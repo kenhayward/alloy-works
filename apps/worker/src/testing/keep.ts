@@ -4,7 +4,7 @@ import type { Typst } from '../typst.js';
 
 /**
  * The corpus's Typst, keeping every PDF it compiles in `directory` for a person to open in a reader:
- * the Matterhorn review PUB-104 asks for is made on the corpus's PDFs (docs/guides/auditing-a-release.md),
+ * the Matterhorn review PUB-105 asks for is made on the corpus's PDFs (docs/guides/auditing-a-release.md),
  * and the suite otherwise keeps none. Each file is named by the case that compiled it, `name()` asked at
  * the compile - its own title, not its describe's - and numbered in the order that case compiled them. With no directory, Typst as it was.
  */

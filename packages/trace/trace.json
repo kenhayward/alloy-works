@@ -8312,9 +8312,18 @@
       "area": "PUB",
       "statement": "The Matterhorn Protocol checkpoints only a person can judge must be reviewed, and passed, on the publishing regression corpus whenever the engine, the template or the pipeline changes, and the review kept with the release",
       "tranche": "T1",
-      "status": "Specified",
+      "status": "Superseded by PUB-105",
       "document": "PUB-publishing-and-output.md",
       "line": 140
+    },
+    {
+      "id": "PUB-105",
+      "area": "PUB",
+      "statement": "Before each release, the Matterhorn Protocol checkpoints only a person can judge must be reviewed, and passed, on the publishing regression corpus, and the review kept with the release",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "PUB-publishing-and-output.md",
+      "line": 141
     },
     {
       "id": "PUB-031",
@@ -8323,7 +8332,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 141
+      "line": 142
     },
     {
       "id": "PUB-032",
@@ -8332,7 +8341,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 142
+      "line": 143
     },
     {
       "id": "PUB-033",
@@ -8341,7 +8350,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 143
+      "line": 144
     },
     {
       "id": "PUB-034",
@@ -8350,7 +8359,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 144
+      "line": 145
     },
     {
       "id": "PUB-035",
@@ -8359,7 +8368,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-100",
       "document": "PUB-publishing-and-output.md",
-      "line": 145
+      "line": 146
     },
     {
       "id": "PUB-100",
@@ -8368,7 +8377,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 146
+      "line": 147
     },
     {
       "id": "PUB-101",
@@ -8377,7 +8386,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 147
+      "line": 148
     },
     {
       "id": "PUB-036",
@@ -8386,7 +8395,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-091",
       "document": "PUB-publishing-and-output.md",
-      "line": 148
+      "line": 149
     },
     {
       "id": "PUB-091",
@@ -8395,7 +8404,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 149
+      "line": 150
     },
     {
       "id": "PUB-080",
@@ -8404,7 +8413,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 150
+      "line": 151
     },
     {
       "id": "PUB-037",
@@ -8413,7 +8422,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 166
+      "line": 170
     },
     {
       "id": "PUB-038",
@@ -8422,7 +8431,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 167
+      "line": 171
     },
     {
       "id": "PUB-039",
@@ -8431,7 +8440,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 168
+      "line": 172
     },
     {
       "id": "PUB-040",
@@ -8440,7 +8449,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 169
+      "line": 173
     },
     {
       "id": "PUB-041",
@@ -8449,7 +8458,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 170
+      "line": 174
     },
     {
       "id": "PUB-042",
@@ -8458,7 +8467,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 171
+      "line": 175
     },
     {
       "id": "PUB-043",
@@ -8467,7 +8476,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 187
+      "line": 191
     },
     {
       "id": "PUB-063",
@@ -8476,7 +8485,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 188
+      "line": 192
     },
     {
       "id": "PUB-064",
@@ -8485,7 +8494,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-085",
       "document": "PUB-publishing-and-output.md",
-      "line": 189
+      "line": 193
     },
     {
       "id": "PUB-085",
@@ -8494,7 +8503,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-102",
       "document": "PUB-publishing-and-output.md",
-      "line": 190
+      "line": 194
     },
     {
       "id": "PUB-102",
@@ -8503,7 +8512,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 191
+      "line": 195
     },
     {
       "id": "PUB-044",
@@ -8512,7 +8521,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 192
+      "line": 196
     },
     {
       "id": "PUB-045",
@@ -8521,7 +8530,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 193
+      "line": 197
     },
     {
       "id": "PUB-082",
@@ -8530,7 +8539,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 194
+      "line": 198
     },
     {
       "id": "PUB-046",
@@ -8539,7 +8548,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 195
+      "line": 199
     },
     {
       "id": "PUB-075",
@@ -8548,7 +8557,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 196
+      "line": 200
     },
     {
       "id": "PUB-076",
@@ -8557,7 +8566,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 197
+      "line": 201
     },
     {
       "id": "PUB-077",
@@ -8566,7 +8575,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 198
+      "line": 202
     },
     {
       "id": "PUB-047",
@@ -8575,7 +8584,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 223
+      "line": 227
     },
     {
       "id": "PUB-093",
@@ -8584,7 +8593,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 224
+      "line": 228
     },
     {
       "id": "PUB-048",
@@ -8593,7 +8602,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 225
+      "line": 229
     },
     {
       "id": "PUB-049",
@@ -8602,7 +8611,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 226
+      "line": 230
     },
     {
       "id": "PUB-050",
@@ -8611,7 +8620,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 227
+      "line": 231
     },
     {
       "id": "PUB-057",
@@ -8620,7 +8629,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 228
+      "line": 232
     },
     {
       "id": "PUB-058",
@@ -8629,7 +8638,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 229
+      "line": 233
     },
     {
       "id": "PUB-059",
@@ -8638,7 +8647,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 230
+      "line": 234
     },
     {
       "id": "PUB-060",
@@ -8647,7 +8656,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 231
+      "line": 235
     },
     {
       "id": "PUB-073",
@@ -8656,7 +8665,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 232
+      "line": 236
     },
     {
       "id": "PUB-074",
@@ -8665,7 +8674,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 233
+      "line": 237
     },
     {
       "id": "PUB-081",
@@ -8674,7 +8683,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 234
+      "line": 238
     },
     {
       "id": "PUB-083",
@@ -8683,7 +8692,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 235
+      "line": 239
     },
     {
       "id": "PUB-084",
@@ -8692,7 +8701,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 236
+      "line": 240
     },
     {
       "id": "PUB-051",
@@ -8701,7 +8710,7 @@
       "tranche": "Constraint",
       "status": "Superseded by PUB-072",
       "document": "PUB-publishing-and-output.md",
-      "line": 266
+      "line": 270
     },
     {
       "id": "PUB-052",
@@ -8710,7 +8719,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 267
+      "line": 271
     },
     {
       "id": "PUB-053",
@@ -8719,7 +8728,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 268
+      "line": 272
     },
     {
       "id": "PUB-071",
@@ -8728,7 +8737,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 269
+      "line": 273
     },
     {
       "id": "PUB-072",
@@ -8737,7 +8746,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 270
+      "line": 274
     },
     {
       "id": "PUB-094",
@@ -8746,7 +8755,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 271
+      "line": 275
     },
     {
       "id": "PUB-079",
@@ -8755,7 +8764,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 272
+      "line": 276
     },
     {
       "id": "PUB-054",
@@ -8764,7 +8773,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 288
+      "line": 292
     },
     {
       "id": "PUB-055",
@@ -8773,7 +8782,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 289
+      "line": 293
     },
     {
       "id": "PUB-056",
@@ -8782,7 +8791,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 290
+      "line": 294
     },
     {
       "id": "REL-001",
@@ -13752,25 +13761,25 @@
       "id": "PUB-N01",
       "statement": "**Not a prepress system.** No imposition, colour separation, trapping or bleed management",
       "document": "PUB-publishing-and-output.md",
-      "line": 296
+      "line": 300
     },
     {
       "id": "PUB-N02",
       "statement": "**No web publishing channel, and no anonymous distribution.** The output is documents, not a site. A report meant for the public goes on a web server, and the product's involvement ends at the file ([ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md))",
       "document": "PUB-publishing-and-output.md",
-      "line": 297
+      "line": 301
     },
     {
       "id": "PUB-N03",
       "statement": "**No editing of output.** A published artifact is produced from a baseline; correcting it means correcting the document and publishing again",
       "document": "PUB-publishing-and-output.md",
-      "line": 298
+      "line": 302
     },
     {
       "id": "PUB-N04",
       "statement": "**Google Docs is not held to the fidelity bar**, and must not be sold as though it were",
       "document": "PUB-publishing-and-output.md",
-      "line": 299
+      "line": 303
     },
     {
       "id": "REL-N01",
@@ -14632,35 +14641,35 @@
       "question": "**Which pagination and PDF engine?**",
       "settledBy": "**Settled.** Typst, rendering the resolved content model through one fixed template. See [ADR-0013](../../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md)",
       "document": "PUB-publishing-and-output.md",
-      "line": 305
+      "line": 309
     },
     {
       "id": "PUB-Q02",
       "question": "**Does Google Docs export survive at all?** It exists because customers ask for it and cannot express what the product is for, and it now has a second problem: writing to a user's Google Docs needs Drive scopes, which are restricted, which means app verification and a periodic security assessment - exactly what IAM-044 and [ADR-0009](../../decisions/0009-federation-and-google-accounts-no-local-passwords.md) were taken to avoid",
       "settledBy": "Whether a customer wants it enough to accept both that it is visibly worse and that it carries a compliance cost nothing else in the product does",
       "document": "PUB-publishing-and-output.md",
-      "line": 306
+      "line": 310
     },
     {
       "id": "PUB-Q03",
       "question": "**Is PDF/A required, and at which conformance level?** Archival and submission requirements differ by regime, and the levels are not interchangeable",
       "settledBy": "The first customer with a submission requirement that names one",
       "document": "PUB-publishing-and-output.md",
-      "line": 307
+      "line": 311
     },
     {
       "id": "PUB-Q04",
       "question": "**How is preview made fast enough (CNT-096) while using the same pipeline (PUB-006)?**",
       "settledBy": "**Settled.** Typst compiles incrementally, reusing unchanged layout between compiles: an edit reaches page 40 of a 300-page document in under half a second, whatever page it is on. The one difference is PUB-061. See [ADR-0013](../../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md). Since [ADR-0027](../../decisions/0027-the-warm-range-preview-leaves-t1.md) this answers T3's warm preview; T1's is the whole document, compiled cold, and CNT-096 is withdrawn",
       "document": "PUB-publishing-and-output.md",
-      "line": 308
+      "line": 312
     },
     {
       "id": "PUB-Q05",
       "question": "**Can an incremental compilation be made byte-identical to a clean one (PUB-076)?** Reusing layout between compiles is what makes preview fast; producing the same bytes either way is what makes PUB-043 checkable",
       "settledBy": "Measurement against the engine. If it cannot, the answer is that preview compiles incrementally and publication always compiles clean - which costs seconds on a path that already takes thirty",
       "document": "PUB-publishing-and-output.md",
-      "line": 309
+      "line": 313
     },
     {
       "id": "REL-Q01",
@@ -15806,6 +15815,10 @@
         {
           "id": "PUB-103",
           "howItIsMet": "Each clause, and how it is met. **Tagged**: every PDF is compiled by the pinned Typst to PDF/UA-1, `--pdf-standard ua-1` under `--features a11y-extras`, which tags it. **Checked on every publication**: `recordPublication` queues a `check_pdf` in the transaction that records a publication with a PDF, and the job checks the PDF against veraPDF's PDF/UA-1 profile and keeps its whole report beside the publication (PUB-091; queued again by the sweep where it gave up). **Passes**: held by the template and the regression corpus, not by a refusal - the corpus compiles the template's output through veraPDF on every change to the template or the engine, the six-level case passing with `H1` to `H6` tagged, and the budget's 311-page reference document passes every time it is checked. What the corpus shows the engine cannot tag, `assemble` refuses before anything is made: every node is a heading at its depth, a section's title or a component's, and the pinned Typst tags one below the sixth level as a paragraph, which veraPDF passes (measured, the regression corpus), so `assemble` refuses each node nested deeper than six levels where a PDF is asked for under a layout, `heading_too_deep`, naming it, and Word, which numbers and tags nine, publishes it (ADR-0031, W-E). A request made before layouts keeps saying what it always said, as its other refusals do, and is not refused so. The page's words offer Word alone only to a publish under a layout with a Word page: a preview is always a PDF, and a layout with no Word page makes none. **A publication that fails is shown, never hidden**: the check follows the record (ADR-0030), so a PDF veraPDF fails is not refused; it stays recorded, and its page says it failed and names each rule, as it says one that could not be checked. A failure found after recording is a defect in the template or the engine, which a case in the corpus then holds"
+        },
+        {
+          "id": "PUB-105",
+          "howItIsMet": "Before each release a person reviews the Matterhorn Protocol checkpoints only a person can judge on the regression corpus (PUB-087) by [the audit guide](../guides/auditing-a-release.md): the corpus keeps every PDF it compiles where `ALLOY_CORPUS_PDFS` names a directory, each named by its case, and each checkpoint's human failure conditions are judged on those PDFs in a reader that shows the tag tree and with a screen reader. The record is committed as `docs/audits/<version>/matterhorn.md`, naming the protocol's version and each checkpoint's verdict, and the release's baseline verifies PUB-105 by `attestation`, naming who looked and when. A change to the engine, the template or the pipeline merged between two releases is reviewed with the release that ships it, and the record says which changes it reviewed"
         },
         {
           "id": "PUB-102",
