@@ -33,11 +33,14 @@ function errorFacets(err) {
 
 // Postgres via pg. Returns { ok, rows } or throws (caller records the error via errorFacets).
 async function pgQuery(spec, secret, sql, params, timeoutMs) {
-  const client = new Client({
-    host: spec.host, port: spec.port, database: spec.database, user: spec.user,
-    password: secret, ssl: spec.ssl ?? false,
-    connectionTimeoutMillis: timeoutMs, query_timeout: timeoutMs, statement_timeout: timeoutMs,
-  });
+  // spec.connectionString embeds the secret in a URL - the classic leak vector the brief names.
+  const cfg = spec.connectionString
+    ? { connectionString: spec.connectionString.replace('__SECRET__', encodeURIComponent(secret)),
+        connectionTimeoutMillis: timeoutMs, query_timeout: timeoutMs, statement_timeout: timeoutMs }
+    : { host: spec.host, port: spec.port, database: spec.database, user: spec.user,
+        password: secret, ssl: spec.ssl ?? false,
+        connectionTimeoutMillis: timeoutMs, query_timeout: timeoutMs, statement_timeout: timeoutMs };
+  const client = new Client(cfg);
   try {
     await client.connect();
     const res = await client.query(sql ?? 'select 1 as one', params ?? []);
@@ -81,8 +84,10 @@ async function httpQuery(spec, secret, timeoutMs) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const res = await fetch(spec.url, {
-      headers: { authorization: `Bearer ${secret}` },
+    // spec.tokenInQuery puts the secret in the URL query string - a leak vector for HTTP sources.
+    const url = spec.tokenInQuery ? `${spec.url}?token=${encodeURIComponent(secret)}` : spec.url;
+    const res = await fetch(url, {
+      headers: spec.tokenInQuery ? {} : { authorization: `Bearer ${secret}` },
       redirect: spec.followRedirects ? 'follow' : 'manual',
       signal: ctrl.signal,
     });

@@ -1,5 +1,4 @@
 node_modules/
 *.log
-dcp1-*.json
-dcp1-*.out
+dcp1-*
 report*.json
