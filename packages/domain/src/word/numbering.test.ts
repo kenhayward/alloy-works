@@ -112,9 +112,9 @@ describe('the numbering Word computes a heading number from (Word 1, ruling R7)'
     const body = levels(xml, 1);
     expect(body).toHaveLength(9);
     expect(body.map((level) => level.format)).toEqual(Array(9).fill('decimal'));
-    expect(body[0]!.text).toBe('%1');
-    expect(body[2]!.text).toBe('%1.%2.%3');
-    expect(body[8]!.text).toBe('%1.%2.%3.%4.%5.%6.%7.%8.%9');
+    expect(body[0]!.text).toBe('%1 ');
+    expect(body[2]!.text).toBe('%1.%2.%3 ');
+    expect(body[8]!.text).toBe('%1.%2.%3.%4.%5.%6.%7.%8.%9 ');
     // M2: front matter i, i.1; appendices A, A.1 - the default scheme's.
     expect(levels(xml, 2).map((level) => level.format)).toEqual([
       'lowerRoman',
@@ -124,8 +124,11 @@ describe('the numbering Word computes a heading number from (Word 1, ruling R7)'
       'upperLetter',
       ...Array(8).fill('decimal'),
     ]);
-    // A space after the number, as the PDF sets "1 Introduction", not a tab to a stop.
-    expect(new Set(body.map((level) => level.suffix))).toEqual(new Set(['space']));
+    // A space after the number, as the PDF sets "1 Introduction", not a tab to a stop - and in the
+    // number's own text, with no suffix: Word sets a `space` suffix in Arial whatever the heading's
+    // face, which stood a mono heading's title 6.25pt nearer its number than the PDF's (measured in
+    // Word's own PDF, W15.2), where the number's text is set in the heading's face.
+    expect(new Set(body.map((level) => level.suffix))).toEqual(new Set(['nothing']));
   });
 
   it('links the body list from the heading styles, level by level, and no other list from any style', () => {
@@ -146,12 +149,12 @@ describe('the numbering Word computes a heading number from (Word 1, ruling R7)'
     });
     const written = numberingXml(scheme, links);
     expect(levels(written, 1).slice(0, 3)).toMatchObject([
-      { format: 'upperRoman', text: '%1' },
-      { format: 'lowerLetter', text: '%1-%2' },
-      { format: 'lowerLetter', text: '%1-%2-%3' },
+      { format: 'upperRoman', text: '%1 ' },
+      { format: 'lowerLetter', text: '%1-%2 ' },
+      { format: 'lowerLetter', text: '%1-%2-%3 ' },
     ]);
-    expect(levels(written, 3)[1]!.text).toBe('%1<&>%2');
-    expect(written).toContain('%1&lt;&amp;&gt;%2');
+    expect(levels(written, 3)[1]!.text).toBe('%1<&>%2 ');
+    expect(written).toContain('%1&lt;&amp;&gt;%2 ');
   });
 });
 
