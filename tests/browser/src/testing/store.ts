@@ -6,10 +6,10 @@ import {
   DEFAULT_THEME_ID,
   type ThemeStoreAnswer,
 } from '@alloy-works/db';
+import { OWN_KINDS, type OwnKind, type ThemeContent } from '@alloy-works/conformance';
 import {
   DEFAULT_CATALOGUE_VERSIONS,
   DEFAULT_THEME_VERSION,
-  type Catalogue,
   type CatalogueKind,
   type Theme,
 } from '@alloy-works/domain';
@@ -28,18 +28,12 @@ export const DATABASE =
   process.env.ALLOY_BROWSER_DATABASE ??
   'postgres://aw_service:aw_service_dev@127.0.0.1:5432/alloy_dev';
 
-/** The catalogues a theme written here brings of its own; the other two are the default's. */
-export const OWN_KINDS = ['paragraph', 'character', 'table', 'image'] as const;
-export type OwnKind = (typeof OWN_KINDS)[number];
-
 /**
- * A theme to write: its content but for the catalogues it binds, which are written first and named by
- * the versions they become, and its four catalogues of its own at `catalogue/3`.
+ * A theme to write: one of the kit's measured themes (`@alloy-works/conformance`), its content but for
+ * the catalogues it binds, which are written first and named by the versions they become, and its four
+ * catalogues of its own at `catalogue/3`.
  */
-export interface ThemeToWrite {
-  readonly theme: Omit<Theme, 'catalogues'>;
-  readonly catalogues: { readonly [K in OwnKind]: Extract<Catalogue, { kind: K }> };
-}
+export type ThemeToWrite = ThemeContent;
 
 /**
  * The artifacts a theme is written to: the theme's and one for each catalogue of its own, fixed, so
@@ -48,6 +42,18 @@ export interface ThemeToWrite {
 export interface ThemeArtifacts {
   readonly theme: string;
   readonly catalogues: Readonly<Record<OwnKind, string>>;
+}
+
+/**
+ * Where the measured theme numbered `n` is written - the contrary theme 1, each generated one after it:
+ * fixed, so a later run writes nothing unchanged.
+ */
+export function artifactsOf(n: number): ThemeArtifacts {
+  const id = (k: number) => `a7e5b0c1-5a1e-4b0c-8f00-000000000${n}0${k}`;
+  return {
+    theme: id(0),
+    catalogues: { paragraph: id(1), character: id(2), table: id(3), image: id(4) },
+  };
 }
 
 /**

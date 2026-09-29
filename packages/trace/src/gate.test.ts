@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Baseline, Requirement, TraceModel } from './model.js';
-import { gate } from './gate.js';
+import { gate, type LocalRunFacts } from './gate.js';
 
 /** No record under docs/audits/ is there: these baselines name none, or name one to be refused. */
 const noRecords = (): boolean => false;
+/** And none is read: a local-run's report is handed over only where a test hands one. */
+const unread = (): undefined => undefined;
+/** And no local run to be told of. */
+const noRun: LocalRunFacts = { testFiles: 0, ancestry: () => 'unknown' };
 import type { TestOutcome } from './results.js';
 
 const requirement = (id: string, status = 'Specified'): Requirement => ({
@@ -40,7 +44,7 @@ const outcomes = (entries: TestOutcome[]): Map<string, TestOutcome> =>
 
 describe('deciding a baseline', () => {
   it('fails an included requirement that no test names', () => {
-    const result = gate(baseline({}), model({}), outcomes([]), noRecords);
+    const result = gate(baseline({}), model({}), outcomes([]), noRecords, unread, noRun);
 
     expect(result.met).toBe(0);
     expect(result.unmet).toEqual([
@@ -57,6 +61,8 @@ describe('deciding a baseline', () => {
       }),
       outcomes([{ id: 'ZZZ-001', outcome: 'failed', tests: ['a (ZZZ-001)'] }]),
       noRecords,
+      unread,
+      noRun,
     );
 
     expect(result.met).toBe(0);
@@ -77,6 +83,8 @@ describe('deciding a baseline', () => {
       model({ citations: [] }),
       outcomes([{ id: 'ZZZ-001', outcome: 'passed', tests: ['covers ZZZ-001'] }]),
       noRecords,
+      unread,
+      noRun,
     );
 
     expect(result.met).toBe(0);
@@ -93,6 +101,8 @@ describe('deciding a baseline', () => {
       }),
       outcomes([]),
       noRecords,
+      unread,
+      noRun,
     );
 
     expect(result.unmet).toEqual([
@@ -115,6 +125,8 @@ describe('deciding a baseline', () => {
       }),
       outcomes([{ id: 'ZZZ-001', outcome: 'passed', tests: ['a (ZZZ-001)'] }]),
       noRecords,
+      unread,
+      noRun,
     );
 
     expect(result.unmet).toEqual([]);
@@ -133,6 +145,8 @@ describe('deciding a baseline', () => {
       model({}),
       outcomes([]),
       noRecords,
+      unread,
+      noRun,
     );
 
     expect(result.unmet).toContainEqual({
@@ -151,6 +165,8 @@ describe('deciding a baseline', () => {
       model({ citations: [{ id: 'ZZZ-001', file: 'a.test.ts', line: 1, kind: 'title' }] }),
       outcomes([{ id: 'ZZZ-001', outcome: 'passed', tests: ['a (ZZZ-001)'] }]),
       noRecords,
+      unread,
+      noRun,
     );
 
     expect(result.unmet).toEqual([
@@ -184,6 +200,8 @@ describe('deciding a baseline', () => {
       three,
       passed,
       noRecords,
+      unread,
+      noRun,
     );
     expect(met.unmet).toEqual([]);
     expect(met.met).toBe(3);
@@ -196,6 +214,8 @@ describe('deciding a baseline', () => {
       three,
       passed,
       noRecords,
+      unread,
+      noRun,
     );
     expect(withoutTheSuite.unmet).toEqual([
       {
@@ -210,6 +230,8 @@ describe('deciding a baseline', () => {
       three,
       outcomes([{ id: 'ZZZ-001', outcome: 'failed', tests: ['a (ZZZ-001)'] }]),
       noRecords,
+      unread,
+      noRun,
     );
     expect(suiteFailed.unmet).toContainEqual({
       id: 'ZZZ-003',
@@ -229,7 +251,7 @@ describe('deciding a baseline', () => {
       ],
     });
 
-    const missing = gate(declared, model({}), outcomes([]), () => false);
+    const missing = gate(declared, model({}), outcomes([]), () => false, unread, noRun);
     expect(missing.declarationProblems).toEqual([
       {
         kind: 'missing-record',
@@ -240,10 +262,17 @@ describe('deciding a baseline', () => {
     ]);
 
     const asked: string[] = [];
-    const present = gate(declared, model({}), outcomes([]), (path) => {
-      asked.push(path);
-      return true;
-    });
+    const present = gate(
+      declared,
+      model({}),
+      outcomes([]),
+      (path) => {
+        asked.push(path);
+        return true;
+      },
+      unread,
+      noRun,
+    );
     expect(present.declarationProblems).toEqual([]);
     expect(present.met).toBe(1);
     expect(asked).toEqual(['docs/audits/0.0.0-invented/wcag.md']);
@@ -262,6 +291,8 @@ describe('deciding a baseline', () => {
         model({}),
         outcomes([]),
         () => true,
+        unread,
+        noRun,
       );
       expect(result.declarationProblems).toEqual([
         {
@@ -286,6 +317,8 @@ describe('deciding a baseline', () => {
       model({}),
       outcomes([]),
       noRecords,
+      unread,
+      noRun,
     );
 
     expect(result.unmet).toEqual([]);
@@ -302,6 +335,8 @@ describe('deciding a baseline', () => {
       model({}),
       outcomes([]),
       noRecords,
+      unread,
+      noRun,
     );
 
     expect(result.met).toBe(0);
@@ -330,6 +365,8 @@ describe('deciding a baseline', () => {
       }),
       outcomes([{ id: 'ZZZ-001', outcome: 'passed', tests: ['a (ZZZ-001)'] }]),
       noRecords,
+      unread,
+      noRun,
     );
 
     expect(result.unmet).toEqual([]);
@@ -355,6 +392,8 @@ describe('deciding a baseline', () => {
       }),
       outcomes([{ id: 'ZZZ-001', outcome: 'passed', tests: ['a (ZZZ-001)'] }]),
       noRecords,
+      unread,
+      noRun,
     );
 
     expect(result.unmet).toEqual([]);
@@ -374,6 +413,8 @@ describe('deciding a baseline', () => {
       model({ citations: [{ id: 'ZZZ-404', file: 'a.test.ts', line: 1, kind: 'title' }] }),
       outcomes([]),
       noRecords,
+      unread,
+      noRun,
     );
 
     expect(result.problems.map((problem) => problem.kind)).toContain('cites-unknown');
@@ -394,6 +435,8 @@ describe('deciding a baseline', () => {
       }),
       outcomes([{ id: 'ZZZ-001', outcome: 'passed', tests: ['a (ZZZ-001)'] }]),
       noRecords,
+      unread,
+      noRun,
     );
 
     expect(result.problems.map((problem) => problem.kind)).toContain('claimed-twice');
@@ -427,6 +470,8 @@ describe('deciding a baseline', () => {
         { id: 'ZZZ-003', outcome: 'passed', tests: ['a (ZZZ-003)'] },
       ]),
       noRecords,
+      unread,
+      noRun,
     );
 
     expect(result.problems.map((problem) => problem.kind)).toContain('not-contiguous');
@@ -456,6 +501,8 @@ describe('deciding a baseline', () => {
       model({ citations: [] }),
       outcomes([]),
       noRecords,
+      unread,
+      noRun,
     );
 
     expect(result.met).toBe(0);
@@ -478,6 +525,8 @@ describe('deciding a baseline', () => {
       model({}),
       outcomes([]),
       noRecords,
+      unread,
+      noRun,
     );
 
     expect(result.met).toBe(0);
@@ -510,6 +559,8 @@ describe('deciding a baseline', () => {
       }),
       outcomes([{ id: 'ZZZ-001', outcome: 'passed', tests: ['a (ZZZ-001)'] }]),
       noRecords,
+      unread,
+      noRun,
     );
 
     expect(result.declarationProblems.map((problem) => problem.kind).sort()).toEqual([
@@ -539,9 +590,380 @@ describe('deciding a baseline', () => {
       model({}),
       outcomes([]),
       noRecords,
+      unread,
+      noRun,
     );
 
     expect(result.unmet.map((unmet) => unmet.id).sort()).toEqual(['ZZZ-001', 'ZZZ-002']);
     expect(result.met).toBe(0);
+  });
+});
+
+/**
+ * **`local-run`** (the W15 plan's W15-D): a requirement only a run on a machine with Word can verify.
+ * Its row names who ran it, when and the record of the run; beside the record, the run's report reduced
+ * by `pnpm trace record-run`. The gate meets it when it is eligible as any other is; the record and the
+ * report are there and of this release; the report is of a run that did not fail; by that report the
+ * requirement is Verified - a title citation, every test naming it passed and none skipped; and in CI's
+ * own results no test naming it failed. Each condition is shown failing alone, naming itself.
+ */
+describe('deciding a requirement verified by a local run', () => {
+  const RECORD = 'docs/audits/0.0.0-invented/word.md';
+  const REPORT = 'docs/audits/0.0.0-invented/word.json';
+  // Not the reserved area: a run's report is read through `parseResults`, which skips a ZZZ identifier
+  // in a real report, as it must.
+  const included = [{ id: 'QQQ-001', why: 'invented for the fixture' }];
+  const ran = baseline({
+    included,
+    verification: [{ id: 'QQQ-001', kind: 'local-run', by: `Ada, 2026-09-30, ${RECORD}` }],
+  });
+  const cited = model({
+    requirements: [requirement('QQQ-001'), requirement('QQQ-002')],
+    designs: [{ document: 'one.md', owns: [{ id: 'QQQ-001', howItIsMet: 'a' }] }],
+    citations: [{ id: 'QQQ-001', file: 'apps/worker/src/a.test.ts', line: 1, kind: 'title' }],
+  });
+  /** The commit a run was made at: one in this branch's history, unless a test says otherwise. */
+  const COMMIT = 'c0ffee'.padEnd(40, '0');
+  /**
+   * A reduced report, as `record-run` writes it: the run at `COMMIT` from a clean tree, each test's
+   * full name and status in the first of the worker's two test files and one more test in the second,
+   * and the counts of them all.
+   */
+  const report = (
+    tests: Record<string, string>,
+    success = true,
+    over: Record<string, unknown> = {},
+  ): string => {
+    const files = [tests, { 'another file': 'passed' }].map((each) =>
+      Object.entries(each).map(([fullName, status]) => ({ fullName, status })),
+    );
+    const statuses = files.flat().map((each) => each.status);
+    const count = (of: (status: string) => boolean) => statuses.filter(of).length;
+    return JSON.stringify({
+      success,
+      startTime: 1_790_000_000_000,
+      commit: COMMIT,
+      clean: true,
+      counts: {
+        total: statuses.length,
+        passed: count((each) => each === 'passed'),
+        failed: count((each) => each === 'failed'),
+        skipped: count((each) => each !== 'passed' && each !== 'failed'),
+      },
+      testResults: files.map((assertionResults) => ({ assertionResults })),
+      ...over,
+    });
+  };
+  const passing = report({ 'Word measured QQQ-001 holds': 'passed', 'another test': 'passed' });
+  /** CI's own results: the Word test skipped, as it is where Word is not. */
+  const inCi = outcomes([{ id: 'QQQ-001', outcome: 'skipped', tests: ['Word measured QQQ-001'] }]);
+  const files =
+    (present: Record<string, string>) =>
+    (path: string): boolean =>
+      path in present;
+  const reading =
+    (present: Record<string, string>) =>
+    (path: string): string | undefined =>
+      present[path];
+  /** The worker has two test files, and the commit is in this branch's history. */
+  const facts: LocalRunFacts = { testFiles: 2, ancestry: () => 'ancestor' };
+  const decide = (
+    present: Record<string, string>,
+    over: {
+      baseline?: Baseline;
+      model?: TraceModel;
+      ci?: Map<string, TestOutcome>;
+      facts?: LocalRunFacts;
+    } = {},
+  ) =>
+    gate(
+      over.baseline ?? ran,
+      over.model ?? cited,
+      over.ci ?? inCi,
+      files(present),
+      reading(present),
+      over.facts ?? facts,
+    );
+  const unmetWhy = (result: ReturnType<typeof gate>) =>
+    result.unmet.map((each) => ({ id: each.id, kind: each.kind, why: each.why }));
+
+  it('meets it where the record and its report are there, the run passed and every test naming it passed there, and none failed in CI', () => {
+    const result = decide({ [RECORD]: '# A run\n', [REPORT]: passing });
+
+    expect(result.unmet).toEqual([]);
+    expect(result.declarationProblems).toEqual([]);
+    expect(result.met).toBe(1);
+  });
+
+  it('fails it where its record is not there, saying so', () => {
+    expect(unmetWhy(decide({ [REPORT]: passing }))).toEqual([
+      {
+        id: 'QQQ-001',
+        kind: 'local-run',
+        why: `QQQ-001's local run names its record ${RECORD}, which is not there`,
+      },
+    ]);
+  });
+
+  it('fails it where the report beside the record is not there, saying so', () => {
+    expect(unmetWhy(decide({ [RECORD]: '# A run\n' }))).toEqual([
+      {
+        id: 'QQQ-001',
+        kind: 'local-run',
+        why: `QQQ-001's local run has no report ${REPORT} beside its record - run pnpm trace record-run`,
+      },
+    ]);
+  });
+
+  it('fails it where the report is not a report of a run', () => {
+    // Hand-typed as the final review typed one: no commit, no tree's state, or no counts.
+    const without = (key: string) => JSON.stringify({ ...JSON.parse(passing), [key]: undefined });
+    for (const unreadable of [
+      'not json',
+      JSON.stringify({ success: true }),
+      without('commit'),
+      without('clean'),
+      without('counts'),
+    ]) {
+      expect(unmetWhy(decide({ [RECORD]: '# A run\n', [REPORT]: unreadable }))).toEqual([
+        {
+          id: 'QQQ-001',
+          kind: 'local-run',
+          why: `QQQ-001's local run's report ${REPORT} is not a report of a run`,
+        },
+      ]);
+    }
+  });
+
+  it('fails it where the local run failed, whatever its tests naming it did', () => {
+    const failedRun = report({ 'Word measured QQQ-001 holds': 'passed', another: 'failed' }, false);
+    expect(unmetWhy(decide({ [RECORD]: '# A run\n', [REPORT]: failedRun }))).toEqual([
+      {
+        id: 'QQQ-001',
+        kind: 'local-run',
+        why: `QQQ-001's local run failed, by its report ${REPORT}`,
+      },
+    ]);
+  });
+
+  it('fails it where, by the report, a test naming it failed or was skipped, or none names it', () => {
+    for (const [status, said] of [
+      ['failed', 'failed'],
+      ['skipped', 'skipped'],
+      ['todo', 'skipped'],
+    ] as const) {
+      const run = report({ 'Word measured QQQ-001 holds': 'passed', 'QQQ-001 again': status });
+      expect(unmetWhy(decide({ [RECORD]: '# A run\n', [REPORT]: run }))).toEqual([
+        {
+          id: 'QQQ-001',
+          kind: 'local-run',
+          why: `QQQ-001 is named by a test that ${said} in its local run`,
+        },
+      ]);
+    }
+    const none = report({ 'another test': 'passed' });
+    expect(unmetWhy(decide({ [RECORD]: '# A run\n', [REPORT]: none }))).toEqual([
+      {
+        id: 'QQQ-001',
+        kind: 'local-run',
+        why: 'QQQ-001 is named by no test in its local run',
+      },
+    ]);
+  });
+
+  it('fails it where only a rule: field cites it, since a result is matched by its title alone', () => {
+    const ruled = model({
+      requirements: [requirement('QQQ-001')],
+      designs: [{ document: 'one.md', owns: [{ id: 'QQQ-001', howItIsMet: 'a' }] }],
+      citations: [{ id: 'QQQ-001', file: 'apps/worker/src/a.test.ts', line: 1, kind: 'rule' }],
+    });
+    expect(
+      unmetWhy(decide({ [RECORD]: '# A run\n', [REPORT]: passing }, { model: ruled })),
+    ).toEqual([
+      {
+        id: 'QQQ-001',
+        kind: 'local-run',
+        why: "QQQ-001 is cited by no test title under apps/worker/src/, where a local run's tests are",
+      },
+    ]);
+  });
+
+  it("fails it where a test naming it failed in CI's own results, though the local run passed", () => {
+    const failedInCi = outcomes([
+      { id: 'QQQ-001', outcome: 'failed', tests: ['the PDF half QQQ-001'] },
+    ]);
+    expect(
+      unmetWhy(decide({ [RECORD]: '# A run\n', [REPORT]: passing }, { ci: failedInCi })),
+    ).toEqual([
+      {
+        id: 'QQQ-001',
+        kind: 'local-run',
+        why: "QQQ-001 is named by a test that failed in CI's own results",
+      },
+    ]);
+  });
+
+  it('fails it where it is not in force, before anything is read', () => {
+    const read: string[] = [];
+    const result = gate(
+      ran,
+      model({ ...cited, requirements: [requirement('QQQ-001', 'Withdrawn')] }),
+      inCi,
+      () => true,
+      (path) => {
+        read.push(path);
+        return passing;
+      },
+      facts,
+    );
+    expect(unmetWhy(result)).toEqual([
+      {
+        id: 'QQQ-001',
+        kind: 'local-run',
+        why: 'QQQ-001 is "Withdrawn", not in force for this release',
+      },
+    ]);
+    expect(read).toEqual([]);
+  });
+
+  it("refuses a hand-built row whose record is not this release's, reading nothing", () => {
+    const asked: string[] = [];
+    const result = gate(
+      baseline({
+        included,
+        verification: [
+          { id: 'QQQ-001', kind: 'local-run', by: 'Ada, 2026-09-30, docs/audits/0.0.9/word.md' },
+        ],
+      }),
+      cited,
+      inCi,
+      (path) => {
+        asked.push(path);
+        return true;
+      },
+      (path) => {
+        asked.push(path);
+        return passing;
+      },
+      facts,
+    );
+    expect(unmetWhy(result)).toEqual([
+      {
+        id: 'QQQ-001',
+        kind: 'local-run',
+        why: "QQQ-001's local-run `by` names docs/audits/0.0.9/word.md, which is not a record of this release",
+      },
+    ]);
+    expect(asked).toEqual([]);
+  });
+
+  // The final review of W15.1: a hand-typed report of one file and one test, with no counts, beside an
+  // empty record, passed. Each of what it lacked is now asked for, and each is named where it is not.
+  it('fails it where its record is empty, which records nothing', () => {
+    expect(unmetWhy(decide({ [RECORD]: ' \n', [REPORT]: passing }))).toEqual([
+      { id: 'QQQ-001', kind: 'local-run', why: `QQQ-001's local run's record ${RECORD} is empty` },
+    ]);
+  });
+
+  it("fails it where the report's counts are not its tests'", () => {
+    const miscounted = report({ 'Word measured QQQ-001 holds': 'passed' }, true, {
+      counts: { total: 1, passed: 1, failed: 0, skipped: 0 },
+    });
+    expect(unmetWhy(decide({ [RECORD]: '# A run\n', [REPORT]: miscounted }))).toEqual([
+      {
+        id: 'QQQ-001',
+        kind: 'local-run',
+        why: `QQQ-001's local run's report ${REPORT} counts other tests than it holds`,
+      },
+    ]);
+  });
+
+  it('fails it where the report covers fewer test files than the worker has, since the whole suite is the run', () => {
+    expect(
+      unmetWhy(
+        decide({ [RECORD]: '# A run\n', [REPORT]: passing }, { facts: { ...facts, testFiles: 3 } }),
+      ),
+    ).toEqual([
+      {
+        id: 'QQQ-001',
+        kind: 'local-run',
+        why: `QQQ-001's local run's report ${REPORT} covers 2 of the worker's 3 test files - the whole suite is the run`,
+      },
+    ]);
+  });
+
+  it('fails it where the run was made from a working tree with changes in it', () => {
+    const dirty = report({ 'Word measured QQQ-001 holds': 'passed' }, true, { clean: false });
+    expect(unmetWhy(decide({ [RECORD]: '# A run\n', [REPORT]: dirty }))).toEqual([
+      {
+        id: 'QQQ-001',
+        kind: 'local-run',
+        why: `QQQ-001's local run was made from a working tree with uncommitted changes, by its report ${REPORT}`,
+      },
+    ]);
+  });
+
+  it("fails it where the run's commit is not in this branch's history, and meets it where history cannot say", () => {
+    const present = { [RECORD]: '# A run\n', [REPORT]: passing };
+    const asked: string[] = [];
+    expect(
+      unmetWhy(
+        decide(present, {
+          facts: {
+            ...facts,
+            ancestry: (commit) => {
+              asked.push(commit);
+              return 'not-ancestor';
+            },
+          },
+        }),
+      ),
+    ).toEqual([
+      {
+        id: 'QQQ-001',
+        kind: 'local-run',
+        why: `QQQ-001's local run was made at ${COMMIT}, which is not in this branch's history`,
+      },
+    ]);
+    expect(asked).toEqual([COMMIT]);
+    // A shallow clone, CI's, holds no older commit to ask of: the record names it for a reviewer.
+    expect(decide(present, { facts: { ...facts, ancestry: () => 'unknown' } }).met).toBe(1);
+  });
+
+  it("fails it where no test title under apps/worker/src/ cites it, where a local run's tests are", () => {
+    const elsewhere = model({
+      requirements: [requirement('QQQ-001')],
+      designs: [{ document: 'one.md', owns: [{ id: 'QQQ-001', howItIsMet: 'a' }] }],
+      citations: [{ id: 'QQQ-001', file: 'tests/browser/src/a.test.ts', line: 1, kind: 'title' }],
+    });
+    expect(
+      unmetWhy(decide({ [RECORD]: '# A run\n', [REPORT]: passing }, { model: elsewhere })),
+    ).toEqual([
+      {
+        id: 'QQQ-001',
+        kind: 'local-run',
+        why: "QQQ-001 is cited by no test title under apps/worker/src/, where a local run's tests are",
+      },
+    ]);
+  });
+
+  it('lets another requirement inherit from one a local run verified', () => {
+    const result = decide(
+      { [RECORD]: '# A run\n', [REPORT]: passing },
+      {
+        baseline: baseline({
+          included: [
+            { id: 'QQQ-001', why: 'invented for the fixture' },
+            { id: 'QQQ-002', why: 'invented for the fixture' },
+          ],
+          verification: [
+            { id: 'QQQ-001', kind: 'local-run', by: `Ada, 2026-09-30, ${RECORD}` },
+            { id: 'QQQ-002', kind: 'inherited', by: 'QQQ-001' },
+          ],
+        }),
+      },
+    );
+    expect(result.unmet).toEqual([]);
+    expect(result.met).toBe(2);
   });
 });

@@ -37,6 +37,67 @@ const worst = (outcomes: Outcome[]): Outcome =>
 const outcomeOf = (status: string): Outcome =>
   status === 'passed' ? 'passed' : status === 'failed' ? 'failed' : 'skipped';
 
+/** How many tests a run held, and how many of them passed, failed and did not run. */
+export interface RunCounts {
+  readonly total: number;
+  readonly passed: number;
+  readonly failed: number;
+  readonly skipped: number;
+}
+
+function countsOf(report: z.infer<typeof Report>): RunCounts {
+  const outcomes = report.testResults.flatMap((file) =>
+    file.assertionResults.map((each) => outcomeOf(each.status)),
+  );
+  const count = (outcome: Outcome) => outcomes.filter((each) => each === outcome).length;
+  return {
+    total: outcomes.length,
+    passed: count('passed'),
+    failed: count('failed'),
+    skipped: count('skipped'),
+  };
+}
+
+/**
+ * A local run's report as `pnpm trace record-run` commits it beside the run's record (the W15 plan's
+ * W15-D): whether the run succeeded, when it started, its counts, and each test's full name and status
+ * - which is all the gate reads of it. No file's path, no failure's message, no duration and nothing a
+ * test wrote into its `meta`: what a run on somebody's machine leaves in its report is theirs, not the
+ * repository's.
+ */
+export interface RunRecord {
+  readonly success: boolean;
+  readonly startTime: number;
+  /** `git rev-parse HEAD` where the run was recorded, and whether its working tree was clean. */
+  readonly commit: string;
+  readonly clean: boolean;
+  readonly counts: RunCounts;
+  readonly testResults: readonly {
+    readonly assertionResults: readonly { readonly fullName: string; readonly status: string }[];
+  }[];
+}
+
+/**
+ * A Vitest JSON report reduced to its `RunRecord`, stamped with the commit it was recorded at and
+ * whether the working tree was clean, or thrown on where it is not a report.
+ */
+export function reduceRun(
+  raw: unknown,
+  where: { readonly commit: string; readonly clean: boolean },
+): RunRecord {
+  const report = validate(Report, raw, "the run's report");
+  return {
+    success: report.success,
+    startTime: report.startTime,
+    commit: where.commit,
+    clean: where.clean,
+    counts: countsOf(report),
+    testResults: report.testResults.map((file) => ({
+      assertionResults: file.assertionResults.map(({ fullName, status }) => ({ fullName, status })),
+    })),
+  };
+}
+
 /**
  * Several JSON reports to what each requirement's tests did. One report per package, because each
  * `vitest.config.ts` writes its own.
@@ -148,4 +209,62 @@ export function checkCoherence(reports: NamedReport[], expectedNames: string[]):
   }
 
   return problems;
+}
+
+const Recorded = Report.extend({
+  commit: z.string().regex(/^[0-9a-f]{40}$/),
+  clean: z.boolean(),
+  counts: z.object({
+    total: z.number(),
+    passed: z.number(),
+    failed: z.number(),
+    skipped: z.number(),
+  }),
+});
+
+/**
+ * A local run's report as `record-run` committed it, read from its text for the gate and the pack: the
+ * run - whether it succeeded and what each requirement's tests did in it - with its commit, whether its tree was clean and how many test files it
+ * covers - or why it is not one. The report is data somebody committed: this holds it to the shape
+ * `record-run` writes and to counts that agree with its own tests, and takes it as written.
+ */
+export function readRecordedRun(text: string):
+  | {
+      readonly run: RunRecord & {
+        readonly files: number;
+        readonly outcomes: Map<string, TestOutcome>;
+      };
+    }
+  | { readonly refused: 'unreadable' | 'miscounted' } {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    return { refused: 'unreadable' };
+  }
+  const parsed = Recorded.safeParse(raw);
+  if (!parsed.success) return { refused: 'unreadable' };
+  const report = parsed.data;
+  const counted = countsOf(report);
+  const stated = report.counts;
+  if (
+    counted.total !== stated.total ||
+    counted.passed !== stated.passed ||
+    counted.failed !== stated.failed ||
+    counted.skipped !== stated.skipped
+  ) {
+    return { refused: 'miscounted' };
+  }
+  return {
+    run: {
+      success: report.success,
+      startTime: report.startTime,
+      commit: report.commit,
+      clean: report.clean,
+      counts: counted,
+      testResults: report.testResults,
+      files: report.testResults.length,
+      outcomes: parseResults([report]),
+    },
+  };
 }

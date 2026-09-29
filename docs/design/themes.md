@@ -955,7 +955,7 @@ measurement found, and what changed:
 **Outside STY-080, and why.** STY-080 asks that every style property both outputs render be the same
 in each, and that a difference be allowed only where STY-060's list names it. That list is empty between
 the editor and the PDF - its one entry, the Word face STY-052 substitutes, is Word's and STY-081's - and
-the test holds it so (`APPROVED_DEVIATIONS` in `compare.ts`). What the comparison leaves out is not a
+the test holds it so (`EDITOR_DEVIATIONS` in the conformance kit's `compare.ts`, beside Word's own list). What the comparison leaves out is not a
 difference it forgives: each is something one output does not render as a style property, so outside
 what STY-080 asks.
 

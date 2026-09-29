@@ -8,6 +8,7 @@ import {
   attestationIsSubstantial,
   validate,
   inheritedFrom,
+  localRunDeclared,
 } from '../model.js';
 import { boldIdentifier, tableCells } from './table.js';
 
@@ -16,7 +17,16 @@ import { boldIdentifier, tableCells } from './table.js';
  * non-empty string, so an attestation's `by` and an inherited row's `by` need their own shape checks
  * here, in the parser, so a malformed declaration can never enter the model at all.
  */
-function checkVerificationRow(row: Verification, id: string, where: string): void {
+function checkVerificationRow(row: Verification, id: string, where: string, version: string): void {
+  if (row.kind === 'local-run') {
+    const declared = localRunDeclared(row.by, version);
+    if ('refused' in declared) {
+      throw new Error(
+        `${where}: ${id}'s local-run \`by\` ${declared.refused}. A local-run row names who ran it, ` +
+          `the date and one record of this release, such as "Ada, 2026-09-30, docs/audits/${version}/word.md".`,
+      );
+    }
+  }
   if (row.kind === 'attestation' && !attestationIsSubstantial(row.by)) {
     throw new Error(
       `${where}: ${id}'s attestation \`by\` must name a person and a date in YYYY-MM-DD form, ` +
@@ -167,7 +177,7 @@ export function parseBaseline(document: string, text: string): Baseline {
     3,
     (id, cells, where) => {
       const row = validate(Verification, { id, kind: cells[1], by: cells[2] }, where);
-      checkVerificationRow(row, id, where);
+      checkVerificationRow(row, id, where, name);
       return row;
     },
   );

@@ -105,13 +105,15 @@ export const Exclusion = z.object({
 });
 export type Exclusion = z.infer<typeof Exclusion>;
 
-export const VERIFICATION_KINDS = ['test', 'inherited', 'attestation'] as const;
+export const VERIFICATION_KINDS = ['test', 'inherited', 'attestation', 'local-run'] as const;
 
 /**
  * How a requirement is shown to be met. `test` is the default and needs no declaration: a test names
- * it and passes. The other two exist because a constraint that governs how everything is built often
- * cannot be reached by a test named after it, and pretending otherwise is how a traceability matrix
- * becomes a lie that passes.
+ * it and passes. `inherited` and `attestation` exist because a constraint that governs how everything
+ * is built often cannot be reached by a test named after it, and pretending otherwise is how a
+ * traceability matrix becomes a lie that passes. `local-run` is for a requirement only a run on a
+ * particular machine can verify - Word's, which CI does not have (the W15 plan's W15-D): its tests are
+ * named and run as any other, and the gate reads their outcomes from the run's reduced report.
  */
 export const Verification = z.object({
   id: z.string().regex(REQUIREMENT_ID),
@@ -162,6 +164,41 @@ export function recordsNamed(by: string): string[] {
 export function isRecordOf(path: string, version: string): boolean {
   const match = /^docs\/audits\/([0-9A-Za-z.+-]+)\/[a-z0-9-]+\.md$/.exec(path);
   return match !== null && match[1] === version;
+}
+
+/**
+ * What a `local-run` row declares: the record of the run under `docs/audits/<this release>/`, and the
+ * report `pnpm trace record-run` reduced beside it, the same name ending `.json`.
+ */
+export interface LocalRunDeclaration {
+  readonly record: string;
+  readonly report: string;
+}
+
+/**
+ * A `local-run` row's `by` read against release `version`: it names a person, a date in `YYYY-MM-DD`
+ * form and exactly one record of this release - `Ada, 2026-09-30, docs/audits/0.126.0/word.md`. Shared
+ * by the parser, which refuses a row that does not, and the gate, which must not trust a `Baseline`
+ * built by hand to have been parsed.
+ */
+export function localRunDeclared(
+  by: string,
+  version: string,
+): LocalRunDeclaration | { readonly refused: string } {
+  const records = recordsNamed(by);
+  const person = records
+    .reduce((rest, record) => rest.replace(record, ''), by)
+    .replace(ATTESTATION_DATE, '');
+  if (!/\p{L}/u.test(person)) return { refused: 'names no person who ran it' };
+  if (!ATTESTATION_DATE.test(by)) return { refused: 'names no date in YYYY-MM-DD form' };
+  if (records.length !== 1) {
+    return { refused: `must name exactly one record under docs/audits/, not ${records.length}` };
+  }
+  const record = records[0]!;
+  if (!isRecordOf(record, version)) {
+    return { refused: `names ${record}, which is not a record of this release` };
+  }
+  return { record, report: record.replace(/\.md$/, '.json') };
 }
 
 export function attestationIsSubstantial(by: string): boolean {

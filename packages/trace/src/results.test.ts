@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { checkCoherence, parseResults, reportsForEvidence } from './results.js';
+import {
+  checkCoherence,
+  parseResults,
+  readRecordedRun,
+  reduceRun,
+  reportsForEvidence,
+} from './results.js';
 
 const NOW = 1_800_000_000_000;
 
@@ -197,5 +203,85 @@ describe('checking that a set of reports agree with each other', () => {
     const problems = checkCoherence(reports, ['trace', 'e2e']);
 
     expect(problems.some((problem) => problem.includes('e2e'))).toBe(true);
+  });
+});
+
+/**
+ * `pnpm trace record-run`'s reduction (the W15 plan's W15-D): a local run's report as it is committed
+ * beside its record - each test's full name and status, the counts and the start time, and nothing
+ * else: no path, no message, nothing of the machine it ran on.
+ */
+describe('reducing a local run for its record', () => {
+  const full = {
+    numTotalTests: 3,
+    numPassedTests: 1,
+    numFailedTests: 0,
+    numPendingTests: 2,
+    success: true,
+    startTime: NOW,
+    testResults: [
+      {
+        name: 'D:/Somewhere/Ada/apps/worker/src/word-check.test.ts',
+        message: 'a message from the machine',
+        status: 'passed',
+        startTime: NOW,
+        endTime: NOW + 10,
+        assertionResults: [
+          {
+            ancestorTitles: ['the Word check'],
+            fullName: 'the Word check ABC-029 opens every fixture',
+            status: 'passed',
+            title: 'opens every fixture',
+            duration: 12,
+            failureMessages: [],
+            meta: { version: '16.0' },
+          },
+          {
+            fullName: 'another test',
+            status: 'skipped',
+            failureMessages: ['at D:/Somewhere/Ada/x.ts'],
+          },
+          { fullName: 'a third', status: 'todo' },
+        ],
+      },
+    ],
+  };
+
+  const COMMIT = 'c0ffee'.padEnd(40, '0');
+  const at = { commit: COMMIT, clean: true };
+
+  it('keeps each test by its full name and status, the counts, the start time and the commit it was recorded at, and nothing more', () => {
+    expect(reduceRun(full, at)).toEqual({
+      success: true,
+      startTime: NOW,
+      commit: COMMIT,
+      clean: true,
+      counts: { total: 3, passed: 1, failed: 0, skipped: 2 },
+      testResults: [
+        {
+          assertionResults: [
+            { fullName: 'the Word check ABC-029 opens every fixture', status: 'passed' },
+            { fullName: 'another test', status: 'skipped' },
+            { fullName: 'a third', status: 'todo' },
+          ],
+        },
+      ],
+    });
+    const written = JSON.stringify(reduceRun(full, at));
+    for (const kept of ['Somewhere', 'Ada/', 'message', 'duration', 'meta', 'title"']) {
+      expect(written).not.toContain(kept);
+    }
+  });
+
+  it('reads back as the report it was reduced from, to the same outcomes', () => {
+    const read = readRecordedRun(JSON.stringify(reduceRun(full, at)));
+    if ('refused' in read) throw new Error(`refused: ${read.refused}`);
+    expect(read.run).toMatchObject({ success: true, commit: COMMIT, clean: true, files: 1 });
+    expect(read.run.counts).toEqual({ total: 3, passed: 1, failed: 0, skipped: 2 });
+    expect(read.run.outcomes).toEqual(parseResults([full]));
+  });
+
+  it('refuses a report that is not a Vitest report', () => {
+    expect(() => reduceRun({ success: true }, at)).toThrow(/testResults/);
   });
 });

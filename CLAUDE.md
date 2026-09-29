@@ -126,6 +126,7 @@ and its calls are one origin. Publishing, search and the rest of the proposed sy
 | Traceability                   | TypeScript - the requirement corpus parsed, compiled and queried                                             | `packages/trace`        |
 | End-to-end check               | Vitest over HTTP - the whole system in containers, no browser                                                | `tests/e2e`             |
 | Browser suite                  | Vitest over playwright-core and a pinned Chromium - the renderer against the whole system, axe-core with it  | `tests/browser`         |
+| Conformance kit                | TypeScript + pdf.js, test-only - the measured fixture, themes, PDF reader and comparison both suites share   | `packages/conformance`  |
 
 Everything that differs between a browser tab and an Electron window arrives through **one
 interface**, `PlatformBridge`. The renderer calls it and never branches on which delivery it is in.
@@ -312,8 +313,9 @@ body**: `Fixes #<n>`. Do this without asking. Notes:
   factual claim in a guide is checked against the code or the tool before it is written.
 - **`docs/audits/<version>/`** holds the records a person makes before a release by
   [the audit guide](docs/guides/auditing-a-release.md) - the WCAG 2.2 AA audit and the Matterhorn
-  review - which the release's baseline cites by `attestation`. Like a review, a record is never
-  edited afterwards.
+  review - which the release's baseline cites by `attestation` - and the record of a run only a machine
+  with Word can make, cited by `local-run`, with the report `pnpm trace record-run` reduced beside it.
+  Like a review, a record is never edited afterwards.
 - **`docs/decisions/`** gets a new record when a choice constrains later work **and** its reasoning
   would otherwise have to be reconstructed from the diff. Both halves matter: a choice nobody will
   question needs no record, and a record that states only the conclusion is an opinion with a date
@@ -383,6 +385,7 @@ pnpm trace pins                                   # each count the trace tests p
 pnpm trace verify                                 # states, with Verified computed from the JSON reports `pnpm test` writes
 pnpm trace gate                                   # pass or fail a baseline; the CI step of the same name
 pnpm trace pack 0.13.0                            # write that baseline's evidence pack to docs/trace/0.13.0/
+pnpm trace record-run <version> word              # reduce a whole worker run where Word is to docs/audits/<version>/word.json
 pnpm trace draft <issue>                          # draft a row from a filed GitHub issue; prints, never inserts
 pnpm trace draft --area XXX --statement "..."     # the same, from flags - no gh required
 pnpm lint          # eslint, flat config at the root

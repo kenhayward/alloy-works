@@ -27,4 +27,10 @@
 *.pptx binary
 *.zip binary
 
+# A PDF is a binary file with text inside it: a checkout that rewrote its line endings would move every
+# offset its cross-reference table records, and the conformance kit's fixture would no longer read.
+*.pdf binary
+*.jpeg binary
+*.gif binary
+
 pnpm-lock.yaml -diff linguist-generated

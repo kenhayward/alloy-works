@@ -1,6 +1,6 @@
 // The query surface over the committed corpus. Thin by design: what is worth testing lives in
 // format.ts and state.ts, which are pure and tested without a process.
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { EOL } from 'node:os';
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
@@ -23,8 +23,8 @@ import {
   nextIdentifier,
   search,
 } from './format.js';
-import { gate } from './gate.js';
-import { type TraceModel, TRANCHES, validate } from './model.js';
+import { gate, type LocalRunFacts } from './gate.js';
+import { type Baseline, localRunDeclared, type TraceModel, TRANCHES, validate } from './model.js';
 import { type AreaIndexEntry, parseAreaIndex } from './parse/areas.js';
 import { parseBaseline } from './parse/baseline.js';
 import { FiledRequirement, normalizeTranche, parseIssue } from './parse/issue.js';
@@ -36,6 +36,7 @@ import {
   type TestOutcome,
   checkCoherence,
   parseResults,
+  reduceRun,
   reportsForEvidence,
 } from './results.js';
 import { allTraces, traceOf } from './state.js';
@@ -99,6 +100,11 @@ const USAGE = `pnpm trace <command>
   gate [name]        pass or fail a baseline (default: the newest by filename) against the JSON
                      reports in .trace-results. Exits 0 when every included requirement is met
                      and the declaration itself has no problems, 1 otherwise
+  record-run <version> <name>
+                     reduce .trace-results/worker.json, a whole run of the worker's suite on a
+                     machine with Word, to docs/audits/<version>/<name>.json - each test's name and
+                     status, the counts and the start time, and no path and no message - for a
+                     baseline's local-run row to name beside its record. Refuses a failed run
   pack <version>     write the evidence pack for baseline <version> to docs/trace/<version>/ -
                      the matrix, the gaps and the test results a release is handed off with.
                      Refuses when the gate fails: an evidence pack for a release that does not
@@ -375,12 +381,154 @@ function recordIn(root: string): (record: string) => boolean {
   };
 }
 
+/** A record's text, or nothing where it is not a file under `root`. */
+function readIn(root: string): (record: string) => string | undefined {
+  const exists = recordIn(root);
+  return (record) => (exists(record) ? readFileSync(join(root, record), 'utf8') : undefined);
+}
+
+/**
+ * What the CLI asks of git for a local run, handed in so a test can answer for a repository of its
+ * own: the commit checked out, `git status --porcelain`, and whether a commit is in this branch's
+ * history - `unknown` where git cannot say, as in CI's shallow checkout or outside a repository.
+ */
+export interface Git {
+  readonly head: () => string;
+  readonly status: () => string;
+  readonly ancestry: (commit: string) => 'ancestor' | 'not-ancestor' | 'unknown';
+}
+
+/** Git, asked of the repository at `root`. */
+export function gitIn(root: string): Git {
+  const run = (...args: string[]) => execFileSync('git', args, { cwd: root, encoding: 'utf8' });
+  return {
+    head: () => run('rev-parse', 'HEAD').trim(),
+    status: () => run('status', '--porcelain'),
+    ancestry: (commit) => {
+      const asked = spawnSync('git', ['merge-base', '--is-ancestor', commit, 'HEAD'], {
+        cwd: root,
+      });
+      return asked.status === 0 ? 'ancestor' : asked.status === 1 ? 'not-ancestor' : 'unknown';
+    },
+  };
+}
+
+/** The oldest a run's report may be when it is recorded: a whole run takes minutes, not hours. */
+const LOCAL_RUN_FRESH_MS = 4 * 60 * 60 * 1000;
+
+/** The worker's test files, which a local run of its whole suite covers. */
+function workerTestFiles(root: string): number {
+  return testFilesIn(root).filter((file) => file.startsWith('apps/worker/src/')).length;
+}
+
+/** What the gate is told of the repository at `root` for a `local-run` row. */
+function localRunFacts(root: string, git: Git): LocalRunFacts {
+  return { testFiles: workerTestFiles(root), ancestry: git.ancestry };
+}
+
+/** The worker's report, which a local run of its whole suite on a machine with Word writes. */
+const LOCAL_RUN_REPORT = 'worker';
+
+/** What a record's release and name may be: those `isRecordOf` takes, and nothing that climbs out. */
+const RELEASE = /^[0-9A-Za-z.+-]+$/;
+const RECORD_NAME = /^[a-z0-9-]+$/;
+
+/**
+ * `pnpm trace record-run <version> <name>` (the W15 plan's W15-D): the worker's report in
+ * `.trace-results`, from a whole run of its suite on a machine with Word, reduced by `reduceRun` to
+ * `docs/audits/<version>/<name>.json`, beside the record a baseline's `local-run` row names. Refuses a
+ * failed run, and a report holding fewer of the worker's test files than it has - a run of one file,
+ * which the Word check alone leaves - since the gate is told the whole suite ran. Exported so a test
+ * can run it over a repository of its own.
+ */
+export function recordRun(
+  root: string,
+  args: readonly string[],
+  git: Git = gitIn(root),
+  now: number = Date.now(),
+): number {
+  const [version, name] = args;
+  if (version === undefined || name === undefined) {
+    return fail('record-run needs a release and a name, such as record-run 0.126.0 word.');
+  }
+  if (!RELEASE.test(version) || version.startsWith('.')) {
+    return fail(`"${version}" is not a release a record can be kept under.`);
+  }
+  if (!RECORD_NAME.test(name)) {
+    return fail(`"${name}" is not a record's name: lower-case letters, digits and hyphens.`);
+  }
+  const path = join(root, DEFAULT_RESULTS_DIR, `${LOCAL_RUN_REPORT}.json`);
+  if (!existsSync(path)) {
+    return fail(
+      `No ${DEFAULT_RESULTS_DIR}/${LOCAL_RUN_REPORT}.json. Run the whole worker suite with ALLOY_WORD_CHECK=1 first.`,
+    );
+  }
+  // Recorded at a commit a reviewer can check out, and only from a tree that is that commit.
+  if (git.status().trim() !== '') {
+    return fail(
+      'The working tree has uncommitted changes - refusing to record a run of it. Commit them, run ' +
+        'the whole worker suite again, and record that run.',
+    );
+  }
+  const raw = JSON.parse(readFileSync(path, 'utf8')) as unknown;
+  const reduced = reduceRun(raw, { commit: git.head(), clean: true });
+  if (now - reduced.startTime > LOCAL_RUN_FRESH_MS) {
+    const hours = ((now - reduced.startTime) / (60 * 60 * 1000)).toFixed(1);
+    return fail(
+      `${DEFAULT_RESULTS_DIR}/${LOCAL_RUN_REPORT}.json is of a run ${hours} hours ago - refusing to ` +
+        'record it. Run the whole worker suite again and record that run.',
+    );
+  }
+  if (!reduced.success) {
+    return fail(
+      `${DEFAULT_RESULTS_DIR}/${LOCAL_RUN_REPORT}.json reports a failed run - refusing to record it.`,
+    );
+  }
+  const files = workerTestFiles(root);
+  if (reduced.testResults.length < files) {
+    return fail(
+      `${DEFAULT_RESULTS_DIR}/${LOCAL_RUN_REPORT}.json reports ${reduced.testResults.length} of the worker's ` +
+        `${files} test files - run the whole worker suite, not one file of it.`,
+    );
+  }
+  const record = `docs/audits/${version}/${name}.json`;
+  mkdirSync(join(root, 'docs', 'audits', version), { recursive: true });
+  writeFileSync(join(root, record), `${JSON.stringify(reduced, null, 2)}\n`);
+  const { total, passed, failed, skipped } = reduced.counts;
+  console.log(
+    `Wrote ${record}: ${total} tests, ${passed} passed, ${failed} failed, ${skipped} skipped, ` +
+      `at commit ${reduced.commit}.`,
+  );
+  return 0;
+}
+
+/**
+ * For each requirement a baseline's `local-run` row verifies, the report beside its record, as the gate
+ * read it: what the pack names.
+ */
+function localRuns(root: string, baseline: Baseline): Map<string, string> {
+  const read = readIn(root);
+  const runs = new Map<string, string>();
+  for (const row of baseline.verification) {
+    if (row.kind !== 'local-run') continue;
+    const declared = localRunDeclared(row.by, baseline.name);
+    const text = 'report' in declared ? read(declared.report) : undefined;
+    if (text !== undefined) runs.set(row.id, text);
+  }
+  return runs;
+}
+
 /**
  * `pnpm trace gate [version]`: the newest baseline, or the one named, decided against the reports in
  * `.trace-results` and the records its attestations name, all read under `root`. Exported so a test can
  * run it over a repository of its own; `main` runs it over this one.
  */
-export function runGate(root: string, model: TraceModel, argument: string | undefined): number {
+export function runGate(
+  root: string,
+  model: TraceModel,
+  argument: string | undefined,
+  git: Git = gitIn(root),
+): number {
   const files = baselineFiles(root);
   if (files.length === 0) return fail(`No baseline in docs/specification/${BASELINES_DIR}.`);
 
@@ -409,7 +557,14 @@ export function runGate(root: string, model: TraceModel, argument: string | unde
     return 1;
   }
 
-  const result = gate(baseline, model, results.outcomes, recordIn(root));
+  const result = gate(
+    baseline,
+    model,
+    results.outcomes,
+    recordIn(root),
+    readIn(root),
+    localRunFacts(root, git),
+  );
   const includedIds = new Set(baseline.included.map((inclusion) => inclusion.id));
   console.log(formatGate(result, includedIds));
   return result.met === result.total && result.declarationProblems.length === 0 ? 0 : 1;
@@ -552,6 +707,8 @@ function main(argv: string[]): number {
       }
       case 'gate':
         return runGate(REPO_ROOT, model, argument);
+      case 'record-run':
+        return recordRun(REPO_ROOT, argv.slice(1));
       case 'pack': {
         if (argument === undefined) return fail('pack needs a version, such as 0.13.0.');
 
@@ -591,7 +748,14 @@ function main(argv: string[]): number {
           return 1;
         }
 
-        const result = gate(baseline, model, results.outcomes, recordIn(REPO_ROOT));
+        const result = gate(
+          baseline,
+          model,
+          results.outcomes,
+          recordIn(REPO_ROOT),
+          readIn(REPO_ROOT),
+          localRunFacts(REPO_ROOT, gitIn(REPO_ROOT)),
+        );
         if (result.met !== result.total || result.declarationProblems.length > 0) {
           const includedIds = new Set(baseline.included.map((inclusion) => inclusion.id));
           console.log(
@@ -617,6 +781,7 @@ function main(argv: string[]): number {
           result,
           model,
           outcomes: results.outcomes,
+          runs: localRuns(REPO_ROOT, baseline),
         });
         for (const document of documents) {
           const absolute = join(REPO_ROOT, document.path);

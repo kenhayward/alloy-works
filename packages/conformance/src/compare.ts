@@ -14,21 +14,35 @@ import type { Token } from './styled.js';
  */
 export const TOLERANCE = 0.5;
 
-/**
- * **STY-060's list of approved deviations**, as it stands between the editor and the PDF: empty. The one
- * deviation approved today, a face Word may not embed set in the face its theme names for Word
- * (STY-052), is Word's, and STY-081's to carry. A difference is on it by its property and what the
- * token shows; one that is not on it fails.
- */
-export const APPROVED_DEVIATIONS: readonly {
+/** A deviation STY-060 approves: a property, what it stands in, and why. */
+export interface Deviation {
   readonly property: string;
   readonly what: string;
   readonly why: string;
-}[] = [];
+}
 
-/** Whether a difference is one STY-060's list approves. */
-export function approved(difference: Difference): boolean {
-  return APPROVED_DEVIATIONS.some(
+/**
+ * **STY-060's list of approved deviations between the editor and the PDF**: empty. A difference is on
+ * it by its property and what the token shows; one that is not on it fails.
+ */
+export const EDITOR_DEVIATIONS: readonly Deviation[] = [];
+
+/**
+ * **STY-060's list between Word and the PDF** (the W15 plan's W15-H): one entry, the one STY-060 names -
+ * STY-052's substitution, the maths face a theme declares Word may not embed set in the face it names
+ * for Word, Cambria Math in the default theme.
+ */
+export const WORD_DEVIATIONS: readonly Deviation[] = [
+  {
+    property: 'maths face',
+    what: "the equation's face",
+    why: 'STY-052: a face Word may not embed is set in the face the theme names for Word, and reported',
+  },
+];
+
+/** Whether a difference is one the list of approved deviations for its pair of outputs approves. */
+export function approved(difference: Difference, list: readonly Deviation[]): boolean {
+  return list.some(
     (each) => each.property === difference.property && each.what === difference.what,
   );
 }
