@@ -17,6 +17,7 @@ back.
 | [Relationships](Relationship_Spike_Findings.md)                                                   | Whether a graph store is needed, or recursive queries over the primary one                | [ADR-0017](../../decisions/0017-relationships-in-postgres-traversed-by-recursive-sql.md)                                                                              |
 | [Realtime](Realtime_Spike_Findings.md)                                                            | Which transport carries presence, locks and notifications, and how it fans out            | [ADR-0018](../../decisions/0018-realtime-one-push-channel-postgres-fan-out.md)                                                                                        |
 | [Editor framework](Editor_Framework_Spike.md) - [findings](Editor_Framework_Spike_Findings.md)    | Which editor the stored model is the editor's model of, and what it imposes on that model | [ADR-0023](../../decisions/0023-prosemirror-as-the-editor-and-its-model.md)                                                                                           |
+| [Data connectors](Data_Connector_Spike.md)                                                        | Where a query against a tenant's source runs, as whom, and how its result is pinned       | To come                                                                                                                                                               |
 
 ## What a findings document is for
 
