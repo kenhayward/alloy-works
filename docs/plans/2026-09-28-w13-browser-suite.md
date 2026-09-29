@@ -312,6 +312,29 @@ Only these could change the plan; everything else is built as written.
   there after the page has settled. A result already on the screen before its act fails the sample.
 - **The interface's share subtracts the union of the requests' times**, not their sum: an open waits
   on several requests at once, and summing them would count the same milliseconds more than once.
+- **Measured on the reference machine**, 2026-09-29, after #337 and the targets fix, with no other
+  stack of the product's running and another project's containers beside it (recorded in `meta`):
+  every budget met, with room. The open's interface share fell from 243 ms at p95 before the fix to
+  176, its whole time from 343 to 317; a jump, which never landed before #337, takes 25 ms. Each
+  budget was watched fail first, on an impossible bound of 1 ms, before the green run below.
+
+| Budget                       | Measured, p95 / max (ms) | Number (ms) | Met |
+| ---------------------------- | ------------------------ | ----------- | --- |
+| STR-072, opening's interface | 175.5 / 181.0            | 250 / 500   | Yes |
+| STR-072, an insert           | 82.4 / 103.3             | 250 / 500   | Yes |
+| STR-072, a removal           | 65.9 / 66.7              | 250 / 500   | Yes |
+| STR-072, a retitle           | 51.3 / 56.1              | 250 / 500   | Yes |
+| STR-072, Starts on           | 62.4 / 90.2              | 250 / 500   | Yes |
+| STR-072, a move              | 108.6 / 124.1            | 250 / 500   | Yes |
+| STR-072, a demotion          | 74.6 / 119.7             | 250 / 500   | Yes |
+| STR-072, a promotion         | 66.8 / 70.6              | 250 / 500   | Yes |
+| CNT-179, opening, whole time | 316.5 / 351.4            | 1000 / 2000 | Yes |
+| CNT-179, a jump, whole time  | 25.1 / 25.4              | 250 / 500   | Yes |
+
+- **What the full browser run found besides**: PR #337's `STR-045 opens at a linked node with its
+heading below the header` fails on this machine, at 41.0 against a header at 44, with main's
+  `DocumentText.tsx` as well as this slice's: the sections above the target settle 1.3 pixels shorter
+  each after it has been scrolled to. Filed as issue #341; not this slice's to fix.
 
 ## W13.4: Measured style
 

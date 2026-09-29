@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { arch, availableParallelism, cpus, platform, release, totalmem, version } from 'node:os';
 import type { Browser } from 'playwright-core';
@@ -90,5 +91,28 @@ export async function configuration(browser: Browser): Promise<Record<string, un
       postgres: /image:\s*(\S*postgres\S*|\S*pgvector\S*)/.exec(compose)?.[1] ?? 'unknown',
     },
     held: process.env['CI'] === 'true' ? 'neither bound: recorded only, on CI' : 'both bounds',
+    // What else the machine's Docker was running as the samples were taken, the stack's own among it:
+    // contention a number read later should be read beside.
+    docker: runningProjects(),
   };
+}
+
+/** Each compose project with containers running, and how many, or what kept Docker from saying. */
+function runningProjects(): Record<string, number> | string {
+  try {
+    const out = execFileSync(
+      'docker',
+      ['ps', '--format', '{{.Label "com.docker.compose.project"}}|{{.Names}}'],
+      { encoding: 'utf8', timeout: 10_000 },
+    );
+    const projects: Record<string, number> = {};
+    for (const line of out.split(/\r?\n/).filter(Boolean)) {
+      const [project, name] = line.split('|');
+      const key = project || name || 'unnamed';
+      projects[key] = (projects[key] ?? 0) + 1;
+    }
+    return projects;
+  } catch (failure) {
+    return `not known: ${String(failure).slice(0, 120)}`;
+  }
 }

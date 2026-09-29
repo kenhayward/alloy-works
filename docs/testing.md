@@ -758,6 +758,23 @@ at p95 and no sample above 500; and CNT-179, the whole time to open it, 1 second
   with the compose stack in Docker Desktop and the pinned Chromium beside it. To measure them alone:
   `pnpm --filter @alloy-works/browser exec vitest run src/budgets.test.ts`, with the stack's variables
   set as above, on a machine running nothing else.
+  W13.3 measured them on the reference configuration, Chromium 153.0.8010.12 and the stack at 0.125.0,
+  with no other stack of the product's running; another project's nine containers and Portainer's agent
+  were running beside it, which the run records as it records the rest. Twenty samples each, forty for a
+  retitle, **Starts on** and a move; every warm-up inside the maximum:
+
+| Budget                       | Measured, p95 / max (ms) | Number (ms) | Met |
+| ---------------------------- | ------------------------ | ----------- | --- |
+| STR-072, opening's interface | 175.5 / 181.0            | 250 / 500   | Yes |
+| STR-072, an insert           | 82.4 / 103.3             | 250 / 500   | Yes |
+| STR-072, a removal           | 65.9 / 66.7              | 250 / 500   | Yes |
+| STR-072, a retitle           | 51.3 / 56.1              | 250 / 500   | Yes |
+| STR-072, Starts on           | 62.4 / 90.2              | 250 / 500   | Yes |
+| STR-072, a move              | 108.6 / 124.1            | 250 / 500   | Yes |
+| STR-072, a demotion          | 74.6 / 119.7             | 250 / 500   | Yes |
+| STR-072, a promotion         | 66.8 / 70.6              | 250 / 500   | Yes |
+| CNT-179, opening, whole time | 316.5 / 351.4            | 1000 / 2000 | Yes |
+| CNT-179, a jump, whole time  | 25.1 / 25.4              | 250 / 500   | Yes |
 
 **What it cannot see.** Headless Chromium has no browser interface, so `Alt+Left` is never Back there
 whatever the page does: the test shows the tree prevented the key's default, which is what keeps it

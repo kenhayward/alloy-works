@@ -175,14 +175,17 @@ async function choose(page: Page, node: string): Promise<void> {
 const ACTS = ['insert', 'remove', 'retitle', 'set', 'move', 'demote', 'promote'] as const;
 type Act = (typeof ACTS)[number];
 
-/** A budget's record: the interface's share, the whole time and the service's, and the warm-up. */
-function recorded(all: readonly Measured[]) {
-  const samples = all.slice(WARM_UP);
+/**
+ * A budget's record: the interface's share, the whole time and the service's, and the warm-ups -
+ * `warm` of them, the first cycle's, which is two for an act measured both ways.
+ */
+function recorded(all: readonly Measured[], warm = WARM_UP) {
+  const samples = all.slice(warm);
   return {
     interface: summary(samples.map((each) => each.interface)),
     whole: summary(samples.map((each) => each.whole)),
     service: summary(samples.map((each) => each.service)),
-    warmUp: all.slice(0, WARM_UP),
+    warmUp: all.slice(0, warm),
     requests: all[all.length - 1]!.requests,
   };
 }
@@ -193,7 +196,7 @@ describe('the navigation budgets over a document of five hundred nodes', () => {
     fixture = await fiveHundred(api());
   }, 1_800_000);
 
-  it("opens a document of five hundred nodes within the interface's share of the budget", async ({
+  it("STR-072 opens a document of five hundred nodes within the interface's share of the budget", async ({
     task,
   }) => {
     await withPage(async (page) => {
@@ -210,7 +213,7 @@ describe('the navigation budgets over a document of five hundred nodes', () => {
     });
   }, 600_000);
 
-  it("shows each structural act on the outline within the interface's share of the budget: insert, remove, retitle, Starts on, move, demote and promote", async ({
+  it("STR-072 shows each structural act on the outline within the interface's share of the budget: insert, remove, retitle, Starts on, move, demote and promote", async ({
     task,
   }) => {
     await withPage(async (page) => {
@@ -316,7 +319,9 @@ describe('the navigation budgets over a document of five hundred nodes', () => {
       expect(now.map((each) => each.id).slice(0, 2)).toEqual([topic, next]);
       expect(now.length).toBe(FIVE_HUNDRED.sectionsPerChapter);
 
-      const acts = Object.fromEntries(ACTS.map((act) => [act, recorded(measured[act])]));
+      // Retitle, Starts on and move are measured both ways, twice a cycle.
+      const warm = (act: Act) => (measured[act].length / (WARM_UP + SAMPLES)) * WARM_UP;
+      const acts = Object.fromEntries(ACTS.map((act) => [act, recorded(measured[act], warm(act))]));
       record(task.meta, {
         configuration: await configuration(page.context().browser()!),
         fixture: shapeOf(fixture),
@@ -327,14 +332,16 @@ describe('the navigation budgets over a document of five hundred nodes', () => {
         hold(
           `${act}, the interface`,
           acts[act]!.interface,
-          measured[act][0]!.interface,
+          Math.max(...measured[act].slice(0, warm(act)).map((each) => each.interface)),
           BUDGETS.interface,
         );
       }
     });
   }, 900_000);
 
-  it('opens the document view and jumps to any node within the budget', async ({ task }) => {
+  it('CNT-179 opens the document view and jumps to any node within the budget', async ({
+    task,
+  }) => {
     await withPage(async (page) => {
       const requests = await prepared(page);
       const settle = () => requests.quiet();
