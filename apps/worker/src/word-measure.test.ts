@@ -55,6 +55,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { FONT_DIRECTORY, loadPinnedFonts, pinnedFacesByHash } from './fonts.js';
 import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { defaultTheme } from './testing/theme.js';
+import { unheld, type Found, type Left } from './testing/word-left.js';
 import { inWordsTurn } from './testing/word-turn.js';
 import { createTypst, typstBinaryPath } from './typst.js';
 
@@ -106,8 +107,11 @@ declare module 'vitest' {
         { readonly compared: number; readonly largest: Record<string, number> }
       >;
       readonly differences: number;
-      /** Each kind of difference W15.2 leaves (`LEFT`), and its largest of each property. */
-      readonly left: Record<string, Record<string, number>>;
+      /** Each kind of difference W15.2 leaves (`LEFT`): how many, and its largest of each length. */
+      readonly left: Record<
+        string,
+        { readonly count: number; readonly largest: Record<string, number> }
+      >;
     };
   }
 }
@@ -238,22 +242,6 @@ const MARKED = [
   'language',
 ] as const;
 
-/**
- * A kind of difference W15.2 measured and left (the plan's W15.2 as-built note; word-output.md, "Word
- * measured"): its name, where it goes by W15-I's rule, which differences are of it, and the largest of
- * each property the run that left it measured.
- */
-interface Left {
-  /** Its name, as the plan's as-built note and word-output.md give it. */
-  readonly kind: string;
-  /** Where it goes (W15-I): Word's side in a slice of its own, W15.3's template, or Ken's. */
-  readonly route: string;
-  /** Whether a difference, of a token under a theme, is of this kind. */
-  readonly holds: (difference: Difference, facts: Facts) => boolean;
-  /** The largest of each property the run that left it measured, in points: no run may pass it. */
-  readonly largest: Readonly<Record<string, number>>;
-}
-
 /** What a theme sets of a token, for telling what kind a difference is. */
 interface Facts {
   readonly filled: (token: string) => boolean;
@@ -296,20 +284,49 @@ const stepFrom = (difference: Difference) => /^step from (.+)$/.exec(difference.
 const either = (difference: Difference, test: (token: string) => boolean) =>
   test(difference.token) || test(stepFrom(difference) ?? '');
 
+/** Whether a difference is of a fill's top or foot, which a line's height moves. */
+const aboveOrBelow = (difference: Difference) =>
+  difference.property === 'fill top' || difference.property === 'fill bottom';
+
 /** The images in a line, by the token opening the line each stands on. */
 const IMAGE_LINES: Readonly<Record<string, string>> = { 'image 3': 'Zi1', 'image 4': 'Zi2' };
 
 /**
- * **What W15.2 leaves**, each kind named with where it goes (W15-I) and held to the largest of each
- * property the run that left it measured (Word 16.0, build 16.0.20326, W13.4's seeds): a difference is
- * of the first kind that holds it, in this order. None is approved - STY-060's list for Word holds the
- * maths face alone - and none is forgiven: a difference of no kind here fails, one larger than its
- * kind's largest fails, and a kind no difference is left of fails until it is taken off, so the list
- * stays exactly what is left. Each kind is stated in the plan's W15.2 as-built note and in
- * word-output.md with its reason and its sizes. While any is left the test cites nothing: STY-081 is
- * cited once the list is empty.
+ * **What W15.2 leaves**, each kind named with where it goes (W15-I) and held to exactly what the run
+ * that left it measured (Word 16.0, build 16.0.20326, W13.4's seeds): a difference is of the first kind
+ * that holds it, in this order. None is approved - STY-060's list for Word holds the maths face alone -
+ * and none is forgiven: a difference of no kind fails; a kind with more or fewer differences than it
+ * measured fails, so one more of a kind under its largest is seen; a length larger than its kind's
+ * largest fails, as does a property its kind does not name; and a kind held difference by difference
+ * fails on one it does not name and on one it names that is not found. So the list stays exactly what
+ * is left, and is changed only by hand. Each kind is stated in the plan's W15.2 as-built note and in
+ * word-output.md with its reason and its sizes. While any is left the test cites nothing.
  */
-const LEFT: readonly Left[] = [
+const LEFT: readonly Left<Facts>[] = [
+  {
+    // Word draws the wider of two rules meeting on a line, and so its colour, where the PDF draws the
+    // header's.
+    kind: "a table's rule Word draws in the colour of the wider rule on its line",
+    route: "Word's side, with the tables",
+    holds: (difference) =>
+      /^Zt/.test(difference.token) && difference.property.endsWith('rule colour'),
+    count: 12,
+    largest: {},
+    named: [
+      'Generated 1 (1301): Zt21 bottom rule colour',
+      'Generated 1 (1301): Zt22 bottom rule colour',
+      'Generated 1 (1301): Zt23 top rule colour',
+      'Generated 1 (1301): Zt24 top rule colour',
+      'Generated 4 (1501): Zt21 bottom rule colour',
+      'Generated 4 (1501): Zt22 bottom rule colour',
+      'Generated 4 (1501): Zt23 top rule colour',
+      'Generated 4 (1501): Zt24 top rule colour',
+      'Generated 6 (1503): Zt11 bottom rule colour',
+      'Generated 6 (1503): Zt12 bottom rule colour',
+      'Generated 6 (1503): Zt13 top rule colour',
+      'Generated 6 (1503): Zt14 top rule colour',
+    ],
+  },
   {
     // Word's cell margins stand from a rule's inner edge, the PDF's from its middle; Word draws the
     // wider of two rules meeting on a line, where the PDF draws the header's; Word fills a cell in
@@ -317,8 +334,8 @@ const LEFT: readonly Left[] = [
     kind: 'tables',
     route: "Word's side, a slice of its own",
     holds: (difference) => either(difference, (token) => /^Zt/.test(token)),
+    count: 631,
     largest: {
-      'bottom rule colour': 0,
       'bottom rule position': 2.14,
       'bottom rule width': 1.65,
       'fill bottom': 1.43,
@@ -329,18 +346,18 @@ const LEFT: readonly Left[] = [
       'right rule position': 1.28,
       start: 1.41,
       step: 8.12,
-      'top rule colour': 0,
       'top rule position': 6.1,
       'top rule width': 1.65,
     },
   },
   {
     // Word sets the line holding an equation as tall as its maths face's line, so the fill behind it
-    // is the maths engine's height, outside as it is for STY-080 (W15-H).
-    kind: "the fill behind the line holding the equation, as tall as Word's maths face",
+    // stands above and below as the maths engine's height does, outside as it is for STY-080 (W15-H).
+    kind: "the fill above and below the line holding the equation, as tall as Word's maths face",
     route: "Outside (W15-H): an equation's height is the maths engine's",
-    holds: (difference) => difference.token === 'Ze1' && difference.property.startsWith('fill'),
-    largest: { 'fill bottom': 1.62, 'fill left': 1.68, 'fill right': 1.76, 'fill top': 4.09 },
+    holds: (difference) => difference.token === 'Ze1' && aboveOrBelow(difference),
+    count: 6,
+    largest: { 'fill bottom': 1.62, 'fill top': 4.09 },
   },
   {
     // Word sets a list's number on its item's first line, so centred or set to the end with it, and
@@ -352,6 +369,7 @@ const LEFT: readonly Left[] = [
       /^Z[lo]\d/.test(difference.token) &&
       (difference.property.startsWith('marker') || difference.property.startsWith('step')) &&
       ['centre', 'end'].includes(facts.aligned(difference.token)),
+    count: 34,
     largest: { 'marker end': 390.22, step: 3.94 },
   },
   {
@@ -362,44 +380,102 @@ const LEFT: readonly Left[] = [
       difference.property === 'fill left' &&
       /^Z[lo]\d/.test(difference.token) &&
       facts.filled(difference.token),
+    count: 18,
     largest: { 'fill left': 28.4 },
   },
   {
     // Word grows a line to what it holds - an image, a run larger than its text, one in a face with a
     // taller ascent or a deeper descent, a raised or lowered run - with its baseline the deepest descent
     // above its foot and no leading above what grew it; the PDF keeps the text's own line where it can.
-    // ADR-0014: where the rules differ, Word's wins.
+    // So the steps into and out of it, and a fill's top and foot about it. ADR-0014: where the rules
+    // differ, Word's wins.
     kind: 'a line holding an image, or a run larger, in another face or raised or lowered',
     route: "W15.3: the PDF and the editor take Word's rule",
     holds: (difference, facts) =>
       (difference.property.startsWith('step') && either(difference, facts.heldOpen)) ||
-      (difference.property.startsWith('fill') && facts.heldOpen(difference.token)),
-    largest: {
-      'fill bottom': 2.23,
-      'fill left': 1.68,
-      'fill right': 1.77,
-      'fill top': 4.25,
-      step: 6.57,
-    },
+      (aboveOrBelow(difference) && facts.heldOpen(difference.token)),
+    count: 83,
+    largest: { 'fill bottom': 2.23, 'fill top': 4.25, step: 6.57 },
   },
   {
     // Word's fill reaches past a border's spacing above and below as it does across, and the spacing
-    // is in whole points; a filled label stands between the two preformatted blocks, so the step over
-    // it is the panels'.
-    kind: 'panels: a fill above and below its text, and the steps about it',
+    // is in whole points.
+    kind: "panels: a fill's edges against its text",
     route: "Word's side, a slice of its own",
     holds: (difference, facts) =>
-      (difference.property.startsWith('fill') && facts.filled(difference.token)) ||
-      (difference.property.startsWith('step') &&
-        (either(difference, facts.filled) ||
-          (difference.token === 'Zf3' && stepFrom(difference) === 'Zf1' && facts.filled('Zf2')))),
-    largest: {
-      'fill bottom': 1.62,
-      'fill left': 1.86,
-      'fill right': 2.04,
-      'fill top': 3.66,
-      step: 4.38,
-    },
+      difference.property.startsWith('fill') && facts.filled(difference.token),
+    count: 239,
+    largest: { 'fill bottom': 1.62, 'fill left': 1.86, 'fill right': 2.04, 'fill top': 3.66 },
+  },
+  {
+    // A paragraph's fill in Word stands out by its borders' spacing, above and below, where the PDF's
+    // padding stands inside its spaces - so a step into or out of a filled paragraph moves by what
+    // the fill's top and foot do. Under a theme that fills its body text, that is most steps, so each
+    // is named; a filled label stands between the two preformatted blocks, so the step over it is
+    // one of them.
+    kind: 'a step into or out of a filled paragraph',
+    route: "Word's side, with the panels",
+    holds: (difference, facts) =>
+      difference.property.startsWith('step') &&
+      (either(difference, facts.filled) ||
+        (difference.token === 'Zf3' && stepFrom(difference) === 'Zf1' && facts.filled('Zf2'))),
+    count: 53,
+    largest: { step: 4.38 },
+    named: [
+      'Contrary: Zf1 step from Zq3',
+      'Contrary: Zf3 step from Zf1',
+      'Contrary: Zh02 step from Zh01',
+      'Contrary: Zh03 step from Zh02',
+      'Contrary: Zh04 step from Zh03',
+      'Contrary: Zh05 step from Zh04',
+      'Contrary: Zh06 step from Zh05',
+      'Contrary: Zl2 step from Zl3',
+      'Contrary: Zp01 step from Zh06',
+      'Contrary: Zp02 step from Zp01',
+      'Contrary: Zp03 step from Zp02',
+      'Contrary: Zp04 step from Zp03',
+      'Contrary: Zq1 step from Zo10',
+      'Contrary: Zq2 step from Zq1',
+      'Contrary: Zq3 step from Zq2',
+      'Default: Zf3 step from Zf1',
+      'Generated 1 (1301): Zf3 step from Zf1',
+      'Generated 1 (1301): Zh02 step from Zh01',
+      'Generated 1 (1301): Zp03 step from Zp02',
+      'Generated 1 (1301): Zp04 step from Zp03',
+      'Generated 2 (1302): Zh03 step from Zh02',
+      'Generated 2 (1302): Zh04 step from Zh03',
+      'Generated 2 (1302): Zp01 step from Zh06',
+      'Generated 3 (1303): Zh02 step from Zh01',
+      'Generated 3 (1303): Zh03 step from Zh02',
+      'Generated 3 (1303): Zh04 step from Zh03',
+      'Generated 4 (1501): Zh03 step from Zh02',
+      'Generated 4 (1501): Zh04 step from Zh03',
+      'Generated 4 (1501): Zq2 step from Zq1',
+      'Generated 4 (1501): Zr1 step from Zp04',
+      'Generated 5 (1502): Zf3 step from Zf1',
+      'Generated 5 (1502): Zh02 step from Zh01',
+      'Generated 5 (1502): Zl3 step from Zl1',
+      'Generated 5 (1502): Zo10 step from Zo9',
+      'Generated 5 (1502): Zp01 step from Zh06',
+      'Generated 5 (1502): Zp02 step from Zp01',
+      'Generated 5 (1502): Zp03 step from Zp02',
+      'Generated 5 (1502): Zq1 step from Zo10',
+      'Generated 5 (1502): Zr3 step from Zm2',
+      'Generated 5 (1502): Zr7 step from Zm6',
+      'Generated 5 (1502): Zr8 step from Zm7',
+      'Generated 5 (1502): Zr9 step from Zm8',
+      'Generated 6 (1503): Zh02 step from Zh01',
+      'Generated 6 (1503): Zl1 step from Zm9',
+      'Generated 6 (1503): Zl2 step from Zl3',
+      'Generated 6 (1503): Zl3 step from Zl1',
+      'Generated 6 (1503): Zo10 step from Zo9',
+      'Generated 6 (1503): Zp01 step from Zh06',
+      'Generated 6 (1503): Zp02 step from Zp01',
+      'Generated 6 (1503): Zp04 step from Zp03',
+      'Generated 6 (1503): Zq1 step from Zo10',
+      'Generated 6 (1503): Zq3 step from Zq2',
+      'Generated 6 (1503): Zr9 step from Zm8',
+    ],
   },
   {
     // Word sets a number's space suffix in Arial whatever the heading's face, and the number at a size
@@ -409,6 +485,7 @@ const LEFT: readonly Left[] = [
     kind: "a heading's start after its number",
     route: "Word's side, open: a suffix Word sets in Arial",
     holds: (difference) => difference.property === 'start' && /^Zh/.test(difference.token),
+    count: 23,
     largest: { start: 6.25 },
   },
   {
@@ -422,12 +499,13 @@ const LEFT: readonly Left[] = [
           facts.aligned(IMAGE_LINES[difference.token] ?? difference.token),
         )) ||
       (difference.property === 'start' && IMAGE_LINES[difference.token] !== undefined),
+    count: 87,
     largest: { start: 2.5 },
   },
 ];
 
 /** The kind of what W15.2 leaves a difference is, or nothing. */
-function leftOf(difference: Difference, facts: Facts): Left | undefined {
+function leftOf(difference: Difference, facts: Facts): Left<Facts> | undefined {
   return LEFT.find((each) => each.holds(difference, facts));
 }
 
@@ -606,7 +684,7 @@ describe.runIf(WORD_CHECK)('Word measured against the PDF, where Word is (W15.2)
   it('sets what it measures where the PDF sets it, under eight themes - each length within half a point, and each face, weight, posture, colour, underline and fill exactly - but the maths face approved for Word and what W15.2 leaves, each kind named and none larger than measured', async ({
     task,
   }) => {
-    const found: (Difference & { theme: string; left: string | null })[] = [];
+    const found: Found[] = [];
     const recorded: Record<string, { compared: number; largest: Record<string, number> }> = {};
     for (const { measured, tokens } of made) {
       const word = await readPaint(await readFile(join(FOLDER, `${measured.file}-word.pdf`)));
@@ -641,17 +719,16 @@ describe.runIf(WORD_CHECK)('Word measured against the PDF, where Word is (W15.2)
         JSON.stringify(dump, null, 1),
       );
     }
-    // What each kind W15.2 leaves came to, in this run: its largest of each property.
-    const left: Record<string, Record<string, number>> = {};
+    // What each kind W15.2 leaves came to, in this run: how many, and its largest of each length.
+    const left: Record<string, { count: number; largest: Record<string, number> }> = {};
     for (const each of found) {
       if (each.left === null) continue;
+      const kind = (left[each.left] ??= { count: 0, largest: {} });
+      kind.count += 1;
+      if (typeof each.editor !== 'number' || typeof each.pdf !== 'number') continue;
       const property = each.property.replace(/ from .*$/, '');
-      const by =
-        typeof each.editor === 'number' && typeof each.pdf === 'number'
-          ? Math.round(Math.abs(each.editor - each.pdf) * 100) / 100
-          : 0;
-      const kind = (left[each.left] ??= {});
-      kind[property] = Math.max(kind[property] ?? 0, by);
+      const by = Math.round(Math.abs(each.editor - each.pdf) * 100) / 100;
+      kind.largest[property] = Math.max(kind.largest[property] ?? 0, by);
     }
     const [word] = exported;
     const report = {
@@ -666,17 +743,12 @@ describe.runIf(WORD_CHECK)('Word measured against the PDF, where Word is (W15.2)
     console.info(`Word measured: ${JSON.stringify(report)}`);
     // Every theme compared something: a run cannot pass by comparing nothing.
     expect(Object.values(recorded).every((each) => each.compared > 250)).toBe(true);
-    // Nothing of no kind W15.2 names.
-    expect(found.filter((each) => each.left === null)).toEqual([]);
-    // No kind larger than it measured, and every kind still left - W13.4's seeds only, since another
-    // set measures other themes.
-    if (process.env.ALLOY_BROWSER_STYLE_SEEDS === undefined) {
-      expect(Object.keys(left).sort()).toEqual(LEFT.map((each) => each.kind).sort());
-      for (const kind of LEFT) {
-        for (const [property, by] of Object.entries(left[kind.kind] ?? {})) {
-          expect(by, `${kind.kind}: ${property}`).toBeLessThanOrEqual(kind.largest[property] ?? 0);
-        }
-      }
-    }
+    // Nothing of no kind W15.2 names; and, over W13.4's seeds, which the kinds were measured under,
+    // each kind exactly as measured.
+    expect(
+      process.env.ALLOY_BROWSER_STYLE_SEEDS === undefined
+        ? unheld(found, LEFT)
+        : found.filter((each) => each.left === null),
+    ).toEqual([]);
   }, 300_000);
 });
