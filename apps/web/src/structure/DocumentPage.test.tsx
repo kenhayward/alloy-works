@@ -3846,6 +3846,16 @@ describe('the address of every node', () => {
       await waitFor(() => expect(scrolledTo).toEqual([SECOND]));
     });
 
+    it('STR-045 still goes to a linked node when a modifier key is pressed alone while it waits, as a screen reader is silenced with Ctrl (issue #350)', async () => {
+      const { fetch, release } = holdingTexts(twoSections());
+      openLinked(fetch);
+      const text = await screen.findByRole('region', { name: "The document's text" });
+      fireEvent.keyDown(text, { key: 'Control' });
+      fireEvent.keyDown(text, { key: 'Shift' });
+      release();
+      await waitFor(() => expect(scrolledTo).toEqual([SECOND]));
+    });
+
     /**
      * The browser's word that the column changed size, fired by hand: jsdom lays nothing out. Only the
      * observers still watching hear it, as in the browser.

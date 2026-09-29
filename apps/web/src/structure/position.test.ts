@@ -53,19 +53,21 @@ describe('where the reader is in the text', () => {
  * A page laid out by hand, as jsdom lays out nothing: the linked node stands `nodeTop` pixels down a
  * document `height` pixels tall, the window is scrolled to `scrollY` - never past its furthest, the
  * height less the window's - and scrolling the node into view puts it just below a 44-pixel header,
- * as the root's `scroll-padding-top` does, or as near as the window can scroll. The column's
- * `ResizeObserver` is the test's to fire, as the browser fires it after a layout that changed the
- * column's size.
+ * as the root's `scroll-padding-top` does, or as near as the window can scroll. The column stands in
+ * an article, below what the page shows above it. Each `ResizeObserver` is the test's to fire for an
+ * element it watches, as the browser fires it after a layout that changed that element's size.
  */
 function laidOut({ nodeTop = 1500, height = 3000 } = {}) {
   const page = { nodeTop, height, scrollY: 0, aligned: 0 };
   const furthest = () => page.height - window.innerHeight;
-  let resized: (() => void) | null = null;
+  const watched = new Map<() => void, Set<Element>>();
+  const article = document.createElement('article');
   const column = document.createElement('div');
   const node = document.createElement('div');
   node.setAttribute('data-node', 'n');
   column.append(node);
-  document.body.append(column);
+  article.append(column);
+  document.body.append(article);
   node.getBoundingClientRect = () =>
     ({ top: page.nodeTop - page.scrollY, bottom: page.nodeTop - page.scrollY + 40 }) as DOMRect;
   node.scrollIntoView = () => {
@@ -78,27 +80,43 @@ function laidOut({ nodeTop = 1500, height = 3000 } = {}) {
     get: () => page.height,
   });
   window.ResizeObserver = class {
-    constructor(callback: () => void) {
-      resized = callback;
+    constructor(private readonly callback: () => void) {
+      watched.set(callback, new Set());
     }
-    observe() {}
+    observe(element: Element) {
+      watched.get(this.callback)?.add(element);
+    }
     unobserve() {}
     disconnect() {
-      resized = null;
+      watched.get(this.callback)?.clear();
     }
   } as unknown as typeof ResizeObserver;
+  /** The browser's word that `element` changed size, to every observer watching it. */
+  const resized = (element: Element) => {
+    for (const [callback, elements] of watched) if (elements.has(element)) callback();
+  };
   /** The layout changes: everything above the node takes `by` pixels more, and the browser says so. */
   const grow = (by: number) => {
     page.nodeTop += by;
     page.height += by;
     page.scrollY = Math.min(page.scrollY, Math.max(0, furthest()));
-    resized?.();
+    resized(column);
   };
   const find = () => column.querySelector('[data-node="n"]');
   // Gone to, as the page goes to a linked node before it holds it there.
   node.scrollIntoView();
   page.aligned = 0;
-  return { page, furthest, grow, find, column, node, remove: () => column.remove() };
+  return {
+    page,
+    furthest,
+    grow,
+    resized,
+    find,
+    article,
+    column,
+    node,
+    remove: () => article.remove(),
+  };
 }
 
 describe('a linked node held where the link put it (STR-045, issue #350)', () => {
@@ -200,6 +218,34 @@ describe('a linked node held where the link put it (STR-045, issue #350)', () =>
     remove();
   });
 
+  it('STR-045 goes to a linked node again when what stands above the text changes size, as a notice of faces not held appears', () => {
+    const { page, resized, find, article, column, remove } = laidOut();
+    holdInPlace(find, column);
+    // A notice appears above the column in the page's article: the node moves, the column does not
+    // change size.
+    page.nodeTop += 48;
+    page.height += 48;
+    resized(article);
+    expect(page.aligned).toBe(1);
+    expect(page.scrollY).toBe(page.nodeTop - 44);
+    remove();
+  });
+
+  it('STR-045 keeps a linked node through a modifier key pressed alone, as a screen reader is silenced with Ctrl', () => {
+    const { page, grow, find, column, node, remove } = laidOut();
+    holdInPlace(find, column);
+    for (const key of ['Control', 'Shift', 'Alt', 'AltGraph', 'Meta', 'CapsLock', 'Fn', 'OS']) {
+      fireEvent.keyDown(node, { key });
+    }
+    grow(-20);
+    expect(page.aligned).toBe(1);
+    // Any other key is the reader's.
+    fireEvent.keyDown(node, { key: 'c', ctrlKey: true });
+    grow(-20);
+    expect(page.aligned).toBe(1);
+    remove();
+  });
+
   it('STR-045 lets a linked node go when it leaves the text', () => {
     const { page, grow, find, column, node, remove } = laidOut();
     holdInPlace(find, column);
@@ -226,6 +272,20 @@ describe('a linked node held where the link put it (STR-045, issue #350)', () =>
     grow(300);
     expect(page.aligned).toBe(2);
     expect(document.documentElement.style.overflowAnchor).toBe('');
+    remove();
+  });
+
+  it('STR-045 schedules nothing when the page settles after the hold has let go', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const { find, column, remove } = laidOut();
+    let settle!: () => void;
+    const release = holdInPlace(find, column, {
+      settled: new Promise<void>((resolve) => (settle = resolve)),
+    });
+    release();
+    settle();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(vi.getTimerCount()).toBe(0);
     remove();
   });
 

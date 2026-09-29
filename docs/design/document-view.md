@@ -133,17 +133,19 @@ not under it: the root carries `scroll-padding-top: var(--header-height)`.
 texts have arrived - before then every component above it is a heading alone, and the node would be
 pushed down the page as each fills in - or after five seconds where they have not. It does not go at
 all where the reader has meanwhile chosen another node or done anything with the page themselves: a
-wheel, a touch, a key, a press of the pointer, or a scroll of their own however made - a find, a
-scrollbar dragged - which is any scroll but the browser's anchoring and a page grown shorter pulling
-the window up (`watchReader` in `position.ts`).
+wheel, a touch, a key other than a modifier alone, a press of the pointer, or a scroll of their own
+however made - a find, a scrollbar dragged - which is any scroll but the browser's anchoring and a
+page grown shorter pulling the window up (`watchReader` in `position.ts`). A modifier alone is not
+the reader's act: a screen reader's user presses Ctrl to silence speech as the page opens.
 
 **Holding the node** (issues #341, #350): the theme, asked for beside the texts, may answer after
 them, and its faces are fetched only once text set in them is drawn, so everything above the node
 changes height after it is gone to - and the browser's own scroll anchoring does not keep it in
 place, which left it a few pixels under the header when the faces arrived, or off the screen when the
 theme did. So having gone there, the page holds the node there: whenever the text's column changes
-size, a `ResizeObserver` goes to the node again, with the browser's anchoring off meanwhile so the two
-never fight (`holdInPlace` in `position.ts`). It lets go when the reader does anything the wait
+size, or the article holding it does - a notice of faces not held, shown above the text as the theme
+arrives, moves the node without changing the column - a `ResizeObserver` goes to the node again, with
+the browser's anchoring off meanwhile so the two never fight (`holdInPlace` in `position.ts`). It lets go when the reader does anything the wait
 above would have heard, when another node is chosen, when the node leaves the text, and once the page
 has settled - the texts read, the theme's presentation in and its faces loaded, and then a second and
 a half with the column's size unchanged - and in any case after ten seconds.
