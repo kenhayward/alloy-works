@@ -43,7 +43,13 @@ import { HeldFields, type SaveAnswer } from '../metadata/HeldFields.js';
 import { byName } from '../metadata/people.js';
 import { UnheldFaces, ZoomControl } from '../theme/Canvas.js';
 import { PresentationProvider } from '../theme/presentation.js';
-import { LINK_WAITS_MS, SCROLL_INPUTS, SCROLLING_KEYS, useReadingPosition } from './position.js';
+import {
+  holdInPlace,
+  LINK_WAITS_MS,
+  SCROLL_INPUTS,
+  SCROLLING_KEYS,
+  useReadingPosition,
+} from './position.js';
 import type { Choosing, OfferedVersion } from './VersionChoice.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -911,13 +917,25 @@ export function DocumentPage({
       for (const kind of SCROLL_INPUTS) window.removeEventListener(kind, scrolled, options);
     };
   }, []);
+  // And held there as what is above it settles - the theme, its faces, the zoom - until the reader acts
+  // (issue #350): let go by the reader, by another node chosen, and by the page going.
+  const holding = useRef<(() => void) | null>(null);
+  const letGo = () => {
+    holding.current?.();
+    holding.current = null;
+  };
+  useEffect(() => letGo, []);
   useEffect(() => {
     // Gone to once the text is whole, so the components above it have taken their room (issue #336).
-    if (arriving.current === null || textsRead !== shownVersion) return;
-    const element = textColumn.current?.querySelector(`[data-node="${arriving.current}"]`);
+    const column = textColumn.current;
+    if (arriving.current === null || textsRead !== shownVersion || column === null) return;
+    const node = arriving.current;
+    const element = column.querySelector(`[data-node="${node}"]`);
     if (!element) return;
     arriving.current = null;
     element.scrollIntoView?.({ block: 'start' });
+    letGo();
+    holding.current = holdInPlace(() => column.querySelector(`[data-node="${node}"]`), column);
   });
   const chooseMode = (mode: Mode) => {
     setChosenMode(mode);
@@ -1097,8 +1115,10 @@ export function DocumentPage({
               // The address follows what is chosen, without a history entry per arrow key and without a
               // `hashchange`, so a reload or a copy of the address comes back to it.
               window.history.replaceState(window.history.state, '', nodeLink(document.id, node));
-              // A link still waiting for the texts is the reader's no longer: they chose elsewhere.
+              // A link still waiting for the texts, or holding its node, is the reader's no longer: they
+              // chose elsewhere.
               arriving.current = null;
+              letGo();
               // And the text goes to it (STR-035); a link's mark stays only on what it marked.
               textColumn.current
                 ?.querySelector(`[data-node="${node}"]`)

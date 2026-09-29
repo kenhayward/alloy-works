@@ -570,6 +570,8 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 553, from 552 (2026-09-29): issue #350 - STR-045 in apps/web's position.test.ts, a linked node
+  // held where the link put it as the text above it settles, and let go when the reader acts.
   // 552, from 551 (2026-09-29): issues #331 and #333 - STY-080 in tests/browser's styles.test.ts, the
   // editor measured against the PDF under five themes: one title, one citation.
   // 551, from 550 (2026-09-29): W13.3 - CNT-179 in tests/browser's budgets.test.ts. STR-072's two
@@ -715,7 +717,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(552);
+    expect(model.citations).toHaveLength(553);
   });
 
   it('cites no identifier the corpus does not hold', () => {

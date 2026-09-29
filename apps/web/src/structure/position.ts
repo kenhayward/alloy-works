@@ -28,6 +28,68 @@ export const SCROLLING_KEYS: ReadonlySet<string> = new Set([
   ' ',
 ]);
 
+/**
+ * What the reader does that lets go of a linked node the page is holding in place: anything at all -
+ * a scroll of their own, a key, a press of the pointer - since any of it may move the page, and the
+ * hold would pull it back.
+ */
+export const HOLD_ENDS_ON = ['wheel', 'touchmove', 'keydown', 'pointerdown'] as const;
+
+/**
+ * Holds a linked node where the page went to it (STR-045, issue #350), and answers how to let go.
+ *
+ * Going to the node once is not enough: what is above it keeps changing height after the texts arrive
+ * - the theme, asked for beside the texts, may answer after them, and its faces are fetched only once
+ * text set in them is drawn - and the browser's own scroll anchoring does not hold the node through
+ * it, so it was left anywhere from a few pixels under the header to off the screen altogether. So
+ * whenever the text's column changes size, which it does with every height inside it, the node is
+ * scrolled into view again.
+ *
+ * It lets go at the reader's first act (`HOLD_ENDS_ON`), when the window is scrolled while the node
+ * has not moved - the reader's own scroll by some other means, a scrollbar dragged - or when the node
+ * leaves the text. A scroll heard while the node has moved is the layout's, the window pulled up by a
+ * page grown shorter, and the node is gone to again.
+ */
+export function holdInPlace(find: () => Element | null, column: Element): () => void {
+  if (typeof ResizeObserver === 'undefined') return () => undefined;
+  /** Where the node stands in the document, and where the window was, as the hold last left them. */
+  let nodeAt = 0;
+  let windowAt = 0;
+  const standing = (node: Element) => node.getBoundingClientRect().top + window.scrollY;
+  const align = () => {
+    const node = find();
+    if (node === null) {
+      release();
+      return;
+    }
+    node.scrollIntoView?.({ block: 'start' });
+    nodeAt = standing(node);
+    windowAt = window.scrollY;
+  };
+  const scrolled = () => {
+    const node = find();
+    if (node === null) release();
+    else if (Math.abs(standing(node) - nodeAt) >= 1) align();
+    else if (Math.abs(window.scrollY - windowAt) >= 1) release();
+  };
+  const acted = () => release();
+  const observer = new ResizeObserver(() => align());
+  const options = { capture: true, passive: true } as const;
+  function release() {
+    observer.disconnect();
+    window.removeEventListener('scroll', scrolled);
+    for (const kind of HOLD_ENDS_ON) window.removeEventListener(kind, acted, options);
+  }
+  const node = find();
+  if (node === null) return () => undefined;
+  nodeAt = standing(node);
+  windowAt = window.scrollY;
+  observer.observe(column);
+  window.addEventListener('scroll', scrolled, { passive: true });
+  for (const kind of HOLD_ENDS_ON) window.addEventListener(kind, acted, options);
+  return release;
+}
+
 /** How far down the window the line is that a node's heading must have reached to be where the reader is. */
 const READING_LINE = 0.25;
 

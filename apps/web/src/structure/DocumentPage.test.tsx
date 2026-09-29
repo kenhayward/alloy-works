@@ -3846,6 +3846,40 @@ describe('the address of every node', () => {
       await waitFor(() => expect(scrolledTo).toEqual([SECOND]));
     });
 
+    it('STR-045 keeps going to a linked node as the text above it settles, until the reader chooses another (issue #350)', async () => {
+      // The browser's word that the column changed size, fired by hand: jsdom lays nothing out.
+      const watching = new Set<() => void>();
+      const resized = {
+        forEach: (each: (callback: () => void) => void) => [...watching].forEach(each),
+      };
+      const originalObserver = window.ResizeObserver;
+      window.ResizeObserver = class {
+        constructor(private readonly callback: () => void) {}
+        observe() {
+          watching.add(this.callback);
+        }
+        unobserve() {}
+        disconnect() {
+          watching.delete(this.callback);
+        }
+      } as unknown as typeof ResizeObserver;
+      try {
+        const fake = twoSections();
+        openLinked(fake.fetch);
+        await screen.findByRole('region', { name: "The document's text" });
+        await waitFor(() => expect(scrolledTo).toEqual([SECOND]));
+        // The theme's faces arrive and the text above the node is set again: it is gone to again.
+        act(() => resized.forEach((callback) => callback()));
+        expect(scrolledTo).toEqual([SECOND, SECOND]);
+        // The reader chooses another: the link's node is theirs no longer.
+        await userEvent.click(treeItem(/Unpacking/));
+        act(() => resized.forEach((callback) => callback()));
+        expect(scrolledTo).toEqual([SECOND, SECOND, FIRST]);
+      } finally {
+        window.ResizeObserver = originalObserver;
+      }
+    });
+
     it('STR-045 leaves the reader where they chose to go while a link waited for the texts (issue #336)', async () => {
       const { fetch, release } = holdingTexts(twoSections());
       openLinked(fetch);

@@ -132,7 +132,15 @@ not under it: the root carries `scroll-padding-top: var(--header-height)`.
 **Arriving by a link** (STR-045): the page opens at the node, scrolled to once the placed components'
 texts have arrived - before then every component above it is a heading alone, and the node would be
 pushed down the page as each fills in - or after five seconds where they have not, and not at all
-where the reader has meanwhile chosen another node or scrolled the page themselves. It marks the
+where the reader has meanwhile chosen another node or scrolled the page themselves. Having gone
+there, it **holds the node there** (issues #341, #350): the theme, asked for beside the texts, may
+answer after them, and its faces are fetched only once text set in them is drawn, so everything above
+the node changes height after it is gone to - and the browser's own scroll anchoring does not keep it
+in place, which left it a few pixels under the header when the faces arrived, or off the screen when
+the theme did.
+Whenever the text's column changes size, a `ResizeObserver` goes to the node again, until the reader
+does anything - a wheel, a touch, a key, a press of the pointer - or the window is scrolled while the
+node has not moved, or another node is chosen (`holdInPlace` in `position.ts`). It marks the
 node's heading as well as its tree item, a mark that stays until the reader moves elsewhere, as the
 outline's does. A document
 the reader may not read is not found, as today (404). A node that places a component the reader may not

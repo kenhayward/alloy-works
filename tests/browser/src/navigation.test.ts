@@ -1,4 +1,4 @@
-import type { Locator, Page } from 'playwright-core';
+import type { Locator, Page, Response } from 'playwright-core';
 import { describe, expect, it } from 'vitest';
 import {
   api,
@@ -203,6 +203,63 @@ async function shownInPane(tree: Locator, node: string): Promise<boolean> {
   }, node);
 }
 
+/** Whether a response is the texts' or the theme's, or a face's file. */
+const TEXTS = (response: Response) => response.url().endsWith('/texts');
+const THEME = (response: Response) => response.url().endsWith('/presentation');
+const FACE = /\.(ttf|otf)(\?.*)?$/;
+
+/**
+ * Holds every request `matching` until `after` has answered and a moment more, so what it brings
+ * changes the page after the link has gone to its node; answers when the first of them is through.
+ */
+async function holdUntil(
+  page: Page,
+  matching: string | RegExp,
+  after: (response: Response) => boolean,
+): Promise<{ readonly through: Promise<unknown> }> {
+  const answered = page.waitForResponse(after);
+  // Awaited below; a page closed before it answers is the test's own failure, not an unhandled one.
+  answered.catch(() => undefined);
+  let letThrough!: () => void;
+  const released = new Promise<void>((resolve) => (letThrough = resolve));
+  await page.route(matching, async (route) => {
+    await answered;
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await route.continue();
+    letThrough();
+  });
+  return { through: released.then(() => page.waitForTimeout(100)) };
+}
+
+/**
+ * The orders a document's page can take in what it loads, each arranged before the page opens and
+ * answering once what it held is through: what the texts, the theme and the faces each change is the
+ * height of everything above a linked node, however late it comes (issues #341, #350).
+ */
+const INTERLEAVINGS: readonly {
+  readonly name: string;
+  readonly arrange: (page: Page) => Promise<{ readonly through: Promise<unknown> }>;
+}[] = [
+  { name: 'as the stack serves it', arrange: async () => ({ through: Promise.resolve() }) },
+  {
+    name: 'the theme after the texts',
+    arrange: (page) => holdUntil(page, '**/v1/documents/*/presentation', TEXTS),
+  },
+  { name: 'the faces after the texts', arrange: (page) => holdUntil(page, FACE, TEXTS) },
+  {
+    name: 'the texts after the theme',
+    arrange: (page) => holdUntil(page, '**/v1/documents/*/texts', THEME),
+  },
+  {
+    name: 'on a machine four times slower',
+    arrange: async (page) => {
+      const cdp = await page.context().newCDPSession(page);
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+      return { through: Promise.resolve() };
+    },
+  },
+];
+
 describe('moving through a long document in a browser (issue #336)', () => {
   it('STR-035 scrolls the text wherever the wheel takes it, and it stays there', async () => {
     const client = api();
@@ -248,6 +305,72 @@ describe('moving through a long document in a browser (issue #336)', () => {
       await open(page, `/documents/${made.id}/nodes/${target.id}`);
       await expectOnScreen(page, target.id, 'the linked node');
       expect(await settled(page)).toBeGreaterThan(0);
+    });
+  });
+
+  it('STR-045 keeps a linked node below the header however its texts, theme and faces arrive (issues #341, #350)', async () => {
+    const client = api();
+    const made = await longDocument(client, 'Reached as it loads', 3, 3);
+    // The middle section: the window can scroll past it, so nothing but the page holds it in place.
+    const target = everyNode(nodesOf(made))[4]!;
+    // Every order tried, and every one that lands wrong named together.
+    const wrong: string[] = [];
+    for (const { name, arrange } of INTERLEAVINGS) {
+      await withPage(async (page) => {
+        const { through } = await arrange(page);
+        await open(page, `/documents/${made.id}/nodes/${target.id}`);
+        await through;
+        await page.evaluate(async () => {
+          await document.fonts.ready;
+        });
+        try {
+          await expectOnScreen(page, target.id, `the linked node, ${name}`);
+          expect(await settled(page), name).toBeGreaterThan(0);
+        } catch (failure) {
+          wrong.push((failure as Error).message.split('\n')[0]!);
+        }
+      });
+    }
+    expect(wrong).toEqual([]);
+  });
+
+  it('STR-045 leaves the reader where they scrolled once a link has taken them to its node, whatever arrives after (issue #350)', async () => {
+    const client = api();
+    const made = await longDocument(client, 'Scrolled from a link', 3, 3);
+    const target = everyNode(nodesOf(made))[4]!;
+    await withPage(async (page) => {
+      // The theme held until the reader has scrolled: its arrival changes every height above the node.
+      let release!: () => void;
+      const held = new Promise<void>((resolve) => (release = resolve));
+      await page.route('**/v1/documents/*/presentation', async (route) => {
+        await held;
+        await route.continue();
+      });
+      const { text } = await open(page, `/documents/${made.id}/nodes/${target.id}`);
+      await page.waitForFunction(
+        (id) => {
+          const node = document.querySelector(
+            `[aria-label="The document's text"] [data-node="${id}"]`,
+          );
+          const header = document.querySelector('header')!.getBoundingClientRect().bottom;
+          return node !== null && Math.abs(node.getBoundingClientRect().top - header) < 2;
+        },
+        target.id,
+        { polling: 'raf' },
+      );
+      await overTheText(page, text);
+      await wheel(page, 300);
+      const themed = page.waitForResponse((response) => response.url().endsWith('/presentation'));
+      release();
+      await themed;
+      await page.evaluate(async () => {
+        await document.fonts.ready;
+      });
+      await settled(page);
+      const at = await standing(page, target.id);
+      expect(at.top, 'the node, left where the reader scrolled past it').toBeLessThan(
+        at.header - 100,
+      );
     });
   });
 

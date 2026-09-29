@@ -3,6 +3,18 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.126.1 - 2026-09-29 (PR #TBD)
+
+### Fixed
+
+- **A link to a part of a document keeps that part where it opened.** Following a link to a section
+  took the page to it, but what stands above it kept changing height as the page finished loading -
+  the document's styles and typefaces can arrive a moment after its text - and nothing moved the page
+  to follow. The section's heading could end a few pixels under the page's header, or off the screen
+  altogether. The page now keeps the section just below the header while the text above it settles,
+  and lets it go the moment you scroll, press a key, click or choose another part (issue #350,
+  issue #341).
+
 ## 0.126.0 - 2026-09-29 (PR #348)
 
 ### Added
