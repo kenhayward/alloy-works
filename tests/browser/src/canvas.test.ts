@@ -47,11 +47,11 @@ async function placing(client: Client, name: string, component: string): Promise
 /** Opens a document's page, in `mode`, at `zoom`, and waits for its component's text. */
 async function openDocument(
   page: Page,
-  document: DocumentView,
+  opened: DocumentView,
   mode: 'Reading' | 'Authoring',
   zoom: '1' | '0.5',
 ): Promise<void> {
-  await page.goto(`${SERVICE}/#/documents/${document.id}`);
+  await page.goto(`${SERVICE}/#/documents/${opened.id}`);
   await page.getByRole('radio', { name: mode }).check();
   await page.getByLabel('Zoom').selectOption(zoom);
   const canvas = page.locator('section.aw-canvas');
@@ -110,11 +110,11 @@ describe('the canvas as a person uses it', () => {
   it("stands a component's label beside its heading, not over it (the final review of issue #333)", async () => {
     const client = api();
     const component = await withAnImage(client, 'Labelled');
-    const document = await placing(client, 'Labelled', component);
+    const placed = await placing(client, 'Labelled', component);
     await withPage(async (page) => {
       // Wide enough that the column is wider than the measure, where the label stands beside it.
       await page.setViewportSize({ width: 1700, height: 1000 });
-      await openDocument(page, document, 'Reading', '1');
+      await openDocument(page, placed, 'Reading', '1');
       const boxes = await page.evaluate(() => {
         const card = document.querySelector('section.aw-canvas [data-component]')!;
         const heading = card.querySelector('h1, h2, h3, h4, h5, h6')!;
@@ -142,9 +142,9 @@ describe('the canvas as a person uses it', () => {
     it(`opens a component in place the column's width, and leaves its text to the pointer, at ${Number(zoom) * 100}% (the final review of issue #333)`, async () => {
       const client = api();
       const component = await withAnImage(client, `In place at ${zoom}`);
-      const document = await placing(client, `In place at ${zoom}`, component);
+      const placed = await placing(client, `In place at ${zoom}`, component);
       await withPage(async (page) => {
-        await openDocument(page, document, 'Authoring', zoom);
+        await openDocument(page, placed, 'Authoring', zoom);
         // The text, where the pointer lands on it, is the text and not the label over it.
         const hit = await page.evaluate(() => {
           const body = document.querySelector('section.aw-canvas [data-opens="true"]')!;
