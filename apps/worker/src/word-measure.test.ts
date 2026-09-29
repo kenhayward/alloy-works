@@ -236,15 +236,19 @@ const MARKED = [
   'language',
 ] as const;
 
-/** What a difference is left as, and why: a kind W15.2 found and did not close, and where it goes. */
+/**
+ * A kind of difference W15.2 measured and left (the plan's W15.2 as-built note; word-output.md, "Word
+ * measured"): its name, where it goes by W15-I's rule, which differences are of it, and the largest of
+ * each property the run that left it measured.
+ */
 interface Left {
-  /** A name for it, as the plan's as-built note and word-output.md name it. */
+  /** Its name, as the plan's as-built note and word-output.md give it. */
   readonly kind: string;
-  /** Where it goes: Word's side, W15.3's template, or Ken's (W15-I). */
+  /** Where it goes (W15-I): Word's side in a slice of its own, W15.3's template, or Ken's. */
   readonly route: string;
   /** Whether a difference, of a token under a theme, is of this kind. */
   readonly holds: (difference: Difference, facts: Facts) => boolean;
-  /** The largest of each property this run measured, which no later run may pass: in points. */
+  /** The largest of each property the run that left it measured, in points: no run may pass it. */
   readonly largest: Readonly<Record<string, number>>;
 }
 
@@ -252,22 +256,33 @@ interface Left {
 interface Facts {
   readonly filled: (token: string) => boolean;
   readonly aligned: (token: string) => Alignment;
-  /** Whether the line a token stands on is held open by an image or a run set larger than its text. */
+  /**
+   * Whether the line a token stands on holds what its own text does not: an image, or a mark's run
+   * set larger than its text, in another face, or raised or lowered.
+   */
   readonly heldOpen: (token: string) => boolean;
 }
 
 function factsOf(theme: ResolvedTheme): Facts {
   const properties = (token: string) =>
     theme.paragraphStyles.get(styleOf(theme, token))!.properties;
-  const larger = (mark: (typeof MARKED)[number]) =>
-    (theme.characterStyles[mark].properties.scale ?? 1) > 1;
+  // The paragraphs holding the marks are the text's own style: a run is otherwise where it is larger,
+  // in another face, or raised or lowered.
+  const otherwise = (mark: (typeof MARKED)[number]) => {
+    const set = theme.characterStyles[mark].properties;
+    return (
+      (set.scale ?? 1) > 1 ||
+      (set.typeface !== undefined && set.typeface !== properties('Zr1').typeface) ||
+      set.position !== undefined
+    );
+  };
   return {
     filled: (token) => properties(token).background !== 'none',
     aligned: (token) => properties(token).alignment,
     heldOpen: (token) => {
       if (token === 'Zi1' || token === 'Zi2') return true;
       const n = /^Z[rm]([1-9])$/.exec(token)?.[1];
-      return n !== undefined && larger(MARKED[Number(n) - 1]!);
+      return n !== undefined && otherwise(MARKED[Number(n) - 1]!);
     },
   };
 }
@@ -275,80 +290,137 @@ function factsOf(theme: ResolvedTheme): Facts {
 /** The token a step is from, where the difference is a step. */
 const stepFrom = (difference: Difference) => /^step from (.+)$/.exec(difference.property)?.[1];
 
+/** Whether `test` holds of a difference's token, or of the token its step is from. */
+const either = (difference: Difference, test: (token: string) => boolean) =>
+  test(difference.token) || test(stepFrom(difference) ?? '');
+
+/** The images in a line, by the token opening the line each stands on. */
+const IMAGE_LINES: Readonly<Record<string, string>> = { 'image 3': 'Zi1', 'image 4': 'Zi2' };
+
 /**
- * **What W15.2 leaves**, each named with its route (W15-I) and held to the largest this run measured
- * (Word 16.0, build 16.0.20326): the first kind a difference is, in this order. None is approved -
- * STY-060's list for Word holds the maths face alone - and none is left out: a difference of no kind
- * here fails, one larger than its kind's largest fails, and a kind no difference is left of fails
- * until it is taken off, so the list stays what is left. Nothing here is STY-081's: the test cites it
- * once the list is empty.
+ * **What W15.2 leaves**, each kind named with where it goes (W15-I) and held to the largest of each
+ * property the run that left it measured (Word 16.0, build 16.0.20326, W13.4's seeds): a difference is
+ * of the first kind that holds it, in this order. None is approved - STY-060's list for Word holds the
+ * maths face alone - and none is forgiven: a difference of no kind here fails, one larger than its
+ * kind's largest fails, and a kind no difference is left of fails until it is taken off, so the list
+ * stays exactly what is left. Each kind is stated in the plan's W15.2 as-built note and in
+ * word-output.md with its reason and its sizes. While any is left the test cites nothing: STY-081 is
+ * cited once the list is empty.
  */
 const LEFT: readonly Left[] = [
   {
+    // Word's cell margins stand from a rule's inner edge, the PDF's from its middle; Word draws the
+    // wider of two rules meeting on a line, where the PDF draws the header's; Word fills a cell in
+    // pieces about its margins; and a cell's first line takes its leading above it.
     kind: 'tables',
-    route: "Word's side, a slice of its own; the header row's rule W15.3's",
-    holds: (difference) => /^Zt/.test(difference.token) || /^Zt/.test(stepFrom(difference) ?? ''),
-    largest: {},
+    route: "Word's side, a slice of its own",
+    holds: (difference) => either(difference, (token) => /^Zt/.test(token)),
+    largest: {
+      'bottom rule colour': 0,
+      'bottom rule position': 2.14,
+      'bottom rule width': 1.65,
+      'fill bottom': 1.43,
+      'fill left': 0.94,
+      'fill right': 1.71,
+      'fill top': 7.2,
+      'left rule position': 1.46,
+      'right rule position': 1.28,
+      start: 1.41,
+      step: 8.12,
+      'top rule colour': 0,
+      'top rule position': 6.1,
+      'top rule width': 1.65,
+    },
   },
   {
+    // Word sets the line holding an equation as tall as its maths face's line, so the fill behind it
+    // is the maths engine's height, outside as it is for STY-080 (W15-H).
+    kind: "the fill behind the line holding the equation, as tall as Word's maths face",
+    route: "Outside (W15-H): an equation's height is the maths engine's",
+    holds: (difference) => difference.token === 'Ze1' && difference.property.startsWith('fill'),
+    largest: { 'fill bottom': 1.62, 'fill left': 1.68, 'fill right': 1.76, 'fill top': 4.09 },
+  },
+  {
+    // Word sets a list's number on its item's first line, so centred or set to the end with it, and
+    // grows that line to the number alone; the PDF sets it at the list's column, in the list's style,
+    // whose line holds the item's open.
     kind: "a list item's number beside text set to the centre or the end",
-    route: "Ken's: Word sets the number with its line",
+    route: "Ken's: Word sets a number with its line - a report under PUB-078, or a STY-060 entry",
     holds: (difference, facts) =>
-      difference.property.startsWith('marker') &&
+      /^Z[lo]\d/.test(difference.token) &&
+      (difference.property.startsWith('marker') || difference.property.startsWith('step')) &&
       ['centre', 'end'].includes(facts.aligned(difference.token)),
-    largest: {},
+    largest: { 'marker end': 390.22, step: 3.94 },
   },
   {
+    // Word's paragraph fill runs from the item's number; the PDF's, from its text.
     kind: "a list item's fill before its text",
-    route: "Ken's: Word fills from the number",
+    route: "Ken's: Word fills from its number - a report under PUB-078, or a STY-060 entry",
     holds: (difference, facts) =>
       difference.property === 'fill left' &&
       /^Z[lo]\d/.test(difference.token) &&
       facts.filled(difference.token),
-    largest: {},
+    largest: { 'fill left': 28.4 },
   },
   {
-    kind: 'a line held open by an image or a run larger than its text',
-    route: "W15.3: the PDF takes Word's rule",
+    // Word grows a line to what it holds - an image, a run larger than its text, one in a face with a
+    // taller ascent or a deeper descent, a raised or lowered run - with its baseline the deepest descent
+    // above its foot and no leading above what grew it; the PDF keeps the text's own line where it can.
+    // ADR-0014: where the rules differ, Word's wins.
+    kind: 'a line holding an image, or a run larger, in another face or raised or lowered',
+    route: "W15.3: the PDF and the editor take Word's rule",
     holds: (difference, facts) =>
-      (difference.property.startsWith('step') &&
-        (facts.heldOpen(difference.token) || facts.heldOpen(stepFrom(difference) ?? ''))) ||
+      (difference.property.startsWith('step') && either(difference, facts.heldOpen)) ||
       (difference.property.startsWith('fill') && facts.heldOpen(difference.token)),
-    largest: {},
+    largest: {
+      'fill bottom': 2.23,
+      'fill left': 1.68,
+      'fill right': 1.77,
+      'fill top': 4.25,
+      step: 6.57,
+    },
   },
   {
-    kind: "the fill of the line holding the equation, as tall as Word's maths face",
-    route: "Outside (W15-H): the equation's height is the maths engine's",
-    holds: (difference) => difference.token === 'Ze1' && difference.property.startsWith('fill'),
-    largest: {},
-  },
-  {
+    // Word's fill reaches past a border's spacing above and below as it does across, and the spacing
+    // is in whole points; a filled label stands between the two preformatted blocks, so the step over
+    // it is the panels'.
     kind: 'panels: a fill above and below its text, and the steps about it',
     route: "Word's side, a slice of its own",
     holds: (difference, facts) =>
       (difference.property.startsWith('fill') && facts.filled(difference.token)) ||
       (difference.property.startsWith('step') &&
-        (facts.filled(difference.token) || facts.filled(stepFrom(difference) ?? ''))),
-    largest: {},
+        (either(difference, facts.filled) ||
+          (difference.token === 'Zf3' && stepFrom(difference) === 'Zf1' && facts.filled('Zf2')))),
+    largest: {
+      'fill bottom': 1.62,
+      'fill left': 1.86,
+      'fill right': 2.04,
+      'fill top': 3.66,
+      step: 4.38,
+    },
   },
   {
+    // Word sets a number's space suffix in Arial whatever the heading's face, and the number at a size
+    // in half points. The space in the number's own text is set in the face (tried in W15.2), but Word's
+    // paragraph-number reference then prints it after the number in every reference to the heading,
+    // and a Hebrew heading's in Times New Roman: the Word check went red five times.
     kind: "a heading's start after its number",
-    route: "Word's side, open: Word sets the space after a number in Arial",
+    route: "Word's side, open: a suffix Word sets in Arial",
     holds: (difference) => difference.property === 'start' && /^Zh/.test(difference.token),
-    largest: {},
+    largest: { start: 6.25 },
   },
   {
-    kind: 'where a line set to the centre or the end starts, at sizes Word rounds to half points',
-    route: "Ken's: Word sets text in half points",
+    // Word sets a size in half points, 12.25pt at 12.5: a line's length moves with it, and so where a
+    // line set to the centre or the end starts, and where an image after words on its line stands.
+    kind: 'where a line set to the centre or the end starts, and an image after words, at sizes Word rounds to half points',
+    route: "W15.3 or Ken's: sizes in half points in every output",
     holds: (difference, facts) =>
-      /start$/.test(difference.property) &&
-      ['centre', 'end'].includes(
-        facts.aligned(
-          ({ 'image 3': 'Zi1', 'image 4': 'Zi2' } as Record<string, string>)[difference.token] ??
-            difference.token,
-        ),
-      ),
-    largest: {},
+      (/start$/.test(difference.property) &&
+        ['centre', 'end'].includes(
+          facts.aligned(IMAGE_LINES[difference.token] ?? difference.token),
+        )) ||
+      (difference.property === 'start' && IMAGE_LINES[difference.token] !== undefined),
+    largest: { start: 2.5 },
   },
 ];
 
@@ -529,7 +601,7 @@ describe.runIf(WORD_CHECK)('Word measured against the PDF, where Word is (W15.2)
     expect(new Set(exported.map((each) => `${each.version} ${each.build}`)).size).toBe(1);
   });
 
-  it('sets what it measures where the PDF sets it, under eight themes - each length within half a point, and each face, weight, posture, colour, underline and fill exactly - but the maths face STY-060 approves for Word and what W15.2 leaves, each kind named and none larger than measured', async ({
+  it('sets what it measures where the PDF sets it, under eight themes - each length within half a point, and each face, weight, posture, colour, underline and fill exactly - but the maths face approved for Word and what W15.2 leaves, each kind named and none larger than measured', async ({
     task,
   }) => {
     const found: (Difference & { theme: string; left: string | null })[] = [];

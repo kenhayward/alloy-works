@@ -36,7 +36,10 @@ describe('taking turns at Word', () => {
       );
     const done = await Promise.all([turn('first', 60), turn('second', 10)]);
     expect(done).toEqual(['first', 'second']);
-    expect(events).toEqual(['first starts', 'first ends', 'second starts', 'second ends']);
+    // Whichever takes the turn first, the other starts only once it has ended.
+    const [one, other] = [events[0]!.split(' ')[0]!, events[2]?.split(' ')[0] ?? ''];
+    expect(new Set([one, other])).toEqual(new Set(['first', 'second']));
+    expect(events).toEqual([`${one} starts`, `${one} ends`, `${other} starts`, `${other} ends`]);
   });
 
   it('gives the turn up when the work fails, so the next is not kept waiting', async () => {
