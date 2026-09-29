@@ -258,6 +258,8 @@ Only these could change the plan; everything else is built as written.
 - **PUB-104 is not claimed.** Its statement asks for the review whenever the engine, the template or
   the pipeline changes; the guide makes it before each release, so a change merged between releases
   waits for it. publishing.md names the gap; superseding PUB-104 with a per-release row is Ken's.
+  **Since 2026-09-29 Ken has decided it**: PUB-105 supersedes PUB-104 with the review before each
+  release (issue #344), and publishing.md claims PUB-105, verified by attestation as CNT-177 is.
 
 ## W13.3: The budgets
 

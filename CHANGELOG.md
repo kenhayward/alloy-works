@@ -3,6 +3,18 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.124.2 - 2026-09-29 (PR #TBD)
+
+### Changed
+
+- **The accessibility review of published PDFs is made before each release.** A person checks the
+  parts of the PDF accessibility standard that no automatic check can judge - reading order, headings,
+  tables, lists, figures' descriptions, languages and bookmarks - on the set of documents every
+  publishing change is tested against. The requirement asked for that review on every change to how a
+  PDF is made, which would have put a person on most changes; it now asks for it before each release,
+  as the editor's own accessibility audit is made, and each release records who made it and when.
+  Every PDF is still checked automatically when it is published (issue #344).
+
 ## 0.124.1 - 2026-09-29 (PR #337)
 
 ### Fixed

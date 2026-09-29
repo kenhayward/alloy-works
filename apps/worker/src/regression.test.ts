@@ -67,7 +67,7 @@ import { temmlOutput } from '../../../packages/domain/src/content/admission/temm
 
 const fonts = await loadPinnedFonts();
 // Every PDF the corpus compiles is kept in ALLOY_CORPUS_PDFS where it is set, named by its case, for the
-// Matterhorn review a person makes on them (PUB-104, docs/guides/auditing-a-release.md).
+// Matterhorn review a person makes on them (PUB-105, docs/guides/auditing-a-release.md).
 const typst = keepingEach(
   createTypst({ binary: typstBinaryPath(), fonts }),
   process.env['ALLOY_CORPUS_PDFS'],
