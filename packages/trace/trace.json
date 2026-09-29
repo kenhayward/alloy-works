@@ -17096,9 +17096,15 @@
       "kind": "title"
     },
     {
+      "id": "API-062",
+      "file": "apps/service/src/app.test.ts",
+      "line": 103,
+      "kind": "title"
+    },
+    {
       "id": "IAM-053",
       "file": "apps/service/src/app.test.ts",
-      "line": 126,
+      "line": 170,
       "kind": "title"
     },
     {
@@ -18400,7 +18406,13 @@
     {
       "id": "API-012",
       "file": "packages/api-contract/src/openapi.test.ts",
-      "line": 35,
+      "line": 108,
+      "kind": "title"
+    },
+    {
+      "id": "API-062",
+      "file": "packages/api-contract/src/openapi.test.ts",
+      "line": 8,
       "kind": "title"
     },
     {
@@ -20339,6 +20351,12 @@
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
       "line": 244,
+      "kind": "title"
+    },
+    {
+      "id": "API-062",
+      "file": "tests/browser/src/api-documentation.test.ts",
+      "line": 48,
       "kind": "title"
     },
     {

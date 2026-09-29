@@ -6,7 +6,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Whether the service is up. Answers on any hostname */
+        /**
+         * Whether the service is up. Answers on any hostname
+         * @description Use this check to see whether the service process answers requests. It does not test an environment or its dependencies.
+         */
         get: operations["getHealth"];
         put?: never;
         post?: never;
@@ -23,7 +26,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The caller's own answer for every permission on a target */
+        /**
+         * The caller's own answer for every permission on a target
+         * @description Ask whether the caller may perform each permission on a tenant, space or artifact target. The answer includes token scope restrictions when called with a token.
+         */
         get: operations["getAccess"];
         put?: never;
         post?: never;
@@ -40,7 +46,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Every permission a principal has on a target, and the grants and level behind each */
+        /**
+         * Every permission a principal has on a target, and the grants and level behind each
+         * @description For an administrator, explain each permission a named principal has on a target and the grants and levels behind the answer.
+         */
         get: operations["explainAccess"];
         put?: never;
         post?: never;
@@ -57,7 +66,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** An upload the caller made: its state, and its asset version once ready */
+        /**
+         * An upload the caller made: its state, and its asset version once ready
+         * @description Reads the state of an upload the caller created and, once ingestion completes, the resulting asset version.
+         */
         get: operations["getAssetUpload"];
         put?: never;
         post?: never;
@@ -75,7 +87,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Fill an upload with its image's bytes, which are checked before anything may place it */
+        /**
+         * Fill an upload with its image's bytes, which are checked before anything may place it
+         * @description Sends the image bytes for an existing upload. Only PNG and JPEG images admitted by the ingest worker become assets.
+         */
         put: operations["putAssetUploadBytes"];
         post?: never;
         delete?: never;
@@ -91,7 +106,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** An asset version's recorded properties */
+        /**
+         * An asset version's recorded properties
+         * @description Reads the recorded properties of an asset version that the caller may access.
+         */
         get: operations["getAssetVersion"];
         put?: never;
         post?: never;
@@ -108,7 +126,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** An asset version's image, as it was uploaded */
+        /**
+         * An asset version's image, as it was uploaded
+         * @description Returns the stored image bytes of a readable asset version. Use the response media type as supplied.
+         */
         get: operations["getAssetVersionContent"];
         put?: never;
         post?: never;
@@ -125,7 +146,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The components the caller may read, a page at a time */
+        /**
+         * The components the caller may read, a page at a time
+         * @description Lists only components the caller can read, in stable cursor pages. Send the returned next cursor to continue the same listing.
+         */
         get: operations["listComponents"];
         put?: never;
         post?: never;
@@ -142,7 +166,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A component at its latest version, whether the caller may edit it, and its lock */
+        /**
+         * A component at its latest version, whether the caller may edit it, and its lock
+         * @description Opens the latest component version with the caller’s editing permissions and current lock. Use its version when submitting a change.
+         */
         get: operations["getComponent"];
         put?: never;
         post?: never;
@@ -159,7 +186,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The caller's own retained iterations of the component, newest first, while their session holds the lock */
+        /**
+         * The caller's own retained iterations of the component, newest first, while their session holds the lock
+         * @description Lists the caller’s retained editing iterations while their session holds the component lock. Iterations are working saves, not released versions.
+         */
         get: operations["listIterations"];
         put?: never;
         post?: never;
@@ -176,7 +206,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** One of the caller's own retained iterations, content and values, while their session holds the lock */
+        /**
+         * One of the caller's own retained iterations, content and values, while their session holds the lock
+         * @description Reads one retained editing iteration, including its content and values. The caller must still hold the editing lock.
+         */
         get: operations["getIteration"];
         put?: never;
         post?: never;
@@ -194,7 +227,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Save the session's whole content as an iteration */
+        /**
+         * Save the session's whole content as an iteration
+         * @description Saves the complete component content for the named editing session and sequence. An editing lock and the version precondition still apply.
+         */
         put: operations["saveIteration"];
         post?: never;
         delete?: never;
@@ -212,9 +248,15 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Claim the lock for an editing session, or move it to this one */
+        /**
+         * Claim the lock for an editing session, or move it to this one
+         * @description Claims or moves the editing lock to the caller’s session. Another holder’s live lock is not overridden.
+         */
         post: operations["claimLock"];
-        /** Done editing: cut a version of what changed, then release the lock */
+        /**
+         * Done editing: cut a version of what changed, then release the lock
+         * @description Finishes an editing session, cutting a version if its content changed, then releases the lock.
+         */
         delete: operations["releaseLock"];
         options?: never;
         head?: never;
@@ -228,10 +270,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A component's versions, newest first, a page at a time */
+        /**
+         * A component's versions, newest first, a page at a time
+         * @description Lists released component versions newest first using an opaque cursor. It does not include working iterations.
+         */
         get: operations["listComponentVersions"];
         put?: never;
-        /** Save version: cut a version from the session's latest iteration */
+        /**
+         * Save version: cut a version from the session's latest iteration
+         * @description Cuts a released version from the editing session’s latest saved iteration. The component lock and version precondition apply.
+         */
         post: operations["cutVersion"];
         delete?: never;
         options?: never;
@@ -246,10 +294,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Every field, metadata schema and component type at its latest version */
+        /**
+         * Every field, metadata schema and component type at its latest version
+         * @description Lists current field, metadata schema and component type definitions. A later version can change the current shape.
+         */
         get: operations["listDefinitions"];
         put?: never;
-        /** Make a field, a metadata schema or a component type, at version 0.1 */
+        /**
+         * Make a field, a metadata schema or a component type, at version 0.1
+         * @description Creates one definition at version 0.1. Its kind determines which field, schema or component type structure is required.
+         */
         post: operations["createDefinition"];
         delete?: never;
         options?: never;
@@ -264,7 +318,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A definition at its latest version */
+        /**
+         * A definition at its latest version
+         * @description Returns the current version of a definition so it can be read or used as a precondition for an update.
+         */
         get: operations["getDefinition"];
         put?: never;
         post?: never;
@@ -283,7 +340,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Cut a definition's next version from the one the caller opened */
+        /**
+         * Cut a definition's next version from the one the caller opened
+         * @description Records the next definition version based on the version the caller opened.
+         */
         post: operations["recordDefinitionVersion"];
         delete?: never;
         options?: never;
@@ -298,7 +358,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The documents the caller may read, a page at a time */
+        /**
+         * The documents the caller may read, a page at a time
+         * @description Lists documents the caller can read with stable cursor paging, filters and facets.
+         */
         get: operations["listDocuments"];
         put?: never;
         post?: never;
@@ -315,7 +378,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A document at its latest version, and whether the caller may restructure it */
+        /**
+         * A document at its latest version, and whether the caller may restructure it
+         * @description Returns the latest document version, including its outline and whether the caller can restructure it.
+         */
         get: operations["getDocument"];
         put?: never;
         post?: never;
@@ -332,7 +398,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** What each occurrence of the latest version contributes, as the caller is shown it */
+        /**
+         * What each occurrence of the latest version contributes, as the caller is shown it
+         * @description Shows what each occurrence contributes to the current document, subject to the caller’s readable set.
+         */
         get: operations["getContributions"];
         put?: never;
         post?: never;
@@ -349,7 +418,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The latest version's numbering, as the caller is shown it */
+        /**
+         * The latest version's numbering, as the caller is shown it
+         * @description Returns current section, figure, table and equation numbering using the document’s publishing layout.
+         */
         get: operations["getNumbering"];
         put?: never;
         post?: never;
@@ -368,7 +440,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Apply one operation to the outline, as one version */
+        /**
+         * Apply one operation to the outline, as one version
+         * @description Applies one outline operation and records one new document version. Supply the version that was read to avoid overwriting concurrent work.
+         */
         post: operations["editOutline"];
         delete?: never;
         options?: never;
@@ -383,7 +458,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The theme and layout a document is published under, which its text is shown in */
+        /**
+         * The theme and layout a document is published under, which its text is shown in
+         * @description Returns the theme and layout used to publish this document so a reader can present its text consistently.
+         */
         get: operations["getDocumentPresentation"];
         put?: never;
         post?: never;
@@ -402,7 +480,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Preview the latest version of this document as a PDF, kept an hour for the caller */
+        /**
+         * Preview the latest version of this document as a PDF, kept an hour for the caller
+         * @description Queues a short-lived PDF preview of the latest document version for the caller. Follow the returned request to completion.
+         */
         post: operations["requestPreview"];
         delete?: never;
         options?: never;
@@ -417,10 +498,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The document's publications the caller may read, a page at a time */
+        /**
+         * The document's publications the caller may read, a page at a time
+         * @description Lists the readable publications of one document in stable cursor pages.
+         */
         get: operations["listPublications"];
         put?: never;
-        /** Publish the latest version of this document */
+        /**
+         * Publish the latest version of this document
+         * @description Queues publication of a named document version in the requested output formats. A worker produces the outputs asynchronously.
+         */
         post: operations["requestPublication"];
         delete?: never;
         options?: never;
@@ -435,7 +522,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The text of every component the latest version places, as the caller is shown it */
+        /**
+         * The text of every component the latest version places, as the caller is shown it
+         * @description Reads the text of components placed by the latest document version, filtered by what the caller may read.
+         */
         get: operations["getDocumentTexts"];
         put?: never;
         post?: never;
@@ -453,7 +543,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Write the document's own values, whole, as one version with the outline unchanged */
+        /**
+         * Write the document's own values, whole, as one version with the outline unchanged
+         * @description Replaces the document’s own values as one version while leaving its outline unchanged. Supply the version previously read.
+         */
         put: operations["recordDocumentValues"];
         post?: never;
         delete?: never;
@@ -469,10 +562,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The grants made at one level, a page at a time */
+        /**
+         * The grants made at one level, a page at a time
+         * @description Lists access grants at one level using an opaque cursor.
+         */
         get: operations["listGrants"];
         put?: never;
-        /** Grant a role to a person or a group at one level, as an allow or a denial */
+        /**
+         * Grant a role to a person or a group at one level, as an allow or a denial
+         * @description Grants or denies a role to a person or group at the selected level. The resulting access decision takes effect on the next request.
+         */
         post: operations["makeGrant"];
         delete?: never;
         options?: never;
@@ -490,7 +589,10 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Remove a grant, unless it is the last that keeps this environment administered */
+        /**
+         * Remove a grant, unless it is the last that keeps this environment administered
+         * @description Removes a grant unless it is needed to keep the environment administered.
+         */
         delete: operations["removeGrant"];
         options?: never;
         head?: never;
@@ -504,10 +606,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Every group, with its members, a page at a time */
+        /**
+         * Every group, with its members, a page at a time
+         * @description Lists the environment’s groups and their members in cursor pages.
+         */
         get: operations["listGroups"];
         put?: never;
-        /** Make a group: the environment's own, or one standing for a value the provider asserts */
+        /**
+         * Make a group: the environment's own, or one standing for a value the provider asserts
+         * @description Creates a local group or a group representing a value asserted by the identity provider.
+         */
         post: operations["createGroup"];
         delete?: never;
         options?: never;
@@ -525,7 +633,10 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Delete a group, with its memberships and every grant it holds */
+        /**
+         * Delete a group, with its memberships and every grant it holds
+         * @description Deletes a group together with its memberships and grants. This changes access immediately.
+         */
         delete: operations["deleteGroup"];
         options?: never;
         head?: never;
@@ -540,7 +651,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Set the members of one of the environment's own groups */
+        /**
+         * Set the members of one of the environment's own groups
+         * @description Replaces the members of a local group with the given set. Provider-backed membership is managed at sign-in instead.
+         */
         put: operations["setGroupMembers"];
         post?: never;
         delete?: never;
@@ -556,10 +670,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Every invitation, waiting or accepted, a page at a time */
+        /**
+         * Every invitation, waiting or accepted, a page at a time
+         * @description Lists waiting and accepted invitations in stable cursor pages.
+         */
         get: operations["listInvitations"];
         put?: never;
-        /** Invite an address, so the person can be granted access before they first sign in */
+        /**
+         * Invite an address, so the person can be granted access before they first sign in
+         * @description Invites an address so access can be granted before the person first signs in.
+         */
         post: operations["invite"];
         delete?: never;
         options?: never;
@@ -577,7 +697,10 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Withdraw an invitation nobody has accepted, with its person and their grants */
+        /**
+         * Withdraw an invitation nobody has accepted, with its person and their grants
+         * @description Withdraws an unaccepted invitation and removes the principal and grants created for it.
+         */
         delete: operations["withdrawInvitation"];
         options?: never;
         head?: never;
@@ -591,7 +714,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Who is signed in, and to which environment */
+        /**
+         * Who is signed in, and to which environment
+         * @description Returns the person represented by the supplied personal token or signed-in session and the environment in which that credential was issued.
+         */
         get: operations["getMe"];
         put?: never;
         post?: never;
@@ -608,7 +734,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The environment's people, by name, for a user field */
+        /**
+         * The environment's people, by name, for a user field
+         * @description Lists people in the environment by name for a user selection field.
+         */
         get: operations["listPeople"];
         put?: never;
         post?: never;
@@ -625,7 +754,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The environment's theme and layout, which a component on its own is shown in */
+        /**
+         * The environment's theme and layout, which a component on its own is shown in
+         * @description Returns the environment’s default presentation used for a component outside a document.
+         */
         get: operations["getPresentation"];
         put?: never;
         post?: never;
@@ -642,7 +774,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The people a grant can name: everybody who has signed in or been invited */
+        /**
+         * The people a grant can name: everybody who has signed in or been invited
+         * @description Lists people already signed in or invited who may be named by an access grant.
+         */
         get: operations["listPrincipals"];
         put?: never;
         post?: never;
@@ -659,7 +794,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A person's tokens, a page at a time, never their secrets: an administrator's */
+        /**
+         * A person's tokens, a page at a time, never their secrets: an administrator's
+         * @description For an environment administrator, lists another person’s tokens without revealing their secrets.
+         */
         get: operations["listPrincipalTokens"];
         put?: never;
         post?: never;
@@ -679,7 +817,10 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Revoke a person's token, as an administrator: the next request with it is refused */
+        /**
+         * Revoke a person's token, as an administrator: the next request with it is refused
+         * @description For an environment administrator, revokes a person’s token. The next request with it is refused.
+         */
         delete: operations["revokePrincipalToken"];
         options?: never;
         head?: never;
@@ -693,7 +834,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A publish or a preview the caller asked for: its state, every failure, and its publication once made, or its PDF while it lasts */
+        /**
+         * A publish or a preview the caller asked for: its state, every failure, and its publication once made, or its PDF while it lasts
+         * @description Polls a publish or preview request for its state, failure and completed result. A preview PDF expires after its retention period.
+         */
         get: operations["getPublicationRequest"];
         put?: never;
         post?: never;
@@ -710,7 +854,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Every publication the caller may read, of every document, a page at a time */
+        /**
+         * Every publication the caller may read, of every document, a page at a time
+         * @description Lists all publications the caller may read across documents and spaces.
+         */
         get: operations["listPublicationsEverywhere"];
         put?: never;
         post?: never;
@@ -727,7 +874,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A publication: its record, and a link to each output */
+        /**
+         * A publication: its record, and a link to each output
+         * @description Returns a completed publication’s immutable record and links to its outputs.
+         */
         get: operations["getPublication"];
         put?: never;
         post?: never;
@@ -744,7 +894,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The roles a grant can name, with what each holds, a page at a time */
+        /**
+         * The roles a grant can name, with what each holds, a page at a time
+         * @description Lists roles available to grants and the permissions each role holds.
+         */
         get: operations["listRoles"];
         put?: never;
         post?: never;
@@ -763,7 +916,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Ask for a sample PDF of this environment, which a worker makes */
+        /**
+         * Ask for a sample PDF of this environment, which a worker makes
+         * @description Development scaffolding: queues a sample PDF for the signed-in session. Personal API tokens cannot submit this job.
+         */
         post: operations["requestSample"];
         delete?: never;
         options?: never;
@@ -778,7 +934,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** How a sample is coming along, and where to fetch it */
+        /**
+         * How a sample is coming along, and where to fetch it
+         * @description Development scaffolding: polls a sample PDF request until a download is ready.
+         */
         get: operations["getSample"];
         put?: never;
         post?: never;
@@ -795,7 +954,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Everything the caller may read that holds these words, a page at a time */
+        /**
+         * Everything the caller may read that holds these words, a page at a time
+         * @description Searches only content the caller may read, with facets and stable cursor paging.
+         */
         get: operations["search"];
         put?: never;
         post?: never;
@@ -812,9 +974,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The environment's editing settings: how long saved changes are kept */
+        /**
+         * The environment's editing settings: how long saved changes are kept
+         * @description Reads the environment’s editing settings, including how long saved changes are retained.
+         */
         get: operations["getEditingSettings"];
-        /** Change the environment's editing settings */
+        /**
+         * Change the environment's editing settings
+         * @description Changes the environment’s editing settings. Existing saved changes follow the new policy.
+         */
         put: operations["setEditingSettings"];
         post?: never;
         delete?: never;
@@ -830,7 +998,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Begin signing in with a Google account, by way of the one sign-in address */
+        /**
+         * Begin signing in with a Google account, by way of the one sign-in address
+         * @description Browser sign-in route. Redirects through the product’s shared Google sign-in address.
+         */
         get: operations["startGoogleSignIn"];
         put?: never;
         post?: never;
@@ -847,7 +1018,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Where Google returns, at the sign-in address only; hands the sign-in to its environment */
+        /**
+         * Where Google returns, at the sign-in address only; hands the sign-in to its environment
+         * @description Google callback at the shared sign-in address. It hands a one-time code to the environment that started the flow.
+         */
         get: operations["finishGoogleSignIn"];
         put?: never;
         post?: never;
@@ -864,7 +1038,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Redeems the one-time code from the sign-in address, and signs in */
+        /**
+         * Redeems the one-time code from the sign-in address, and signs in
+         * @description Redeems a one-time code at the environment hostname and creates a signed-in browser session.
+         */
         get: operations["completeGoogleSignIn"];
         put?: never;
         post?: never;
@@ -881,7 +1058,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Begin signing in with the organisation's identity provider */
+        /**
+         * Begin signing in with the organisation's identity provider
+         * @description Browser sign-in route. Redirects to the organisation’s identity provider; an API token cannot complete this flow.
+         */
         get: operations["startOrganisationSignIn"];
         put?: never;
         post?: never;
@@ -898,7 +1078,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Where the identity provider returns; completes the sign-in */
+        /**
+         * Where the identity provider returns; completes the sign-in
+         * @description Browser callback for the organisation’s identity provider. The browser’s sign-in attempt and returned state must match.
+         */
         get: operations["finishOrganisationSignIn"];
         put?: never;
         post?: never;
@@ -917,7 +1100,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** End this session, wherever it is in use */
+        /**
+         * End this session, wherever it is in use
+         * @description Ends the current browser session wherever it is in use. A personal API token cannot sign out a session.
+         */
         post: operations["signOut"];
         delete?: never;
         options?: never;
@@ -932,7 +1118,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The spaces the caller may read, and whether they may create a component in each */
+        /**
+         * The spaces the caller may read, and whether they may create a component in each
+         * @description Lists spaces the caller can read and whether they may create a component in each.
+         */
         get: operations["listSpaces"];
         put?: never;
         post?: never;
@@ -951,7 +1140,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Make an upload in this space, with the description its image will carry */
+        /**
+         * Make an upload in this space, with the description its image will carry
+         * @description Starts an image upload in a space and records its description or decorative status. Upload bytes separately to finish it.
+         */
         post: operations["createAssetUpload"];
         delete?: never;
         options?: never;
@@ -966,7 +1158,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The component types a component created here may take, with the default marked */
+        /**
+         * The component types a component created here may take, with the default marked
+         * @description Lists component types usable for a new component in this space, marking the default.
+         */
         get: operations["listComponentTypes"];
         put?: never;
         post?: never;
@@ -985,7 +1180,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Create a component in this space, at version 0.1 */
+        /**
+         * Create a component in this space, at version 0.1
+         * @description Creates a component in the named space at its first version. The caller needs permission to create there.
+         */
         post: operations["createComponent"];
         delete?: never;
         options?: never;
@@ -1002,7 +1200,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Create a document in this space, at version 0.1: an empty outline, or its template's starting one */
+        /**
+         * Create a document in this space, at version 0.1: an empty outline, or its template's starting one
+         * @description Creates a document at version 0.1 in the named space, either empty or from a template’s starting outline.
+         */
         post: operations["createDocument"];
         delete?: never;
         options?: never;
@@ -1019,7 +1220,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Make a template in this space, at version 0.1 */
+        /**
+         * Make a template in this space, at version 0.1
+         * @description Creates a template in the named space at its first version.
+         */
         post: operations["createTemplate"];
         delete?: never;
         options?: never;
@@ -1034,7 +1238,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** What is happening in this environment, as it happens */
+        /**
+         * What is happening in this environment, as it happens
+         * @description Opens a browser-session-only event stream with a snapshot and subsequent changes. See the separate realtime protocol for event meanings and delivery guarantees.
+         */
         get: operations["openStream"];
         put?: never;
         post?: never;
@@ -1051,7 +1258,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The templates the caller may read, each with its name, space and latest version */
+        /**
+         * The templates the caller may read, each with its name, space and latest version
+         * @description Lists readable templates with their name, space and latest version.
+         */
         get: operations["listTemplates"];
         put?: never;
         post?: never;
@@ -1068,7 +1278,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A template at its latest version */
+        /**
+         * A template at its latest version
+         * @description Opens the current template version and its starting document structure.
+         */
         get: operations["getTemplate"];
         put?: never;
         post?: never;
@@ -1087,7 +1300,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Cut a template's next version from the one the caller opened */
+        /**
+         * Cut a template's next version from the one the caller opened
+         * @description Records a new template version based on the version the caller opened.
+         */
         post: operations["recordTemplateVersion"];
         delete?: never;
         options?: never;
@@ -1102,7 +1318,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The environment this address serves, as its sign-in page shows it */
+        /**
+         * The environment this address serves, as its sign-in page shows it
+         * @description Returns the environment selected by the request hostname. Check this before using a token or making a change, especially when you have both production and sandbox environments.
+         */
         get: operations["getTenant"];
         put?: never;
         post?: never;
@@ -1119,10 +1338,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The caller's own tokens, a page at a time, never their secrets */
+        /**
+         * The caller's own tokens, a page at a time, never their secrets
+         * @description Lists the caller’s own personal tokens and their expiry and last use. Token secrets are never returned by a listing.
+         */
         get: operations["listTokens"];
         put?: never;
-        /** Issue the caller a token that acts as them, masked to its scopes, until it expires */
+        /**
+         * Issue the caller a token that acts as them, masked to its scopes, until it expires
+         * @description Issues a personal token with explicit permission scopes and an expiry. The secret appears once in this response and cannot be recovered later.
+         */
         post: operations["createToken"];
         delete?: never;
         options?: never;
@@ -1140,7 +1365,10 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Revoke one of the caller's own tokens: the next request with it is refused */
+        /**
+         * Revoke one of the caller's own tokens: the next request with it is refused
+         * @description Revokes one of the caller’s personal tokens. The next request presenting it is refused.
+         */
         delete: operations["revokeToken"];
         options?: never;
         head?: never;
@@ -1475,7 +1703,10 @@ export interface operations {
     getHealth: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -1484,9 +1715,16 @@ export interface operations {
             /** @description The service is up */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "status": "ok"
+                     *     }
+                     */
                     "application/json": {
                         /** @constant */
                         status: "ok";
@@ -1496,6 +1734,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1518,7 +1758,10 @@ export interface operations {
             query: {
                 target: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -1527,9 +1770,17 @@ export interface operations {
             /** @description Every permission, allowed or not */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "target": "example",
+                     *       "permissions": []
+                     *     }
+                     */
                     "application/json": {
                         target: string;
                         permissions: {
@@ -1543,6 +1794,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1561,6 +1814,8 @@ export interface operations {
             /** @description The caller may address the target but lacks the permission this needs */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1579,6 +1834,8 @@ export interface operations {
             /** @description No such target in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1597,6 +1854,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1620,7 +1879,10 @@ export interface operations {
                 principal: string;
                 target: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -1629,9 +1891,18 @@ export interface operations {
             /** @description Every permission, with its explanation */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "principal": "example",
+                     *       "target": "example",
+                     *       "permissions": []
+                     *     }
+                     */
                     "application/json": {
                         principal: string;
                         target: string;
@@ -1672,6 +1943,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1690,6 +1963,8 @@ export interface operations {
             /** @description The caller may address the target but lacks the permission this needs */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1708,6 +1983,8 @@ export interface operations {
             /** @description No such target in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1726,6 +2003,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1746,7 +2025,10 @@ export interface operations {
     getAssetUpload: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -1757,9 +2039,20 @@ export interface operations {
             /** @description The upload */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": "example",
+                     *       "state": "awaiting",
+                     *       "reason": "not_permitted",
+                     *       "assetVersion": "example"
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         space: string;
@@ -1778,6 +2071,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1796,6 +2091,8 @@ export interface operations {
             /** @description No such upload, or one somebody else made */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1814,6 +2111,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1834,7 +2133,10 @@ export interface operations {
     putAssetUploadBytes: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -1849,9 +2151,20 @@ export interface operations {
             /** @description The upload, checking */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": "example",
+                     *       "state": "awaiting",
+                     *       "reason": "not_permitted",
+                     *       "assetVersion": "example"
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         space: string;
@@ -1870,6 +2183,8 @@ export interface operations {
             /** @description `asset_format_not_permitted`: not a PNG or a JPEG, read from its bytes; `asset_unreadable`: its structure is not what its format permits. The upload is refused */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1888,6 +2203,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1906,6 +2223,8 @@ export interface operations {
             /** @description No such upload, or one somebody else made */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1924,6 +2243,8 @@ export interface operations {
             /** @description `asset_upload_filled`: the upload already has its bytes */
             409: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1942,6 +2263,8 @@ export interface operations {
             /** @description `asset_too_large`: more pixels than an image may have, which refuses the upload; or more bytes, read no further, which leaves it awaiting a smaller file */
             413: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1960,6 +2283,8 @@ export interface operations {
             /** @description `asset_bytes_expected`: the body is not application/octet-stream. Nothing is read, and the upload still awaits its bytes */
             415: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1978,6 +2303,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1998,7 +2325,10 @@ export interface operations {
     getAssetVersion: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -2009,9 +2339,27 @@ export interface operations {
             /** @description The asset version */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "asset": "example",
+                     *       "number": "example",
+                     *       "format": "png",
+                     *       "bytes": -9007199254740991,
+                     *       "width": -9007199254740991,
+                     *       "height": -9007199254740991,
+                     *       "resolution": 0,
+                     *       "alternative": {
+                     *         "text": "example",
+                     *         "language": "en"
+                     *       }
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         asset: string;
@@ -2036,6 +2384,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2054,6 +2404,8 @@ export interface operations {
             /** @description Never answered: an asset the caller may read is one they may open */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2072,6 +2424,8 @@ export interface operations {
             /** @description No such thing in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2090,6 +2444,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2110,7 +2466,10 @@ export interface operations {
     getAssetVersionContent: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -2121,6 +2480,8 @@ export interface operations {
             /** @description The bytes, never sniffed and never run: a version never changes, so they may be kept for a year */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2131,6 +2492,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2149,6 +2512,8 @@ export interface operations {
             /** @description Never answered: an asset the caller may read is one they may open */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2167,6 +2532,8 @@ export interface operations {
             /** @description No such thing in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2185,6 +2552,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2212,7 +2581,10 @@ export interface operations {
                 types?: string;
                 spaces?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2221,9 +2593,23 @@ export interface operations {
             /** @description A page of components */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example",
+                     *       "total": -9007199254740991,
+                     *       "spaces": [],
+                     *       "facets": {
+                     *         "spaces": [],
+                     *         "types": []
+                     *       }
+                     *     }
+                     */
                     "application/json": {
                         items: {
                             id: string;
@@ -2277,6 +2663,8 @@ export interface operations {
             /** @description A cursor this listing did not give out, a limit outside 1 to 100, or spaces that are not a list of ids */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2295,6 +2683,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2313,6 +2703,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2335,7 +2727,10 @@ export interface operations {
             query?: {
                 session?: string & (unknown & unknown);
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path: {
                 id: string;
             };
@@ -2346,9 +2741,49 @@ export interface operations {
             /** @description The component */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "content": {},
+                     *       "mayEdit": false,
+                     *       "lock": {
+                     *         "holder": {
+                     *           "id": "example",
+                     *           "name": "example"
+                     *         },
+                     *         "expectedRelease": "example",
+                     *         "yours": false,
+                     *         "session": "example"
+                     *       },
+                     *       "unsaved": {
+                     *         "savedAt": "example"
+                     *       },
+                     *       "sequence": -9007199254740991,
+                     *       "type": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "fields": [],
+                     *       "schemas": [],
+                     *       "values": {}
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         space: {
@@ -2429,6 +2864,8 @@ export interface operations {
             /** @description A session that is not a lowercase uuid */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2447,6 +2884,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2465,6 +2904,8 @@ export interface operations {
             /** @description Never answered: a component the caller may read is one they may open */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2483,6 +2924,8 @@ export interface operations {
             /** @description No such component in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2501,6 +2944,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2525,7 +2970,10 @@ export interface operations {
                 cursor?: string;
                 limit?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path: {
                 id: string;
             };
@@ -2536,9 +2984,17 @@ export interface operations {
             /** @description A page of iterations, with no content */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example"
+                     *     }
+                     */
                     "application/json": {
                         /** @description Newest first, with no content (RC-E) */
                         items: {
@@ -2563,6 +3019,8 @@ export interface operations {
             /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2581,6 +3039,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2599,6 +3059,8 @@ export interface operations {
             /** @description The caller may read the component but may not edit it */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2617,6 +3079,8 @@ export interface operations {
             /** @description No such component in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2635,6 +3099,8 @@ export interface operations {
             /** @description lock_held or lock_required: the session named does not hold the lock */
             409: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2676,6 +3142,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2698,7 +3166,10 @@ export interface operations {
             query: {
                 session: string & (unknown & unknown);
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path: {
                 id: string;
                 iteration: string & (unknown & unknown);
@@ -2710,9 +3181,25 @@ export interface operations {
             /** @description The iteration, whole */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "session": "example",
+                     *       "sequence": -9007199254740991,
+                     *       "createdAt": "example",
+                     *       "openedFrom": {
+                     *         "id": "example",
+                     *         "number": "example"
+                     *       },
+                     *       "content": {},
+                     *       "values": {}
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         /** @description The editing session that wrote it, one of the caller's own */
@@ -2740,6 +3227,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2758,6 +3247,8 @@ export interface operations {
             /** @description The caller may read the component but may not edit it */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2776,6 +3267,8 @@ export interface operations {
             /** @description No such component or iteration, or one that is not the caller's own or is no longer kept */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2794,6 +3287,8 @@ export interface operations {
             /** @description lock_held or lock_required: the session named does not hold the lock */
             409: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2835,6 +3330,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2855,7 +3352,12 @@ export interface operations {
     saveIteration: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
                 session: string & (unknown & unknown);
@@ -2865,6 +3367,12 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "openedFrom": "00000000-0000-4000-8000-000000000001",
+                 *       "content": {}
+                 *     }
+                 */
                 "application/json": {
                     /** @description The version the session opened from, which must be the latest */
                     openedFrom: string & (unknown & unknown);
@@ -2883,9 +3391,27 @@ export interface operations {
             /** @description Accepted, and the lock extended */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "sequence": 0,
+                     *       "lock": {
+                     *         "holder": {
+                     *           "id": "example",
+                     *           "name": "example"
+                     *         },
+                     *         "expectedRelease": "example",
+                     *         "yours": false,
+                     *         "session": "example"
+                     *       }
+                     *     }
+                     */
                     "application/json": {
                         sequence: number;
                         lock: {
@@ -2906,6 +3432,8 @@ export interface operations {
             /** @description `content_invalid`: the content is not a document the model accepts; `values_invalid`: a fixed value changed, a value of the wrong type, or a user this environment does not hold */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2947,6 +3475,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2965,6 +3495,8 @@ export interface operations {
             /** @description The caller may read the component but may not edit it */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2983,6 +3515,8 @@ export interface operations {
             /** @description No such component in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3001,6 +3535,8 @@ export interface operations {
             /** @description lock_held, lock_required, version_precondition, iteration_stale or iteration_conflict */
             409: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3042,6 +3578,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3062,7 +3600,12 @@ export interface operations {
     claimLock: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path: {
                 id: string;
             };
@@ -3070,6 +3613,11 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "session": "00000000-0000-4000-8000-000000000001"
+                 *     }
+                 */
                 "application/json": {
                     session: string & (unknown & unknown);
                     /** @description Continue here: move a lock this principal holds elsewhere */
@@ -3081,9 +3629,26 @@ export interface operations {
             /** @description Claimed */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "lock": {
+                     *         "holder": {
+                     *           "id": "example",
+                     *           "name": "example"
+                     *         },
+                     *         "expectedRelease": "example",
+                     *         "yours": false,
+                     *         "session": "example"
+                     *       }
+                     *     }
+                     */
                     "application/json": {
                         lock: {
                             holder: {
@@ -3103,6 +3668,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3121,6 +3688,8 @@ export interface operations {
             /** @description The caller may read the component but may not edit it */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3139,6 +3708,8 @@ export interface operations {
             /** @description No such component in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3157,6 +3728,8 @@ export interface operations {
             /** @description lock_held, lock_required, version_precondition, iteration_stale or iteration_conflict */
             409: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3198,6 +3771,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3221,7 +3796,12 @@ export interface operations {
                 session: string & (unknown & unknown);
                 openedFrom: string & (unknown & unknown);
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path: {
                 id: string;
             };
@@ -3232,9 +3812,25 @@ export interface operations {
             /** @description Released, with the version cut or the latest */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "outcome": "cut",
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       }
+                     *     }
+                     */
                     "application/json": {
                         /**
                          * @description unchanged: nothing differed from the latest version, which is not an error
@@ -3257,6 +3853,8 @@ export interface operations {
             /** @description `values_invalid`: a fixed value differs from its default at the cut */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3298,6 +3896,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3316,6 +3916,8 @@ export interface operations {
             /** @description The caller may read the component but may not edit it */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3334,6 +3936,8 @@ export interface operations {
             /** @description No such component in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3352,6 +3956,8 @@ export interface operations {
             /** @description lock_held, lock_required, version_precondition, iteration_stale or iteration_conflict */
             409: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3393,6 +3999,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3416,7 +4024,10 @@ export interface operations {
                 cursor?: string;
                 limit?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path: {
                 id: string;
             };
@@ -3427,9 +4038,17 @@ export interface operations {
             /** @description A page of its versions, newest first */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example"
+                     *     }
+                     */
                     "application/json": {
                         items: {
                             id: string;
@@ -3451,6 +4070,8 @@ export interface operations {
             /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3469,6 +4090,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3487,6 +4110,8 @@ export interface operations {
             /** @description Never answered: a component the caller may read is one whose versions they may read */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3505,6 +4130,8 @@ export interface operations {
             /** @description No such component in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3523,6 +4150,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3543,7 +4172,12 @@ export interface operations {
     cutVersion: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path: {
                 id: string;
             };
@@ -3551,6 +4185,12 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "session": "00000000-0000-4000-8000-000000000001",
+                 *       "openedFrom": "00000000-0000-4000-8000-000000000001"
+                 *     }
+                 */
                 "application/json": {
                     session: string & (unknown & unknown);
                     openedFrom: string & (unknown & unknown);
@@ -3562,9 +4202,25 @@ export interface operations {
             /** @description Cut, or nothing to cut */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "outcome": "cut",
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       }
+                     *     }
+                     */
                     "application/json": {
                         /**
                          * @description unchanged: nothing differed from the latest version, which is not an error
@@ -3587,6 +4243,8 @@ export interface operations {
             /** @description `values_invalid`: a fixed value differs from its default at the cut */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3628,6 +4286,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3646,6 +4306,8 @@ export interface operations {
             /** @description The caller may read the component but may not edit it */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3664,6 +4326,8 @@ export interface operations {
             /** @description No such component in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3682,6 +4346,8 @@ export interface operations {
             /** @description lock_held, lock_required, version_precondition, iteration_stale or iteration_conflict */
             409: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3723,6 +4389,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3746,7 +4414,10 @@ export interface operations {
                 cursor?: string;
                 limit?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -3755,9 +4426,17 @@ export interface operations {
             /** @description A page of the definitions, by name */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example"
+                     *     }
+                     */
                     "application/json": {
                         items: {
                             id: string;
@@ -3777,6 +4456,8 @@ export interface operations {
             /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3795,6 +4476,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3813,6 +4496,8 @@ export interface operations {
             /** @description The caller may not read the environment */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3831,6 +4516,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3851,12 +4538,29 @@ export interface operations {
     createDefinition: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path?: never;
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "kind": "field",
+                 *       "definition": {
+                 *         "schemaVersion": 1,
+                 *         "name": "Study number",
+                 *         "dataType": "text",
+                 *         "multiplicity": "one",
+                 *         "validation": {}
+                 *       }
+                 *     }
+                 */
                 "application/json": {
                     /** @enum {string} */
                     kind: "field" | "metadataSchema" | "componentType";
@@ -3870,9 +4574,27 @@ export interface operations {
             /** @description Made, at version 0.1 */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "kind": "field",
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "definition": {}
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         /** @enum {string} */
@@ -3896,6 +4618,8 @@ export interface operations {
             /** @description `definition_unresolved`, `definition_invalid`, `definition_name_taken` (MET-031), `assignment_conflict` (MET-008), `schema_conflict` (MET-040) or `field_breaks_default` (MET-037); or `invalid_request`, a payload that is not a definition of its kind */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3963,6 +4687,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3981,6 +4707,8 @@ export interface operations {
             /** @description The caller may not manage definitions */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -3999,6 +4727,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4019,7 +4749,10 @@ export interface operations {
     getDefinition: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -4030,9 +4763,25 @@ export interface operations {
             /** @description The definition */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "kind": "field",
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "definition": {}
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         /** @enum {string} */
@@ -4056,6 +4805,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4074,6 +4825,8 @@ export interface operations {
             /** @description Never answered: a definition the caller may not read is not found */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4092,6 +4845,8 @@ export interface operations {
             /** @description No such definition in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4110,6 +4865,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4130,7 +4887,12 @@ export interface operations {
     recordDefinitionVersion: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -4138,6 +4900,12 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "openedFrom": "00000000-0000-4000-8000-000000000001",
+                 *       "definition": {}
+                 *     }
+                 */
                 "application/json": {
                     openedFrom: string & (unknown & unknown);
                     definition: {
@@ -4150,9 +4918,27 @@ export interface operations {
             /** @description The definition at its latest version: the one cut, or the one before where nothing changed */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "kind": "field",
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "definition": {}
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         /** @enum {string} */
@@ -4176,6 +4962,8 @@ export interface operations {
             /** @description `definition_unresolved`, `definition_invalid`, `definition_name_taken` (MET-031), `assignment_conflict` (MET-008), `schema_conflict` (MET-040) or `field_breaks_default` (MET-037); or `invalid_request`, a payload that is not a definition of its kind */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4243,6 +5031,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4261,6 +5051,8 @@ export interface operations {
             /** @description The caller may read the definition but not manage it */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4279,6 +5071,8 @@ export interface operations {
             /** @description No such definition in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4297,6 +5091,8 @@ export interface operations {
             /** @description `version_precondition`: the definition has a newer version than the one named */
             409: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4364,6 +5160,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4391,7 +5189,10 @@ export interface operations {
                 spaces?: string;
                 publishing?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -4400,9 +5201,22 @@ export interface operations {
             /** @description A page of documents */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example",
+                     *       "total": -9007199254740991,
+                     *       "facets": {
+                     *         "spaces": [],
+                     *         "publishing": []
+                     *       }
+                     *     }
+                     */
                     "application/json": {
                         items: {
                             id: string;
@@ -4450,6 +5264,8 @@ export interface operations {
             /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4468,6 +5284,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4486,6 +5304,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4506,7 +5326,10 @@ export interface operations {
     getDocument: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -4517,9 +5340,55 @@ export interface operations {
             /** @description The document */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "outline": {},
+                     *       "values": {},
+                     *       "fields": {
+                     *         "document": [],
+                     *         "section": []
+                     *       },
+                     *       "schemas": [],
+                     *       "template": {
+                     *         "id": "example",
+                     *         "name": "example",
+                     *         "version": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         }
+                     *       },
+                     *       "mayEdit": false,
+                     *       "mayPublish": false,
+                     *       "layout": {
+                     *         "id": "example",
+                     *         "version": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         },
+                     *         "language": "en",
+                     *         "scheme": {},
+                     *         "words": {},
+                     *         "formats": []
+                     *       }
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         space: {
@@ -4627,6 +5496,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4645,6 +5516,8 @@ export interface operations {
             /** @description Never answered: a document the caller may read is one they may open */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4663,6 +5536,8 @@ export interface operations {
             /** @description No such document in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4681,6 +5556,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4701,7 +5578,10 @@ export interface operations {
     getContributions: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -4712,9 +5592,22 @@ export interface operations {
             /** @description Each occurrence and its contributions */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "document": "example",
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example"
+                     *       },
+                     *       "occurrences": [],
+                     *       "versions": []
+                     *     }
+                     */
                     "application/json": {
                         document: string;
                         version: {
@@ -4743,6 +5636,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4761,6 +5656,8 @@ export interface operations {
             /** @description Never answered: a document the caller may read is one whose contributions they may read */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4779,6 +5676,8 @@ export interface operations {
             /** @description No such document in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4797,6 +5696,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4817,7 +5718,10 @@ export interface operations {
     getNumbering: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -4828,9 +5732,30 @@ export interface operations {
             /** @description The numbering table */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "document": "example",
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example"
+                     *       },
+                     *       "scheme": "example",
+                     *       "layout": {
+                     *         "id": "example",
+                     *         "version": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         }
+                     *       },
+                     *       "occurrences": [],
+                     *       "entries": []
+                     *     }
+                     */
                     "application/json": {
                         document: string;
                         version: {
@@ -4875,6 +5800,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4893,6 +5820,8 @@ export interface operations {
             /** @description Never answered: a document the caller may read is one they may number */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4911,6 +5840,8 @@ export interface operations {
             /** @description No such document in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4929,6 +5860,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -4949,7 +5882,12 @@ export interface operations {
     editOutline: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -4957,6 +5895,15 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "openedFrom": "00000000-0000-4000-8000-000000000001",
+                 *       "operation": {
+                 *         "operation": "remove",
+                 *         "node": "aaaaaaaaaaaaaaaaaaaaaaaaaa"
+                 *       }
+                 *     }
+                 */
                 "application/json": {
                     /** @description The version the outline was read at, which must be the latest */
                     openedFrom: string & (unknown & unknown);
@@ -5322,9 +6269,57 @@ export interface operations {
             /** @description Applied, or nothing changed: the document at its latest version */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "outline": {},
+                     *       "values": {},
+                     *       "fields": {
+                     *         "document": [],
+                     *         "section": []
+                     *       },
+                     *       "schemas": [],
+                     *       "template": {
+                     *         "id": "example",
+                     *         "name": "example",
+                     *         "version": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         }
+                     *       },
+                     *       "mayEdit": false,
+                     *       "mayPublish": false,
+                     *       "layout": {
+                     *         "id": "example",
+                     *         "version": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         },
+                     *         "language": "en",
+                     *         "scheme": {},
+                     *         "words": {},
+                     *         "formats": []
+                     *       }
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         space: {
@@ -5432,6 +6427,8 @@ export interface operations {
             /** @description outline_invalid: the operation does not apply to the latest outline; values_invalid: a section's value does not fit; values_unresolved: the document's template no longer resolves; or invalid_request: a body this route does not accept */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -5573,6 +6570,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -5591,6 +6590,8 @@ export interface operations {
             /** @description The caller may read the document but may not edit it */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -5609,6 +6610,8 @@ export interface operations {
             /** @description No such document in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -5627,6 +6630,8 @@ export interface operations {
             /** @description version_precondition: the outline has changed since it was read */
             409: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -5768,6 +6773,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -5788,7 +6795,10 @@ export interface operations {
     getDocumentPresentation: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -5799,9 +6809,25 @@ export interface operations {
             /** @description The theme and the frame */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "theme": {
+                     *         "versionId": "example",
+                     *         "number": "example",
+                     *         "content": {},
+                     *         "catalogues": []
+                     *       },
+                     *       "frame": {
+                     *         "measure": 0,
+                     *         "textHeight": 0
+                     *       }
+                     *     }
+                     */
                     "application/json": {
                         theme: {
                             versionId: string;
@@ -5833,6 +6859,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -5851,6 +6879,8 @@ export interface operations {
             /** @description Never answered: a document the caller may read is one they may see set */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -5869,6 +6899,8 @@ export interface operations {
             /** @description No such document, or not one the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -5887,6 +6919,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -5907,7 +6941,12 @@ export interface operations {
     requestPreview: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -5915,6 +6954,11 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "version": "00000000-0000-4000-8000-000000000001"
+                 *     }
+                 */
                 "application/json": {
                     /** @description The document version the caller is previewing, which must be the latest */
                     version: string & (unknown & unknown);
@@ -5925,9 +6969,28 @@ export interface operations {
             /** @description Asked for, and queued; follow the request for its outcome and its PDF */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "document": "example",
+                     *       "kind": "publish",
+                     *       "state": "queued",
+                     *       "failures": [],
+                     *       "publication": "example",
+                     *       "preview": {
+                     *         "view": "example",
+                     *         "download": "example",
+                     *         "expiresAt": "example"
+                     *       }
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         document: string;
@@ -5967,6 +7030,8 @@ export interface operations {
             /** @description `format_unsupported`: the layout makes no PDF; `layout_language`: the document is not in its layout's language; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6013,6 +7078,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6031,6 +7098,8 @@ export interface operations {
             /** @description Never answered: a document the caller may read is one they may preview */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6049,6 +7118,8 @@ export interface operations {
             /** @description No such document in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6067,6 +7138,8 @@ export interface operations {
             /** @description `version_precondition`: the document has a newer version than the one named, which `current` names */
             409: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6113,6 +7186,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6140,7 +7215,10 @@ export interface operations {
                 spaces?: string;
                 documents?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -6151,9 +7229,22 @@ export interface operations {
             /** @description A page of the publications */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example",
+                     *       "total": -9007199254740991,
+                     *       "facets": {
+                     *         "spaces": [],
+                     *         "documents": []
+                     *       }
+                     *     }
+                     */
                     "application/json": {
                         items: {
                             id: string;
@@ -6201,6 +7292,8 @@ export interface operations {
             /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6219,6 +7312,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6237,6 +7332,8 @@ export interface operations {
             /** @description Never answered: a document the caller may read is one whose listing they may read */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6255,6 +7352,8 @@ export interface operations {
             /** @description No such document in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6273,6 +7372,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6293,7 +7394,12 @@ export interface operations {
     requestPublication: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -6301,6 +7407,14 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "version": "00000000-0000-4000-8000-000000000001",
+                 *       "formats": [
+                 *         "example"
+                 *       ]
+                 *     }
+                 */
                 "application/json": {
                     /** @description The document version the caller is publishing, which must be the latest */
                     version: string & (unknown & unknown);
@@ -6313,9 +7427,28 @@ export interface operations {
             /** @description Asked for, and queued; follow the request for its outcome */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "document": "example",
+                     *       "kind": "publish",
+                     *       "state": "queued",
+                     *       "failures": [],
+                     *       "publication": "example",
+                     *       "preview": {
+                     *         "view": "example",
+                     *         "download": "example",
+                     *         "expiresAt": "example"
+                     *       }
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         document: string;
@@ -6355,6 +7488,8 @@ export interface operations {
             /** @description `format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6401,6 +7536,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6419,6 +7556,8 @@ export interface operations {
             /** @description The caller may read the document but may not publish it */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6437,6 +7576,8 @@ export interface operations {
             /** @description No such document in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6455,6 +7596,8 @@ export interface operations {
             /** @description `version_precondition`: the document has a newer version than the one named, which `current` names */
             409: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6501,6 +7644,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6521,7 +7666,10 @@ export interface operations {
     getDocumentTexts: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -6532,9 +7680,22 @@ export interface operations {
             /** @description Each occurrence, and each version it resolved to with its content */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "document": "example",
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example"
+                     *       },
+                     *       "occurrences": [],
+                     *       "versions": []
+                     *     }
+                     */
                     "application/json": {
                         document: string;
                         version: {
@@ -6577,6 +7738,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6595,6 +7758,8 @@ export interface operations {
             /** @description Never answered: a document the caller may read is one whose text they may read, as far as they may read it */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6613,6 +7778,8 @@ export interface operations {
             /** @description No such document in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6631,6 +7798,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6651,7 +7820,12 @@ export interface operations {
     recordDocumentValues: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -6659,6 +7833,12 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "openedFrom": "00000000-0000-4000-8000-000000000001",
+                 *       "values": {}
+                 *     }
+                 */
                 "application/json": {
                     /** @description The version the values were read at, which must be the latest */
                     openedFrom: string & (unknown & unknown);
@@ -6673,9 +7853,57 @@ export interface operations {
             /** @description Written, or nothing changed: the document at its latest version */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "outline": {},
+                     *       "values": {},
+                     *       "fields": {
+                     *         "document": [],
+                     *         "section": []
+                     *       },
+                     *       "schemas": [],
+                     *       "template": {
+                     *         "id": "example",
+                     *         "name": "example",
+                     *         "version": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         }
+                     *       },
+                     *       "mayEdit": false,
+                     *       "mayPublish": false,
+                     *       "layout": {
+                     *         "id": "example",
+                     *         "version": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         },
+                     *         "language": "en",
+                     *         "scheme": {},
+                     *         "words": {},
+                     *         "formats": []
+                     *       }
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         space: {
@@ -6783,6 +8011,8 @@ export interface operations {
             /** @description values_invalid: a value is for a field the document's template does not apply, or does not fit its field; values_unresolved: the template no longer resolves; or invalid_request: a body this route does not accept */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6924,6 +8154,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6942,6 +8174,8 @@ export interface operations {
             /** @description The caller may read the document but may not edit it */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6960,6 +8194,8 @@ export interface operations {
             /** @description No such document in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -6978,6 +8214,8 @@ export interface operations {
             /** @description version_precondition: the document has changed since it was read */
             409: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7119,6 +8357,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7147,7 +8387,10 @@ export interface operations {
                 types?: string;
                 spaces?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -7156,9 +8399,17 @@ export interface operations {
             /** @description A page of grants */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example"
+                     *     }
+                     */
                     "application/json": {
                         items: {
                             id: string;
@@ -7200,6 +8451,8 @@ export interface operations {
             /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7218,6 +8471,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7236,6 +8491,8 @@ export interface operations {
             /** @description The caller may read the level but may not administer it, or anything above it */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7254,6 +8511,8 @@ export interface operations {
             /** @description No such level or grant in this environment, or none the caller may see */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7272,6 +8531,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7292,12 +8553,27 @@ export interface operations {
     makeGrant: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path?: never;
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "role": "00000000-0000-4000-8000-000000000001",
+                 *       "subject": {
+                 *         "principal": "00000000-0000-4000-8000-000000000001"
+                 *       },
+                 *       "level": "tenant",
+                 *       "effect": "allow"
+                 *     }
+                 */
                 "application/json": {
                     /** @description The role granted */
                     role: string & (unknown & unknown);
@@ -7321,9 +8597,40 @@ export interface operations {
             /** @description Granted */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "grant": {
+                     *         "id": "example",
+                     *         "role": {
+                     *           "id": "example",
+                     *           "name": "example"
+                     *         },
+                     *         "subject": {
+                     *           "principal": {
+                     *             "id": "example",
+                     *             "name": "example",
+                     *             "email": "example"
+                     *           }
+                     *         },
+                     *         "level": "tenant",
+                     *         "effect": "allow",
+                     *         "expiresAt": "example",
+                     *         "extends": "example",
+                     *         "grantedBy": {
+                     *           "id": "example",
+                     *           "name": "example"
+                     *         },
+                     *         "grantedAt": "example"
+                     *       }
+                     *     }
+                     */
                     "application/json": {
                         grant: {
                             id: string;
@@ -7363,6 +8670,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7381,6 +8690,8 @@ export interface operations {
             /** @description The caller may read the level but may not administer it, or anything above it */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7399,6 +8710,8 @@ export interface operations {
             /** @description No such level or grant in this environment, or none the caller may see */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7417,6 +8730,8 @@ export interface operations {
             /** @description grant_duplicate, grant_allow_without_read, grant_administer_denied_at_tenant, grant_role_missing, grant_subject_missing, grant_external_at_tenant, grant_external_capped or grant_external_past_cap */
             409: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7435,6 +8750,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7455,7 +8772,12 @@ export interface operations {
     removeGrant: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -7466,9 +8788,18 @@ export interface operations {
             /** @description Removed */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "removed": "example"
+                     *     }
+                     */
                     "application/json": {
                         /** @description The grant removed */
                         removed: string;
@@ -7478,6 +8809,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7496,6 +8829,8 @@ export interface operations {
             /** @description No such level or grant in this environment, or none the caller may see */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7514,6 +8849,8 @@ export interface operations {
             /** @description grant_last_administrator */
             409: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7532,6 +8869,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7559,7 +8898,10 @@ export interface operations {
                 types?: string;
                 spaces?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -7568,9 +8910,17 @@ export interface operations {
             /** @description A page of groups */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example"
+                     *     }
+                     */
                     "application/json": {
                         items: {
                             id: string;
@@ -7596,6 +8946,8 @@ export interface operations {
             /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7614,6 +8966,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7632,6 +8986,8 @@ export interface operations {
             /** @description The caller may not administer this environment */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7650,6 +9006,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7670,12 +9028,22 @@ export interface operations {
     createGroup: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path?: never;
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "name": "example"
+                 *     }
+                 */
                 "application/json": {
                     /** @description 1 to 80 characters, trimmed; unique here */
                     name: string;
@@ -7688,9 +9056,24 @@ export interface operations {
             /** @description Made, with no members yet */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "group": {
+                     *         "id": "example",
+                     *         "name": "example",
+                     *         "source": "tenant",
+                     *         "providerValue": "example",
+                     *         "members": []
+                     *       }
+                     *     }
+                     */
                     "application/json": {
                         group: {
                             id: string;
@@ -7714,6 +9097,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7732,6 +9117,8 @@ export interface operations {
             /** @description The caller may not administer this environment */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7750,6 +9137,8 @@ export interface operations {
             /** @description group_name_taken or group_value_taken */
             409: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7768,6 +9157,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7788,7 +9179,12 @@ export interface operations {
     deleteGroup: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -7799,9 +9195,18 @@ export interface operations {
             /** @description Deleted */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "deleted": "example"
+                     *     }
+                     */
                     "application/json": {
                         /** @description The group deleted, with its memberships and every grant it held */
                         deleted: string;
@@ -7811,6 +9216,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7829,6 +9236,8 @@ export interface operations {
             /** @description The caller may not administer this environment */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7847,6 +9256,8 @@ export interface operations {
             /** @description No such group in this environment */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7865,6 +9276,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7885,7 +9298,12 @@ export interface operations {
     setGroupMembers: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -7893,6 +9311,11 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "principals": []
+                 *     }
+                 */
                 "application/json": {
                     /** @description Every member the group is to have: those not named are removed. Each counted once */
                     principals: (string & (unknown & unknown))[];
@@ -7903,9 +9326,24 @@ export interface operations {
             /** @description Set: the group as it now is */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "group": {
+                     *         "id": "example",
+                     *         "name": "example",
+                     *         "source": "tenant",
+                     *         "providerValue": "example",
+                     *         "members": []
+                     *       }
+                     *     }
+                     */
                     "application/json": {
                         group: {
                             id: string;
@@ -7929,6 +9367,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7947,6 +9387,8 @@ export interface operations {
             /** @description The caller may not administer this environment */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7965,6 +9407,8 @@ export interface operations {
             /** @description No such group in this environment */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -7983,6 +9427,8 @@ export interface operations {
             /** @description group_from_provider, group_member_missing, grant_external_at_tenant, grant_external_capped or grant_external_past_cap */
             409: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8001,6 +9447,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8028,7 +9476,10 @@ export interface operations {
                 types?: string;
                 spaces?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -8037,9 +9488,17 @@ export interface operations {
             /** @description A page of invitations */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example"
+                     *     }
+                     */
                     "application/json": {
                         items: {
                             id: string;
@@ -8070,6 +9529,8 @@ export interface operations {
             /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8088,6 +9549,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8106,6 +9569,8 @@ export interface operations {
             /** @description The caller may not administer this environment */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8124,6 +9589,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8144,12 +9611,22 @@ export interface operations {
     invite: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path?: never;
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "email": "developer@example.com"
+                 *     }
+                 */
                 "application/json": {
                     /**
                      * Format: email
@@ -8165,9 +9642,33 @@ export interface operations {
             /** @description Invited, or the waiting invitation renewed */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "invitation": {
+                     *         "id": "example",
+                     *         "email": "example",
+                     *         "person": "example",
+                     *         "external": false,
+                     *         "invitedBy": {
+                     *           "id": "example",
+                     *           "name": "example"
+                     *         },
+                     *         "createdAt": "example",
+                     *         "expiresAt": "example",
+                     *         "lapsed": false,
+                     *         "acceptedAt": "example",
+                     *         "acceptedThrough": "organisation"
+                     *       },
+                     *       "renewed": false
+                     *     }
+                     */
                     "application/json": {
                         invitation: {
                             id: string;
@@ -8198,6 +9699,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8216,6 +9719,8 @@ export interface operations {
             /** @description The caller may not administer this environment */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8234,6 +9739,8 @@ export interface operations {
             /** @description invitation_signed_in or invitation_kind_differs */
             409: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8252,6 +9759,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8272,7 +9781,12 @@ export interface operations {
     withdrawInvitation: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -8283,9 +9797,18 @@ export interface operations {
             /** @description Withdrawn */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "withdrawn": "example"
+                     *     }
+                     */
                     "application/json": {
                         /** @description The invitation withdrawn, with its person and their grants */
                         withdrawn: string;
@@ -8295,6 +9818,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8313,6 +9838,8 @@ export interface operations {
             /** @description The caller may not administer this environment */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8331,6 +9858,8 @@ export interface operations {
             /** @description No such invitation in this environment */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8349,6 +9878,8 @@ export interface operations {
             /** @description invitation_accepted */
             409: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8367,6 +9898,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8387,7 +9920,10 @@ export interface operations {
     getMe: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -8396,9 +9932,19 @@ export interface operations {
             /** @description The signed-in principal */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "displayName": "example",
+                     *       "email": "example",
+                     *       "environment": "example"
+                     *     }
+                     */
                     "application/json": {
                         /** @description The principal, stable for as long as the environment exists */
                         id: string;
@@ -8412,6 +9958,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8430,6 +9978,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8453,7 +10003,10 @@ export interface operations {
                 cursor?: string;
                 limit?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -8462,9 +10015,17 @@ export interface operations {
             /** @description A page of the people, by when each first appeared, invited or signed in */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example"
+                     *     }
+                     */
                     "application/json": {
                         items: {
                             id: string;
@@ -8478,6 +10039,8 @@ export interface operations {
             /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8496,6 +10059,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8514,6 +10079,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8534,7 +10101,10 @@ export interface operations {
     getPresentation: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -8543,9 +10113,25 @@ export interface operations {
             /** @description The theme and the frame */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "theme": {
+                     *         "versionId": "example",
+                     *         "number": "example",
+                     *         "content": {},
+                     *         "catalogues": []
+                     *       },
+                     *       "frame": {
+                     *         "measure": 0,
+                     *         "textHeight": 0
+                     *       }
+                     *     }
+                     */
                     "application/json": {
                         theme: {
                             versionId: string;
@@ -8577,6 +10163,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8595,6 +10183,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8623,7 +10213,10 @@ export interface operations {
                 types?: string;
                 spaces?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -8632,9 +10225,17 @@ export interface operations {
             /** @description A page of people */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example"
+                     *     }
+                     */
                     "application/json": {
                         items: {
                             id: string;
@@ -8656,6 +10257,8 @@ export interface operations {
             /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8674,6 +10277,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8692,6 +10297,8 @@ export interface operations {
             /** @description The caller may read the level but may not administer it, or anything above it */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8710,6 +10317,8 @@ export interface operations {
             /** @description No such level or grant in this environment, or none the caller may see */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8728,6 +10337,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8751,7 +10362,10 @@ export interface operations {
                 cursor?: string;
                 limit?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -8762,9 +10376,17 @@ export interface operations {
             /** @description A page of the person's tokens */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example"
+                     *     }
+                     */
                     "application/json": {
                         items: {
                             id: string;
@@ -8786,6 +10408,8 @@ export interface operations {
             /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8804,6 +10428,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8822,6 +10448,8 @@ export interface operations {
             /** @description forbidden: the caller may not administer this environment; or token_not_allowed: an administrator manages tokens with a signed-in session, never a token */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8840,6 +10468,8 @@ export interface operations {
             /** @description No such person in this environment */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8858,6 +10488,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8878,7 +10510,12 @@ export interface operations {
     revokePrincipalToken: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
                 token: string & (unknown & unknown);
@@ -8890,9 +10527,18 @@ export interface operations {
             /** @description Revoked */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "revoked": "example"
+                     *     }
+                     */
                     "application/json": {
                         /** @description The token revoked */
                         revoked: string;
@@ -8902,6 +10548,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8920,6 +10568,8 @@ export interface operations {
             /** @description forbidden: the caller may not administer this environment; or token_not_allowed: an administrator manages tokens with a signed-in session, never a token */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8938,6 +10588,8 @@ export interface operations {
             /** @description No such token of that person's in this environment */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8956,6 +10608,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -8976,7 +10630,10 @@ export interface operations {
     getPublicationRequest: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -8987,9 +10644,26 @@ export interface operations {
             /** @description The request */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "document": "example",
+                     *       "kind": "publish",
+                     *       "state": "queued",
+                     *       "failures": [],
+                     *       "publication": "example",
+                     *       "preview": {
+                     *         "view": "example",
+                     *         "download": "example",
+                     *         "expiresAt": "example"
+                     *       }
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         document: string;
@@ -9029,6 +10703,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9047,6 +10723,8 @@ export interface operations {
             /** @description No such request, or one somebody else asked for */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9065,6 +10743,8 @@ export interface operations {
             /** @description A done preview, and this environment has nowhere to keep documents yet */
             503: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9083,6 +10763,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9110,7 +10792,10 @@ export interface operations {
                 spaces?: string;
                 documents?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -9119,9 +10804,22 @@ export interface operations {
             /** @description A page of the publications */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example",
+                     *       "total": -9007199254740991,
+                     *       "facets": {
+                     *         "spaces": [],
+                     *         "documents": []
+                     *       }
+                     *     }
+                     */
                     "application/json": {
                         items: {
                             id: string;
@@ -9169,6 +10867,8 @@ export interface operations {
             /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9187,6 +10887,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9205,6 +10907,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9225,7 +10929,10 @@ export interface operations {
     getPublication: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -9236,9 +10943,39 @@ export interface operations {
             /** @description The publication */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "document": "example",
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example"
+                     *       },
+                     *       "title": "example",
+                     *       "publisher": {
+                     *         "id": "example",
+                     *         "displayName": "example"
+                     *       },
+                     *       "publishedAt": "example",
+                     *       "approval": "none",
+                     *       "formats": [],
+                     *       "engine": {
+                     *         "name": "typst",
+                     *         "version": "example"
+                     *       },
+                     *       "template": {
+                     *         "name": "publication",
+                     *         "version": -9007199254740991
+                     *       },
+                     *       "pipeline": "example",
+                     *       "outputs": []
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         document: string;
@@ -9435,6 +11172,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9453,6 +11192,8 @@ export interface operations {
             /** @description Never answered: a publication the caller may read is one they may open */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9471,6 +11212,8 @@ export interface operations {
             /** @description No such publication in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9489,6 +11232,8 @@ export interface operations {
             /** @description This environment has nowhere to keep documents yet */
             503: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9507,6 +11252,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9535,7 +11282,10 @@ export interface operations {
                 types?: string;
                 spaces?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -9544,9 +11294,17 @@ export interface operations {
             /** @description A page of roles */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example"
+                     *     }
+                     */
                     "application/json": {
                         items: {
                             id: string;
@@ -9561,6 +11319,8 @@ export interface operations {
             /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9579,6 +11339,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9597,6 +11359,8 @@ export interface operations {
             /** @description The caller may read the level but may not administer it, or anything above it */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9615,6 +11379,8 @@ export interface operations {
             /** @description No such level or grant in this environment, or none the caller may see */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9633,6 +11399,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9653,7 +11421,12 @@ export interface operations {
     requestSample: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -9662,9 +11435,20 @@ export interface operations {
             /** @description Asked for; a worker will make it */
             202: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "state": "queued",
+                     *       "download": "example"
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         /** @enum {string} */
@@ -9677,6 +11461,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9695,6 +11481,8 @@ export interface operations {
             /** @description token_not_allowed: this takes a signed-in session, never a token */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9713,6 +11501,8 @@ export interface operations {
             /** @description This environment has nowhere to keep documents yet */
             503: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9731,6 +11521,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9751,7 +11543,10 @@ export interface operations {
     getSample: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path: {
                 sampleId: string;
             };
@@ -9762,9 +11557,18 @@ export interface operations {
             /** @description The sample */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "state": "queued",
+                     *       "download": "example"
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         /** @enum {string} */
@@ -9777,6 +11581,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9795,6 +11601,8 @@ export interface operations {
             /** @description No such sample in this environment */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9813,6 +11621,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9845,7 +11655,10 @@ export interface operations {
                 changedTo?: string;
                 value?: string | string[];
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -9854,9 +11667,17 @@ export interface operations {
             /** @description The results, or by name why there are none to give */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "outcome": "empty",
+                     *       "message": "example"
+                     *     }
+                     */
                     "application/json": {
                         /** @constant */
                         outcome: "empty";
@@ -9974,6 +11795,8 @@ export interface operations {
             /** @description An offset or a limit out of range, or a filter that is not one */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -9992,6 +11815,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10010,6 +11835,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10030,7 +11857,10 @@ export interface operations {
     getEditingSettings: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -10039,9 +11869,16 @@ export interface operations {
             /** @description The editing settings */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "iterationRetentionDays": 1
+                     *     }
+                     */
                     "application/json": {
                         /** @description How many days an iteration is kept after the next version of its component is made: 1 to 365, 30 unless changed */
                         iterationRetentionDays: number;
@@ -10051,6 +11888,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10069,6 +11908,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10089,12 +11930,22 @@ export interface operations {
     setEditingSettings: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path?: never;
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "iterationRetentionDays": 1
+                 *     }
+                 */
                 "application/json": {
                     /** @description How many days an iteration is kept after the next version of its component is made: 1 to 365, 30 unless changed */
                     iterationRetentionDays: number;
@@ -10105,9 +11956,18 @@ export interface operations {
             /** @description The editing settings, as changed */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "iterationRetentionDays": 1
+                     *     }
+                     */
                     "application/json": {
                         /** @description How many days an iteration is kept after the next version of its component is made: 1 to 365, 30 unless changed */
                         iterationRetentionDays: number;
@@ -10117,6 +11977,8 @@ export interface operations {
             /** @description A window that is not a whole number of days from 1 to 365 */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10135,6 +11997,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10153,6 +12017,8 @@ export interface operations {
             /** @description The caller may not administer this environment */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10171,6 +12037,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10191,7 +12059,10 @@ export interface operations {
     startGoogleSignIn: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -10202,6 +12073,8 @@ export interface operations {
                 headers: {
                     /** @description Where to go next */
                     Location?: string;
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10209,6 +12082,8 @@ export interface operations {
             /** @description This environment does not permit signing in this way */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10227,6 +12102,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10251,7 +12128,10 @@ export interface operations {
                 state?: string;
                 error?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -10262,6 +12142,8 @@ export interface operations {
                 headers: {
                     /** @description Where to go next */
                     Location?: string;
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10269,6 +12151,8 @@ export interface operations {
             /** @description The sign-in could not be completed */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10287,6 +12171,8 @@ export interface operations {
             /** @description This account is not invited to that environment */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10305,6 +12191,8 @@ export interface operations {
             /** @description This is not the sign-in address */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10323,6 +12211,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10345,7 +12235,10 @@ export interface operations {
             query: {
                 code: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -10356,6 +12249,8 @@ export interface operations {
                 headers: {
                     /** @description Where to go next */
                     Location?: string;
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10363,6 +12258,8 @@ export interface operations {
             /** @description The sign-in could not be completed */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10381,6 +12278,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10401,7 +12300,10 @@ export interface operations {
     startOrganisationSignIn: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -10412,6 +12314,8 @@ export interface operations {
                 headers: {
                     /** @description Where to go next */
                     Location?: string;
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10419,6 +12323,8 @@ export interface operations {
             /** @description This environment does not permit signing in this way */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10437,6 +12343,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10461,7 +12369,10 @@ export interface operations {
                 state?: string;
                 error?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -10472,6 +12383,8 @@ export interface operations {
                 headers: {
                     /** @description Where to go next */
                     Location?: string;
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10479,6 +12392,8 @@ export interface operations {
             /** @description The sign-in could not be completed */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10497,6 +12412,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10517,7 +12434,10 @@ export interface operations {
     signOut: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -10526,6 +12446,8 @@ export interface operations {
             /** @description Signed out, everywhere this session was in use */
             204: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -10533,6 +12455,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10551,6 +12475,8 @@ export interface operations {
             /** @description token_not_allowed: this takes a signed-in session, never a token */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10569,6 +12495,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10592,7 +12520,10 @@ export interface operations {
                 cursor?: string;
                 limit?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -10601,9 +12532,17 @@ export interface operations {
             /** @description A page of the spaces, by name */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example"
+                     *     }
+                     */
                     "application/json": {
                         items: {
                             id: string;
@@ -10619,6 +12558,8 @@ export interface operations {
             /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10637,6 +12578,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10655,6 +12598,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10675,7 +12620,12 @@ export interface operations {
     createAssetUpload: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path: {
                 space: string & (unknown & unknown);
             };
@@ -10683,6 +12633,14 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "alternative": {
+                 *         "text": "example",
+                 *         "language": "en"
+                 *       }
+                 *     }
+                 */
                 "application/json": {
                     /** @description The image's default description for somebody who cannot see it, in a language, or null for none */
                     alternative: {
@@ -10696,9 +12654,22 @@ export interface operations {
             /** @description The upload, awaiting its bytes */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": "example",
+                     *       "state": "awaiting",
+                     *       "reason": "not_permitted",
+                     *       "assetVersion": "example"
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         space: string;
@@ -10717,6 +12688,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10735,6 +12708,8 @@ export interface operations {
             /** @description The caller may read the space but not create in it */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10753,6 +12728,8 @@ export interface operations {
             /** @description No such thing in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10771,6 +12748,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10794,7 +12773,10 @@ export interface operations {
                 cursor?: string;
                 limit?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path: {
                 space: string & (unknown & unknown);
             };
@@ -10805,9 +12787,17 @@ export interface operations {
             /** @description A page of the component types, by name */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example"
+                     *     }
+                     */
                     "application/json": {
                         items: {
                             id: string;
@@ -10823,6 +12813,8 @@ export interface operations {
             /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10841,6 +12833,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10859,6 +12853,8 @@ export interface operations {
             /** @description The caller may read the space but may not create in it */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10877,6 +12873,8 @@ export interface operations {
             /** @description No such space in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10895,6 +12893,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -10915,7 +12915,12 @@ export interface operations {
     createComponent: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path: {
                 space: string & (unknown & unknown);
             };
@@ -10923,6 +12928,13 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "title": "example",
+                 *       "language": "en",
+                 *       "direction": "ltr"
+                 *     }
+                 */
                 "application/json": {
                     title: string;
                     language: string;
@@ -10937,9 +12949,51 @@ export interface operations {
             /** @description Created, at version 0.1 */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "content": {},
+                     *       "mayEdit": false,
+                     *       "lock": {
+                     *         "holder": {
+                     *           "id": "example",
+                     *           "name": "example"
+                     *         },
+                     *         "expectedRelease": "example",
+                     *         "yours": false,
+                     *         "session": "example"
+                     *       },
+                     *       "unsaved": {
+                     *         "savedAt": "example"
+                     *       },
+                     *       "sequence": -9007199254740991,
+                     *       "type": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "fields": [],
+                     *       "schemas": [],
+                     *       "values": {}
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         space: {
@@ -11020,6 +13074,8 @@ export interface operations {
             /** @description The title, language or direction is not one the content model accepts */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11038,6 +13094,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11056,6 +13114,8 @@ export interface operations {
             /** @description The caller may read the space but may not create in it */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11074,6 +13134,8 @@ export interface operations {
             /** @description No such space in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11092,6 +13154,8 @@ export interface operations {
             /** @description component_type_missing: no such component type in this environment */
             409: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11110,6 +13174,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11130,7 +13196,12 @@ export interface operations {
     createDocument: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path: {
                 space: string & (unknown & unknown);
             };
@@ -11138,6 +13209,13 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "title": "example",
+                 *       "language": "en",
+                 *       "direction": "ltr"
+                 *     }
+                 */
                 "application/json": {
                     title: string;
                     language: string;
@@ -11152,9 +13230,57 @@ export interface operations {
             /** @description Created, at version 0.1 */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "outline": {},
+                     *       "values": {},
+                     *       "fields": {
+                     *         "document": [],
+                     *         "section": []
+                     *       },
+                     *       "schemas": [],
+                     *       "template": {
+                     *         "id": "example",
+                     *         "name": "example",
+                     *         "version": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         }
+                     *       },
+                     *       "mayEdit": false,
+                     *       "mayPublish": false,
+                     *       "layout": {
+                     *         "id": "example",
+                     *         "version": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         },
+                     *         "language": "en",
+                     *         "scheme": {},
+                     *         "words": {},
+                     *         "formats": []
+                     *       }
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         space: {
@@ -11262,6 +13388,8 @@ export interface operations {
             /** @description The title, language or direction is not one an outline accepts; or `template_unresolved`: a theme, layout, schema or field the template names does not resolve */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11311,6 +13439,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11329,6 +13459,8 @@ export interface operations {
             /** @description The caller may read the space but may not create in it */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11347,6 +13479,8 @@ export interface operations {
             /** @description No such space in this environment, or none the caller may read; or no such template, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11365,6 +13499,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11385,7 +13521,12 @@ export interface operations {
     createTemplate: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path: {
                 space: string & (unknown & unknown);
             };
@@ -11393,6 +13534,25 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "definition": {
+                 *         "schemaVersion": 1,
+                 *         "name": "example",
+                 *         "theme": "00000000-0000-4000-8000-000000000001",
+                 *         "layout": "00000000-0000-4000-8000-000000000001",
+                 *         "schemas": [],
+                 *         "outline": {
+                 *           "sections": []
+                 *         },
+                 *         "changes": {
+                 *           "add": false,
+                 *           "remove": false,
+                 *           "reorder": false
+                 *         }
+                 *       }
+                 *     }
+                 */
                 "application/json": {
                     definition: {
                         /** @constant */
@@ -11424,9 +13584,31 @@ export interface operations {
             /** @description Made, at version 0.1 */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "definition": {},
+                     *       "mayDesign": false
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         space: {
@@ -11454,6 +13636,8 @@ export interface operations {
             /** @description `template_unresolved`: a theme, layout, schema or field it names does not resolve */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11503,6 +13687,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11521,6 +13707,8 @@ export interface operations {
             /** @description The caller may read the space but may not design in it */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11539,6 +13727,8 @@ export interface operations {
             /** @description No such space in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11557,6 +13747,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11577,7 +13769,10 @@ export interface operations {
     openStream: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -11586,6 +13781,8 @@ export interface operations {
             /** @description The stream: a snapshot, then what happens next */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11595,6 +13792,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11613,6 +13812,8 @@ export interface operations {
             /** @description token_not_allowed: this takes a signed-in session, never a token */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11631,6 +13832,8 @@ export interface operations {
             /** @description This environment cannot stream yet */
             503: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11649,6 +13852,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11675,7 +13880,10 @@ export interface operations {
                 order?: "asc" | "desc";
                 spaces?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -11684,9 +13892,21 @@ export interface operations {
             /** @description A page of templates */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example",
+                     *       "total": -9007199254740991,
+                     *       "facets": {
+                     *         "spaces": []
+                     *       }
+                     *     }
+                     */
                     "application/json": {
                         items: {
                             id: string;
@@ -11721,6 +13941,8 @@ export interface operations {
             /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11739,6 +13961,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11757,6 +13981,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11777,7 +14003,10 @@ export interface operations {
     getTemplate: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -11788,9 +14017,29 @@ export interface operations {
             /** @description The template */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "definition": {},
+                     *       "mayDesign": false
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         space: {
@@ -11818,6 +14067,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11836,6 +14087,8 @@ export interface operations {
             /** @description Never answered: a template the caller may not read is not found */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11854,6 +14107,8 @@ export interface operations {
             /** @description No such template in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11872,6 +14127,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -11892,7 +14149,12 @@ export interface operations {
     recordTemplateVersion: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -11900,6 +14162,26 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "openedFrom": "00000000-0000-4000-8000-000000000001",
+                 *       "definition": {
+                 *         "schemaVersion": 1,
+                 *         "name": "example",
+                 *         "theme": "00000000-0000-4000-8000-000000000001",
+                 *         "layout": "00000000-0000-4000-8000-000000000001",
+                 *         "schemas": [],
+                 *         "outline": {
+                 *           "sections": []
+                 *         },
+                 *         "changes": {
+                 *           "add": false,
+                 *           "remove": false,
+                 *           "reorder": false
+                 *         }
+                 *       }
+                 *     }
+                 */
                 "application/json": {
                     openedFrom: string & (unknown & unknown);
                     definition: {
@@ -11932,9 +14214,31 @@ export interface operations {
             /** @description The template at its latest version: the one cut, or the one before where nothing changed */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "definition": {},
+                     *       "mayDesign": false
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         space: {
@@ -11962,6 +14266,8 @@ export interface operations {
             /** @description `template_unresolved`: a theme, layout, schema or field it names does not resolve */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12011,6 +14317,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12029,6 +14337,8 @@ export interface operations {
             /** @description The caller may read the template but may not change it */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12047,6 +14357,8 @@ export interface operations {
             /** @description No such template in this environment, or none the caller may read */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12065,6 +14377,8 @@ export interface operations {
             /** @description `version_precondition`: the template has a newer version than the one named */
             409: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12114,6 +14428,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12134,7 +14450,10 @@ export interface operations {
     getTenant: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -12143,9 +14462,16 @@ export interface operations {
             /** @description The environment */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "name": "example"
+                     *     }
+                     */
                     "application/json": {
                         /** @description What this environment is called, as its own people see it */
                         name: string;
@@ -12155,6 +14481,8 @@ export interface operations {
             /** @description No environment is served at this address */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12173,6 +14501,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12196,7 +14526,10 @@ export interface operations {
                 cursor?: string;
                 limit?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -12205,9 +14538,17 @@ export interface operations {
             /** @description A page of the caller's tokens */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example"
+                     *     }
+                     */
                     "application/json": {
                         items: {
                             id: string;
@@ -12229,6 +14570,8 @@ export interface operations {
             /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12247,6 +14590,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12265,6 +14610,8 @@ export interface operations {
             /** @description token_not_allowed: tokens are managed with a signed-in session, never a token */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12283,6 +14630,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12303,12 +14652,22 @@ export interface operations {
     createToken: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path?: never;
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "name": "example",
+                 *       "scopes": [],
+                 *       "expiresAt": "2026-01-01T00:00:00.000Z"
+                 *     }
+                 */
                 "application/json": {
                     /** @description 1 to 80 characters, trimmed */
                     name: string;
@@ -12326,9 +14685,22 @@ export interface operations {
             /** @description Issued, with its secret, shown this once */
             200: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "name": "example",
+                     *       "scopes": [],
+                     *       "createdAt": "example",
+                     *       "expiresAt": "example",
+                     *       "lastUsedAt": "example",
+                     *       "secret": "example"
+                     *     }
+                     */
                     "application/json": {
                         id: string;
                         /** @description What the person called it, to tell their tokens apart */
@@ -12348,6 +14720,8 @@ export interface operations {
             /** @description invalid_request, or token_expiry_invalid: an expiry past, or more than 365 days away */
             400: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12366,6 +14740,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12384,6 +14760,8 @@ export interface operations {
             /** @description token_not_allowed: tokens are managed with a signed-in session, never a token */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12402,6 +14780,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12422,7 +14802,10 @@ export interface operations {
     revokeToken: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
             path: {
                 id: string & (unknown & unknown);
             };
@@ -12433,6 +14816,8 @@ export interface operations {
             /** @description Revoked */
             204: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -12440,6 +14825,8 @@ export interface operations {
             /** @description No session, or not one this environment issued */
             401: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12458,6 +14845,8 @@ export interface operations {
             /** @description token_not_allowed: tokens are managed with a signed-in session, never a token */
             403: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12476,6 +14865,8 @@ export interface operations {
             /** @description No such token of the caller's in this environment */
             404: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -12494,6 +14885,8 @@ export interface operations {
             /** @description An error, in the one shape every error takes */
             default: {
                 headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
                     [name: string]: unknown;
                 };
                 content: {

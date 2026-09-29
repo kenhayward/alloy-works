@@ -19,7 +19,9 @@ describe('the routes that find and open components', () => {
         document.paths[path]?.get as {
           parameters: { name: string; in: string; required: boolean }[];
         }
-      ).parameters.map(({ name, in: where, required }) => [name, where, required]);
+      ).parameters
+        .filter((parameter) => parameter.in !== 'header')
+        .map(({ name, in: where, required }) => [name, where, required]);
     const paged = [
       ['cursor', 'query', false],
       ['limit', 'query', false],

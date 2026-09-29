@@ -66,8 +66,8 @@ describe('the asset routes (figures 1)', () => {
   });
 
   it('names an asset version route by the version, as the path its target reads', () => {
-    expect(operation('/v1/asset-versions/{id}', 'get').parameters).toEqual([
+    expect(operation('/v1/asset-versions/{id}', 'get').parameters).toContainEqual(
       expect.objectContaining({ name: 'id', in: 'path' }),
-    ]);
+    );
   });
 });
