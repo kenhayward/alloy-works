@@ -42,6 +42,7 @@ exist.
 | [0003](0003-one-renderer-two-deliveries.md)                                     | One renderer, two deliveries                                              | Accepted           |
 | [0004](0004-brand-assets-and-packaging.md)                                      | Brand assets and desktop packaging                                        | Accepted           |
 | [0005](0005-purpose-built-node-and-mark-content-model.md)                       | A purpose-built node-and-mark content model                               | Accepted           |
+| [0032](0032-words-fidelity-to-the-pdf-leaves-t1.md)                             | Word's fidelity to the PDF leaves T1                                      | Accepted           |
 | [0031](0031-t1-publishes-headings-to-six-levels.md)                             | T1 publishes headings to six levels                                       | Accepted           |
 | [0030](0030-the-conformance-report-joins-a-publication-after-it-is-recorded.md) | The conformance report joins a publication after it is recorded           | Accepted           |
 | [0029](0029-a-browser-suite-in-ci-and-attested-audits.md)                       | A browser suite in CI, and audits a person attests                        | Accepted           |

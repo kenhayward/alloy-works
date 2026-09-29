@@ -67,6 +67,7 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
+    // 1479, from 1477 (2026-09-29): ADR-0032, Word's fidelity to the PDF leaves T1 - PUB-106 (T1, the PDF's) and PUB-107 (T2, Word's own pages) supersede PUB-092.
     // 1477, from 1476 (2026-09-29): PUB-105 supersedes PUB-104, the Matterhorn review made before each release rather than on each change (issue #344).
     // 1476, from 1474 (2026-09-29): W13.3 - STR-072 supersedes STR-039 (issue #134) and CNT-179 supersedes CNT-076 (issue #339), the navigation budgets with numbers.
     // 1474, from 1472 (2026-09-28): W13.4 - STY-080 and STY-081 supersede STY-053, the editor and Word each measured against the PDF (issue #328).
@@ -74,9 +75,10 @@ describe('the committed trace.json', () => {
     // 1471, from 1470 (2026-09-28): W14.7's final review - CNT-178 supersedes CNT-148, because macOS chooses its spelling checker's languages itself.
     // 1470, from 1458 (2026-09-28): the T1 audit's last decisions and rewordings: CNT-176 and CNT-177, PUB-098 to PUB-104, IAM-080 and IAM-081 supersede the rows they split, and STY-079 is new (issue #306).
     // 1458, from 1449 (2026-09-26): the rewordings Ken agreed after the T1 audit (K7, and W1's three): CNT-171 to CNT-175, STR-070, MET-042, STY-078 and API-061 supersede the rows they reword.
-    expect(model.requirements).toHaveLength(1477);
+    expect(model.requirements).toHaveLength(1479);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 506, from 505 (2026-09-29): ADR-0032 - themes.md claims PUB-106, PUB-092's PDF half, shown by the regression corpus's four keep cases; PUB-107, Word's own pages, and STY-081 and PUB-023 are T2's, unclaimed.
     // 505, from 504 (2026-09-29): issues #331 and #333 fixed - themes.md claims STY-080, every property both outputs render measured and agreeing.
     // 504, from 503 (2026-09-29): publishing.md claims PUB-105, the Matterhorn review before each release, verified by attestation as CNT-177 is (issue #344).
     // 503, from 502 (2026-09-29): W13.3 - document-view.md claims CNT-179, measured green by the browser suite's budgets.test.ts on the reference machine; STR-072 is not claimed, since the document opened cold misses its number (structure.md names the gap).
@@ -220,7 +222,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(505);
+    ).toBe(506);
   });
 });
 
@@ -570,6 +572,8 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 554, from 553 (2026-09-29): ADR-0032 - PUB-106 in apps/worker's regression.test.ts, on the keep rules' describe, whose four
+  // cases show each rule holding in the PDF wherever the page allows; PUB-092, which it supersedes, was left uncited since W14.3.
   // 553, from 552 (2026-09-29): issue #350 - STR-045 in apps/web's position.test.ts, a linked node
   // held where the link put it as the text above it settles, and let go when the reader acts.
   // 552, from 551 (2026-09-29): issues #331 and #333 - STY-080 in tests/browser's styles.test.ts, the
@@ -717,7 +721,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(553);
+    expect(model.citations).toHaveLength(554);
   });
 
   it('cites no identifier the corpus does not hold', () => {

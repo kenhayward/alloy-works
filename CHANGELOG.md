@@ -3,6 +3,21 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.127.1 - 2026-09-29 (PR #TBD)
+
+### Changed
+
+- **Matching Word to the PDF has moved to a later release.** Word's own rendering of a publication
+  was measured against the PDF and does not match it everywhere yet: tables, filled paragraphs, a
+  line holding an image or a larger word, and a few other cases are still more than half a point
+  apart. Closing the gap would take several more pieces of work, one of which would change how the
+  PDF itself is laid out, so it moves to tranche T2, which a new decision record explains. Nothing
+  changes in what you publish today: Word output is still checked by opening it in Word, and the
+  measurement keeps running there, failing on any difference beyond what it has recorded.
+- **Keeping lines together across a page break is promised for the PDF in this release**, and
+  shown by the publishing checks. Word is given the same rules, but checking where Word itself breaks
+  its pages moves to a later release with the rest of the Word measurement.
+
 ## 0.127.0 - 2026-09-29 (PR #349)
 
 ### Added

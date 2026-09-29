@@ -270,9 +270,9 @@ It holds, in its own describe blocks:
 - **The keep rules**, moved here from `themes.test.ts`: keep-with-next, keep-together where
   the page allows it and not where it does not, and widow and orphan control, each measured across the
   foot of a small page on a grid of 12pt lines, and each read from the same style as the Word writer's
-  own rule, `w:keepNext`, `w:keepLines` and `w:widowControl`. They cite STY-008 where they show a
-  style's keeping, and not PUB-092, which asks each engine's pages to show the rules holding: nothing
-  yet measures where Word itself breaks a page (themes.md names the gap).
+  own rule, `w:keepNext`, `w:keepLines` and `w:widowControl`. They cite PUB-106, the rules holding in
+  the PDF, and STY-008 where they show a style's keeping; not PUB-107, which asks Word's own pages to
+  show the rules holding, since nothing measures where Word itself breaks a page (T2's, ADR-0032).
 
 A defect that was not in publishing output has no case here: the content model's (#88, a caption held
 as a string; #122 to #125), the editor's and the paste's, and the worker's retrying of a job its
