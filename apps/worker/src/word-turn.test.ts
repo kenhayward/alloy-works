@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -60,6 +60,47 @@ describe('taking turns at Word', () => {
     // A process number no process holds: past the largest a system gives out.
     await writeFile(lock, '2147483646');
     await expect(inWordsTurn(async () => 'taken', { lock, every: 10 })).resolves.toBe('taken');
+  });
+
+  it('lets one of several waiters take a turn a process that has ended left behind, never two at once', async () => {
+    // Every waiter sees the same ended holder; the first to take the turn must not have its lock taken
+    // from it by another that saw the ended one too.
+    for (let round = 0; round < 20; round += 1) {
+      const lock = join(folder, `word-${round}.lock`);
+      await writeFile(lock, '2147483646');
+      let inside = 0;
+      let most = 0;
+      await Promise.all(
+        Array.from({ length: 4 }, () =>
+          inWordsTurn(
+            async () => {
+              inside += 1;
+              most = Math.max(most, inside);
+              await new Promise((resolve) => setTimeout(resolve, 5));
+              inside -= 1;
+            },
+            { lock, every: 1 },
+          ),
+        ),
+      );
+      expect(most, `round ${round}`).toBe(1);
+    }
+  });
+
+  it('takes a turn whose lock was left empty a while ago, by a process that ended before it wrote its number', async () => {
+    const lock = join(folder, 'word.lock');
+    await writeFile(lock, '');
+    const before = new Date(Date.now() - 60_000);
+    await utimes(lock, before, before);
+    await expect(inWordsTurn(async () => 'taken', { lock, every: 10 })).resolves.toBe('taken');
+  });
+
+  it('waits on a lock just made and still empty, whose maker is writing its number', async () => {
+    const lock = join(folder, 'word.lock');
+    await writeFile(lock, '');
+    await expect(inWordsTurn(async () => 'never', { lock, every: 10, within: 50 })).rejects.toThrow(
+      /word\.lock/,
+    );
   });
 
   it('stops waiting after as long as it is told, naming the lock', async () => {
