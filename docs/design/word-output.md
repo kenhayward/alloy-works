@@ -39,7 +39,8 @@ writer includes as `styles.xml`.
 
 **PUB-023 is not claimed**, though this design answers much of it; the final review of Word 4 found
 it claimed for more than the design gives. Its "first-class" is, by PUB-078, kept by STY-081's
-conformance suite, which does not measure Word's style values yet; and a maths character is judged
+conformance suite, which since W15.2 measures Word's style values and finds them not yet the PDF's
+([Word measured](#word-measured-w152)); and a maths character is judged
 against STIX Two Math, not the Cambria Math Word sets it in - which the report now says once for a
 document setting an equation (`maths_coverage_unchecked`, W14.6), but which is still no judgement of
 any character. **PUB-035 was not claimed either**, for the structures it asked Word to carry on the
@@ -1343,8 +1344,9 @@ PDF. A requirement Word can meet - every accessibility structure Word has, carri
 none for named on the publication - would be claimed here; that is a change to PUB-035 for Ken,
 through the requirement form.
 
-**Not cited, and why.** The Word check cites PUB-029 alone, as before, since CI skips it. PUB-092 and
-STY-081 wait for Word's pagination and its style properties to be measured where Word runs (since
+**Not cited, and why.** The Word check cites PUB-029 alone, as before, since CI skips it. STY-081
+waits for Word's style properties to agree with the PDF's where W15.2 measures them
+([Word measured](#word-measured-w152)), and PUB-092 for Word's pagination to be measured (since
 W14.3 the regression corpus shows each keep rule reaching Word as its own property, and themes.md
 names the gap that is left: Word's own page breaks), PUB-073
 for T3's baselines, and PUB-028, review in Word, is T6.
@@ -1438,6 +1440,71 @@ consequences of a table that now begins in its cells, and one more:
 - **A floated figure's anchor keeps the flow's spaces.** It stands out of the flow, its spaces held, so
   the space the PDF puts above a table whose caption is below it, or below a table ending in its cells,
   is added to what the anchor holds rather than dropped.
+
+### Word measured (W15.2)
+
+W15.2 of the [W15 plan](../plans/2026-09-29-w15-word-measured.md) holds Word to the PDF by the measures
+the editor is held by. `apps/worker/src/word-measure.test.ts`, where Word is (`ALLOY_WORD_CHECK=1` on
+Windows), assembles the conformance kit's fixture under eight themes - the default, the contrary one,
+W13.4's three generated ones and three for Word alone, seeds 1501 to 1503, which may float a figure -
+compiles each through the current template and writes it by `writeDocx`, has Word export its own PDF
+through the Word check's `-ExportOnly`, and reads and compares the two PDFs by the kit's one reader and
+comparison: every length within half a point, and every face, weight, posture, colour, underline and
+fill exactly, a face and a weight read from the program Word embedded; and what STY-080 leaves out only
+because the editor cannot - a section heading's start, a floated figure's size and start, a fill's
+edges against its text, and the rules about a cell read from the PDF alone. A step over a page break,
+and an edge of a cell where either output breaks its table, are the page's (PUB-065) and not compared;
+the line holding an equation and a floated figure's caption are stepped neither into nor out of, since
+Word sets the one in Cambria Math and the page places the other (W15-H). STY-060's list for Word holds
+the maths face STY-052 substitutes, and nothing else.
+
+**Measured**, in Word 16.0, build 16.0.20326: 343 to 516 values compared a theme, and before any fix
+1,673 differences. Every face, weight, posture, colour, underline and fill is exact but twelve table
+rules' colours; a size is within 0.31pt (Word's half points), an image's size within 0.06, a figure's
+start within half a point - a floated one among them - and an image in a line's foot within 0.19.
+
+**What W15.2 changed in the writer**, `word/6`, each found by the measurement:
+
+- **The page is the theme's paper**: `w:background` in its colour, with `w:displayBackgroundShape`,
+  which Word needs to paint it. Word's page was white under every theme.
+- **A style with no fill states a fill of `auto`**, where it wrote `w:shd` `nil`, which leaves the fill
+  of the style it is based on: Word painted a lead paragraph after a filled body in the body's fill.
+- **A panel's text stands at its padding**, where the PDF's does, and its fill at its indents: the
+  indents are the padding, and the border's spacing across is the padding less how far Word's fill
+  reaches past it, 1.9pt before the text and 2.07 after, measured. Word 2 had the indents take the
+  reach, so the fill stood at the indents and the text 2pt further in. `panelInset` is the padding
+  alone, and a preformatted block's closer setting is worked out against the wider room.
+- **A header column's rule is written on the side of the next column's cells as well**, in every row:
+  Word draws the wider of two rules on a line, and a 3pt rule between the columns was drawn over the
+  header column's 0.75pt one, which the PDF draws.
+
+**Tried and left**: Word sets a heading number's `space` suffix in Arial whatever the heading's face, 6.25pt
+narrower than a mono heading's space. The space in the number's own text, with no suffix, is set in
+the face, but Word's `REF \r` then prints it after the number in every reference to the heading, and
+a Hebrew heading's space in Times New Roman Bold, so the Word check went red five times and the change
+was reverted.
+
+**What is left**, 1,186 differences of eight kinds, which the test names and holds each to the largest
+it measured: a difference of no kind fails, one larger than its kind's largest fails, and a kind with
+nothing left of it fails until it is taken off the list. None is approved, and while any is left the
+test cites nothing.
+
+| Kind                                                                                                                 | Largest, in points                                                                 | Why, and where it goes                                                                                                                                                                                                                                                                              |
+| -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tables: a cell's text, rules, fill and steps (643)                                                                   | a step 8.12; a rule's place 6.10, 0.54 in the default; its width 1.65; a fill 7.20 | Word's cell margins stand from a rule's inner edge, the PDF's from its middle; Word draws the wider of two rules on a line where the PDF draws the header's; Word fills a cell in pieces about its margins; and a cell's first line takes its leading above it. **Word's side, a slice of its own** |
+| Panels: a fill above and below its text, and the steps about it (259)                                                | a step 4.38; a fill's top 3.66, 1.76 in the default                                | Word's fill reaches past a border's spacing above and below as it does across, and the spacing is in whole points. **Word's side, a slice of its own**                                                                                                                                              |
+| A line holding an image, or a run larger than its text, in another face, or raised or lowered (111)                  | a step 6.57, 3.93 in the default; a fill's top 4.25                                | Word grows the line to what it holds, its baseline the deepest descent above its foot, with no leading above. **W15.3: the PDF and the editor take Word's rule** (ADR-0014)                                                                                                                         |
+| Where a line set to the centre or the end starts, and an image after words, at sizes Word rounds to half points (87) | 2.50                                                                               | Word sets a size in half points, 12.25pt at 12.5, and the line's length moves with it. **W15.3 or Ken's**: every output at half points, or a theme's sizes held to them                                                                                                                             |
+| A list item's number beside text set to the centre or the end (34)                                                   | its end 390.22, 202.26 in the default; a step 3.94                                 | Word sets the number on its item's first line, centred or set to the end with it; the PDF at the list's column. **Ken's**: a report under PUB-078, or a STY-060 entry                                                                                                                               |
+| A heading's start after its number (23)                                                                              | 6.25, 0.50 in the default                                                          | The suffix Word sets in Arial, above, and the half points. **Word's side, open**                                                                                                                                                                                                                    |
+| A list item's fill before its text (18)                                                                              | 28.40                                                                              | Word fills from the number, the PDF from the text. **Ken's**, as the number                                                                                                                                                                                                                         |
+| The fill behind the line holding an equation (11)                                                                    | its top 4.09                                                                       | Word sets the line as tall as Cambria Math's. **Outside** (W15-H): an equation's height is the maths engine's                                                                                                                                                                                       |
+
+Of Word 2's six differences beyond half a point, the image's line is the third kind, the cell's first
+line and the panels' parting are in the tables' and the panels', a panel's text standing further in is
+fixed, and an item opening with a nested list or preformatted text is not in the fixture; the term's
+step is not in the fixture either. The plan's W15.2 as-built note has each theme's largest difference
+per property.
 
 ## Open questions
 

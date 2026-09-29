@@ -65,8 +65,8 @@ describe('taking turns at Word', () => {
   it('stops waiting after as long as it is told, naming the lock', async () => {
     const lock = join(folder, 'word.lock');
     await writeFile(lock, String(process.pid));
-    await expect(
-      inWordsTurn(async () => 'never', { lock, every: 10, within: 50 }),
-    ).rejects.toThrow(/word\.lock/);
+    await expect(inWordsTurn(async () => 'never', { lock, every: 10, within: 50 })).rejects.toThrow(
+      /word\.lock/,
+    );
   });
 });

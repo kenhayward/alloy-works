@@ -117,9 +117,23 @@ section's heading** (issue #333) - and it was dropped. Both are fixed in the pro
 document view, and compared: every property both outputs render is measured and agrees, and what the
 comparison leaves out is named there as outside STY-080, with why.
 
-**STY-081 is not claimed: Word is not measured against the PDF yet.** It needs Word itself, and the
-Word check (`word-check.test.ts`), which opens the writer's documents in Word, is where it will be
-measured. Until then the claim stands dropped, beside PUB-023, which word-output.md says waits for it.
+**STY-081 is not claimed: Word is measured against the PDF, and does not agree yet.** Since W15.2
+of the [W15 plan](../plans/2026-09-29-w15-word-measured.md), `word-measure.test.ts` sets the
+conformance kit's fixture in Word under eight themes, where Word is, and compares Word's own PDF with
+the PDF by the kit's comparison at STY-080's tolerances. Every face, weight, posture, colour, underline
+and fill is exact but the maths face STY-052 substitutes and twelve table rules' colours; the lengths
+are not: 1,186 differences of eight kinds are left, the largest a table's step at 8.12pt, each kind
+named with its size and where it goes in word-output.md's
+[Word measured](word-output.md#word-measured-w152). The claim waits for them, beside PUB-023, which
+word-output.md says waits for it.
+
+**STY-060 is not claimed either**, though both lists it asks for exist and are exact - the editor's
+empty, Word's holding STY-052's substitution alone (`EDITOR_DEVIATIONS` and `WORD_DEVIATIONS` in the
+conformance kit's `compare.ts`). Its second half, "a deviation not on that list must fail", holds for
+the editor's suite and not yet for Word's: Word's measurement holds what W15.2 left by kind, each to
+the largest it measured, rather than failing it, so that the Word check's practice can run the whole
+worker suite green while the kinds wait for their slices. The claim is made when Word's suite fails
+every difference not on its list, which is when STY-081 holds.
 
 **PUB-027's claim has a cost the Word writer pays** (the final review of Word 1, M5). Every style is a
 real Word style, and a run names a mark's character style rather than carrying its formatting, but
@@ -370,7 +384,7 @@ document exercises it at several values, and each projection's output is measure
 | Target | How a value is measured                                                                                                                                                                                         |
 | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Typst  | From the PDF: each character's text matrix gives its baseline, not its bounding box                                                                                                                             |
-| Word   | LibreOffice renders the `.docx` to PDF and is measured the same way - a proxy; confirmed in Word itself under PUB-029                                                                                           |
+| Word   | Word itself exports the `.docx` to PDF and it is measured the same way, by the same reader and comparison (W15.2, W15-A); LibreOffice, the prototype's proxy, is not used                                       |
 | Editor | Chromium: a zero-size marker at each line's start gives the baseline, and computed styles give size, weight and colour. Built by W13.4 ([The theme in the editor, measured](#the-theme-in-the-editor-measured)) |
 
 The fixtures are generated as well as hand-written: random valid property values, resolved and
@@ -982,8 +996,9 @@ pinned Chromium both trim.
 
 **What W13.4 claims, and what claims it now.** W13.4 claimed nothing: STY-080 waited for issues #331
 and #333. With both fixed, the test in `styles.test.ts` cites STY-080, which it answers whole. **STY-081
-is not claimed**: Word measured against the PDF needs Word itself, and the Word check, which opens the
-writer's documents in Word, is where it will be measured; word-output.md says PUB-023 waits for it.
+is not claimed**: Word is measured against the PDF by the same kit since W15.2, where Word is, and
+does not agree yet (above, [Requirements owned](#requirements-owned)); word-output.md says PUB-023
+waits for it.
 
 ## Where a caption sits
 

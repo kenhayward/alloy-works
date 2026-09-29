@@ -3,6 +3,28 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.127.0 - 2026-09-29 (PR #TBD)
+
+### Added
+
+- **Word is measured against the PDF.** On a machine with Word, the same checks that hold the editor
+  to the PDF now hold Word's own rendering of a publication to it, under eight themes: every size and
+  position to within half a point, and every face, weight, slant, colour, underline and fill exactly.
+  Word does not match the PDF everywhere yet: the check names each kind of difference that is left -
+  tables, filled paragraphs, a line holding an image or a larger word, sizes Word rounds to half
+  points, a list's number beside centred text, a heading's number - and fails if any grows or a new
+  one appears.
+
+### Fixed
+
+- **A Word document now has the theme's paper colour.** Word's page was white under every theme.
+- **A paragraph with no fill of its own is no longer painted in the fill of the style it is based
+  on** in Word.
+- **The text of a filled block, such as preformatted text, stands where the PDF puts it** in Word,
+  rather than 2pt further in on each side.
+- **A table's header column keeps its own rule in Word** where the rule between the other columns is
+  wider, as in the PDF.
+
 ## 0.126.0 - 2026-09-29 (PR #348)
 
 ### Added
