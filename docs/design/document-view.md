@@ -111,11 +111,26 @@ outline's **current** node - marked with `aria-current="location"`, and kept in 
 the collapsed rail says where the reader is, as layout C draws it: "4.1 of 46". It is an
 `IntersectionObserver` over each node's `data-node` element, which the text already carries.
 
-**Jumping**: choosing a node - in the outline, in a generated list, or following a link - scrolls the
-text to its heading, and the outline chooses it, as today.
+**The outline pane scrolls itself** (issue #336). The window scrolls the text; the outline pane stands
+beside it, sticky between the header band and the status bar, and its tree scrolls inside it.
+The current node is kept in view by scrolling the pane alone, never by the tree item's
+`scrollIntoView`, which scrolls the window too: with the pane scrolled by the window, keeping its item
+in view moved the text, which changed the node in view, which moved the window again, and the page
+sprang back near its top however the reader scrolled. The status bar tells the page its height, one
+line or wrapped, as `--status-height`, which the pane's height and the root's
+`scroll-padding-bottom` subtract. In a window under 480 pixels tall - a phone on its side, or 400%
+zoom - the pane is not stuck: it would show a line or two of its tree, so it scrolls with the page.
 
-**Arriving by a link** (STR-045): the page opens at the node, scrolled to, and marks its heading as well
-as its tree item, a mark that stays until the reader moves elsewhere, as the outline's does. A document
+**Jumping**: choosing a node - in the outline, in a generated list, or following a link - scrolls the
+text to its heading, and the outline chooses it, as today. The heading stops below the header band,
+not under it: the root carries `scroll-padding-top: var(--header-height)`.
+
+**Arriving by a link** (STR-045): the page opens at the node, scrolled to once the placed components'
+texts have arrived - before then every component above it is a heading alone, and the node would be
+pushed down the page as each fills in - or after five seconds where they have not, and not at all
+where the reader has meanwhile chosen another node or scrolled the page themselves. It marks the
+node's heading as well as its tree item, a mark that stays until the reader moves elsewhere, as the
+outline's does. A document
 the reader may not read is not found, as today (404). A node that places a component the reader may not
 read is still reached: its place, its number, and "Not yours to read", never its text.
 

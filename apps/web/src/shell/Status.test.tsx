@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { useEffect } from 'react';
 import { describe, expect, it } from 'vitest';
 
@@ -65,5 +65,44 @@ describe('the status bar', () => {
     render(<Saying notice="Link copied." context={['Version 0.1 in General']} />);
     expect(screen.getByRole('status')).toHaveTextContent('Link copied.');
     expect(screen.getByText('Version 0.1 in General')).toBeInTheDocument();
+  });
+
+  it('tells the page how tall it is, as it wraps, so what scrolls stops above it (issue #336)', () => {
+    const original = {
+      rect: HTMLElement.prototype.getBoundingClientRect,
+      observer: window.ResizeObserver,
+    };
+    let height = 31;
+    let resized: (() => void) | null = null;
+    HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
+      const tall = this.tagName === 'FOOTER' ? height : 0;
+      return { top: 0, bottom: tall, left: 0, right: 0, width: 0, height: tall } as DOMRect;
+    };
+    // An observer by hand: it tells the bar it changed size when the test says so.
+    window.ResizeObserver = class {
+      constructor(callback: () => void) {
+        resized = callback;
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver;
+    const root = document.documentElement;
+    try {
+      const { unmount } = render(
+        <StatusProvider>
+          <Saying notice="Link copied." />
+        </StatusProvider>,
+      );
+      expect(root.style.getPropertyValue('--status-height')).toBe('31px');
+      height = 53;
+      act(() => resized?.());
+      expect(root.style.getPropertyValue('--status-height')).toBe('53px');
+      unmount();
+      expect(root.style.getPropertyValue('--status-height')).toBe('');
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = original.rect;
+      window.ResizeObserver = original.observer;
+    }
   });
 });

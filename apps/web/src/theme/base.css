@@ -37,6 +37,14 @@ html {
   scroll-padding-top: var(--header-height);
 }
 
+/*
+ * And the status bar stands over its foot, its height told to the page by the bar itself, one line
+ * or wrapped: what is scrolled to stops above it too (issue #336).
+ */
+html {
+  scroll-padding-bottom: var(--status-height, 0px);
+}
+
 h1 {
   margin: 0 0 var(--space-16);
   font-size: var(--size-page-title);

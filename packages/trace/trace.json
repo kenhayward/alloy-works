@@ -17796,133 +17796,133 @@
     {
       "id": "CNT-046",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2293,
+      "line": 2294,
       "kind": "title"
     },
     {
       "id": "CNT-072",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3251,
+      "line": 3252,
       "kind": "title"
     },
     {
       "id": "CNT-073",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3271,
+      "line": 3272,
       "kind": "title"
     },
     {
       "id": "CNT-074",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3913,
+      "line": 4058,
       "kind": "title"
     },
     {
       "id": "CNT-075",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4070,
+      "line": 4215,
       "kind": "title"
     },
     {
       "id": "CNT-105",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3364,
+      "line": 3365,
       "kind": "title"
     },
     {
       "id": "CNT-150",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4807,
+      "line": 4952,
       "kind": "title"
     },
     {
       "id": "CNT-154",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3364,
+      "line": 3365,
       "kind": "title"
     },
     {
       "id": "CNT-156",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3395,
+      "line": 3396,
       "kind": "title"
     },
     {
       "id": "CNT-158",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3548,
+      "line": 3549,
       "kind": "title"
     },
     {
       "id": "CNT-162",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3531,
+      "line": 3532,
       "kind": "title"
     },
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4368,
+      "line": 4513,
       "kind": "title"
     },
     {
       "id": "IAM-080",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3380,
+      "line": 3381,
       "kind": "title"
     },
     {
       "id": "STR-008",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 519,
+      "line": 520,
       "kind": "title"
     },
     {
       "id": "STR-035",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3707,
+      "line": 3717,
       "kind": "title"
     },
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4572,
+      "line": 4717,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4408,
+      "line": 4553,
       "kind": "title"
     },
     {
       "id": "STR-044",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3082,
+      "line": 3083,
       "kind": "title"
     },
     {
       "id": "STR-045",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3731,
+      "line": 3760,
       "kind": "title"
     },
     {
       "id": "STR-046",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3128,
+      "line": 3129,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 899,
+      "line": 900,
       "kind": "title"
     },
     {
       "id": "STR-065",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2626,
+      "line": 2627,
       "kind": "title"
     },
     {
@@ -20287,6 +20287,18 @@
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
       "line": 244,
+      "kind": "title"
+    },
+    {
+      "id": "STR-035",
+      "file": "tests/browser/src/navigation.test.ts",
+      "line": 207,
+      "kind": "title"
+    },
+    {
+      "id": "STR-045",
+      "file": "tests/browser/src/navigation.test.ts",
+      "line": 242,
       "kind": "title"
     },
     {
