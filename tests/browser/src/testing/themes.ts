@@ -94,8 +94,9 @@ function derive(
  * the editor renders but these, which the template does not set (issue #330) and the themes here
  * therefore never state - a caption's fill, padding and indents, since the template sets a caption's
  * text and not its block; the first line's indent of centred text, which the engine does not indent,
- * of preformatted text, which it sets as code, and of a paragraph in a list's item, which it does not
- * indent either.
+ * of preformatted text, which it sets as code, of a paragraph in a list's item, which it does not
+ * indent either, and of a heading, which it sets as a heading's text and not a paragraph (found by
+ * this suite once it measured where a heading starts, issue #333).
  */
 function printable(
   id: string,
@@ -109,7 +110,10 @@ function printable(
   const unindented =
     properties.alignment === 'centre' ||
     id === DEFAULT_THEME.roles.preformatted ||
-    appliesTo.includes('listItem')
+    appliesTo.includes('listItem') ||
+    Object.entries(DEFAULT_THEME.roles).some(
+      ([role, style]) => role.startsWith('heading') && style === id,
+    )
       ? { firstLineIndent: 0 }
       : {};
   return { ...properties, ...caption, ...unindented };
@@ -171,7 +175,7 @@ export function contraryTheme(): {
       colour: '#5a1f1f',
       typeface: was.typeface === 'mono' ? 'serif' : 'mono',
       ...(was.position ? { position: was.position } : {}),
-      scale: was.scale === undefined ? 0.9 : 1,
+      scale: was.scale === undefined ? 1.25 : 1,
     }),
     (was) => ({
       ...was,
@@ -224,9 +228,9 @@ function generator(seed: number): () => number {
  * (the W13 plan's question 3): text dark enough on fills and paper light enough that contrast
  * (STY-069) is met at any size; a line spacing never below its size, and never below the face's own
  * height, which the editor's line cannot hold (`line_spacing_below_size`, and themes.md); a table's rules
- * no wider than twice its padding (`table_rule_over_text`); a mark's scale no larger than its text,
- * since a larger one grows its line by a rule the editor does not follow (themes.md); preformatted text
- * in the monospaced face; and a figure as a block, since the editor has no page to float one to.
+ * no wider than twice its padding (`table_rule_over_text`); preformatted text in the monospaced face;
+ * and a figure as a block, since the editor has no page to float one to. A mark's scale runs from 0.6 to
+ * 1.6 of its text, so a run larger than its text opens its line in both outputs (issue #331).
  */
 export function generatedTheme(n: number, seed: number) {
   const random = generator(seed);
@@ -279,7 +283,7 @@ export function generatedTheme(n: number, seed: number) {
       ...(chance(0.5) ? { colour: ink() } : {}),
       ...(chance(0.4) ? { typeface: pick(['serif', 'mono'] as const) } : {}),
       ...(was.position ? { position: was.position } : {}),
-      ...(chance(0.4) ? { scale: between(0.6, 1, 0.05) } : {}),
+      ...(chance(0.4) ? { scale: between(0.6, 1.6, 0.05) } : {}),
     }),
     (was) => {
       const padding = between(1, 9);

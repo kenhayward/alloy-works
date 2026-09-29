@@ -36,6 +36,9 @@ function ruleFor(name: string): TagParseRule & { getAttrs: (node: HTMLElement) =
 
 const gate = (name: string) => ruleFor(name).getAttrs;
 
+/** What every mark's element holds: a box a line tall, and inside it the box its text is set in. */
+const BOXES = ['span', { class: 'aw-mark-below' }, ['span', { class: 'aw-mark-run' }, 0]];
+
 describe('the editor schema', () => {
   it('holds the ten marks an author or the mapping needs', () => {
     expect(Object.keys(editorSchema.marks).sort()).toEqual([...editorMarks].sort());
@@ -78,7 +81,7 @@ describe('the editor schema', () => {
     expect(editorSchema.marks.language!.spec.toDOM!(mark, true)).toEqual([
       'span',
       { lang: 'fr-CA', class: 'aw-language aw-mark-language', 'data-mark-id': 'm1' },
-      0,
+      BOXES,
     ]);
   });
 
@@ -96,13 +99,13 @@ describe('the editor schema', () => {
         class: 'aw-mark-hyperlink',
         'data-mark-id': 'm2',
       },
-      0,
+      BOXES,
     ]);
     const bare = editorSchema.mark('hyperlink', { id: 'm3', href: 'mailto:ada@example.test' });
     expect(editorSchema.marks.hyperlink!.spec.toDOM!(bare, true)).toEqual([
       'a',
       { href: 'mailto:ada@example.test', class: 'aw-mark-hyperlink', 'data-mark-id': 'm3' },
-      0,
+      BOXES,
     ]);
   });
 
@@ -112,43 +115,56 @@ describe('the editor schema', () => {
     expect(rendered('emphasis', { id: 'm1' })).toEqual([
       'em',
       { class: 'aw-mark-emphasis', 'data-mark-id': 'm1' },
-      0,
+      BOXES,
     ]);
     expect(rendered('strong', { id: 'm2' })).toEqual([
       'strong',
       { class: 'aw-mark-strong', 'data-mark-id': 'm2' },
-      0,
+      BOXES,
     ]);
     expect(rendered('underline', { id: 'm3' })).toEqual([
       'u',
       { class: 'aw-mark-underline', 'data-mark-id': 'm3' },
-      0,
+      BOXES,
     ]);
     expect(rendered('subscript', { id: 'm4' })).toEqual([
       'sub',
       { class: 'aw-mark-subscript', 'data-mark-id': 'm4' },
-      0,
+      BOXES,
     ]);
     expect(rendered('superscript', { id: 'm5' })).toEqual([
       'sup',
       { class: 'aw-mark-superscript', 'data-mark-id': 'm5' },
-      0,
+      BOXES,
     ]);
     expect(rendered('inlineCode', { id: 'm6' })).toEqual([
       'code',
       { class: 'aw-mark-inlineCode', 'data-mark-id': 'm6' },
-      0,
+      BOXES,
     ]);
     expect(rendered('quotedPhrase', { id: 'm7' })).toEqual([
       'q',
       { class: 'aw-mark-quotedPhrase', 'data-mark-id': 'm7' },
-      0,
+      BOXES,
     ]);
     expect(rendered('definedTerm', { id: 'm8', term: 'toner' })).toEqual([
       'dfn',
       { 'data-term': 'toner', class: 'aw-mark-definedTerm', 'data-mark-id': 'm8' },
-      0,
+      BOXES,
     ]);
+  });
+
+  it("renders a mark's text in two boxes of its own inside its element, which the theme holds a line open by (issue #331)", () => {
+    // The theme sets the mark's element and the first box as lines of the paragraph's own text, which
+    // is what a line a run larger than its text stands in is opened against, and the text in the
+    // second, in the mark's look (packages/domain/src/theme/css.ts, markRules). The hole is the
+    // innermost, so what is typed lands in the text's own box.
+    for (const name of Object.keys(editorSchema.marks)) {
+      const type = editorSchema.marks[name]!;
+      const attrs = Object.fromEntries(Object.keys(type.spec.attrs ?? {}).map((key) => [key, 'x']));
+      const rendered = type.spec.toDOM!(type.create(attrs), true) as unknown as unknown[];
+      expect(rendered[2], name).toEqual(BOXES);
+    }
   });
 
   it('matches only the elements it renders itself, by a selector it cannot widen unnoticed', () => {

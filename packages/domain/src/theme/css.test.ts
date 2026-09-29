@@ -46,6 +46,9 @@ function ruleFor(text: string, selector: string): string {
 
 const z = (points: string) => `calc(${points}pt * var(--aw-zoom))`;
 const NONE = z('0');
+/** A mark's own element, and the element its text is set in inside it (issue #331). */
+const RUN = '.aw-canvas.aw-canvas .aw-mark-';
+const TEXT = ' > .aw-mark-below > .aw-mark-run';
 
 /**
  * The default theme with a style an author may choose that states every paragraph property at a value
@@ -112,13 +115,25 @@ describe('projectCss', () => {
       `--aw-before: ${z('5')}`,
       `--aw-after: ${z('7')}`,
       `--aw-leading: ${z('4')}`,
+      // What a line of it is, for what stands in one to be measured against (issue #331).
+      '--aw-face: "aw-face-mono"',
+      `--aw-size: ${z('12')}`,
+      '--aw-weight: 700',
+      '--aw-posture: italic',
+      `--aw-line: ${z('16')}`,
+      '--aw-descent: 0.30029',
+      `--aw-top: ${z('8.396')}`,
+      `--aw-run: ${z('12')}`,
+      '--aw-run-face: "aw-face-mono"',
+      '--aw-run-weight: 700',
+      '--aw-run-posture: italic',
       // Its fill between its spaces: the padding box less the space above and below it.
       '--aw-fill: #f0f0f0',
       'background-color: transparent',
       'background-image: linear-gradient(var(--aw-fill), var(--aw-fill))',
       'background-repeat: no-repeat',
-      'background-position: 0 var(--aw-before)',
-      'background-size: 100% calc(100% - var(--aw-before) - var(--aw-after))',
+      `background-position: 0 calc(var(--aw-before) - var(--aw-lift, ${NONE}))`,
+      `background-size: 100% calc(100% - var(--aw-before) - var(--aw-after) + var(--aw-lift, ${NONE}))`,
       'text-align: justify',
       `text-indent: ${z('9')}`,
       `margin-inline: ${z('18')} ${z('6')}`,
@@ -141,16 +156,26 @@ describe('projectCss', () => {
     );
 
     // Strong, restated: every character property, the script's size its scale times 1331/2048.
-    expect(ruleFor(text, '.aw-canvas.aw-canvas .aw-mark-strong').split('; ')).toEqual([
+    expect(ruleFor(text, `${RUN}strong${TEXT}`).split('; ')).toEqual([
       'font-weight: 400',
+      '--aw-run-weight: 400',
       'font-style: italic',
+      '--aw-run-posture: italic',
       'text-decoration-line: underline',
       'color: #223344',
       'font-family: "aw-face-mono"',
-      'vertical-align: super',
-      'font-size: 0.52em',
+      '--aw-run-face: "aw-face-mono"',
+      'font-size: calc(var(--aw-around) * 0.52)',
+      '--aw-run: 1em',
       'line-height: 0',
+      'vertical-align: super',
+      'position: relative',
+      'top: calc(-1 * var(--aw-down))',
     ]);
+    // And the line it stands in is grown by its scale, not the script's size: 0.8 grows nothing.
+    expect(ruleFor(text, `${RUN}strong`)).toContain(
+      `--aw-grow: max(${NONE}, calc(var(--aw-run) * 0.8 - var(--aw-size)))`,
+    );
   });
 
   it('fills a block with no spaces of its own as a colour, which an accessibility checker can read, and one with spaces between them', () => {
@@ -188,8 +213,8 @@ describe('projectCss', () => {
       'background-color: transparent',
       'background-image: linear-gradient(var(--aw-fill), var(--aw-fill))',
       'background-repeat: no-repeat',
-      'background-position: 0 var(--aw-before)',
-      'background-size: 100% calc(100% - var(--aw-before) - var(--aw-after))',
+      `background-position: 0 calc(var(--aw-before) - var(--aw-lift, ${NONE}))`,
+      `background-size: 100% calc(100% - var(--aw-before) - var(--aw-after) + var(--aw-lift, ${NONE}))`,
     ]);
     // Its selector outweighs any style's, two classes and an attribute, whichever comes first.
     expect(ends).toContain(':first-child > [data-style]:first-child');
@@ -239,7 +264,7 @@ describe('projectCss', () => {
       ruleFor(inside, '.aw-canvas.aw-canvas [data-place="text"][data-style="body"]').split('; '),
     ).toEqual([
       'text-box: trim-both cap alphabetic',
-      'margin-block: 0',
+      `margin-block: var(--aw-lift, ${NONE}) 0`,
       `padding-block: calc(var(--aw-before) + ${z('4.768')}) calc(${z('2.379')} + var(--aw-after))`,
     ]);
     // Only where the face's cap height is known: without it, the ascent and the descent, as before.
@@ -254,9 +279,9 @@ describe('projectCss', () => {
     expect(css).not.toContain('Liberation');
     expect(css).toContain('.aw-canvas.aw-canvas math { font-family: "aw-face-maths"; }');
     // Inline code in the monospaced face at 0.8 of the text it stands in.
-    const code = ruleFor(css, '.aw-canvas.aw-canvas .aw-mark-inlineCode');
+    const code = ruleFor(css, `${RUN}inlineCode${TEXT}`);
     expect(code).toContain('font-family: "aw-face-mono"');
-    expect(code).toContain('font-size: 0.8em');
+    expect(code).toContain('font-size: calc(var(--aw-around) * 0.8)');
     // And preformatted text's lines in its role's face and size, never the browser's own for `code`.
     expect(ruleFor(css, '.aw-canvas.aw-canvas pre code')).toBe('font: inherit');
   });
@@ -301,7 +326,7 @@ describe('projectCss', () => {
     // The default list item is the body: 11pt on 14.35pt, 2.75pt after.
     const list = '.aw-canvas.aw-canvas :is(ul, ol)';
     expect(ruleFor(css, `${list} > li > [data-style]:first-child`)).toBe(
-      `margin-block-start: calc(${z('3.35')} - var(--aw-leading))`,
+      `margin-block-start: calc(${z('3.35')} - var(--aw-leading) + var(--aw-lift, ${NONE}))`,
     );
     expect(ruleFor(css, `${list} > li:first-child > [data-style]:first-child`)).toBe(
       `--aw-before: ${NONE}`,
@@ -367,26 +392,209 @@ describe('projectCss', () => {
   });
 
   it("states every property of a mark, the text's own where its style states none, so no browser default shows", () => {
-    expect(ruleFor(css, '.aw-canvas.aw-canvas .aw-mark-hyperlink').split('; ')).toEqual([
-      'font-weight: inherit',
-      'font-style: inherit',
+    expect(ruleFor(css, `${RUN}hyperlink${TEXT}`).split('; ')).toEqual([
+      'font-weight: var(--aw-run-weight)',
+      'font-style: var(--aw-run-posture)',
       'text-decoration-line: none',
       'color: inherit',
-      'font-family: inherit',
-      'vertical-align: baseline',
-      'font-size: inherit',
+      'font-family: var(--aw-run-face)',
+      'font-size: var(--aw-around)',
+      '--aw-run: 1em',
+      'line-height: 0',
+      'vertical-align: var(--aw-down)',
     ]);
-    expect(ruleFor(css, '.aw-canvas.aw-canvas .aw-mark-strong')).toContain('font-weight: 700');
-    expect(ruleFor(css, '.aw-canvas.aw-canvas .aw-mark-subscript')).toContain(
-      'vertical-align: sub',
-    );
+    expect(ruleFor(css, `${RUN}strong${TEXT}`)).toContain('font-weight: 700');
+    expect(ruleFor(css, `${RUN}subscript${TEXT}`)).toContain('vertical-align: sub');
+    // The mark's own element says nothing of its look but its colour and its underline's absence -
+    // a link's own - which its text inherits and draws.
+    expect(ruleFor(css, `${RUN}hyperlink`)).toContain('color: inherit; text-decoration-line: none');
   });
 
   it('opens no line for a mark set in another face or at another size, as the template sets it on its line', () => {
     // Inline code, in the monospaced face at 0.8: its own line height would have opened its line by a
-    // point and a half under the default theme (the browser suite, W13.4).
-    expect(ruleFor(css, '.aw-canvas.aw-canvas .aw-mark-inlineCode')).toContain('line-height: 0');
-    expect(ruleFor(css, '.aw-canvas.aw-canvas .aw-mark-strong')).not.toContain('line-height');
+    // point and a half under the default theme (the browser suite, W13.4). Its text is drawn at no
+    // height of its own, whatever its face and size.
+    expect(ruleFor(css, `${RUN}inlineCode${TEXT}`)).toContain('line-height: 0');
+    expect(ruleFor(css, `${RUN}strong${TEXT}`)).toContain('line-height: 0');
+  });
+
+  it("opens a line held by a run larger than its text as the template does, by what it stands above the text's top and below its foot, on every line the run is on (issue #331)", () => {
+    // Every paragraph says what a line of it is: its face, size, weight and posture, its line spacing,
+    // its descender, its text's own top above the baseline - one em less the descender - and the size a
+    // run in it stands at. The body: Liberation Serif at 11pt on 14.35pt, 443/2048 of an em below.
+    const body = ruleFor(css, '.aw-canvas.aw-canvas [data-place="text"][data-style="body"]');
+    for (const declaration of [
+      '--aw-face: "aw-face-serif"',
+      `--aw-size: ${z('11')}`,
+      '--aw-weight: 400',
+      '--aw-posture: normal',
+      `--aw-line: ${z('14.35')}`,
+      '--aw-descent: 0.21631',
+      `--aw-top: ${z('8.621')}`,
+      `--aw-run: ${z('11')}`,
+      '--aw-run-face: "aw-face-serif"',
+      '--aw-run-weight: 400',
+      '--aw-run-posture: normal',
+    ]) {
+      expect(body.split('; ')).toContain(declaration);
+    }
+    // The size a run stands at is a length computed where it is set, so a run inside another reads the
+    // size of the one around it.
+    expect(css).toContain(
+      "@property --aw-run { syntax: '<length>'; inherits: true; initial-value: 0; }",
+    );
+
+    // A mark is three boxes. Its own element is a line of its paragraph's text - the same face, size
+    // and line spacing, so the same line box the browser makes for the paragraph's own text - raised by
+    // what the run stands above the text's top: its growth, the size it stands at less the text's,
+    // times one less the descender, as the template's top edge is an em less the descender of the size
+    // it is set at.
+    const scaled = defaultInputs();
+    scaled.catalogues.character.styles.find((style) => style.mark === 'strong')!.properties = {
+      bold: true,
+      scale: 1.25,
+    };
+    const text = projectCss(resolved(scaled));
+    expect(ruleFor(text, `${RUN}strong`).split('; ')).toEqual([
+      'font-family: var(--aw-face)',
+      'font-size: var(--aw-size)',
+      'font-weight: var(--aw-weight)',
+      'font-style: var(--aw-posture)',
+      'line-height: var(--aw-line)',
+      'color: inherit',
+      'text-decoration-line: none',
+      '--aw-around: var(--aw-run)',
+      `--aw-grow: max(${NONE}, calc(var(--aw-run) * 1.25 - var(--aw-size)))`,
+      '--aw-up: calc((1 - var(--aw-descent)) * var(--aw-grow))',
+      '--aw-down: calc(var(--aw-descent) * var(--aw-grow))',
+      'vertical-align: var(--aw-up)',
+    ]);
+    // The second is another such line, lowered from the first by the whole growth: below the text's
+    // baseline by what the run stands below its foot.
+    expect(ruleFor(text, `${RUN}strong > .aw-mark-below`)).toBe(
+      'vertical-align: calc(-1 * var(--aw-grow))',
+    );
+    // And the third is the text, raised back onto the baseline, drawn at no height of its own, at its
+    // scale of the run it stands in, and the size and look a mark inside it stands in.
+    expect(ruleFor(text, `${RUN}strong${TEXT}`).split('; ')).toEqual([
+      'font-weight: 700',
+      '--aw-run-weight: 700',
+      'font-style: var(--aw-run-posture)',
+      'text-decoration-line: none',
+      'color: inherit',
+      'font-family: var(--aw-run-face)',
+      'font-size: calc(var(--aw-around) * 1.25)',
+      '--aw-run: 1em',
+      'line-height: 0',
+      'vertical-align: var(--aw-down)',
+    ]);
+    // A script grows its line by its scale alone, as the template's does: the script's own size is the
+    // engine's shaping, not a size its line is measured at. It moves up or down by the browser's own
+    // rule, drawn where it would stand on the text's baseline.
+    const subscript = ruleFor(css, `${RUN}subscript${TEXT}`).split('; ');
+    expect(subscript).toContain('font-size: calc(var(--aw-around) * 0.65)');
+    expect(subscript.slice(-3)).toEqual([
+      'vertical-align: sub',
+      'position: relative',
+      'top: calc(-1 * var(--aw-down))',
+    ]);
+    expect(ruleFor(css, `${RUN}subscript`)).toContain(
+      `--aw-grow: max(${NONE}, calc(var(--aw-run) - var(--aw-size)))`,
+    );
+  });
+
+  it("opens a line held by an image as the template does, by what the image stands above the text's own top (issue #331)", () => {
+    const trimmed = projectCss(resolved(), { capHeight: () => 1341 / 2048 });
+    const inside = trimmed.slice(trimmed.indexOf('@supports'));
+    // A block of its own, standing on the text's baseline, whose first line is a line of the text's -
+    // as tall above its baseline as the browser makes the paragraph's own lines - less the text's own
+    // top, above the image: so its line is opened by what the image stands above that top.
+    expect(ruleFor(inside, '.aw-canvas.aw-canvas .aw-inline-image-holder')).toBe(
+      'display: inline-block; line-height: 0; text-indent: 0; vertical-align: baseline',
+    );
+    expect(ruleFor(inside, '.aw-canvas.aw-canvas .aw-inline-image-holder::before')).toBe(
+      'content: "\\200b"; display: block; line-height: var(--aw-line); ' +
+        'text-box: trim-end text alphabetic; margin-block-end: calc(-1 * var(--aw-top)); ' +
+        'pointer-events: none',
+    );
+    expect(css).not.toContain('.aw-inline-image-holder');
+  });
+
+  it("keeps what holds a paragraph's first and last lines open where the browser would trim it away: a line of its own text above the first and below the last, trimmed instead (issue #331)", () => {
+    // The browser trims a block's first line to its cap height and its last to its baseline, and with
+    // them whatever holds either open. So a paragraph holding something that can - an image in a line,
+    // a mark larger than its text - begins and ends with a line of its own text, the trimmed ones, and
+    // stands that line higher: its space before, its padding, its descender and its cap height less
+    // than it would have, as padding where that is more than nothing and as a lift where it is less.
+    const scaled = defaultInputs();
+    scaled.catalogues.character.styles.find((style) => style.mark === 'strong')!.properties = {
+      scale: 1.25,
+    };
+    const trimmed = projectCss(resolved(scaled), { capHeight: () => 1341 / 2048 });
+    const inside = trimmed.slice(trimmed.indexOf('@supports'));
+    const grows =
+      ':has(.aw-inline-image-holder:not(.aw-footnote-text *), .aw-mark-strong:not(.aw-footnote-text *))';
+    const body = `.aw-canvas.aw-canvas [data-place="text"][data-style="body"]${grows}`;
+    // The body: no padding, 443/2048 and 1341/2048 of 11pt - 9.582pt - less than its space before.
+    const lifted = `calc(var(--aw-before) + ${z('-9.582')})`;
+    expect(ruleFor(inside, body).split('; ')).toEqual([
+      `--aw-lift: min(${NONE}, ${lifted})`,
+      `padding-block-start: max(${NONE}, ${lifted})`,
+      `text-indent: 0 each-line`,
+    ]);
+    expect(ruleFor(inside, `${body}::before`)).toBe(
+      'content: "\\200b\\A"; white-space: pre; pointer-events: none',
+    );
+    expect(ruleFor(inside, `${body}::after`)).toBe(
+      'content: "\\200b"; display: block; margin-block-end: calc(-1 * var(--aw-line)); pointer-events: none',
+    );
+    // And every block's lift is its margin above, with what else stands it there.
+    expect(
+      ruleFor(inside, '.aw-canvas.aw-canvas [data-place="text"][data-style="body"]'),
+    ).toContain(`margin-block: var(--aw-lift, ${NONE}) 0`);
+    // A paragraph marked as not resolving keeps its label, and a footnote's is where its anchor is.
+    expect(inside).not.toContain(`[data-unresolved]${grows}`);
+    expect(inside).not.toContain(`.aw-footnote-paragraph[data-style="body"]${grows}`);
+    // A mark no larger than its text holds nothing open: the default's paragraphs grow only for images.
+    const plain = projectCss(resolved(), { capHeight: () => 1341 / 2048 });
+    expect(plain).toContain(':has(.aw-inline-image-holder:not(.aw-footnote-text *)) {');
+    expect(plain).not.toContain(':has(.aw-inline-image-holder:not(.aw-footnote-text *), .aw-mark');
+  });
+
+  it("holds a list item's line open to its marker's top and foot, as the template's marker in the list's style does (issue #331)", () => {
+    // The default list item: Liberation Serif at 11pt on 14.35pt. The marker is trimmed to its cap
+    // height and its baseline, which a browser measures exactly, and stood the list's leading and its
+    // own top above its baseline - 14.35 - (443 + 1341) / 2048 x 11 = 4.768pt above its cap height - and
+    // its descender, 2.379pt, below: the item's line is opened to whichever of it and the item's text
+    // stands further out.
+    const trimmed = projectCss(resolved(), { capHeight: () => 1341 / 2048 });
+    const inside = trimmed.slice(trimmed.indexOf('@supports'));
+    const list = '.aw-canvas.aw-canvas :is(ul, ol)';
+    expect(ruleFor(inside, `${list} > li::before`)).toBe(
+      `text-box: trim-both cap alphabetic; line-height: ${z('14.35')}; ` +
+        `padding-block: ${z('4.768')} ${z('2.379')}`,
+    );
+    // The first item's marker stands the list's space before above it as its text does, and the last
+    // item's the list's space after below it.
+    expect(ruleFor(inside, `${list} > li:first-child::before`)).toBe(
+      `padding-block-start: ${z('4.768')}`,
+    );
+    expect(ruleFor(inside, `${list} > li:last-child::before`)).toBe(
+      `padding-block-end: ${z('5.129')}`,
+    );
+  });
+
+  it("gives a list inside an item that ends it no space after, as the template's list sets only its leading between its items (issue #331)", () => {
+    const nested =
+      '.aw-canvas.aw-canvas li:not(:last-child) > :is(ul, ol):last-child > li:last-child';
+    expect(ruleFor(css, `${nested} > [data-style]:last-child`)).toBe(`--aw-after: ${NONE}`);
+    // However deep: a list at the end of an item at the end of a list at the end of an item.
+    expect(
+      ruleFor(css, `${nested} > :is(ul, ol):last-child > li:last-child > [data-style]:last-child`),
+    ).toBe(`--aw-after: ${NONE}`);
+    const trimmed = projectCss(resolved(), { capHeight: () => 1341 / 2048 });
+    const inside = trimmed.slice(trimmed.indexOf('@supports'));
+    expect(ruleFor(inside, `${nested}::before`)).toBe(`padding-block-end: ${z('2.379')}`);
   });
 });
 
@@ -444,7 +652,7 @@ describe('projectCss for tables and images (W8.3)', () => {
     );
     // A cell's first block takes no space or leading above it, and its last no space after.
     expect(ruleFor(text, `${at} :is(td, th) > [data-style]:first-child`)).toBe(
-      'margin-block-start: calc(-1 * (var(--aw-before) + var(--aw-leading)))',
+      `margin-block-start: calc(var(--aw-lift, ${NONE}) - var(--aw-before) - var(--aw-leading))`,
     );
     expect(ruleFor(text, `${at} :is(td, th) > [data-style]:last-child`)).toBe(
       `--aw-after: ${NONE}`,

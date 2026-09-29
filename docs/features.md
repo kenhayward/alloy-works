@@ -279,15 +279,19 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   fixed seeds - and measure every word that begins a paragraph, a run, a cell or a caption in the
   document view and in the PDF: where it starts and where its line sits, its size, face, weight,
   slant, colour and underline and what is behind it, every table rule and every image. Anything more
-  than half a point apart fails; the largest difference found is under a third of a point. A list's
-  items now start where the PDF starts them, after a column as wide as the widest bullet or number,
-  and a table's outer rule is drawn whole at the edge of the text. What does not match yet, and is not
+  than half a point apart fails; the largest difference found is under a tenth of a point. A list's
+  items start where the PDF starts them, after a column as wide as the widest bullet or number, and a
+  table's outer rule is drawn whole at the edge of the text. A line holding an image, a run of text
+  larger than the text around it, or a list item smaller than its list's bullet or number now opens
+  by exactly as much as the PDF's does, on every line of a paragraph; and in the document view a
+  section's heading stands where the PDF sets it - spaced by its heading style alone, its number in the
+  heading's own colour and a single space before its title, and centred or set to the end where its
+  style says - so the document reads as closely spaced as it prints. What does not match, and is not
   measured: a caption's or a footnote's fill, padding and indents, and a first-line indent on centred
-  or preformatted text or in a list's item, which the editor shows and the PDF does not print (issue
-  #330); a line holding an image or an equation in the text, or a list item in a smaller style than its
-  list, which opens by a different amount (issue #331); how high a subscript or superscript sits
-  (issue #332); and where the document view places a section's heading (issue #333). Word is not
-  measured against the PDF yet.
+  or preformatted text, in a list's item or on a heading, which the editor shows and the PDF does not
+  print (issue #330); how high a subscript or superscript sits, and how far an italic one moves along
+  its line (issue #332); and a line held open by an equation taller than its text, whose height each
+  side's maths engine decides. Word is not measured against the PDF yet.
 
 - **Choosing a style.** **Paragraph style**, beside the formatting toolbar, sets the style of the
   paragraphs the selection touches, from the styles the theme offers where they stand - a paragraph in

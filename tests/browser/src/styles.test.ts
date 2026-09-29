@@ -47,11 +47,10 @@ import { COMPONENT_TITLE, HEADINGS, IMAGES, styledContent, type Token } from './
 import { contraryTheme, generatedTheme } from './testing/themes.js';
 
 /**
- * **The editor measured against the PDF** (the W13 plan's W13.4 and B-M; ADR-0014's method), toward
- * STY-080, which it does not yet answer in full and so does not cite: two properties both outputs render
- * still differ, the step into a line held open by something taller than its text (issue #331) and
- * where the document view stands a section's heading (issue #333), and themes.md names them.
- * One component holding a token at the head of every block and run the theme styles (`styled.ts`) is
+ * **The editor measured against the PDF** (the W13 plan's W13.4 and B-M; ADR-0014's method), for
+ * STY-080, which it answers since issues #331 - the step into a line held open by something taller or
+ * deeper than its text - and #333 - where the document view stands a section's heading - were fixed
+ * and their steps and starts compared. One component holding a token at the head of every block and run the theme styles (`styled.ts`) is
  * placed in a document under each of five themes - the default, one differing from it in every
  * property the editor projects, and three generated from seeds - and each document is published
  * through the stack and read in the document view's Reading mode, which CNT-075 holds the same as the
@@ -266,7 +265,7 @@ async function measureTheme(
 }
 
 describe('the editor measured against the PDF', () => {
-  it('sets what it measures where the PDF prints it, under the default, a contrary and three generated themes: each length within half a point, and each face, weight, posture, colour, underline and fill exactly', async ({
+  it('STY-080 sets what it measures where the PDF prints it, under the default, a contrary and three generated themes: each length within half a point, and each face, weight, posture, colour, underline and fill exactly', async ({
     task,
   }) => {
     const client = api();

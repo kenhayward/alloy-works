@@ -206,7 +206,7 @@ async function shownInPane(tree: Locator, node: string): Promise<boolean> {
 describe('moving through a long document in a browser (issue #336)', () => {
   it('STR-035 scrolls the text wherever the wheel takes it, and it stays there', async () => {
     const client = api();
-    const made = await longDocument(client, 'Scrolled by the wheel', 3, 3);
+    const made = await longDocument(client, 'Scrolled by the wheel', 3, 4);
     await withPage(async (page) => {
       const { text } = await open(page, `/documents/${made.id}`);
       expect(await settled(page)).toBe(0);

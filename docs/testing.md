@@ -674,7 +674,8 @@ answered send one move. And one holds issue #325 fixed: two spaces typed in a se
 stored, computed as `break-spaces` and drawn as two.
 
 `navigation.test.ts` holds issue #336 fixed, over documents longer than the window made through the
-API - three sections placing three components each, and one of five hundred nodes: the wheel takes
+API - three sections placing three components each (four, for the wheel, which needs more than 1500
+pixels to travel), and one of five hundred nodes: the wheel takes
 the text where it is turned and it stays there, a node chosen in the outline or reached by a link is
 left with its heading on the screen below the header, and its tree item in view in the outline's own
 pane, by pointer and by `Home` and `End`, and the long document opens where it begins. Each place is
@@ -710,12 +711,16 @@ the seeds.
   and every difference with the largest found, into that folder as JSON, which is where a failure is
   read.
 - **The generator is narrowed** to what the store takes (contrast, a line at least 1.2 of its size, a
-  rule no wider than twice its table's padding) and to what both outputs render: no mark larger than its
-  text, no floated figure, and none of what the PDF does not set yet (issue #330).
+  rule no wider than twice its table's padding) and to what both outputs render: no floated figure, and
+  none of what the PDF does not set yet (issue #330), a heading's first-line indent among it. A mark's
+  scale runs from 0.6 to 1.6 of its text, so a run larger than its text opens its line in both.
 - **A list's markers** are measured too: where each bullet or number ends - a number right-aligned in
   the list's column - and its face, weight, posture, size and colour, the list's place's style.
-- **It cites nothing yet.** Two properties both outputs render still differ (issues #331 and #333), so
-  STY-080 is not claimed and a test cannot cite it; themes.md names them.
+- **It cites STY-080**, which it answers whole since issues #331 - the step into a line held open by an
+  image, a run larger than its text or a list's marker - and #333 - where the document view stands a
+  section's heading - were fixed; each step into and out of such a line and each heading's start and
+  steps are compared. The fixture holds two images in a line, in paragraphs of two sizes, so that
+  whichever a theme's page sets first on a page, the step into the other is compared.
 - **A filled block with spaces of its own is a gradient**, painted between its spaces, which axe-core
   cannot read as a background: it reports that block's text `incomplete`, for the audit, rather than
   checking its contrast. A filled block with no spaces is a colour, which axe checks. The default

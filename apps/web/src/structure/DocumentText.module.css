@@ -31,6 +31,38 @@
 }
 
 /*
+ * On the canvas, a heading stands as the publication sets it (document-view.md, "One scroll"; issue
+ * #333): its number, a space and its title in one line of its heading style, spaced from what stands
+ * above and below it by that style alone - the theme's projection gives it its spaces, its leading
+ * and its alignment - and never by the view's own gaps. The column's and each section's own layout,
+ * and the space above a component's text, stand down there.
+ */
+.text:global(.aw-canvas),
+.text:global(.aw-canvas) .section {
+  display: block;
+}
+
+/* Each section and component the measure wide, as a component's text is, so a heading's indents
+ * stand inside the measure and not beside it. */
+.text:global(.aw-canvas) .section,
+.text:global(.aw-canvas) .reference {
+  width: calc(var(--aw-measure) * var(--aw-zoom));
+}
+
+.text:global(.aw-canvas) .heading {
+  display: block;
+}
+
+.text:global(.aw-canvas) .number {
+  color: inherit;
+  font-variant-numeric: normal;
+}
+
+.text:global(.aw-canvas) .body {
+  margin-top: 0;
+}
+
+/*
  * A component in the document's one scroll (document-view.md, "One scroll" and "Boundaries"; CNT-072,
  * CNT-073): its heading and its text, with no chrome of its own. Its edges and its label - what it is,
  * whether the reader may edit it and who holds it, and Open - show while the pointer or the focus is

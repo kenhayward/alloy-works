@@ -351,6 +351,13 @@ test first:
 - The test waits for the page to be drawn whole before it measures, and fails where the screen is not
   the document's.
 
+**After W13.4** (0.125.1). Issues #331 and #333 were fixed as bugs, each measured red first: the step
+into a line held open by an image, a run larger than its text or a list's marker, and where the
+document view stands a section's heading, are now compared and agree, and `styles.test.ts` cites
+STY-080, which themes.md claims. The generated themes scale marks above their text too, the fixture
+holds a second image in a line, and a script's start - an italic face's own offset - joined #332's
+row of what is outside STY-080 ([themes.md](../design/themes.md#the-theme-in-the-editor-measured)).
+
 ## Left, named
 
 - **STY-081 and PUB-023**: Word measured as the PDF is, which themes.md designed as LibreOffice's

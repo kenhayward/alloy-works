@@ -6,6 +6,12 @@ import { equationAlternative, isLanguageLabel, kindWord } from '@alloy-works/dom
  * Renders a mark's element, always carrying `data-mark-id`, so that the view can read its own output
  * back (see `markSpec`). `attributes` is written after the identifier only for the reader's sake; the
  * order of a DOM output spec's attributes has no meaning.
+ *
+ * Its text stands two boxes deep inside it, `.aw-mark-below` and `.aw-mark-run`, the hole in the
+ * innermost: the theme sets the element and the first box as lines of the paragraph's own text, which
+ * a line a run larger than its text stands in is held open against as the published line is, and the
+ * text in the second (issue #331; `projectCss`'s `markRules`). Neither box carries anything the view
+ * reads back: a mark is read from its element alone.
  */
 const render =
   (tag: string, attributes: (attrs: Attrs) => Record<string, string> = () => ({})) =>
@@ -14,7 +20,11 @@ const render =
     // Each mark's own class, which the theme styles it by (themes.md, "The theme in the editor"),
     // beside any class the mark already has.
     const classes = [own.class, `aw-mark-${mark.type.name}`].filter(Boolean).join(' ');
-    return [tag, { ...own, class: classes, 'data-mark-id': mark.attrs.id as string }, 0] as const;
+    return [
+      tag,
+      { ...own, class: classes, 'data-mark-id': mark.attrs.id as string },
+      ['span', { class: 'aw-mark-below' }, ['span', { class: 'aw-mark-run' }, 0]],
+    ] as const;
   };
 
 /**

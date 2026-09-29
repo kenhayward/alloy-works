@@ -56,21 +56,24 @@ const round = (value: number) => Math.round(value * 100) / 100;
  *
  * - **Every token**: its size, face, weight, posture, colour and underline, and what stands behind it -
  *   but a footnote's, which the document view reads beside its anchor, in its paragraph's fill.
- * - **Where it starts**, across the measure: in running text, a quotation, preformatted text and its
- *   label, a mark's run, a table's cell and a list's item. Not in a heading, which the document view
- *   sets after its number its own way (issue #333); not in a footnote, which the page sets at its foot,
- *   nor in the line holding its anchor, which the document view lengthens with the footnote's words. A
+ * - **Where it starts**, across the measure: in running text, a heading - after its number, as the page
+ *   sets it (issue #333) - a quotation, preformatted text and its label, a mark's run but a script's, a
+ *   table's cell and a list's item. Not a script's, which the engine moves along its line by its
+ *   italic face's own offset, from the face's tables as it moves it up or down (issue #332); not in a
+ *   footnote, which the page sets at its foot, nor in the line holding its anchor, which the document
+ *   view lengthens with the footnote's words. A
  *   caption's line is compared at the edge its alignment sets it by, since the PDF opens it with its
  *   number and the editor does not. The line holding an equation (`equated`) is compared where its
  *   paragraph is set from the start, where the equation's width moves nothing before it; where its
  *   paragraph is centred or set to the end, the line's length is the maths engine's and not compared.
  * - **The step from one baseline to the next**, in the order the page reads them, wherever both stand in
  *   the component's own flow and the PDF sets both on one page: running text, lists, quotations,
- *   preformatted text, a table's caption, cells and note, a figure's caption. A mark's run is its
- *   line's, so its step is nought; the step into a line something taller than its text holds open is
- *   not compared (`Token.grows`, issue #331); and a script, lowered or raised by the engine's own
- *   measure and the browser's rather than the theme's (themes.md, issue #332), is compared only for
- *   which way it moves.
+ *   preformatted text, a table's caption, cells and note, a figure's caption, and the sections' and
+ *   the component's headings above them. A mark's run is its line's, so its step is nought; the step
+ *   into a line held open by something taller or deeper than its text - an image, a run larger than
+ *   its text, a list's marker - is compared as any other (issue #331); and a script, lowered or raised
+ *   by the engine's own measure and the browser's rather than the theme's (themes.md, issue #332), is
+ *   compared only for which way it moves.
  */
 export function compare(
   tokens: readonly Token[],
@@ -110,8 +113,9 @@ export function compare(
     if (token.where === 'equated' && (aligned === 'start' || aligned === 'justify')) {
       length(token, 'start', e.x, p.x);
     } else if (
+      token.where === 'heading' ||
       token.where === 'flow' ||
-      token.where === 'mark' ||
+      (token.where === 'mark' && !token.script) ||
       token.where === 'cell' ||
       token.where === 'list' ||
       token.where === 'label'
@@ -132,10 +136,7 @@ export function compare(
 
   // The steps, in the order the page reads them: a caption may stand above its block or below it.
   const inFlow = (each: Token) =>
-    each.where !== 'heading' &&
-    each.where !== 'footnote' &&
-    each.where !== 'footnoted' &&
-    each.where !== 'label';
+    each.where !== 'footnote' && each.where !== 'footnoted' && each.where !== 'label';
   const chain = tokens
     .filter((each) => inFlow(each) && !each.script && editor.has(each.text) && pdf.has(each.text))
     .sort((a, b) => {
@@ -147,7 +148,7 @@ export function compare(
     if (!previous) return;
     const [e, p] = [editor.get(token.text)!, pdf.get(token.text)!];
     const [pe, pp] = [editor.get(previous.text)!, pdf.get(previous.text)!];
-    if (pp.page !== p.page || token.grows || previous.grows === 'around') return;
+    if (pp.page !== p.page) return;
     length(token, `step from ${previous.text}`, e.baseline - pe.baseline, p.baseline - pp.baseline);
   });
 

@@ -3,6 +3,28 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.125.1 - 2026-09-29 (PR #TBD)
+
+### Fixed
+
+- **A line holding an image now stands as far from the line above as it will print.** In the editor
+  and a document's text, a line with an image in it, a run of text in a larger size than the text
+  around it, or a list item smaller than its list's bullet or number opened by a different amount than
+  in the PDF - under the default theme a paragraph holding an image stood about 2pt nearer the one
+  above. Each now opens by exactly what stands above the text's own top or below its foot, as the PDF
+  does, on every line of a paragraph. A list inside a list item no longer leaves the space after a
+  list before the next item (issue #331).
+- **A document's section headings are spaced as they print.** The document view spaced its section
+  headings by its own gaps - two nested headings about 7pt further apart than on the page, and more
+  above a component's text - put its own gap after a heading's number, and did not centre a heading or
+  set it to the end where its style says so. A heading now stands where the PDF sets it: its number, a
+  space and its title in one line of its heading style, in the heading's colour, spaced only as that
+  style says, so a document reads as closely spaced as it prints (issue #333).
+- **The editor is now shown to match the PDF in full.** With both fixed, the browser tests measure
+  every setting both the editor and the PDF show - where lines stand, where text starts, sizes, faces,
+  colours, fills, rules and images - and all agree within half a point, the largest difference under a
+  tenth of a point.
+
 ## 0.124.1 - 2026-09-29 (PR #337)
 
 ### Fixed
