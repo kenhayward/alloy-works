@@ -1,10 +1,8 @@
 import {
   conditions,
-  documentTargets,
   number,
   resolve,
   sectionNumbers,
-  walkOutline,
   type Contribution,
   type NumberingScheme,
   type OutlineView,
@@ -29,6 +27,7 @@ import {
 } from 'react';
 
 import { heldSentence } from '../editor/held.js';
+import { referenceContexts } from './contexts.js';
 import { textOffsetIn } from '../editor/caret.js';
 
 import { Lozenge } from '../states/Lozenge.js';
@@ -44,41 +43,6 @@ const ownRoom = (element: HTMLElement) => innerWidth(element);
 
 /** What the text knows of an occurrence's contributions until the page has heard: nothing. */
 const NOTHING_KNOWN: ReadonlyMap<string, readonly Contribution[]> = new Map();
-
-/**
- * **What each occurrence's references are shown against** (cross-references 1, rulings R11 and R12):
- * by occurrence node, `documentTargets` for that occurrence, numbered by the same pipeline a publish
- * numbers with, over the outline the page holds and the contributions it last heard. One map for the
- * text and for the editor opened in place, so a reference reads the same in the card and on the
- * surface it opens into. Without a scheme nothing is numbered, and every target is offered with no
- * label rather than with one a publication would not print. `words` is the layout's own for above and
- * below (cross-references 2, ruling R9), carried into every context alike so a relative reference
- * prints what a publish would, wherever in the document it stands. `component` is the occurrence's
- * own, so a reference naming its own component by a `component` target reads as a block of its own,
- * as a publish binds it (the final review of cross-references 2).
- */
-function referenceContexts(
-  outline: OutlineView,
-  scheme: NumberingScheme | null,
-  contributions: ReadonlyMap<string, readonly Contribution[]>,
-  words: { readonly above: string; readonly below: string } | null,
-): ReadonlyMap<string, ReferenceContext> {
-  const numbering =
-    scheme === null
-      ? { scheme: '', entries: [] }
-      : number(conditions(resolve(outline, contributions)), scheme);
-  const contexts = new Map<string, ReferenceContext>();
-  walkOutline(outline.nodes, (node) => {
-    if (node.type !== 'reference' || node.component === null) return;
-    const editing = { component: node.component, node: node.id };
-    contexts.set(node.id, {
-      targets: documentTargets({ outline, numbering, contributions, editing }),
-      component: node.component,
-      ...(words === null ? {} : { words }),
-    });
-  });
-  return contexts;
-}
 
 /** Said where a component's text does not read, or holds what the editor cannot show yet. */
 const CANNOT_SHOW = 'This component holds content this editor cannot show yet.';

@@ -67,16 +67,18 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
-    // 1475, from 1474 (2026-09-29): PUB-105 supersedes PUB-104, the Matterhorn review made before each release rather than on each change (issue #344).
+    // 1477, from 1476 (2026-09-29): PUB-105 supersedes PUB-104, the Matterhorn review made before each release rather than on each change (issue #344).
+    // 1476, from 1474 (2026-09-29): W13.3 - STR-072 supersedes STR-039 (issue #134) and CNT-179 supersedes CNT-076 (issue #339), the navigation budgets with numbers.
     // 1474, from 1472 (2026-09-28): W13.4 - STY-080 and STY-081 supersede STY-053, the editor and Word each measured against the PDF (issue #328).
     // 1472, from 1471 (2026-09-28): W14.4 - STR-071 supersedes STR-070, a figure or a table explicitly unnumbered (issue #129).
     // 1471, from 1470 (2026-09-28): W14.7's final review - CNT-178 supersedes CNT-148, because macOS chooses its spelling checker's languages itself.
     // 1470, from 1458 (2026-09-28): the T1 audit's last decisions and rewordings: CNT-176 and CNT-177, PUB-098 to PUB-104, IAM-080 and IAM-081 supersede the rows they split, and STY-079 is new (issue #306).
     // 1458, from 1449 (2026-09-26): the rewordings Ken agreed after the T1 audit (K7, and W1's three): CNT-171 to CNT-175, STR-070, MET-042, STY-078 and API-061 supersede the rows they reword.
-    expect(model.requirements).toHaveLength(1475);
+    expect(model.requirements).toHaveLength(1477);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
-    // 503, from 502 (2026-09-29): publishing.md claims PUB-105, the Matterhorn review before each release, verified by attestation as CNT-177 is (issue #344).
+    // 504, from 503 (2026-09-29): publishing.md claims PUB-105, the Matterhorn review before each release, verified by attestation as CNT-177 is (issue #344).
+    // 503, from 502 (2026-09-29): W13.3 - document-view.md claims CNT-179, measured green by the browser suite's budgets.test.ts on the reference machine; STR-072 is not claimed, since the document opened cold misses its number (structure.md names the gap).
     // 502, from 503 (2026-09-28): W13.4 after W13.2 - themes.md does not claim STY-080 (issues #331, #333 named beside its table).
     // 503, from 504 (2026-09-28): W13.2's final review - publishing.md drops PUB-104, which asks for the review on each change and the guide makes it before each release; the gap is named beside its table.
     // 504, from 500 (2026-09-28): W13.2 - component-editor.md claims CNT-176, CNT-177 and CNT-078, and publishing.md PUB-104, each verified by the browser suite or a person's attestation.
@@ -217,7 +219,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(503);
+    ).toBe(504);
   });
 });
 
@@ -567,6 +569,8 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 551, from 550 (2026-09-29): W13.3 - CNT-179 in tests/browser's budgets.test.ts. STR-072's two
+  // tests cite nothing while it is not claimed.
   // 550, from 548 (2026-09-29): issue #336 - STR-035 and STR-045 in tests/browser's
   // navigation.test.ts, a long document scrolled, jumped through and linked into: four titles in one
   // file, two citations. STR-035's new title in the document page's test adds none.
@@ -708,7 +712,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(550);
+    expect(model.citations).toHaveLength(551);
   });
 
   it('cites no identifier the corpus does not hold', () => {

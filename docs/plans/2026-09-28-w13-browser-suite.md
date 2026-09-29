@@ -284,6 +284,93 @@ Only these could change the plan; everything else is built as written.
    with the stack and Chromium named.
 6. Tests: STR-072 and CNT-179, each on its measuring test.
 
+**W13.3, as built** (PR #340). What question 2 found, and what departs from the above:
+
+- **Question 2 stopped the slice, as B-K said it would.** Measured first on the reference machine,
+  the open met both numbers - its interface's share 243 ms at p95, the whole 343 ms - and a move met
+  STR-072's; but no jump ever landed. The outline pane had no scroll of its own, so keeping the node
+  in view in the tree scrolled the window, which moved the text, which moved the node in view, until
+  the page settled near the top: of 21 nodes chosen, none stayed on the screen, and the text could
+  not be scrolled past a screen by hand at any size. Filed as issue #336 and fixed by PR #337 before
+  the rows landed. Ken's answer, 2026-09-29: land both rows at the numbers proposed if the view meets
+  them; take the next item test-first to give the open headroom; and measure every act, not a move.
+- **The open's share was mostly the page working out cross-reference targets.** `referenceContexts`
+  called `documentTargets` once per occurrence as the text was drawn, each walking the whole outline:
+  about 65 ms of a 300 ms open, profiled. It now computes an occurrence's targets when a reference in
+  its text first asks, and keeps them (`apps/web/src/structure/contexts.ts`), test first.
+- **Every act, not only a move.** STR-072 says "each structural act"; the row names them, and the test
+  measures each by the keyboard as a person makes it, paired with its inverse so the fixture ends
+  every cycle as it began: an insert and its removal, a retitle and back, **Starts on** a new page and
+  back, a move down and up, a demotion and its promotion. A retitle, **Starts on** and a move are
+  measured both ways, so forty samples each.
+- **The fixture is found by its shape as well as its title**: ten chapters titled `Chapter n` of nine
+  sections titled `Topic n.m`, none starting on a new page, each holding only references, four
+  hundred components and no two alike. A failed run that left an act undone leaves a document of
+  another shape, and the next run makes a new one (about fifteen seconds).
+- **Each result is the state's own content**, asked for by the page in every frame after the act:
+  the open ends when the tree holds five hundred named items and the first component's paragraph is
+  on the screen, not under the header; an act when the tree names or numbers the node as the act
+  leaves it; a jump when the node's heading is on the screen, and the jump counts only if it is still
+  there after the page has settled. A result already on the screen before its act fails the sample.
+- **The interface's share subtracts the union of the requests' times**, not their sum: an open waits
+  on several requests at once, and summing them would count the same milliseconds more than once.
+- **Measured on the reference machine**, 2026-09-29, after #337 and the targets fix, with no other
+  stack of the product's running and another project's containers beside it (recorded in `meta`):
+  every budget met. The open's interface share fell from 243 ms at p95 before the fix to
+  176, its whole time from 343 to 317; a jump, which never landed before #337, takes 25 ms. Each
+  budget was watched fail first, on an impossible bound of 1 ms, before the green run below.
+
+| Budget                       | Measured, p95 / max (ms) | Number (ms) | Met |
+| ---------------------------- | ------------------------ | ----------- | --- |
+| STR-072, opening's interface | 175.5 / 181.0            | 250 / 500   | Yes |
+| STR-072, an insert           | 82.4 / 103.3             | 250 / 500   | Yes |
+| STR-072, a removal           | 65.9 / 66.7              | 250 / 500   | Yes |
+| STR-072, a retitle           | 51.3 / 56.1              | 250 / 500   | Yes |
+| STR-072, Starts on           | 62.4 / 90.2              | 250 / 500   | Yes |
+| STR-072, a move              | 108.6 / 124.1            | 250 / 500   | Yes |
+| STR-072, a demotion          | 74.6 / 119.7             | 250 / 500   | Yes |
+| STR-072, a promotion         | 66.8 / 70.6              | 250 / 500   | Yes |
+| CNT-179, opening, whole time | 316.5 / 351.4            | 1000 / 2000 | Yes |
+| CNT-179, a jump, whole time  | 25.1 / 25.4              | 250 / 500   | Yes |
+
+- **The final review's fixes**, 2026-09-29. The p95 is said by sample count, the third slowest of
+  forty; each sample's requests are held to the paths its act asks for, and one holding any other is
+  refused (`timing.test.ts` watched a stray request go unrefused first); the text's contexts are held
+  to the outline they were made from by a test that failed with `outline` taken out of the memo's
+  dependencies; the fixture's comment says every act changes it and each is undone. **The open is
+  measured cold as well**, a fresh page loaded at the document's address, and **a fifth of the
+  fixture's texts hold cross-references** (fixture 2), so the targets fix is no longer measured at its
+  best case. Measured again on the reference machine, with alloy-works (5), diariz (8), hawser (1), portainer_agent (1) running beside it:
+
+| Budget                                    | Measured, p95 / max (ms) | Number (ms) | Met    |
+| ----------------------------------------- | ------------------------ | ----------- | ------ |
+| STR-072, opening from the list, interface | 197.9 / 223.9            | 250 / 500   | Yes    |
+| STR-072, opening cold, interface          | 334.3 / 338.2            | 250 / 500   | **No** |
+| STR-072, an insert, interface             | 85.2 / 87.3              | 250 / 500   | Yes    |
+| STR-072, a removal, interface             | 114.8 / 120.5            | 250 / 500   | Yes    |
+| STR-072, a retitle, interface             | 73.0 / 88.9              | 250 / 500   | Yes    |
+| STR-072, Starts on, interface             | 60.0 / 82.5              | 250 / 500   | Yes    |
+| STR-072, a move, interface                | 123.9 / 135.5            | 250 / 500   | Yes    |
+| STR-072, a demotion, interface            | 90.2 / 110.1             | 250 / 500   | Yes    |
+| STR-072, a promotion, interface           | 87.7 / 99.4              | 250 / 500   | Yes    |
+| CNT-179, opening from the list, whole     | 332.3 / 361.5            | 1000 / 2000 | Yes    |
+| CNT-179, opening cold, whole              | 432.8 / 449.9            | 1000 / 2000 | Yes    |
+| CNT-179, a jump, whole                    | 24.0 / 27.3              | 250 / 500   | Yes    |
+
+- **Opened cold, STR-072 is missed.** The renderer's start is inside the interface's share, and the
+  cold open's is above 250 ms at p95. STR-072 says "opening a document" and names no starting point,
+  so it is **not claimed** and its tests cite nothing; structure.md names the gap. Ken decides (B-K):
+  whether STR-072 means an open inside the application, in which case its row says so and the claim
+  returns, or a load too, in which case the renderer's start has to be made faster. CNT-179, the whole
+  time, meets its numbers both ways and is claimed. The final review's own run measured the open from
+  the list at 217 to 229 ms at p95, and a run of this slice's with another stack of the suite and two
+  veraPDF checkers beside it measured 259.8 and failed, so its margin is smaller than the first run
+  here showed.
+- **What the full browser run found besides**: PR #337's `STR-045 opens at a linked node with its
+heading below the header` fails on this machine, at 41.0 against a header at 44, with main's
+  `DocumentText.tsx` as well as this slice's: the sections above the target settle 1.3 pixels shorter
+  each after it has been scrolled to. Filed as issue #341; not this slice's to fix.
+
 ## W13.4: Measured style
 
 1. The rows, through the requirement form: STY-080 and STY-081 landed, STY-053 marked
