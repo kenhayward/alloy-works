@@ -122,18 +122,21 @@ of the [W15 plan](../plans/2026-09-29-w15-word-measured.md), `word-measure.test.
 conformance kit's fixture in Word under eight themes, where Word is, and compares Word's own PDF with
 the PDF by the kit's comparison at STY-080's tolerances. Every face, weight, posture, colour, underline
 and fill is exact but the maths face STY-052 substitutes and twelve table rules' colours; the lengths
-are not: 1,186 differences of eight kinds are left, the largest a table's step at 8.12pt, each kind
+are not: 1,186 differences of ten kinds are left, the largest a table's step at 8.12pt, each kind
 named with its size and where it goes in word-output.md's
 [Word measured](word-output.md#word-measured-w152). The claim waits for them, beside PUB-023, which
-word-output.md says waits for it.
+word-output.md says waits for it. W15 stops after W15.2 (Ken, 2026-09-29), and STY-081 moves to T2.
 
 **STY-060 is not claimed either**, though both lists it asks for exist and are exact - the editor's
 empty, Word's holding STY-052's substitution alone (`EDITOR_DEVIATIONS` and `WORD_DEVIATIONS` in the
 conformance kit's `compare.ts`). Its second half, "a deviation not on that list must fail", holds for
-the editor's suite and not yet for Word's: Word's measurement holds what W15.2 left by kind, each to
-the largest it measured, rather than failing it, so that the Word check's practice can run the whole
-worker suite green while the kinds wait for their slices. The claim is made when Word's suite fails
-every difference not on its list, which is when STY-081 holds.
+the editor's suite and not yet for Word's. Word's measurement is a characterization of what W15.2
+left: it fails a difference of no kind, and holds each of ten kinds exactly as measured - how many
+differences it holds, the largest of each length and no other property, and, for the 12 table rules'
+colours and the 53 steps into and out of a filled paragraph, each one by name - rather than failing
+them, so that the whole worker suite runs green where Word is while the kinds wait. Held exactly is
+still held, not failed: the claim is made when Word's suite fails every difference not on its list,
+which is when STY-081 holds.
 
 **PUB-027's claim has a cost the Word writer pays** (the final review of Word 1, M5). Every style is a
 real Word style, and a run names a mark's character style rather than carrying its formatting, but

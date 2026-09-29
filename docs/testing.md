@@ -530,13 +530,17 @@ Word approves. It takes about twenty seconds, and leaves both PDFs of each theme
 measurements and `found.json`, every difference with the kind it is of, in `alloy-works-word-measure`
 under the system's temporary folder, which is where a failure is read; Word's version and build, the
 seeds, how many values each theme compared and its largest difference per property go into the test's
-`meta` and are printed. **Word does not agree with the PDF yet**: what W15.2 left is named in the test
-by kind (`LEFT`), each held to the largest it measured, and the test fails on a difference of no
-kind, on one larger than its kind's, and on a kind nothing is left of - so it is green while nothing
-moves, cites nothing, and is where a change to the writer that moves Word shows
-([word-output.md](design/word-output.md#word-measured-w152) has the kinds). The three Word files take
+`meta` and are printed. **Word does not agree with the PDF yet**, and the test is a characterization
+of what W15.2 left (`LEFT`, checked by `testing/word-left.ts`, whose own tests run in CI): ten kinds,
+each held exactly as measured - how many differences it holds, the largest of each length and no
+other property, and two of them each difference by name, a colour held only so - and a difference of
+no kind fails. So it is green while nothing moves, fails on one more difference of any kind however
+small, cites nothing, and is where a change to the writer that moves Word shows
+([word-output.md](design/word-output.md#word-measured-w152) has the kinds). A kind is changed only by
+hand, with the run that shows why. The three Word files take
 turns at Word through a lock file under the system's temporary folder (`testing/word-turn.ts`),
-since each starts a Word of its own and the script refuses while one runs. So the one switch runs the
+since each starts a Word of its own and the script refuses while one runs; a lock whose process has
+ended, or left empty a while, is taken away by one waiter at a time. So the one switch runs the
 check, the export and the measurement: **for a release, run the whole worker suite with it
 on** (`ALLOY_WORD_CHECK=1 pnpm --filter @alloy-works/worker test`) and then
 `pnpm trace record-run <version> word`, which reduces that run's `.trace-results/worker.json` to

@@ -10,10 +10,11 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 - **Word is measured against the PDF.** On a machine with Word, the same checks that hold the editor
   to the PDF now hold Word's own rendering of a publication to it, under eight themes: every size and
   position to within half a point, and every face, weight, slant, colour, underline and fill exactly.
-  Word does not match the PDF everywhere yet: the check names each kind of difference that is left -
-  tables, filled paragraphs, a line holding an image or a larger word, sizes Word rounds to half
-  points, a list's number beside centred text, a heading's number - and fails if any grows or a new
-  one appears.
+  Word does not match the PDF everywhere yet: 1,186 differences of ten kinds are left - tables,
+  filled paragraphs, a line holding an image or a larger word, sizes Word rounds to half points, a
+  list's number beside centred text, a heading's number. The check records exactly what is left and
+  fails on anything else: another difference of any kind, even a small one, one grown larger, one
+  gone, or a colour it does not list by name.
 
 ### Fixed
 
@@ -21,7 +22,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 - **A paragraph with no fill of its own is no longer painted in the fill of the style it is based
   on** in Word.
 - **The text of a filled block, such as preformatted text, stands where the PDF puts it** in Word,
-  rather than 2pt further in on each side.
+  rather than 2pt further in on each side. Where the block's padding is small, its fill in Word now
+  reaches up to about 2pt beyond its text on each side, a little further than in the PDF.
 - **A table's header column keeps its own rule in Word** where the rule between the other columns is
   wider, as in the PDF.
 
