@@ -4,6 +4,8 @@
   "type": "module",
   "description": "THROWAWAY harness for the data connector spike. Not a pnpm workspace member; not run by CI.",
   "dependencies": {
+    "jose": "6.2.12",
+    "mssql": "12.7.2",
     "pg": "8.13.1",
     "tedious": "18.6.1"
   }

@@ -32,6 +32,9 @@ volumes:
   source-pg-data:
   sqlserver-data:
   seaweed-data:
+  # Phase 2: the stand-in provider writes its public keys here and the token-exchange endpoint reads
+  # them, so the exchange trusts the tenant's provider without a network route between the two.
+  trust:
 
 services:
   # --- aw-dc-platform: stands for the platform's own network ---
@@ -78,6 +81,8 @@ services:
     command: ["node", "idp.mjs"]
     environment:
       PORT: "80"
+      ACCESS_TTL: "300"
+    volumes: ["trust:/trust"]
     networks:
       aw-dc-platform:
         ipv4_address: 172.31.10.14
@@ -91,6 +96,12 @@ services:
     environment:
       ROLE: caller
       PORT: "8080"
+      # Phase 2 (case 4): the caller stands for the service and the worker, holding the tenant's schema
+      # in platform-pg and reaching the connector over aw-dc-connector-rpc. Invented values.
+      PLATFORM_PG_URL: "postgres://postgres:platform-pg-fake-pw@172.31.10.11:5432/platform"
+      IDP_URL: "http://172.31.10.14"
+      CONNECTOR_URL: "http://172.31.30.31:8080"
+      TENANT_SEALING_KEY: "dlBCBJkzSuecCoSn76qngagHLR5Qjg5YHBMawT+ReJ0="
       PLATFORM_DENY: "172.31.10.10,172.31.10.11,172.31.10.12,172.31.10.13,172.31.10.14"
       METADATA_ADDR: "172.31.10.13"
     networks:
@@ -132,6 +143,7 @@ services:
     volumes:
       - "source-pg-data:/var/lib/postgresql"
       - "./init/source-pg.sql:/docker-entrypoint-initdb.d/source-pg.sql:ro"
+      - "./init/source-pg-phase2.sql:/docker-entrypoint-initdb.d/source-pg-phase2.sql:ro"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -158,6 +170,7 @@ services:
       PORT: "80"
       API_TOKEN: "fake-api-bearer-token-for-the-spike"
       REDIRECT_TO: "http://172.31.10.13/latest/meta-data/iam/security-credentials/"
+      EXCHANGE_URL: "http://token-exchange"
     networks:
       aw-dc-sources:
         ipv4_address: 172.31.20.23
@@ -168,10 +181,14 @@ services:
     command: ["node", "token-exchange.mjs"]
     environment:
       PORT: "80"
+      EXCHANGE_TTL: "300"
+      CLIENT_ID: "aw-connector-acme"
+      CLIENT_SECRET: "fake-exchange-client-secret-for-the-spike"
+    volumes: ["trust:/trust:ro"]
+    depends_on: [caller, idp]
     networks:
       aw-dc-sources:
         ipv4_address: 172.31.20.24
-    depends_on: [caller]
 
   resolver:
     image: aw-dc-agent:latest
