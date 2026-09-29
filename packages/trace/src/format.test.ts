@@ -77,6 +77,23 @@ describe('the tranche listing', () => {
     expect(formatTranche(model, 'T6')).toBe('No requirement is in tranche T6.');
   });
 
+  it('reports a requirement in T7 and one in T8, in the listing and in the stats', () => {
+    const later: TraceModel = {
+      ...model,
+      requirements: [
+        ...model.requirements,
+        requirement('ZZZ-004', 'A widget must be importable', 'T7'),
+        requirement('ZZZ-005', 'A widget must look the same in Word', 'T8'),
+      ],
+    };
+
+    expect(formatTranche(later, 'T7')).toContain('1 requirement(s) in tranche T7');
+    expect(formatTranche(later, 'T8', 'ZZZ')).toContain('ZZZ-005');
+    const rows = formatStats(later).split(/\r?\n/);
+    expect(rows.some((row) => row.startsWith('T7 '))).toBe(true);
+    expect(rows.some((row) => row.startsWith('T8 '))).toBe(true);
+  });
+
   it('lists the requirements themselves when an area is named', () => {
     const output = formatTranche(model, 'T1', 'ZZZ');
 

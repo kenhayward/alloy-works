@@ -37,8 +37,8 @@ in them, so a reader who never refreshes still sees correct numbers everywhere e
 PUB-027 - styles as real Word styles - belongs to [themes.md](themes.md), whose Word projection this
 writer includes as `styles.xml`.
 
-**PUB-023 is not claimed, and is T2's since
-[ADR-0032](../decisions/0032-words-fidelity-to-the-pdf-leaves-t1.md)**, with STY-081, though this
+**PUB-023 is not claimed, and is T8's since
+[ADR-0032](../decisions/0032-words-fidelity-to-the-pdf-leaves-t1.md) and [ADR-0033](../decisions/0033-t2-is-the-data-spine.md)**, with STY-081, though this
 design answers much of it; the final review of Word 4 found it claimed for more than the design gives. Its "first-class" is, by PUB-078, kept by STY-081's
 conformance suite, which since W15.2 measures Word's style values and finds them not yet the PDF's
 ([Word measured](#word-measured-w152)); and a maths character is judged
@@ -1332,7 +1332,7 @@ another face and not reported. Word's rebuilt contents, lists and running heads 
 structured equation to its characters, which the final review named beside those two, is now reported
 (`equation_flattened`). PUB-023 is claimed when STY-081, STY-053's Word half, split from it by W13.4,
 lands and the maths face's coverage is judged or reported; themes.md names STY-081 as its gap. Both
-are T2's since ADR-0032, which ended W15 after W15.2's measurement.
+left T1 by ADR-0032, which ended W15 after W15.2's measurement, and are T8's since ADR-0033.
 
 **PUB-035 is not claimed.** Word carries headings at their outline levels, images described or
 decorative, header rows marked, every run's language, footnotes and cross-references as Word's own,
@@ -1351,7 +1351,7 @@ waits for Word's style properties to agree with the PDF's where W15.2 measures t
 ([Word measured](#word-measured-w152)), and PUB-092 for Word's pagination to be measured (since
 W14.3 the regression corpus shows each keep rule reaching Word as its own property, and themes.md
 names the gap that is left: Word's own page breaks; since ADR-0032 PUB-092 is superseded by PUB-106,
-the PDF's half, cited on the corpus, and PUB-107, Word's own pages, in T2), PUB-073
+the PDF's half, cited on the corpus, and PUB-107, Word's own pages, in T8), PUB-073
 for T3's baselines, and PUB-028, review in Word, is T6.
 
 **Left, for anyone after T1.** Nothing of WO-M is left. Open: the two questions under
@@ -1513,8 +1513,8 @@ red.
 A panel's text now stands where the PDF's does, and its fill therefore stands out from the text by
 Word's reach where the padding is small: up to about 2pt beyond it across, where the padding is less
 than the reach, which the panels' kind holds. W15 stopped after W15.2 (Ken, 2026-09-29): the routes
-above are recorded for T2, where STY-081, PUB-023 and PUB-107, PUB-092's Word half, now are
-([ADR-0032](../decisions/0032-words-fidelity-to-the-pdf-leaves-t1.md)). The test stays, a
+above are recorded for T8, where STY-081, PUB-023 and PUB-107, PUB-092's Word half, now are
+([ADR-0032](../decisions/0032-words-fidelity-to-the-pdf-leaves-t1.md), [ADR-0033](../decisions/0033-t2-is-the-data-spine.md)). The test stays, a
 characterization of exactly what is left, run where the Word check runs.
 
 Of Word 2's six differences beyond half a point, the image's line is the third kind, the cell's first

@@ -91,18 +91,21 @@ corpus.
 
 ## 4. The assistant
 
-| ID          | Requirement                                                                                                                                | Tranche    | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------- |
-| **GEN-007** | The assistant's tools must be the product's own capabilities - search, read, propose an edit, run a declared query - and nothing else      | Constraint | Specified |
-| **GEN-008** | Every tool call must be authorised exactly as the equivalent user action would be, using the calling user's identity (**IAM-036**)         | Constraint | Specified |
-| **GEN-009** | A tool call that changes anything must be confirmed by the user before it takes effect                                                     | Constraint | Specified |
-| **GEN-010** | The assistant must show what it did: which tools it called, with what arguments, and what came back                                        | T5         | Specified |
-| **GEN-011** | The assistant must be able to cite the content it drew on, by identity, so that a claim can be checked                                     | T5         | Specified |
-| **GEN-012** | A thin assistant capability must be available from T2 - drafting against the current document - so that this governance is exercised early | T2         | Specified |
+| ID          | Requirement                                                                                                                                                                                             | Tranche    | Status    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **GEN-007** | The assistant's tools must be the product's own capabilities - search, read, propose an edit, run a declared query - and nothing else                                                                   | Constraint | Specified |
+| **GEN-008** | Every tool call must be authorised exactly as the equivalent user action would be, using the calling user's identity (**IAM-036**)                                                                      | Constraint | Specified |
+| **GEN-009** | A tool call that changes anything must be confirmed by the user before it takes effect                                                                                                                  | Constraint | Specified |
+| **GEN-010** | The assistant must show what it did: which tools it called, with what arguments, and what came back                                                                                                     | T5         | Specified |
+| **GEN-011** | The assistant must be able to cite the content it drew on, by identity, so that a claim can be checked                                                                                                  | T5         | Specified |
+| **GEN-012** | A thin assistant capability - drafting against the current document - must be the first of the assistant's capabilities built, so that this governance is exercised against real use before the rest is | T5         | Specified |
 
-**GEN-012 is deliberate sequencing.** A governance model designed in the abstract and first used in
-T5 will be wrong in ways nobody can predict; the same model exercised against real use from T2 will
-be wrong in ways somebody has already fixed.
+**GEN-012 is deliberate sequencing.** A governance model designed in the abstract and first used by
+the whole assistant will be wrong in ways nobody can predict; the same model exercised against a thin
+slice first will be wrong in ways somebody has already fixed. It was T2's, riding along with the data;
+it is T5's since [ADR-0033](../../decisions/0033-t2-is-the-data-spine.md), because a thin slice still
+needs the model endpoints, the governance and the cost controls T5 builds, and a second product
+surface T2 has no other reason to open. The ordering it asks for now holds within T5.
 
 ## 5. Interactive chat
 
@@ -324,3 +327,21 @@ A later review read all twenty-one documents against each other. Its sections ar
 | Review sections | Change                                                                                                                                                                                                                           |
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2.7             | **GEN-060** binds every AI-assisted write to the rules a human edit obeys - the component lock, the refusal naming its holder, and the version precondition - so the assistant cannot become a way round the collaboration model |
+
+### Ken's re-tranching of T2, 2026-09-29
+
+Not a review. Ken narrowed T2 to the data spine - connections, query definitions, parameters,
+bindings, provenance, revising a bound value by hand, tabular presentation and field formatting,
+and only what those directly depend on - and moved the rest of what T2 held to a new tranche, T7,
+the administration and the library, and Word's fidelity to the PDF to T8, the last, recorded by
+[ADR-0033](../../decisions/0033-t2-is-the-data-spine.md). A row moving tranche whole keeps its
+identifier, and only its tranche changes.
+
+| What was found                                                                                                                                                                                                                                                 | Change                                                                                                                                                                                                                                               |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GEN-012 put a thin assistant in T2 so that section 7's governance met real use before T5. A thin slice still needs the model endpoints, the governance and the cost controls T5 builds, and opens a second product surface that T2 has no other reason to open | **GEN-012 moved to T5**                                                                                                                                                                                                                              |
+| GEN-012's statement said "available from T2", which its tranche now contradicts                                                                                                                                                                                | Reworded, a clarity edit in consequence of the move: the thin slice is the first of the assistant's capabilities built. What it asks - governance exercised on a thin slice before the rest of the assistant - is unchanged, so the identifier stays |
+
+| Counts       | Before | After |
+| ------------ | ------ | ----- |
+| Requirements | 60     | 60    |

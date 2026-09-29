@@ -3,6 +3,27 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.127.2 - 2026-09-29 (PR #355)
+
+### Changed
+
+- **The next release is about data, and only data.** Tranche T2 now holds what it takes to put live
+  data into a document: connections to your systems, the queries run against them, a template's
+  parameters feeding those queries, values and tables bound into the text, where each value came
+  from, correcting a bound value by hand, and how a bound table is laid out and its numbers
+  formatted. Everything else that had gathered in T2 (user provisioning and single sign-on with more
+  than one provider, the asset library, reference libraries and vocabularies, export and import,
+  administration through the API, and adding styles or themes without a release) moves to a new
+  tranche, T7. Matching Word's rendering to the PDF moves to T8, the last. A decision record explains
+  the split.
+- **The drafting assistant arrives with the rest of the AI features, in T5**, rather than early in
+  T2, because even a small one needs the model connections, governance and cost controls that T5
+  builds.
+- **Opening a document within its budget now means opening it from inside the application**, from
+  the documents list. Opened that way, and for every change to its outline, a five-hundred-node
+  document meets its number, and the requirement is now claimed. Loading a document's address into a
+  fresh page is still measured and recorded.
+
 ## 0.127.1 - 2026-09-29 (PR #354)
 
 ### Changed

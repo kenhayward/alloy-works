@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { REPO_ROOT } from './compile.js';
+import { TRANCHES } from './model.js';
 
 /**
  * The issue form's area dropdown is a copy of the corpus's area codes, and a copy drifts. An area
@@ -29,6 +30,16 @@ describe('the requirement issue form', () => {
 
   it('offers all twenty-two, so neither list is empty by accident', () => {
     expect(areasInForm).toHaveLength(22);
+  });
+
+  // The tranche dropdown is a copy of the parser's vocabulary, and drifts the same way: a tranche
+  // the corpus accepts and the form omits is one nobody can suggest.
+  it('offers every tranche the corpus accepts, in order, and then Not sure', () => {
+    const block = form.slice(form.indexOf('id: suggested-tranche'));
+    const options = block.slice(block.indexOf('options:'), block.indexOf('validations:'));
+    const offered = [...options.matchAll(/^\s+- (.+?)\s*$/gm)].map((m) => m[1]!);
+
+    expect(offered).toEqual([...TRANCHES, 'Not sure']);
   });
 
   // This checks the labels a person reads, not the YAML's own keys: a GitHub issue form gives every

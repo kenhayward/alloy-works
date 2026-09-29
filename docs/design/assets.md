@@ -61,7 +61,7 @@ its own, nothing here claims to be audited until it is.
 and application segments, can carry any bytes at all - a zip in a text chunk is still a well-formed
 PNG, measured by the figures 1 review. They are inert here: the bytes are served only as the image's
 own type, never sniffed and never run, and never offered for download. Removing what metadata carries
-is AST-007's declared policy, which is T2's; until then the design claims no more than AST-051 says.
+is AST-007's declared policy, which is T7's; until then the design claims no more than AST-051 says.
 
 ## What this document does not own
 
@@ -70,8 +70,8 @@ is AST-007's declared policy, which is T2's; until then the design claims no mor
 | Alternative text in three states, inherited, own or decorative                           | content-model.md (AST-012, AST-013, AST-015, AST-039). This design stores the default a figure inherits                                      |
 | How big a figure prints                                                                  | themes.md's image styles (STY-015 to STY-018, STY-078), built by themes 2; the default theme's two in [publishing.md](publishing.md#figures) |
 | Refusing a figure with no alternative text at publish                                    | publishing.md (PUB-033, AST-014)                                                                                                             |
-| Size limits a tenant can lower (AST-004), derivatives, licences, replacement             | T2 and T3. T1's limits are the product's, declared as constants                                                                              |
-| An asset library, search over assets, where an asset is used (AST-018, AST-027, AST-028) | T2. In T1 an asset is reached only through the figure that places it                                                                         |
+| Size limits a tenant can lower (AST-004), derivatives, licences, replacement             | T7 and T3. T1's limits are the product's, declared as constants                                                                              |
+| An asset library, search over assets, where an asset is used (AST-018, AST-027, AST-028) | T7. In T1 an asset is reached only through the figure that places it                                                                         |
 | Pasting or dropping an image into a component                                            | A later editor slice. Paste keeps no image today, and still will after these slices                                                          |
 
 ## Formats, measured
@@ -191,7 +191,7 @@ without allocating anything.
 | Bytes  | **25 MB**      | A high-quality 50-megapixel JPEG is under 20 MB; nothing larger is a picture for a report                                     |
 | Pixels | **50 million** | Every phone and most cameras under it (a 6000 by 4000 photograph is 24 million); a decoded RGBA image of 50 million is 200 MB |
 
-AST-004 asks for a limit per format that a tenant can lower. That is T2's, and these constants are
+AST-004 asks for a limit per format that a tenant can lower. That is T7's, and these constants are
 where it will read from.
 
 ## The asset, stored
@@ -218,14 +218,14 @@ An asset version's content, at its schema version 1:
 
 **A figure references an asset version, not an asset.** A component version is immutable, and what it
 shows must be too: a figure pinned to a version shows the same bytes with the same default text for as
-long as the version exists. Floating at the latest version is AST-017's, and T2's. So the content
+long as the version exists. Floating at the latest version is AST-017's, and T7's. So the content
 model's `asset` member, today any non-empty string, is tightened to an artifact version identifier -
 **in place at content schema version 1**, as the table's shape was, because no figure has ever been
 stored: a read-only count, run before the plan, is what licenses it (decision F-I).
 
 **Changing the default alternative text is a new asset version** with the same object. A figure
 pinned to the old version keeps the old default, which is AST-031's point - an asset version states
-what it covers - reached without T2's per-property history.
+what it covers - reached without T7's per-property history.
 
 ## Reading an asset
 
@@ -304,9 +304,9 @@ check" and "fails its check", and this design claims all three. Decision F-A.
 | F-C | **Checked twice: the header in the service, the decode in a worker job**, with a `checking` state nothing can place                                                                           | Yes. Or everything in the service, at the cost of decoding 50 million pixels inside a request                      |
 | F-D | **sharp 0.35.4 pinned in the worker** for the decode, and **our own header walk** in `packages/domain`, the two required to agree                                                             | Yes. sharp alone misses a polyglot and invents a resolution; our walk alone does not prove the file decodes        |
 | F-E | **25 MB and 50 million pixels**, as product constants until AST-004                                                                                                                           | Yes                                                                                                                |
-| F-F | **An asset is in the space of the component it was uploaded into**, read decided on the asset. AST-026, a T2 requirement, met early because the alternative is an asset nobody's grants reach | Yes                                                                                                                |
+| F-F | **An asset is in the space of the component it was uploaded into**, read decided on the asset. AST-026, a T7 requirement, met early because the alternative is an asset nobody's grants reach | Yes                                                                                                                |
 | F-G | **Bytes served by a service route**, with `nosniff`, a sandboxing policy and an immutable cache, not by signed store links                                                                    | Yes                                                                                                                |
-| F-H | **A figure references an asset version**, pinned; floating at latest is T2's AST-017                                                                                                          | Yes                                                                                                                |
+| F-H | **A figure references an asset version**, pinned; floating at latest is T7's AST-017                                                                                                          | Yes                                                                                                                |
 | F-I | **The content model's `asset` tightened in place** to an artifact version identifier, at schema version 1, on a read-only count of stored figures                                             | Yes, if the count is zero; a migration otherwise                                                                   |
 
 ## Changed while planning and building the first slice

@@ -67,6 +67,7 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
+    // 1479, unchanged (2026-09-29): ADR-0033, T2 narrowed to the data spine - 82 rows move whole to T7, STY-081, PUB-023 and PUB-107 to T8, and GEN-012 to T5, each keeping its identifier.
     // 1479, from 1477 (2026-09-29): ADR-0032, Word's fidelity to the PDF leaves T1 - PUB-106 (T1, the PDF's) and PUB-107 (T2, Word's own pages) supersede PUB-092.
     // 1477, from 1476 (2026-09-29): PUB-105 supersedes PUB-104, the Matterhorn review made before each release rather than on each change (issue #344).
     // 1476, from 1474 (2026-09-29): W13.3 - STR-072 supersedes STR-039 (issue #134) and CNT-179 supersedes CNT-076 (issue #339), the navigation budgets with numbers.
@@ -78,6 +79,7 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1479);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 506, from 505 (2026-09-29): ADR-0033 - structure.md claims STR-072, an open from within the application on Ken's answer, measured green by the browser suite's budgets.test.ts; T2's re-tranching to T7 and T8 moves claims with their rows and drops none.
     // 505, from 506 (2026-09-29): ADR-0032 - themes.md stops claiming STY-049: Word borrows a character Cambria Math lacks, and refusing it (W15-K) moved to T2.
     // 506, from 505 (2026-09-29): ADR-0032 - themes.md claims PUB-106, PUB-092's PDF half, shown by the regression corpus's four keep cases; PUB-107, Word's own pages, and STY-081 and PUB-023 are T2's, unclaimed.
     // 505, from 504 (2026-09-29): issues #331 and #333 fixed - themes.md claims STY-080, every property both outputs render measured and agreeing.
@@ -223,7 +225,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(505);
+    ).toBe(506);
   });
 });
 
@@ -573,6 +575,8 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 555, from 554 (2026-09-29): ADR-0033 - STR-072 in tests/browser's budgets.test.ts, the open from
+  // the documents list and every act on the outline: two titles in one file, one citation.
   // 554, from 553 (2026-09-29): ADR-0032 - PUB-106 in apps/worker's regression.test.ts, on the keep rules' describe, whose four
   // cases show each rule holding in the PDF wherever the page allows; PUB-092, which it supersedes, was left uncited since W14.3.
   // 553, from 552 (2026-09-29): issue #350 - STR-045 in apps/web's position.test.ts, a linked node
@@ -722,7 +726,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(554);
+    expect(model.citations).toHaveLength(555);
   });
 
   it('cites no identifier the corpus does not hold', () => {

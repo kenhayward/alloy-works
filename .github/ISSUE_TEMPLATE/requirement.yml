@@ -89,6 +89,8 @@ body:
         - T4
         - T5
         - T6
+        - T7
+        - T8
         - Constraint
         - Not sure
     validations:

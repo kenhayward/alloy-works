@@ -142,7 +142,7 @@ say this design holds ground it does not.
 | CNT-164, CNT-057, CNT-058 | A toolbar, a keyboard shortcut and an insertion palette are the editor's; component-editor.md claims CNT-164 and CNT-057. CNT-035 was split into CNT-164, T1, and CNT-165, the defined term's control, T6 |
 | CNT-053, CNT-102          | Citation style rendering is T6, in **PUB**                                                                                                                                                                |
 | CNT-039                   | The strict data anchor is here in shape, but generated content needs a bound table, which is T2. Claiming it would claim the T2 case                                                                      |
-| CNT-120                   | Admonitions are T2, and the block is deliberately absent from the vocabulary                                                                                                                              |
+| CNT-120                   | Admonitions are T7, and the block is deliberately absent from the vocabulary                                                                                                                              |
 | CNT-122                   | Claimed by [themes.md](themes.md): resolving an image style to real dimensions is **STY**'s, and the editor resolves it by those same rules                                                               |
 | CNT-094                   | Already claimed by [themes.md](themes.md)                                                                                                                                                                 |
 | CNT-145                   | Claimed by [storage-and-versioning.md](storage-and-versioning.md), which records the component type on the version rather than in content                                                                 |
@@ -308,7 +308,7 @@ conditional resolution, translation and three output formats.
 | `blockquote`   | Block content, and an optional attribution that may carry a citation                                                                                                                                                                                                         |
 | `equation`     | MathML, and numbered or explicitly unnumbered                                                                                                                                                                                                                                |
 
-Two are absent on purpose. **`admonition`** is CNT-120, which is T2 and takes its closed vocabulary
+Two are absent on purpose. **`admonition`** is CNT-120, which is T7 and takes its closed vocabulary
 from an admonition style catalogue that does not exist yet. **A bound table** arrives with T2's
 bindings; the spike built one for gate case 3, and what transferred from that case is the key-column
 anchoring CNT-107 now requires of an authored table.

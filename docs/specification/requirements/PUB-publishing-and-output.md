@@ -83,7 +83,7 @@ exactly when it matters.
 | **PUB-018** | Widow and orphan control, keep-with-next and keep-together must be honoured                                                                                                                                                                                                                        | T1         | Superseded by PUB-092 |
 | **PUB-092** | Widow and orphan control, keep-with-next and keep-together must be declared by style, passed to each engine as that engine's own rule, and shown by the publishing regression corpus to hold wherever the page allows                                                                              | T1         | Superseded by PUB-106 |
 | **PUB-106** | Widow and orphan control, keep-with-next and keep-together must be declared by style, passed to the PDF's engine as that engine's own rule, and shown by the publishing regression corpus to hold in the PDF wherever the page allows                                                              | T1         | Specified             |
-| **PUB-107** | Widow and orphan control, keep-with-next and keep-together declared by style must be passed to Word as Word's own rule, and the publishing regression corpus's cases, opened in Word, must show them holding in Word's own pages wherever the page allows                                          | T2         | Specified             |
+| **PUB-107** | Widow and orphan control, keep-with-next and keep-together declared by style must be passed to Word as Word's own rule, and the publishing regression corpus's cases, opened in Word, must show them holding in Word's own pages wherever the page allows                                          | T8         | Specified             |
 | **PUB-019** | Typefaces must be embedded, subject to the licence recorded with the theme (**STY-041**, **STY-042**)                                                                                                                                                                                              | T1         | Specified             |
 | **PUB-020** | PDF/A must be producible where a layout declares it, for archival and submission                                                                                                                                                                                                                   | T3         | Specified             |
 | **PUB-021** | The document outline must appear as PDF bookmarks                                                                                                                                                                                                                                                  | T1         | Specified             |
@@ -105,17 +105,18 @@ Word is substituted by STY-052, and a substitute with different metrics re-break
 touches. Composing again against the face that will actually be used is the only version of this that
 produces a document matching its own approval.
 
-**PUB-092 is split by engine: PUB-106 is the PDF's, and PUB-107 is Word's, in T2.** The rules are
+**PUB-092 is split by engine: PUB-106 is the PDF's, and PUB-107 is Word's, in T8.** The rules are
 declared once, by style, and each engine is handed its own. The regression corpus shows them holding in
 the PDF on every change; Word's own pages are measured only on a machine with Word, and T1 leaves that
 measurement with the rest of Word's fidelity to the PDF
-([ADR-0032](../../decisions/0032-words-fidelity-to-the-pdf-leaves-t1.md)).
+([ADR-0032](../../decisions/0032-words-fidelity-to-the-pdf-leaves-t1.md)), which is the last tranche's
+([ADR-0033](../../decisions/0033-t2-is-the-data-spine.md)).
 
 ## 6. Word
 
 | ID          | Requirement                                                                                                                                                                                                                                                                                                                                                                             | Tranche    | Status    |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **PUB-023** | Word must be a first-class output, not a convenience export                                                                                                                                                                                                                                                                                                                             | T2         | Specified |
+| **PUB-023** | Word must be a first-class output, not a convenience export                                                                                                                                                                                                                                                                                                                             | T8         | Specified |
 | **PUB-024** | Heading numbers must be carried as a numbering definition Word understands, never as literal text in a heading                                                                                                                                                                                                                                                                          | T1         | Specified |
 | **PUB-025** | Footnotes must be real Word footnotes, numbered by Word                                                                                                                                                                                                                                                                                                                                 | T1         | Specified |
 | **PUB-026** | Cross-references must be fields Word can update, not the numbers they resolved to                                                                                                                                                                                                                                                                                                       | T1         | Specified |
@@ -132,10 +133,12 @@ out its own pages and a recipient's first edit reflows the rest, so the Word doc
 relied on to share the PDF's pages - and a page number copied across from the PDF would look finished
 and be wrong. See [ADR-0015](../../decisions/0015-word-output-our-own-writer-reflowable.md).
 
-**PUB-023 is T2's.** By PUB-078, what makes Word first-class is STY-081's suite keeping the answer
+**PUB-023 is T8's.** By PUB-078, what makes Word first-class is STY-081's suite keeping the answer
 "nothing", and Word was measured against the PDF in T1 and found not to agree yet; the measurement
-stays, and the work of closing it moves to T2 with STY-081
-([ADR-0032](../../decisions/0032-words-fidelity-to-the-pdf-leaves-t1.md)).
+stays, and the work of closing it moved out of T1 with STY-081
+([ADR-0032](../../decisions/0032-words-fidelity-to-the-pdf-leaves-t1.md)) and then to T8, the last
+tranche, when T2 was narrowed to the data
+([ADR-0033](../../decisions/0033-t2-is-the-data-spine.md)).
 
 **PUB-029 is a process requirement in a requirements document, deliberately.** The content model
 spike learned it the expensive way: a round-trip test that reads its own output can only prove that
@@ -567,3 +570,21 @@ half, and the rest becomes a row of its own.
 | Counts       | Before                      | After                       |
 | ------------ | --------------------------- | --------------------------- |
 | Requirements | 105, of which 14 superseded | 107, of which 15 superseded |
+
+### Ken's re-tranching of T2, 2026-09-29
+
+Not a review. Ken narrowed T2 to the data spine - connections, query definitions, parameters,
+bindings, provenance, revising a bound value by hand, tabular presentation and field formatting,
+and only what those directly depend on - and moved the rest of what T2 held to a new tranche, T7,
+the administration and the library, and Word's fidelity to the PDF to T8, the last, recorded by
+[ADR-0033](../../decisions/0033-t2-is-the-data-spine.md). A row moving tranche whole keeps its
+identifier, and only its tranche changes.
+
+| What was found                                                                                                                                                                        | Change                                                              |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| PUB-049, the provenance of every bound value with its publication, and PUB-099, the resolution order's test placing each stage as it arrives, the bindings first, are the spine's own | Kept in T2                                                          |
+| PUB-023 and PUB-107 are Word's fidelity to the PDF, T2's since ADR-0032 only because T2 was the next tranche; neither is the data's                                                   | **PUB-023 and PUB-107 moved to T8**, the last tranche, with STY-081 |
+
+| Counts       | Before                      | After                       |
+| ------------ | --------------------------- | --------------------------- |
+| Requirements | 107, of which 15 superseded | 107, of which 15 superseded |
