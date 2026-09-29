@@ -71,8 +71,10 @@ import { createTypst, typstBinaryPath } from './typst.js';
  * tolerances: every length within half a point and every face, weight, posture, colour, underline and
  * fill exactly - and, where Word and the PDF both render what the editor cannot, a section heading's
  * start, a floated figure's size and where it stands across the measure, and a fill's edges against its
- * text. A difference passes only where STY-060's list for Word names it, which holds STY-052's maths
- * face alone.
+ * text. A difference is approved only where STY-060's list for Word names it, which holds STY-052's
+ * maths face alone. Word does not agree with the PDF yet: what W15.2 measured and left is named below by
+ * kind (`LEFT`), each held to the largest it measured, and anything else fails - so the test cites
+ * nothing until the list is empty and the comparison holds whole (STY-081).
  *
  * Gated as the Word check is: Windows with Word, `ALLOY_WORD_CHECK=1`, never in CI. Every run records
  * Word's version and build, the seeds, how many values it compared and the largest difference per
