@@ -16986,6 +16986,10 @@
           "howItIsMet": "A style missing or out of place, a face the renderer does not hold and a character its family cannot set are each marked on the text, never set in a silent default ([The theme in the editor](#the-theme-in-the-editor), ET-I)"
         },
         {
+          "id": "STY-080",
+          "howItIsMet": "The browser suite measures the editor against the PDF of the same document under the default theme, a contrary one and three generated from seeds: every length within half a point, and every face, weight, posture, colour, underline and fill exactly, with STY-060's list of approved deviations between the two empty ([The theme in the editor, measured](#the-theme-in-the-editor-measured))"
+        },
+        {
           "id": "PUB-019",
           "howItIsMet": "Embedding in PDF and in Word is decided per face from its licence (STY-041, STY-042, STY-052)"
         },
@@ -17795,7 +17799,7 @@
     {
       "id": "CNT-175",
       "file": "apps/web/src/editor/renderContent.test.ts",
-      "line": 243,
+      "line": 276,
       "kind": "title"
     },
     {
@@ -19925,37 +19929,37 @@
     {
       "id": "CNT-082",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 202,
+      "line": 227,
       "kind": "title"
     },
     {
       "id": "CNT-097",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 250,
+      "line": 275,
       "kind": "title"
     },
     {
       "id": "CNT-115",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 353,
+      "line": 378,
       "kind": "title"
     },
     {
       "id": "STY-037",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 361,
+      "line": 386,
       "kind": "title"
     },
     {
       "id": "STY-050",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 202,
+      "line": 227,
       "kind": "title"
     },
     {
       "id": "STY-058",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 92,
+      "line": 95,
       "kind": "title"
     },
     {
@@ -20261,7 +20265,7 @@
     {
       "id": "CNT-126",
       "file": "packages/editor/src/schema.test.ts",
-      "line": 85,
+      "line": 88,
       "kind": "title"
     },
     {
@@ -20346,6 +20350,12 @@
       "id": "STR-006",
       "file": "tests/browser/src/outline.test.ts",
       "line": 187,
+      "kind": "title"
+    },
+    {
+      "id": "STY-080",
+      "file": "tests/browser/src/styles.test.ts",
+      "line": 268,
       "kind": "title"
     },
     {

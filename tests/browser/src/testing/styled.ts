@@ -45,14 +45,6 @@ export interface Token {
   readonly what: string;
   /** For a mark's run lowered or raised, which. */
   readonly script?: 'subscript' | 'superscript';
-  /**
-   * Whether its line holds something taller than its own text - an image in it, which stands above it,
-   * or the marker of the list it is in, set in the list's own style, which may stand above it and below
-   * it - which the PDF grows the line for and the editor does not (issue #331; themes.md, "The
-   * theme in the editor, measured"). The step to it, and for `around` the step from it, is not
-   * compared.
-   */
-  readonly grows?: 'above' | 'around';
 }
 
 /** The marks, each with what it needs besides its type, in the order the component holds them. */
@@ -92,11 +84,12 @@ export const HEADINGS: readonly Token[] = [1, 2, 3, 4, 5].map((depth) => ({
   what: `a heading at depth ${depth}`,
 }));
 
-/** The images the component holds, in the order they stand: two figures and one in a line. */
+/** The images the component holds, in the order they stand: two figures and two in a line. */
 export const IMAGES: readonly { readonly what: string; readonly line?: string }[] = [
   { what: 'a figure in figure' },
   { what: 'a figure in half-width' },
   { what: 'an image in a line', line: 'Zi1' },
+  { what: 'an image in a line of lead', line: 'Zi2' },
 ];
 
 /** The component's title, set as a heading at depth six. */
@@ -113,12 +106,7 @@ export const COMPONENT_TITLE: Token = {
 export function styledContent(image: string): { content: object[]; tokens: Token[] } {
   marks = 0;
   const tokens: Token[] = [];
-  const token = (
-    value: string,
-    where: Where,
-    what: string,
-    also: Pick<Token, 'script' | 'grows'> = {},
-  ) => {
+  const token = (value: string, where: Where, what: string, also: Pick<Token, 'script'> = {}) => {
     tokens.push({ text: value, where, what, ...also });
     return value;
   };
@@ -176,7 +164,7 @@ export function styledContent(image: string): { content: object[]; tokens: Token
       {
         content: [
           paragraph('measured-item-centred', 'centred', [
-            text(`${token('Zl2', 'list', 'a centred list item', { grows: 'around' })} item`),
+            text(`${token('Zl2', 'list', 'a centred list item')} item`),
           ]),
         ],
       },
@@ -272,7 +260,7 @@ export function styledContent(image: string): { content: object[]; tokens: Token
   // An equation in a line, whose face is the theme's maths face: only its face is the theme's.
   content.push(
     paragraph('measured-equation', 'body', [
-      text(`${token('Ze1', 'equated', 'the paragraph holding an equation', { grows: 'above' })} `),
+      text(`${token('Ze1', 'equated', 'the paragraph holding an equation')} `),
       {
         type: 'equation',
         mathml: '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x"><mi>x</mi></math>',
@@ -283,7 +271,16 @@ export function styledContent(image: string): { content: object[]; tokens: Token
 
   content.push(
     paragraph('measured-inline-image', 'body', [
-      text(`${token('Zi1', 'flow', 'the paragraph holding an image', { grows: 'above' })} `),
+      text(`${token('Zi1', 'flow', 'the paragraph holding an image')} `),
+      { type: 'image', asset: image, imageStyle: 'inline', alternative: { kind: 'inherited' } },
+      text(' image'),
+    ]),
+  );
+  // And again in a paragraph of another size, straight after: whichever of the two a theme's page
+  // sets first on a page, the step into the other is compared (issue #331).
+  content.push(
+    paragraph('measured-inline-image-lead', 'lead', [
+      text(`${token('Zi2', 'flow', 'the lead paragraph holding an image')} `),
       { type: 'image', asset: image, imageStyle: 'inline', alternative: { kind: 'inherited' } },
       text(' image'),
     ]),

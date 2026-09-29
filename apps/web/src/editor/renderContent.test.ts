@@ -165,6 +165,39 @@ describe('a component rendered as text', () => {
     ]);
   });
 
+  it("draws an image in a line in a holder of its own, as the surface's image view does, which the theme holds its line open by (issue #331)", () => {
+    const rendered = renderContent(
+      {
+        ...content,
+        content: [
+          {
+            type: 'paragraph',
+            id: 'b1',
+            style: 'body',
+            content: [
+              { type: 'text', value: 'Press ', marks: [] },
+              {
+                type: 'image',
+                asset: '0b0e8c5e-3a7d-4f5e-9c1a-6d2f4b8a1c3e',
+                imageStyle: 'inline',
+                alternative: { kind: 'inherited' },
+              },
+              { type: 'text', value: ' to start.', marks: [] },
+            ],
+          },
+        ],
+      },
+      document,
+    );
+    if (rendered === null) throw new Error('Expected markup');
+    const host = document.createElement('div');
+    host.append(rendered);
+    const image = host.querySelector('img.aw-inline-image');
+    expect(image?.parentElement).toHaveClass('aw-inline-image-holder');
+    expect(image?.parentElement?.parentElement?.tagName).toBe('P');
+    expect(host.querySelector('p')).toHaveTextContent('Press to start.');
+  });
+
   it('draws each equation as MathML, a block in display style with its numbering, and one with no alternative marked (equations 1)', () => {
     const NS = 'http://www.w3.org/1998/Math/MathML';
     const squared = `<math xmlns="${NS}" alttext="x squared"><msup><mi>x</mi><mn>2</mn></msup></math>`;

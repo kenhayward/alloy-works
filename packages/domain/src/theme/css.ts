@@ -90,6 +90,14 @@ export const PROJECTED_CHARACTER_PROPERTIES = [
  *   there - a table's note staying last.
  * - **A mark states every property**: the style's value where it states one, and otherwise the text's
  *   own, so a browser's default for `strong`, `a`, `code` or `sup` never shows through.
+ * - **A line is opened by what stands above its text's top or below its foot, as the template's is**
+ *   (issue #331): an image in it, a run larger than its text, a list's marker in a larger style than
+ *   its item. The template's line is exactly one em of its text tall, an em less the descender above
+ *   the baseline and the descender below, and grows by whatever stands further out; a browser's line
+ *   is its line spacing tall, split about the face's ascent and descent as it rounds them. So what
+ *   stands out is measured against a line of the paragraph's own text, which the browser makes the
+ *   same as the paragraph's, never against a length written here (`markRules`, `imageRules`,
+ *   `growerRules`, `markerRules`).
  *
  * Safe to generate from tenant data because the schema already restricts every string that
  * reaches it: identifiers are class-safe, and colours are hex (STY-N03).
@@ -100,6 +108,9 @@ export function projectCss(theme: ResolvedTheme, options: ProjectCssOptions = {}
   // What a browser that trims a line to its face's cap height and its baseline sets instead (below).
   const trimmed: string[] = [];
   const rules = [
+    // The size a run of text stands at, computed where it is set, so a mark inside another reads the
+    // size of the one around it (`markRules`).
+    "@property --aw-run { syntax: '<length>'; inherits: true; initial-value: 0; }",
     `.aw-canvas { background: ${theme.paper}; color: ${ink}; }`,
     // A quotation is inset by its paragraphs' own indents, as the template sets it; the editor's own
     // inset and rule stand down.
@@ -120,6 +131,7 @@ export function projectCss(theme: ResolvedTheme, options: ProjectCssOptions = {}
     const cap = capHeight(style.typeface);
     if (cap !== undefined) {
       trimmed.push(`${selectors.join(', ')} { ${lines(style, cap).join('; ')}; }`);
+      trimmed.push(...growerRules(theme, style, selectors, cap));
     }
     if (style.properties.contextualSpacing) {
       const neighbours = selectors.filter((selector) => !selector.includes('::'));
@@ -138,14 +150,7 @@ export function projectCss(theme: ResolvedTheme, options: ProjectCssOptions = {}
     }
   }
 
-  for (const mark of STYLED_MARKS) {
-    const style = theme.characterStyles[mark];
-    const declarations = characterDeclarations(
-      style.properties,
-      style.typeface && faceFamily(style.typeface.id),
-    );
-    rules.push(`${CANVAS} .aw-mark-${mark} { ${declarations.join('; ')}; }`);
-  }
+  rules.push(...markRules(theme));
 
   const cell = theme.paragraphStyles.get(theme.places.tableCell);
   for (const table of theme.tableStyles.values()) rules.push(...tableRules(table, cell));
@@ -194,6 +199,7 @@ export function projectCss(theme: ResolvedTheme, options: ProjectCssOptions = {}
   }
 
   if (trimmed.length > 0) {
+    trimmed.push(...imageRules(), ...markerRules(theme, capHeight));
     rules.push(`@supports (text-box: trim-both cap alphabetic) {\n${trimmed.join('\n')}\n}`);
   }
   return rules.join('\n') + '\n';
@@ -251,11 +257,16 @@ function listRules(theme: ResolvedTheme): string[] {
     ),
     `${list} > li > * { grid-column: 2; min-width: 0; }`,
     `${list} > li > [data-style]:first-child ` +
-      `{ margin-block-start: calc(${length(p.lineSpacing - p.size)} - var(--aw-leading)); }`,
+      `{ margin-block-start: calc(${length(p.lineSpacing - p.size)} - var(--aw-leading) + ${LIFT}); }`,
     `${list} > li:first-child > [data-style]:first-child { --aw-before: ${length(p.spaceBefore)}; }`,
     `${list} > li:not(:first-child) > [data-style]:first-child { --aw-before: ${NONE}; }`,
     `${list} > li:last-child > [data-style]:last-child { --aw-after: ${length(p.spaceAfter)}; }`,
     `${list} > li:not(:last-child) > [data-style]:last-child { --aw-after: ${NONE}; }`,
+    // A list that ends an item which is not its list's last stands no space after it: the template
+    // sets only the leading between one item and the next, whatever the first ends in (found by the
+    // browser suite, issue #331). Where the item is its list's last, the space after is the outer
+    // list's, which is the same place's.
+    `${NESTED_ENDS.map((each) => `${each} > [data-style]:last-child`).join(', ')} { --aw-after: ${NONE}; }`,
     // A filled block given the list's spaces paints its fill between them, whatever its own were.
     `${list} > li:first-child > [data-style]:first-child, ${list} > li:last-child > [data-style]:last-child ` +
       `{ background-color: transparent; ${BETWEEN_SPACES.join('; ')}; }`,
@@ -368,7 +379,7 @@ function tableRules(style: TableStyle, cell: ResolvedParagraphStyle | undefined)
     `${at} tr > :first-child { ${side('start', outer)}; }`,
     `${at} tr > :last-child { ${side('end', outer)}; }`,
     `${at} :is(td, th) > [data-style]:first-child ` +
-      '{ margin-block-start: calc(-1 * (var(--aw-before) + var(--aw-leading))); }',
+      `{ margin-block-start: calc(${LIFT} - var(--aw-before) - var(--aw-leading)); }`,
     `${at} :is(td, th) > [data-style]:last-child { --aw-after: ${NONE}; }`,
   ];
   if (style.banding.fill !== 'none') {
@@ -506,6 +517,22 @@ function paragraphDeclarations(style: ResolvedParagraphStyle): string[] {
     // And its leading, the line spacing less the em a line of it is: what a block first in a cell
     // takes back (`tableRules`).
     `--aw-leading: ${length(p.lineSpacing - p.size)}`,
+    // What a line of it is, for what stands in the line to be measured against (issue #331): its face,
+    // size, weight, posture and line spacing, which a line of its text is drawn in wherever one is
+    // needed; its face's descender, and its text's own top above the baseline, an em less the
+    // descender, which is the template's; and the size a run in it stands at, and the face, weight
+    // and posture a mark in it inherits where its style states none (`markRules`).
+    `--aw-face: "${faceFamily(face.id)}"`,
+    `--aw-size: ${length(p.size)}`,
+    `--aw-weight: ${p.bold ? 700 : 400}`,
+    `--aw-posture: ${p.italic ? 'italic' : 'normal'}`,
+    `--aw-line: ${length(p.lineSpacing)}`,
+    `--aw-descent: ${precise(face.descent)}`,
+    `--aw-top: ${length((1 - face.descent) * p.size)}`,
+    `--aw-run: ${length(p.size)}`,
+    `--aw-run-face: "${faceFamily(face.id)}"`,
+    `--aw-run-weight: ${p.bold ? 700 : 400}`,
+    `--aw-run-posture: ${p.italic ? 'italic' : 'normal'}`,
     // Its fill, painted between its spaces: where it has none, its padding box, as a colour, which an
     // accessibility checker reads as the text's background; where it has spaces, the padding box less
     // them, which only a positioned gradient paints - and which a checker cannot read, so it hands such
@@ -548,25 +575,205 @@ function lines(style: ResolvedParagraphStyle, cap: number | undefined): string[]
   }
   return [
     'text-box: trim-both cap alphabetic',
-    'margin-block: 0',
+    // Lifted where it begins with a line of its own text above its first (`growerRules`).
+    `margin-block: ${LIFT} 0`,
     `padding-block: calc(var(--aw-before) + ${length(padding + p.lineSpacing - (face.descent + cap) * p.size)}) ` +
       `calc(${length(padding + face.descent * p.size)} + var(--aw-after))`,
   ];
 }
 
+/**
+ * **Every mark as three boxes** (issue #331), which the editor's markup gives it (`schema.ts`): the
+ * mark's own element, an `.aw-mark-below` inside it, and an `.aw-mark-run` inside that holding the text.
+ *
+ * The template opens a line by what a run larger than its text stands above the text's top and below
+ * its foot - the run's growth, the size it is set at less the text's, times an em less the descender
+ * above and the descender below, since its line's edges are ems of whatever size is set - and it
+ * measures a script by its mark's scale, the script's own size being the engine's shaping. A browser
+ * opens a line by each inline box's line spacing, split about its face's ascent and descent as it
+ * rounds them to pixels, so no length written here can say where the paragraph's own line stands. So
+ * the two outer boxes are each a line of the paragraph's own text - its face, size, weight, posture and
+ * line spacing, which the browser makes as it makes the paragraph's - the first raised by the growth
+ * above and the second lowered below by the growth below, and on every line the run is on: a line is
+ * held open to the further of the paragraph's own and theirs. The text is set back on the baseline at
+ * no height of its own, in the mark's look and at its scale of the run around it.
+ */
+function markRules(theme: ResolvedTheme): string[] {
+  const rules: string[] = [];
+  for (const mark of STYLED_MARKS) {
+    const style = theme.characterStyles[mark];
+    const at = `${CANVAS} .aw-mark-${mark}`;
+    const scale = style.properties.scale ?? 1;
+    rules.push(
+      `${at} { ${[
+        'font-family: var(--aw-face)',
+        'font-size: var(--aw-size)',
+        'font-weight: var(--aw-weight)',
+        'font-style: var(--aw-posture)',
+        'line-height: var(--aw-line)',
+        'color: inherit',
+        'text-decoration-line: none',
+        '--aw-around: var(--aw-run)',
+        `--aw-grow: max(${NONE}, calc(var(--aw-run)${scale === 1 ? '' : ` * ${fixed(scale)}`} - var(--aw-size)))`,
+        '--aw-up: calc((1 - var(--aw-descent)) * var(--aw-grow))',
+        '--aw-down: calc(var(--aw-descent) * var(--aw-grow))',
+        'vertical-align: var(--aw-up)',
+      ].join('; ')}; }`,
+      `${at} > .aw-mark-below { vertical-align: calc(-1 * var(--aw-grow)); }`,
+      `${at} > .aw-mark-below > .aw-mark-run { ${characterDeclarations(
+        style.properties,
+        style.typeface && faceFamily(style.typeface.id),
+      ).join('; ')}; }`,
+    );
+  }
+  return rules;
+}
+
+/**
+ * A mark's text: what its style states, and otherwise what the run around it is set in - the face,
+ * weight and posture a paragraph or an enclosing mark passes down, since the mark's own element is set
+ * in its paragraph's - at its scale of the run around it, a script at the theme's script size of that.
+ * A script moves by the browser's own rule, drawn where it would stand from the text's baseline, and
+ * opens no line of its own, as the template's does not.
+ */
 function characterDeclarations(p: CharacterProperties, family: string | undefined): string[] {
   const scale = (p.scale ?? 1) * (p.position === undefined ? 1 : SCRIPT_SCALE);
+  const stated = (property: string, name: string, value: string | undefined) =>
+    value === undefined
+      ? [`${property}: var(${name})`]
+      : [`${property}: ${value}`, `${name}: ${value}`];
   return [
-    `font-weight: ${p.bold === undefined ? 'inherit' : p.bold ? 700 : 400}`,
-    `font-style: ${p.italic === undefined ? 'inherit' : p.italic ? 'italic' : 'normal'}`,
+    ...stated(
+      'font-weight',
+      '--aw-run-weight',
+      p.bold === undefined ? undefined : p.bold ? '700' : '400',
+    ),
+    ...stated(
+      'font-style',
+      '--aw-run-posture',
+      p.italic === undefined ? undefined : p.italic ? 'italic' : 'normal',
+    ),
     `text-decoration-line: ${p.underline ? 'underline' : 'none'}`,
     `color: ${p.colour ?? 'inherit'}`,
-    `font-family: ${family === undefined ? 'inherit' : `"${family}"`}`,
-    `vertical-align: ${p.position === 'subscript' ? 'sub' : p.position === 'superscript' ? 'super' : 'baseline'}`,
-    `font-size: ${scale === 1 ? 'inherit' : `${fixed(scale)}em`}`,
-    // A script does not open its line, as the template's does not; nor does a run in another face or at
-    // another size, which the template sets on its paragraph's line (found by the browser suite, W13.4).
-    ...(p.position === undefined && family === undefined && scale === 1 ? [] : ['line-height: 0']),
+    ...stated('font-family', '--aw-run-face', family === undefined ? undefined : `"${family}"`),
+    `font-size: ${scale === 1 ? 'var(--aw-around)' : `calc(var(--aw-around) * ${fixed(scale)})`}`,
+    '--aw-run: 1em',
+    'line-height: 0',
+    ...(p.position === undefined
+      ? ['vertical-align: var(--aw-down)']
+      : [
+          `vertical-align: ${p.position === 'subscript' ? 'sub' : 'super'}`,
+          'position: relative',
+          'top: calc(-1 * var(--aw-down))',
+        ]),
+  ];
+}
+
+/**
+ * An image in a line (issue #331), in a holder the editor gives it: the template opens its line by what
+ * the image stands above the text's own top, an em less the descender, where a browser opens it by what
+ * the image stands above its line spacing's share. So the holder is a block standing on the text's
+ * baseline, and above the image it holds a line of the paragraph's text, trimmed at its baseline - as
+ * tall above it as the paragraph's own lines, which the browser rounds alike - less that top: the line
+ * is held open to the further of the paragraph's own top and the image's above the text's.
+ */
+function imageRules(): string[] {
+  const holder = `${CANVAS} .aw-inline-image-holder`;
+  return [
+    `${holder} { display: inline-block; line-height: 0; text-indent: 0; vertical-align: baseline; }`,
+    `${holder}::before { content: "\\200b" / ""; display: block; line-height: var(--aw-line); ` +
+      'text-box: trim-end text alphabetic; margin-block-end: calc(-1 * var(--aw-top)); pointer-events: none; }',
+  ];
+}
+
+/**
+ * **A paragraph holding what can open its first or last line** (issue #331) - an image in a line, a
+ * mark larger than its text - begins and ends with a line of its own text, which the browser trims
+ * instead: it trims a block's first line to its cap height and its last to its baseline, and with them
+ * whatever holds either open. The line above is its first and stands a line above the text's own, so
+ * the paragraph is lifted by that line: its padding above is what it had less a line, where that is
+ * more than nothing, and the rest a lift, which every block's margin above carries (`lines`,
+ * `listRules`, `tableRules`) and its fill is painted clear of. Its first line's indent is given to the
+ * text's own first line, after the break. The line below is a block, which stands the line's height
+ * back into its paragraph. Neither line says anything to a screen reader.
+ *
+ * **Lifted, the paragraph reaches over the foot of what stands above it**, which is that block's to be
+ * clicked (the final review of issue #331): a click on the lower half of the line above put the caret in
+ * the lifted paragraph, which comes later and so is hit first. What it lifts is clipped away, which a
+ * pointer passes through, and nothing is painted there but the invisible line. A clip makes it a
+ * stacking context, painted in the order of the text; nothing raises it further, since what must stand
+ * over it - a footnote's editor opened above it, a component's label - is raised itself (the editor
+ * stylesheet raises a paragraph whose footnote is open; the re-review).
+ *
+ * A footnote's paragraph, which the document view sets in its anchor's line, and one marked as not
+ * resolving, whose label is its first line (STY-070), are left as they are, whatever style it names.
+ */
+function growerRules(
+  theme: ResolvedTheme,
+  style: ResolvedParagraphStyle,
+  selectors: readonly string[],
+  cap: number,
+): string[] {
+  const growers = [
+    '.aw-inline-image-holder',
+    ...STYLED_MARKS.filter((mark) => (theme.characterStyles[mark].properties.scale ?? 1) > 1).map(
+      (mark) => `.aw-mark-${mark}`,
+    ),
+  ].map((each) => `${each}:not(.aw-footnote-text *)`);
+  const at = selectors
+    .filter(
+      (each) =>
+        !each.includes('::') &&
+        !each.includes('[data-unresolved]') &&
+        !each.includes('.aw-footnote-paragraph'),
+    )
+    .map((each) => `${each}:not([data-unresolved]):has(${growers.join(', ')})`);
+  if (at.length === 0) return [];
+  const p = style.properties;
+  const filled = p.background !== 'none';
+  const lifted = `calc(var(--aw-before) + ${length((filled ? p.padding : 0) - (style.typeface.descent + cap) * p.size)})`;
+  return [
+    `${at.join(', ')} { ${[
+      `--aw-lift: min(${NONE}, ${lifted})`,
+      `padding-block-start: max(${NONE}, ${lifted})`,
+      `text-indent: ${zoomed(p.firstLineIndent)} each-line`,
+      'position: relative',
+      `clip-path: inset(calc(-1 * ${LIFT}) -100em -100em)`,
+      ...(filled ? ['background-color: transparent', ...BETWEEN_SPACES] : []),
+    ].join('; ')}; }`,
+    `${at.map((each) => `${each}::before`).join(', ')} ` +
+      '{ content: "\\200b\\A" / ""; white-space: pre; pointer-events: none; }',
+    `${at.map((each) => `${each}::after`).join(', ')} ` +
+      '{ content: "\\200b" / ""; display: block; margin-block-end: calc(-1 * var(--aw-line)); pointer-events: none; }',
+  ];
+}
+
+/**
+ * **A list's markers hold their items' lines open**, as the template's do (issue #331): a marker is set
+ * in the list's place's style, and its line is an em of that style tall, so where the item's text is
+ * smaller the marker stands further above and below it. Each marker is trimmed to its cap height and
+ * its baseline, which a browser measures exactly, and padded to the list's leading and its own top above
+ * its baseline and its descender below - the first item's the list's space before too, and the last
+ * item's its space after, as their text is given them - so the row of the list's grid its item stands
+ * in is as tall as the further of the two.
+ */
+function markerRules(
+  theme: ResolvedTheme,
+  capHeight: (face: Typeface) => number | undefined,
+): string[] {
+  const item = theme.paragraphStyles.get(theme.places.listItem);
+  const cap = item && capHeight(item.typeface);
+  if (!item || cap === undefined) return [];
+  const p = item.properties;
+  const above = p.lineSpacing - (item.typeface.descent + cap) * p.size;
+  const below = item.typeface.descent * p.size;
+  const list = `${CANVAS} :is(ul, ol)`;
+  return [
+    `${list} > li::before { text-box: trim-both cap alphabetic; line-height: ${zoomed(p.lineSpacing)}; ` +
+      `padding-block: ${zoomed(above)} ${zoomed(below)}; }`,
+    `${list} > li:first-child::before { padding-block-start: ${zoomed(above + p.spaceBefore)}; }`,
+    `${list} > li:last-child::before { padding-block-end: ${zoomed(below + p.spaceAfter)}; }`,
+    `${NESTED_ENDS.map((each) => `${each}::before`).join(', ')} { padding-block-end: ${zoomed(below)}; }`,
   ];
 }
 
@@ -588,12 +795,27 @@ function fill(colour: string, spaceless: boolean): string[] {
 const BETWEEN_SPACES = [
   'background-image: linear-gradient(var(--aw-fill), var(--aw-fill))',
   'background-repeat: no-repeat',
-  'background-position: 0 var(--aw-before)',
-  'background-size: 100% calc(100% - var(--aw-before) - var(--aw-after))',
+  // Clear of the line a lifted paragraph begins with above its own (`growerRules`).
+  'background-position: 0 calc(var(--aw-before) - var(--aw-lift, calc(0pt * var(--aw-zoom))))',
+  'background-size: 100% calc(100% - var(--aw-before) - var(--aw-after) + var(--aw-lift, calc(0pt * var(--aw-zoom))))',
 ];
 
 /** No length, with a unit, so that a `calc` can add it: what a space taken away is. */
 const NONE = 'calc(0pt * var(--aw-zoom))';
+
+/** How far a block is lifted, where it begins with a line of its own text above its first. */
+const LIFT = `var(--aw-lift, ${NONE})`;
+
+/**
+ * An item ending in a list, where the item is not its list's last - and that list's last item ending
+ * in a list, and so on, six deep: where the template sets only its leading between the item and the
+ * next, whatever the item ends in.
+ */
+const NESTED_ENDS = [0, 1, 2, 3, 4, 5].map(
+  (depth) =>
+    `${CANVAS} li:not(:last-child) > ${':is(ul, ol):last-child > li:last-child > '.repeat(depth)}` +
+    ':is(ul, ol):last-child > li:last-child',
+);
 
 /** A length in points, scaled by the canvas's zoom, always with a unit: what a `calc` can add. */
 function length(points: number): string {
@@ -607,4 +829,9 @@ function zoomed(points: number): string {
 
 function fixed(value: number): string {
   return String(Number(value.toFixed(3)));
+}
+
+/** A fraction of an em, to a hundred-thousandth: what a length is multiplied by. */
+function precise(value: number): string {
+  return String(Number(value.toFixed(5)));
 }

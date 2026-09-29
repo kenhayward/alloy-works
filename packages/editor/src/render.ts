@@ -37,8 +37,24 @@ export function renderContent(
   });
   drawReferences(rendered, referencesShown(opened.doc, context));
   drawEquations(rendered, opened.doc);
+  drawImages(rendered);
   drawPlaces(rendered, opened.doc);
   return rendered;
+}
+
+/**
+ * Each image in a line in a holder of its own, as the surface's `imageView` draws it, so a document's
+ * text and the surface cannot draw one differently: the theme holds the image's line open by the
+ * holder, as the published line is (issue #331). `toDOM` is the bare image, which a copy sees.
+ */
+function drawImages(rendered: HTMLElement | DocumentFragment): void {
+  rendered.querySelectorAll<HTMLElement>('img.aw-inline-image').forEach((image) => {
+    if (image.parentElement?.classList.contains('aw-inline-image-holder')) return;
+    const holder = image.ownerDocument.createElement('span');
+    holder.className = 'aw-inline-image-holder';
+    image.replaceWith(holder);
+    holder.append(image);
+  });
 }
 
 /**

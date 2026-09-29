@@ -1548,6 +1548,27 @@ stands apart from its neighbours in a block of its own; and the application's ow
 styles stand down on the canvas, which has 6pt of room either side of the measure for a table's outer
 rule (`CANVAS_CSS` in `presentation.tsx`).
 
+**A line held open as the page holds it** (issues #331 and #333, which let STY-080 be claimed). Every
+paragraph style's rule also names what a line of it is - `--aw-face`, `--aw-size`, `--aw-weight`,
+`--aw-posture`, `--aw-line`, `--aw-descent`, `--aw-top`, and the size and look a mark in it inherits,
+`--aw-run` (registered by an `@property` as a length, so a mark inside another reads the enclosing run's
+size) and `--aw-run-face`, `--aw-run-weight`, `--aw-run-posture`. A mark's markup is three elements:
+its own, carrying `aw-mark-<mark>` and `data-mark-id`, which the view reads back, then
+`span.aw-mark-below`, then `span.aw-mark-run`, which holds the text and is ProseMirror's content hole
+(`render` in `packages/editor/src/schema.ts`); `projectCss` sets the first two as lines of the
+paragraph's own text, raised and lowered by the run's growth, and the look on the third. An image in a
+line stands in `span.aw-inline-image-holder` on the surface (`imageView`) and in a document's read text
+(`drawImages` in `render.ts`), which `projectCss` makes a block holding a trimmed line of the text above
+the image. A paragraph holding either, where the browser trims, begins and ends with a line of its own
+text as `::before` and `::after`, generated content with empty alternative text, lifted by `--aw-lift`,
+which every block's margin above carries, and clipped by `clip-path` where it is lifted, so a pointer
+over the line above reaches that line. The clip makes it a stacking context at no `z-index`; the editor
+stylesheet raises `.ProseMirror p:has(.aw-footnote-editor)` to 2, so an open footnote stays over the
+paragraphs after its own, and draws a chosen inline image's outline inside its holder. A list's
+marker is trimmed and padded to hold its item's row open. On the canvas the document view's headings
+are blocks spaced by their heading style alone, each in a `.measured` holder the measure wide, inside
+sections and components as wide as the column (`DocumentText.module.css`).
+
 | Where                                | What                                                                                                                                                                                                                             |
 | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `fonts: src/coverage.ts`             | Each family's characters as ranges, generated and drift-checked                                                                                                                                                                  |

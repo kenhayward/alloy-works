@@ -54,7 +54,9 @@ nor chosen anywhere at all.
 **The text column is one canvas** (W8's), the theme's paper at the layout's measure, holding the whole
 document rather than a canvas per component. Every heading is set in the theme's role for its depth,
 `heading1` to `heading6`, a deeper one in `heading6`, with its number - a section's and a component's
-alike, as the publication sets them. A component's text follows its heading with nothing around it: no
+alike, as the publication sets them: the number, a space and the title in one line of the heading
+style, in its colour and alignment, and spaced from what stands above and below it by that style alone,
+never by the view's own gaps (issue #333). A component's text follows its heading with nothing around it: no
 border, no fill, no head of controls. The editor opened in place is the same surface on the same paper,
 so opening a component moves nothing (CNT-075). What each card says today - whether the reader may edit
 it, and who holds it - moves into the component's label.
