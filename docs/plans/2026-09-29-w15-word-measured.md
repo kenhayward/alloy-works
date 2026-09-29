@@ -219,7 +219,11 @@ reverted.
 **What is left**, each kind with its largest and its route by W15-I. The test holds each to the
 largest this run measured and fails on a difference of no kind, on one larger than its kind's largest,
 and on a kind no difference is left of (`LEFT` in `word-measure.test.ts`): nothing is approved by it,
-and it cites nothing while any is left.
+and it cites nothing while any is left. **What the comparison leaves out for Word**, beyond W15-H's
+list, is stated in the kit's `compare` and here: the steps into and out of the line holding the
+equation, which Word sets in Cambria Math, so that the line's height is the maths engine's (W15-H), and
+of a floated figure's caption, which the page places; and a step, or an edge of a cell, where either
+output breaks its page between the two (PUB-065).
 
 | Kind                                                                                                            | Differences, themes | Largest                                                                                   | Route                                                                                                                                                                                                                                                   |
 | --------------------------------------------------------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

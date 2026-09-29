@@ -44,7 +44,12 @@ export async function inWordsTurn<T>(
         continue;
       }
       if (Date.now() > until) {
-        throw new Error(`Waited ${within} ms for Word's turn at ${lock}, held by process ${holder}`);
+        throw new Error(
+          `Waited ${within} ms for Word's turn at ${lock}, held by process ${holder}`,
+          {
+            cause: error,
+          },
+        );
       }
       await new Promise((resolve) => setTimeout(resolve, every));
     }

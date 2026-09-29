@@ -96,11 +96,12 @@ export const IMAGES: readonly { readonly what: string; readonly line?: string }[
  * Each figure of `IMAGES`, by what it is: the image style it is placed in and the token opening its
  * caption, which is where a floated one is found.
  */
-export const FIGURES: Readonly<Record<string, { readonly style: string; readonly caption: string }>> =
-  {
-    'a figure in figure': { style: 'figure', caption: 'Zg1' },
-    'a figure in half-width': { style: 'half-width', caption: 'Zg2' },
-  };
+export const FIGURES: Readonly<
+  Record<string, { readonly style: string; readonly caption: string }>
+> = {
+  'a figure in figure': { style: 'figure', caption: 'Zg1' },
+  'a figure in half-width': { style: 'half-width', caption: 'Zg2' },
+};
 
 /** The component's title, set as a heading at depth six. */
 export const COMPONENT_TITLE: Token = {

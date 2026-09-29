@@ -32,9 +32,9 @@ describe("the reader, over the PDF's own of the measured fixture", () => {
 
   it('reads the underline mark as underlined, and nothing else', async () => {
     const measured = measurePdf(await readPaint(read('measured-typst.pdf')), every, MARGIN);
-    expect([...measured.values()].filter((each) => each.underline).map((each) => each.token)).toEqual(
-      ['Zm3'],
-    );
+    expect(
+      [...measured.values()].filter((each) => each.underline).map((each) => each.token),
+    ).toEqual(['Zm3']);
   });
 
   it('reads its faces as the file names them', async () => {

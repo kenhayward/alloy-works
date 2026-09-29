@@ -176,7 +176,7 @@ describe("a fill's edges against its text, its padding", () => {
     expect([fill.left, fill.right].map((each) => each.toFixed(2))).toEqual(['225.67', '450.48']);
   });
 
-  it('reads a fill as far as it shows: a rule painted along an edge of it covers it to the rule\'s inner side', () => {
+  it("reads a fill as far as it shows: a rule painted along an edge of it covers it to the rule's inner side", () => {
     // A cell under a 1pt rule stroked along each edge, the PDF's way, centred on the cell's edges;
     // and one under rules Word paints as filled rectangles inside its edges.
     const pdf = page(

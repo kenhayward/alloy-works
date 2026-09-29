@@ -58,7 +58,13 @@ describe('the comparison, where one output breaks a page the other does not (the
     const pdf = byToken([at('Za1', 100), at('Za2', 120), at('Za3', 140)]);
     const other = byToken([at('Za1', 700), at('Za2', 90, 2), at('Za3', 110.2, 2)]);
     const steps: string[] = [];
-    const found = compare(tokens, other, pdf, () => 'start', (property) => steps.push(property));
+    const found = compare(
+      tokens,
+      other,
+      pdf,
+      () => 'start',
+      (property) => steps.push(property),
+    );
     expect(found).toEqual([]);
     expect(steps.filter((each) => each.startsWith('step'))).toEqual(['step from Za2']);
   });

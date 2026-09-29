@@ -264,8 +264,7 @@ export function compareRules(
       .filter((each) => (down(each) - down(here)) * way > 1)
       .sort((a, b) => Math.abs(down(a) - down(here)) - Math.abs(down(b) - down(here)))[0];
     return (
-      next !== undefined &&
-      (printed.get(next.token)?.page !== page || next.page !== here.page)
+      next !== undefined && (printed.get(next.token)?.page !== page || next.page !== here.page)
     );
   };
   for (const token of cells) {
