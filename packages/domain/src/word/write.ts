@@ -115,10 +115,13 @@ import { spacingOverrides, type SpacingOverride } from './spacing.js';
  * quotations, preformatted text, tables and figures where `word/1` refused them, `word/3` is Word
  * 3's, which writes footnotes and cross-references where `word/2` refused them, `word/4` is Word
  * 4's, which writes equations, a reference to one and the list of equations where `word/3` refused
- * them, and `word/5` is W14.5's, which writes a caption on its style's side, parts any two tables that
- * would meet with an empty paragraph, and names a table whose caption is below it where it begins.
+ * them, `word/5` is W14.5's, which writes a caption on its style's side, parts any two tables that
+ * would meet with an empty paragraph, and names a table whose caption is below it where it begins,
+ * and `word/6` is W15.2's, which sets the page in the theme's paper, states a style's want of a fill
+ * so none is inherited, stands a panel's text at its padding and its fill at its indents, and draws
+ * a header column's rule on both sides of its line.
  */
-export const WORD_WRITER_VERSION = 'word/5';
+export const WORD_WRITER_VERSION = 'word/6';
 
 /** What the writer is given: `assemble`'s answer for Word, the formats asked for, and the faces. */
 export interface WordWriting {
@@ -932,7 +935,9 @@ export function writeDocx(input: WordWriting): WrittenDocx {
   put('docProps/core.xml', coreXml(document));
   put(
     'word/document.xml',
-    `${DECLARATION}<w:document ${DOCUMENT_NAMESPACES}><w:body>${body}</w:body></w:document>`,
+    // The page in the theme's paper, as the PDF's is (measured in Word's own PDF, W15.2).
+    `${DECLARATION}<w:document ${DOCUMENT_NAMESPACES}><w:background w:color="${hex(theme.paper)}"/>` +
+      `<w:body>${body}</w:body></w:document>`,
   );
   put('word/_rels/document.xml.rels', relationshipsXml(relationships.xml));
   for (const each of media.values()) put(`word/media/${each.name}`, each.bytes);
@@ -1628,10 +1633,10 @@ class Writer {
    * twentieths of a point (Word 2, task 5; measured in the Word check): none where its widest line fits
    * its panel. `assemble` holds a line to the columns the PDF's measure has room for, and refuses a
    * longer one, so the PDF never wraps one; but Word sets the text at the nearest half point - 8.8pt
-   * at 9 - in a panel 4pt narrower than the PDF's, its fill reaching 2pt past its border's spacing
-   * each side (`panelInset`), and of the 83 columns the default's PDF holds, Word set 80 and wrapped
-   * the rest. So a block whose widest line Word would wrap has every character of every line set the
-   * least whole twentieths closer that fits it, alike so its columns stay columns - 4 under the
+   * at 9 - and of the 83 columns the default's PDF holds, Word set 80 and wrapped the rest, in a panel
+   * then 4pt narrower than the PDF's (Word 2; since W15.2 its text stands where the PDF's does,
+   * `panelInset`). So a block whose widest line Word would wrap has every character of every line set
+   * the least whole twentieths closer that fits it, alike so its columns stay columns - 3 under the
    * default - counting its columns and their advance as `assemble` counts them. No closer than the
    * next half point down would set it: a line wanting more is left for Word to wrap, as it would have,
    * rather than set with its characters over each other. A twip each side is kept for `panelsApart`.
@@ -1834,9 +1839,12 @@ class Writer {
   }
 
   /**
-   * What a cell states over its table style, as template 13 draws it: nothing, but where a table has
-   * more header columns than Word's one first column - the header column's fill behind every cell of
-   * them the header row's does not fill, and its rule after the last of them.
+   * What a cell states over its table style, as template 13 draws it: the header column's rule on the
+   * side of each cell starting in the column after the header columns - Word draws the wider of the two
+   * rules either side of a line, and a wider rule between the columns would win it, where the PDF draws
+   * the header column's (measured in Word, W15.2); and where a table has more header columns than
+   * Word's one first column, the header column's fill behind every cell of them the header row's does
+   * not fill, and its rule after the last of them.
    */
   private cellFormat(
     table: PublishedTable,
@@ -1845,8 +1853,11 @@ class Writer {
     x: number,
     cell: PublishedCell,
   ): string {
-    if (table.headerColumns < 2 || x >= table.headerColumns) return '';
     const { headerRow, headerColumn } = style;
+    if (x === table.headerColumns && x > 0 && headerColumn.rule !== 'none') {
+      return `<w:tcBorders>${tableRule('left', headerColumn.rule)}</w:tcBorders>`;
+    }
+    if (table.headerColumns < 2 || x >= table.headerColumns) return '';
     const rule =
       x + cell.colspan === table.headerColumns && headerColumn.rule !== 'none'
         ? `<w:tcBorders>${tableRule('right', headerColumn.rule)}</w:tcBorders>`
@@ -3271,7 +3282,8 @@ function sectionProperties(
 }
 
 /**
- * The document's settings (R6), in CT_Settings' order: its faces embedded, the margins mirrored where
+ * The document's settings (R6), in CT_Settings' order: the page's colour shown, which the document's
+ * background sets to the theme's paper (W15.2), its faces embedded, the margins mirrored where
  * the inside and the outside differ, hyphenation where a style hyphenates, the fields updated as it
  * opens, the separator and the continuation separator its footnotes are set under where it has a
  * footnote (Word 3, ruling R2; M5), compatibility mode 15 with spaces that add (M1), the maths face
@@ -3290,6 +3302,7 @@ function settingsXml(
   const tag = wordLanguage(document.language);
   return (
     `${DECLARATION}<w:settings xmlns:w="${W_NS}" xmlns:m="${M_NS}">` +
+    '<w:displayBackgroundShape/>' +
     '<w:embedTrueTypeFonts/>' +
     (mirrored ? '<w:mirrorMargins/>' : '') +
     (hyphenates ? '<w:autoHyphenation/>' : '') +

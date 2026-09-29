@@ -522,8 +522,8 @@ describe('writeDocx: the package (Word 1, ruling R6)', () => {
     }
   });
 
-  it('is the Word writer at word/5', () => {
-    expect(WORD_WRITER_VERSION).toBe('word/5');
+  it('is the Word writer at word/6', () => {
+    expect(WORD_WRITER_VERSION).toBe('word/6');
   });
 });
 
@@ -532,6 +532,7 @@ describe('writeDocx: settings (ruling R6)', () => {
 
   it('adds spaces as the theme does, asks Word to update its fields, embeds its faces and names the language', () => {
     expect(kids(settings).map((each) => each.name)).toEqual([
+      'w:displayBackgroundShape',
       'w:embedTrueTypeFonts',
       'w:updateFields',
       'w:compat',
@@ -551,6 +552,22 @@ describe('writeDocx: settings (ruling R6)', () => {
     expect(first(settings, 'w:themeFontLang')!.attrs).toEqual({ 'w:val': 'en-GB' });
   });
 
+  it("sets the page in the theme's paper and shows it, as the PDF's page is (measured in Word's own PDF, W15.2)", () => {
+    // Before, Word's page was white under every theme: the paper was never written.
+    const papered = written({
+      theme: themeWith((inputs) => {
+        inputs.theme.paper = '#fdfaf2';
+      }),
+    }).docx;
+    const document = papered.xml('word/document.xml');
+    expect(kids(document).map((each) => each.name)).toEqual(['w:background', 'w:body']);
+    expect(first(document, 'w:background')!.attrs).toEqual({ 'w:color': 'FDFAF2' });
+    expect(kids(papered.xml('word/settings.xml'))[0]!.name).toBe('w:displayBackgroundShape');
+    expect(first(plain.docx.xml('word/document.xml'), 'w:background')!.attrs).toEqual({
+      'w:color': 'FFFFFF',
+    });
+  });
+
   it("names the maths face's Word face, Cambria Math under the default theme", () => {
     expect(first(settings, 'm:mathFont')!.attrs['m:val']).toBe('Cambria Math');
   });
@@ -567,6 +584,7 @@ describe('writeDocx: settings (ruling R6)', () => {
       }),
     }).docx.xml('word/settings.xml');
     expect(kids(hyphenating).map((each) => each.name)).toEqual([
+      'w:displayBackgroundShape',
       'w:embedTrueTypeFonts',
       'w:mirrorMargins',
       'w:autoHyphenation',
@@ -1717,8 +1735,8 @@ describe('writeDocx: preformatted text (Word 2, ruling R5)', () => {
       code('P4', 'four'),
     ]);
     const { at } = bodyOf(panels.docx);
-    // The style's own: its padding and Word's reach past it, 8pt, each side.
-    const moved = { 'w:left': '161', 'w:right': '161', 'w:firstLine': '0' };
+    // The style's own: its padding, 6pt, each side (W15.2), and a twip more.
+    const moved = { 'w:left': '121', 'w:right': '121', 'w:firstLine': '0' };
     expect(indents(at('one'))).toBeUndefined();
     expect(indents(at('two a'))).toEqual(moved);
     expect(indents(at('two b'))).toEqual(moved);
@@ -1727,9 +1745,10 @@ describe('writeDocx: preformatted text (Word 2, ruling R5)', () => {
   });
 
   it("sets a block whose widest line the PDF's measure holds but Word's panel does not the least whole twentieths of a point closer that fits it, every line alike, and no closer than half a point's size would", () => {
-    // Measured in Word 16 (the Word check, Word 2 task 5): 8.8pt text is 9pt in Word, in a panel 4pt
-    // narrower than the PDF's, so of the 83 columns the PDF's measure holds Word set 80 and wrapped
-    // the rest. 83 at 9pt is 448.20pt against a room of 435.28; 4 twentieths closer is 431.60.
+    // Measured in Word 16 (the Word check, Word 2 task 5): 8.8pt text is 9pt in Word, so of the 83
+    // columns the PDF's measure holds Word set 80 and wrapped the rest, in a panel then 4pt narrower
+    // than the PDF's. With the panel's text where the PDF's stands (W15.2), 83 at 9pt is 448.20pt
+    // against a room of 439.18; 3 twentieths closer, 5.25pt a column, is 435.75.
     const widest = '1234567890'.repeat(9).slice(0, 83);
     const fits = 'x'.repeat(80);
     const over = 'y'.repeat(90);
@@ -1743,8 +1762,8 @@ describe('writeDocx: preformatted text (Word 2, ruling R5)', () => {
     const { at } = bodyOf(set.docx);
     const closer = (paragraph: Element) =>
       all(paragraph, 'w:r').map((run) => first(run, 'w:spacing')?.attrs['w:val'] ?? null);
-    expect(closer(at(widest))).toEqual(['-4']);
-    expect(closer(at('short'))).toEqual(['-4']);
+    expect(closer(at(widest))).toEqual(['-3']);
+    expect(closer(at('short'))).toEqual(['-3']);
     expect(closer(at(fits))).toEqual([null]);
     // Ninety columns would want 12 twentieths, more than the 6 the next half point down gives: Word
     // wraps it as it would have, rather than set its characters over each other.
@@ -1767,7 +1786,7 @@ describe('writeDocx: preformatted text (Word 2, ruling R5)', () => {
     });
     const { at } = bodyOf(labelled.docx);
     expect(indents(at('one'))).toBeUndefined();
-    expect(indents(at('shell'))).toEqual({ 'w:left': '161', 'w:right': '161', 'w:firstLine': '0' });
+    expect(indents(at('shell'))).toEqual({ 'w:left': '121', 'w:right': '121', 'w:firstLine': '0' });
     expect(indents(at('two'))).toBeUndefined();
   });
 });
@@ -2202,6 +2221,44 @@ describe('writeDocx: tables (Word 2, ruling R7)', () => {
     expect(own(1, 0)['w:shd']).toBeUndefined();
     // Both header columns' text bold.
     expect(pinnedBold(kids(grid[4]![1]!, 'w:p')[0]!)).toBe(true);
+  });
+
+  it("draws the header column's rule on the side of the column after it too, in every row, so that a wider rule between the columns does not win it in Word, as the PDF draws the header's (measured in Word, W15.2)", () => {
+    // Word draws the wider of the two rules either side of a line; the PDF, the header column's
+    // wherever it has one. Measured before: a 3pt rule between the columns drawn over a 0.75pt header.
+    const wider = themeWith((inputs) => {
+      inputs.catalogues.table.styles.push({
+        ...RULED,
+        rules: { ...RULED.rules, vertical: { width: 3, colour: '#473913' } },
+      });
+    });
+    const header = { 'w:val': 'single', 'w:sz': '12', 'w:space': '0', 'w:color': '00AA00' };
+    const leftOf = (tabled: ReturnType<typeof tabledOf>, column: number) => {
+      const found = blocksOf(tabled.docx).find((each) => each.name === 'w:tbl')!;
+      return rowsOf(found).map((row) => {
+        if (row[column] === undefined) return 'spanned';
+        const borders = first(kids(row[column], 'w:tcPr')[0]!, 'w:tcBorders');
+        return borders === undefined ? undefined : first(borders, 'w:left')?.attrs;
+      });
+    };
+    // Every row's cell at the second column: "Values", "Morning", "1", "3" and "5".
+    expect(leftOf(tabledOf([readings()], { theme: wider }), 1)).toEqual(Array(5).fill(header));
+    // Two header columns: "Values" spans the line in the first row, which is its cell's.
+    expect(leftOf(tabledOf([readings({ headerColumns: 2 })], { theme: wider }), 2)).toEqual([
+      'spanned',
+      header,
+      header,
+      header,
+      header,
+    ]);
+    // A header column with no rule of its own leaves the line the table's.
+    const unruled = themeWith((inputs) => {
+      inputs.catalogues.table.styles.push({
+        ...RULED,
+        headerColumn: { ...RULED.headerColumn, rule: 'none' },
+      });
+    });
+    expect(leftOf(tabledOf([readings()], { theme: unruled }), 1)).toEqual(Array(5).fill(undefined));
   });
 
   it('stands a table in a quotation in by the quotation, as wide as what is left of the measure', () => {

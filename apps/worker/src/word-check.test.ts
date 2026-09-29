@@ -58,6 +58,7 @@ import {
   type Noted,
   type Target,
 } from './testing/word.js';
+import { inWordsTurn } from './testing/word-turn.js';
 import { createTypst, typstBinaryPath } from './typst.js';
 
 /**
@@ -2390,10 +2391,13 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
       }
 
       const json = join(FOLDER, 'word.json');
-      await run(
-        'powershell.exe',
-        ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', SCRIPT, '-Folder', FOLDER],
-        { timeout: 900_000, windowsHide: true },
+      // In the suite's turn at Word: the export and the measurement start Words of their own too.
+      await inWordsTurn(() =>
+        run(
+          'powershell.exe',
+          ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', SCRIPT, '-Folder', FOLDER],
+          { timeout: 900_000, windowsHide: true },
+        ),
       );
       const opened = JSON.parse(await readFile(json, 'utf8')) as Opened[];
       for (const { typst: compiled, ...each } of made) {
