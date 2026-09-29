@@ -96,7 +96,7 @@ the PDF where Word is, with what is left recorded exactly.
   a maths character it lacks for Word by name; it is not built, so Word still draws such a character
   from another face, and the report says once for a document setting an equation that its maths face
   was not checked (`maths_coverage_unchecked`). The W15 plan read themes.md's STY-049 claim as partial
-  for Word for this reason (W15-K); that reading stands and is Ken's to settle.
+  for Word for this reason (W15-K), so themes.md no longer claims STY-049 and names the gap.
 - The ADR the W15 plan named for `local-run` (W15-M) is left for when a real run's report has been
   through the gate; this record takes the number it had named.
 - A T1 release's baseline carries no `local-run` row for STY-081 or PUB-107. PUB-029 may carry one.

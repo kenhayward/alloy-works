@@ -77,7 +77,6 @@ conformance suite.
 | **STY-047** | A typeface artifact is the font files themselves, versioned; the baseline pins the files                                                                                                                                                                                                                                                                                                            |
 | **STY-074** | The default theme's faces are checked against Latin, Greek, Cyrillic and Hebrew and the mathematics, from their character maps, by the coverage check below                                                                                                                                                                                                                                         |
 | **STY-069** | The domain's theme reader refuses a text colour below 4.5:1, or 3:1 for large text, against any background it can stand on, and the store refuses what the reader refuses, so a theme is checked when it is saved ([Themes in the PDF](#themes-in-the-pdf), TH-G)                                                                                                                                   |
-| **STY-049** | Glyph coverage is checked at resolution, against the pinned files' character maps, before any renderer runs                                                                                                                                                                                                                                                                                         |
 | **STY-050** | Vertical space between two blocks is the first block's space after plus the second block's space before, in every output                                                                                                                                                                                                                                                                            |
 | **STY-051** | Line spacing is a minimum baseline-to-baseline distance in points, and means that distance in every output                                                                                                                                                                                                                                                                                          |
 | **STY-052** | A typeface whose licence forbids embedding in Word declares a permitted face for Word output, and the publish report names the substitution                                                                                                                                                                                                                                                         |
@@ -102,6 +101,13 @@ Word as well, as `w:widowControl`, `w:keepNext` and `w:keepLines`, and the corpu
 from the same style as the PDF's, on or stated off; what nothing measures is where Word itself breaks
 a page, which PUB-107 asks. The Word check (`word-check.test.ts`) is where it could be measured, and
 PUB-107 is not claimed.
+
+**STY-049 is not claimed** (since ADR-0032): glyph coverage is checked at resolution against the
+pinned files' character maps, so the PDF fails a character its faces cannot set, but Word sets
+equations in Cambria Math, a face the product does not hold, and silently borrows a character Cambria
+Math lacks from a face nobody declared. Refusing that character for Word needs Cambria Math's coverage
+as data (the W15 plan's W15-K), which W15.4 would have built and ADR-0032 moved to T2 with the rest of
+Word's fidelity.
 
 **STY-075 is not claimed**: the scripts the supported locales admit have no list until LOC-038
 declares one, and which faces answer it is decided then. STY-074, its T1 half, is claimed.

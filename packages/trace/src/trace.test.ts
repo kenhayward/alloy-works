@@ -78,6 +78,7 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1479);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 505, from 506 (2026-09-29): ADR-0032 - themes.md stops claiming STY-049: Word borrows a character Cambria Math lacks, and refusing it (W15-K) moved to T2.
     // 506, from 505 (2026-09-29): ADR-0032 - themes.md claims PUB-106, PUB-092's PDF half, shown by the regression corpus's four keep cases; PUB-107, Word's own pages, and STY-081 and PUB-023 are T2's, unclaimed.
     // 505, from 504 (2026-09-29): issues #331 and #333 fixed - themes.md claims STY-080, every property both outputs render measured and agreeing.
     // 504, from 503 (2026-09-29): publishing.md claims PUB-105, the Matterhorn review before each release, verified by attestation as CNT-177 is (issue #344).
@@ -222,7 +223,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(506);
+    ).toBe(505);
   });
 });
 
