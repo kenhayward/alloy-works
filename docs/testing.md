@@ -612,11 +612,13 @@ person, is written into the test's `meta` for the audit, never failed on, and `p
 **Where it finds the stack.** Three variables, each defaulting to the compose stack's own address, and
 passed through by turbo:
 
-| Variable                | Default                          | What it is                                           |
-| ----------------------- | -------------------------------- | ---------------------------------------------------- |
-| `ALLOY_BROWSER_SERVICE` | `http://dev.acme.localhost:8088` | The environment as the browser meets it              |
-| `ALLOY_BROWSER_API`     | `http://127.0.0.1:8088`          | The same environment as Node reaches it for fixtures |
-| `ALLOY_BROWSER_IDP`     | `http://idp.localhost:9090`      | The stand-in provider, by the name it calls itself   |
+| Variable                 | Default                                                         | What it is                                                                 |
+| ------------------------ | --------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `ALLOY_BROWSER_SERVICE`  | `http://dev.acme.localhost:8088`                                | The environment as the browser meets it                                    |
+| `ALLOY_BROWSER_API`      | `http://127.0.0.1:8088`                                         | The same environment as Node reaches it for fixtures                       |
+| `ALLOY_BROWSER_IDP`      | `http://idp.localhost:9090`                                     | The stand-in provider, by the name it calls itself                         |
+| `ALLOY_BROWSER_DATABASE` | `postgres://aw_service:aw_service_dev@127.0.0.1:5432/alloy_dev` | Where the measured style writes its themes (below)                         |
+| `ALLOY_BROWSER_STORE_AT` | `127.0.0.1`                                                     | Where Node follows a link the object store signed, its name kept in `Host` |
 
 Chromium resolves any `*.localhost` name to this machine itself, so the browser needs nothing from
 the machine's resolver; Node reaches the provider at `127.0.0.1` on the port its name carries. To
@@ -627,7 +629,8 @@ own, so the first is never touched:
 SERVICE_PORT=8188 IDP_PORT=9190 STORE_PORT=8433 POSTGRES_PORT=5532 \
   docker compose -p aw-browser -f deploy/compose.yaml up -d --build --wait
 ALLOY_BROWSER_SERVICE=http://dev.acme.localhost:8188 ALLOY_BROWSER_API=http://127.0.0.1:8188 \
-  ALLOY_BROWSER_IDP=http://idp.localhost:9190 pnpm test:browser
+  ALLOY_BROWSER_IDP=http://idp.localhost:9190 \
+  ALLOY_BROWSER_DATABASE=postgres://aw_service:aw_service_dev@127.0.0.1:5532/alloy_dev pnpm test:browser
 docker compose -p aw-browser -f deploy/compose.yaml down -v
 ```
 
@@ -669,6 +672,55 @@ node chosen by a click, **Add section**, **Title** clicked into and left, **Star
 each state. Another test shows structure.md's known limit: two `Alt+Down` pressed before the first is
 answered send one move. And one holds issue #325 fixed: two spaces typed in a section's title are
 stored, computed as `break-spaces` and drawn as two.
+
+`navigation.test.ts` holds issue #336 fixed, over documents longer than the window made through the
+API - three sections placing three components each, and one of five hundred nodes: the wheel takes
+the text where it is turned and it stays there, a node chosen in the outline or reached by a link is
+left with its heading on the screen below the header, and its tree item in view in the outline's own
+pane, by pointer and by `Home` and `End`, and the long document opens where it begins. Each place is
+read once the window has stopped moving for half a second, since the defect was a page that got there
+and was pulled back. The pinned headless Chromium drops the wheel events a page is sent in its first
+moments, so the test turns it a pixel at a time until one lands before counting. What it cannot
+reach with the stack alone - a link whose texts never answer, or are overtaken by the reader choosing
+or scrolling elsewhere - the jsdom suite holds, in the document page's own test.
+
+**The measured style** (`styles.test.ts`, toward STY-080; [themes.md](design/themes.md#the-theme-in-the-editor-measured))
+measures the editor against the PDF of the same document. One component holding a token at the head of
+every block and run a theme styles is placed in a document under each of five themes - the default, one
+differing from it in every property the editor projects, and three generated from seeds - and each
+document is published through the stack, downloaded by its signed link and read by pdf.js
+(`src/testing/pdf.ts`, a small copy of the worker suite's `readPaint`), and opened in the document
+view's Reading mode at 100%. Each token is measured in both (`src/testing/measure.ts`): in the page by a
+zero-size marker set before its first letter and its element's computed style, in the PDF by the text
+matrix of the run that paints it. The comparison (`src/testing/compare.ts`) fails on any length more
+than half a point apart - where a token starts, each step between baselines in the order the page reads
+them, a size, an image's size, a table rule's width and where it runs - and on any face, weight,
+posture, colour, underline or fill that differs; what it leaves out, and why, is in its own description
+and in themes.md. The largest difference each property showed is written into the test's `meta`, with
+the seeds.
+
+- **Its themes are written into the stack's database**, the W13 plan's one exception to fixtures made
+  through the API, since no route makes a theme in T1: by `@alloy-works/db`'s own `addCatalogueVersion`
+  and `addThemeVersion` (`src/testing/store.ts`), as the development environment's tenant, logged in as
+  the service logs in. Nothing creates a theme artifact but a migration, so each is seeded with a copy of
+  the default's rows and the theme measured is its next version - fixed artifacts, so a later run writes
+  nothing where a theme has not changed. `ALLOY_BROWSER_DATABASE` says where the stack's database is.
+- **Other seeds** can be tried without changing the test: `ALLOY_BROWSER_STYLE_SEEDS=11,22,33` measures
+  those instead, up to eight. `ALLOY_BROWSER_STYLE_DUMP=<folder>` writes every token's two measurements,
+  and every difference with the largest found, into that folder as JSON, which is where a failure is
+  read.
+- **The generator is narrowed** to what the store takes (contrast, a line at least 1.2 of its size, a
+  rule no wider than twice its table's padding) and to what both outputs render: no mark larger than its
+  text, no floated figure, and none of what the PDF does not set yet (issue #330).
+- **A list's markers** are measured too: where each bullet or number ends - a number right-aligned in
+  the list's column - and its face, weight, posture, size and colour, the list's place's style.
+- **It cites nothing yet.** Two properties both outputs render still differ (issues #331 and #333), so
+  STY-080 is not claimed and a test cannot cite it; themes.md names them.
+- **A filled block with spaces of its own is a gradient**, painted between its spaces, which axe-core
+  cannot read as a background: it reports that block's text `incomplete`, for the audit, rather than
+  checking its contrast. A filled block with no spaces is a colour, which axe checks. The default
+  theme's one filled style, preformatted text, has spaces, so its text is among what axe hands to a
+  person.
 
 **What it cannot see.** Headless Chromium has no browser interface, so `Alt+Left` is never Back there
 whatever the page does: the test shows the tree prevented the key's default, which is what keeps it

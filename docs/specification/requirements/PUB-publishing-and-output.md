@@ -117,7 +117,7 @@ produces a document matching its own approval.
 | **PUB-065** | Word output must carry the resolved document's content, numbering and cross-references and leave pagination to Word; the PDF is the output a page number cites, and the publication record must say so                                                                                                                                                                                  | Constraint | Specified |
 | **PUB-066** | Contents, lists of figures and tables, and page references in Word output must be fields that Word refreshes when the document opens, never page numbers copied from the PDF                                                                                                                                                                                                            | Constraint | Specified |
 | **PUB-067** | Equations in Word output must be native Word equations built from the same structure as the PDF's, never images and never a second conversion of the source                                                                                                                                                                                                                             | T1         | Specified |
-| **PUB-078** | Where a style, a property or a construct has no faithful Word representation, publishing must either refuse it (PUB-014) or report it on the publication exactly as a lossy export reports (PUB-055). Word is not exempt from saying what it could not carry; what makes it first-class is that the answer is normally nothing, and **STY-053**'s conformance suite is what keeps it so | Constraint | Specified |
+| **PUB-078** | Where a style, a property or a construct has no faithful Word representation, publishing must either refuse it (PUB-014) or report it on the publication exactly as a lossy export reports (PUB-055). Word is not exempt from saying what it could not carry; what makes it first-class is that the answer is normally nothing, and **STY-081**'s conformance suite is what keeps it so | Constraint | Specified |
 
 **PUB-065 and PUB-066 are the price of Word being editable, stated rather than discovered.** Word lays
 out its own pages and a recipient's first edit reflows the rest, so the Word document can never be
@@ -324,7 +324,7 @@ fails by name. Either answer is defensible and the silence was not.
 | PUB-033, PUB-034                     | CNT-022 alternative text; CNT-140 and CNT-084, the language of a passage                                              |
 | PUB-039, PUB-040                     | LIB - the terms and citations generated matter is built from                                                          |
 | PUB-060                              | LIF-026 - access to a shared publication in the audit log                                                             |
-| PUB-068 to PUB-070                   | STY-049, STY-052, STY-053 - glyphs, substitution, and the conformance suite                                           |
+| PUB-068 to PUB-070                   | STY-049, STY-052, STY-080, STY-081 - glyphs, substitution, and the conformance suites                                 |
 | PUB-077                              | STY-047, VER-018, VER-022 - what a baseline pins, and that it stays retrievable                                       |
 | PUB-081                              | ADM-029, ADM-030 - the export before closure, and the grace period after it                                           |
 | PUB-068 to PUB-081                   | [The v1 review](<../../reviews/PUB - Publishing and output.md>); section 16                                           |
@@ -498,3 +498,19 @@ is its own row, verified by `attestation` in each release's baseline.
 | Counts       | Before                    | After                       |
 | ------------ | ------------------------- | --------------------------- |
 | Requirements | 97, of which 9 superseded | 104, of which 13 superseded |
+
+### Pointers repointed after STY-053's split, 2026-09-28
+
+Not a review. STY-053 was superseded by STY-080, the editor measured against the PDF, and STY-081, Word
+measured against the PDF (issue #328; the W13 plan's decision B-M). Each change is a pointer, checked
+against what the replacements say; no row was added, superseded or withdrawn here.
+
+| What was found                                                           | Change                                                                                                                   |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| PUB-078 named STY-053's conformance suite as what keeps Word first-class | It names **STY-081**'s, Word measured against the PDF, the half of STY-053 that measured Word                            |
+| Section 15's traceability row for PUB-068 to PUB-070 rested on STY-053   | It rests on **STY-080 and STY-081**                                                                                      |
+| Earlier rows of this change history name STY-053                         | **Not changed.** Each records what was visible when it was written, and is not rewritten to match what happened after it |
+
+| Counts       | Before                      | After                       |
+| ------------ | --------------------------- | --------------------------- |
+| Requirements | 104, of which 13 superseded | 104, of which 13 superseded |

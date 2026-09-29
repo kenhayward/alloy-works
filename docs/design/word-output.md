@@ -38,7 +38,7 @@ PUB-027 - styles as real Word styles - belongs to [themes.md](themes.md), whose 
 writer includes as `styles.xml`.
 
 **PUB-023 is not claimed**, though this design answers much of it; the final review of Word 4 found
-it claimed for more than the design gives. Its "first-class" is, by PUB-078, kept by STY-053's
+it claimed for more than the design gives. Its "first-class" is, by PUB-078, kept by STY-081's
 conformance suite, which does not measure Word's style values yet; and a maths character is judged
 against STIX Two Math, not the Cambria Math Word sets it in - which the report now says once for a
 document setting an equation (`maths_coverage_unchecked`, W14.6), but which is still no judgement of
@@ -453,8 +453,8 @@ restarts, since the scheme counts each matter apart and Word's sequence counts t
 **What Word 1 to Word 4 claim and cite.** Word 1: PUB-023 once the rest have landed rather than
 first, PUB-027 (themes.md), PUB-034's and CNT-084's Word halves, CNT-128's, PUB-092's, PUB-012, PUB-065
 and PUB-074, STY-052's report. Word 2: TAB-039's and TAB-049's Word halves, PUB-035. Word 3: PUB-024,
-PUB-025, PUB-026, PUB-066. Word 4: PUB-067 and CNT-045. PUB-029 by the Word check, from Word 1. STY-053's
-Word half needs its measurements automated where Word runs; the Word check is where they will live, and
+PUB-025, PUB-026, PUB-066. Word 4: PUB-067 and CNT-045. PUB-029 by the Word check, from Word 1. STY-081,
+STY-053's Word half since W13.4, needs its measurements automated where Word runs; the Word check is where they will live, and
 the claim waits for them. Word 4's final review dropped PUB-023 and PUB-035, each claimed for more
 than the design gives ([Requirements owned](#requirements-owned)).
 
@@ -624,7 +624,7 @@ reports it:
 Word's pagination. PUB-065: it asks Word to carry cross-references, which Word 1 refuses; every Word
 output's `pages_cite_the_pdf` is its record half, for Word 3 to cite beside a carried reference.
 PUB-066: the contents is a `TOC` field that Word refreshes, but the lists and page references are Word
-3's. PUB-023 waits for Word 4, PUB-073 for T3's baselines, and STY-053 for the Word check to measure
+3's. PUB-023 waits for Word 4, PUB-073 for T3's baselines, and STY-081 for the Word check to measure
 style properties.
 
 **Left for Word 2 to 4.** Word 2: lists, quotations, preformatted text, tables, figures and images
@@ -1323,13 +1323,13 @@ to 337, and back to 335 when the final review's I3 and I4 dropped PUB-023's and 
 **PUB-023 is not claimed.** Every construct a T1 document holds reaches Word as Word's own
 structure, validated, with what the writer knows it loses named in the report - the worker's
 `everything` test shows it, and the Word check shows Word numbering and setting them as the PDF does.
-That is not yet the whole of "first-class": PUB-078 makes STY-053's conformance suite what keeps Word
+That is not yet the whole of "first-class": PUB-078 makes STY-081's conformance suite what keeps Word
 first-class, and that suite does not measure Word's style values yet; and a maths character is judged
 against STIX Two Math, not the Cambria Math Word sets it in, so one Cambria Math lacks is drawn from
 another face and not reported. Word's rebuilt contents, lists and running heads flattening a
 structured equation to its characters, which the final review named beside those two, is now reported
-(`equation_flattened`). PUB-023 is claimed when STY-053's Word half lands and the maths face's
-coverage is judged or reported.
+(`equation_flattened`). PUB-023 is claimed when STY-081, STY-053's Word half, split from it by W13.4,
+lands and the maths face's coverage is judged or reported; themes.md names STY-081 as its gap.
 
 **PUB-035 is not claimed.** Word carries headings at their outline levels, images described or
 decorative, header rows marked, every run's language, footnotes and cross-references as Word's own,
@@ -1344,7 +1344,7 @@ none for named on the publication - would be claimed here; that is a change to P
 through the requirement form.
 
 **Not cited, and why.** The Word check cites PUB-029 alone, as before, since CI skips it. PUB-092 and
-STY-053 wait for Word's pagination and its style properties to be measured where Word runs (since
+STY-081 wait for Word's pagination and its style properties to be measured where Word runs (since
 W14.3 the regression corpus shows each keep rule reaching Word as its own property, and themes.md
 names the gap that is left: Word's own page breaks), PUB-073
 for T3's baselines, and PUB-028, review in Word, is T6.

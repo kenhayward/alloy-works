@@ -41,6 +41,7 @@ import { shimRangeMeasurement } from '../test/range.js';
 import { DocumentList } from './DocumentList.js';
 import { DocumentPage } from './DocumentPage.js';
 import { documentAddress } from './links.js';
+import { LINK_WAITS_MS } from './position.js';
 import { NewDocument } from './NewDocument.js';
 import { OutlinePanel } from './OutlinePanel.js';
 import { DEFAULT_PRESENTATION } from '../theme/presentation.fixture.js';
@@ -3650,6 +3651,7 @@ describe('the address of every node', () => {
     /** Each node's top edge, as the page lays it out; jsdom lays nothing out. */
     const tops = new Map<string, number>();
     const scrolledTo: string[] = [];
+    const treeScrolled: string[] = [];
     let seen: (() => void) | null = null;
     const original = {
       rect: Element.prototype.getBoundingClientRect,
@@ -3659,9 +3661,14 @@ describe('the address of every node', () => {
     beforeEach(() => {
       tops.clear();
       scrolledTo.length = 0;
+      treeScrolled.length = 0;
       seen = null;
       Element.prototype.getBoundingClientRect = function (this: Element) {
-        const top = tops.get(this.getAttribute('data-node') ?? '') ?? 0;
+        // A tree item's own row is drawn where its node is.
+        const node = this.hasAttribute('data-row')
+          ? this.closest('[data-node]')?.getAttribute('data-node')
+          : this.getAttribute('data-node');
+        const top = tops.get(node ?? '') ?? 0;
         return {
           top,
           bottom: top + 40,
@@ -3678,6 +3685,9 @@ describe('the address of every node', () => {
         const node = this.getAttribute('data-node');
         if (node !== null && this.closest('[aria-label="The document\'s text"]'))
           scrolledTo.push(node);
+        // An element in the tree scrolled into view moves the window, since the window is what
+        // scrolls the page - and with it the text, whose node in view then changes (issue #336).
+        if (this.closest('[role="tree"]')) treeScrolled.push(node ?? this.tagName);
       };
       // An observer by hand: it tells the page something crossed, when the test says so.
       window.IntersectionObserver = class {
@@ -3728,6 +3738,25 @@ describe('the address of every node', () => {
       expect(scrolledTo).toContain(SECOND);
     });
 
+    it("STR-035 keeps the node in view in the tree by scrolling the outline's own pane, never the window that scrolls the text", async () => {
+      const fake = twoSections();
+      render(<DocumentPage client={client(fake.fetch)} id={DOCUMENT} principalId={ADA} />);
+      await screen.findByRole('region', { name: "The document's text" });
+      const pane = screen.getByRole('tree', { name: 'Outline' }).closest('[role="tabpanel"]');
+      if (!(pane instanceof HTMLElement)) throw new Error('The tree is in no pane');
+      // Every element is laid out at 0 to 40 here but a node's, so the pane shows its first 40
+      // pixels, and the second section's item is drawn at 60 to 100: below what the pane shows.
+      tops.set(FIRST, -400);
+      tops.set(SECOND, 60);
+      act(() => seen?.());
+      await waitFor(() =>
+        expect(treeItem(/Setting up/)).toHaveAttribute('aria-current', 'location'),
+      );
+      // Brought into view in the pane alone, its foot to the pane's foot.
+      expect(pane.scrollTop).toBe(60);
+      expect(treeScrolled).toEqual([]);
+    });
+
     it("STR-045 takes a reader who follows a node's link to it in the text, and marks it there until they choose another", async () => {
       const fake = twoSections();
       render(
@@ -3745,6 +3774,122 @@ describe('the address of every node', () => {
       // Choosing another moves the mark off, as the outline's own does.
       await userEvent.click(treeItem(/Unpacking/));
       expect(marked()).toBeUndefined();
+    });
+
+    it('keeps the outline pane between the header and the status bar, and lets it go in a window too short to hold it (issue #336)', () => {
+      // jsdom lays nothing out, so where the pane stands is read from the stylesheets' own rules. By a
+      // name in a variable: Vite rewrites a literal one into the stylesheet's served address.
+      const sheets = { page: './DocumentPage.module.css', base: '../theme/base.css' };
+      const read = (path: string) =>
+        readFileSync(new URL(path, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+      const PANE = ".layout > [data-panel] > [data-part='outline']";
+      /** The declarations of each rule for exactly `selector` in `css`, as `property: value` pairs. */
+      const declared = (css: string, selector: string) =>
+        [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+          .filter((match) => match[1]!.split(',').some((each) => each.trim() === selector))
+          .flatMap((match) =>
+            match[2]!
+              .split(';')
+              .map((each) => each.trim().replace(/\s+/g, ' '))
+              .filter(Boolean),
+          );
+      const [outside, ...media] = read(sheets.page).split('@media');
+      const pane = declared(outside!, PANE);
+      expect(pane).toContain('position: sticky');
+      expect(pane.find((each) => each.startsWith('max-height:'))).toMatch(
+        /var\(--header-height\).*var\(--status-height, 0px\)/,
+      );
+      // At 400% zoom a stuck pane would show a line or two of its tree: in a short window it scrolls
+      // with the page instead, and keeps nothing out of reach.
+      const short = media.find((each) => each.trim().startsWith('(max-height: 480px)'));
+      expect(short, 'a rule for a short window').toBeDefined();
+      expect(declared(short!.slice(short!.indexOf('{') + 1), PANE)).toEqual(
+        expect.arrayContaining(['position: static', 'max-height: none']),
+      );
+      // What the window scrolls to stops above the status bar as it does below the header.
+      const html = declared(read(sheets.base), 'html');
+      expect(html).toContain('scroll-padding-top: var(--header-height)');
+      expect(html).toContain('scroll-padding-bottom: var(--status-height, 0px)');
+    });
+
+    /** The fake's answers, the texts held until `release` - or for good, where it is never called. */
+    const holdingTexts = (fake: ReturnType<typeof service>) => {
+      let release!: () => void;
+      const held = new Promise<void>((resolve) => (release = resolve));
+      const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+        const request = input instanceof Request ? input : new Request(String(input), init);
+        if (new URL(request.url).pathname.endsWith('/texts')) await held;
+        return fake.fetch(request);
+      }) as typeof globalThis.fetch;
+      return { fetch, release };
+    };
+    /** Lets the page take what has arrived: answers read, effects run. */
+    const settle = () => act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+    const openLinked = (fetch: typeof globalThis.fetch) =>
+      render(
+        <DocumentPage
+          client={client(fetch)}
+          id={DOCUMENT}
+          principalId={ADA}
+          linked={{ node: SECOND, arrival: 1 }}
+        />,
+      );
+
+    it('STR-045 goes to a linked node once the texts above it have arrived, not before (issue #336)', async () => {
+      const { fetch, release } = holdingTexts(twoSections());
+      openLinked(fetch);
+      await screen.findByRole('region', { name: "The document's text" });
+      await settle();
+      // Every component above it is still a heading alone: going now, it would be pushed off the screen.
+      expect(scrolledTo).toEqual([]);
+      release();
+      await waitFor(() => expect(scrolledTo).toEqual([SECOND]));
+    });
+
+    it('STR-045 leaves the reader where they chose to go while a link waited for the texts (issue #336)', async () => {
+      const { fetch, release } = holdingTexts(twoSections());
+      openLinked(fetch);
+      await screen.findByRole('region', { name: "The document's text" });
+      await userEvent.click(treeItem(/Unpacking/));
+      expect(scrolledTo).toEqual([FIRST]);
+      release();
+      await settle();
+      expect(scrolledTo).toEqual([FIRST]);
+    });
+
+    it('STR-045 leaves the reader where they scrolled to while a link waited for the texts (issue #336)', async () => {
+      const inputs: [string, (target: Element) => void][] = [
+        ['the wheel', (target) => fireEvent.wheel(target, { deltaY: 100 })],
+        ['a touch', (target) => fireEvent.touchMove(target)],
+        ['Page Down', (target) => fireEvent.keyDown(target, { key: 'PageDown' })],
+        ['the space bar', (target) => fireEvent.keyDown(target, { key: ' ' })],
+      ];
+      for (const [input, scroll] of inputs) {
+        scrolledTo.length = 0;
+        const { fetch, release } = holdingTexts(twoSections());
+        const { unmount } = openLinked(fetch);
+        const text = await screen.findByRole('region', { name: "The document's text" });
+        scroll(text);
+        release();
+        await settle();
+        expect(scrolledTo, `scrolled by ${input}`).toEqual([]);
+        unmount();
+      }
+    });
+
+    it('STR-045 goes to a linked node when the texts never answer, after waiting a few seconds (issue #336)', async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'], shouldAdvanceTime: true });
+      try {
+        const { fetch } = holdingTexts(twoSections());
+        openLinked(fetch);
+        await screen.findByRole('region', { name: "The document's text" });
+        await settle();
+        expect(scrolledTo).toEqual([]);
+        act(() => vi.advanceTimersByTime(LINK_WAITS_MS));
+        await waitFor(() => expect(scrolledTo).toEqual([SECOND]));
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 

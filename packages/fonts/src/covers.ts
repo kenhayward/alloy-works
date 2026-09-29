@@ -28,3 +28,11 @@ export function covers(codePoint: number, family: string): boolean {
 export function familyOfFile(sha256: string): string | undefined {
   return PINNED_FONT_FILES.find((each) => each.sha256 === sha256)?.family;
 }
+
+/**
+ * A pinned file's cap height, as a fraction of its em, by the hash a theme names it by; undefined for
+ * a file nobody pinned.
+ */
+export function capHeightOfFile(sha256: string): number | undefined {
+  return PINNED_FONT_FILES.find((each) => each.sha256 === sha256)?.capHeight;
+}

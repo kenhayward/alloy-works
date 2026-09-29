@@ -240,6 +240,7 @@ describe('the pinned fonts (issue #145)', () => {
       {
         file: 'STIXTwoMath-Regular.otf',
         family: 'STIX Two Math',
+        capHeight: 657 / 1000,
         sha256: '3a5f3f26f40d5698b3c62dd085d48d6663696a3f80825aab8b553d5097518e8c',
       },
     ]);

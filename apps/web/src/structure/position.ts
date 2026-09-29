@@ -8,6 +8,26 @@ function movesNodes(mutation: MutationRecord): boolean {
   return [...mutation.addedNodes, ...mutation.removedNodes].some(holdsNode);
 }
 
+/**
+ * How long a link waits for the placed components' texts before it goes to its node anyway: the texts
+ * set where the node falls, but a request that never answers must not leave the reader at the top.
+ */
+export const LINK_WAITS_MS = 5_000;
+
+/** The input by which a reader scrolls the page themselves: a key among `SCROLLING_KEYS`, for a key. */
+export const SCROLL_INPUTS = ['wheel', 'touchmove', 'keydown'] as const;
+
+/** The keys the browser scrolls the page by. */
+export const SCROLLING_KEYS: ReadonlySet<string> = new Set([
+  'PageUp',
+  'PageDown',
+  'Home',
+  'End',
+  'ArrowUp',
+  'ArrowDown',
+  ' ',
+]);
+
 /** How far down the window the line is that a node's heading must have reached to be where the reader is. */
 const READING_LINE = 0.25;
 

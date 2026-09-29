@@ -274,6 +274,21 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   hyphenation, keeping lines together, a table's header repeated on each page and a floated figure's
   place on its page are left to the publication.
 
+  **Measured against the PDF on every change.** The browser tests publish one document under five
+  themes - the default, one that changes every setting the editor shows, and three made at random from
+  fixed seeds - and measure every word that begins a paragraph, a run, a cell or a caption in the
+  document view and in the PDF: where it starts and where its line sits, its size, face, weight,
+  slant, colour and underline and what is behind it, every table rule and every image. Anything more
+  than half a point apart fails; the largest difference found is under a third of a point. A list's
+  items now start where the PDF starts them, after a column as wide as the widest bullet or number,
+  and a table's outer rule is drawn whole at the edge of the text. What does not match yet, and is not
+  measured: a caption's or a footnote's fill, padding and indents, and a first-line indent on centred
+  or preformatted text or in a list's item, which the editor shows and the PDF does not print (issue
+  #330); a line holding an image or an equation in the text, or a list item in a smaller style than its
+  list, which opens by a different amount (issue #331); how high a subscript or superscript sits
+  (issue #332); and where the document view places a section's heading (issue #333). Word is not
+  measured against the PDF yet.
+
 - **Choosing a style.** **Paragraph style**, beside the formatting toolbar, sets the style of the
   paragraphs the selection touches, from the styles the theme offers where they stand - a paragraph in
   running text, in a list, in a quotation or in a table's cell each has its own - with the default
@@ -473,9 +488,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   and caption and a link to where it is placed, renumbered at once when you move anything. A number
   that would depend on a component you may not read is left off. A cross-reference in the text shows
   what the page gives its target, as a publication prints it. As you read, the outline marks where you
-  are, keeping it in view; choosing any part of the outline, or an entry in the lists beneath it, takes
-  the text there, and a link to a part opens the document at it, its heading marked until you choose
-  another.
+  are, keeping it in view; the outline stays beside the text as you scroll and scrolls on its own.
+  Choosing any part of the outline, or an entry in the lists beneath it, takes the text there, and a
+  link to a part opens the document at it, its heading below the page's header and marked until you
+  choose another.
 
   **Each component says which version the document shows.** Its label says the version - `Version
 0.3, latest` when it follows the component's latest, `Version 0.1, pinned` when the document is
