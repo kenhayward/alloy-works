@@ -49,8 +49,7 @@ export const WORD_FORMATS: Readonly<Record<NumberFormat, string>> = {
  *
  * Each level writes its number as `number` does: every part to its own depth in the format for its
  * place, the last format repeating, joined by the separator, then a space before the title, as the
- * PDF sets "1 Introduction" - in the number's text, since a suffix's space is Word's Arial's width. No
- * indents: the heading style's stand.
+ * PDF sets "1 Introduction". No indents: the heading style's stand.
  */
 export function numberingXml(
   scheme: NumberingScheme,
@@ -69,10 +68,7 @@ export function numberingXml(
         `<w:lvl w:ilvl="${ilvl}"><w:start w:val="1"/>` +
         `<w:numFmt w:val="${WORD_FORMATS[format]}"/>` +
         (style === undefined ? '' : `<w:pStyle w:val="${style}"/>`) +
-        // The space in the number's own text, with no suffix: Word sets a `space` suffix in Arial
-        // whatever the heading's face (measured in Word's own PDF, W15.2), where the number's text is
-        // set in the heading's.
-        `<w:suff w:val="nothing"/><w:lvlText w:val="${escapeXml(text)} "/>` +
+        `<w:suff w:val="space"/><w:lvlText w:val="${escapeXml(text)}"/>` +
         '<w:lvlJc w:val="left"/></w:lvl>'
       );
     });
