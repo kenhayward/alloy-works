@@ -3,6 +3,17 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.125.2 - 2026-09-29 (PR #346)
+
+### Changed
+
+- **Word is next to be measured against the PDF.** The coming releases hold every Word document to the
+  PDF of the same content the way the editor already is: Word's own layout, exported by Word, measured
+  word by word under several themes, with anything more than half a point apart failing the check. They
+  also check that Word keeps a heading with its text and a paragraph together where the style says to,
+  and refuse to send a maths symbol to Word when Word's maths font cannot draw it, naming it, instead of
+  letting Word borrow it from another font. Nothing changes for you in this release.
+
 ## 0.125.1 - 2026-09-29 (PR #345)
 
 ### Changed
