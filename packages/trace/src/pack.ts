@@ -1,7 +1,7 @@
 import type { Problem } from './check.js';
 import type { GateResult } from './gate.js';
-import { TRANCHES, type Baseline, type TraceModel } from './model.js';
-import type { TestOutcome } from './results.js';
+import { localRunDeclared, TRANCHES, type Baseline, type TraceModel } from './model.js';
+import { readRun, type TestOutcome } from './results.js';
 import { type Trace, traceOf } from './state.js';
 
 export interface PackDocument {
@@ -22,6 +22,11 @@ export interface PackInput {
    * same as before this field existed.
    */
   readonly outcomes?: ReadonlyMap<string, TestOutcome>;
+  /**
+   * For each requirement a `local-run` row verifies, the text of the report `record-run` reduced beside
+   * its record, as the gate read it: the pack names the record, the report's counts and its tests.
+   */
+  readonly runs?: ReadonlyMap<string, string>;
 }
 
 /**
@@ -51,9 +56,25 @@ const passed = (result: GateResult): boolean =>
  * `by` is the whole evidential content of the row, and printing it is the only reason this function
  * takes the baseline at all.
  */
-function evidenceFor(id: string, baseline: Baseline, trace: Trace | undefined): string {
+function evidenceFor(
+  id: string,
+  baseline: Baseline,
+  trace: Trace | undefined,
+  runs?: ReadonlyMap<string, string>,
+): string {
   const declared = baseline.verification.find((row) => row.id === id);
   if (declared?.kind === 'attestation') return `Attested by ${declared.by}`;
+  if (declared?.kind === 'local-run') {
+    const run = readRun(runs?.get(id) ?? '');
+    const at = localRunDeclared(declared.by, baseline.name);
+    const report = 'report' in at ? at.report : 'beside its record';
+    if (run === undefined) return `Run locally by ${declared.by}; its report ${report} not read`;
+    const { total, passed, failed, skipped } = run.counts;
+    return (
+      `Run locally by ${declared.by}; its report ${report} holds ${total} tests: ` +
+      `${passed} passed, ${failed} failed, ${skipped} skipped`
+    );
+  }
   if (declared?.kind === 'inherited') return `Inherited from ${declared.by}`;
   if (trace === undefined || trace.citations.length === 0) return 'No test names it';
   return trace.citations.map((citation) => `${citation.file}:${citation.line}`).join('; ');
@@ -127,7 +148,7 @@ function matrix(input: PackInput): PackDocument {
         statement,
         tranche,
         design,
-        evidenceFor(inclusion.id, baseline, trace),
+        evidenceFor(inclusion.id, baseline, trace, input.runs),
         verdictFor(inclusion.id, result),
       ];
     });
@@ -224,6 +245,19 @@ function results(input: PackInput): PackDocument {
       const declared = baseline.verification.find((row) => row.id === inclusion.id);
       const verdict = verdictFor(inclusion.id, result);
 
+      if (declared?.kind === 'local-run') {
+        const named = readRun(input.runs?.get(inclusion.id) ?? '')?.outcomes.get(inclusion.id);
+        return named === undefined
+          ? [
+              [
+                `**${inclusion.id}**`,
+                declared.kind,
+                evidenceFor(inclusion.id, baseline, trace, input.runs),
+                verdict,
+              ],
+            ]
+          : named.tests.map((name) => [`**${inclusion.id}**`, declared.kind, name, verdict]);
+      }
       if (declared?.kind === 'attestation' || declared?.kind === 'inherited') {
         return [
           [

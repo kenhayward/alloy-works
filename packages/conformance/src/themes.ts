@@ -9,15 +9,48 @@ import {
   type ResolvedParagraphProperties,
   type ResolvedTheme,
   type TableRule,
+  type Theme,
 } from '@alloy-works/domain';
-import type { ThemeArtifacts, ThemeToWrite } from './store.js';
 
 /**
- * **The five themes W13.4 measures** (the W13 plan's B-M): the default; a second, hand-written, that
- * differs from it in every property the editor projects; and three generated from a seeded generator
- * within the catalogue's schema, narrowed to what the store accepts (the plan's question 3). Each but
- * the default is written to artifacts of its own (`store.ts`), which a template then names.
+ * **The themes the editor and Word are measured under** (the W13 plan's B-M; the W15 plan's W15-F):
+ * the default; a second, hand-written, that differs from it in every property the editor projects;
+ * and themes generated from a seeded generator within the catalogue's schema, narrowed to what the
+ * store accepts (the W13 plan's question 3) - three from W13.4's seeds, and for Word three more with
+ * the editor's one remaining narrowing lifted. The browser suite writes each but the default to
+ * artifacts of its own, which a template then names; the worker's suite reads each as a publish would.
  */
+
+/** The catalogues a measured theme brings of its own; the other two are the default's. */
+export const OWN_KINDS = ['paragraph', 'character', 'table', 'image'] as const;
+export type OwnKind = (typeof OWN_KINDS)[number];
+
+/**
+ * A measured theme's content: the theme but for the catalogues it binds, which are named by the
+ * versions they become where it is written or read, and its four catalogues of its own at `catalogue/3`.
+ */
+export interface ThemeContent {
+  readonly theme: Omit<Theme, 'catalogues'>;
+  readonly catalogues: { readonly [K in OwnKind]: Extract<Catalogue, { kind: K }> };
+}
+
+/** W13.4's seeds, which the editor is measured under and Word beside it. */
+const W13_SEEDS: readonly number[] = [1301, 1302, 1303];
+
+/**
+ * The seeds the generated themes are made from, from `ALLOY_BROWSER_STYLE_SEEDS` - `11,22,33` - where
+ * it is set, so another set can be tried without changing a test, and W13.4's three where it is not.
+ * Read by the kit for both suites, so Word and the editor are held to the PDF over the same values.
+ */
+export function styleSeeds(value: string | undefined): number[] {
+  return value === undefined ? [...W13_SEEDS] : value.split(',').map((each) => Number(each.trim()));
+}
+
+/** The seeds of the themes both the editor and Word are measured under. */
+export const EDITOR_SEEDS: readonly number[] = styleSeeds(process.env.ALLOY_BROWSER_STYLE_SEEDS);
+
+/** The seeds of the three themes generated for Word alone (W15-F), a figure free to float. */
+export const WORD_SEEDS: readonly number[] = [1501, 1502, 1503];
 
 type ParagraphCatalogue = Extract<Catalogue, { kind: 'paragraph' }>;
 type CharacterCatalogue = Extract<Catalogue, { kind: 'character' }>;
@@ -51,7 +84,7 @@ function derive(
   character: (id: string, was: CharacterProperties) => CharacterProperties,
   table: (was: TableStyle) => TableStyle,
   image: (was: ImageStyle) => ImageStyle,
-): ThemeToWrite {
+): ThemeContent {
   const resolved = resolvedDefault();
   const base = DEFAULT_CATALOGUES.paragraph.base;
   const paragraphs: ParagraphCatalogue = {
@@ -119,13 +152,34 @@ function printable(
   return { ...properties, ...caption, ...unindented };
 }
 
-/** Where each theme but the default is written: fixed, so a later run writes nothing unchanged. */
-function artifactsOf(n: number): ThemeArtifacts {
-  const id = (k: number) => `a7e5b0c1-5a1e-4b0c-8f00-000000000${n}0${k}`;
-  return {
-    theme: id(0),
-    catalogues: { paragraph: id(1), character: id(2), table: id(3), image: id(4) },
-  };
+/** Where a measured theme's own catalogues are bound when it is read here: fixed, and no artifact's. */
+const READ_AT: Readonly<Record<OwnKind, string>> = {
+  paragraph: '00000000-0000-4000-8000-00000000c001',
+  character: '00000000-0000-4000-8000-00000000c002',
+  table: '00000000-0000-4000-8000-00000000c003',
+  image: '00000000-0000-4000-8000-00000000c004',
+};
+
+/**
+ * A measured theme read by the product's one theme reader, as a publish reads the theme its template
+ * names (themes 1, ruling R4) - its own four catalogues and the default's other two - or thrown on with
+ * what the reader refused, so no suite measures a theme the store would not hold.
+ */
+export function readMeasuredTheme(content: ThemeContent): ResolvedTheme {
+  const catalogues = { ...DEFAULT_THEME.catalogues, ...READ_AT };
+  const read = readTheme(
+    { ...content.theme, catalogues },
+    new Map<string, unknown>([
+      ...DEFAULT_CATALOGUES_BY_VERSION,
+      ...OWN_KINDS.map((kind) => [READ_AT[kind], content.catalogues[kind]] as const),
+    ]),
+  );
+  if (!read.ok) {
+    throw new Error(
+      `${content.theme.name} does not read: ${read.refusals.map((each) => each.message).join('; ')}`,
+    );
+  }
+  return read.theme;
 }
 
 const ALIGNMENTS = ['start', 'end', 'centre', 'justify'] as const;
@@ -138,12 +192,8 @@ const ALIGNMENTS = ['start', 'end', 'centre', 'justify'] as const;
  * alignment and caption side, and the image in a line's height; and the paper. Preformatted text keeps
  * its monospaced face, whose advance is what the template counts its columns by.
  */
-export function contraryTheme(): {
-  readonly name: string;
-  readonly write: ThemeToWrite;
-  readonly artifacts: ThemeArtifacts;
-} {
-  const write = derive(
+export function contraryTheme(): { readonly name: string; readonly content: ThemeContent } {
+  const content = derive(
     'Contrary',
     '#fdfaf2',
     (id, was) => ({
@@ -208,7 +258,7 @@ export function contraryTheme(): {
             caption: was.caption === 'below' ? 'above' : 'below',
           },
   );
-  return { name: 'Contrary', write, artifacts: artifactsOf(1) };
+  return { name: 'Contrary', content };
 }
 
 /** mulberry32: a small seeded generator, so a generated theme is the same every run of its seed. */
@@ -231,9 +281,16 @@ function generator(seed: number): () => number {
  * no wider than twice its padding (`table_rule_over_text`); preformatted text in the monospaced face;
  * and a figure as a block, since the editor has no page to float one to. A mark's scale runs from 0.6 to
  * 1.6 of its text, so a run larger than its text opens its line in both outputs (issue #331).
+ *
+ * **`forWord`** lifts the one narrowing left that is the editor's alone (W15-F): a figure's style may
+ * float it, which Word and the PDF both render - the other, a mark no larger than its text, was lifted
+ * for both by issue #331. Where each figure stands is drawn from a generator of its own, so everything
+ * else a seed makes is the same for Word as for the editor, and the editor's themes are W13.4's.
  */
-export function generatedTheme(n: number, seed: number) {
+export function generatedTheme(n: number, seed: number, { forWord = false } = {}) {
   const random = generator(seed);
+  // Only ever drawn from for Word: the editor's themes draw exactly what they drew before it.
+  const floating = generator(seed ^ 0x5bd1e995);
   const pick = <T>(of: readonly T[]): T => of[Math.floor(random() * of.length)]!;
   const between = (low: number, high: number, step = 0.25) =>
     Math.round((low + random() * (high - low)) / step) * step;
@@ -251,7 +308,7 @@ export function generatedTheme(n: number, seed: number) {
   const rule = (padding: number): TableRule =>
     chance(0.2) ? 'none' : { width: between(0.25, Math.min(3, padding * 2), 0.25), colour: ink() };
   const name = `Generated ${n}`;
-  const write = derive(
+  const content = derive(
     name,
     light(),
     (id, was) => {
@@ -309,7 +366,10 @@ export function generatedTheme(n: number, seed: number) {
             fixed: { dimension: 'width', unit: 'measure', value: between(0.25, 1, 0.05) },
             alignment: pick(['start', 'centre', 'end'] as const),
             caption: pick(['above', 'below'] as const),
+            ...(forWord
+              ? { placement: floating() < 0.5 ? ('float' as const) : ('block' as const) }
+              : {}),
           },
   );
-  return { name, write, artifacts: artifactsOf(n + 1), seed };
+  return { name, content, seed };
 }

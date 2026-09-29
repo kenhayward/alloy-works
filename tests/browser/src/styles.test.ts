@@ -6,20 +6,35 @@ import {
   faceFamily,
   type ResolvedParagraphProperties,
 } from '@alloy-works/domain';
-import { describe, expect, inject, it } from 'vitest';
-import { api, type Client, type DocumentView } from './testing/api.js';
-import { SERVICE } from './testing/addresses.js';
 import {
   approved,
+  COMPONENT_TITLE,
   compare,
   compareImages,
   compareMarkers,
   compareMathsFace,
   compareRules,
+  contraryTheme,
+  EDITOR_DEVIATIONS,
+  EDITOR_SEEDS,
+  generatedTheme,
+  HEADINGS,
+  IMAGES,
+  measurePdf,
+  pdfImages,
+  pdfMarkers,
+  pdfMathsFace,
+  pdfRules,
+  readPaint,
+  styledContent,
   type Alignment,
   type Difference,
   type Largest,
-} from './testing/compare.js';
+  type Token,
+} from '@alloy-works/conformance';
+import { describe, expect, inject, it } from 'vitest';
+import { api, type Client, type DocumentView } from './testing/api.js';
+import { SERVICE } from './testing/addresses.js';
 import {
   makeComponent,
   makeDocument,
@@ -34,27 +49,19 @@ import {
   editorMathsFace,
   editorRules,
   measureEditor,
-  measurePdf,
-  pdfImages,
-  pdfMarkers,
-  pdfMathsFace,
-  pdfRules,
 } from './testing/measure.js';
 import { withPage } from './testing/page.js';
-import { readPaint } from './testing/pdf.js';
-import { writeTheme, type ThemeToWrite } from './testing/store.js';
-import { COMPONENT_TITLE, HEADINGS, IMAGES, styledContent, type Token } from './testing/styled.js';
-import { contraryTheme, generatedTheme } from './testing/themes.js';
+import { artifactsOf, writeTheme, type ThemeToWrite } from './testing/store.js';
 
 /**
  * **The editor measured against the PDF** (the W13 plan's W13.4 and B-M; ADR-0014's method), for
  * STY-080, which it answers since issues #331 - the step into a line held open by something taller or
  * deeper than its text - and #333 - where the document view stands a section's heading - were fixed
- * and their steps and starts compared. One component holding a token at the head of every block and run the theme styles (`styled.ts`) is
+ * and their steps and starts compared. One component holding a token at the head of every block and run the theme styles (the kit's `styled.ts`, in `@alloy-works/conformance`) is
  * placed in a document under each of five themes - the default, one differing from it in every
  * property the editor projects, and three generated from seeds - and each document is published
  * through the stack and read in the document view's Reading mode, which CNT-075 holds the same as the
- * editing surface. Each token is measured in both (`measure.ts`) and compared (`compare.ts`): every
+ * editing surface. Each token is measured in both (`measure.ts` here, the kit's for the PDF) and compared (the kit's `compare.ts`): every
  * length within half a point, and every face, weight, posture, colour, underline and fill exactly.
  */
 
@@ -69,9 +76,7 @@ declare module 'vitest' {
 }
 
 /** The three seeds the generated themes are made from; another set can be tried by the variable. */
-const SEEDS = (process.env.ALLOY_BROWSER_STYLE_SEEDS ?? '1301,1302,1303')
-  .split(',')
-  .map((each) => Number(each.trim()));
+const SEEDS = EDITOR_SEEDS;
 
 /** The default layout's margin, inside and outside alike: where the measure starts on every page. */
 const MARGIN = 72;
@@ -273,17 +278,20 @@ describe('the editor measured against the PDF', () => {
     const { content, tokens } = styledContent(image);
     const component = await makeComponent(client, COMPONENT_TITLE.text, content);
 
-    const contrary = contraryTheme();
-    const generated = SEEDS.map((seed, index) => generatedTheme(index + 1, seed));
+    const contrary = { ...contraryTheme(), artifacts: artifactsOf(1) };
+    const generated = SEEDS.map((seed, index) => ({
+      ...generatedTheme(index + 1, seed),
+      artifacts: artifactsOf(index + 2),
+    }));
     const themes: { name: string; id: string; write: ThemeToWrite | null }[] = [
       { name: 'Default', id: DEFAULT_THEME_ID, write: null },
       ...[contrary, ...generated].map((each) => ({
         name: each.name,
         id: each.artifacts.theme,
-        write: each.write,
+        write: each.content,
       })),
     ];
-    for (const each of [contrary, ...generated]) await writeTheme(each.artifacts, each.write);
+    for (const each of [contrary, ...generated]) await writeTheme(each.artifacts, each.content);
 
     // The largest difference found for each property, over every theme, for the record.
     const most = new Map<string, { by: number; theme: string }>();
@@ -310,6 +318,6 @@ describe('the editor measured against the PDF', () => {
       );
     }
     // Approved deviations pass (STY-060), and none is approved between the editor and the PDF.
-    expect(found.filter((each) => !approved(each))).toEqual([]);
+    expect(found.filter((each) => !approved(each, EDITOR_DEVIATIONS))).toEqual([]);
   }, 900_000);
 });

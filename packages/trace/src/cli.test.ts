@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { EOL, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -9,6 +9,7 @@ import {
   describeWrite,
   readAreaArguments,
   readDraftInput,
+  recordRun,
   resolveOutputPath,
   runGate,
   writeListing,
@@ -354,6 +355,156 @@ describe('the gate, run by the CLI', () => {
     try {
       mkdirSync(join(root, 'docs', 'audits', '0.0.1', 'wcag.md'), { recursive: true });
       expect(runGate(root, traced, undefined)).toBe(1);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+/**
+ * A local run over the CLI (the W15 plan's W15-D), in a repository of its own: `pnpm trace record-run`
+ * reducing the worker's report to the record's report, and the gate reading both from the disk. Not the
+ * reserved area, since a run's report is read through `parseResults`, which skips it.
+ */
+describe('a local run, recorded and gated by the CLI', () => {
+  const ran: TraceModel = {
+    requirements: [
+      {
+        id: 'QQQ-001',
+        area: 'QQQ',
+        statement: 'A widget must be measured where Word is',
+        tranche: 'T1',
+        status: 'Specified',
+        document: 'QQQ-invented-area.md',
+        line: 1,
+      },
+    ],
+    nonRequirements: [],
+    questions: [],
+    designs: [{ document: 'one.md', owns: [{ id: 'QQQ-001', howItIsMet: 'a' }] }],
+    citations: [{ id: 'QQQ-001', file: 'apps/worker/src/a.test.ts', line: 1, kind: 'title' }],
+  };
+
+  /** The worker's Vitest report as a whole run on a machine with Word writes it: two files. */
+  const workerReport = (success = true, files = 2) => ({
+    numTotalTests: 2,
+    success,
+    startTime: Date.now(),
+    testResults: Array.from({ length: files }, (_, n) => ({
+      name: `D:/Somewhere/apps/worker/src/${n === 0 ? 'a' : 'b'}.test.ts`,
+      message: '',
+      assertionResults: [
+        n === 0
+          ? { fullName: 'Word measured QQQ-001 holds', status: success ? 'passed' : 'failed' }
+          : { fullName: 'something else', status: 'passed', failureMessages: [] },
+      ],
+    })),
+  });
+
+  function repository(): string {
+    const root = mkdtempSync(join(tmpdir(), 'alloy-local-run-'));
+    mkdirSync(join(root, 'docs', 'specification', 'baselines'), { recursive: true });
+    writeFileSync(
+      join(root, 'docs', 'specification', 'baselines', '0.0.2.md'),
+      [
+        '# 0.0.2',
+        '',
+        '> **Declared:** 2026-09-30. Invented for the test.',
+        '',
+        '## Included',
+        '',
+        '| ID          | Why it is in force    |',
+        '| ----------- | --------------------- |',
+        '| **QQQ-001** | invented for the test |',
+        '',
+        '## Verification',
+        '',
+        '| ID          | Kind      | By                                         |',
+        '| ----------- | --------- | ------------------------------------------ |',
+        '| **QQQ-001** | local-run | Ada, 2026-09-30, docs/audits/0.0.2/word.md |',
+        '',
+      ].join('\n'),
+    );
+    // The worker's two test files, which a whole run of its suite reports on.
+    mkdirSync(join(root, 'apps', 'worker', 'src'), { recursive: true });
+    writeFileSync(join(root, 'apps', 'worker', 'src', 'a.test.ts'), '');
+    writeFileSync(join(root, 'apps', 'worker', 'src', 'b.test.ts'), '');
+    mkdirSync(join(root, '.trace-results'));
+    return root;
+  }
+  const writeReport = (root: string, name: string, report: unknown) =>
+    writeFileSync(join(root, '.trace-results', `${name}.json`), JSON.stringify(report));
+  const recorded = (root: string) => join(root, 'docs', 'audits', '0.0.2', 'word.json');
+
+  it("reduces the worker's report to the record's report, with no path and no message", () => {
+    const root = repository();
+    try {
+      writeReport(root, 'worker', workerReport());
+      expect(recordRun(root, ['0.0.2', 'word'])).toBe(0);
+      const written = readFileSync(recorded(root), 'utf8');
+      expect(written).not.toContain('Somewhere');
+      expect(written).not.toContain('message');
+      expect(JSON.parse(written)).toMatchObject({
+        success: true,
+        counts: { total: 2, passed: 2, failed: 0, skipped: 0 },
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses a failed run, writing nothing', () => {
+    const root = repository();
+    try {
+      writeReport(root, 'worker', workerReport(false));
+      expect(recordRun(root, ['0.0.2', 'word'])).toBe(1);
+      expect(existsSync(recorded(root))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses a run of fewer of the worker's test files than it has, since the whole suite is the run", () => {
+    const root = repository();
+    try {
+      writeReport(root, 'worker', workerReport(true, 1));
+      expect(recordRun(root, ['0.0.2', 'word'])).toBe(1);
+      expect(existsSync(recorded(root))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses where there is no report to reduce, or no release and name a record can have', () => {
+    const root = repository();
+    try {
+      expect(recordRun(root, ['0.0.2', 'word'])).toBe(1);
+      writeReport(root, 'worker', workerReport());
+      expect(recordRun(root, ['0.0.2'])).toBe(1);
+      expect(recordRun(root, ['../0.0.2', 'word'])).toBe(1);
+      expect(recordRun(root, ['0.0.2', 'Word Run'])).toBe(1);
+      expect(existsSync(join(root, 'docs', 'audits'))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("gates the requirement on the record and the report on the disk, beside CI's own results", () => {
+    const root = repository();
+    try {
+      writeReport(root, 'worker', workerReport());
+      expect(recordRun(root, ['0.0.2', 'word'])).toBe(0);
+      // CI's own run, where the Word test is skipped.
+      writeReport(root, 'worker', {
+        ...workerReport(),
+        testResults: [
+          { assertionResults: [{ fullName: 'Word measured QQQ-001 holds', status: 'skipped' }] },
+        ],
+      });
+      // No record beside the report yet: the row names one.
+      expect(runGate(root, ran, undefined)).toBe(1);
+      writeFileSync(join(root, 'docs', 'audits', '0.0.2', 'word.md'), '# A run\n');
+      expect(runGate(root, ran, undefined)).toBe(0);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

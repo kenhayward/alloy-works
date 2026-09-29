@@ -39,6 +39,10 @@ packages/trace/trace.json
 # from, rather than the run it actually was.
 docs/trace/
 
+# The reduced report of a local run, written by `pnpm trace record-run` beside the record a
+# baseline's local-run row names: a tool writes it, as it writes .trace-results, and the gate reads it.
+docs/audits/**/*.json
+
 # The interface screens, exported from a design canvas and kept exactly as drawn: formatting their
 # HTML could change the whitespace a browser renders, and the PNG beside each is a picture of it.
 docs/interface/screens/

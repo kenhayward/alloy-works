@@ -24,6 +24,7 @@
     "zod": "^4.6.1"
   },
   "devDependencies": {
+    "@alloy-works/conformance": "workspace:^",
     "@types/node": "^24.5.2",
     "@types/pg": "^8.23.1",
     "fflate": "^0.8.3",

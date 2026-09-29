@@ -219,6 +219,63 @@ describe('parsing a baseline document', () => {
     ).toThrow(/ZZZ-001.*identifier/is);
   });
 
+  // W15-D: a `local-run` row names who ran it, when, and the one record of this release the run left,
+  // whose report `pnpm trace record-run` wrote beside it.
+  const localRun = (by: string): string =>
+    doc(
+      ...included,
+      '## Verification',
+      '',
+      '| ID          | Kind      | By |',
+      '| ----------- | --------- | -- |',
+      `| **ZZZ-001** | local-run | ${by} |`,
+    );
+
+  it('reads a local-run row naming a person, a date and one record of this release', () => {
+    const by = 'Ada, 2026-09-30, docs/audits/0.0.0-invented/word.md';
+    expect(parseBaseline(document, localRun(by)).verification).toEqual([
+      { id: 'ZZZ-001', kind: 'local-run', by },
+    ]);
+  });
+
+  it('refuses a local-run row naming no person', () => {
+    expect(() =>
+      parseBaseline(document, localRun('2026-09-30, docs/audits/0.0.0-invented/word.md')),
+    ).toThrow(/0\.0\.0-invented\.md:\d+.*ZZZ-001.*local-run.*person/is);
+  });
+
+  it('refuses a local-run row naming no date in YYYY-MM-DD form', () => {
+    expect(() =>
+      parseBaseline(document, localRun('Ada, 30 September, docs/audits/0.0.0-invented/word.md')),
+    ).toThrow(/0\.0\.0-invented\.md:\d+.*ZZZ-001.*local-run.*date/is);
+  });
+
+  it('refuses a local-run row naming no record, or two', () => {
+    expect(() => parseBaseline(document, localRun('Ada, 2026-09-30'))).toThrow(
+      /ZZZ-001.*local-run.*one record/is,
+    );
+    expect(() =>
+      parseBaseline(
+        document,
+        localRun(
+          'Ada, 2026-09-30, docs/audits/0.0.0-invented/word.md, docs/audits/0.0.0-invented/more.md',
+        ),
+      ),
+    ).toThrow(/ZZZ-001.*local-run.*one record/is);
+  });
+
+  it("refuses a local-run row whose record is not this release's", () => {
+    for (const record of [
+      'docs/audits/0.0.9/word.md',
+      'docs/audits/0.0.0-invented/word.json',
+      'docs/audits/../../package.json',
+    ]) {
+      expect(() => parseBaseline(document, localRun(`Ada, 2026-09-30, ${record}`))).toThrow(
+        /ZZZ-001.*local-run.*not a record of this release/is,
+      );
+    }
+  });
+
   it('treats the three sections as independent, so a baseline may exclude nothing', () => {
     const parsed = parseBaseline(document, doc(...included));
 

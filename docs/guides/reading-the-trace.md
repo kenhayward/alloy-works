@@ -175,7 +175,9 @@ actually met? It fails when
 
 - an included requirement is not met by its declared kind - no test names it, or a test naming it
   failed, or it inherits from something unmet (an `inherited` row may name several, and every one
-  must be included and met);
+  must be included and met), or a `local-run` row's run does not show it: its record under
+  `docs/audits/<version>/` or the report beside it is missing, the run failed, a test naming it failed
+  or was skipped in that run, or a test naming it failed in CI's own results;
 - an included requirement is no longer in force;
 - the **declaration itself** is malformed - a requirement both included and excluded, a duplicate
   verification row, an attestation with no substance, an attestation naming a record under
@@ -376,6 +378,7 @@ product does, and it is checkable at every step rather than asserted at the end.
 | `pnpm trace verify [dir]`                          | The same table, with `Verified` computed from a test run                                                                                                                                                                                                                                                                                                                                      |
 | `pnpm trace baseline [name]`                       | A committed baseline: what it includes, excludes and why                                                                                                                                                                                                                                                                                                                                      |
 | `pnpm trace gate [name]`                           | Pass or fail a baseline. Non-zero exit on failure                                                                                                                                                                                                                                                                                                                                             |
+| `pnpm trace record-run <version> <name>`           | Reduce `.trace-results/worker.json`, a whole run of the worker's suite where Word is, to `docs/audits/<version>/<name>.json` - each test's name and status, the counts and the start time, no path and no message - for a baseline's `local-run` row. Refuses a failed run, and a run of fewer of the worker's test files than it has                                                         |
 | `pnpm trace pack <version>`                        | Write the evidence pack. Refuses a dirty working tree                                                                                                                                                                                                                                                                                                                                         |
 | `pnpm trace draft <issue>`                         | Draft a row from a filed issue. Prints only, never writes                                                                                                                                                                                                                                                                                                                                     |
 

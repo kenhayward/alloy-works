@@ -4,13 +4,14 @@ import {
   attestationIsSubstantial,
   inheritedFrom,
   isRecordOf,
+  localRunDeclared,
   recordsNamed,
   type Baseline,
   type TraceModel,
   type VERIFICATION_KINDS,
   type Verification,
 } from './model.js';
-import type { TestOutcome } from './results.js';
+import { readRun, type TestOutcome } from './results.js';
 import { traceOf } from './state.js';
 
 export type Unmet = { id: string; kind: (typeof VERIFICATION_KINDS)[number]; why: string };
@@ -61,6 +62,12 @@ export function gate(
    * function of what it is handed. Required, so no caller can forget to look.
    */
   recordExists: (path: string) => boolean,
+  /**
+   * A file's text, by its path from the repository's root, or nothing where it cannot be read: for the
+   * report a `local-run` row's record has beside it, which `pnpm trace record-run` wrote. Handed in, as
+   * `recordExists` is, so the gate stays pure; asked only for a path of this release a row names.
+   */
+  readRecord: (path: string) => string | undefined,
 ): GateResult {
   const requirementById = new Map(
     model.requirements.map((requirement) => [requirement.id, requirement]),
@@ -176,6 +183,50 @@ export function gate(
     for (const id of ids) touching.set(id, [...(touching.get(id) ?? []), problem]);
   }
 
+  /**
+   * A `local-run` row's verdict (the W15 plan's W15-D), each condition in turn, the first that fails
+   * named: its `by` names a person, a date and one record of this release; the record is there, and
+   * the report `record-run` reduced beside it; the report is of a run that did not fail; by that report
+   * the requirement is Verified - `traceOf`'s own rung, a title citation and every test naming it
+   * passed, none skipped; and in CI's own results no test naming it failed, where a skip is expected,
+   * since CI has no Word. Asked once per requirement, so each file is read once.
+   */
+  const localRuns = new Map<string, string | null>();
+  function localRun(id: string, by: string): string | null {
+    const known = localRuns.get(id);
+    if (known !== undefined) return known;
+    const why = ((): string | null => {
+      const declared = localRunDeclared(by, baseline.name);
+      if ('refused' in declared) return `${id}'s local-run \`by\` ${declared.refused}`;
+      if (!recordExists(declared.record)) {
+        return `${id}'s local run names its record ${declared.record}, which is not there`;
+      }
+      const text = recordExists(declared.report) ? readRecord(declared.report) : undefined;
+      if (text === undefined) {
+        return `${id}'s local run has no report ${declared.report} beside its record - run pnpm trace record-run`;
+      }
+      const run = readRun(text);
+      if (run === undefined) {
+        return `${id}'s local run's report ${declared.report} is not a report of a run`;
+      }
+      if (!run.success) return `${id}'s local run failed, by its report ${declared.report}`;
+      if (traceOf(id, model, run.outcomes)?.state !== 'Verified') {
+        const there = run.outcomes.get(id);
+        return there === undefined
+          ? `${id} is named by no test in its local run`
+          : there.outcome !== 'passed'
+            ? `${id} is named by a test that ${there.outcome} in its local run`
+            : `${id} is not cited by a test title, so its local run verifies nothing`;
+      }
+      if (outcomes.get(id)?.outcome === 'failed') {
+        return `${id} is named by a test that failed in CI's own results`;
+      }
+      return null;
+    })();
+    localRuns.set(id, why);
+    return why;
+  }
+
   function eligible(id: string): boolean {
     const requirement = requirementById.get(id);
     return requirement !== undefined && requirement.status === 'Specified' && !touching.has(id);
@@ -200,6 +251,7 @@ export function gate(
     // already gone through that check.
     if (declared?.kind === 'attestation') return attestationIsSubstantial(declared.by);
     if (declared?.kind === 'inherited') return false;
+    if (declared?.kind === 'local-run') return localRun(id, declared.by) === null;
     return traceOf(id, model, outcomes)?.state === 'Verified';
   }
 
@@ -275,6 +327,15 @@ export function gate(
             : outside !== undefined
               ? `${id} inherits from ${target}, which is not in the baseline`
               : `${id} inherits from ${target}, which is not met`,
+      });
+      continue;
+    }
+    if (kind === 'local-run') {
+      const declared = verificationById.get(id)!;
+      unmet.push({
+        id,
+        kind,
+        why: localRun(id, declared.by) ?? `${id} was not met by its local run`,
       });
       continue;
     }

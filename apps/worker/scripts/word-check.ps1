@@ -29,10 +29,16 @@
 # the contents or a list after it; and with every paragraph, the contents' entries and the lists', the
 # text each equation in it gives, so that a test can tell the words around an equation from its maths.
 #
+# With -ExportOnly (the W15 plan's W15.1), it does only what a measurement needs of Word: opens each
+# document, updates its contents and every field, repaginates, exports Word's own PDF, <name>.pdf, and
+# reports Word's Version and Build beside the path, with none of the reads above, which are slow and
+# assert nothing a measurement needs, and no copy saved. Word cannot be pinned, so its version and build
+# are read on every run and recorded (W15-E).
+#
 # Tracks the WINWORD process it started and stops only that one, if Quit leaves it running. Where
 # starting Word started no process of its own, it attached to one somebody else runs, and it closes
 # only its own documents and leaves that Word alone.
-param([Parameter(Mandatory = $true)][string]$Folder)
+param([Parameter(Mandatory = $true)][string]$Folder, [switch]$ExportOnly)
 $ErrorActionPreference = 'Stop'
 
 # Word's enumerations, by the values this uses.
@@ -312,6 +318,26 @@ try {
     $name = $file.BaseName
     $out = [ordered]@{ name = $name; opened = $false; error = $null }
     $doc = $null
+    if ($ExportOnly) {
+      try {
+        $doc = $word.Documents.Open($file.FullName, $false, $true, $false)
+        $out.opened = $true
+        $out.version = [string]$word.Version
+        $out.build = [string]$word.Build
+        Update $doc
+        # A plain string, as below: a wrapped path leaves Word waiting inside ExportAsFixedFormat.
+        $pdf = [string](Join-Path $Folder "$name.pdf")
+        $out.pdf = $pdf
+        $doc.ExportAsFixedFormat($pdf, $wdExportFormatPDF)
+        $doc.Close([ref]$wdDoNotSaveChanges)
+        $doc = $null
+      } catch {
+        $out.error = $_.Exception.Message
+        if ($null -ne $doc) { try { $doc.Close([ref]$wdDoNotSaveChanges) } catch {} }
+      }
+      $results += $out
+      continue
+    }
     try {
       $doc = $word.Documents.Open($file.FullName, $false, $true, $false)
       $out.opened = $true

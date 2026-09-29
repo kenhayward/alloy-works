@@ -500,6 +500,27 @@ a fraction where the heading and the caption stand and as its runs alone in the 
   field-update prompt's default and updates on opening, so the contents as prefilled - what a reader
   who declines the prompt sees - is never looked at.
 
+**The export-only mode** (the [W15 plan](plans/2026-09-29-w15-word-measured.md), W15.1) is what a
+measurement needs of Word and no more: `word-check.ps1 -ExportOnly` opens each document, updates its
+contents and every field, repaginates, exports Word's own PDF and reports Word's `Version` and `Build` -
+Word updates itself and cannot be pinned, so both are read on every run - with none of the check's
+reads and no copy saved. `apps/worker/src/word-export.test.ts`, behind the same switch, holds it over
+the conformance kit's measured fixture under the default theme and layout, written by `writeDocx` and
+compiled through the current template from one `assemble`, and reads Word's PDF with the kit's reader:
+every token of the fixture found in it, each face by its embedded program's PostScript name, and each
+cell's and panel's fill and each table's rules as Word painted them. It leaves both PDFs in
+`alloy-works-word-export` under the system's temporary folder. **Word's PDF is never committed**: it
+embeds subsets of Microsoft's faces, which ADR-0010 keeps out of the repository, so it is made and read
+only where Word is. The kit keeps the Typst PDF of the fixture in `packages/conformance/src/fixtures/`,
+and its own tests, in CI, hold the reader to what Word's PDF is made of - `___WRD_EMBED_SUB_<n>` faces,
+colours restored by `Q`, rules painted as filled rectangles, character spacing - in PDFs they write
+themselves, embedding only the pinned Liberation faces. So the one switch runs the check
+and the export, and will run W15.2's measurement: **for a release, run the whole worker suite with it
+on** (`ALLOY_WORD_CHECK=1 pnpm --filter @alloy-works/worker test`) and then
+`pnpm trace record-run <version> word`, which reduces that run's `.trace-results/worker.json` to
+`docs/audits/<version>/word.json` for a baseline's `local-run` row
+([baselines](specification/baselines/README.md), "Verification").
+
 ## The end-to-end suite
 
 `tests/e2e` drives the whole system as a person's browser would meet it, and nothing else does: the
@@ -698,11 +719,11 @@ or scrolling elsewhere - the jsdom suite holds, in the document page's own test.
 measures the editor against the PDF of the same document. One component holding a token at the head of
 every block and run a theme styles is placed in a document under each of five themes - the default, one
 differing from it in every property the editor projects, and three generated from seeds - and each
-document is published through the stack, downloaded by its signed link and read by pdf.js
-(`src/testing/pdf.ts`, a small copy of the worker suite's `readPaint`), and opened in the document
-view's Reading mode at 100%. Each token is measured in both (`src/testing/measure.ts`): in the page by a
-zero-size marker set before its first letter and its element's computed style, in the PDF by the text
-matrix of the run that paints it. The comparison (`src/testing/compare.ts`) fails on any length more
+document is published through the stack, downloaded by its signed link and read by pdf.js (the
+conformance kit's `readPaint`, a small copy of the worker suite's), and opened in the document view's
+Reading mode at 100%. Each token is measured in both: in the page by a zero-size marker set before its
+first letter and its element's computed style (`src/testing/measure.ts`), in the PDF by the text
+matrix of the run that paints it (the kit's `measure.ts`). The comparison (the kit's `compare.ts`) fails on any length more
 than half a point apart - where a token starts, each step between baselines in the order the page reads
 them, a size, an image's size, a table rule's width and where it runs - and on any face, weight,
 posture, colour, underline or fill that differs; what it leaves out, and why, is in its own description
@@ -730,6 +751,13 @@ the seeds.
   section's heading - were fixed; each step into and out of such a line and each heading's start and
   steps are compared. The fixture holds two images in a line, in paragraphs of two sizes, so that
   whichever a theme's page sets first on a page, the step into the other is compared.
+- **Its fixture, themes, PDF reader, the PDF's half of the measurement and the comparison are the
+  conformance kit's** (`packages/conformance`, the W15 plan's W15-C), so that Word is held to the PDF
+  by the same measures from W15.2: the kit's own tests run in `pnpm test`, and hold the fixture and the
+  five themes to hashes taken before they moved there, so the move changed nothing the suite measures;
+  the store's writing and the editor's measurement stay here. It keeps STY-060's two lists of approved
+  deviations, the editor's empty and Word's holding STY-052's substitution alone, and a generator mode
+  for Word's own three themes, seeds 1501 to 1503, in which a figure may float.
 - **A filled block with spaces of its own is a gradient**, painted between its spaces, which axe-core
   cannot read as a background: it reports that block's text `incomplete`, for the audit, rather than
   checking its contrast. A filled block with no spaces is a colour, which axe checks. The default

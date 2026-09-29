@@ -90,11 +90,35 @@ Not every requirement outside the baseline needs a row here - see below.
 
 How a requirement is shown to be met, for the requirements that need saying beyond "a test passed".
 
-| Kind          | Meaning                                               | What it needs                                                                                                        |
-| ------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `test`        | The default. A test names the requirement and passes. | Nothing here - it needs no row at all.                                                                               |
-| `inherited`   | Satisfied by other requirements' verification.        | The covering identifier, or several separated by commas, each of which must be included and met, in the `By` column. |
-| `attestation` | A person checked it for this release.                 | Who, and when, in the `By` column, and where it names its record under `docs/audits/`, a record that is there.       |
+| Kind          | Meaning                                                                             | What it needs                                                                                                                                                                            |
+| ------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test`        | The default. A test names the requirement and passes.                               | Nothing here - it needs no row at all.                                                                                                                                                   |
+| `inherited`   | Satisfied by other requirements' verification.                                      | The covering identifier, or several separated by commas, each of which must be included and met, in the `By` column.                                                                     |
+| `attestation` | A person checked it for this release.                                               | Who, and when, in the `By` column, and where it names its record under `docs/audits/`, a record that is there.                                                                           |
+| `local-run`   | Tests naming it ran and passed on a particular machine - Word's - for this release. | Who ran it, when, and one record of this release, `docs/audits/<version>/<name>.md`, in the `By` column; beside it the run's report, `<name>.json`, which `pnpm trace record-run` wrote. |
+
+A `local-run` row is for a requirement only a run where Word is can verify (the
+[W15 plan](../../plans/2026-09-29-w15-word-measured.md), W15-D): CI runs Linux and has no Word, so the
+tests naming it are skipped there, and a skip never verifies. The whole worker suite is run on the
+reference machine with `ALLOY_WORD_CHECK=1`, and `pnpm trace record-run <version> <name>` reduces its
+report, `.trace-results/worker.json`, to `docs/audits/<version>/<name>.json` - each test's full name and
+status, the counts and the start time, and no path, no message and nothing of the machine - refusing
+a failed run and a run of fewer of the worker's test files than it has. The person writes the record
+beside it, `<name>.md`: who ran it, when, the commit, Word's version and build, and what Word showed.
+
+**The gate meets a `local-run` requirement** when it is eligible as any other is - in force and
+touched by no corpus problem; the record and the report are there and of this release; the report is
+a run that did not fail; by that report the requirement is Verified - a test title cites it, and every
+test naming it passed and none was skipped; and in CI's own results no test naming it failed, a skip
+being expected there. Where one of these does not hold it says which. `pnpm trace verify` is
+unchanged, and reads `.trace-results` alone: in CI such a requirement reads Covered, and after a local
+run with Word, Verified. The evidence pack names the record and the report's counts, and lists the
+report's tests naming the requirement.
+
+**What the gate cannot see** is that the run was made at this release's commit: the report carries no
+commit, and the record names it. What holds it is the procedure - the run is made on the release's
+commit and recorded before its baseline cites it - which a reviewer checks against the record, as an
+attestation's.
 
 `test` is the default precisely so that the common case costs nothing: most requirements are
 verified by a test naming them, and a table with 1,306 rows saying so would be the "new column in

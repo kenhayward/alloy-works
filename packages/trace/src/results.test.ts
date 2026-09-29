@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { checkCoherence, parseResults, reportsForEvidence } from './results.js';
+import { checkCoherence, parseResults, readRun, reduceRun, reportsForEvidence } from './results.js';
 
 const NOW = 1_800_000_000_000;
 
@@ -197,5 +197,79 @@ describe('checking that a set of reports agree with each other', () => {
     const problems = checkCoherence(reports, ['trace', 'e2e']);
 
     expect(problems.some((problem) => problem.includes('e2e'))).toBe(true);
+  });
+});
+
+/**
+ * `pnpm trace record-run`'s reduction (the W15 plan's W15-D): a local run's report as it is committed
+ * beside its record - each test's full name and status, the counts and the start time, and nothing
+ * else: no path, no message, nothing of the machine it ran on.
+ */
+describe('reducing a local run for its record', () => {
+  const full = {
+    numTotalTests: 3,
+    numPassedTests: 1,
+    numFailedTests: 0,
+    numPendingTests: 2,
+    success: true,
+    startTime: NOW,
+    testResults: [
+      {
+        name: 'D:/Somewhere/Ada/apps/worker/src/word-check.test.ts',
+        message: 'a message from the machine',
+        status: 'passed',
+        startTime: NOW,
+        endTime: NOW + 10,
+        assertionResults: [
+          {
+            ancestorTitles: ['the Word check'],
+            fullName: 'the Word check ABC-029 opens every fixture',
+            status: 'passed',
+            title: 'opens every fixture',
+            duration: 12,
+            failureMessages: [],
+            meta: { version: '16.0' },
+          },
+          {
+            fullName: 'another test',
+            status: 'skipped',
+            failureMessages: ['at D:/Somewhere/Ada/x.ts'],
+          },
+          { fullName: 'a third', status: 'todo' },
+        ],
+      },
+    ],
+  };
+
+  it('keeps each test by its full name and status, the counts and the start time, and nothing more', () => {
+    expect(reduceRun(full)).toEqual({
+      success: true,
+      startTime: NOW,
+      counts: { total: 3, passed: 1, failed: 0, skipped: 2 },
+      testResults: [
+        {
+          assertionResults: [
+            { fullName: 'the Word check ABC-029 opens every fixture', status: 'passed' },
+            { fullName: 'another test', status: 'skipped' },
+            { fullName: 'a third', status: 'todo' },
+          ],
+        },
+      ],
+    });
+    const written = JSON.stringify(reduceRun(full));
+    for (const kept of ['Somewhere', 'Ada/', 'message', 'duration', 'meta', 'title"']) {
+      expect(written).not.toContain(kept);
+    }
+  });
+
+  it('reads back as the report it was reduced from, to the same outcomes', () => {
+    const reduced = readRun(JSON.stringify(reduceRun(full)));
+    expect(reduced?.success).toBe(true);
+    expect(reduced?.counts).toEqual({ total: 3, passed: 1, failed: 0, skipped: 2 });
+    expect(reduced?.outcomes).toEqual(parseResults([full]));
+  });
+
+  it('refuses a report that is not a Vitest report', () => {
+    expect(() => reduceRun({ success: true })).toThrow(/testResults/);
   });
 });

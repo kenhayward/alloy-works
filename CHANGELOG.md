@@ -3,6 +3,28 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.126.0 - 2026-09-29 (PR #TBD)
+
+### Added
+
+- **The tools Word will be measured with.** What the editor is measured against the PDF with - the
+  document that holds every style, the themes, the PDF reader and the comparison - now lives in one
+  shared test kit, so Word will be held to the PDF by exactly the same measures and tolerances as the
+  editor. The editor's measurement is unchanged by the move: the same themes, the same findings.
+- **The PDF reader reads Word's own PDFs.** It names the face Word drew each word in from the font
+  file Word embedded, rather than the placeholder name Word gives every embedded font, keeps a colour
+  Word sets before painting where it belongs, reads a table's rules Word draws as filled shapes, and
+  follows the letter spacing Word adds to some lines.
+- **A quick Word export for measuring.** The Word check can now open each document in Word, update
+  it and export Word's own PDF without its slower readings, reporting Word's version and build every
+  time, since Word cannot be pinned to one.
+- **A release can now count a check only a machine with Word can run.** A release's list of what it
+  answers for can name a local run - who ran it, when, and its record - and `pnpm trace record-run`
+  keeps the run's results beside that record, test names and results only, with no file paths or
+  messages. The release check counts such a requirement only when that record and its results are
+  there for this release, the run passed, every test naming the requirement passed in it with none
+  skipped, and none failed in the automatic checks.
+
 ## 0.125.3 - 2026-09-29 (PR #347)
 
 ### Fixed

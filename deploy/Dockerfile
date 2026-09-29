@@ -32,6 +32,7 @@ COPY apps/web/package.json apps/web/
 COPY apps/worker/package.json apps/worker/
 COPY packages/api-client/package.json packages/api-client/
 COPY packages/api-contract/package.json packages/api-contract/
+COPY packages/conformance/package.json packages/conformance/
 COPY packages/db/package.json packages/db/
 COPY packages/editor/package.json packages/editor/
 COPY packages/fonts/package.json packages/fonts/

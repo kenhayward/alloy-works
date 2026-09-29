@@ -41,6 +41,84 @@ const outcomeOf = (status: string): Outcome =>
  * Several JSON reports to what each requirement's tests did. One report per package, because each
  * `vitest.config.ts` writes its own.
  */
+/**
+ * A run's report read from its text - one `.trace-results` wrote, or the reduced copy `record-run`
+ * writes of one - or nothing where the text is not JSON or not a report's shape: whether the run
+ * succeeded, and what each requirement's tests did in it. For the gate, which reads a local run's
+ * report and must say it could not rather than throw.
+ */
+export function readRun(text: string):
+  | {
+      readonly success: boolean;
+      readonly counts: RunCounts;
+      readonly outcomes: Map<string, TestOutcome>;
+    }
+  | undefined {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+  const report = Report.safeParse(raw);
+  if (!report.success) return undefined;
+  return {
+    success: report.data.success,
+    counts: countsOf(report.data),
+    outcomes: parseResults([report.data]),
+  };
+}
+
+/** How many tests a run held, and how many of them passed, failed and did not run. */
+export interface RunCounts {
+  readonly total: number;
+  readonly passed: number;
+  readonly failed: number;
+  readonly skipped: number;
+}
+
+function countsOf(report: z.infer<typeof Report>): RunCounts {
+  const outcomes = report.testResults.flatMap((file) =>
+    file.assertionResults.map((each) => outcomeOf(each.status)),
+  );
+  const count = (outcome: Outcome) => outcomes.filter((each) => each === outcome).length;
+  return {
+    total: outcomes.length,
+    passed: count('passed'),
+    failed: count('failed'),
+    skipped: count('skipped'),
+  };
+}
+
+/**
+ * A local run's report as `pnpm trace record-run` commits it beside the run's record (the W15 plan's
+ * W15-D): whether the run succeeded, when it started, its counts, and each test's full name and status
+ * - which is all the gate reads of it. No file's path, no failure's message, no duration and nothing a
+ * test wrote into its `meta`: what a run on somebody's machine leaves in its report is theirs, not the
+ * repository's.
+ */
+export interface RunRecord {
+  readonly success: boolean;
+  readonly startTime: number;
+  readonly counts: RunCounts;
+  readonly testResults: readonly {
+    readonly assertionResults: readonly { readonly fullName: string; readonly status: string }[];
+  }[];
+}
+
+/** A Vitest JSON report reduced to its `RunRecord`, or thrown on where it is not a report. */
+export function reduceRun(raw: unknown): RunRecord {
+  const report = validate(Report, raw, "the run's report");
+  return {
+    success: report.success,
+    startTime: report.startTime,
+    counts: countsOf(report),
+    testResults: report.testResults.map((file) => ({
+      assertionResults: file.assertionResults.map(({ fullName, status }) => ({ fullName, status })),
+    })),
+  };
+}
+
 export function parseResults(reports: unknown[]): Map<string, TestOutcome> {
   const perIdentifier = new Map<string, { outcomes: Outcome[]; tests: string[] }>();
 
