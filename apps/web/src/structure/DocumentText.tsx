@@ -314,15 +314,19 @@ export function DocumentText({
 
   const titled = (node: OutlineViewNode, depth: number) => {
     const at = numbers.get(node.id);
+    // In a holder the measure wide on the canvas, so the heading's indents and alignment stand inside
+    // the measure while its section and component keep the column's width (issue #333).
     return (
-      <Heading depth={depth}>
-        {at !== undefined && (
-          <>
-            <span className={styles['number']}>{at}</span>{' '}
-          </>
-        )}
-        {node.type === 'section' ? <SectionTitle title={node.title} /> : nodeName(node, names)}
-      </Heading>
+      <div className={styles['measured']}>
+        <Heading depth={depth}>
+          {at !== undefined && (
+            <>
+              <span className={styles['number']}>{at}</span>{' '}
+            </>
+          )}
+          {node.type === 'section' ? <SectionTitle title={node.title} /> : nodeName(node, names)}
+        </Heading>
+      </div>
     );
   };
 

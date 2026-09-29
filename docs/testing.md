@@ -673,6 +673,12 @@ each state. Another test shows structure.md's known limit: two `Alt+Down` presse
 answered send one move. And one holds issue #325 fixed: two spaces typed in a section's title are
 stored, computed as `break-spaces` and drawn as two.
 
+`canvas.test.ts` holds what a person does on the canvas that the measured style cannot see (the
+final review of issues #331 and #333): a click on the lower half of the line above a paragraph holding
+an image puts the caret in that line; a component's label stands at the column's edge, clear of its
+heading's words; and a component opened in place is the column's width, not clipped, with its text
+reachable by the pointer and its toolbar in no more rows than the column lays it in, at 100% and 50%.
+
 `navigation.test.ts` holds issue #336 fixed, over documents longer than the window made through the
 API - three sections placing three components each (four, for the wheel, which needs more than 1500
 pixels to travel), and one of five hundred nodes: the wheel takes

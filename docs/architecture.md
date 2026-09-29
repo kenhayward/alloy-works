@@ -1560,10 +1560,12 @@ paragraph's own text, raised and lowered by the run's growth, and the look on th
 line stands in `span.aw-inline-image-holder` on the surface (`imageView`) and in a document's read text
 (`drawImages` in `render.ts`), which `projectCss` makes a block holding a trimmed line of the text above
 the image. A paragraph holding either, where the browser trims, begins and ends with a line of its own
-text as `::before` and `::after`, lifted by `--aw-lift`, which every block's margin above carries. A
-list's marker is trimmed and padded to hold its item's row open. The document view's sections and
-components are the measure wide on the canvas, and its headings blocks spaced by their heading style
-alone (`DocumentText.module.css`).
+text as `::before` and `::after`, generated content with empty alternative text, lifted by `--aw-lift`,
+which every block's margin above carries, and clipped by `clip-path` where it is lifted, so a pointer
+over the line above reaches that line; it is positioned at `z-index: 1`, over what follows. A list's
+marker is trimmed and padded to hold its item's row open. On the canvas the document view's headings
+are blocks spaced by their heading style alone, each in a `.measured` holder the measure wide, inside
+sections and components as wide as the column (`DocumentText.module.css`).
 
 | Where                                | What                                                                                                                                                                                                                             |
 | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

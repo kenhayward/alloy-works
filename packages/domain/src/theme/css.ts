@@ -681,7 +681,7 @@ function imageRules(): string[] {
   const holder = `${CANVAS} .aw-inline-image-holder`;
   return [
     `${holder} { display: inline-block; line-height: 0; text-indent: 0; vertical-align: baseline; }`,
-    `${holder}::before { content: "\\200b"; display: block; line-height: var(--aw-line); ` +
+    `${holder}::before { content: "\\200b" / ""; display: block; line-height: var(--aw-line); ` +
       'text-box: trim-end text alphabetic; margin-block-end: calc(-1 * var(--aw-top)); pointer-events: none; }',
   ];
 }
@@ -695,8 +695,16 @@ function imageRules(): string[] {
  * more than nothing, and the rest a lift, which every block's margin above carries (`lines`,
  * `listRules`, `tableRules`) and its fill is painted clear of. Its first line's indent is given to the
  * text's own first line, after the break. The line below is a block, which stands the line's height
- * back into its paragraph. A footnote's paragraph, which the document view sets in its anchor's line,
- * and one marked as not resolving, whose label is its first line, are left as they are.
+ * back into its paragraph. Neither line says anything to a screen reader.
+ *
+ * **Lifted, the paragraph reaches over the foot of what stands above it**, which is that block's to be
+ * clicked (the final review of issue #331): a click on the lower half of the line above put the caret in
+ * the lifted paragraph, which comes later and so is hit first. What it lifts is clipped away, which a
+ * pointer passes through, and nothing is painted there but the invisible line. A clip makes it a
+ * stacking context, so it stands above what follows, as a footnote's editor drawn beneath it did.
+ *
+ * A footnote's paragraph, which the document view sets in its anchor's line, and one marked as not
+ * resolving, whose label is its first line (STY-070), are left as they are, whatever style it names.
  */
 function growerRules(
   theme: ResolvedTheme,
@@ -717,7 +725,7 @@ function growerRules(
         !each.includes('[data-unresolved]') &&
         !each.includes('.aw-footnote-paragraph'),
     )
-    .map((each) => `${each}:has(${growers.join(', ')})`);
+    .map((each) => `${each}:not([data-unresolved]):has(${growers.join(', ')})`);
   if (at.length === 0) return [];
   const p = style.properties;
   const filled = p.background !== 'none';
@@ -727,12 +735,15 @@ function growerRules(
       `--aw-lift: min(${NONE}, ${lifted})`,
       `padding-block-start: max(${NONE}, ${lifted})`,
       `text-indent: ${zoomed(p.firstLineIndent)} each-line`,
+      'position: relative',
+      'z-index: 1',
+      `clip-path: inset(calc(-1 * ${LIFT}) -100em -100em)`,
       ...(filled ? ['background-color: transparent', ...BETWEEN_SPACES] : []),
     ].join('; ')}; }`,
     `${at.map((each) => `${each}::before`).join(', ')} ` +
-      '{ content: "\\200b\\A"; white-space: pre; pointer-events: none; }',
+      '{ content: "\\200b\\A" / ""; white-space: pre; pointer-events: none; }',
     `${at.map((each) => `${each}::after`).join(', ')} ` +
-      '{ content: "\\200b"; display: block; margin-block-end: calc(-1 * var(--aw-line)); pointer-events: none; }',
+      '{ content: "\\200b" / ""; display: block; margin-block-end: calc(-1 * var(--aw-line)); pointer-events: none; }',
   ];
 }
 

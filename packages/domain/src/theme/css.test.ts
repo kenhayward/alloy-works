@@ -513,7 +513,7 @@ describe('projectCss', () => {
       'display: inline-block; line-height: 0; text-indent: 0; vertical-align: baseline',
     );
     expect(ruleFor(inside, '.aw-canvas.aw-canvas .aw-inline-image-holder::before')).toBe(
-      'content: "\\200b"; display: block; line-height: var(--aw-line); ' +
+      'content: "\\200b" / ""; display: block; line-height: var(--aw-line); ' +
         'text-box: trim-end text alphabetic; margin-block-end: calc(-1 * var(--aw-top)); ' +
         'pointer-events: none',
     );
@@ -534,25 +534,41 @@ describe('projectCss', () => {
     const inside = trimmed.slice(trimmed.indexOf('@supports'));
     const grows =
       ':has(.aw-inline-image-holder:not(.aw-footnote-text *), .aw-mark-strong:not(.aw-footnote-text *))';
-    const body = `.aw-canvas.aw-canvas [data-place="text"][data-style="body"]${grows}`;
+    // Never a paragraph marked as not resolving, whose label is its first line (STY-070).
+    const body = `.aw-canvas.aw-canvas [data-place="text"][data-style="body"]:not([data-unresolved])${grows}`;
     // The body: no padding, 443/2048 and 1341/2048 of 11pt - 9.582pt - less than its space before.
     const lifted = `calc(var(--aw-before) + ${z('-9.582')})`;
     expect(ruleFor(inside, body).split('; ')).toEqual([
       `--aw-lift: min(${NONE}, ${lifted})`,
       `padding-block-start: max(${NONE}, ${lifted})`,
       `text-indent: 0 each-line`,
+      // Lifted, it reaches over the foot of what stands above it, which is that block's to be clicked:
+      // what it lifts is clipped away, which a pointer passes through. Above what follows, so that a
+      // footnote's editor, drawn beneath it, stays over the next paragraph as it was.
+      'position: relative',
+      'z-index: 1',
+      `clip-path: inset(calc(-1 * var(--aw-lift, ${NONE})) -100em -100em)`,
     ]);
+    // The lines of its own text it begins and ends with say nothing to a screen reader.
     expect(ruleFor(inside, `${body}::before`)).toBe(
-      'content: "\\200b\\A"; white-space: pre; pointer-events: none',
+      'content: "\\200b\\A" / ""; white-space: pre; pointer-events: none',
     );
     expect(ruleFor(inside, `${body}::after`)).toBe(
-      'content: "\\200b"; display: block; margin-block-end: calc(-1 * var(--aw-line)); pointer-events: none',
+      'content: "\\200b" / ""; display: block; margin-block-end: calc(-1 * var(--aw-line)); pointer-events: none',
     );
     // And every block's lift is its margin above, with what else stands it there.
     expect(
       ruleFor(inside, '.aw-canvas.aw-canvas [data-place="text"][data-style="body"]'),
     ).toContain(`margin-block: var(--aw-lift, ${NONE}) 0`);
-    // A paragraph marked as not resolving keeps its label, and a footnote's is where its anchor is.
+    // A paragraph marked as not resolving keeps its label, and a footnote's is where its anchor is:
+    // every selector a paragraph holding either is chosen by leaves one marked out, whatever style it
+    // names - a style the theme holds for somewhere else is marked too.
+    const chosen = inside
+      .split('\n')
+      .filter((line) => line.includes(grows))
+      .flatMap((line) => selectorsOf(line));
+    expect(chosen.length).toBeGreaterThan(0);
+    for (const selector of chosen) expect(selector).toContain(':not([data-unresolved])');
     expect(inside).not.toContain(`[data-unresolved]${grows}`);
     expect(inside).not.toContain(`.aw-footnote-paragraph[data-style="body"]${grows}`);
     // A mark no larger than its text holds nothing open: the default's paragraphs grow only for images.

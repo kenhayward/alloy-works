@@ -926,6 +926,11 @@ measurement found, and what changed:
     instead, and is lifted by the line it begins with: its padding above less a line, where that is more
     than nothing, and a margin for the rest, which every block's margin above carries and its fill is
     painted clear of. Its first-line indent moves to the text's own first line, after the break.
+    Neither invisible line says anything to a screen reader. Lifted, the paragraph reached over the
+    foot of the line above it and took its clicks - the lower half of that line put the caret in the
+    lifted paragraph (the final review) - so what it lifts is clipped away, which a pointer passes
+    through, and it stands above what follows, as a footnote's editor drawn beneath it did. A
+    paragraph marked as not resolving (STY-070) is left as it is, so its label stays its first line.
   - **A list's marker** is trimmed to its cap height and its baseline and padded to the list's leading
     and its own top above it and its descender below, so the row of the list's grid its item stands in
     is as tall as the further of the two. A list that ends an item, where the item is not its list's
@@ -938,9 +943,11 @@ measurement found, and what changed:
   by its style not aligned at all - and a heading as wide as the measure beside its indents rather than
   inside them. On the canvas each heading is now a block of its heading style, its number
   and a space and its title in one line of it, in its colour, spaced from what stands above and below
-  it by that style alone; the view's own gaps stand down; and every section and component is the
-  measure wide, so a heading's indents stand inside it. Where a heading starts, and every step into and
-  out of one, are compared.
+  it by that style alone; the view's own gaps stand down; and each heading stands in a holder the
+  measure wide, so its indents and alignment stand inside the measure while its section and component
+  keep the column's width - where a component's label stands beside its heading and the editor opened
+  in place has the column to itself, which making the sections the measure wide had taken from them (the
+  final review). Where a heading starts, and every step into and out of one, are compared.
 
 **Outside STY-080, and why.** STY-080 asks that every style property both outputs render be the same
 in each, and that a difference be allowed only where STY-060's list names it. That list is empty between

@@ -42,10 +42,11 @@
   display: block;
 }
 
-/* Each section and component the measure wide, as a component's text is, so a heading's indents
- * stand inside the measure and not beside it. */
-.text:global(.aw-canvas) .section,
-.text:global(.aw-canvas) .reference {
+/* Each heading in a holder the measure wide, as a component's text is, so its indents and its
+ * alignment stand inside the measure and not beside it - while each section and component stays as
+ * wide as the column, where a component's label stands beside its heading and the editor opened in
+ * place has the column's width (the final review of issue #333). */
+.text:global(.aw-canvas) .measured {
   width: calc(var(--aw-measure) * var(--aw-zoom));
 }
 
@@ -252,7 +253,7 @@
 
 /* The node a link took the reader to, its heading marked until they choose another (STR-045), as the
  * outline marks its item. */
-.section[data-marked='true'] > .heading,
-.reference[data-marked='true'] > .component > .heading {
+.section[data-marked='true'] > .measured > .heading,
+.reference[data-marked='true'] > .component > .measured > .heading {
   background: var(--accent-weak);
 }
