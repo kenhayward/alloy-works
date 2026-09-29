@@ -67,6 +67,7 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
+    // 1478, from 1477 (2026-09-29): API-062 adds the versioned, navigable and token-executable developer API reference (issue #352).
     // 1477, from 1476 (2026-09-29): PUB-105 supersedes PUB-104, the Matterhorn review made before each release rather than on each change (issue #344).
     // 1476, from 1474 (2026-09-29): W13.3 - STR-072 supersedes STR-039 (issue #134) and CNT-179 supersedes CNT-076 (issue #339), the navigation budgets with numbers.
     // 1474, from 1472 (2026-09-28): W13.4 - STY-080 and STY-081 supersede STY-053, the editor and Word each measured against the PDF (issue #328).
@@ -74,9 +75,10 @@ describe('the committed trace.json', () => {
     // 1471, from 1470 (2026-09-28): W14.7's final review - CNT-178 supersedes CNT-148, because macOS chooses its spelling checker's languages itself.
     // 1470, from 1458 (2026-09-28): the T1 audit's last decisions and rewordings: CNT-176 and CNT-177, PUB-098 to PUB-104, IAM-080 and IAM-081 supersede the rows they split, and STY-079 is new (issue #306).
     // 1458, from 1449 (2026-09-26): the rewordings Ken agreed after the T1 audit (K7, and W1's three): CNT-171 to CNT-175, STR-070, MET-042, STY-078 and API-061 supersede the rows they reword.
-    expect(model.requirements).toHaveLength(1477);
+    expect(model.requirements).toHaveLength(1478);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
+    // 506, from 505 (2026-09-29): service-foundations.md claims API-062, the versioned, hierarchical and explicitly token-executed API reference (issue #352).
     // 505, from 504 (2026-09-29): issues #331 and #333 fixed - themes.md claims STY-080, every property both outputs render measured and agreeing.
     // 504, from 503 (2026-09-29): publishing.md claims PUB-105, the Matterhorn review before each release, verified by attestation as CNT-177 is (issue #344).
     // 503, from 502 (2026-09-29): W13.3 - document-view.md claims CNT-179, measured green by the browser suite's budgets.test.ts on the reference machine; STR-072 is not claimed, since the document opened cold misses its number (structure.md names the gap).
@@ -220,7 +222,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(505);
+    ).toBe(506);
   });
 });
 

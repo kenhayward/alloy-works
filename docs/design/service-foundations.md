@@ -44,6 +44,7 @@ generated from them and committed, and the renderer's client is generated from t
 | **API-002** | Routes are zod schemas; the OpenAPI document is generated from them at build, committed, and the client types generated from it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | **API-061** | The renderer reads and changes stored state only through the generated client, which calls only the routes the contract declares; what it converts in the browser - LaTeX to MathML, the spoken alternative, a paste - it stores through those routes like anything else                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | **API-003** | CI regenerates the document and fails on any difference; Fastify validates every response against its schema, and a status a route does not list against the one error shape the document declares as its `default`, so nothing undeclared is sent; a test holds the routes served to the contract's, both ways                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| **API-062** | The service publishes the committed OpenAPI document by API major version and a self-hosted reference generated from it; every operation has a description, one navigation tag, its required permission and examples, and the tags belong to a documented group. The reference executes only token-enabled operations, with an explicitly entered personal token kept in memory, never with the browser's session or through another origin                                                                                                                                                                                                                                                                                                                                                                         |
 | **API-005** | Every error is one JSON shape with a stable `code`, a message, and the request's trace id                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | **API-006** | The error shape names what failed and, where a rule refused it, the rule's identifier                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | **API-037** | Every mutation of a versioned resource names the version it was read at - the outline act and the publication request the document's, a save, a cut and a release the component's - and a mismatch is refused `409 version_precondition`, naming the version the resource is at now: the document with its outline for the outline act, the version's heading alone for a publication request, whose outline may name what the caller may not read (IAM-073), and the version's heading for a component                                                                                                                                                                                                                                                                                                             |
@@ -370,6 +371,153 @@ viewer goes through the same helper.
   breaking change, and generated clients ignore what they do not know - which the document's own
   description tells every caller (API-010, API-012).
 
+## Developer API reference, in T1
+
+The committed OpenAPI document is already the synchronous API's authority, but it is a build artifact,
+not a reference an integration developer can open. API-062 publishes that same document and renders it;
+it does not introduce a second description of the API. Three addresses are stable:
+
+| Address            | Answers                                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------------------ |
+| `/openapi/v1.json` | The committed OpenAPI document for major version 1, as JSON                                                  |
+| `/docs/v1/`        | The reference for that document, including search, navigation, examples, code samples and token execution    |
+| `/docs`            | A redirect to the current supported major version's reference; it is convenience, never a version identifier |
+
+The two documents are public on a hostname that resolves to an environment. Reading an interface is not
+authority to use it, and hiding its shape would not protect content. An unknown hostname gets the same
+tenant-not-found answer as the application. The OpenAPI document uses the relative server `/`, so the
+reference always calls the environment whose address the reader opened and never offers a production
+hostname while somebody is reading a sandbox. A token issued in another environment is unauthenticated,
+as it is on any ordinary request.
+
+The service serves these as infrastructure beside the renderer, outside `/v1`; they do not describe
+themselves as product operations. The route-parity test keeps its stronger existing assertion for the
+contract routes and separately pins the documentation routes and their methods, rather than acquiring
+an open-ended exception for anything outside `/v1`. `/docs`, `/docs/v1/` and `/openapi/v1.json` are
+claimed before the renderer's fallback, so none can accidentally answer the application's `index.html`.
+
+### One source, made complete
+
+`RouteContract` gains documentation metadata that `buildOpenApi` publishes with the schemas it already
+generates:
+
+- a CommonMark `description`, distinct from the short `summary` used in navigation;
+- exactly one primary `tag`, chosen from a closed catalogue rather than written as an arbitrary string;
+- request and response examples, validated against their zod schema in the contract suite;
+- the permission a token needs, derived from `access.permission`, never repeated by hand; and
+- whether the operation is token-enabled, derived from `access.credential`, not chosen for the docs.
+
+The generator also publishes the request and response headers the service applies across routes:
+`X-Request-Id`, `Idempotency-Key` where it is honoured, and `Idempotent-Replayed` where it can be
+returned. A route's description says its side effects, version precondition, lock behaviour, paging,
+job submission and exceptional retry semantics where any applies. Field descriptions remain on the
+zod schemas, beside the constraints they explain. The generated document carries examples and the
+general account of errors, compatibility, pagination, idempotency and authentication. Nothing is
+hand-edited in `openapi.json`.
+
+“Fully described” is therefore testable rather than editorial: every operation has a non-empty summary
+and description, exactly one known tag, its security derived from `access`, and at least one valid
+successful response example where it answers JSON. Every request body has an example; redirects,
+streams, bytes and empty responses state why no JSON example applies. Every parameter and object member
+whose name is not self-explanatory has a description. A contract test enumerates all operations and
+reports the operation id for any missing part.
+
+### Hierarchy
+
+OpenAPI 3.1 tags are the portable operation grouping. `x-tagGroups` adds the one navigation level the
+reference needs without moving the authoritative document to OpenAPI 3.2 only for presentation. The
+root declares every tag, in display order, with its own description, and every tag occurs in exactly one
+group:
+
+| Group                        | Tags                                                                     |
+| ---------------------------- | ------------------------------------------------------------------------ |
+| Start here                   | Environments, identity                                                   |
+| Content                      | Spaces, components, documents, definitions, templates, assets            |
+| Publishing                   | Previews, publication requests, publications, presentation and numbering |
+| Identity and access          | Tokens, people and principals, groups, invitations, roles and grants     |
+| Discovery and administration | Search, settings                                                         |
+| Realtime and service         | Event stream, health                                                     |
+
+The operation is the third level under group and tag. The reference has one search across summaries,
+descriptions, paths and schemas. Realtime remains specified separately under API-014 and API-015; its
+tag links to that account and does not pretend an OpenAPI response schema describes the event protocol.
+
+### Rendering and execution
+
+The reference is Scalar, pinned in the lock file and built into the service's own output. Its script,
+styles, fonts and icons are served beneath `/docs/v1/`; there is no CDN, hosted registry, analytics,
+agent, remote font, request proxy or runtime download. The dependency renders the authoritative
+document and may be replaced later without changing the addresses, document or contract metadata.
+
+The reference presents `token` as its one interactive credential. It does not remove the `session`
+security scheme from the document - that would make the contract untrue - but it neither asks for nor
+uses a session:
+
+1. The reader pastes an `awt_` personal token into the reference's authorisation control. It is held in
+   JavaScript memory only: never a URL, cookie, server-side session, log, indexed store or local/session
+   storage, and gone on reload or close.
+2. A request is enabled only where the operation's OpenAPI `security` includes `token`. Session-only
+   operations remain documented, carry a visible “signed-in session only” note and have no execute
+   control. In particular, a token cannot use the reference to issue or administer another token.
+3. The request client sets `credentials: 'omit'`, refuses any destination whose origin is not the page's
+   origin, and adds `Authorization: Bearer <token>` itself. No browser session can make an apparently
+   token-authenticated example succeed, and no CORS proxy sees the token.
+4. Before a mutating request is sent, the reference distinguishes it from a read and says that it will
+   change the named environment. The operation still relies on the ordinary permission, token-scope,
+   precondition, lock and idempotency checks; the reference has no privileged path.
+
+The page labels the environment from `GET /v1/tenant` and keeps the origin visible beside the execute
+control. It shows the service's structured error body without translating it, including the request id
+that support can follow. Code samples contain a token placeholder, never the entered secret.
+
+### Delivery and browser boundary
+
+The JSON document is served with its OpenAPI media type, an ETag and revalidation. Versioned local
+assets are immutable; the HTML revalidates and contains no credential. The reference's responses set
+`Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff` and a content security policy whose
+`default-src` is `none`, whose connections are `self`, and whose scripts are local and authorised by a
+fresh nonce or a pinned hash. It cannot be framed. HTTPS remains the deployment boundary for both the
+application and the reference.
+
+Keeping the reference on the environment origin avoids a new CORS policy. If documentation later moves
+to a developer-domain origin, that is a new design: it must settle the permitted origins, environment
+selection and how a token never reaches a proxy. It is not enabled by widening CORS here.
+
+The API major, not the product release, versions the reference. When `/v2` arrives, `/openapi/v1.json`
+and `/docs/v1/` remain for as long as v1 remains supported under API-011; `/docs` may then move to v2.
+
+### Decisions
+
+| #     | Decision                                                                                                               |
+| ----- | ---------------------------------------------------------------------------------------------------------------------- |
+| DOC-A | Render and serve the committed generated document; never generate another contract at request time                     |
+| DOC-B | Stable versioned JSON and HTML addresses, with `/docs` only a redirect to the current major                            |
+| DOC-C | OpenAPI 3.1 tags plus `x-tagGroups`; group, tag, operation is the complete hierarchy                                   |
+| DOC-D | Scalar is pinned and wholly self-hosted, with every optional networked feature disabled                                |
+| DOC-E | Reference reads are public on a tenant hostname; all authority remains at the ordinary endpoint                        |
+| DOC-F | Execution accepts an explicit personal token in memory, omits cookies and refuses another origin                       |
+| DOC-G | Session-only operations are documented but cannot be executed from the reference                                       |
+| DOC-H | Documentation routes are tested infrastructure outside the contract surface, never an unbounded route-parity exception |
+
+### Verification
+
+- **The document**: its committed form equals generation; every operation meets the completeness rule;
+  every example parses with the associated zod schema; every tag is declared once and belongs to one
+  group; security and required permission agree with `RouteAccess`.
+- **The endpoints**: a tenant hostname gets the exact v1 document, the v1 reference and the current
+  redirect with their content types, cache and security headers; an unknown hostname is refused; the
+  renderer fallback never answers any of them.
+- **The browser boundary**: a browser test enters a token and calls a harmless token-enabled route,
+  observing the bearer header and no cookie; reload removes it; a session cookie without a token still
+  produces `401`; another-origin destination is refused before fetch; code samples do not contain the
+  entered token.
+- **The permissions**: a read works with a valid token; a missing, expired, revoked, foreign or
+  under-scoped token receives the ordinary structured refusal; a session-only operation has no execute
+  control; a mutation displays the environment warning and passes through its ordinary checks.
+- **The reference**: keyboard navigation, search, disclosure controls, token entry, error output and the
+  mutating warning have accessible names, visible focus and a useful reading order at narrow and wide
+  viewports.
+
 ## Listings and idempotency, in T1
 
 W7 builds the listings and the idempotency key the bullets above name. Decisions LI-A to LI-H and ID-A
@@ -560,12 +708,12 @@ id and never its content, and are ADM-022's.
 
 ## Workspace
 
-| Workspace               | Holds                                                                                              |
-| ----------------------- | -------------------------------------------------------------------------------------------------- |
-| `apps/service`          | Fastify: routes, sign-in, sessions, realtime streams                                               |
-| `apps/worker`           | Job claiming, publishing, and a preview mode running `typst watch` (ADR-0019)                      |
-| `packages/db`           | Kysely, `withTenant`, the migrations and their runner, provisioning                                |
-| `packages/api-contract` | The routes as zod schemas, the committed `openapi.json`, and the generated client for the renderer |
+| Workspace               | Holds                                                                                                                         |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `apps/service`          | Fastify: routes, sign-in, sessions, realtime streams, and the versioned self-hosted API reference                             |
+| `apps/worker`           | Job claiming, publishing, and a preview mode running `typst watch` (ADR-0019)                                                 |
+| `packages/db`           | Kysely, `withTenant`, the migrations and their runner, provisioning                                                           |
+| `packages/api-contract` | The routes and documentation metadata as zod schemas, the committed `openapi.json`, and the generated client for the renderer |
 
 `packages/domain` stays platform-free and is imported by all of them. `apps/web` gains the generated
 client and a development proxy to the service.
@@ -582,6 +730,8 @@ client and a development proxy to the service.
 - **The runner**: applying twice changes nothing; a failure in one tenant leaves others migrated and
   resumes on the next run; a new tenant ends at the same version as every other.
 - **The contract**: the regenerated OpenAPI document equals the committed one.
+- **The reference**: API-062's completeness, hierarchy, versioned endpoints and explicit-token browser
+  boundary are exercised as [Developer API reference, in T1](#developer-api-reference-in-t1) describes.
 - **The scopes**: sign-in requests exactly `openid email profile`.
 - **The Google route**: an uninvited account is refused; a personal account never matches a named
   Workspace domain; a hand-off code works once and not after sixty seconds; a tampered state is
