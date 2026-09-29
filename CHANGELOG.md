@@ -14,7 +14,10 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   outline, timing each from the key or click to the result on the screen. Two requirements now give
   those times numbers: the page's own share of opening the document and of each change, a quarter of
   a second at most for nineteen in twenty and never more than half a second; and the whole wait to
-  open it, a second (never two), and to go to any part, a quarter of a second (never half).
+  open it, a second (never two), and to go to any part, a quarter of a second (never half). Each is
+  met but one: a document opened straight from its address, in a new tab, takes the page about a third
+  of a second of its own, over the quarter asked; opened from the documents list, and every change,
+  are well inside it. Whether the first counts is still to be decided.
 
 ### Changed
 

@@ -314,7 +314,7 @@ Only these could change the plan; everything else is built as written.
   on several requests at once, and summing them would count the same milliseconds more than once.
 - **Measured on the reference machine**, 2026-09-29, after #337 and the targets fix, with no other
   stack of the product's running and another project's containers beside it (recorded in `meta`):
-  every budget met, with room. The open's interface share fell from 243 ms at p95 before the fix to
+  every budget met. The open's interface share fell from 243 ms at p95 before the fix to
   176, its whole time from 343 to 317; a jump, which never landed before #337, takes 25 ms. Each
   budget was watched fail first, on an impossible bound of 1 ms, before the green run below.
 
@@ -331,6 +331,39 @@ Only these could change the plan; everything else is built as written.
 | CNT-179, opening, whole time | 316.5 / 351.4            | 1000 / 2000 | Yes |
 | CNT-179, a jump, whole time  | 25.1 / 25.4              | 250 / 500   | Yes |
 
+- **The final review's fixes**, 2026-09-29. The p95 is said by sample count, the third slowest of
+  forty; each sample's requests are held to the paths its act asks for, and one holding any other is
+  refused (`timing.test.ts` watched a stray request go unrefused first); the text's contexts are held
+  to the outline they were made from by a test that failed with `outline` taken out of the memo's
+  dependencies; the fixture's comment says every act changes it and each is undone. **The open is
+  measured cold as well**, a fresh page loaded at the document's address, and **a fifth of the
+  fixture's texts hold cross-references** (fixture 2), so the targets fix is no longer measured at its
+  best case. Measured again on the reference machine, with alloy-works (5), diariz (8), hawser (1), portainer_agent (1) running beside it:
+
+| Budget                                    | Measured, p95 / max (ms) | Number (ms) | Met    |
+| ----------------------------------------- | ------------------------ | ----------- | ------ |
+| STR-072, opening from the list, interface | 197.9 / 223.9            | 250 / 500   | Yes    |
+| STR-072, opening cold, interface          | 334.3 / 338.2            | 250 / 500   | **No** |
+| STR-072, an insert, interface             | 85.2 / 87.3              | 250 / 500   | Yes    |
+| STR-072, a removal, interface             | 114.8 / 120.5            | 250 / 500   | Yes    |
+| STR-072, a retitle, interface             | 73.0 / 88.9              | 250 / 500   | Yes    |
+| STR-072, Starts on, interface             | 60.0 / 82.5              | 250 / 500   | Yes    |
+| STR-072, a move, interface                | 123.9 / 135.5            | 250 / 500   | Yes    |
+| STR-072, a demotion, interface            | 90.2 / 110.1             | 250 / 500   | Yes    |
+| STR-072, a promotion, interface           | 87.7 / 99.4              | 250 / 500   | Yes    |
+| CNT-179, opening from the list, whole     | 332.3 / 361.5            | 1000 / 2000 | Yes    |
+| CNT-179, opening cold, whole              | 432.8 / 449.9            | 1000 / 2000 | Yes    |
+| CNT-179, a jump, whole                    | 24.0 / 27.3              | 250 / 500   | Yes    |
+
+- **Opened cold, STR-072 is missed.** The renderer's start is inside the interface's share, and the
+  cold open's is above 250 ms at p95. STR-072 says "opening a document" and names no starting point,
+  so it is **not claimed** and its tests cite nothing; structure.md names the gap. Ken decides (B-K):
+  whether STR-072 means an open inside the application, in which case its row says so and the claim
+  returns, or a load too, in which case the renderer's start has to be made faster. CNT-179, the whole
+  time, meets its numbers both ways and is claimed. The final review's own run measured the open from
+  the list at 217 to 229 ms at p95, and a run of this slice's with another stack of the suite and two
+  veraPDF checkers beside it measured 259.8 and failed, so its margin is smaller than the first run
+  here showed.
 - **What the full browser run found besides**: PR #337's `STR-045 opens at a linked node with its
 heading below the header` fails on this machine, at 41.0 against a header at 44, with main's
   `DocumentText.tsx` as well as this slice's: the sections above the target settle 1.3 pixels shorter

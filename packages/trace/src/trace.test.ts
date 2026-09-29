@@ -76,7 +76,7 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1476);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
-    // 504, from 502 (2026-09-29): W13.3 - structure.md claims STR-072 and document-view.md CNT-179, each measured green by the browser suite's budgets.test.ts on the reference machine.
+    // 503, from 502 (2026-09-29): W13.3 - document-view.md claims CNT-179, measured green by the browser suite's budgets.test.ts on the reference machine; STR-072 is not claimed, since the document opened cold misses its number (structure.md names the gap).
     // 502, from 503 (2026-09-28): W13.4 after W13.2 - themes.md does not claim STY-080 (issues #331, #333 named beside its table).
     // 503, from 504 (2026-09-28): W13.2's final review - publishing.md drops PUB-104, which asks for the review on each change and the guide makes it before each release; the gap is named beside its table.
     // 504, from 500 (2026-09-28): W13.2 - component-editor.md claims CNT-176, CNT-177 and CNT-078, and publishing.md PUB-104, each verified by the browser suite or a person's attestation.
@@ -217,7 +217,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(504);
+    ).toBe(503);
   });
 });
 
@@ -567,8 +567,8 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
-  // 552, from 550 (2026-09-29): W13.3 - STR-072 and CNT-179 in tests/browser's budgets.test.ts:
-  // STR-072 on two titles, the open and every act, and CNT-179 on one; one file, two citations.
+  // 551, from 550 (2026-09-29): W13.3 - CNT-179 in tests/browser's budgets.test.ts. STR-072's two
+  // tests cite nothing while it is not claimed.
   // 550, from 548 (2026-09-29): issue #336 - STR-035 and STR-045 in tests/browser's
   // navigation.test.ts, a long document scrolled, jumped through and linked into: four titles in one
   // file, two citations. STR-035's new title in the document page's test adds none.
@@ -710,7 +710,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(552);
+    expect(model.citations).toHaveLength(551);
   });
 
   it('cites no identifier the corpus does not hold', () => {

@@ -729,52 +729,77 @@ at p95 and no sample above 500; and CNT-179, the whole time to open it, 1 second
 
 - **The fixture** is STR-063's reference shape, made through the API (`src/testing/five-hundred.ts`):
   ten chapters of nine sections, a hundred sections in all, holding four hundred references to four
-  hundred components - forty to a chapter - each a paragraph of prose and a list of three items, and
-  every tenth a table and a numbered equation as well. It is made once per stack and found after that
-  by its title, which carries the shape's version, and by its shape, read back from the service: a
-  document a failed run left changed is passed over and a new one made, which takes about fifteen
-  seconds.
+  hundred components - forty to a chapter - each a paragraph of prose and a list of three items, every
+  tenth a table and a numbered equation as well, and a fifth of them cross-references: every tenth to
+  its own table and equation, and every tenth but five to another component's table, so the text works
+  out targets as a real document's does. It is made once per stack and found after that by its title,
+  which carries the shape's version, and by its shape, read back from the service - how many texts
+  hold a reference included: a document a failed run left changed is passed over and a new one made,
+  which takes about fifteen seconds.
 - **The page times each act itself** (`src/testing/timing.ts`), from an init script, never by the
-  test's polling: from the act - the key's or the click's own event time, or the moment the page is
-  told to go to the document - to the frame after the result is first in it, painted. The result is
-  the state's own content, asked for in every frame: the tree's five hundred items all named and the
-  first component's paragraph on the screen, not under the header, for an open; the node named or
-  numbered as the act leaves it, or gone, for an act; the node's heading on the screen for a jump,
-  which counts only if it is still there once the page has settled. A result on the screen before its
-  act fails the sample, since it would time nothing.
-- **The interface's share** is the whole time less the time any request the act waited on was in
-  flight - begun after the act and answered before the result was painted, from its `requestStart` to
-  its `responseEnd` by Resource Timing - overlapping requests counted once. The whole time and the
-  service's are recorded beside it.
-- **Each is one warm-up, then twenty samples**, the nearest-rank p95 being the second slowest; an open
-  is made from the documents list, as a link followed there makes it; every act is made by the keyboard
-  and paired with its inverse, so the fixture ends each cycle as it began, and a retitle, **Starts on**
-  and a move are measured both ways; the jumps are to nodes drawn from a generator seeded 179, each
-  chosen in the outline by a pointer. The warm-up is held to the maximum.
+  test's polling: from the act - the key's or the click's own event time, the moment the page is told
+  to go to the document, or, for a load, the page's own time origin - to the frame after the result is
+  first in it, painted. The result is the state's own content, asked for in every frame: the tree's
+  five hundred items all named and the first component's paragraph on the screen, not under the
+  header, for an open; the node named or numbered as the act leaves it, or gone, for an act; the node's
+  heading on the screen for a jump, which counts only if it is still there once the page has settled.
+  A result on the screen before its act fails the sample, since it would time nothing.
+- **The interface's share** is the whole time less the time the act's own requests were in flight -
+  from `requestStart` to `responseEnd` by Resource Timing, the document's own request among them for a
+  load, overlapping ones counted once. Resource Timing ties no request to what asked for it, so every
+  request answered in the window is held to the paths the act asks for - an outline act its
+  `POST .../outline`, an open the document's reads and the faces, a load those and the renderer's own
+  files, a jump nothing - and a sample holding any other is refused, naming it, so a heartbeat can
+  never be taken off the interface's share. `timing.test.ts` holds that, on a page of its own. The
+  whole time and the service's are recorded beside it.
+- **Each is one warm-up, then twenty samples**, the nearest-rank p95 being the second slowest of
+  twenty; a retitle, **Starts on** and a move are measured both ways, forty samples after two warm-ups,
+  and there the p95 is the third slowest. The document is opened two ways: **from the documents list**,
+  as a link followed there opens it, and **cold**, its address loaded into a fresh page of the same
+  browser - the renderer started, then the document opened. Every act is made by the keyboard and
+  paired with its inverse, so the fixture ends each cycle as it began; the jumps are to nodes drawn
+  from a generator seeded 179, each chosen in the outline by a pointer. Every warm-up is held to the
+  maximum.
 - **They bind where `CI` is not `true`, and record only on CI** (B-P), as STR-063's and PUB-102's do:
   every sample, the p50, p95 and maximum, and the configuration - CPU, memory, operating system, Node,
-  Chromium as the browser reports itself, the stack's version and the fixture's shape - are written into
-  the test's `meta` and printed. The reference configuration is [the one above](#the-reference-configuration),
-  with the compose stack in Docker Desktop and the pinned Chromium beside it. To measure them alone:
+  Chromium as the browser reports itself, the stack's version, the fixture's shape, and every compose
+  project Docker was running - are written into the test's `meta` and printed. The reference
+  configuration is [the one above](#the-reference-configuration), with the compose stack in Docker
+  Desktop and the pinned Chromium beside it. To measure them alone:
   `pnpm --filter @alloy-works/browser exec vitest run src/budgets.test.ts`, with the stack's variables
   set as above, on a machine running nothing else.
-  W13.3 measured them on the reference configuration, Chromium 153.0.8010.12 and the stack at 0.125.0,
-  with no other stack of the product's running; another project's nine containers and Portainer's agent
-  were running beside it, which the run records as it records the rest. Twenty samples each, forty for a
-  retitle, **Starts on** and a move; every warm-up inside the maximum:
+- **STR-072 is not claimed, and its tests cite nothing**: opened cold, the document misses its number
+  (below), and the row names no starting point; the cold open is recorded and not held until Ken
+  decides whether it is in STR-072 (B-K). Opened from the list, and every act, are held to it. CNT-179's
+  cold open is held to CNT-179's, which it meets.
 
-| Budget                       | Measured, p95 / max (ms) | Number (ms) | Met |
-| ---------------------------- | ------------------------ | ----------- | --- |
-| STR-072, opening's interface | 175.5 / 181.0            | 250 / 500   | Yes |
-| STR-072, an insert           | 82.4 / 103.3             | 250 / 500   | Yes |
-| STR-072, a removal           | 65.9 / 66.7              | 250 / 500   | Yes |
-| STR-072, a retitle           | 51.3 / 56.1              | 250 / 500   | Yes |
-| STR-072, Starts on           | 62.4 / 90.2              | 250 / 500   | Yes |
-| STR-072, a move              | 108.6 / 124.1            | 250 / 500   | Yes |
-| STR-072, a demotion          | 74.6 / 119.7             | 250 / 500   | Yes |
-| STR-072, a promotion         | 66.8 / 70.6              | 250 / 500   | Yes |
-| CNT-179, opening, whole time | 316.5 / 351.4            | 1000 / 2000 | Yes |
-| CNT-179, a jump, whole time  | 25.1 / 25.4              | 250 / 500   | Yes |
+W13.3 measured them on the reference configuration, Chromium 153.0.8010.12 and the stack at
+0.125.0, with no other stack of the suite's running; beside it Docker was running
+alloy-works (5), diariz (8), hawser (1), portainer_agent (1), which the run records as it records the rest - the product's own development stack among them,
+idle. Twenty samples each, forty for a retitle, **Starts on** and a move; every warm-up inside the
+maximum:
+
+| Budget                                    | Measured, p95 / max (ms) | Number (ms) | Met    |
+| ----------------------------------------- | ------------------------ | ----------- | ------ |
+| STR-072, opening from the list, interface | 197.9 / 223.9            | 250 / 500   | Yes    |
+| STR-072, opening cold, interface          | 334.3 / 338.2            | 250 / 500   | **No** |
+| STR-072, an insert, interface             | 85.2 / 87.3              | 250 / 500   | Yes    |
+| STR-072, a removal, interface             | 114.8 / 120.5            | 250 / 500   | Yes    |
+| STR-072, a retitle, interface             | 73.0 / 88.9              | 250 / 500   | Yes    |
+| STR-072, Starts on, interface             | 60.0 / 82.5              | 250 / 500   | Yes    |
+| STR-072, a move, interface                | 123.9 / 135.5            | 250 / 500   | Yes    |
+| STR-072, a demotion, interface            | 90.2 / 110.1             | 250 / 500   | Yes    |
+| STR-072, a promotion, interface           | 87.7 / 99.4              | 250 / 500   | Yes    |
+| CNT-179, opening from the list, whole     | 332.3 / 361.5            | 1000 / 2000 | Yes    |
+| CNT-179, opening cold, whole              | 432.8 / 449.9            | 1000 / 2000 | Yes    |
+| CNT-179, a jump, whole                    | 24.0 / 27.3              | 250 / 500   | Yes    |
+
+**The margin is less than one run shows.** The open from the list is the budget nearest its number,
+and it moves with the machine: the final review's run on the same machine, before the fixture held
+references, measured its interface share at 217 to 229 ms at p95 against 175.5 in this slice's first
+run; and a run of this slice's, taken while another stack of the suite and two veraPDF checkers ran
+beside it, measured 259.8 - over 250, and failed. Read it as close to its number, and quote it only
+from a run with nothing else of the suite's running.
 
 **What it cannot see.** Headless Chromium has no browser interface, so `Alt+Left` is never Back there
 whatever the page does: the test shows the tree prevented the key's default, which is what keeps it

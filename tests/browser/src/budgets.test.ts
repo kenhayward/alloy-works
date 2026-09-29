@@ -18,6 +18,7 @@ import {
   inFlight,
   instrument,
   measure,
+  measureLoad,
   type Measured,
   type Until,
 } from './testing/timing.js';
@@ -29,11 +30,41 @@ import {
  * content, asked for by the page: the outline's five hundred items named and the first text on the
  * screen, a node inserted, gone, renamed or renumbered, a node's heading in view. One warm-up,
  * reported and held to the maximum, then twenty samples, of which the nearest-rank p95 is the second
- * slowest.
+ * slowest; forty for an act measured both ways, of which it is the third slowest. Each sample's
+ * requests are held to the paths its act asks for, so nothing else is taken off the interface's share.
+ * The document is opened two ways: from the documents list, as a link followed there opens it, and
+ * cold, its address loaded into a fresh page.
  */
 
 const WARM_UP = 1;
 const SAMPLES = 20;
+
+/**
+ * What the document's page reads as it opens (B-L): the document, its texts, its contributions, its
+ * presentation and publications, the components that name its references, who may do what, and the
+ * faces it sets its text in.
+ */
+const OPEN_READS = [
+  /^\/v1\/documents\/[^/]+(\/(texts|contributions|presentation|publications))?$/,
+  /^\/v1\/components$/,
+  /^\/v1\/access$/,
+  /^\/assets\/[^/]+\.(ttf|otf|woff2?)$/,
+];
+
+/**
+ * What a load reads besides: the page itself, the renderer's own files and the brand's marks, the
+ * environment, and who is signed in.
+ */
+const LOAD_READS = [
+  ...OPEN_READS,
+  /^\/$/,
+  /^\/assets\/[^/]+$/,
+  /^\/[^/]+\.(svg|png|ico)$/,
+  /^\/v1\/(tenant|me)$/,
+];
+
+/** What an act on the outline asks: the act itself, and nothing else. */
+const OUTLINE_ACT = [/^\/v1\/documents\/[^/]+\/outline$/];
 
 declare module 'vitest' {
   interface TaskMeta {
@@ -71,15 +102,49 @@ async function atTheList(page: Page, settle: () => Promise<void>): Promise<void>
 
 /** The document opened from the list, as a link followed there opens it, timed to its first screen. */
 async function openFromTheList(page: Page, fixture: FiveHundred): Promise<Measured> {
-  const until: Until = {
+  const until = opened(fixture);
+  return measure(page, until, () => armAndGo(page, until, `#/documents/${fixture.document.id}`), {
+    startOn: 'now',
+    expects: OPEN_READS,
+  });
+}
+
+/** What an open ends on: the tree's items all named and the first component's text on the screen. */
+function opened(fixture: FiveHundred): Until {
+  return {
     kind: 'open',
     nodes: fixture.nodes,
     node: fixture.first.node,
     words: fixture.first.words,
   };
-  return measure(page, until, () => armAndGo(page, until, `#/documents/${fixture.document.id}`), {
-    startOn: 'now',
-  });
+}
+
+/**
+ * The document opened cold: its address loaded into a fresh page of the same browser, as a reader
+ * opens a link to it from elsewhere, timed from the navigation's start. One warm-up and the samples,
+ * each page closed after it; what one says in its console fails the test, as the gated page's does.
+ */
+async function coldOpens(page: Page, fixture: FiveHundred): Promise<Measured[]> {
+  const all: Measured[] = [];
+  for (let sample = 0; sample < WARM_UP + SAMPLES; sample++) {
+    const fresh = await page.context().newPage();
+    const said: string[] = [];
+    fresh.on('console', (message) => {
+      if (message.type() === 'error' || message.type() === 'warning') said.push(message.text());
+    });
+    fresh.on('pageerror', (error) => said.push(error.message));
+    try {
+      all.push(
+        await measureLoad(fresh, opened(fixture), `${SERVICE}/#/documents/${fixture.document.id}`, {
+          expects: LOAD_READS,
+        }),
+      );
+    } finally {
+      await fresh.close();
+    }
+    expect(said, 'a page opened cold is quiet').toEqual([]);
+  }
+  return all;
 }
 
 /** The page at the fixture's documents list, instrumented, with its requests counted. */
@@ -196,24 +261,37 @@ describe('the navigation budgets over a document of five hundred nodes', () => {
     fixture = await fiveHundred(api());
   }, 1_800_000);
 
-  it("STR-072 opens a document of five hundred nodes within the interface's share of the budget", async ({
+  // Cites nothing: opened cold, the document misses STR-072's number (the interface's share 334 ms at
+  // p95 on the reference machine, W13.3), so STR-072 is not claimed until Ken decides (B-K). Opened
+  // from the list it is held to it; cold it is recorded.
+  it("opens a document of five hundred nodes within the interface's share of the budget, from the documents list, and records it opened cold", async ({
     task,
   }) => {
     await withPage(async (page) => {
       const requests = await prepared(page);
       const all = await opens(page, fixture, () => requests.quiet());
+      const cold = await coldOpens(page, fixture);
       const open = recorded(all);
+      const load = recorded(cold);
       record(task.meta, {
         configuration: await configuration(page.context().browser()!),
         fixture: shapeOf(fixture),
         open,
+        cold: load,
         budget: BUDGETS.interface,
       });
-      hold('opening, the interface', open.interface, all[0]!.interface, BUDGETS.interface);
+      hold(
+        'opening from the list, the interface',
+        open.interface,
+        all[0]!.interface,
+        BUDGETS.interface,
+      );
+      // Recorded, and not held: see above.
     });
   }, 600_000);
 
-  it("STR-072 shows each structural act on the outline within the interface's share of the budget: insert, remove, retitle, Starts on, move, demote and promote", async ({
+  // Cites nothing while STR-072 is not claimed: see the open's test above.
+  it("shows each structural act on the outline within the interface's share of the budget: insert, remove, retitle, Starts on, move, demote and promote", async ({
     task,
   }) => {
     await withPage(async (page) => {
@@ -241,7 +319,7 @@ describe('the navigation budgets over a document of five hundred nodes', () => {
       // Each act measured, then the page left to settle: what an act sets off - the texts read again
       // for the version it made - is not the next act's.
       const timed = async (act: Act, until: Until, key: () => Promise<void>) => {
-        measured[act].push(await measure(page, until, key));
+        measured[act].push(await measure(page, until, key, { expects: OUTLINE_ACT }));
         await settle();
       };
 
@@ -345,7 +423,7 @@ describe('the navigation budgets over a document of five hundred nodes', () => {
     await withPage(async (page) => {
       const requests = await prepared(page);
       const settle = () => requests.quiet();
-      const opened = await opens(page, fixture, settle);
+      const fromList = await opens(page, fixture, settle);
 
       // Jumps to nodes drawn from a seeded sequence, each chosen in the outline by a pointer, passing
       // over any whose heading is already on the screen, since a jump there moves nothing. A heading
@@ -359,22 +437,27 @@ describe('the navigation budgets over a document of five hundred nodes', () => {
         if (await holdsNow(page, until)) continue;
         const row = rowOf(page, node);
         await row.scrollIntoViewIfNeeded();
-        jumps.push(await measure(page, until, () => row.click()));
+        // A jump asks the service nothing: any request in its window refuses the sample.
+        jumps.push(await measure(page, until, () => row.click(), { expects: [] }));
         chosen.push(node);
         await settle();
         expect(await holdsNow(page, until), `the jump to ${node} stays where it landed`).toBe(true);
       }
 
-      const open = recorded(opened);
+      const cold = await coldOpens(page, fixture);
+      const open = recorded(fromList);
+      const load = recorded(cold);
       const jump = summary(jumps.slice(WARM_UP).map((each) => each.whole));
       record(task.meta, {
         configuration: await configuration(page.context().browser()!),
         fixture: shapeOf(fixture),
         open,
+        cold: load,
         jump: { whole: jump, warmUp: jumps.slice(0, WARM_UP), seed: 179, nodes: chosen },
         budgets: { open: BUDGETS.open, jump: BUDGETS.jump },
       });
-      hold('opening, the whole time', open.whole, opened[0]!.whole, BUDGETS.open);
+      hold('opening from the list, the whole time', open.whole, fromList[0]!.whole, BUDGETS.open);
+      hold('opening cold, the whole time', load.whole, cold[0]!.whole, BUDGETS.open);
       hold('a jump, the whole time', jump, jumps[0]!.whole, BUDGETS.jump);
     });
   }, 600_000);
@@ -389,6 +472,7 @@ function shapeOf(fixture: FiveHundred) {
     sections: fixture.sections,
     references: fixture.references,
     components: fixture.components,
+    referring: fixture.referring,
   };
 }
 

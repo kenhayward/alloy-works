@@ -26,7 +26,11 @@ export interface Timed {
   readonly act: number;
   readonly held: number;
   readonly painted: number;
-  /** Each request the act waited on: begun after the act and answered before the result was painted. */
+  /**
+   * Each request begun after the act and answered before its result was painted - the page's own
+   * document among them, for a load. Which of them the act waited on the page cannot say, so `measure`
+   * holds each to the paths the act is expected to ask for, and refuses a sample holding any other.
+   */
   readonly requests: readonly {
     readonly name: string;
     readonly from: number;
@@ -48,8 +52,8 @@ export interface Measured {
  * sample (B-L).
  *
  * `arm` clears the resource timings and waits for the act: the next key other than a modifier or the
- * next pointer press, whose event's own time is the act's; or, for an act the page is told to make,
- * now. From then it asks the condition at every frame, before the frame is drawn; the first frame it
+ * next pointer press, whose event's own time is the act's; for an act the page is told to make, now;
+ * or, for a load, the page's time origin, with the document's own request among what it waited on. From then it asks the condition at every frame, before the frame is drawn; the first frame it
  * holds in is the one that shows the result, and the time is taken after that frame is painted, from a
  * message posted as the frame is drawn - which the page runs once the frame is done.
  */
@@ -144,12 +148,14 @@ export function instrument(): void {
     get failed() {
       return state.failed;
     },
-    arm(until: Until, startOn: 'input' | 'now'): void {
+    arm(until: Until, startOn: 'input' | 'now' | 'origin'): void {
       state.result = null;
       state.failed = null;
       performance.clearResourceTimings();
       let act: number | null = null;
-      if (startOn === 'now') act = performance.now();
+      // A load is timed from the page's own time origin, the navigation's start.
+      if (startOn === 'origin') act = 0;
+      else if (startOn === 'now') act = performance.now();
       else {
         const began = (event: Event) => {
           if (event instanceof KeyboardEvent && MODIFIERS.has(event.key)) return;
@@ -177,8 +183,10 @@ export function instrument(): void {
         channel.port1.onmessage = () => {
           const painted = performance.now();
           const from = act!;
-          const requests = performance
-            .getEntriesByType('resource')
+          const requests = [
+            ...performance.getEntriesByType('navigation'),
+            ...performance.getEntriesByType('resource'),
+          ]
             .filter(
               (entry): entry is PerformanceResourceTiming =>
                 entry instanceof PerformanceResourceTiming &&
@@ -219,9 +227,16 @@ export function covered(intervals: readonly (readonly [number, number])[]): numb
 
 /**
  * One act measured in the page (B-L): armed, made by `act`, and timed by the page from the act to the
- * frame showing `until` painted. The service's share is the time any request the act waited on was in
+ * frame showing `until` painted. The service's share is the time any of the act's requests was in
  * flight, from its `requestStart` to its `responseEnd` by Resource Timing, overlapping ones counted
  * once; the interface's is the rest.
+ *
+ * **Only the act's own requests are subtracted.** Resource Timing ties no request to what asked for
+ * it, so every request answered in the window - begun after the act, answered before the paint - is
+ * held to `expects`, the paths the act asks for (an outline act its `POST .../outline`, an open its
+ * own reads, a jump none), and a sample with any other in it is refused, naming it: a heartbeat or a
+ * read left over from the last act would otherwise be taken off the interface's share as though the
+ * act had waited on it.
  */
 export async function measure(
   page: Page,
@@ -230,7 +245,12 @@ export async function measure(
   {
     startOn = 'input',
     within = 30_000,
-  }: { readonly startOn?: 'input' | 'now'; readonly within?: number } = {},
+    expects,
+  }: {
+    readonly startOn?: 'input' | 'now';
+    readonly within?: number;
+    readonly expects: readonly RegExp[];
+  },
 ): Promise<Measured> {
   type Armed = { budget: { arm(until: Until, startOn: 'input' | 'now'): void } };
   // A result already on the screen would end the sample at the act's first frame, timing nothing.
@@ -245,6 +265,11 @@ export async function measure(
   } else {
     await act();
   }
+  return timedAs(await result(page, until, within), expects);
+}
+
+/** The page's times for the act it was armed for, once the frame showing `until` has been painted. */
+async function result(page: Page, until: Until, within: number): Promise<Timed> {
   let answer: Timed | { failed: string };
   try {
     const handle = await page.waitForFunction(
@@ -273,6 +298,43 @@ export async function measure(
     });
   }
   if ('failed' in answer) throw new Error(`The page could not ask its condition: ${answer.failed}`);
+  return answer;
+}
+
+/**
+ * A load measured (B-L): a fresh `page` - no page of the application open in it yet - sent to `url`,
+ * timed by the page from its time origin, the navigation's start, to the frame showing `until`
+ * painted. What the service took includes the document's own request; everything else is as `measure`
+ * takes it, `expects` the load's own paths.
+ */
+export async function measureLoad(
+  page: Page,
+  until: Until,
+  url: string,
+  { within = 30_000, expects }: { readonly within?: number; readonly expects: readonly RegExp[] },
+): Promise<Measured> {
+  await page.addInitScript(instrument);
+  await page.addInitScript((condition) => {
+    (window as unknown as { budget: { arm(until: Until, startOn: 'origin'): void } }).budget.arm(
+      condition,
+      'origin',
+    );
+  }, until);
+  await page.goto(url);
+  return timedAs(await result(page, until, within), expects);
+}
+
+/** A sample from the page's times: its requests held to `expects`, the service's share taken out. */
+function timedAs(answer: Timed, expects: readonly RegExp[]): Measured {
+  const stray = answer.requests
+    .map((request) => new URL(request.name).pathname)
+    .filter((path) => !expects.some((expected) => expected.test(path)));
+  if (stray.length > 0) {
+    throw new Error(
+      `Requests the act does not make were answered in its window, so its service share cannot be ` +
+        `told from theirs: ${stray.join(', ')}`,
+    );
+  }
   const whole = answer.painted - answer.act;
   const service = covered(answer.requests.map((request) => [request.from, request.to] as const));
   const round = (value: number) => Number(value.toFixed(1));

@@ -17,15 +17,17 @@ import { blockEquation } from './every-block.js';
  * hundred references to four hundred components, forty to a chapter, five under each of its first four
  * sections and four under each of the other five. Each component is a heading's worth of prose and a
  * list of three items, and every tenth holds a table and a numbered equation as well, so the view sets
- * what a document holds.
+ * what a document holds. **A fifth of them hold cross-references**, so the text works out targets as a
+ * real document's does: every tenth refers to its own table and equation, and every tenth but five to
+ * the table of the one five before it, placed elsewhere in the document.
  *
- * **Made once per stack, and found after that** (B-C): nothing measured changes it but a move, which
- * the test that makes one puts back, and the shape it is checked against survives a move among
- * siblings left undone by a failed run. Its title carries the shape's version, so a change to the shape
- * below takes a new version and a new document.
+ * **Made once per stack, and found after that** (B-C): every act the budgets make on it is paired with
+ * its inverse, so each cycle leaves it as it found it; one a failed run left undone leaves a document
+ * of another shape, which is passed over and a new one made. Its title carries the shape's version, so
+ * a change to the shape below takes a new version and a new document.
  */
 export const FIVE_HUNDRED = {
-  version: 1,
+  version: 2,
   chapters: 10,
   sectionsPerChapter: 9,
   // References under each of a chapter's sections, in order: forty to a chapter.
@@ -44,6 +46,8 @@ export interface FiveHundred {
   readonly sections: number;
   readonly references: number;
   readonly components: number;
+  /** How many of its occurrences' texts hold a cross-reference, read from the service. */
+  readonly referring: number;
   /** The first reference in reading order, and words its text opens with. */
   readonly first: { readonly node: string; readonly words: string };
   /** Every node in reading order, with its depth. */
@@ -77,7 +81,7 @@ function text(value: string) {
   return { type: 'text', value, marks: [] };
 }
 
-function paragraph(id: string, value: string) {
+function paragraph(id: string, value: string): { content: object[] } & Record<string, unknown> {
   return { type: 'paragraph', id, style: 'body', content: [text(value)] };
 }
 
@@ -89,11 +93,36 @@ function prose(random: () => number, count: number): string {
   return `${chosen.join(' ')}.`;
 }
 
-/** Component `n`'s content: prose and a list, and a table and an equation in every tenth. */
-export function contentOf(n: number): readonly unknown[] {
+/** A cross-reference to `target`, printing its number and its title, as the Reference dialog makes one. */
+function reference(id: string, target: object) {
+  return { type: 'crossReference', id, target, display: 'numberAndTitle' };
+}
+
+/**
+ * Component `n`'s content: prose and a list, a table and an equation in every tenth, and references in
+ * a fifth - to its own table and equation in every tenth, and in every tenth but five to the table of
+ * `referred`, the component five before it.
+ */
+export function contentOf(n: number, referred?: string): readonly unknown[] {
   const random = seeded(n + 1);
+  const opens = paragraph('p1', `${opening(n)}: ${prose(random, 70)}`);
+  if (n % FIVE_HUNDRED.richEvery === 0) {
+    opens.content.push(
+      text(' See '),
+      reference('x1', { kind: 'block', block: 't1' }),
+      text(' and '),
+      reference('x2', { kind: 'block', block: 'e1' }),
+      text('.'),
+    );
+  } else if (n % FIVE_HUNDRED.richEvery === FIVE_HUNDRED.richEvery / 2 && referred !== undefined) {
+    opens.content.push(
+      text(' As '),
+      reference('x1', { kind: 'component', component: referred, block: 't1' }),
+      text(' shows.'),
+    );
+  }
   const blocks: unknown[] = [
-    paragraph('p1', `${opening(n)}: ${prose(random, 70)}`),
+    opens,
     {
       type: 'list',
       id: 'l1',
@@ -196,6 +225,7 @@ function readBack(document: DocumentView): FiveHundred | null {
     sections,
     references,
     components: components.size,
+    referring: 0,
     first: { node: first.id, words: '' },
     order,
   };
@@ -218,18 +248,19 @@ async function inPool<T>(
 /** The fixture made: its four hundred components, then its outline, one act at a time. */
 async function make(client: Client, space: string): Promise<DocumentView> {
   const ids: string[] = new Array<string>(FIVE_HUNDRED.components);
-  await inPool(
-    Array.from({ length: FIVE_HUNDRED.components }, (_, n) => n),
-    8,
-    async (n) => {
+  const every = Array.from({ length: FIVE_HUNDRED.components }, (_, n) => n);
+  const rich = (n: number) => n % FIVE_HUNDRED.richEvery === 0;
+  // The tables' components first, so each reference to one can name it.
+  for (const pass of [every.filter(rich), every.filter((n) => !rich(n))]) {
+    await inPool(pass, 8, async (n) => {
       const made = await makeComponent(
         client,
         `${FIVE_HUNDRED_TITLE}, component ${String(n).padStart(3, '0')}`,
-        contentOf(n),
+        contentOf(n, ids[n - FIVE_HUNDRED.richEvery / 2]),
       );
       ids[n] = made.id;
-    },
-  );
+    });
+  }
   const { data: made, response } = await client.POST('/v1/spaces/{space}/documents', {
     params: { path: { space } },
     body: { title: FIVE_HUNDRED_TITLE, language: 'en-GB', direction: 'ltr' },
@@ -297,5 +328,10 @@ export async function fiveHundred(client: Client): Promise<FiveHundred> {
   const opens = /Component \d{3} opens here/.exec(content)?.[0];
   if (!opens)
     throw new Error("The fixture's first component does not open as the fixture writes it");
-  return { ...found, first: { node: found.first.node, words: opens } };
+  const referring = texts.occurrences.filter((occurrence) =>
+    JSON.stringify(
+      texts.versions.find((each) => each.id === occurrence.version)?.content ?? '',
+    ).includes('"crossReference"'),
+  ).length;
+  return { ...found, referring, first: { node: found.first.node, words: opens } };
 }

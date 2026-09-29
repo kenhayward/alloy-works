@@ -15627,7 +15627,7 @@
         },
         {
           "id": "CNT-179",
-          "howItIsMet": "The browser suite (`tests/browser/src/budgets.test.ts`) opens a document of 400 components in 500 nodes twenty times from the documents list, to its outline named and its first component's text on the screen, against p95 1 s and a maximum of 2 s; and jumps from the outline to twenty nodes drawn from a seeded sequence, to the node's heading on the screen and still there once the page has settled, against p95 250 ms and a maximum of 500 ms. Each is the whole time, timed by the page, with the configuration recorded beside it; bound on a named machine and recorded only on CI"
+          "howItIsMet": "The browser suite (`tests/browser/src/budgets.test.ts`) opens a document of 400 components in 500 nodes, a fifth of whose texts hold cross-references, twenty times from the documents list and twenty times cold - its address loaded into a fresh page - to its outline named and its first component's text on the screen, against p95 1 s and a maximum of 2 s; and jumps from the outline to twenty nodes drawn from a seeded sequence, to the node's heading on the screen and still there once the page has settled, against p95 250 ms and a maximum of 500 ms. Each is the whole time, timed by the page, with the configuration recorded beside it; bound on a named machine and recorded only on CI"
         }
       ]
     },
@@ -16580,10 +16580,6 @@
         {
           "id": "STR-063",
           "howItIsMet": "The document route, the contributions route, the numbering route and an outline act are each measured in the service suite over a document of 500 nodes and 400 occurrences, against p95 250 ms and a maximum of 500 ms, after five warm-up calls that are not measured samples, with the configuration recorded beside the result. A run on a named machine is held to both; a run on a shared CI runner, whose speed varies by more than the budget itself, records both and is held to neither (issues #179 and #188), so a green CI run does not show the budget met"
-        },
-        {
-          "id": "STR-072",
-          "howItIsMet": "The browser suite (`tests/browser/src/budgets.test.ts`) times, in the pinned Chromium against the running stack, STR-063's document of 500 nodes and 400 occurrences made through the API: the document opened from the documents list, and every act the outline offers - an insert, a removal, a retitle, **Starts on**, a move, a demotion and a promotion - made by the keyboard, each timed by the page from the act to the frame showing its result painted, less the time the requests it waited on were in flight by Resource Timing; one warm-up and twenty samples each, against p95 250 ms and a maximum of 500 ms, with the configuration recorded beside the result. Bound on a named machine and recorded only on CI, as STR-063 is"
         },
         {
           "id": "STR-040",
@@ -20318,13 +20314,7 @@
     {
       "id": "CNT-179",
       "file": "tests/browser/src/budgets.test.ts",
-      "line": 342,
-      "kind": "title"
-    },
-    {
-      "id": "STR-072",
-      "file": "tests/browser/src/budgets.test.ts",
-      "line": 199,
+      "line": 420,
       "kind": "title"
     },
     {
