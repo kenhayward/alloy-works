@@ -13,7 +13,10 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   scrolls on its own, following where you are without moving the text (issue #336).
 - **A part you go to is shown below the page's header**, whether chosen in the outline or reached by
   a link, rather than with its heading hidden under the header; a link opens at its part once the
-  text above it has loaded, so it is not pushed off the screen as that text arrives (issue #336).
+  text above it has loaded, so it is not pushed off the screen as that text arrives, and does not
+  pull you back there if you have chosen another part or scrolled away while it loaded. The outline
+  ends above the status bar at the foot of the page, and in a very short window, or zoomed right in,
+  it scrolls with the page instead (issue #336).
 
 ## 0.123.0 - 2026-09-28 (PR #327)
 

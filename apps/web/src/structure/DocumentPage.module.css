@@ -31,7 +31,8 @@
  * The outline pane: a tabbed panel at the top of its column (interface slice 15), standing beside the
  * text as the window scrolls it - under the header band, above the status bar - and scrolling its own
  * tree (issue #336). Scrolled with the page, keeping the reader's node in view in it moved the window,
- * and so the text, and so the node in view, and the page sprang back to its top.
+ * and so the text, and so the node in view, and the page sprang back to its top. It ends a gap above
+ * the status bar, whose height the bar tells the page as `--status-height`, one line or wrapped.
  */
 .layout > [data-panel] > [data-part='outline'] {
   grid-column: 1;
@@ -41,7 +42,9 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  max-height: calc(100vh - var(--header-height) - var(--space-12) - var(--space-40));
+  max-height: calc(
+    100vh - var(--header-height) - var(--space-12) - var(--status-height, 0px) - var(--space-12)
+  );
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius-8);
@@ -175,6 +178,18 @@
     position: static;
     grid-column: 1 / -1;
     grid-row: auto;
+  }
+}
+
+/*
+ * A window too short to hold the pane beside the text - a phone on its side, or 400% zoom, where a
+ * stuck pane would show a line or two of its tree: it scrolls with the page instead, whole, and the
+ * current node is kept in view in it by nothing, since it has no scroll of its own (issue #336).
+ */
+@media (max-height: 480px) {
+  .layout > [data-panel] > [data-part='outline'] {
+    position: static;
+    max-height: none;
   }
 }
 

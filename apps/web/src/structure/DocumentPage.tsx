@@ -43,7 +43,7 @@ import { HeldFields, type SaveAnswer } from '../metadata/HeldFields.js';
 import { byName } from '../metadata/people.js';
 import { UnheldFaces, ZoomControl } from '../theme/Canvas.js';
 import { PresentationProvider } from '../theme/presentation.js';
-import { useReadingPosition } from './position.js';
+import { LINK_WAITS_MS, SCROLL_INPUTS, SCROLLING_KEYS, useReadingPosition } from './position.js';
 import type { Choosing, OfferedVersion } from './VersionChoice.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -499,6 +499,13 @@ export function DocumentPage({
       current = false;
     };
   }, [client, id, shownVersion, textsAttempt]);
+  // A texts request that never answers must not keep a link from its node: a few seconds after the
+  // version opens, the text is taken as whole as it will be (issue #336).
+  useEffect(() => {
+    if (shownVersion === null) return undefined;
+    const givenUp = setTimeout(() => setTextsRead(shownVersion), LINK_WAITS_MS);
+    return () => clearTimeout(givenUp);
+  }, [shownVersion]);
   // Who holds what changes while the page is in another window's shadow: returning to it hears it.
   useEffect(() => {
     const again = () => setTextsAttempt((attempt) => attempt + 1);
@@ -891,6 +898,19 @@ export function DocumentPage({
     arriving.current = linked.node;
     setMarked(linked.node);
   }, [linked]);
+  // Nor once they have scrolled the page themselves while it waited: going then would pull them back
+  // from where they took it (issue #336). Taken before anything below can prevent it.
+  useEffect(() => {
+    const scrolled = (event: Event) => {
+      if (event instanceof KeyboardEvent && !SCROLLING_KEYS.has(event.key)) return;
+      arriving.current = null;
+    };
+    const options = { capture: true, passive: true } as const;
+    for (const kind of SCROLL_INPUTS) window.addEventListener(kind, scrolled, options);
+    return () => {
+      for (const kind of SCROLL_INPUTS) window.removeEventListener(kind, scrolled, options);
+    };
+  }, []);
   useEffect(() => {
     // Gone to once the text is whole, so the components above it have taken their room (issue #336).
     if (arriving.current === null || textsRead !== shownVersion) return;
@@ -1077,6 +1097,8 @@ export function DocumentPage({
               // The address follows what is chosen, without a history entry per arrow key and without a
               // `hashchange`, so a reload or a copy of the address comes back to it.
               window.history.replaceState(window.history.state, '', nodeLink(document.id, node));
+              // A link still waiting for the texts is the reader's no longer: they chose elsewhere.
+              arriving.current = null;
               // And the text goes to it (STR-035); a link's mark stays only on what it marked.
               textColumn.current
                 ?.querySelector(`[data-node="${node}"]`)

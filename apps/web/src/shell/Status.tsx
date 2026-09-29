@@ -1,4 +1,12 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 
 import { Icon } from '../editor/Icon.js';
 import styles from './Status.module.css';
@@ -55,8 +63,26 @@ export function StatusBar({
   notice: string | null;
   context: readonly string[] | null;
 }) {
+  // How tall the bar stands over the window's foot, one line or wrapped to two, told to the page as
+  // `--status-height`: what the window scrolls to stops above it, and the outline pane stuck beside
+  // the text ends above it (issue #336).
+  const bar = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const element = bar.current;
+    if (element === null) return undefined;
+    const root = document.documentElement;
+    const measure = () =>
+      root.style.setProperty('--status-height', `${element.getBoundingClientRect().height}px`);
+    measure();
+    const resized = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    resized?.observe(element);
+    return () => {
+      resized?.disconnect();
+      root.style.removeProperty('--status-height');
+    };
+  }, []);
   return (
-    <footer className={styles['bar']}>
+    <footer ref={bar} className={styles['bar']}>
       <p role="status" className={styles['notice']}>
         {notice !== null && isMove(notice) && <Icon name="Move" size={13} />}
         {notice}
