@@ -260,6 +260,55 @@ const INTERLEAVINGS: readonly {
   },
 ];
 
+/** Waits for a linked node's heading to have been taken to just below the header. */
+async function arrivedAt(page: Page, node: string): Promise<void> {
+  await page.waitForFunction(
+    (id) => {
+      const element = document.querySelector(
+        `[aria-label="The document's text"] [data-node="${id}"]`,
+      );
+      const header = document.querySelector('header')!.getBoundingClientRect().bottom;
+      return element !== null && Math.abs(element.getBoundingClientRect().top - header) < 2;
+    },
+    node,
+    { polling: 'raf' },
+  );
+  // And the page given the means to grow the text above a node, as its own layout grows it.
+  await page.evaluate(() => {
+    (window as unknown as { growAbove: (id: string, by: number) => void }).growAbove = (id, by) => {
+      const room = document.createElement('div');
+      room.style.height = `${by}px`;
+      document
+        .querySelector(`[aria-label="The document's text"] [data-node="${id}"]`)!
+        .append(room);
+    };
+  });
+}
+
+/** Declared for the page's scripts: `arrivedAt` puts it there. */
+declare function growAbove(id: string, by: number): void;
+
+/**
+ * Holds the document's theme back until the answer is called, which lets it through and waits for it
+ * and the faces it names: its arrival changes every height above a linked node.
+ */
+async function holdTheTheme(page: Page): Promise<() => Promise<void>> {
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => (release = resolve));
+  await page.route('**/v1/documents/*/presentation', async (route) => {
+    await held;
+    await route.continue();
+  });
+  return async () => {
+    const themed = page.waitForResponse(THEME);
+    release();
+    await themed;
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+    });
+  };
+}
+
 describe('moving through a long document in a browser (issue #336)', () => {
   it('STR-035 scrolls the text wherever the wheel takes it, and it stays there', async () => {
     const client = api();
@@ -340,37 +389,78 @@ describe('moving through a long document in a browser (issue #336)', () => {
     const target = everyNode(nodesOf(made))[4]!;
     await withPage(async (page) => {
       // The theme held until the reader has scrolled: its arrival changes every height above the node.
-      let release!: () => void;
-      const held = new Promise<void>((resolve) => (release = resolve));
-      await page.route('**/v1/documents/*/presentation', async (route) => {
-        await held;
-        await route.continue();
-      });
+      const release = await holdTheTheme(page);
       const { text } = await open(page, `/documents/${made.id}/nodes/${target.id}`);
-      await page.waitForFunction(
-        (id) => {
-          const node = document.querySelector(
-            `[aria-label="The document's text"] [data-node="${id}"]`,
-          );
-          const header = document.querySelector('header')!.getBoundingClientRect().bottom;
-          return node !== null && Math.abs(node.getBoundingClientRect().top - header) < 2;
-        },
-        target.id,
-        { polling: 'raf' },
-      );
+      await arrivedAt(page, target.id);
       await overTheText(page, text);
       await wheel(page, 300);
-      const themed = page.waitForResponse((response) => response.url().endsWith('/presentation'));
-      release();
-      await themed;
-      await page.evaluate(async () => {
-        await document.fonts.ready;
-      });
+      await release();
       await settled(page);
       const at = await standing(page, target.id);
       expect(at.top, 'the node, left where the reader scrolled past it').toBeLessThan(
         at.header - 100,
       );
+    });
+  });
+
+  it('STR-045 leaves the reader where they scrolled by no wheel, key or pointer - a find, a dragged scrollbar - as the theme arrives (issue #350)', async () => {
+    const client = api();
+    const made = await longDocument(client, 'Scrolled without an input', 3, 3);
+    const target = everyNode(nodesOf(made))[4]!;
+    await withPage(async (page) => {
+      const release = await holdTheTheme(page);
+      await open(page, `/documents/${made.id}/nodes/${target.id}`);
+      await arrivedAt(page, target.id);
+      // The window scrolled as a find or a scrollbar scrolls it: no event the page hears but the scroll.
+      await page.evaluate(() => window.scrollBy(0, 300));
+      await release();
+      await settled(page);
+      const at = await standing(page, target.id);
+      expect(at.top, 'the node, left where the reader scrolled past it').toBeLessThan(
+        at.header - 100,
+      );
+    });
+  });
+
+  it("STR-045 takes a scroll of the reader's own in the frame the text above the node grows for theirs, not the layout's (issue #350)", async () => {
+    const client = api();
+    const made = await longDocument(client, 'Scrolled as it grew', 3, 3);
+    const nodes = everyNode(nodesOf(made));
+    const target = nodes[4]!;
+    await withPage(async (page) => {
+      await open(page, `/documents/${made.id}/nodes/${target.id}`);
+      await arrivedAt(page, target.id);
+      const from = await settled(page);
+      // In one task: the text above the node 60 pixels taller, and the window scrolled 400 by the reader.
+      await page.evaluate((above) => {
+        growAbove(above, 60);
+        window.scrollBy(0, 400);
+      }, nodes[1]!.id);
+      expect(await settled(page), 'the reader, left 400 pixels down').toBe(from + 400);
+      // And let go: the text above growing again moves nothing.
+      await page.evaluate((above) => growAbove(above, 200), nodes[1]!.id);
+      expect(await settled(page), 'the window, once the hold has let go').toBe(from + 400);
+    });
+  });
+
+  it('STR-045 lets a linked node go once the page has settled, so nothing that grows above it later moves the window (issue #350)', async () => {
+    const client = api();
+    const made = await longDocument(client, 'Settled after a link', 3, 3);
+    const nodes = everyNode(nodesOf(made));
+    const target = nodes[4]!;
+    await withPage(async (page) => {
+      await open(page, `/documents/${made.id}/nodes/${target.id}`);
+      await arrivedAt(page, target.id);
+      await page.evaluate(async () => {
+        await document.fonts.ready;
+      });
+      // Well past the page's settling: its texts, theme and faces in, and nothing resized since.
+      await page.waitForTimeout(3_000);
+      // The browser's own anchoring off, so the window moves only where the page moves it.
+      await page.addStyleTag({ content: 'html { overflow-anchor: none !important; }' });
+      const from = await settled(page);
+      await page.evaluate((above) => growAbove(above, 300), nodes[1]!.id);
+      expect(await settled(page), 'the window, after the page settled').toBe(from);
     });
   });
 

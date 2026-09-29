@@ -14,26 +14,80 @@ function movesNodes(mutation: MutationRecord): boolean {
  */
 export const LINK_WAITS_MS = 5_000;
 
-/** The input by which a reader scrolls the page themselves: a key among `SCROLLING_KEYS`, for a key. */
-export const SCROLL_INPUTS = ['wheel', 'touchmove', 'keydown'] as const;
-
-/** The keys the browser scrolls the page by. */
-export const SCROLLING_KEYS: ReadonlySet<string> = new Set([
-  'PageUp',
-  'PageDown',
-  'Home',
-  'End',
-  'ArrowUp',
-  'ArrowDown',
-  ' ',
-]);
-
 /**
- * What the reader does that lets go of a linked node the page is holding in place: anything at all -
- * a scroll of their own, a key, a press of the pointer - since any of it may move the page, and the
- * hold would pull it back.
+ * What the reader does that is theirs to do with the page: anything at all - a scroll of their own, a
+ * key, a press of the pointer - since any of it may move the page. A link waiting to go to its node
+ * does not go, and one holding its node lets go (STR-045).
  */
 export const HOLD_ENDS_ON = ['wheel', 'touchmove', 'keydown', 'pointerdown'] as const;
+
+/** How long the text's column must keep its size, once the page has settled, for a hold to let go. */
+export const HOLD_QUIET_MS = 1_500;
+
+/** The longest a linked node is held, however the page's loading goes. */
+export const HOLD_LONGEST_MS = 10_000;
+
+/** What moved the window, as `watchReader` reads a scroll. */
+type ScrollCause = 'none' | 'anchoring' | 'clamp' | 'reader';
+
+/**
+ * Why the window scrolled, from where it and the node stood before and stand now: not at all; with the
+ * node, which stays where it was on the screen, as the browser anchors the text; up to its furthest,
+ * as a page grown shorter pulls it; or otherwise, which only the reader does - by a find, a scrollbar
+ * dragged, or in the same frame as the text above the node grew (issue #350).
+ */
+function scrollCause(
+  before: { readonly window: number; readonly screen: number },
+  now: { readonly window: number; readonly screen: number; readonly furthest: number },
+): ScrollCause {
+  if (Math.abs(now.window - before.window) < 1) return 'none';
+  if (Math.abs(now.screen - before.screen) < 1) return 'anchoring';
+  if (now.window < before.window && now.window >= now.furthest - 1) return 'clamp';
+  return 'reader';
+}
+
+/**
+ * Watches for the reader taking the page themselves while a link has it (STR-045): any of
+ * `HOLD_ENDS_ON`, or a scroll `scrollCause` reads as theirs, calls `reader`; a scroll that pulled the
+ * window up to its furthest calls `clamp`, where given. `seen` says where the node and the window
+ * stand now, after the page itself has moved them.
+ */
+export function watchReader(
+  find: () => Element | null,
+  on: { readonly reader: () => void; readonly clamp?: () => void },
+): { readonly seen: () => void; readonly stop: () => void } {
+  const screenOf = (node: Element | null) => node?.getBoundingClientRect().top ?? Number.NaN;
+  let windowAt = window.scrollY;
+  let screenAt = screenOf(find());
+  const seen = () => {
+    windowAt = window.scrollY;
+    screenAt = screenOf(find());
+  };
+  const scrolled = () => {
+    const cause = scrollCause(
+      { window: windowAt, screen: screenAt },
+      {
+        window: window.scrollY,
+        screen: screenOf(find()),
+        furthest: document.documentElement.scrollHeight - window.innerHeight,
+      },
+    );
+    if (cause === 'reader') on.reader();
+    else if (cause === 'clamp' && on.clamp) on.clamp();
+    else seen();
+  };
+  const acted = () => on.reader();
+  const options = { capture: true, passive: true } as const;
+  window.addEventListener('scroll', scrolled, { passive: true });
+  for (const kind of HOLD_ENDS_ON) window.addEventListener(kind, acted, options);
+  return {
+    seen,
+    stop: () => {
+      window.removeEventListener('scroll', scrolled);
+      for (const kind of HOLD_ENDS_ON) window.removeEventListener(kind, acted, options);
+    },
+  };
+}
 
 /**
  * Holds a linked node where the page went to it (STR-045, issue #350), and answers how to let go.
@@ -43,19 +97,30 @@ export const HOLD_ENDS_ON = ['wheel', 'touchmove', 'keydown', 'pointerdown'] as 
  * text set in them is drawn - and the browser's own scroll anchoring does not hold the node through
  * it, so it was left anywhere from a few pixels under the header to off the screen altogether. So
  * whenever the text's column changes size, which it does with every height inside it, the node is
- * scrolled into view again.
+ * scrolled into view again; and the browser's anchoring is off meanwhile, so the two never fight.
  *
- * It lets go at the reader's first act (`HOLD_ENDS_ON`), when the window is scrolled while the node
- * has not moved - the reader's own scroll by some other means, a scrollbar dragged - or when the node
- * leaves the text. A scroll heard while the node has moved is the layout's, the window pulled up by a
- * page grown shorter, and the node is gone to again.
+ * It lets go at the reader's first act or scroll of their own (`watchReader`), when the node leaves
+ * the text, and once the page has settled: `settled` answered - the texts, the theme and its faces in
+ * - and the column's size kept for `HOLD_QUIET_MS`; and in any case after `HOLD_LONGEST_MS`. A
+ * scroll that pulled the window up to its furthest, as a page grown shorter does, is gone to again.
  */
-export function holdInPlace(find: () => Element | null, column: Element): () => void {
-  if (typeof ResizeObserver === 'undefined') return () => undefined;
-  /** Where the node stands in the document, and where the window was, as the hold last left them. */
-  let nodeAt = 0;
-  let windowAt = 0;
-  const standing = (node: Element) => node.getBoundingClientRect().top + window.scrollY;
+export function holdInPlace(
+  find: () => Element | null,
+  column: Element,
+  { settled }: { readonly settled?: Promise<unknown> } = {},
+): () => void {
+  if (typeof ResizeObserver === 'undefined' || find() === null) return () => undefined;
+  const root = document.documentElement.style;
+  const anchoring = root.overflowAnchor;
+  root.overflowAnchor = 'none';
+  let held = true;
+  let quiet: ReturnType<typeof setTimeout> | undefined;
+  let hasSettled = false;
+  const hushed = () => {
+    if (!hasSettled) return;
+    clearTimeout(quiet);
+    quiet = setTimeout(release, HOLD_QUIET_MS);
+  };
   const align = () => {
     const node = find();
     if (node === null) {
@@ -63,31 +128,40 @@ export function holdInPlace(find: () => Element | null, column: Element): () => 
       return;
     }
     node.scrollIntoView?.({ block: 'start' });
-    nodeAt = standing(node);
-    windowAt = window.scrollY;
+    reader.seen();
+    hushed();
   };
-  const scrolled = () => {
-    const node = find();
-    if (node === null) release();
-    else if (Math.abs(standing(node) - nodeAt) >= 1) align();
-    else if (Math.abs(window.scrollY - windowAt) >= 1) release();
-  };
-  const acted = () => release();
+  const reader = watchReader(find, { reader: () => release(), clamp: align });
   const observer = new ResizeObserver(() => align());
-  const options = { capture: true, passive: true } as const;
+  const longest = setTimeout(release, HOLD_LONGEST_MS);
   function release() {
+    if (!held) return;
+    held = false;
     observer.disconnect();
-    window.removeEventListener('scroll', scrolled);
-    for (const kind of HOLD_ENDS_ON) window.removeEventListener(kind, acted, options);
+    reader.stop();
+    clearTimeout(quiet);
+    clearTimeout(longest);
+    root.overflowAnchor = anchoring;
   }
-  const node = find();
-  if (node === null) return () => undefined;
-  nodeAt = standing(node);
-  windowAt = window.scrollY;
   observer.observe(column);
-  window.addEventListener('scroll', scrolled, { passive: true });
-  for (const kind of HOLD_ENDS_ON) window.addEventListener(kind, acted, options);
+  void settled?.then(() => {
+    hasSettled = true;
+    hushed();
+  });
   return release;
+}
+
+/**
+ * Answers once the page has settled around a linked node: `ready` answered - the texts read and the
+ * theme's presentation in, or refused - and then, a frame later, when the text set in its faces has
+ * asked for them, the faces loaded.
+ */
+export async function pageSettled(ready: Promise<unknown>): Promise<void> {
+  await ready;
+  if (typeof requestAnimationFrame === 'function') {
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+  }
+  await (document as Partial<Document>).fonts?.ready;
 }
 
 /** How far down the window the line is that a node's heading must have reached to be where the reader is. */

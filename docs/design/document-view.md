@@ -131,20 +131,27 @@ not under it: the root carries `scroll-padding-top: var(--header-height)`.
 
 **Arriving by a link** (STR-045): the page opens at the node, scrolled to once the placed components'
 texts have arrived - before then every component above it is a heading alone, and the node would be
-pushed down the page as each fills in - or after five seconds where they have not, and not at all
-where the reader has meanwhile chosen another node or scrolled the page themselves. Having gone
-there, it **holds the node there** (issues #341, #350): the theme, asked for beside the texts, may
-answer after them, and its faces are fetched only once text set in them is drawn, so everything above
-the node changes height after it is gone to - and the browser's own scroll anchoring does not keep it
-in place, which left it a few pixels under the header when the faces arrived, or off the screen when
-the theme did.
-Whenever the text's column changes size, a `ResizeObserver` goes to the node again, until the reader
-does anything - a wheel, a touch, a key, a press of the pointer - or the window is scrolled while the
-node has not moved, or another node is chosen (`holdInPlace` in `position.ts`). It marks the
-node's heading as well as its tree item, a mark that stays until the reader moves elsewhere, as the
-outline's does. A document
-the reader may not read is not found, as today (404). A node that places a component the reader may not
-read is still reached: its place, its number, and "Not yours to read", never its text.
+pushed down the page as each fills in - or after five seconds where they have not. It does not go at
+all where the reader has meanwhile chosen another node or done anything with the page themselves: a
+wheel, a touch, a key, a press of the pointer, or a scroll of their own however made - a find, a
+scrollbar dragged - which is any scroll but the browser's anchoring and a page grown shorter pulling
+the window up (`watchReader` in `position.ts`).
+
+**Holding the node** (issues #341, #350): the theme, asked for beside the texts, may answer after
+them, and its faces are fetched only once text set in them is drawn, so everything above the node
+changes height after it is gone to - and the browser's own scroll anchoring does not keep it in
+place, which left it a few pixels under the header when the faces arrived, or off the screen when the
+theme did. So having gone there, the page holds the node there: whenever the text's column changes
+size, a `ResizeObserver` goes to the node again, with the browser's anchoring off meanwhile so the two
+never fight (`holdInPlace` in `position.ts`). It lets go when the reader does anything the wait
+above would have heard, when another node is chosen, when the node leaves the text, and once the page
+has settled - the texts read, the theme's presentation in and its faces loaded, and then a second and
+a half with the column's size unchanged - and in any case after ten seconds.
+
+**Marking the node**: the page marks the linked node's heading as well as its tree item, a mark that
+stays until the reader moves elsewhere, as the outline's does. A document the reader may not read is
+not found, as today (404). A node that places a component the reader may not read is still reached:
+its place, its number, and "Not yours to read", never its text.
 
 ## Decisions for Ken
 

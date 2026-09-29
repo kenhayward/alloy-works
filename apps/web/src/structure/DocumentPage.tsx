@@ -42,13 +42,13 @@ import { Waiting } from '../states/Waiting.js';
 import { HeldFields, type SaveAnswer } from '../metadata/HeldFields.js';
 import { byName } from '../metadata/people.js';
 import { UnheldFaces, ZoomControl } from '../theme/Canvas.js';
-import { PresentationProvider } from '../theme/presentation.js';
+import { PresentationProvider, usePresentation } from '../theme/presentation.js';
 import {
   holdInPlace,
   LINK_WAITS_MS,
-  SCROLL_INPUTS,
-  SCROLLING_KEYS,
+  pageSettled,
   useReadingPosition,
+  watchReader,
 } from './position.js';
 import type { Choosing, OfferedVersion } from './VersionChoice.js';
 
@@ -431,6 +431,16 @@ function keptBoundaries(): boolean {
   } catch {
     return false;
   }
+}
+
+/** Tells the page once the theme's presentation is in, or refused: a linked node is held until then. */
+function Presented({ onSettled }: { onSettled: () => void }) {
+  const presentation = usePresentation();
+  const settled = presentation !== null && presentation.state !== 'loading';
+  useEffect(() => {
+    if (settled) onSettled();
+  }, [settled, onSettled]);
+  return null;
 }
 
 export function DocumentPage({
@@ -904,27 +914,50 @@ export function DocumentPage({
     arriving.current = linked.node;
     setMarked(linked.node);
   }, [linked]);
-  // Nor once they have scrolled the page themselves while it waited: going then would pull them back
-  // from where they took it (issue #336). Taken before anything below can prevent it.
+  // Nor once they have done anything with the page themselves while it waited - a wheel, a key, a
+  // press of the pointer, a scroll of their own however made: going then would pull them back from
+  // where they took it (issues #336, #350). Taken before anything below can prevent it.
+  const waiting = useRef<{ readonly stop: () => void } | null>(null);
+  const stopWaiting = () => {
+    waiting.current?.stop();
+    waiting.current = null;
+  };
   useEffect(() => {
-    const scrolled = (event: Event) => {
-      if (event instanceof KeyboardEvent && !SCROLLING_KEYS.has(event.key)) return;
-      arriving.current = null;
-    };
-    const options = { capture: true, passive: true } as const;
-    for (const kind of SCROLL_INPUTS) window.addEventListener(kind, scrolled, options);
-    return () => {
-      for (const kind of SCROLL_INPUTS) window.removeEventListener(kind, scrolled, options);
-    };
-  }, []);
-  // And held there as what is above it settles - the theme, its faces, the zoom - until the reader acts
-  // (issue #350): let go by the reader, by another node chosen, and by the page going.
+    const node = arriving.current;
+    if (node === null) return undefined;
+    const watch = watchReader(
+      () => textColumn.current?.querySelector(`[data-node="${node}"]`) ?? null,
+      {
+        reader: () => {
+          arriving.current = null;
+          stopWaiting();
+        },
+      },
+    );
+    waiting.current = watch;
+    return () => watch.stop();
+  }, [linked?.arrival]);
+  // The theme's presentation in, or refused: told by the provider below, which the page renders.
+  const [presented] = useState(() => {
+    let told!: () => void;
+    const promise = new Promise<void>((resolve) => (told = resolve));
+    return { promise, told };
+  });
+  // And held there as what is above it settles - the theme and its faces, and a Fit zoom refitting
+  // to a window resized - until the page has settled or the reader acts (issue #350): let go by the
+  // reader, by another node chosen, and by the page going.
   const holding = useRef<(() => void) | null>(null);
   const letGo = () => {
     holding.current?.();
     holding.current = null;
   };
-  useEffect(() => letGo, []);
+  useEffect(
+    () => () => {
+      stopWaiting();
+      letGo();
+    },
+    [],
+  );
   useEffect(() => {
     // Gone to once the text is whole, so the components above it have taken their room (issue #336).
     const column = textColumn.current;
@@ -933,9 +966,12 @@ export function DocumentPage({
     const element = column.querySelector(`[data-node="${node}"]`);
     if (!element) return;
     arriving.current = null;
+    stopWaiting();
     element.scrollIntoView?.({ block: 'start' });
     letGo();
-    holding.current = holdInPlace(() => column.querySelector(`[data-node="${node}"]`), column);
+    holding.current = holdInPlace(() => column.querySelector(`[data-node="${node}"]`), column, {
+      settled: pageSettled(presented.promise),
+    });
   });
   const chooseMode = (mode: Mode) => {
     setChosenMode(mode);
@@ -1016,6 +1052,7 @@ export function DocumentPage({
     // Set in the theme and layout this document publishes under, its own and its components' text alike
     // (themes.md, "The theme in the editor", ET-A).
     <PresentationProvider client={client} document={document.id}>
+      <Presented onSettled={presented.told} />
       {/* Named by its title and the mode it is in, so a screen reader arriving hears which (CNT-154). */}
       <article aria-labelledby="document-title document-mode" className={styles['page']}>
         <span id="document-mode" hidden>
@@ -1118,6 +1155,7 @@ export function DocumentPage({
               // A link still waiting for the texts, or holding its node, is the reader's no longer: they
               // chose elsewhere.
               arriving.current = null;
+              stopWaiting();
               letGo();
               // And the text goes to it (STR-035); a link's mark stays only on what it marked.
               textColumn.current
