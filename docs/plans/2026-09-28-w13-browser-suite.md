@@ -306,6 +306,51 @@ Only these could change the plan; everything else is built as written.
 7. docs/testing.md and themes.md: what is measured, where, and against what.
 8. Tests: STY-080, on the comparison over the five themes.
 
+**W13.4, as built** (PR #334). The rows arrived as issue #328. Departures from the above, each in
+[themes.md](../design/themes.md#the-theme-in-the-editor-measured):
+
+- **Question 3's answer: yes, and not by `addThemeVersion` alone.** The store takes every theme the
+  generator makes once it is narrowed to contrast, a line at least 1.2 of its size and a rule no wider
+  than twice its table's padding. But `addThemeVersion` writes a version of a theme that exists, and
+  nothing creates a theme or a catalogue artifact but a migration, so the suite copies the default's
+  rows as each new artifact's first version and writes the theme it measures as the next, through the
+  store's own writers. Fixed artifacts, so a later run writes nothing where a theme is unchanged.
+- **The first run found the editor half a point to twenty points from the PDF in twenty-eight places
+  under the default theme, and more under the others.** What was the editor's own is fixed in this
+  slice, in the projection (issue #329): spaces as padding rather than snapped borders, each block's
+  baseline placed from its face's cap height where the browser can trim a line to it - which needed each
+  pinned file's cap height in `@alloy-works/fonts` - tables with rules that take no room, lists, an
+  attribution, a preformatted block's label, figures, inline code and the application's own table and
+  `code` styles.
+- **STY-080 is worded over what both outputs render**, as STY-053 was over each output that renders a
+  property. What the PDF does not set - a caption's and a footnote's fill, padding and indents, the
+  first-line indent of centred or preformatted text (issue #330) - is outside it, and the themes state
+  none of it until the PDF does.
+- **Named and not compared**, each with its issue: the step into a line held open by something taller
+  than its text (#331), how far a script moves (#332), and where the document view places a section's
+  heading (#333); and without issues, a footnote's place, equations' layout and floated figures.
+- **Measured beyond step 6**: a table's rules, their width, colour and where each runs against its cell's
+  text, and what stands behind each token - a fill, a band or the paper.
+
+**W13.4's final review** (PR #334) found the STY-080 claim partial, and four other defects, each fixed
+test first:
+
+- **STY-080 is not claimed, and the test cites nothing.** Issues #331 and #333 are properties both
+  outputs render and which differ, so the claim was partial; themes.md names them beside its table,
+  and says plainly what the comparison leaves out as outside STY-080 and why. STY-060's list of approved
+  deviations stays empty between the editor and the PDF, and the test holds it so.
+- **A list's items** stood where the editor stylesheet put them, 6.4pt out under the default theme and
+  9pt under Contrary, and a list's start was not compared. The projection now sets a list as the engine
+  does - a column of markers as wide as the widest, then half an em - and the fixture holds a nested
+  list and a numbered one counted from nine, whose starts are compared.
+- **The equation's face and the preformatted label's start** are measured.
+- **A table's outer rule** was clipped at the canvas's edge, and the measurement read the rule it meant
+  to draw rather than the one painted: it reads the painted one now, and the canvas has room either
+  side of the measure.
+- **A block's fill** is a colour where it has no spaces of its own, so axe-core checks its contrast.
+- The test waits for the page to be drawn whole before it measures, and fails where the screen is not
+  the document's.
+
 ## Left, named
 
 - **STY-081 and PUB-023**: Word measured as the PDF is, which themes.md designed as LibreOffice's

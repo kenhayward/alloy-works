@@ -3776,7 +3776,7 @@ describe('the address of every node', () => {
       expect(marked()).toBeUndefined();
     });
 
-    it("keeps the outline pane between the header and the status bar, and lets it go in a window too short to hold it (issue #336)", () => {
+    it('keeps the outline pane between the header and the status bar, and lets it go in a window too short to hold it (issue #336)', () => {
       // jsdom lays nothing out, so where the pane stands is read from the stylesheets' own rules. By a
       // name in a variable: Vite rewrites a literal one into the stylesheet's served address.
       const sheets = { page: './DocumentPage.module.css', base: '../theme/base.css' };

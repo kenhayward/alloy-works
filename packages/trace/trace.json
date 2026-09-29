@@ -8265,7 +8265,7 @@
     {
       "id": "PUB-078",
       "area": "PUB",
-      "statement": "Where a style, a property or a construct has no faithful Word representation, publishing must either refuse it (PUB-014) or report it on the publication exactly as a lossy export reports (PUB-055). Word is not exempt from saying what it could not carry; what makes it first-class is that the answer is normally nothing, and **STY-053**'s conformance suite is what keeps it so",
+      "statement": "Where a style, a property or a construct has no faithful Word representation, publishing must either refuse it (PUB-014) or report it on the publication exactly as a lossy export reports (PUB-055). Word is not exempt from saying what it could not carry; what makes it first-class is that the answer is normally nothing, and **STY-081**'s conformance suite is what keeps it so",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
@@ -11516,27 +11516,45 @@
       "area": "STY",
       "statement": "Every style property must be verified, by an automated suite, to render the same measured value in each output format that renders it - in the editor, in PDF and in Word",
       "tranche": "T1",
-      "status": "Specified",
+      "status": "Superseded by STY-080",
       "document": "STY-styles-and-presentation-themes.md",
       "line": 197
     },
     {
-      "id": "STY-058",
+      "id": "STY-080",
       "area": "STY",
-      "statement": "The editor must render every declared property of every paragraph and character style as the theme declares it, not a sample of them, so that STY-053's suite tests nothing STY-036 did not oblige (CNT-082, CNT-097)",
+      "statement": "Every style property that both the editor and the PDF render must be verified, by an automated suite over the default theme and generated ones, to render in the editor at the value the PDF of the same content renders it: each length - where text starts, the step between two baselines, a size, a rule's width and where it runs, an image's size - within half a point, and each face, weight, posture, colour, underline and fill exactly. A difference is allowed only where STY-060's list of approved deviations names it",
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
       "line": 198
     },
     {
-      "id": "STY-060",
+      "id": "STY-081",
       "area": "STY",
-      "statement": "The conformance suite (STY-053) must carry an explicit list of approved cross-format deviations - the Word typeface substitution in STY-052 is the only one today - and a deviation not on that list must fail. Determinism (STY-038) is a claim about one format given one input, never that every format renders identically",
-      "tranche": "Constraint",
+      "statement": "Every style property that both Word and the PDF render must be verified, by an automated suite, to render in a Word document at the value the PDF of the same content renders it, within the same tolerances as STY-080, a difference allowed only where STY-060's list of approved deviations names it",
+      "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
       "line": 199
+    },
+    {
+      "id": "STY-058",
+      "area": "STY",
+      "statement": "The editor must render every declared property of every paragraph and character style as the theme declares it, not a sample of them, so that STY-080's suite tests nothing STY-036 did not oblige (CNT-082, CNT-097)",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "STY-styles-and-presentation-themes.md",
+      "line": 200
+    },
+    {
+      "id": "STY-060",
+      "area": "STY",
+      "statement": "The conformance suites (STY-080, STY-081) must each carry an explicit list of approved cross-format deviations - the Word typeface substitution in STY-052 is the only one today - and a deviation not on that list must fail. Determinism (STY-038) is a claim about one format given one input, never that every format renders identically",
+      "tranche": "Constraint",
+      "status": "Specified",
+      "document": "STY-styles-and-presentation-themes.md",
+      "line": 201
     },
     {
       "id": "STY-070",
@@ -11545,7 +11563,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 200
+      "line": 202
     },
     {
       "id": "STY-039",
@@ -11554,7 +11572,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 217
+      "line": 220
     },
     {
       "id": "STY-040",
@@ -11563,7 +11581,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 218
+      "line": 221
     },
     {
       "id": "STY-041",
@@ -11572,7 +11590,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 219
+      "line": 222
     },
     {
       "id": "STY-042",
@@ -11581,7 +11599,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 220
+      "line": 223
     },
     {
       "id": "STY-045",
@@ -11590,7 +11608,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 221
+      "line": 224
     },
     {
       "id": "STY-046",
@@ -11599,7 +11617,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 222
+      "line": 225
     },
     {
       "id": "STY-047",
@@ -11608,7 +11626,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 223
+      "line": 226
     },
     {
       "id": "STY-048",
@@ -11617,7 +11635,7 @@
       "tranche": "T1",
       "status": "Superseded by STY-074",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 224
+      "line": 227
     },
     {
       "id": "STY-074",
@@ -11626,7 +11644,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 225
+      "line": 228
     },
     {
       "id": "STY-075",
@@ -11635,7 +11653,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 226
+      "line": 229
     },
     {
       "id": "STY-049",
@@ -11644,7 +11662,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 227
+      "line": 230
     },
     {
       "id": "STY-052",
@@ -11653,7 +11671,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 228
+      "line": 231
     },
     {
       "id": "STY-062",
@@ -11662,7 +11680,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 229
+      "line": 232
     },
     {
       "id": "STY-043",
@@ -11671,7 +11689,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 263
+      "line": 266
     },
     {
       "id": "STY-044",
@@ -11680,7 +11698,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 264
+      "line": 267
     },
     {
       "id": "STY-071",
@@ -11689,7 +11707,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 265
+      "line": 268
     },
     {
       "id": "STY-073",
@@ -11698,7 +11716,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 266
+      "line": 269
     },
     {
       "id": "TAB-001",
@@ -13854,31 +13872,31 @@
       "id": "STY-N01",
       "statement": "**No per-document and no per-author overrides.** A document that needs a different look uses a different theme (CNT-N08)",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 272
+      "line": 275
     },
     {
       "id": "STY-N02",
       "statement": "**No page geometry.** Size, margins, running heads and columns belong to the publishing layout",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 273
+      "line": 276
     },
     {
       "id": "STY-N03",
       "statement": "**No stylesheet or code supplied by a tenant.** Extension is declarative, from a fixed set of properties. Arbitrary style code would be an injection surface and would make every output format a rendering engine",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 274
+      "line": 277
     },
     {
       "id": "STY-N04",
       "statement": "**Not a design tool.** A theme is configured, not drawn",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 275
+      "line": 278
     },
     {
       "id": "STY-N05",
       "statement": "**No inverting content in dark mode.** The application's chrome may go dark; the document canvas stays the theme's paper and ink, because a theme's colours were chosen for paper",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 276
+      "line": 279
     },
     {
       "id": "TAB-N01",
@@ -14778,35 +14796,35 @@
       "question": "**Are catalogues tenant-wide, or per space?** A consultancy working for two clients may need two house styles that authors must not confuse",
       "settledBy": "Whether early customers serve more than one end client from one tenant. Likely yes in this market",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 282
+      "line": 285
     },
     {
       "id": "STY-Q02",
       "question": "**Does STY-N03 survive a real house style?** Declarative properties cover most of typography and none of the last five per cent somebody's brand guideline insists on",
       "settledBy": "The first house style that cannot be expressed. The answer is probably to widen the declared property set rather than open an escape hatch",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 283
+      "line": 286
     },
     {
       "id": "STY-Q03",
       "question": "**Who supplies typefaces, and who holds the licence?**",
       "settledBy": "**Settled.** Product-supplied faces are open-licence only; a customer's brand face is supplied by the customer under the customer's own licence. See [ADR-0010](../../decisions/0010-open-licence-typefaces-only.md)",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 284
+      "line": 287
     },
     {
       "id": "STY-Q04",
       "question": "**Does a theme need variants - screen against print, light against dark?**",
       "settledBy": "**Settled for the editor.** No: the canvas stays paper when the application goes dark (STY-N05). Whether the HTML reading format needs a screen palette is left to its design. See [themes.md](../../design/themes.md)",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 285
+      "line": 288
     },
     {
       "id": "STY-Q05",
       "question": "**What contrast ratio binds a customer's own brand palette (STY-069)?** A house style whose colours fail 4.5:1 is a real thing, and refusing it outright refuses the customer",
       "settledBy": "Legal and commercial advice with the first brand that fails. The likely answer is that the product's own themes must pass while a tenant's are warned rather than refused, which is a different requirement from the one written today",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 286
+      "line": 289
     },
     {
       "id": "TAB-Q01",
@@ -16901,10 +16919,6 @@
           "howItIsMet": "A typeface whose licence forbids embedding in Word declares a permitted face for Word output, and the publish report names the substitution"
         },
         {
-          "id": "STY-053",
-          "howItIsMet": "The conformance suite below"
-        },
-        {
           "id": "STY-054",
           "howItIsMet": "A typeface artifact carries its ascent and descent; the CSS projection and the Typst template both use them to put a line's extra space above it"
         },
@@ -17554,7 +17568,7 @@
     {
       "id": "CNT-057",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 6392,
+      "line": 6394,
       "kind": "title"
     },
     {
@@ -17590,7 +17604,7 @@
     {
       "id": "CNT-094",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 6169,
+      "line": 6171,
       "kind": "title"
     },
     {
@@ -17650,7 +17664,7 @@
     {
       "id": "CNT-178",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 6284,
+      "line": 6286,
       "kind": "title"
     },
     {
@@ -17668,13 +17682,13 @@
     {
       "id": "STY-070",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5963,
+      "line": 5965,
       "kind": "title"
     },
     {
       "id": "STY-079",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5853,
+      "line": 5855,
       "kind": "title"
     },
     {
@@ -17782,133 +17796,133 @@
     {
       "id": "CNT-046",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2293,
+      "line": 2294,
       "kind": "title"
     },
     {
       "id": "CNT-072",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3251,
+      "line": 3252,
       "kind": "title"
     },
     {
       "id": "CNT-073",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3271,
+      "line": 3272,
       "kind": "title"
     },
     {
       "id": "CNT-074",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3941,
+      "line": 4058,
       "kind": "title"
     },
     {
       "id": "CNT-075",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4098,
+      "line": 4215,
       "kind": "title"
     },
     {
       "id": "CNT-105",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3364,
+      "line": 3365,
       "kind": "title"
     },
     {
       "id": "CNT-150",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4835,
+      "line": 4952,
       "kind": "title"
     },
     {
       "id": "CNT-154",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3364,
+      "line": 3365,
       "kind": "title"
     },
     {
       "id": "CNT-156",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3395,
+      "line": 3396,
       "kind": "title"
     },
     {
       "id": "CNT-158",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3548,
+      "line": 3549,
       "kind": "title"
     },
     {
       "id": "CNT-162",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3531,
+      "line": 3532,
       "kind": "title"
     },
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4396,
+      "line": 4513,
       "kind": "title"
     },
     {
       "id": "IAM-080",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3380,
+      "line": 3381,
       "kind": "title"
     },
     {
       "id": "STR-008",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 519,
+      "line": 520,
       "kind": "title"
     },
     {
       "id": "STR-035",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3716,
+      "line": 3717,
       "kind": "title"
     },
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4600,
+      "line": 4717,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4436,
+      "line": 4553,
       "kind": "title"
     },
     {
       "id": "STR-044",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3082,
+      "line": 3083,
       "kind": "title"
     },
     {
       "id": "STR-045",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3759,
+      "line": 3760,
       "kind": "title"
     },
     {
       "id": "STR-046",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3128,
+      "line": 3129,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 899,
+      "line": 900,
       "kind": "title"
     },
     {
       "id": "STR-065",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 2626,
+      "line": 2627,
       "kind": "title"
     },
     {
@@ -19876,37 +19890,37 @@
     {
       "id": "CNT-082",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 121,
+      "line": 202,
       "kind": "title"
     },
     {
       "id": "CNT-097",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 140,
+      "line": 250,
       "kind": "title"
     },
     {
       "id": "CNT-115",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 188,
+      "line": 353,
       "kind": "title"
     },
     {
       "id": "STY-037",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 196,
+      "line": 361,
       "kind": "title"
     },
     {
       "id": "STY-050",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 121,
+      "line": 202,
       "kind": "title"
     },
     {
       "id": "STY-058",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 66,
+      "line": 92,
       "kind": "title"
     },
     {

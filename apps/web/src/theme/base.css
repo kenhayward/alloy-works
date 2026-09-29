@@ -17,23 +17,6 @@
   min-height: 100vh;
 }
 
-/*
- * The window is the page's scroller, and the header band stands over its top: anything scrolled to -
- * a node of a document chosen or linked to, a field the focus moves to - stops below the band rather
- * than under it (issue #336).
- */
-html {
-  scroll-padding-top: var(--header-height);
-}
-
-/*
- * And the status bar stands over its foot, its height told to the page by the bar itself, one line
- * or wrapped: what is scrolled to stops above it (issue #336).
- */
-html {
-  scroll-padding-bottom: var(--status-height, 0px);
-}
-
 html,
 body {
   margin: 0;
@@ -42,6 +25,24 @@ body {
   font-family: var(--sans);
   font-size: var(--size-body);
   line-height: 1.5;
+}
+
+/*
+ * The page scrolls under the sticky header band, so whatever the browser scrolls into view - a field a
+ * click focuses, a node the outline jumps to - stops below the band, never beneath it (WCAG 2.4.11,
+ * focus not obscured). Found by the browser suite: a component opened in place scrolled its header's
+ * chips under the band, where axe's target-size found them crowded.
+ */
+html {
+  scroll-padding-top: var(--header-height);
+}
+
+/*
+ * And the status bar stands over its foot, its height told to the page by the bar itself, one line
+ * or wrapped: what is scrolled to stops above it too (issue #336).
+ */
+html {
+  scroll-padding-bottom: var(--status-height, 0px);
 }
 
 h1 {

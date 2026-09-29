@@ -12,14 +12,40 @@ import { defaultInputs, resolved } from './theme.fixture.js';
 /** The editor's projection. It translates resolved styles and decides nothing. */
 const css = projectCss(resolved());
 
-/** The declarations of the one rule whose selector list includes `selector`. */
-function ruleFor(text: string, selector: string): string {
-  const rule = text
-    .split('\n')
-    .find((line) => line.split(' { ')[0]!.split(', ').includes(selector));
-  if (!rule) throw new Error(`No rule for ${selector}`);
-  return rule.slice(rule.indexOf(' { ') + 3, -3);
+/** A rule's selector list, split at its own commas and never at one inside `:is(..)` or `:has(..)`. */
+function selectorsOf(line: string): string[] {
+  const list = line.slice(0, line.indexOf(' { '));
+  const selectors: string[] = [];
+  let depth = 0;
+  let start = 0;
+  for (let at = 0; at < list.length; at += 1) {
+    if (list[at] === '(') depth += 1;
+    else if (list[at] === ')') depth -= 1;
+    else if (list[at] === ',' && depth === 0) {
+      selectors.push(list.slice(start, at).trim());
+      start = at + 1;
+    }
+  }
+  return [...selectors, list.slice(start).trim()];
 }
+
+/** Every rule whose selector list includes `selector`, in order, as its declarations. */
+function rulesFor(text: string, selector: string): string[] {
+  return text
+    .split('\n')
+    .filter((line) => line.includes(' { ') && selectorsOf(line).includes(selector))
+    .map((rule) => rule.slice(rule.indexOf(' { ') + 3, -3));
+}
+
+/** The declarations of the first rule whose selector list includes `selector`. */
+function ruleFor(text: string, selector: string): string {
+  const [rule] = rulesFor(text, selector);
+  if (rule === undefined) throw new Error(`No rule for ${selector}`);
+  return rule;
+}
+
+const z = (points: string) => `calc(${points}pt * var(--aw-zoom))`;
+const NONE = z('0');
 
 /**
  * The default theme with a style an author may choose that states every paragraph property at a value
@@ -77,32 +103,41 @@ describe('projectCss', () => {
     // whose half-leading is (16 - (1705 + 615) / 2048 x 12) / 2 = 1.203pt.
     const text = everyProperty();
     const panel = ruleFor(text, '.aw-canvas.aw-canvas [data-style="panel"]');
-    const z = (points: string) => `calc(${points}pt * var(--aw-zoom))`;
     expect(panel.split('; ')).toEqual([
       'font-family: "aw-face-mono"',
       `font-size: ${z('12')}`,
       'font-weight: 700',
       'font-style: italic',
       'color: #1a2b3c',
-      'background-color: #f0f0f0',
-      'background-clip: padding-box',
+      `--aw-before: ${z('5')}`,
+      `--aw-after: ${z('7')}`,
+      `--aw-leading: ${z('4')}`,
+      // Its fill between its spaces: the padding box less the space above and below it.
+      '--aw-fill: #f0f0f0',
+      'background-color: transparent',
+      'background-image: linear-gradient(var(--aw-fill), var(--aw-fill))',
+      'background-repeat: no-repeat',
+      'background-position: 0 var(--aw-before)',
+      'background-size: 100% calc(100% - var(--aw-before) - var(--aw-after))',
       'text-align: justify',
       `text-indent: ${z('9')}`,
-      `margin-block: 0 ${z('-1.203')}`,
       `margin-inline: ${z('18')} ${z('6')}`,
-      'border: 0 solid transparent',
-      `border-block-width: ${z('5')} ${z('7')}`,
-      // Its padding inside its fill, on every side; its half-leading above its first line.
-      `padding-block: ${z('5.203')} ${z('4')}`,
+      'border: 0',
+      `margin-block: 0 ${z('-1.203')}`,
+      // Its space before, its half-leading and its padding inside its fill above its first line; its
+      // padding and its space after below its last.
+      `padding-block: calc(var(--aw-before) + ${z('5.203')}) calc(${z('4')} + var(--aw-after))`,
       `padding-inline: ${z('4')}`,
       `line-height: ${z('16')}`,
     ]);
     // Contextual spacing: two neighbours in Panel lose the space between them, and only that.
     expect(text).toContain(
-      '.aw-canvas.aw-canvas [data-style="panel"] + [data-style="panel"] { border-block-start-width: 0; }',
+      '.aw-canvas.aw-canvas [data-style="panel"] + [data-style="panel"]:not([data-language]) ' +
+        `{ --aw-before: ${NONE}; }`,
     );
     expect(text).toContain(
-      '.aw-canvas.aw-canvas [data-style="panel"]:has(+ [data-style="panel"]) { border-block-end-width: 0; }',
+      '.aw-canvas.aw-canvas [data-style="panel"]:has(+ [data-style="panel"]:not([data-language])) ' +
+        `{ --aw-after: ${NONE}; }`,
     );
 
     // Strong, restated: every character property, the script's size its scale times 1331/2048.
@@ -118,13 +153,62 @@ describe('projectCss', () => {
     ]);
   });
 
+  it('fills a block with no spaces of its own as a colour, which an accessibility checker can read, and one with spaces between them', () => {
+    const inputs = defaultInputs();
+    inputs.catalogues.paragraph.styles.push({
+      id: 'boxed',
+      name: 'Boxed',
+      appliesTo: ['text'],
+      properties: { background: '#eeeeee', padding: 3, spaceBefore: 0, spaceAfter: 0 },
+    });
+    const text = projectCss(resolved(inputs));
+    const boxed = ruleFor(text, '.aw-canvas.aw-canvas [data-style="boxed"]');
+    expect(boxed).toContain('--aw-fill: #eeeeee; background: #eeeeee');
+    expect(boxed).not.toContain('linear-gradient');
+  });
+
+  it("paints a list's first and last items' fills between the list's spaces, a spaceless filled style's too, and never an ancestor's fill in an unfilled one", () => {
+    // Boxed has no spaces of its own, so it fills as a colour; as a list's last item it is given the
+    // list's space after, which the PDF leaves unfilled: its colour stands down there, and the fill is
+    // painted between the spaces instead.
+    const inputs = defaultInputs();
+    inputs.catalogues.paragraph.styles.push({
+      id: 'boxed',
+      name: 'Boxed',
+      appliesTo: ['text', 'listItem'],
+      properties: { background: '#eeeeee', padding: 3, spaceBefore: 0, spaceAfter: 0 },
+    });
+    const text = projectCss(resolved(inputs));
+    const ends = '.aw-canvas.aw-canvas :is(ul, ol) > li:first-child > [data-style]:first-child';
+    const rule = rulesFor(
+      text,
+      '.aw-canvas.aw-canvas :is(ul, ol) > li:last-child > [data-style]:last-child',
+    ).find((each) => each.includes('linear-gradient'));
+    expect(rule?.split('; ')).toEqual([
+      'background-color: transparent',
+      'background-image: linear-gradient(var(--aw-fill), var(--aw-fill))',
+      'background-repeat: no-repeat',
+      'background-position: 0 var(--aw-before)',
+      'background-size: 100% calc(100% - var(--aw-before) - var(--aw-after))',
+    ]);
+    // Its selector outweighs any style's, two classes and an attribute, whichever comes first.
+    expect(ends).toContain(':first-child > [data-style]:first-child');
+    // An unfilled style names no fill of its own, so it never paints a fill it inherits.
+    expect(ruleFor(text, '.aw-canvas.aw-canvas [data-place="text"][data-style="body"]')).toContain(
+      '--aw-fill: transparent; background: transparent',
+    );
+  });
+
   it("STY-050 CNT-082 spaces blocks by adding one's space after to the next's space before, never collapsing them", () => {
-    // A block's spaces are transparent borders, which never collapse into each other as margins do.
-    // The body: no space before, 2.75pt after.
+    // A block's spaces are padding, which never collapses into a neighbour's as margins do, and which a
+    // browser draws at its length - where a border's width is snapped to whole pixels, which the browser
+    // suite found losing up to three quarters of a point at every block. The body: 2.75pt after.
     const body = ruleFor(css, '.aw-canvas.aw-canvas [data-place="text"][data-style="body"]');
-    expect(body).toContain('border: 0 solid transparent');
-    expect(body).toContain('border-block-width: 0 calc(2.75pt * var(--aw-zoom))');
-    expect(css).not.toMatch(/margin-(top|bottom|block-start|block-end):/);
+    expect(body).toContain(`--aw-before: ${NONE}`);
+    expect(body).toContain(`--aw-after: ${z('2.75')}`);
+    expect(body).toContain('padding-block: calc(var(--aw-before) + ');
+    expect(body).toContain(' + var(--aw-after))');
+    expect(css).not.toMatch(/border-block-width/);
   });
 
   it("moves each line's extra space above it, as Word does, by cancelling CSS's split", () => {
@@ -133,8 +217,34 @@ describe('projectCss', () => {
     // 14.35pt. Adding it above and taking it back below as a margin - which can go negative where
     // padding cannot - leaves it all above.
     const body = ruleFor(css, '.aw-canvas.aw-canvas [data-place="text"][data-style="body"]');
-    expect(body).toContain('margin-block: 0 calc(-1.084pt * var(--aw-zoom))');
-    expect(body).toContain('padding-block: calc(1.084pt * var(--aw-zoom)) 0');
+    expect(body).toContain(`margin-block: 0 ${z('-1.084')}`);
+    expect(body).toContain(
+      `padding-block: calc(var(--aw-before) + ${z('1.084')}) calc(${NONE} + var(--aw-after))`,
+    );
+  });
+
+  it("places each block's first baseline from its face's cap height where the renderer knows it, which a browser measures exactly, and its ascent and descent where it cannot trim", () => {
+    // Liberation Serif's cap height is 1341/2048 of its em. The body at 11pt on 14.35pt: its first
+    // baseline its line spacing less its descender below its top, 14.35 - 443/2048 x 11 = 11.971pt, of
+    // which the cap height, 7.203pt, is the trimmed line's; its foot its descender, 2.379pt, below its
+    // last baseline. A browser rounds a face's ascent and descent to whole pixels, and trims to its cap
+    // height as it is (the browser suite, W13.4).
+    const trimmed = projectCss(resolved(), { capHeight: () => 1341 / 2048 });
+    const supports = trimmed
+      .split('\n')
+      .indexOf('@supports (text-box: trim-both cap alphabetic) {');
+    expect(supports).toBeGreaterThan(0);
+    const inside = trimmed.split('\n').slice(supports).join('\n');
+    expect(
+      ruleFor(inside, '.aw-canvas.aw-canvas [data-place="text"][data-style="body"]').split('; '),
+    ).toEqual([
+      'text-box: trim-both cap alphabetic',
+      'margin-block: 0',
+      `padding-block: calc(var(--aw-before) + ${z('4.768')}) calc(${z('2.379')} + var(--aw-after))`,
+    ]);
+    // Only where the face's cap height is known: without it, the ascent and the descent, as before.
+    expect(css).not.toContain('@supports');
+    expect(projectCss(resolved(), { capHeight: () => undefined })).not.toContain('@supports');
   });
 
   it('CNT-097 sets text in the face the theme declares, never a face of the same name on the machine, at the size it declares', () => {
@@ -147,6 +257,8 @@ describe('projectCss', () => {
     const code = ruleFor(css, '.aw-canvas.aw-canvas .aw-mark-inlineCode');
     expect(code).toContain('font-family: "aw-face-mono"');
     expect(code).toContain('font-size: 0.8em');
+    // And preformatted text's lines in its role's face and size, never the browser's own for `code`.
+    expect(ruleFor(css, '.aw-canvas.aw-canvas pre code')).toBe('font: inherit');
   });
 
   it('sets a paragraph whose style will not resolve in the default of the place it stands in, as it is marked', () => {
@@ -185,6 +297,59 @@ describe('projectCss', () => {
     expect(() => ruleFor(css, '.aw-canvas.aw-canvas pre[data-language]::before')).not.toThrow();
   });
 
+  it("sets a list as the template does: its items their place's leading apart and its place's spaces around it, whatever styles its items are in, and its markers in its place's style", () => {
+    // The default list item is the body: 11pt on 14.35pt, 2.75pt after.
+    const list = '.aw-canvas.aw-canvas :is(ul, ol)';
+    expect(ruleFor(css, `${list} > li > [data-style]:first-child`)).toBe(
+      `margin-block-start: calc(${z('3.35')} - var(--aw-leading))`,
+    );
+    expect(ruleFor(css, `${list} > li:first-child > [data-style]:first-child`)).toBe(
+      `--aw-before: ${NONE}`,
+    );
+    expect(ruleFor(css, `${list} > li:not(:first-child) > [data-style]:first-child`)).toBe(
+      `--aw-before: ${NONE}`,
+    );
+    expect(ruleFor(css, `${list} > li:last-child > [data-style]:last-child`)).toBe(
+      `--aw-after: ${z('2.75')}`,
+    );
+    expect(ruleFor(css, `${list} > li:not(:last-child) > [data-style]:last-child`)).toBe(
+      `--aw-after: ${NONE}`,
+    );
+    expect(ruleFor(css, list)).toBe('margin-block: 0');
+    // Its items where the engine sets them: a column of markers as wide as the widest, half an em of
+    // the place's size, then the text - each item a row of the list's grid.
+    expect(rulesFor(css, list)).toContain(
+      'display: grid; grid-template-columns: max-content minmax(0, 1fr); ' +
+        `column-gap: ${z('5.5')}; padding-inline-start: 0; list-style: none`,
+    );
+    expect(ruleFor(css, `${list} > li`)).toContain('grid-template-columns: subgrid');
+    expect(ruleFor(css, '.aw-canvas.aw-canvas ol > li::before')).toBe(
+      'content: counter(list-item, decimal) "."; justify-self: end',
+    );
+    expect(ruleFor(css, '.aw-canvas.aw-canvas ul ul > li::before')).toBe(
+      'content: "\\25E6"; justify-self: start',
+    );
+    expect(rulesFor(css, '.aw-canvas.aw-canvas li')).toEqual([
+      'margin-block: 0',
+      `font-family: "aw-face-serif"; font-size: ${z('11')}; font-weight: 400; font-style: normal; ` +
+        'color: #000000; line-height: 0',
+    ]);
+  });
+
+  it("stands a quotation's attribution inside the quotation's indents, and preformatted text's label above its block, as the template sets them", () => {
+    // The default quotation is inset 11pt each side, and its attribution states no indent of its own.
+    expect(ruleFor(css, '.aw-canvas.aw-canvas blockquote > [data-role="attribution"]')).toBe(
+      `margin-inline: ${z('11')} ${z('11')}`,
+    );
+    // The default label: 1.3pt before, 10.44pt line spacing and 3.4pt after - 15.14pt of room above
+    // its block, where the label stands, out of the block's flow and its fill.
+    const at = '.aw-canvas.aw-canvas pre[data-language][data-role]';
+    expect(ruleFor(css, at)).toBe(`position: relative; margin-block-start: ${z('15.14')}`);
+    expect(ruleFor(css, `${at}::before`)).toBe(
+      `position: absolute; inset-block-start: ${z('-15.14')}; inset-inline: 0 0`,
+    );
+  });
+
   it('CNT-115 scales every length by the canvas zoom, and writes none in any other unit but ems of the text', () => {
     const lengths = css.match(/-?\d+(\.\d+)?(pt|px|em|rem|mm|in)\b/g) ?? [];
     expect(lengths.length).toBeGreaterThan(0);
@@ -216,17 +381,26 @@ describe('projectCss', () => {
       'vertical-align: sub',
     );
   });
+
+  it('opens no line for a mark set in another face or at another size, as the template sets it on its line', () => {
+    // Inline code, in the monospaced face at 0.8: its own line height would have opened its line by a
+    // point and a half under the default theme (the browser suite, W13.4).
+    expect(ruleFor(css, '.aw-canvas.aw-canvas .aw-mark-inlineCode')).toContain('line-height: 0');
+    expect(ruleFor(css, '.aw-canvas.aw-canvas .aw-mark-strong')).not.toContain('line-height');
+  });
 });
 
 describe('projectCss for tables and images (W8.3)', () => {
   /** A table style that states every property at something the default does not. */
-  function ruledAndStriped() {
+  function ruledAndStriped(
+    header: { fill: string; bold: boolean } = { fill: '#dddddd', bold: true },
+  ) {
     const inputs = defaultInputs();
     inputs.catalogues.table.styles.push({
       id: 'striped',
       name: 'Striped',
       appliesTo: ['table'],
-      headerRow: { fill: '#dddddd', bold: true, rule: { width: 1.5, colour: '#333333' } },
+      headerRow: { ...header, rule: { width: 1.5, colour: '#333333' } },
       headerColumn: { fill: '#eeeeee', bold: true, rule: { width: 0.75, colour: '#444444' } },
       banding: { fill: '#f5f5f5' },
       rules: {
@@ -241,23 +415,39 @@ describe('projectCss for tables and images (W8.3)', () => {
     return projectCss(resolved(inputs));
   }
   const at = '.aw-canvas.aw-canvas [data-table-style="striped"]';
-  const z = (points: string) => `calc(${points}pt * var(--aw-zoom))`;
 
-  it("draws a table's rules, its cells' padding and its outer frame from its table style", () => {
+  it("draws a table's rules as the template does, taking no room - half in each cell beside a line, the outer rule's other half outside - its cells' padding whole", () => {
     const text = ruledAndStriped();
+    // The cells' place is the default's: no space before, 3.35pt of leading, 2.75pt after.
     expect(ruleFor(text, `${at} table`)).toBe(
-      `border-collapse: collapse; border: ${z('2')} solid #111111`,
+      'border-collapse: collapse; border: 0; background: transparent; ' +
+        `box-shadow: 0 0 0 ${z('1')} #111111; margin-block: ${z('3.35')} ${z('2.75')}`,
     );
     const cells = ruleFor(text, `${at} td`);
-    expect(cells).toContain(`padding: ${z('4')}`);
-    expect(cells).toContain(`border-block: ${z('0.5')} solid #222222`);
-    expect(cells).toContain('border-inline: none');
+    expect(cells).toContain(`padding: ${z('4')}; border: 0`);
+    expect(cells).toContain(`--aw-rule-top: ${z('0.25')}; --aw-rule-top-colour: #222222`);
+    expect(cells).toContain(`--aw-rule-start: ${NONE}; --aw-rule-start-colour: transparent`);
+    expect(cells).toContain(
+      'box-shadow: inset 0 var(--aw-rule-top) 0 0 var(--aw-rule-top-colour), ' +
+        'inset 0 calc(-1 * var(--aw-rule-bottom)) 0 0 var(--aw-rule-bottom-colour), ' +
+        'inset var(--aw-rule-left) 0 0 0 var(--aw-rule-left-colour), ' +
+        'inset calc(-1 * var(--aw-rule-right)) 0 0 0 var(--aw-rule-right-colour)',
+    );
+    // The application's own look for a table stands down.
+    expect(cells).toContain('text-transform: none; letter-spacing: normal');
     // The frame is the outer rule on every side, over the inside rules at the table's edges.
     expect(ruleFor(text, `${at} tr:first-child > *`)).toBe(
-      `border-block-start: ${z('2')} solid #111111`,
+      `--aw-rule-top: ${z('1')}; --aw-rule-top-colour: #111111`,
     );
     expect(ruleFor(text, `${at} tr > :last-child`)).toBe(
-      `border-inline-end: ${z('2')} solid #111111`,
+      `--aw-rule-end: ${z('1')}; --aw-rule-end-colour: #111111`,
+    );
+    // A cell's first block takes no space or leading above it, and its last no space after.
+    expect(ruleFor(text, `${at} :is(td, th) > [data-style]:first-child`)).toBe(
+      'margin-block-start: calc(-1 * (var(--aw-before) + var(--aw-leading)))',
+    );
+    expect(ruleFor(text, `${at} :is(td, th) > [data-style]:last-child`)).toBe(
+      `--aw-after: ${NONE}`,
     );
   });
 
@@ -267,21 +457,38 @@ describe('projectCss for tables and images (W8.3)', () => {
     expect(ruleFor(text, `${at} [scope="row"]`)).toBe('background-color: #eeeeee');
     // Bold over whatever the cell's paragraph style says, as the template sets it on the text.
     expect(ruleFor(text, `${at} [scope="col"] [data-style]`)).toBe('font-weight: 700');
+    // Each cell beside a header's line draws its half of the header's rule, over the table's own.
     expect(ruleFor(text, `${at} tr:has(> [scope="col"]):not(:has(+ tr > [scope="col"])) > *`)).toBe(
-      `border-block-end: ${z('1.5')} solid #333333`,
+      `--aw-rule-bottom: ${z('0.75')}; --aw-rule-bottom-colour: #333333`,
+    );
+    expect(ruleFor(text, `${at} tr:has(> [scope="col"]) + tr:not(:has(> [scope="col"])) > *`)).toBe(
+      `--aw-rule-top: ${z('0.75')}; --aw-rule-top-colour: #333333`,
     );
     expect(ruleFor(text, `${at} [scope="row"]:not(:has(+ [scope="row"]))`)).toBe(
-      `border-inline-end: ${z('0.75')} solid #444444`,
-    );
-    // And from the other side too: two cells either side of a line both state it, so the browser's
-    // choice between two collapsed borders - the wider wins - never takes the body's rule over the
-    // header's, as each cell drawing its own lines in the template never does.
-    expect(ruleFor(text, `${at} tr:has(> [scope="col"]) + tr:not(:has(> [scope="col"])) > *`)).toBe(
-      `border-block-start: ${z('1.5')} solid #333333`,
+      `--aw-rule-end: ${z('0.375')}; --aw-rule-end-colour: #444444`,
     );
     expect(ruleFor(text, `${at} [scope="row"]:not(:has(+ [scope="row"])) + *`)).toBe(
-      `border-inline-start: ${z('0.75')} solid #444444`,
+      `--aw-rule-start: ${z('0.375')}; --aw-rule-start-colour: #444444`,
     );
+  });
+
+  it("carries the header column's rule through the header rows, and gives the corner the header column's fill and weight where the header row has none, as the template does", () => {
+    const text = ruledAndStriped({ fill: 'none', bold: false });
+    // The corner under one header column: the header row's first cell, in a table whose body rows
+    // have one header cell each.
+    const corner =
+      `${at} table:has(tr > [scope="row"]:nth-child(1)):not(:has(tr > [scope="row"]:nth-child(2))) ` +
+      'tr > [scope="col"]';
+    expect(ruleFor(text, `${corner}:nth-child(-n + 1)`)).toBe('background-color: #eeeeee');
+    expect(ruleFor(text, `${corner}:nth-child(-n + 1) [data-style]`)).toBe('font-weight: 700');
+    expect(ruleFor(text, `${corner}:nth-child(1)`)).toBe(
+      `--aw-rule-end: ${z('0.375')}; --aw-rule-end-colour: #444444`,
+    );
+    expect(ruleFor(text, `${corner}:nth-child(2)`)).toBe(
+      `--aw-rule-start: ${z('0.375')}; --aw-rule-start-colour: #444444`,
+    );
+    // Where the header row has its own, the corner is the header row's.
+    expect(ruledAndStriped()).not.toContain(`${corner}:nth-child(-n + 1) {`);
   });
 
   it('bands every other body row from the first, and leaves a filled header column its own fill', () => {
@@ -296,8 +503,9 @@ describe('projectCss for tables and images (W8.3)', () => {
   it('leaves the default table as template 12 set it: every rule black at 1pt, cells 5pt, no fills', () => {
     const table = '.aw-canvas.aw-canvas [data-table-style="table"]';
     expect(ruleFor(css, `${table} td`)).toContain(
-      'border-block: calc(1pt * var(--aw-zoom)) solid #000000',
+      `--aw-rule-top: ${z('0.5')}; --aw-rule-top-colour: #000000`,
     );
+    expect(ruleFor(css, `${table} td`)).toContain(`padding: ${z('5')}`);
     expect(ruleFor(css, `${table} [scope="col"]`)).toBe('background-color: transparent');
     expect(css).not.toContain(`${table} tr:nth-child`);
     expect(css).not.toContain(`${table} [scope="col"] [data-style]`);
@@ -326,7 +534,7 @@ describe('projectCss for tables and images (W8.3)', () => {
     expect(ruleFor(text, `${footed} > .aw-table-caption`)).toBe('order: 1');
     expect(ruleFor(text, `${footed} > .aw-table-note`)).toBe('order: 2');
     const headed = '.aw-canvas.aw-canvas figure[data-image-style="headed"]';
-    expect(ruleFor(text, headed)).toBe('display: flex; flex-direction: column');
+    expect(rulesFor(text, headed)).toContain('display: flex; flex-direction: column');
     expect(ruleFor(text, `${headed} > .aw-figure-body`)).toBe('order: -1');
     // A table's caption is the first thing in its markup and a figure's the last, which is where the
     // default's styles place them: nothing moves either.
@@ -336,26 +544,36 @@ describe('projectCss for tables and images (W8.3)', () => {
       '.aw-canvas.aw-canvas figure[data-image-style="figure"]',
       '.aw-canvas.aw-canvas figure[data-image-style="half-width"]',
     ]) {
-      const ruled = text
-        .split('\n')
-        .some((line) => line.split(' { ')[0]!.split(', ').includes(selector));
-      expect(ruled, selector).toBe(false);
+      expect(rulesFor(text, selector).join('; '), selector).not.toMatch(/display: flex|order/);
     }
   });
 
-  it("aligns a figure within its band by its image style, and leaves an image's size to its style's resolution", () => {
+  it('stands a figure and a table apart from their neighbours as the template does, in blocks of their own, so their spaces add rather than collapse', () => {
+    // A figure whose caption is below it stands its caption's space before and leading above its
+    // image: none and 3.35pt under the default.
+    expect(ruleFor(css, '.aw-canvas.aw-canvas figure[data-image-style="figure"]')).toBe(
+      `margin: 0; padding: ${z('3.35')} 0 0; display: flow-root`,
+    );
+    expect(ruleFor(css, '.aw-canvas.aw-canvas [data-table-style="table"]')).toBe(
+      'margin: 0; display: flow-root',
+    );
+  });
+
+  it("aligns a figure within its band by its image style, stands an image in a line on its baseline, and leaves an image's size to its style's resolution", () => {
     expect(ruleFor(css, '.aw-canvas.aw-canvas [data-image-style="figure"] .aw-figure-image')).toBe(
       'text-align: center',
     );
+    // The editor stylesheet makes the image a block, which only its margins move.
+    expect(
+      ruleFor(css, '.aw-canvas.aw-canvas [data-image-style="figure"] .aw-figure-image img'),
+    ).toBe('margin-inline: auto');
+    expect(ruleFor(css, '.aw-canvas.aw-canvas img.aw-inline-image')).toBe(
+      'vertical-align: baseline',
+    );
     // Its size is `styledSize`'s, set on the image by the editor: no fixed size of the stylesheet's
     // stands in its way.
-    expect(
-      ruleFor(
-        css,
-        '.aw-canvas.aw-canvas [data-image-style] img, .aw-canvas.aw-canvas img[data-image-style]'.split(
-          ', ',
-        )[0]!,
-      ),
-    ).toBe('max-height: none; height: auto');
+    expect(ruleFor(css, '.aw-canvas.aw-canvas [data-image-style] img')).toBe(
+      'max-height: none; height: auto',
+    );
   });
 });

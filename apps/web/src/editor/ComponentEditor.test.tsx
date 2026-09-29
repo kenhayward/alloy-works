@@ -5719,16 +5719,16 @@ describe('the surface set in the theme\'s type, at the layout\'s measure (themes
 
   it("CNT-082 separates the surface's blocks by the theme's spacing, a paragraph in a quotation by the quotation's", async () => {
     const { paragraph } = await openInTheme();
-    // The body: nothing before, 2.75pt after, added to the next block's space before.
-    expect(
-      getComputedStyle(paragraph('Unbox the printer.')).getPropertyValue('border-block-width'),
-    ).toBe('0 calc(2.75pt * var(--aw-zoom))');
+    // The body: nothing before, 2.75pt after, added to the next block's space before - each a length
+    // the stylesheet names once, which jsdom gives back as written, without its spaces.
+    const body = getComputedStyle(paragraph('Unbox the printer.'));
+    expect(body.getPropertyValue('--aw-before').trim()).toBe('calc(0pt*var(--aw-zoom))');
+    expect(body.getPropertyValue('--aw-after').trim()).toBe('calc(2.75pt*var(--aw-zoom))');
     // A stored body in a quotation is the quotation's default: 16.5pt before, 12.65pt after, and set
     // in from both sides by 11pt.
     const quoted = getComputedStyle(paragraph('Keep the box.'));
-    expect(quoted.getPropertyValue('border-block-width')).toBe(
-      'calc(16.5pt * var(--aw-zoom)) calc(12.65pt * var(--aw-zoom))',
-    );
+    expect(quoted.getPropertyValue('--aw-before').trim()).toBe('calc(16.5pt*var(--aw-zoom))');
+    expect(quoted.getPropertyValue('--aw-after').trim()).toBe('calc(12.65pt*var(--aw-zoom))');
     expect(quoted.getPropertyValue('margin-inline')).toBe(
       'calc(11pt * var(--aw-zoom)) calc(11pt * var(--aw-zoom))',
     );
@@ -5843,11 +5843,13 @@ describe('the surface set in the theme\'s type, at the layout\'s measure (themes
     await waitFor(() => expect(figure().style.width).toBe('calc(451.28pt * var(--aw-zoom))'));
     // The image in a line: 1.2 ems of the body's 11pt high, and wide in proportion: 19.8pt.
     await waitFor(() => expect(inline().style.width).toBe('calc(19.8pt * var(--aw-zoom))'));
-    // And the table in its table style: its cells ruled at 1pt in black, as the default's are.
-    const cell = view!.dom.querySelector('figure[data-table-style="table"] th') as HTMLElement;
-    expect(getComputedStyle(cell).getPropertyValue('border-block')).toBe(
-      'calc(1pt * var(--aw-zoom)) solid #000000',
+    // And the table in its table style: its cells ruled at 1pt in black, as the default's are, half of
+    // each rule drawn by each cell beside its line.
+    const cell = getComputedStyle(
+      view!.dom.querySelector('figure[data-table-style="table"] th') as HTMLElement,
     );
+    expect(cell.getPropertyValue('--aw-rule-top').trim()).toBe('calc(0.5pt*var(--aw-zoom))');
+    expect(cell.getPropertyValue('--aw-rule-top-colour').trim()).toBe('#000000');
   });
 
   it("STY-079 stands a table's caption and a figure's on the side their styles place them - a table's below its cells and before its note, a figure's above its image - and leaves the default's where the markup has them", async () => {

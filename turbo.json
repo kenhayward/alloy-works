@@ -67,7 +67,15 @@
       "dependsOn": ["^build"],
       "outputs": [],
       "cache": false,
-      "passThroughEnv": ["ALLOY_BROWSER_SERVICE", "ALLOY_BROWSER_API", "ALLOY_BROWSER_IDP"]
+      "passThroughEnv": [
+        "ALLOY_BROWSER_SERVICE",
+        "ALLOY_BROWSER_API",
+        "ALLOY_BROWSER_IDP",
+        "ALLOY_BROWSER_DATABASE",
+        "ALLOY_BROWSER_STORE_AT",
+        "ALLOY_BROWSER_STYLE_SEEDS",
+        "ALLOY_BROWSER_STYLE_DUMP"
+      ]
     }
   }
 }
