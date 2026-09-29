@@ -108,7 +108,7 @@ escape hatch for "no test reaches this" must never be as cheap as the thing it i
 
 Two attestations are due in every release that claims them: the WCAG 2.2 AA audit of the editor
 (CNT-177, with CNT-078 `inherited` from it and from CNT-176, the suite) and the Matterhorn review of the publishing regression
-corpus (PUB-104). [The audit guide](../../guides/auditing-a-release.md) is the procedure for each,
+corpus (PUB-105). [The audit guide](../../guides/auditing-a-release.md) is the procedure for each,
 where its record is committed, and the rows that cite it.
 
 ## Out of baseline is not the same as excluded

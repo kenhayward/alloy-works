@@ -137,7 +137,8 @@ is not the bar and never becomes it.
 | **PUB-030** | PDF output must be tagged and must meet PDF/UA                                                                                                                                                                                                                                                                         | T1      | Superseded by PUB-090 |
 | **PUB-090** | PDF output must be tagged and must conform to PDF/UA-1: every publication must pass veraPDF's PDF/UA-1 validation profile, and the Matterhorn Protocol checkpoints only a person can judge must be reviewed, and passed, on the publishing regression corpus whenever the engine, the template or the pipeline changes | T1      | Superseded by PUB-103 |
 | **PUB-103** | PDF output must be tagged and must pass veraPDF's PDF/UA-1 validation profile on every publication; a heading deeper than six levels must be refused by name, since the engine cannot tag it as a heading under PDF/UA-1                                                                                               | T1      | Specified             |
-| **PUB-104** | The Matterhorn Protocol checkpoints only a person can judge must be reviewed, and passed, on the publishing regression corpus whenever the engine, the template or the pipeline changes, and the review kept with the release                                                                                          | T1      | Specified             |
+| **PUB-104** | The Matterhorn Protocol checkpoints only a person can judge must be reviewed, and passed, on the publishing regression corpus whenever the engine, the template or the pipeline changes, and the review kept with the release                                                                                          | T1      | Superseded by PUB-105 |
+| **PUB-105** | Before each release, the Matterhorn Protocol checkpoints only a person can judge must be reviewed, and passed, on the publishing regression corpus, and the review kept with the release                                                                                                                               | T1      | Specified             |
 | **PUB-031** | Reading order must follow the document's own order, not the order things happen to be laid out in                                                                                                                                                                                                                      | T1      | Specified             |
 | **PUB-032** | Table header cells must be associated with the cells they describe                                                                                                                                                                                                                                                     | T1      | Specified             |
 | **PUB-033** | Publishing must fail where a figure has no alternative text (**CNT-022**)                                                                                                                                                                                                                                              | T1      | Specified             |
@@ -158,6 +159,9 @@ machine-checkable rules of PDF/UA-1 - the only part the engine writes - on every
 Matterhorn Protocol's remaining checkpoints need a person, so they are reviewed on the regression corpus
 (PUB-087) whenever what produces a PDF changes, rather than promised of every publication and checked
 on none.
+**Since 2026-09-29 that review is made before each release** (PUB-105, superseding PUB-104): a
+change to what produces a PDF, merged between two releases, is reviewed by a person with the release
+that ships it, while veraPDF still checks every publication.
 
 ## 8. Generated matter
 
@@ -514,3 +518,18 @@ against what the replacements say; no row was added, superseded or withdrawn her
 | Counts       | Before                      | After                       |
 | ------------ | --------------------------- | --------------------------- |
 | Requirements | 104, of which 13 superseded | 104, of which 13 superseded |
+
+### Ken's answer on when the Matterhorn review is made, 2026-09-29
+
+Not a review. PUB-104 asked for the Matterhorn review whenever the engine, the template or the pipeline
+changes; the audit guide makes it before each release, as CNT-177's audit is made, so publishing.md
+left PUB-104 unclaimed and named the gap. Ken decided the review belongs to each release (issue #344).
+
+| What was found                                                                                                                                                              | Change                                                                                                                                              |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A review a person makes on every change to the engine, the template or the pipeline would put a person on most publishing pull requests, and nothing but a release makes it | **PUB-104 superseded by PUB-105**: the same review, made before each release and kept with it, verified by attestation as CNT-177 is                |
+| A change merged between two releases waits for the next release's review                                                                                                    | Accepted, not changed: veraPDF still checks every publication (PUB-091, PUB-103), and the regression corpus is compiled and checked on every change |
+
+| Counts       | Before                      | After                       |
+| ------------ | --------------------------- | --------------------------- |
+| Requirements | 104, of which 13 superseded | 105, of which 14 superseded |

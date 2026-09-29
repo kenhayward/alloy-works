@@ -2,7 +2,7 @@
 
 > The two checks a person makes before a release, which no test can make for them: the editor
 > audited against WCAG 2.2 AA (CNT-177), and the Matterhorn Protocol checkpoints only a person can
-> judge reviewed on the publishing regression corpus (PUB-104). What to run, what to look at, what to
+> judge reviewed on the publishing regression corpus (PUB-105). What to run, what to look at, what to
 > write down, and the rows that put the release's name to it.
 
 A test demonstrates most of what a release promises. Two things it cannot: whether the editor is
@@ -119,7 +119,7 @@ they should have met, as any bug is (CLAUDE.md, "Branches, issues and pull reque
 against its criterion with the issue's number. Where axe can see it, the fix adds nothing to the
 allow-list - the suite fails until it is fixed.
 
-## The Matterhorn review (PUB-104)
+## The Matterhorn review (PUB-105)
 
 **What it is.** The Matterhorn Protocol, published by the PDF Association, describes how a PDF can
 fail PDF/UA-1, checkpoint by checkpoint, and marks each failure condition as one a machine can test or
@@ -129,11 +129,10 @@ that exercise everything the product publishes, grown by a case for each publish
 Take the checkpoints and their failure conditions from the protocol itself, and say in the record
 which version of it you used; this guide does not restate them, and names none by number.
 
-PUB-104 asks for this review whenever the engine, the template or the publishing pipeline changes.
-This guide makes it before each release, so a change merged between two releases is reviewed with
-the next release, not when it lands; publishing.md names that gap, and PUB-104 is not claimed by any
-design until it is settled. A release that changed any of the three should say in the record which
-changes it reviewed.
+PUB-105 asks for this review before each release, so a change to the engine, the template or the
+publishing pipeline merged between two releases is reviewed with the release that ships it, not when
+it lands. A release that changed any of the three should say in the record which changes it
+reviewed.
 
 **Get the PDFs.** The corpus keeps every PDF it compiles where `ALLOY_CORPUS_PDFS` names a directory,
 each named by the case that made it:
@@ -268,7 +267,7 @@ for three) - and the cases each was judged on.
 ## The rows
 
 Then, in the release's baseline (`docs/specification/baselines/<version>.md`, which a person writes -
-[its README](../specification/baselines/README.md)), include CNT-176, CNT-177, CNT-078 and PUB-104, and
+[its README](../specification/baselines/README.md)), include CNT-176, CNT-177, CNT-078 and PUB-105, and
 say how the three that no test cites are verified:
 
 ```markdown
@@ -277,7 +276,7 @@ say how the three that no test cites are verified:
 | ID          | Kind        | By                                                            |
 | ----------- | ----------- | ------------------------------------------------------------- |
 | **CNT-177** | attestation | <your name>, YYYY-MM-DD, docs/audits/<version>/wcag.md        |
-| **PUB-104** | attestation | <their name>, YYYY-MM-DD, docs/audits/<version>/matterhorn.md |
+| **PUB-105** | attestation | <their name>, YYYY-MM-DD, docs/audits/<version>/matterhorn.md |
 | **CNT-078** | inherited   | CNT-177, CNT-176                                              |
 ```
 
@@ -289,7 +288,7 @@ whose suite passed and whose audit a person made.
 
 **Where the audit found a failure**, the record says so and the release does not attest: CNT-177 and
 CNT-078 go in the baseline's `## Excluded` table, each with a reason naming the issues, rather than in
-`## Included`. The same for PUB-104. A release may ship without claiming conformance; it may not claim
+`## Included`. The same for PUB-105. A release may ship without claiming conformance; it may not claim
 it over a failure somebody wrote down.
 
 Run `pnpm trace gate` last. It must pass.
