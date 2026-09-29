@@ -8,11 +8,17 @@ import type { Page } from 'playwright-core';
  *   the listing to be called by its title - and the paragraph of `node`'s text holding `words` shown
  *   in the first screen.
  * - `number`: the tree item for `node` described by `number`.
+ * - `label`: the tree item for `node` named `label` - a title, and what else its name says of it.
+ * - `added`: a tree item named `label`, the node an insert made, whose identifier is not known before.
+ * - `gone`: no tree item for `node`.
  * - `inView`: `node`'s heading in the text shown on the screen.
  */
 export type Until =
   | { readonly kind: 'open'; readonly nodes: number; readonly node: string; readonly words: string }
   | { readonly kind: 'number'; readonly node: string; readonly number: string }
+  | { readonly kind: 'label'; readonly node: string; readonly label: string }
+  | { readonly kind: 'added'; readonly label: string }
+  | { readonly kind: 'gone'; readonly node: string }
   | { readonly kind: 'inView'; readonly node: string };
 
 /** When the act began, the condition first held, and the frame showing it was painted, in the page's clock. */
@@ -51,8 +57,6 @@ export function instrument(): void {
   performance.setResourceTimingBufferSize(100_000);
   const labelOf = (item: Element) =>
     document.getElementById(item.getAttribute('aria-labelledby') ?? '')?.textContent ?? '';
-  // On the screen and not under anything: the element, or something inside it, is what the page has
-  // at a point in its first line.
   // What keeps it from being shown, or null where it is: the element, or something inside it, is what
   // the page has at a point in its first line - or, for a passage of text, in any of its lines.
   const unseen = (
@@ -101,6 +105,21 @@ export function instrument(): void {
         const number = described ? document.getElementById(described)?.textContent : undefined;
         return number === until.number ? null : `the node is numbered ${number}`;
       }
+      case 'label': {
+        const item = document.querySelector(`[role="treeitem"][data-node="${until.node}"]`);
+        const label = item ? labelOf(item) : undefined;
+        return label === until.label ? null : `the node is named ${label}`;
+      }
+      case 'added': {
+        const items = [...document.querySelectorAll('[role="tree"] [role="treeitem"]')];
+        return items.some((item) => labelOf(item) === until.label)
+          ? null
+          : `no node is named ${until.label}`;
+      }
+      case 'gone':
+        return document.querySelector(`[role="treeitem"][data-node="${until.node}"]`) === null
+          ? null
+          : 'the node is still in the tree';
       case 'inView': {
         const within = text()?.querySelector(`[data-node="${until.node}"]`);
         return unseen(
@@ -214,6 +233,10 @@ export async function measure(
   }: { readonly startOn?: 'input' | 'now'; readonly within?: number } = {},
 ): Promise<Measured> {
   type Armed = { budget: { arm(until: Until, startOn: 'input' | 'now'): void } };
+  // A result already on the screen would end the sample at the act's first frame, timing nothing.
+  if (await holdsNow(page, until)) {
+    throw new Error(`The act's result (${until.kind}) is on the screen before the act`);
+  }
   if (startOn === 'input') {
     await page.evaluate((condition) => {
       (window as unknown as Armed).budget.arm(condition, 'input');

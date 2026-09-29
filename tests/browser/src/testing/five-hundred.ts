@@ -1,5 +1,13 @@
 import type { paths } from '@alloy-works/api-client';
-import { edit, nodesOf, readDocument, words, type Client, type DocumentView } from './api.js';
+import {
+  edit,
+  nodesOf,
+  readDocument,
+  titleOf,
+  words,
+  type Client,
+  type DocumentView,
+} from './api.js';
 import { generalSpace, makeComponent } from './component.js';
 import { blockEquation } from './every-block.js';
 
@@ -151,14 +159,18 @@ function readBack(document: DocumentView): FiveHundred | null {
   let sections = 0;
   let references = 0;
   const wanted = [...FIVE_HUNDRED.referencesPerSection].sort().join();
+  // A section as the fixture makes it: titled so, starting on no new page. A title or a Starts on a
+  // failed run left changed is a document of another shape.
+  const made = (node: (typeof chapters)[number], title: RegExp) =>
+    node.type === 'section' && node.pageBreak === 'none' && title.test(titleOf(node));
   for (const chapter of chapters) {
-    if (chapter.type !== 'section') return null;
+    if (!made(chapter, /^Chapter \d+$/)) return null;
     if (chapter.children.length !== FIVE_HUNDRED.sectionsPerChapter) return null;
     sections += 1;
     order.push({ id: chapter.id, type: 'section' });
     const counts: number[] = [];
     for (const section of chapter.children) {
-      if (section.type !== 'section') return null;
+      if (!made(section, /^Topic \d+\.\d+$/)) return null;
       sections += 1;
       order.push({ id: section.id, type: 'section' });
       counts.push(section.children.length);

@@ -67,12 +67,13 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
+    // 1476, from 1474 (2026-09-29): W13.3 - STR-072 supersedes STR-039 (issue #134) and CNT-179 supersedes CNT-076 (issue #339), the navigation budgets with numbers.
     // 1474, from 1472 (2026-09-28): W13.4 - STY-080 and STY-081 supersede STY-053, the editor and Word each measured against the PDF (issue #328).
     // 1472, from 1471 (2026-09-28): W14.4 - STR-071 supersedes STR-070, a figure or a table explicitly unnumbered (issue #129).
     // 1471, from 1470 (2026-09-28): W14.7's final review - CNT-178 supersedes CNT-148, because macOS chooses its spelling checker's languages itself.
     // 1470, from 1458 (2026-09-28): the T1 audit's last decisions and rewordings: CNT-176 and CNT-177, PUB-098 to PUB-104, IAM-080 and IAM-081 supersede the rows they split, and STY-079 is new (issue #306).
     // 1458, from 1449 (2026-09-26): the rewordings Ken agreed after the T1 audit (K7, and W1's three): CNT-171 to CNT-175, STR-070, MET-042, STY-078 and API-061 supersede the rows they reword.
-    expect(model.requirements).toHaveLength(1474);
+    expect(model.requirements).toHaveLength(1476);
     expect(model.nonRequirements).toHaveLength(117);
     expect(model.questions).toHaveLength(135);
     // 502, from 503 (2026-09-28): W13.4 after W13.2 - themes.md does not claim STY-080 (issues #331, #333 named beside its table).

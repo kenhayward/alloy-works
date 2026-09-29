@@ -282,6 +282,37 @@ Only these could change the plan; everything else is built as written.
    with the stack and Chromium named.
 6. Tests: STR-072 and CNT-179, each on its measuring test.
 
+**W13.3, as built** (PR #TBD). What question 2 found, and what departs from the above:
+
+- **Question 2 stopped the slice, as B-K said it would.** Measured first on the reference machine,
+  the open met both numbers - its interface's share 243 ms at p95, the whole 343 ms - and a move met
+  STR-072's; but no jump ever landed. The outline pane had no scroll of its own, so keeping the node
+  in view in the tree scrolled the window, which moved the text, which moved the node in view, until
+  the page settled near the top: of 21 nodes chosen, none stayed on the screen, and the text could
+  not be scrolled past a screen by hand at any size. Filed as issue #336 and fixed by PR #337 before
+  the rows landed. Ken's answer, 2026-09-29: land both rows at the numbers proposed if the view meets
+  them; take the next item test-first to give the open headroom; and measure every act, not a move.
+- **The open's share was mostly the page working out cross-reference targets.** `referenceContexts`
+  called `documentTargets` once per occurrence as the text was drawn, each walking the whole outline:
+  about 65 ms of a 300 ms open, profiled. It now computes an occurrence's targets when a reference in
+  its text first asks, and keeps them (`apps/web/src/structure/contexts.ts`), test first.
+- **Every act, not only a move.** STR-072 says "each structural act"; the row names them, and the test
+  measures each by the keyboard as a person makes it, paired with its inverse so the fixture ends
+  every cycle as it began: an insert and its removal, a retitle and back, **Starts on** a new page and
+  back, a move down and up, a demotion and its promotion. A retitle, **Starts on** and a move are
+  measured both ways, so forty samples each.
+- **The fixture is found by its shape as well as its title**: ten chapters titled `Chapter n` of nine
+  sections titled `Topic n.m`, none starting on a new page, each holding only references, four
+  hundred components and no two alike. A failed run that left an act undone leaves a document of
+  another shape, and the next run makes a new one (about fifteen seconds).
+- **Each result is the state's own content**, asked for by the page in every frame after the act:
+  the open ends when the tree holds five hundred named items and the first component's paragraph is
+  on the screen, not under the header; an act when the tree names or numbers the node as the act
+  leaves it; a jump when the node's heading is on the screen, and the jump counts only if it is still
+  there after the page has settled. A result already on the screen before its act fails the sample.
+- **The interface's share subtracts the union of the requests' times**, not their sum: an open waits
+  on several requests at once, and summing them would count the same milliseconds more than once.
+
 ## W13.4: Measured style
 
 1. The rows, through the requirement form: STY-080 and STY-081 landed, STY-053 marked

@@ -722,6 +722,43 @@ the seeds.
   theme's one filled style, preformatted text, has spaces, so its text is among what axe hands to a
   person.
 
+**The navigation budgets** (`budgets.test.ts`, W13.3) time the document view on a document of five
+hundred nodes: STR-072, the interface's share of opening it and of each act the outline offers, 250 ms
+at p95 and no sample above 500; and CNT-179, the whole time to open it, 1 second at p95 and none above
+2, and to jump to any node, 250 ms and none above 500.
+
+- **The fixture** is STR-063's reference shape, made through the API (`src/testing/five-hundred.ts`):
+  ten chapters of nine sections, a hundred sections in all, holding four hundred references to four
+  hundred components - forty to a chapter - each a paragraph of prose and a list of three items, and
+  every tenth a table and a numbered equation as well. It is made once per stack and found after that
+  by its title, which carries the shape's version, and by its shape, read back from the service: a
+  document a failed run left changed is passed over and a new one made, which takes about fifteen
+  seconds.
+- **The page times each act itself** (`src/testing/timing.ts`), from an init script, never by the
+  test's polling: from the act - the key's or the click's own event time, or the moment the page is
+  told to go to the document - to the frame after the result is first in it, painted. The result is
+  the state's own content, asked for in every frame: the tree's five hundred items all named and the
+  first component's paragraph on the screen, not under the header, for an open; the node named or
+  numbered as the act leaves it, or gone, for an act; the node's heading on the screen for a jump,
+  which counts only if it is still there once the page has settled. A result on the screen before its
+  act fails the sample, since it would time nothing.
+- **The interface's share** is the whole time less the time any request the act waited on was in
+  flight - begun after the act and answered before the result was painted, from its `requestStart` to
+  its `responseEnd` by Resource Timing - overlapping requests counted once. The whole time and the
+  service's are recorded beside it.
+- **Each is one warm-up, then twenty samples**, the nearest-rank p95 being the second slowest; an open
+  is made from the documents list, as a link followed there makes it; every act is made by the keyboard
+  and paired with its inverse, so the fixture ends each cycle as it began, and a retitle, **Starts on**
+  and a move are measured both ways; the jumps are to nodes drawn from a generator seeded 179, each
+  chosen in the outline by a pointer. The warm-up is held to the maximum.
+- **They bind where `CI` is not `true`, and record only on CI** (B-P), as STR-063's and PUB-102's do:
+  every sample, the p50, p95 and maximum, and the configuration - CPU, memory, operating system, Node,
+  Chromium as the browser reports itself, the stack's version and the fixture's shape - are written into
+  the test's `meta` and printed. The reference configuration is [the one above](#the-reference-configuration),
+  with the compose stack in Docker Desktop and the pinned Chromium beside it. To measure them alone:
+  `pnpm --filter @alloy-works/browser exec vitest run src/budgets.test.ts`, with the stack's variables
+  set as above, on a machine running nothing else.
+
 **What it cannot see.** Headless Chromium has no browser interface, so `Alt+Left` is never Back there
 whatever the page does: the test shows the tree prevented the key's default, which is what keeps it
 from a browser that has one, and that the address and the history did not move - the second half

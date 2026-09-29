@@ -3,6 +3,25 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.125.0 - 2026-09-29 (PR #TBD)
+
+### Added
+
+- **How fast a large document opens and responds is now measured in a real browser.** The browser
+  tests make a document of five hundred parts placing four hundred components, open it twenty times,
+  make every change the outline offers twenty times - adding, removing, renaming, moving, promoting,
+  demoting a section and setting where it starts - and go to twenty parts chosen at random from the
+  outline, timing each from the key or click to the result on the screen. Two requirements now give
+  those times numbers: the page's own share of opening the document and of each change, a quarter of
+  a second at most for nineteen in twenty and never more than half a second; and the whole wait to
+  open it, a second (never two), and to go to any part, a quarter of a second (never half).
+
+### Changed
+
+- **A large document opens faster.** Its text no longer works out, for every component in it, the
+  list of things a cross-reference could point to before anything is shown; it works that out for a
+  component only when its text holds a reference.
+
 ## 0.124.1 - 2026-09-29 (PR #337)
 
 ### Fixed
