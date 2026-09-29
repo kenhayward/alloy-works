@@ -1,4 +1,4 @@
-import type { Locator, Page } from 'playwright-core';
+import type { Locator, Page, Response } from 'playwright-core';
 import { describe, expect, it } from 'vitest';
 import {
   api,
@@ -203,6 +203,112 @@ async function shownInPane(tree: Locator, node: string): Promise<boolean> {
   }, node);
 }
 
+/** Whether a response is the texts' or the theme's, or a face's file. */
+const TEXTS = (response: Response) => response.url().endsWith('/texts');
+const THEME = (response: Response) => response.url().endsWith('/presentation');
+const FACE = /\.(ttf|otf)(\?.*)?$/;
+
+/**
+ * Holds every request `matching` until `after` has answered and a moment more, so what it brings
+ * changes the page after the link has gone to its node; answers when the first of them is through.
+ */
+async function holdUntil(
+  page: Page,
+  matching: string | RegExp,
+  after: (response: Response) => boolean,
+): Promise<{ readonly through: Promise<unknown> }> {
+  const answered = page.waitForResponse(after);
+  // Awaited below; a page closed before it answers is the test's own failure, not an unhandled one.
+  answered.catch(() => undefined);
+  let letThrough!: () => void;
+  const released = new Promise<void>((resolve) => (letThrough = resolve));
+  await page.route(matching, async (route) => {
+    await answered;
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await route.continue();
+    letThrough();
+  });
+  return { through: released.then(() => page.waitForTimeout(100)) };
+}
+
+/**
+ * The orders a document's page can take in what it loads, each arranged before the page opens and
+ * answering once what it held is through: what the texts, the theme and the faces each change is the
+ * height of everything above a linked node, however late it comes (issues #341, #350).
+ */
+const INTERLEAVINGS: readonly {
+  readonly name: string;
+  readonly arrange: (page: Page) => Promise<{ readonly through: Promise<unknown> }>;
+}[] = [
+  { name: 'as the stack serves it', arrange: async () => ({ through: Promise.resolve() }) },
+  {
+    name: 'the theme after the texts',
+    arrange: (page) => holdUntil(page, '**/v1/documents/*/presentation', TEXTS),
+  },
+  { name: 'the faces after the texts', arrange: (page) => holdUntil(page, FACE, TEXTS) },
+  {
+    name: 'the texts after the theme',
+    arrange: (page) => holdUntil(page, '**/v1/documents/*/texts', THEME),
+  },
+  {
+    name: 'on a machine four times slower',
+    arrange: async (page) => {
+      const cdp = await page.context().newCDPSession(page);
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+      return { through: Promise.resolve() };
+    },
+  },
+];
+
+/** Waits for a linked node's heading to have been taken to just below the header. */
+async function arrivedAt(page: Page, node: string): Promise<void> {
+  await page.waitForFunction(
+    (id) => {
+      const element = document.querySelector(
+        `[aria-label="The document's text"] [data-node="${id}"]`,
+      );
+      const header = document.querySelector('header')!.getBoundingClientRect().bottom;
+      return element !== null && Math.abs(element.getBoundingClientRect().top - header) < 2;
+    },
+    node,
+    { polling: 'raf' },
+  );
+  // And the page given the means to grow the text above a node, as its own layout grows it.
+  await page.evaluate(() => {
+    (window as unknown as { growAbove: (id: string, by: number) => void }).growAbove = (id, by) => {
+      const room = document.createElement('div');
+      room.style.height = `${by}px`;
+      document
+        .querySelector(`[aria-label="The document's text"] [data-node="${id}"]`)!
+        .append(room);
+    };
+  });
+}
+
+/** Declared for the page's scripts: `arrivedAt` puts it there. */
+declare function growAbove(id: string, by: number): void;
+
+/**
+ * Holds the document's theme back until the answer is called, which lets it through and waits for it
+ * and the faces it names: its arrival changes every height above a linked node.
+ */
+async function holdTheTheme(page: Page): Promise<() => Promise<void>> {
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => (release = resolve));
+  await page.route('**/v1/documents/*/presentation', async (route) => {
+    await held;
+    await route.continue();
+  });
+  return async () => {
+    const themed = page.waitForResponse(THEME);
+    release();
+    await themed;
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+    });
+  };
+}
+
 describe('moving through a long document in a browser (issue #336)', () => {
   it('STR-035 scrolls the text wherever the wheel takes it, and it stays there', async () => {
     const client = api();
@@ -248,6 +354,113 @@ describe('moving through a long document in a browser (issue #336)', () => {
       await open(page, `/documents/${made.id}/nodes/${target.id}`);
       await expectOnScreen(page, target.id, 'the linked node');
       expect(await settled(page)).toBeGreaterThan(0);
+    });
+  });
+
+  it('STR-045 keeps a linked node below the header however its texts, theme and faces arrive (issues #341, #350)', async () => {
+    const client = api();
+    const made = await longDocument(client, 'Reached as it loads', 3, 3);
+    // The middle section: the window can scroll past it, so nothing but the page holds it in place.
+    const target = everyNode(nodesOf(made))[4]!;
+    // Every order tried, and every one that lands wrong named together.
+    const wrong: string[] = [];
+    for (const { name, arrange } of INTERLEAVINGS) {
+      await withPage(async (page) => {
+        const { through } = await arrange(page);
+        await open(page, `/documents/${made.id}/nodes/${target.id}`);
+        await through;
+        await page.evaluate(async () => {
+          await document.fonts.ready;
+        });
+        try {
+          await expectOnScreen(page, target.id, `the linked node, ${name}`);
+          expect(await settled(page), name).toBeGreaterThan(0);
+        } catch (failure) {
+          wrong.push((failure as Error).message.split('\n')[0]!);
+        }
+      });
+    }
+    expect(wrong).toEqual([]);
+  });
+
+  it('STR-045 leaves the reader where they scrolled once a link has taken them to its node, whatever arrives after (issue #350)', async () => {
+    const client = api();
+    const made = await longDocument(client, 'Scrolled from a link', 3, 3);
+    const target = everyNode(nodesOf(made))[4]!;
+    await withPage(async (page) => {
+      // The theme held until the reader has scrolled: its arrival changes every height above the node.
+      const release = await holdTheTheme(page);
+      const { text } = await open(page, `/documents/${made.id}/nodes/${target.id}`);
+      await arrivedAt(page, target.id);
+      await overTheText(page, text);
+      await wheel(page, 300);
+      await release();
+      await settled(page);
+      const at = await standing(page, target.id);
+      expect(at.top, 'the node, left where the reader scrolled past it').toBeLessThan(
+        at.header - 100,
+      );
+    });
+  });
+
+  it('STR-045 leaves the reader where they scrolled by no wheel, key or pointer - a find, a dragged scrollbar - as the theme arrives (issue #350)', async () => {
+    const client = api();
+    const made = await longDocument(client, 'Scrolled without an input', 3, 3);
+    const target = everyNode(nodesOf(made))[4]!;
+    await withPage(async (page) => {
+      const release = await holdTheTheme(page);
+      await open(page, `/documents/${made.id}/nodes/${target.id}`);
+      await arrivedAt(page, target.id);
+      // The window scrolled as a find or a scrollbar scrolls it: no event the page hears but the scroll.
+      await page.evaluate(() => window.scrollBy(0, 300));
+      await release();
+      await settled(page);
+      const at = await standing(page, target.id);
+      expect(at.top, 'the node, left where the reader scrolled past it').toBeLessThan(
+        at.header - 100,
+      );
+    });
+  });
+
+  it("STR-045 takes a scroll of the reader's own in the frame the text above the node grows for theirs, not the layout's (issue #350)", async () => {
+    const client = api();
+    const made = await longDocument(client, 'Scrolled as it grew', 3, 3);
+    const nodes = everyNode(nodesOf(made));
+    const target = nodes[4]!;
+    await withPage(async (page) => {
+      await open(page, `/documents/${made.id}/nodes/${target.id}`);
+      await arrivedAt(page, target.id);
+      const from = await settled(page);
+      // In one task: the text above the node 60 pixels taller, and the window scrolled 400 by the reader.
+      await page.evaluate((above) => {
+        growAbove(above, 60);
+        window.scrollBy(0, 400);
+      }, nodes[1]!.id);
+      expect(await settled(page), 'the reader, left 400 pixels down').toBe(from + 400);
+      // And let go: the text above growing again moves nothing.
+      await page.evaluate((above) => growAbove(above, 200), nodes[1]!.id);
+      expect(await settled(page), 'the window, once the hold has let go').toBe(from + 400);
+    });
+  });
+
+  it('STR-045 lets a linked node go once the page has settled, so nothing that grows above it later moves the window (issue #350)', async () => {
+    const client = api();
+    const made = await longDocument(client, 'Settled after a link', 3, 3);
+    const nodes = everyNode(nodesOf(made));
+    const target = nodes[4]!;
+    await withPage(async (page) => {
+      await open(page, `/documents/${made.id}/nodes/${target.id}`);
+      await arrivedAt(page, target.id);
+      await page.evaluate(async () => {
+        await document.fonts.ready;
+      });
+      // Well past the page's settling: its texts, theme and faces in, and nothing resized since.
+      await page.waitForTimeout(3_000);
+      // The browser's own anchoring off, so the window moves only where the page moves it.
+      await page.addStyleTag({ content: 'html { overflow-anchor: none !important; }' });
+      const from = await settled(page);
+      await page.evaluate((above) => growAbove(above, 300), nodes[1]!.id);
+      expect(await settled(page), 'the window, after the page settled').toBe(from);
     });
   });
 

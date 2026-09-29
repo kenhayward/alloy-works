@@ -3846,6 +3846,79 @@ describe('the address of every node', () => {
       await waitFor(() => expect(scrolledTo).toEqual([SECOND]));
     });
 
+    it('STR-045 still goes to a linked node when a modifier key is pressed alone while it waits, as a screen reader is silenced with Ctrl (issue #350)', async () => {
+      const { fetch, release } = holdingTexts(twoSections());
+      openLinked(fetch);
+      const text = await screen.findByRole('region', { name: "The document's text" });
+      fireEvent.keyDown(text, { key: 'Control' });
+      fireEvent.keyDown(text, { key: 'Shift' });
+      release();
+      await waitFor(() => expect(scrolledTo).toEqual([SECOND]));
+    });
+
+    /**
+     * The browser's word that the column changed size, fired by hand: jsdom lays nothing out. Only the
+     * observers still watching hear it, as in the browser.
+     */
+    const resizing = () => {
+      const watching = new Set<() => void>();
+      const original = window.ResizeObserver;
+      window.ResizeObserver = class {
+        constructor(private readonly callback: () => void) {}
+        observe() {
+          watching.add(this.callback);
+        }
+        unobserve() {}
+        disconnect() {
+          watching.delete(this.callback);
+        }
+      } as unknown as typeof ResizeObserver;
+      return {
+        resize: () => act(() => [...watching].forEach((callback) => callback())),
+        restore: () => {
+          window.ResizeObserver = original;
+        },
+      };
+    };
+
+    it('STR-045 keeps going to a linked node as the text above it settles, until the reader chooses another (issue #350)', async () => {
+      const { resize, restore } = resizing();
+      try {
+        const fake = twoSections();
+        openLinked(fake.fetch);
+        await screen.findByRole('region', { name: "The document's text" });
+        await waitFor(() => expect(scrolledTo).toEqual([SECOND]));
+        // The theme's faces arrive and the text above the node is set again: it is gone to again.
+        resize();
+        expect(scrolledTo).toEqual([SECOND, SECOND]);
+        // The reader chooses another: the link's node is theirs no longer.
+        await userEvent.click(treeItem(/Unpacking/));
+        resize();
+        expect(scrolledTo).toEqual([SECOND, SECOND, FIRST]);
+      } finally {
+        restore();
+      }
+    });
+
+    it('STR-045 lets a linked node go when another is chosen by no press of the pointer, as a screen reader clicks (issue #350)', async () => {
+      const { resize, restore } = resizing();
+      try {
+        const fake = twoSections();
+        openLinked(fake.fetch);
+        await screen.findByRole('region', { name: "The document's text" });
+        await waitFor(() => expect(scrolledTo).toEqual([SECOND]));
+        // A click alone - no pointer pressed, no key - which the hold does not hear for itself.
+        act(() => {
+          fireEvent.click(treeItem(/Unpacking/));
+        });
+        expect(scrolledTo).toEqual([SECOND, FIRST]);
+        resize();
+        expect(scrolledTo).toEqual([SECOND, FIRST]);
+      } finally {
+        restore();
+      }
+    });
+
     it('STR-045 leaves the reader where they chose to go while a link waited for the texts (issue #336)', async () => {
       const { fetch, release } = holdingTexts(twoSections());
       openLinked(fetch);
@@ -3858,11 +3931,22 @@ describe('the address of every node', () => {
     });
 
     it('STR-045 leaves the reader where they scrolled to while a link waited for the texts (issue #336)', async () => {
+      const windowScrollY = Object.getOwnPropertyDescriptor(window, 'scrollY')!;
       const inputs: [string, (target: Element) => void][] = [
         ['the wheel', (target) => fireEvent.wheel(target, { deltaY: 100 })],
         ['a touch', (target) => fireEvent.touchMove(target)],
         ['Page Down', (target) => fireEvent.keyDown(target, { key: 'PageDown' })],
         ['the space bar', (target) => fireEvent.keyDown(target, { key: ' ' })],
+        ['a press of the pointer', (target) => fireEvent.pointerDown(target)],
+        [
+          'the scrollbar, heard only as the scroll',
+          () => {
+            // The window 300 pixels down, and the node with it; nothing but the scroll says so.
+            Object.defineProperty(window, 'scrollY', { configurable: true, value: 300 });
+            tops.set(SECOND, -300);
+            fireEvent.scroll(window);
+          },
+        ],
       ];
       for (const [input, scroll] of inputs) {
         scrolledTo.length = 0;
@@ -3874,6 +3958,8 @@ describe('the address of every node', () => {
         await settle();
         expect(scrolledTo, `scrolled by ${input}`).toEqual([]);
         unmount();
+        Object.defineProperty(window, 'scrollY', windowScrollY);
+        tops.clear();
       }
     });
 
