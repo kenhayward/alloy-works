@@ -3650,6 +3650,7 @@ describe('the address of every node', () => {
     /** Each node's top edge, as the page lays it out; jsdom lays nothing out. */
     const tops = new Map<string, number>();
     const scrolledTo: string[] = [];
+    const treeScrolled: string[] = [];
     let seen: (() => void) | null = null;
     const original = {
       rect: Element.prototype.getBoundingClientRect,
@@ -3659,9 +3660,14 @@ describe('the address of every node', () => {
     beforeEach(() => {
       tops.clear();
       scrolledTo.length = 0;
+      treeScrolled.length = 0;
       seen = null;
       Element.prototype.getBoundingClientRect = function (this: Element) {
-        const top = tops.get(this.getAttribute('data-node') ?? '') ?? 0;
+        // A tree item's own row is drawn where its node is.
+        const node = this.hasAttribute('data-row')
+          ? this.closest('[data-node]')?.getAttribute('data-node')
+          : this.getAttribute('data-node');
+        const top = tops.get(node ?? '') ?? 0;
         return {
           top,
           bottom: top + 40,
@@ -3678,6 +3684,9 @@ describe('the address of every node', () => {
         const node = this.getAttribute('data-node');
         if (node !== null && this.closest('[aria-label="The document\'s text"]'))
           scrolledTo.push(node);
+        // An element in the tree scrolled into view moves the window, since the window is what
+        // scrolls the page - and with it the text, whose node in view then changes (issue #336).
+        if (this.closest('[role="tree"]')) treeScrolled.push(node ?? this.tagName);
       };
       // An observer by hand: it tells the page something crossed, when the test says so.
       window.IntersectionObserver = class {
@@ -3726,6 +3735,25 @@ describe('the address of every node', () => {
       // Choosing a node in the outline takes the text to it.
       await userEvent.click(treeItem(/Setting up/));
       expect(scrolledTo).toContain(SECOND);
+    });
+
+    it("STR-035 keeps the node in view in the tree by scrolling the outline's own pane, never the window that scrolls the text", async () => {
+      const fake = twoSections();
+      render(<DocumentPage client={client(fake.fetch)} id={DOCUMENT} principalId={ADA} />);
+      await screen.findByRole('region', { name: "The document's text" });
+      const pane = screen.getByRole('tree', { name: 'Outline' }).closest('[role="tabpanel"]');
+      if (!(pane instanceof HTMLElement)) throw new Error('The tree is in no pane');
+      // Every element is laid out at 0 to 40 here but a node's, so the pane shows its first 40
+      // pixels, and the second section's item is drawn at 60 to 100: below what the pane shows.
+      tops.set(FIRST, -400);
+      tops.set(SECOND, 60);
+      act(() => seen?.());
+      await waitFor(() =>
+        expect(treeItem(/Setting up/)).toHaveAttribute('aria-current', 'location'),
+      );
+      // Brought into view in the pane alone, its foot to the pane's foot.
+      expect(pane.scrollTop).toBe(60);
+      expect(treeScrolled).toEqual([]);
     });
 
     it("STR-045 takes a reader who follows a node's link to it in the text, and marks it there until they choose another", async () => {

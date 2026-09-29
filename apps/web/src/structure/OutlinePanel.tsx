@@ -43,6 +43,7 @@ import '@alloy-works/editor/style.css';
 
 import { Icon } from '../editor/Icon.js';
 import styles from './OutlinePanel.module.css';
+import { revealInPane } from './reveal.js';
 
 import {
   breaksFrontFirst,
@@ -365,6 +366,8 @@ export function OutlinePanel({
   const [dragging, setDragging] = useState<string | null>(null);
   // Filled by each item's ref callback, never during render.
   const items = useRef(new Map<string, HTMLElement>());
+  // The outline's own scroller, beside the text rather than scrolled with it (issue #336).
+  const pane = useRef<HTMLDivElement>(null);
   // The drag's own state waits a tick (see `onDragStart`); this is that tick, so a drag that ends first
   // can take it back.
   // Never cleared on unmount (issue #131). Under `<StrictMode>` React runs every effect's cleanup once
@@ -427,9 +430,14 @@ export function OutlinePanel({
     // Only the dialog closing moves the focus: `current` is read, not watched.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [equating]);
-  // The node the reader is at, kept in view in the tree as they scroll the text (STR-035).
+  // The node the reader is at, kept in view in the tree as they scroll the text (STR-035) - by the
+  // pane's own scroll, never the item's `scrollIntoView`, which would move the window and with it the
+  // text, changing the node in view again: the loop that sprang the page back (issue #336). Its own
+  // row, since a section's item holds its children too.
   useEffect(() => {
-    if (inView !== null) items.current.get(inView)?.scrollIntoView?.({ block: 'nearest' });
+    const item = inView === null ? undefined : items.current.get(inView);
+    if (!item || pane.current === null) return;
+    revealInPane(pane.current, item.querySelector<HTMLElement>('[data-row]') ?? item);
   }, [inView]);
   // The node a link took the reader to, marked until they choose another (STR-045's panel half).
   const [highlighted, setHighlighted] = useState<string | null>(null);
@@ -889,6 +897,7 @@ export function OutlinePanel({
         <div data-part="outline">
           {head}
           <div
+            ref={pane}
             className={styles['panel']}
             {...(tab ? { role: 'tabpanel', id: tab.panel, 'aria-labelledby': tab.tab } : {})}
           >

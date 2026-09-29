@@ -3,6 +3,18 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.123.1 - 2026-09-29 (PR #TBD)
+
+### Fixed
+
+- **A document's text scrolls wherever you take it.** On a document longer than the window, the
+  page sprang back towards the top after about a screen, and a part chosen in the outline was
+  reached and then pulled away again. The outline now stays beside the text as you scroll and
+  scrolls on its own, following where you are without moving the text (issue #336).
+- **A part you go to is shown below the page's header**, whether chosen in the outline or reached by
+  a link, rather than with its heading hidden under the header; a link opens at its part once the
+  text above it has loaded, so it is not pushed off the screen as that text arrives (issue #336).
+
 ## 0.123.0 - 2026-09-28 (PR #327)
 
 ### Added

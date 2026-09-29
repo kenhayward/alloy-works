@@ -17,6 +17,15 @@
   min-height: 100vh;
 }
 
+/*
+ * The window is the page's scroller, and the header band stands over its top: anything scrolled to -
+ * a node of a document chosen or linked to, a field the focus moves to - stops below the band rather
+ * than under it (issue #336).
+ */
+html {
+  scroll-padding-top: var(--header-height);
+}
+
 html,
 body {
   margin: 0;

@@ -17800,13 +17800,13 @@
     {
       "id": "CNT-074",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3913,
+      "line": 3941,
       "kind": "title"
     },
     {
       "id": "CNT-075",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4070,
+      "line": 4098,
       "kind": "title"
     },
     {
@@ -17818,7 +17818,7 @@
     {
       "id": "CNT-150",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4807,
+      "line": 4835,
       "kind": "title"
     },
     {
@@ -17848,7 +17848,7 @@
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4368,
+      "line": 4396,
       "kind": "title"
     },
     {
@@ -17866,19 +17866,19 @@
     {
       "id": "STR-035",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3707,
+      "line": 3716,
       "kind": "title"
     },
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4572,
+      "line": 4600,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4408,
+      "line": 4436,
       "kind": "title"
     },
     {
@@ -17890,7 +17890,7 @@
     {
       "id": "STR-045",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 3731,
+      "line": 3759,
       "kind": "title"
     },
     {
@@ -20273,6 +20273,18 @@
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
       "line": 244,
+      "kind": "title"
+    },
+    {
+      "id": "STR-035",
+      "file": "tests/browser/src/navigation.test.ts",
+      "line": 207,
+      "kind": "title"
+    },
+    {
+      "id": "STR-045",
+      "file": "tests/browser/src/navigation.test.ts",
+      "line": 242,
       "kind": "title"
     },
     {

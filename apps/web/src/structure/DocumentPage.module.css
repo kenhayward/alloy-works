@@ -27,13 +27,21 @@
   display: contents;
 }
 
-/* The outline pane: a tabbed panel at the top of its column (interface slice 15). */
+/*
+ * The outline pane: a tabbed panel at the top of its column (interface slice 15), standing beside the
+ * text as the window scrolls it - under the header band, above the status bar - and scrolling its own
+ * tree (issue #336). Scrolled with the page, keeping the reader's node in view in it moved the window,
+ * and so the text, and so the node in view, and the page sprang back to its top.
+ */
 .layout > [data-panel] > [data-part='outline'] {
   grid-column: 1;
   grid-row: 1 / span 3;
+  position: sticky;
+  top: calc(var(--header-height) + var(--space-12));
   display: flex;
   flex-direction: column;
   min-width: 0;
+  max-height: calc(100vh - var(--header-height) - var(--space-12) - var(--space-40));
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius-8);

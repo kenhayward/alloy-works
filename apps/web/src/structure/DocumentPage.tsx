@@ -445,6 +445,9 @@ export function DocumentPage({
   // The number of the version each occurrence resolves to, by node (CNT-162), from the same answer.
   const [resolved, setResolved] = useState<ReadonlyMap<string, string>>(new Map());
   const [textsAttempt, setTextsAttempt] = useState(0);
+  // The version whose texts have been answered, or refused: until then the text is its headings alone,
+  // and a node gone to now would be pushed down the page by every component above it as it fills in.
+  const [textsRead, setTextsRead] = useState<string | null>(null);
   // The one occurrence whose component is open in place: one editor, and so one lock, at a time.
   const [editing, setEditing] = useState<string | null>(null);
   const shownVersion = loaded.state === 'open' ? loaded.document.version.id : null;
@@ -454,7 +457,11 @@ export function DocumentPage({
     client
       .GET('/v1/documents/{id}/texts', { params: { path: { id } } })
       .then(({ data }) => {
-        if (!current || !data) return;
+        if (!current) return;
+        if (!data) {
+          setTextsRead(shownVersion);
+          return;
+        }
         const contents = new Map(data.versions.map((version) => [version.id, version.content]));
         // Checked rather than trusted: the client's bodies are `any` underneath their types.
         const numbers = new Map(
@@ -481,10 +488,13 @@ export function DocumentPage({
         }
         setTexts(byNode);
         setResolved(numberOf);
+        setTextsRead(shownVersion);
       })
       // The text is the reading view beside the outline: where it cannot be read, the cards show
       // their titles alone, which is what they showed before it existed.
-      .catch(() => undefined);
+      .catch(() => {
+        if (current) setTextsRead(shownVersion);
+      });
     return () => {
       current = false;
     };
@@ -882,7 +892,8 @@ export function DocumentPage({
     setMarked(linked.node);
   }, [linked]);
   useEffect(() => {
-    if (arriving.current === null) return;
+    // Gone to once the text is whole, so the components above it have taken their room (issue #336).
+    if (arriving.current === null || textsRead !== shownVersion) return;
     const element = textColumn.current?.querySelector(`[data-node="${arriving.current}"]`);
     if (!element) return;
     arriving.current = null;

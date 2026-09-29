@@ -670,6 +670,15 @@ each state. Another test shows structure.md's known limit: two `Alt+Down` presse
 answered send one move. And one holds issue #325 fixed: two spaces typed in a section's title are
 stored, computed as `break-spaces` and drawn as two.
 
+`navigation.test.ts` holds issue #336 fixed, over documents longer than the window made through the
+API - three sections placing three components each, and one of five hundred nodes: the wheel takes
+the text where it is turned and it stays there, a node chosen in the outline or reached by a link is
+left with its heading on the screen below the header, and its tree item in view in the outline's own
+pane, by pointer and by `Home` and `End`, and the long document opens where it begins. Each place is
+read once the window has stopped moving for half a second, since the defect was a page that got there
+and was pulled back. The pinned headless Chromium drops the wheel events a page is sent in its first
+moments, so the test turns it a pixel at a time until one lands before counting.
+
 **What it cannot see.** Headless Chromium has no browser interface, so `Alt+Left` is never Back there
 whatever the page does: the test shows the tree prevented the key's default, which is what keeps it
 from a browser that has one, and that the address and the history did not move - the second half
