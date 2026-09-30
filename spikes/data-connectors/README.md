@@ -14,25 +14,25 @@ every published port is on `127.0.0.1` in the 157xx range and none is the develo
 
 Three networks, as [the brief](../../docs/specification/spikes/Data_Connector_Spike.md) §11 draws them:
 
-| Network               | Subnet          | Holds                                                                                          |
-| --------------------- | --------------- | ---------------------------------------------------------------------------------------------- |
-| `aw-dc-platform`      | 172.31.10.0/24  | `platform-pg`, `seaweedfs`, `metadata`, `idp`, and the `caller`                                |
-| `aw-dc-sources`       | 172.31.20.0/24  | `source-pg`, `sqlserver`, `fake-api`, `token-exchange`, `resolver`, the `caller`, `connector`  |
-| `aw-dc-connector-rpc` | 172.31.30.0/24  | the `caller` and the `connector` only                                                          |
+| Network               | Subnet         | Holds                                                                                         |
+| --------------------- | -------------- | --------------------------------------------------------------------------------------------- |
+| `aw-dc-platform`      | 172.31.10.0/24 | `platform-pg`, `seaweedfs`, `metadata`, `idp`, and the `caller`                               |
+| `aw-dc-sources`       | 172.31.20.0/24 | `source-pg`, `sqlserver`, `fake-api`, `token-exchange`, `resolver`, the `caller`, `connector` |
+| `aw-dc-connector-rpc` | 172.31.30.0/24 | the `caller` and the `connector` only                                                         |
 
-| Container        | Static IP      | Published        | What it is                                                                                       |
-| ---------------- | -------------- | ---------------- | ------------------------------------------------------------------------------------------------ |
-| `platform-pg`    | 172.31.10.11   | -                | Postgres standing for the platform's own database - a target case 1 must not reach from a source |
-| `seaweedfs`      | 172.31.10.12   | -                | Object store standing for the tenant's - another case 1 target                                   |
-| `metadata`       | 172.31.10.13   | -                | Stand-in cloud metadata endpoint; the declared metadata address (Docker will not route 169.254) |
-| `idp`            | 172.31.10.14   | -                | Stand-in identity provider: signs the users' tokens (cases 3 and 4)                              |
-| `caller`         | .10/.20/.30    | 127.0.0.1:15706  | Placement A: reaches sources itself, and sits on the platform network - only code stops it       |
-| `connector`      | .29/.31        | 127.0.0.1:15707  | Placement C: on `aw-dc-sources` and `aw-dc-connector-rpc` only - not on the platform network     |
-| `source-pg`      | 172.31.20.21   | 127.0.0.1:15702  | Postgres 18 with row-level security; the tenant's source (a private address that must answer)    |
-| `sqlserver`      | 172.31.20.22   | 127.0.0.1:15703  | SQL Server 2022 Developer; security policy + SESSION_CONTEXT                                      |
-| `fake-api`       | 172.31.20.23   | -                | Fake JSON API behind a bearer token; also serves a redirect for case 1                           |
-| `token-exchange` | 172.31.20.24   | -                | Fake RFC 8693 token-exchange endpoint (cases 3 and 4)                                             |
-| `resolver`       | 172.31.20.25   | -                | DNS that rebinds `rebind.evil.test`: allowed IP then denied IP, alternating                       |
+| Container        | Static IP    | Published       | What it is                                                                                       |
+| ---------------- | ------------ | --------------- | ------------------------------------------------------------------------------------------------ |
+| `platform-pg`    | 172.31.10.11 | -               | Postgres standing for the platform's own database - a target case 1 must not reach from a source |
+| `seaweedfs`      | 172.31.10.12 | -               | Object store standing for the tenant's - another case 1 target                                   |
+| `metadata`       | 172.31.10.13 | -               | Stand-in cloud metadata endpoint; the declared metadata address (Docker will not route 169.254)  |
+| `idp`            | 172.31.10.14 | -               | Stand-in identity provider: signs the users' tokens (cases 3 and 4)                              |
+| `caller`         | .10/.20/.30  | 127.0.0.1:15706 | Placement A: reaches sources itself, and sits on the platform network - only code stops it       |
+| `connector`      | .29/.31      | 127.0.0.1:15707 | Placement C: on `aw-dc-sources` and `aw-dc-connector-rpc` only - not on the platform network     |
+| `source-pg`      | 172.31.20.21 | 127.0.0.1:15702 | Postgres 18 with row-level security; the tenant's source (a private address that must answer)    |
+| `sqlserver`      | 172.31.20.22 | 127.0.0.1:15703 | SQL Server 2022 Developer; security policy + SESSION_CONTEXT                                     |
+| `fake-api`       | 172.31.20.23 | -               | Fake JSON API behind a bearer token; also serves a redirect for case 1                           |
+| `token-exchange` | 172.31.20.24 | -               | Fake RFC 8693 token-exchange endpoint (cases 3 and 4)                                            |
+| `resolver`       | 172.31.20.25 | -               | DNS that rebinds `rebind.evil.test`: allowed IP then denied IP, alternating                      |
 
 The `caller` and `connector` run the same `agent.mjs`; the only difference is which networks compose
 attaches. That is the point of case 1 - the boundary is a fact of the network, not a branch in code.
@@ -87,15 +87,15 @@ the findings as a claim.
 
 ### Phase 2 pieces
 
-| File                  | What it is                                                                                                            |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `idp.mjs`             | The tenant's stand-in provider: ES256 tokens, settable lifetimes, `offline_access` refresh with rotation and reuse detection, revocation; a second issuer stands for the Google route |
-| `token-exchange.mjs`  | RFC 8693 exchange trusting only the tenant's provider (through the `trust` volume), audience `fake-api`, capped at the subject token's life; can disable a user |
-| `fake-api.mjs`        | Verifies the exchanged token and answers `{ as, rows }` with the caller's own rows; latency and owner-reassign switches |
-| `lib/identity.mjs`    | Runs a query as the end user in the connector, per mechanism                                                           |
-| `lib/service.mjs`     | The caller as service and worker: sessions and the provider tokens they would hold, publish jobs under the three options, pins with provenance, the result cache, sign-out |
-| `case3.mjs`           | Case 3's driver, against the connector directly                                                                         |
-| `case4.mjs`           | Case 4's driver, through the caller's `/svc/*` routes                                                                    |
+| File                 | What it is                                                                                                                                                                            |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `idp.mjs`            | The tenant's stand-in provider: ES256 tokens, settable lifetimes, `offline_access` refresh with rotation and reuse detection, revocation; a second issuer stands for the Google route |
+| `token-exchange.mjs` | RFC 8693 exchange trusting only the tenant's provider (through the `trust` volume), audience `fake-api`, capped at the subject token's life; can disable a user                       |
+| `fake-api.mjs`       | Verifies the exchanged token and answers `{ as, rows }` with the caller's own rows; latency and owner-reassign switches                                                               |
+| `lib/identity.mjs`   | Runs a query as the end user in the connector, per mechanism                                                                                                                          |
+| `lib/service.mjs`    | The caller as service and worker: sessions and the provider tokens they would hold, publish jobs under the three options, pins with provenance, the result cache, sign-out            |
+| `case3.mjs`          | Case 3's driver, against the connector directly                                                                                                                                       |
+| `case4.mjs`          | Case 4's driver, through the caller's `/svc/*` routes                                                                                                                                 |
 
 ## Credentials
 

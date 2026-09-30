@@ -74,6 +74,10 @@ const overrides = [
   ['postgres SET LOCAL ROLE; text: SET LOCAL ROLE grace', pg, 'pg-set-local-role', 'set local role grace; select id, owner from public.record order by id', {}, pgSaw],
   ['postgres setting; text: set_config app.user grace', pg, 'pg-guc-local', "select set_config('app.user','grace',true); select id, owner from public.record_guc order by id", {}, pgSaw],
   ['postgres SET LOCAL ROLE, one bound statement only', pg, 'pg-set-local-role', 'set local role grace; select id, owner from public.record where $1::int > 0 order by id', { params: [1] }, pgSaw],
+  // One statement, by the extended protocol, that changes the setting from inside itself.
+  ['postgres SET LOCAL ROLE; one statement: set_config(role)', pg, 'pg-set-local-role', "select id, owner from public.record where set_config('role','grace',true) is not null and $1::int > 0 order by id", { params: [1] }, pgSaw],
+  ['postgres setting; one statement: set_config(app.user)', pg, 'pg-guc-local', "select id, owner from public.record_guc where set_config('app.user','grace',true) is not null and $1::int > 0 order by id", { params: [1] }, pgSaw],
+  ['postgres setting; one statement: CTE sets app.user first', pg, 'pg-guc-local', "with s as materialized (select set_config('app.user','grace',true) as v) select r.id, r.owner from s, public.record_guc r where $1::int > 0 order by r.id", { params: [1] }, pgSaw],
   ['sqlserver SESSION_CONTEXT; text: set app_user grace', ms, 'ms-session-context', "EXEC sp_set_session_context N'app_user', N'grace'; SELECT id, owner FROM dbo.record ORDER BY id", { via: 'batch' }, msSaw],
   ['sqlserver SESSION_CONTEXT read_only; text: set grace', ms, 'ms-session-context', "EXEC sp_set_session_context N'app_user', N'grace'; SELECT id, owner FROM dbo.record ORDER BY id", { via: 'batch', readOnlyContext: true }, msSaw],
   ['sqlserver EXECUTE AS; text: REVERT; EXECUTE AS grace', ms, 'ms-execute-as', "REVERT; EXECUTE AS USER = N'grace'; SELECT id, owner FROM dbo.record_eu ORDER BY id", { via: 'batch' }, msSaw],
