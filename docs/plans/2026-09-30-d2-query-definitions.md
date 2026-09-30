@@ -6,7 +6,7 @@
 > [ADR-0035](../decisions/0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md),
 > on what [the D1 plan](2026-09-30-d1-connections-and-the-connector.md) built. data.md's decisions
 > DA-A to DA-AF were approved by Ken on 2026-09-30. This plan's own decisions, D2-A to D2-V below,
-> are **proposed, for Ken**.
+> were approved by Ken on 2026-09-30, every one as recommended.
 
 **Goal:** an author holding `write_sql` on a PostgreSQL connection writes a query definition in a
 space - SQL with named parameters, a variation, the columns proposed by the source and confirmed one
@@ -66,7 +66,8 @@ it (D2-J).
 
 ## Decisions
 
-Proposed, for Ken. Each is the recommendation; the column beside it is what it was chosen over.
+Approved by Ken on 2026-09-30, every one as recommended; the column beside each is what it was chosen
+over.
 
 | #    | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Instead of                                                                                                                                                                                                                                                       |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -435,6 +436,8 @@ Minor.
   `COLLATE "C"`, and saved; the same SQL refused on a connection as `writer`.
 
 ## Questions for Ken before the build
+
+Answered on 2026-09-30: all five as recommended.
 
 1. **D2-B**: `{{name}}` markers, against data.md's `:site`. Recommended.
 2. **D2-M**: a text sort key ordered by code point (`COLLATE "C"`), checked rather than imposed; the
