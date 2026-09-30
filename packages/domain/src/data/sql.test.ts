@@ -67,6 +67,53 @@ describe("PostgreSQL's lexer, which finds a definition's markers", () => {
   });
 });
 
+/** A backslash, built rather than typed, so no tool on the way reads it as an escape. */
+const BACKSLASH = String.fromCharCode(92);
+
+describe("the lexer, where PostgreSQL's own scanner reads otherwise", () => {
+  it('reads a string continued across a newline as one literal of its first kind, escapes and all', () => {
+    // An escape string, continued: its second part keeps the escapes, so a backslash and a quote do
+    // not close it, and the marker is inside the literal, as PostgreSQL reads it.
+    const continued = `select 1::int8 as id, E'a'
+'${BACKSLASH}' || {{x}} || ' as c -- '`;
+    expect(lexPostgres(continued)).toMatchObject({
+      line: 2,
+      problem: expect.stringMatching(/marker/),
+    });
+    // And one that PostgreSQL reads whole - an escaped quote in the continued part - is one text.
+    const whole = `select 1::int8 as id, E'a'
+'${BACKSLASH}'' as c`;
+    expect(lexPostgres(whole)).toEqual([{ kind: 'text', text: whole }]);
+    // A standard string continues too, past a comment before the newline; a marker after it is found.
+    expect(lexPostgres("select 'a' -- {{x}}\n  'b' as c")).toMatchObject({ line: 1 });
+    expect(lexPostgres("select 'a'\n'b' || {{x}}")).toContainEqual({ kind: 'value', name: 'x' });
+    // Without a newline between them, two strings are two, and a marker between them is outside.
+    expect(lexPostgres("select 'a' || {{x}} || 'b'")).toContainEqual({ kind: 'value', name: 'x' });
+  });
+
+  it('reads a dollar quote whatever the length of its tag', () => {
+    const tag = `$${'a'.repeat(200)}$`;
+    expect(lexPostgres(`select ${tag} {{x}} ${tag}`)).toMatchObject({
+      problem: expect.stringMatching(/marker/),
+    });
+    const quoted = `select 1::int8 as id, ${tag} it's ${tag} as c`;
+    expect(lexPostgres(quoted)).toEqual([{ kind: 'text', text: quoted }]);
+  });
+
+  it('refuses a positional parameter after a number, and reads a dollar quote there, as PostgreSQL does', () => {
+    for (const text of ['select 1$1', 'select 1.5$2 from t', 'select x.1$1']) {
+      expect(lexPostgres(text), text).toMatchObject({ problem: expect.stringMatching(/\$1/) });
+    }
+    // A name holds a $ and digits after it; a number does not, so a dollar quote opens after one.
+    expect(lexPostgres('select x$1, _y$2$z from t')).toEqual([
+      { kind: 'text', text: 'select x$1, _y$2$z from t' },
+    ]);
+    expect(lexPostgres('select 1$a$ {{x}} $a$')).toMatchObject({
+      problem: expect.stringMatching(/marker/),
+    });
+  });
+});
+
 const integer = (name: string, over: Partial<Parameter> = {}): Parameter => ({
   name,
   type: { base: 'integer' },
@@ -119,10 +166,10 @@ describe("PostgreSQL's binder", () => {
     );
     expect(bound.text).toBe(
       [
-        'select id from t where label = $1::text and id >= $2::int8 and amount >= $3::numeric',
-        'and day >= $4::date and at >= $5::time and local >= $6::timestamp and since >= $7::timestamptz',
-        'and active = $8::boolean and id = any($9::int8[]) and label = any($10::text[])',
-        'and $1::text is not null and $11::int8 is null',
+        'select id from t where label =  $1::text  and id >=  $2::int8  and amount >=  $3::numeric ',
+        'and day >=  $4::date  and at >=  $5::time  and local >=  $6::timestamp  and since >=  $7::timestamptz ',
+        'and active =  $8::boolean  and id = any( $9::int8[] ) and label = any( $10::text[] )',
+        'and  $1::text  is not null and  $11::int8  is null',
       ].join('\n'),
     );
     expect(bound.values).toEqual([
@@ -141,6 +188,43 @@ describe("PostgreSQL's binder", () => {
     // Nothing of any value reached the text.
     expect(bound.text).not.toContain('drop');
     expect(bound.text).not.toContain('9223372036854775807');
+  });
+
+  it('writes each placeholder with a space either side, so it never fuses with what the author wrote beside it', () => {
+    const text = (sql: string) =>
+      bindPostgres(
+        {
+          parameters: [
+            { name: 'x', type: { base: 'text' }, required: true, list: false },
+            { name: 'y', type: { base: 'text' }, required: true, list: false },
+          ],
+          fetch: fetch(sql),
+        },
+        { x: 'a', y: 'b' },
+      ).text;
+    // A name before it, a dollar sign, and a placeholder beside another.
+    expect(text('select a{{x}}, {{y}} as b')).toBe('select a $1::text ,  $2::text  as b');
+    expect(text('select ${{x}}, {{y}}')).toBe('select $ $1::text ,  $2::text ');
+    expect(text('select {{x}}{{y}}')).toBe('select  $1::text  $2::text ');
+  });
+
+  it('refuses a binding whose text, read again, does not hold exactly the placeholders it wrote', () => {
+    // A fragment ending as the text after it begins makes a comment of the placeholder: nothing runs.
+    const definition = {
+      parameters: [
+        integer('x'),
+        {
+          name: 'v',
+          type: { base: 'text' as const },
+          required: true,
+          list: false,
+          variation: [{ key: 'minus', sql: '-' }],
+        },
+      ],
+      fetch: fetch('select 1 {{#v}}-{{x}} as id'),
+    };
+    expect(lexPostgres(definition.fetch.text)).not.toHaveProperty('problem');
+    expect(() => bindPostgres(definition, { x: '1', v: 'minus' })).toThrow(/placeholder/);
   });
 
   it("DAT-019 places a variation's declared fragment by its key, and never the key itself", () => {
@@ -162,11 +246,11 @@ describe("PostgreSQL's binder", () => {
       fetch: fetch('select id from t where site = {{site}} order by {{#sort}}'),
     };
     expect(bindPostgres(definition, { sort: 'label', site: '1' })).toEqual({
-      text: 'select id from t where site = $1::int8 order by label collate "C", id',
+      text: 'select id from t where site =  $1::int8  order by label collate "C", id',
       values: ['1'],
     });
     expect(bindPostgres(definition, { sort: 'amount', site: '1' }).text).toBe(
-      'select id from t where site = $1::int8 order by amount desc, id',
+      'select id from t where site =  $1::int8  order by amount desc, id',
     );
     // A key that is not declared - an inherited member's name among them - places nothing, and the
     // binder refuses rather than run the query without it.

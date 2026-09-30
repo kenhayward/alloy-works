@@ -582,10 +582,17 @@ value is a typed filter the connector applies to its canonical rows.
   variation's fragment (D2-B), always bound by the driver. A marker is found by a PostgreSQL lexer in
   `packages/domain`, and one inside a string, a quoted identifier, a dollar-quoted body or a comment,
   or a `$1` of the author's own, is refused when the definition is written - `:site` was ruled out,
-  since PostgreSQL's `::` cast and an array slice `a[1:n]` spell it too. PostgreSQL's binder writes each
-  value marker `$n::type` by its declaration - `int8`, `numeric`, `text`, `date`, `time`, `timestamp`,
-  `timestamptz`, `boolean`, or that type's array for a list - and hands the value's canonical text to
-  the driver; a marker used twice binds once; the SQL that ran is that rewritten text (D2-C). Saving one needs `write_sql` on the connection
+  since PostgreSQL's `::` cast and an array slice `a[1:n]` spell it too. The lexer reads what is inside
+  a literal as PostgreSQL's scanner does: a string continued on the next line is one literal of the
+  kind it began as, an escape string's escapes and all; a dollar quote's tag has no length limit; a
+  `$` and a digit after a number are a positional parameter, refused, since only a name holds one;
+  and a standard string's backslash is itself, which every connection the connector opens pins with
+  `standard_conforming_strings=on`. PostgreSQL's binder writes each value marker `$n::type`, a space
+  either side so it never fuses with its neighbours, by its declaration - `int8`, `numeric`, `text`,
+  `date`, `time`, `timestamp`, `timestamptz`, `boolean`, or that type's array for a list - and hands
+  the value's canonical text to the driver; a marker used twice binds once; the SQL that ran is that
+  rewritten text (D2-C). The rewritten text is read again by the same lexer, and nothing is sent
+  unless its placeholders outside every literal and comment are exactly those written. Saving one needs `write_sql` on the connection
   (DAT-101). It is refused, `sql_not_permitted`, on a PostgreSQL connection whose identity is asserted,
   when saved and when run (DAT-102), and on any connection whose last test found its account not
   read-only (DAT-103).

@@ -2915,7 +2915,8 @@ hold its title and description, the one connection it names by artifact id, its 
   its limits and whether it is retired (`packages/domain/src/data/definition.ts`). A value is marked
   `{{name}}` and a fragment `{{#name}}` (D2-B), found by `lexPostgres`, a PostgreSQL lexer that
   refuses a marker inside a string, a quoted identifier, a dollar-quoted body or a comment, and a `$1`
-  of the author's own. A definition is at most 512 KiB of canonical JSON and binds to at most
+  of the author's own, reading a string continued on the next line, a dollar tag of any length and a
+  `$` after a number as PostgreSQL's scanner does. A definition is at most 512 KiB of canonical JSON and binds to at most
   300,000 characters of SQL with its longest fragments, so every one that passes can be run. Every
   string is NFC already or the write is refused (D2-F), since a version's
   digest composes and the source does not. `parseQueryDefinitionForWrite` holds every write path to
@@ -2938,7 +2939,8 @@ declaration (`checkParameterValues`, DAT-020: `parameter_invalid` naming the par
 the value, before the connector is asked), takes the least of the definition's limits and the
 tenant's `data_policy` (DAT-050), and asks the connector's `/v1/run` after its deciding transaction
 commits. The connector binds by its own type's binder, `bindPostgres`, each marker written
-`$n::type` and each value the driver's parameter (DAT-081), a fragment placed by its key and the key
+`$n::type`, a space either side, and each value the driver's parameter (DAT-081), the rewritten
+text read again and refused unless its placeholders are exactly those written, a fragment placed by its key and the key
 never sent (DAT-019); in its child it describes the bound statement first and holds its columns to the
 declaration by D2-L's admissions, then runs it `BEGIN READ ONLY` a page of 500 rows at a time,
 counting the bytes that arrive at the socket and what it keeps, and stopping at a limit or the

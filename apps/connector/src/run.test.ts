@@ -1,6 +1,11 @@
 import { createHash } from 'node:crypto';
 
-import { canonicalResultBytes, runRequestSchema, type RunAnswer } from '@alloy-works/domain';
+import {
+  canonicalResultBytes,
+  runRequestSchema,
+  type Parameter,
+  type RunAnswer,
+} from '@alloy-works/domain';
 import { describe, expect, it } from 'vitest';
 
 import { childSpawn, createSupervisor } from './supervisor.js';
@@ -76,7 +81,7 @@ describe('a run', { timeout: LOADED_TIMEOUT_MS }, () => {
       createHash('sha256').update(canonicalResultBytes(answer.result), 'utf8').digest('hex'),
     );
     expect(answer.ran).toEqual({
-      sql: 'select id, name, depth, opened from sample.site where id >= $1::int8 order by id',
+      sql: 'select id, name, depth, opened from sample.site where id >=  $1::int8  order by id',
     });
     expect(answer.durationMs).toBeGreaterThanOrEqual(0);
   });
@@ -308,5 +313,49 @@ describe('a run', { timeout: LOADED_TIMEOUT_MS }, () => {
       source: { sqlstate: '25006' },
     });
     expect(await count()).toBe(before);
+  });
+
+  it("reads the author's SQL as the source does: a string continued on the next line, a long dollar tag, and standard strings whatever the account's default", async () => {
+    const backslash = String.fromCharCode(92);
+    const lineFeed = String.fromCharCode(10);
+    const c = column('c', { base: 'text' });
+    const x: Parameter = { name: 'x', type: { base: 'text' }, required: true, list: false };
+    const refused = (text: string) =>
+      !runRequestSchema.safeParse(
+        runRequest(settings(), PASSWORDS.reader, draft(text, [id, c], { parameters: [x] }), {
+          x: 'b',
+        }),
+      ).success;
+    const rows = (answer: RunAnswer) =>
+      answer.outcome === 'ok' ? answer.result.rows : failure(answer);
+
+    // An escape string continued on the next line keeps its escapes: the column is what the source
+    // read, and a marker in it is refused before anything is sent.
+    const continued = `select 1::int8 as id, E'a'${lineFeed}'${backslash}'' as c`;
+    expect(rows(await asReader(draft(continued, [id, c])))).toEqual([['1', "a'"]]);
+    expect(
+      refused(`select 1::int8 as id, E'a'${lineFeed}'${backslash}' || {{x}} || ' as c -- '`),
+    ).toBe(true);
+
+    // A dollar quote whose tag is two hundred characters long.
+    const tag = `$${'t'.repeat(200)}$`;
+    expect(
+      rows(await asReader(draft(`select 1::int8 as id, ${tag}it's${tag} as c`, [id, c]))),
+    ).toEqual([['1', "it's"]]);
+    expect(refused(`select 1::int8 as id, ${tag} {{x}} ${tag} as c`)).toBe(true);
+
+    // A standard string's backslash is itself, as the lexer reads it, even for an account whose
+    // default says otherwise: every connection sets standard_conforming_strings on.
+    await asSuperuser((client) =>
+      client.query('alter role reader set standard_conforming_strings = off'),
+    );
+    try {
+      const plain = `select 1::int8 as id, 'a${backslash}' as c`;
+      expect(rows(await asReader(draft(plain, [id, c])))).toEqual([['1', `a${backslash}`]]);
+    } finally {
+      await asSuperuser((client) =>
+        client.query('alter role reader reset standard_conforming_strings'),
+      );
+    }
   });
 });
