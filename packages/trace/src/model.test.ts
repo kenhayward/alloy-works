@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { attestationIsSubstantial, isRecordOf, recordsNamed } from './model.js';
+import { attestationIsSubstantial, isRecordOf, recordsNamed, TRANCHES } from './model.js';
+
+/**
+ * The tranches are Project_Scope.md section 12's table, and nothing else checks the two agree. T7 and
+ * T8 arrived with the re-tranching of 2026-09-29 (ADR-0033).
+ */
+describe('the tranches a requirement may name', () => {
+  it('are T1 to T8, in order, and Constraint', () => {
+    expect(TRANCHES).toEqual(['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'Constraint']);
+  });
+});
 
 /**
  * Shared between `parse/baseline.ts` (which refuses a malformed document outright) and `gate.ts`

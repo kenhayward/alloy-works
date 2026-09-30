@@ -15,7 +15,8 @@ import { getDocument, OPS } from 'pdfjs-dist/legacy/build/pdf.mjs';
  * `___WRD_EMBED_SUB_<n>`, so a run's face is its embedded program's own PostScript name wherever the
  * file keeps one; Word sets a colour and then paints inside `q` and `Q`, so the colours, the line's
  * width and the text state are graphics state, saved and restored; Word draws a table's rules as filled
- * rectangles, so a thin filled rectangle is a rule too; and Word sets a character spacing on some runs,
+ * rectangles, so a thin filled rectangle is a rule too - but for one in the colour of a fill it lies
+ * against, which is that fill's, as Word paints a cell's fill about its margins; and Word sets a character spacing on some runs,
  * so each character is moved on by it. None of it moves what the pinned engine's PDF reads as.
  */
 
@@ -98,6 +99,12 @@ const UNFOLLOWED = new Set([
   'nextLineSetSpacingShowText',
 ]);
 
+/**
+ * How near a strip in a fill's own colour lies to that fill to be part of it: Word leaves a panel's
+ * border in its fill's colour about a point clear of the fill (measured, W15.2).
+ */
+const NEAR = 1.5;
+
 /** The thickest a filled rectangle is that is read as a rule as well as a fill: a theme's widest rule. */
 const THIN = 3;
 
@@ -178,6 +185,8 @@ export async function readPaint(bytes: Buffer): Promise<Paint> {
     const texts: PaintedText[] = [];
     const fills: PaintedFill[] = [];
     const strokes: PaintedStroke[] = [];
+    /** The rules read from thin filled rectangles, which a fill of their own colour may take back. */
+    const thin = new Set<PaintedStroke>();
     const images: PaintedImage[] = [];
     for (let number = 1; number <= pdf.numPages; number += 1) {
       const page = await pdf.getPage(number);
@@ -303,7 +312,9 @@ export async function readPaint(bytes: Buffer): Promise<Paint> {
             // unless it is stroked as well, which records it as the rule it is, once.
             const thickness = Math.min(box[2] - box[0], box[3] - box[1]);
             if (!stroked && thickness > 0 && thickness <= THIN) {
-              strokes.push({ page: number, stroke: fill, box, width: thickness });
+              const rule = { page: number, stroke: fill, box, width: thickness };
+              strokes.push(rule);
+              thin.add(rule);
             }
           }
           if (stroked) {
@@ -321,7 +332,20 @@ export async function readPaint(bytes: Buffer): Promise<Paint> {
         }
       });
     }
-    return { pages, texts, fills, strokes, images };
+    // A thin strip in a fill's own colour against that fill is part of it, not a rule: Word paints a
+    // cell's fill in pieces about its margins, and a panel's border in its fill's colour.
+    const touches = (a: Box, b: Box) =>
+      a[0] <= b[2] + NEAR && b[0] <= a[2] + NEAR && a[1] <= b[3] + NEAR && b[1] <= a[3] + NEAR;
+    const part = (rule: PaintedStroke) =>
+      thin.has(rule) &&
+      fills.some(
+        (fill) =>
+          fill.page === rule.page &&
+          fill.fill === rule.stroke &&
+          Math.min(fill.box[2] - fill.box[0], fill.box[3] - fill.box[1]) > THIN &&
+          touches(fill.box, rule.box),
+      );
+    return { pages, texts, fills, strokes: strokes.filter((rule) => !part(rule)), images };
   } finally {
     // The loading task, not the document: in pdf.js 6 it is the task that owns the worker.
     await task.destroy();

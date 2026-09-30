@@ -270,9 +270,9 @@ It holds, in its own describe blocks:
 - **The keep rules**, moved here from `themes.test.ts`: keep-with-next, keep-together where
   the page allows it and not where it does not, and widow and orphan control, each measured across the
   foot of a small page on a grid of 12pt lines, and each read from the same style as the Word writer's
-  own rule, `w:keepNext`, `w:keepLines` and `w:widowControl`. They cite STY-008 where they show a
-  style's keeping, and not PUB-092, which asks each engine's pages to show the rules holding: nothing
-  yet measures where Word itself breaks a page (themes.md names the gap).
+  own rule, `w:keepNext`, `w:keepLines` and `w:widowControl`. They cite PUB-106, the rules holding in
+  the PDF, and STY-008 where they show a style's keeping; not PUB-107, which asks Word's own pages to
+  show the rules holding, since nothing measures where Word itself breaks a page (T8's, ADR-0032 and ADR-0033).
 
 A defect that was not in publishing output has no case here: the content model's (#88, a caption held
 as a string; #122 to #125), the editor's and the paste's, and the worker's retrying of a job its
@@ -518,8 +518,30 @@ embeds subsets of Microsoft's faces, which ADR-0010 keeps out of the repository,
 only where Word is. The kit keeps the Typst PDF of the fixture in `packages/conformance/src/fixtures/`,
 and its own tests, in CI, hold the reader to what Word's PDF is made of - `___WRD_EMBED_SUB_<n>` faces,
 colours restored by `Q`, rules painted as filled rectangles, character spacing - in PDFs they write
-themselves, embedding only the pinned Liberation faces. So the one switch runs the check
-and the export, and will run W15.2's measurement: **for a release, run the whole worker suite with it
+themselves, embedding only the pinned Liberation faces.
+
+**Word measured** (W15.2): `apps/worker/src/word-measure.test.ts`, behind the same switch, holds Word
+to the PDF by the measures `tests/browser` holds the editor by (STY-081's suite). It writes the kit's
+fixture under eight themes - the default, the contrary one, W13.4's three by `ALLOY_BROWSER_STYLE_SEEDS`
+or 1301 to 1303, and Word's own three, 1501 to 1503 - both ways from one `assemble`, has Word export
+all eight in one session, and compares each pair by the kit: every length within half a point, and
+every face, weight, posture, colour, underline and fill exactly, but the maths face STY-060's list for
+Word approves. It takes about twenty seconds, and leaves both PDFs of each theme, every token's two
+measurements and `found.json`, every difference with the kind it is of, in `alloy-works-word-measure`
+under the system's temporary folder, which is where a failure is read; Word's version and build, the
+seeds, how many values each theme compared and its largest difference per property go into the test's
+`meta` and are printed. **Word does not agree with the PDF yet**, and the test is a characterization
+of what W15.2 left (`LEFT`, checked by `testing/word-left.ts`, whose own tests run in CI): ten kinds,
+each held exactly as measured - how many differences it holds, the largest of each length and no
+other property, and two of them each difference by name, a colour held only so - and a difference of
+no kind fails. So it is green while nothing moves, fails on one more difference of any kind however
+small, cites nothing, and is where a change to the writer that moves Word shows
+([word-output.md](design/word-output.md#word-measured-w152) has the kinds). A kind is changed only by
+hand, with the run that shows why. The three Word files take
+turns at Word through a lock file under the system's temporary folder (`testing/word-turn.ts`),
+since each starts a Word of its own and the script refuses while one runs; a lock whose process has
+ended, or left empty a while, is taken away by one waiter at a time. So the one switch runs the
+check, the export and the measurement: **for a release, run the whole worker suite with it
 on** (`ALLOY_WORD_CHECK=1 pnpm --filter @alloy-works/worker test`) and then
 `pnpm trace record-run <version> word`, which reduces that run's `.trace-results/worker.json` to
 `docs/audits/<version>/word.json` for a baseline's `local-run` row
@@ -814,10 +836,11 @@ at p95 and no sample above 500; and CNT-179, the whole time to open it, 1 second
   Desktop and the pinned Chromium beside it. To measure them alone:
   `pnpm --filter @alloy-works/browser exec vitest run src/budgets.test.ts`, with the stack's variables
   set as above, on a machine running nothing else.
-- **STR-072 is not claimed, and its tests cite nothing**: opened cold, the document misses its number
-  (below), and the row names no starting point; the cold open is recorded and not held until Ken
-  decides whether it is in STR-072 (B-K). Opened from the list, and every act, are held to it. CNT-179's
-  cold open is held to CNT-179's, which it meets.
+- **STR-072 is opening from within the application**, from the documents list, and not a cold load
+  (Ken, 2026-09-29; [ADR-0033](decisions/0033-t2-is-the-data-spine.md)), so the open's test and the
+  acts' test cite it. The interface's share of a cold open is recorded beside the open from the list
+  and not held, since it is above 250 ms at p95 (below) and STR-072 does not ask it; CNT-179's cold
+  open, the whole time a reader waits, is held to CNT-179's, which it meets.
 
 W13.3 measured them on the reference configuration, Chromium 153.0.8010.12 and the stack at
 0.125.0, with no other stack of the suite's running; beside it Docker was running
@@ -825,20 +848,20 @@ alloy-works (5), diariz (8), hawser (1), portainer_agent (1), which the run reco
 idle. Twenty samples each, forty for a retitle, **Starts on** and a move; every warm-up inside the
 maximum:
 
-| Budget                                    | Measured, p95 / max (ms) | Number (ms) | Met    |
-| ----------------------------------------- | ------------------------ | ----------- | ------ |
-| STR-072, opening from the list, interface | 197.9 / 223.9            | 250 / 500   | Yes    |
-| STR-072, opening cold, interface          | 334.3 / 338.2            | 250 / 500   | **No** |
-| STR-072, an insert, interface             | 85.2 / 87.3              | 250 / 500   | Yes    |
-| STR-072, a removal, interface             | 114.8 / 120.5            | 250 / 500   | Yes    |
-| STR-072, a retitle, interface             | 73.0 / 88.9              | 250 / 500   | Yes    |
-| STR-072, Starts on, interface             | 60.0 / 82.5              | 250 / 500   | Yes    |
-| STR-072, a move, interface                | 123.9 / 135.5            | 250 / 500   | Yes    |
-| STR-072, a demotion, interface            | 90.2 / 110.1             | 250 / 500   | Yes    |
-| STR-072, a promotion, interface           | 87.7 / 99.4              | 250 / 500   | Yes    |
-| CNT-179, opening from the list, whole     | 332.3 / 361.5            | 1000 / 2000 | Yes    |
-| CNT-179, opening cold, whole              | 432.8 / 449.9            | 1000 / 2000 | Yes    |
-| CNT-179, a jump, whole                    | 24.0 / 27.3              | 250 / 500   | Yes    |
+| Budget                                    | Measured, p95 / max (ms) | Number (ms) | Met      |
+| ----------------------------------------- | ------------------------ | ----------- | -------- |
+| STR-072, opening from the list, interface | 197.9 / 223.9            | 250 / 500   | Yes      |
+| Opening cold, interface, recorded only    | 334.3 / 338.2            | 250 / 500   | Not held |
+| STR-072, an insert, interface             | 85.2 / 87.3              | 250 / 500   | Yes      |
+| STR-072, a removal, interface             | 114.8 / 120.5            | 250 / 500   | Yes      |
+| STR-072, a retitle, interface             | 73.0 / 88.9              | 250 / 500   | Yes      |
+| STR-072, Starts on, interface             | 60.0 / 82.5              | 250 / 500   | Yes      |
+| STR-072, a move, interface                | 123.9 / 135.5            | 250 / 500   | Yes      |
+| STR-072, a demotion, interface            | 90.2 / 110.1             | 250 / 500   | Yes      |
+| STR-072, a promotion, interface           | 87.7 / 99.4              | 250 / 500   | Yes      |
+| CNT-179, opening from the list, whole     | 332.3 / 361.5            | 1000 / 2000 | Yes      |
+| CNT-179, opening cold, whole              | 432.8 / 449.9            | 1000 / 2000 | Yes      |
+| CNT-179, a jump, whole                    | 24.0 / 27.3              | 250 / 500   | Yes      |
 
 **The margin is less than one run shows.** The open from the list is the budget nearest its number,
 and it moves with the machine: the final review's run on the same machine, before the fixture held

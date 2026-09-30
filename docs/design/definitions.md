@@ -225,5 +225,5 @@ open to reversal at his review.
 
 - **Refusing a required value on a save.** It would stop an author saving half-finished work, which
   MET-023 and component-editor.md both rule out; publication is where it is held.
-- **Checking MET-040 by where-used.** MET-025 is T2; the places are few and all in payloads.
+- **Checking MET-040 by where-used.** MET-025 is T7; the places are few and all in payloads.
 - **Unique names by a query under an advisory lock.** A unique index cannot be raced; a query can.

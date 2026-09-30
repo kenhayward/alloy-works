@@ -1,7 +1,7 @@
 # Detailed requirements
 
 > **Status: v1, reviewed.** One document per capability area in
-> [`Project_Scope.md`](../Project_Scope.md) section 7 - all twenty-two written and all twenty-two reviewed. The first twenty-one were read against each other in a [cross-cutting pass](../../reviews/) whose answers are in [`XXX - Response.md`](<../../reviews/XXX - Response.md>); the twenty-second, **MET**, was written afterwards, when a component's metadata turned out to have been specified as a template's. 1478 requirements, 117 non-requirements and 135 numbered questions, twenty-nine of which have since been settled. These say
+> [`Project_Scope.md`](../Project_Scope.md) section 7 - all twenty-two written and all twenty-two reviewed. The first twenty-one were read against each other in a [cross-cutting pass](../../reviews/) whose answers are in [`XXX - Response.md`](<../../reviews/XXX - Response.md>); the twenty-second, **MET**, was written afterwards, when a component's metadata turned out to have been specified as a template's. 1525 requirements, 118 non-requirements and 135 numbered questions, thirty of which have since been settled. These say
 > what the product must do. How it gets built is [`../../design/`](../../design/), one document per
 > subsystem, each naming the requirements it answers - so a requirement no design claims is work not
 > yet designed, and that gap is visible without anybody keeping a list of it.
@@ -90,7 +90,7 @@ contiguous numbering and this index, for all three identifier kinds.
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **ID**          | As above                                                                                                                                                                                                                                                                                           |
 | **Requirement** | One statement of what must be true. `must` is binding; `should` is a strong default that an implementer may argue against in a decision record. **A `should` that a tranche does not deliver needs a decision record citing it and saying why**, so that a strong default is never quietly dropped |
-| **Tranche**     | `T1`-`T6` from [`Project_Scope.md`](../Project_Scope.md) section 12, or `Constraint` where the requirement governs how something is built rather than naming a thing to build                                                                                                                      |
+| **Tranche**     | `T1`-`T8` from [`Project_Scope.md`](../Project_Scope.md) section 12, or `Constraint` where the requirement governs how something is built rather than naming a thing to build                                                                                                                      |
 | **Status**      | `Specified`, `Withdrawn`, or `Superseded by XXX-NNN`. Nothing here tracks build progress - that is what citations are for                                                                                                                                                                          |
 
 ## Areas
@@ -153,7 +153,7 @@ may not be missing.
 | **Data connection**                        | DAT                |                                                                                                         |
 | **Query definition**                       | DAT                |                                                                                                         |
 | **Binding**                                | DAT                |                                                                                                         |
-| **Binding mode**                           | DAT                | Live, pinned, refreshable - and what happens when a source moves                                        |
+| **Binding mode**                           | DAT                | Checked or pinned, over a stored result (ADR-0035) - and what happens when a source moves               |
 | **Provenance record**                      | DAT, LIF           | DAT writes it, LIF audits it                                                                            |
 | **Relationship**                           | REL                |                                                                                                         |
 | **Condition**                              | REU                | CNT owns the mark, REU the evaluation                                                                   |

@@ -4,7 +4,7 @@
       "id": "ADM-001",
       "area": "ADM",
       "statement": "A tenant administrator must be able to manage users, roles, spaces, connections, model endpoints, workflow definitions, style catalogues, vocabularies and retention policies",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
       "line": 43
@@ -22,7 +22,7 @@
       "id": "ADM-003",
       "area": "ADM",
       "statement": "Administration must be reachable through the API on the same terms as the interface (**API-004**)",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
       "line": 45
@@ -31,7 +31,7 @@
       "id": "ADM-004",
       "area": "ADM",
       "statement": "A destructive administrative action must state what it will affect before it is confirmed",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
       "line": 46
@@ -526,7 +526,7 @@
       "id": "API-009",
       "area": "API",
       "statement": "Rate limits must be declared, and a limited response must say when to retry",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Superseded by API-051",
       "document": "API-api-mcp-and-extensibility.md",
       "line": 46
@@ -580,7 +580,7 @@
       "id": "API-051",
       "area": "API",
       "statement": "Rate limits must be declared in the API specification itself, so that a contract test can verify them (API-003), and a limited response must say when to retry",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
       "line": 52
@@ -597,7 +597,7 @@
     {
       "id": "API-054",
       "area": "API",
-      "statement": "A realtime connection must re-check authorisation on a stated interval as well as at connect and reconnect (API-016), so that a permission withdrawn mid-connection takes effect without waiting for a reconnection that may never come (**IAM-067**)",
+      "statement": "A realtime connection must re-check authorisation on a stated interval as well as at connect and reconnect (API-016), so that a permission withdrawn mid-connection takes effect without waiting for a reconnection that may never come (**IAM-082**)",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
@@ -1021,7 +1021,7 @@
       "id": "AST-004",
       "area": "AST",
       "statement": "A size limit must be declared per format, and a tenant must be able to lower it",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 49
@@ -1048,7 +1048,7 @@
       "id": "AST-007",
       "area": "AST",
       "statement": "Ingest must strip or preserve embedded metadata according to a declared policy, and must record which it did",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 52
@@ -1066,7 +1066,7 @@
       "id": "AST-036",
       "area": "AST",
       "statement": "A scan that has not completed within a declared period must fail the upload rather than leaving it quarantined indefinitely, and the uploader must be told which happened either way",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 54
@@ -1120,7 +1120,7 @@
       "id": "AST-042",
       "area": "AST",
       "statement": "A stored original must be verifiable against its hash on read, and re-verification on a schedule is the storage layer's (**ADM**). This area records the identity; storage keeps the promise",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 60
@@ -1129,7 +1129,7 @@
       "id": "AST-008",
       "area": "AST",
       "statement": "Thumbnails and preview renditions must be generated on ingest, not on demand",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 95
@@ -1138,7 +1138,7 @@
       "id": "AST-009",
       "area": "AST",
       "statement": "Browsing a library must use derivatives, so that a list of a thousand images is not a thousand originals",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 96
@@ -1183,7 +1183,7 @@
       "id": "AST-048",
       "area": "AST",
       "statement": "A derivative must be discardable and rebuildable on demand from the original, which is what makes AST-010 worth having rather than a second permanent copy of everything",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 101
@@ -1192,7 +1192,7 @@
       "id": "AST-049",
       "area": "AST",
       "statement": "Replacing an original (AST-016) must rebuild or invalidate its derivatives, and a derivative of a superseded version must never be served for the version that replaced it",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 102
@@ -1255,7 +1255,7 @@
       "id": "AST-017",
       "area": "AST",
       "statement": "A reference to an asset must be able to pin a version or float at latest, like any other reference",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 141
@@ -1264,7 +1264,7 @@
       "id": "AST-018",
       "area": "AST",
       "statement": "Where an asset is used must be listable, across components, documents and baselines (**REU-006**)",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 142
@@ -1282,7 +1282,7 @@
       "id": "AST-020",
       "area": "AST",
       "statement": "Deleting an asset used only by drafts must warn and name them",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 144
@@ -1291,7 +1291,7 @@
       "id": "AST-031",
       "area": "AST",
       "statement": "An asset version must state what it covers. The binary is versioned; the recorded properties - default alternative text, source, licence and permitted uses - must each carry their own history of what changed, when, and who changed it",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 145
@@ -1399,7 +1399,7 @@
       "id": "AST-026",
       "area": "AST",
       "statement": "Assets must belong to a space and must be permissioned by it (**IAM**)",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 195
@@ -1408,7 +1408,7 @@
       "id": "AST-027",
       "area": "AST",
       "statement": "Assets must be searchable by name, caption, alt text, format and metadata (**SCH**)",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 196
@@ -1417,7 +1417,7 @@
       "id": "AST-028",
       "area": "AST",
       "statement": "An asset library must be browsable visually, with filters",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 197
@@ -1435,7 +1435,7 @@
       "id": "AST-030",
       "area": "AST",
       "statement": "Assets must be exportable with their metadata, and importable the same way (**IMP**)",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "AST-assets-and-media.md",
       "line": 199
@@ -1714,7 +1714,7 @@
       "id": "CNT-020",
       "area": "CNT",
       "statement": "Admonitions must be supported, from a closed vocabulary declared by the presentation theme",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Superseded by CNT-120",
       "document": "CNT-content-and-authoring.md",
       "line": 129
@@ -1723,7 +1723,7 @@
       "id": "CNT-120",
       "area": "CNT",
       "statement": "Admonitions must be supported, from the closed vocabulary the admonition style catalogue declares (**STY-003**)",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
       "line": 130
@@ -1849,7 +1849,7 @@
       "id": "CNT-093",
       "area": "CNT",
       "statement": "Style catalogues must be configuration-extensible: an administrator must be able to add a style - \"small thumbnail\" - without a code change, and it must then be selectable by authors and honoured by every output format",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Superseded by STY-029",
       "document": "CNT-content-and-authoring.md",
       "line": 144
@@ -2317,7 +2317,7 @@
       "id": "CNT-058",
       "area": "CNT",
       "statement": "A tenant must be able to declare a list of preferred characters, surfaced first in that palette",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
       "line": 337
@@ -2614,7 +2614,7 @@
       "id": "CNT-100",
       "area": "CNT",
       "statement": "A tenant must be able to maintain custom dictionaries, so that domain vocabulary is not flagged in every document",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
       "line": 447
@@ -3625,16 +3625,25 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 39
+      "line": 41
     },
     {
       "id": "DAT-002",
       "area": "DAT",
       "statement": "Connection types must include at minimum a relational database, an HTTP endpoint, and a file-based source such as a spreadsheet or delimited file",
       "tranche": "T2",
+      "status": "Superseded by DAT-074",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 42
+    },
+    {
+      "id": "DAT-074",
+      "area": "DAT",
+      "statement": "Connection types must include at minimum a relational database, an HTTP endpoint and S3-compatible object storage, each a source the product pulls from, and a query must be able to read a CSV, XLSX or JSON file fetched through an S3 or an HTTP connection",
+      "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 40
+      "line": 43
     },
     {
       "id": "DAT-003",
@@ -3643,7 +3652,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 41
+      "line": 44
     },
     {
       "id": "DAT-004",
@@ -3652,7 +3661,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 42
+      "line": 45
     },
     {
       "id": "DAT-005",
@@ -3661,16 +3670,25 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 43
+      "line": 46
     },
     {
       "id": "DAT-006",
       "area": "DAT",
       "statement": "A connection must be testable from the interface, and the test must report success or a reason without echoing the credential",
       "tranche": "T2",
+      "status": "Superseded by DAT-075",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 47
+    },
+    {
+      "id": "DAT-075",
+      "area": "DAT",
+      "statement": "A connection must be testable from the interface, and the test must report success, or one reason that is the same for every failure, naming no address and echoing no credential",
+      "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 44
+      "line": 48
     },
     {
       "id": "DAT-007",
@@ -3679,16 +3697,25 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 45
+      "line": 49
     },
     {
       "id": "DAT-008",
       "area": "DAT",
       "statement": "A connection must declare how queries against it authenticate: as a tenant service account, or as the end user",
       "tranche": "T2",
+      "status": "Superseded by DAT-076",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 50
+    },
+    {
+      "id": "DAT-076",
+      "area": "DAT",
+      "statement": "A connection must declare how queries against it authenticate: as a tenant service account, or as the end user by a mechanism its connector declares, which is a delegated token or an asserted identity. A delegated token must be available only to a user signed in through the tenant's own identity provider, and never to one signed in by another route or acting through a personal API token",
+      "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 46
+      "line": 51
     },
     {
       "id": "DAT-064",
@@ -3697,7 +3724,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 47
+      "line": 52
     },
     {
       "id": "DAT-065",
@@ -3706,7 +3733,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 48
+      "line": 53
     },
     {
       "id": "DAT-066",
@@ -3715,7 +3742,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 49
+      "line": 54
     },
     {
       "id": "DAT-009",
@@ -3724,7 +3751,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 69
+      "line": 89
     },
     {
       "id": "DAT-010",
@@ -3733,16 +3760,43 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 70
+      "line": 90
     },
     {
       "id": "DAT-011",
       "area": "DAT",
       "statement": "A query definition must declare the shape of its result: the columns it returns and their types",
       "tranche": "T2",
+      "status": "Superseded by DAT-080",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 91
+    },
+    {
+      "id": "DAT-080",
+      "area": "DAT",
+      "statement": "A query definition must declare its result's columns, after the fetch that produces them, each with a type from one closed list shared by every source: text (any character data of any length, including large text, a CLOB and JSON read as text, bounded only by the size limit), integer, decimal with a precision and scale, date, time, local date-time, instant with a fractional-second precision, boolean, and image. A value a source cannot deliver exactly in its declared type must be refused by name, never rounded",
+      "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 71
+      "line": 92
+    },
+    {
+      "id": "DAT-105",
+      "area": "DAT",
+      "statement": "Each result column must be proposed from the source's own metadata where it has some, or from a sample run otherwise, and must be confirmed by the query's author",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 93
+    },
+    {
+      "id": "DAT-106",
+      "area": "DAT",
+      "statement": "The declared columns and row order must be the query's contract: a result that does not fit them must be refused by name, never adjusted",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 94
     },
     {
       "id": "DAT-012",
@@ -3751,7 +3805,16 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 72
+      "line": 95
+    },
+    {
+      "id": "DAT-107",
+      "area": "DAT",
+      "statement": "A query definition must state a total order that includes its declared key, or its result must be checksummed as a multiset of rows",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 96
     },
     {
       "id": "DAT-013",
@@ -3760,7 +3823,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 73
+      "line": 97
     },
     {
       "id": "DAT-014",
@@ -3769,7 +3832,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 74
+      "line": 98
     },
     {
       "id": "DAT-015",
@@ -3778,7 +3841,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 75
+      "line": 99
     },
     {
       "id": "DAT-016",
@@ -3787,7 +3850,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 76
+      "line": 100
     },
     {
       "id": "DAT-068",
@@ -3796,16 +3859,97 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 77
+      "line": 101
+    },
+    {
+      "id": "DAT-099",
+      "area": "DAT",
+      "statement": "A query against a database must be built with a query builder that stores the query's structure, never its SQL, unless it is written in the SQL fallback (DAT-101); the product must generate the SQL from the structure each time the query runs",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 102
+    },
+    {
+      "id": "DAT-100",
+      "area": "DAT",
+      "statement": "The stored structure of a built query must admit several sources joined, grouping, aggregates and nested queries, so that a stored query never needs migrating for the builder to offer them",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 103
+    },
+    {
+      "id": "DAT-101",
+      "area": "DAT",
+      "statement": "Writing a query's SQL by hand, the SQL fallback, must be a permission of its own, granted per connection",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 104
+    },
+    {
+      "id": "DAT-102",
+      "area": "DAT",
+      "statement": "The SQL fallback must be refused on a connection whose end-user mechanism is an asserted identity that query text can change",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 105
+    },
+    {
+      "id": "DAT-103",
+      "area": "DAT",
+      "statement": "A connection on which the SQL fallback is permitted must authenticate as an account that is read-only at the source, and the connection test (DAT-075) must check that where the source can say",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 106
+    },
+    {
+      "id": "DAT-104",
+      "area": "DAT",
+      "statement": "A query against an HTTP endpoint must be a request template, whose parameters are placed by position - path, query, header or body - and a pointer to where the result's rows are",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 107
+    },
+    {
+      "id": "DAT-095",
+      "area": "DAT",
+      "statement": "A JSON file or response must be read either from a JSON Pointer (RFC 6901) to an array of objects, or as JSON Lines. Each column must be mapped by a pointer relative to the row, a number must be read from its source text, and a nested object or array must be refused by name unless its column is declared text",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 108
+    },
+    {
+      "id": "DAT-096",
+      "area": "DAT",
+      "statement": "An image column must declare its encoding - base64 text, or a database's binary column - and a bound image must be admitted only as a PNG or a JPEG, through the same admission as an uploaded image (**AST**), and stored by its hash",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 109
     },
     {
       "id": "DAT-017",
       "area": "DAT",
       "statement": "A parameter must be passed to the source as a bound value, and must never be concatenated into query text",
       "tranche": "Constraint",
+      "status": "Superseded by DAT-081",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 144
+    },
+    {
+      "id": "DAT-081",
+      "area": "DAT",
+      "statement": "A parameter's value must never be spliced into query text, a URL or a header as text. It must be passed as the driver's bound value, placed by a builder that encodes it for its position and refuses what that position cannot carry, or applied by the connector as a typed filter over a file's rows",
+      "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 89
+      "line": 145
     },
     {
       "id": "DAT-018",
@@ -3814,7 +3958,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 90
+      "line": 146
     },
     {
       "id": "DAT-019",
@@ -3823,7 +3967,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 91
+      "line": 147
     },
     {
       "id": "DAT-020",
@@ -3832,7 +3976,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 92
+      "line": 148
     },
     {
       "id": "DAT-021",
@@ -3841,7 +3985,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 93
+      "line": 149
     },
     {
       "id": "DAT-022",
@@ -3850,25 +3994,34 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 105
+      "line": 161
     },
     {
       "id": "DAT-023",
       "area": "DAT",
       "statement": "Under end-user pass-through, the source system's own access rules must apply, and results may legitimately differ between two users of the same document",
       "tranche": "T2",
+      "status": "Superseded by DAT-077",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 162
+    },
+    {
+      "id": "DAT-077",
+      "area": "DAT",
+      "statement": "Where a connection authenticates as the end user by a mechanism its connector declares, the source system's own access rules must apply when the query runs, and results may legitimately differ between two users. An S3 connection must declare no end-user mechanism",
+      "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 106
+      "line": 163
     },
     {
       "id": "DAT-024",
       "area": "DAT",
-      "statement": "Where results can differ by user, a pinned value must record whose view produced it, and the document must be able to show that",
+      "statement": "Where results can differ by user, a stored value must record whose view produced it, and the document must be able to show that",
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 107
+      "line": 164
     },
     {
       "id": "DAT-025",
@@ -3877,7 +4030,25 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 108
+      "line": 165
+    },
+    {
+      "id": "DAT-090",
+      "area": "DAT",
+      "statement": "Who may read a binding's stored result must be governed by permission to read the document holding it. The source system's own access rules must govern only who may fetch a result or accept one",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 166
+    },
+    {
+      "id": "DAT-091",
+      "area": "DAT",
+      "statement": "Accepting a result obtained under one's own identity must warn that everyone who may read the document will see it",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 167
     },
     {
       "id": "DAT-026",
@@ -3886,7 +4057,16 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 109
+      "line": 168
+    },
+    {
+      "id": "DAT-111",
+      "area": "DAT",
+      "statement": "A result obtained under end-user identity must be cached for no longer than that identity's credential is valid, and never for longer than a stated maximum, and the cache must be keyed by the identity as the source sees it",
+      "tranche": "Constraint",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 169
     },
     {
       "id": "DAT-027",
@@ -3895,7 +4075,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 124
+      "line": 194
     },
     {
       "id": "DAT-028",
@@ -3904,7 +4084,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 125
+      "line": 195
     },
     {
       "id": "DAT-029",
@@ -3913,7 +4093,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 126
+      "line": 196
     },
     {
       "id": "DAT-030",
@@ -3922,7 +4102,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 127
+      "line": 197
     },
     {
       "id": "DAT-031",
@@ -3931,7 +4111,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 128
+      "line": 198
     },
     {
       "id": "DAT-032",
@@ -3940,7 +4120,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 129
+      "line": 199
     },
     {
       "id": "DAT-033",
@@ -3949,7 +4129,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 130
+      "line": 200
     },
     {
       "id": "DAT-067",
@@ -3958,7 +4138,25 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 131
+      "line": 201
+    },
+    {
+      "id": "DAT-097",
+      "area": "DAT",
+      "statement": "Every bound image must take its description from a column the query definition names, or be declared decorative; a publish of a bound image with neither must fail by name",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 202
+    },
+    {
+      "id": "DAT-098",
+      "area": "DAT",
+      "statement": "A bound image must be placeable wherever an image can be placed: in a table's cell, in a line of text, or as a figure",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 203
     },
     {
       "id": "DAT-057",
@@ -3967,7 +4165,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 157
+      "line": 234
     },
     {
       "id": "DAT-058",
@@ -3976,7 +4174,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 158
+      "line": 235
     },
     {
       "id": "DAT-059",
@@ -3985,16 +4183,16 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 159
+      "line": 236
     },
     {
       "id": "DAT-060",
       "area": "DAT",
-      "statement": "A revised binding must stay refreshable. Where the source value moves (DAT-036), the binding must be flagged, the source value must be shown beside the revision, and the author must accept or reject the change deliberately. A refresh must never silently discard a revision, and must never silently keep one over a source that has changed",
+      "statement": "A revised binding must still take revisions from its source. Where a source revision arrives (DAT-084), the binding must be flagged, the source value must be shown beside the person's revision, and the author must accept or reject the change deliberately. Accepting a source revision must never silently discard a person's revision, and must never silently keep one over a source that has changed",
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 160
+      "line": 237
     },
     {
       "id": "DAT-061",
@@ -4003,7 +4201,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 161
+      "line": 238
     },
     {
       "id": "DAT-062",
@@ -4012,7 +4210,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 162
+      "line": 239
     },
     {
       "id": "DAT-063",
@@ -4021,88 +4219,169 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 163
+      "line": 240
     },
     {
       "id": "DAT-034",
       "area": "DAT",
       "statement": "Every binding must resolve in one of three modes: live, pinned, or refreshable",
       "tranche": "T2",
+      "status": "Superseded by DAT-082",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 269
+    },
+    {
+      "id": "DAT-082",
+      "area": "DAT",
+      "statement": "Every binding must take one of two modes: checked, for which the product looks for a source revision when the document is opened, or pinned, for which it never looks. A source revision must be shown beside the stored result, and nothing must change until a person accepts it",
+      "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 184
+      "line": 270
     },
     {
       "id": "DAT-035",
       "area": "DAT",
       "statement": "A pinned binding must store the value it resolved to, together with its provenance",
       "tranche": "T2",
+      "status": "Superseded by DAT-083",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 271
+    },
+    {
+      "id": "DAT-083",
+      "area": "DAT",
+      "statement": "Every binding, whatever its mode, must store the result it resolved to as a dataset version (DAT-092), together with its provenance",
+      "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 185
+      "line": 272
+    },
+    {
+      "id": "DAT-092",
+      "area": "DAT",
+      "statement": "A stored result must be a dataset: an immutable, versioned object apart from the bindings that use it, which may be named. A binding must reference exactly one dataset version",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 273
+    },
+    {
+      "id": "DAT-093",
+      "area": "DAT",
+      "statement": "Accepting a source revision must create a new dataset version and move only that document's binding to it. Another document referencing the same dataset must keep its version until somebody accepts there",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 274
+    },
+    {
+      "id": "DAT-094",
+      "area": "DAT",
+      "statement": "A stored dataset must be queryable as a source of its own, through the same query builder (DAT-099), without querying the source it came from. Who may read a dataset that way must be governed by permission to the dataset",
+      "tranche": "T4",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 275
+    },
+    {
+      "id": "DAT-088",
+      "area": "DAT",
+      "statement": "A preview or a publish must read each binding's stored result, and must never query a source",
+      "tranche": "Constraint",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 276
+    },
+    {
+      "id": "DAT-089",
+      "area": "DAT",
+      "statement": "A source must be queried only when a person acts: placing a binding, creating a document from a template, checking for or accepting a source revision, or a query author's sample run (DAT-014)",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 277
     },
     {
       "id": "DAT-036",
       "area": "DAT",
       "statement": "A refreshable binding must be flagged when its source has moved since it was pinned",
       "tranche": "T2",
+      "status": "Superseded by DAT-084",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 278
+    },
+    {
+      "id": "DAT-084",
+      "area": "DAT",
+      "statement": "A checked binding must be flagged when its source returns a result different from the stored one. The two must be compared only when the person checking is the identity whose view is stored, or the connection runs as a service account; for anybody else a different result must never be flagged as the source having moved",
+      "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 186
+      "line": 279
     },
     {
       "id": "DAT-037",
       "area": "DAT",
-      "statement": "Refreshing a binding must be an explicit act, and must be audited with what it was and what it became",
+      "statement": "Accepting a source revision must be an explicit act, and must be audited with what the binding held and what it holds after",
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 187
+      "line": 280
     },
     {
       "id": "DAT-038",
       "area": "DAT",
-      "statement": "A baseline must pin every binding it contains regardless of mode, so that a published document always resolves to what it published",
+      "statement": "A baseline must record the dataset version every binding it contains holds, regardless of mode, so that a published document always resolves to what it published",
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 188
+      "line": 281
     },
     {
       "id": "DAT-039",
       "area": "DAT",
-      "statement": "An author must be able to see, for a whole document, which bindings are stale, which have failed, and which have never resolved",
+      "statement": "An author must be able to see, for a whole document, which bindings have a source revision waiting, which have failed, and which have never resolved",
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 189
+      "line": 282
     },
     {
       "id": "DAT-070",
       "area": "DAT",
-      "statement": "A binding floating at latest (DAT-015) must be flagged when the query definition it floats on advances, in the same way DAT-036 flags a source that has moved, and a document must be able to show which of its bindings have changed meaning since it was last published",
+      "statement": "A binding floating at latest (DAT-015) must be flagged when the query definition it floats on advances, in the same way DAT-084 flags a source revision, and a document must be able to show which of its bindings have changed meaning since it was last published",
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 190
+      "line": 283
     },
     {
       "id": "DAT-072",
       "area": "DAT",
-      "statement": "Refreshing, pinning or revising a binding is a change to the component holding it, and must be governed by the same concurrency rules as any other edit: the component lock (**COL-005**, **COL-041**) and the API's version precondition (**API-037**). Last-write-wins must not be the answer",
+      "statement": "Accepting a source revision, changing a binding's mode or revising a binding is a change to the component holding it, and must be governed by the same concurrency rules as any other edit: the component lock (**COL-005**, **COL-041**) and the API's version precondition (**API-037**). Last-write-wins must not be the answer",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 191
+      "line": 284
     },
     {
       "id": "DAT-040",
       "area": "DAT",
       "statement": "Every resolved binding must write a provenance record: the query definition and its version, the parameters, the connection, the execution identity, the time, the row count, and a checksum of the result",
       "tranche": "T2",
+      "status": "Superseded by DAT-085",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 316
+    },
+    {
+      "id": "DAT-085",
+      "area": "DAT",
+      "statement": "Every stored result must carry a provenance record: the query definition and its version, the parameters, the connection, the execution identity, the SQL or request that ran, the time, the row count, the dataset version, and a SHA-256 checksum over the result's canonical form, whose version the record names",
+      "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 207
+      "line": 317
     },
     {
       "id": "DAT-041",
@@ -4111,7 +4390,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 208
+      "line": 318
     },
     {
       "id": "DAT-042",
@@ -4120,7 +4399,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 209
+      "line": 319
     },
     {
       "id": "DAT-043",
@@ -4129,16 +4408,34 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 210
+      "line": 320
     },
     {
       "id": "DAT-044",
       "area": "DAT",
       "statement": "A query that fails must fail the publish with a named error identifying the query, the binding and the document",
       "tranche": "T2",
+      "status": "Superseded by DAT-086",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 336
+    },
+    {
+      "id": "DAT-086",
+      "area": "DAT",
+      "statement": "A query that fails must fail the act that ran it (DAT-089) with a named error identifying the query, the binding and the document",
+      "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 221
+      "line": 337
+    },
+    {
+      "id": "DAT-087",
+      "area": "DAT",
+      "statement": "Publishing a document with a binding that holds no stored result must fail with a named error identifying the binding and the document",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 338
     },
     {
       "id": "DAT-045",
@@ -4147,7 +4444,16 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 222
+      "line": 339
+    },
+    {
+      "id": "DAT-108",
+      "area": "DAT",
+      "statement": "Where a source states a length, a digest or a row count apart from the message's own framing, the connector must check the result against it",
+      "tranche": "Constraint",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 340
     },
     {
       "id": "DAT-046",
@@ -4156,7 +4462,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 223
+      "line": 341
     },
     {
       "id": "DAT-047",
@@ -4165,7 +4471,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 224
+      "line": 342
     },
     {
       "id": "DAT-048",
@@ -4174,7 +4480,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 225
+      "line": 343
     },
     {
       "id": "DAT-049",
@@ -4183,16 +4489,16 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 226
+      "line": 344
     },
     {
       "id": "DAT-069",
       "area": "DAT",
-      "statement": "Where a query definition declares an empty result invalid (DAT-068), returning no rows must fail exactly as a failure does (DAT-044). Where it declares one valid, the table must publish with its headers and a declared statement that there is nothing to show, never as blank space a reader cannot tell from a defect (**TAB** owns the rendering)",
+      "statement": "Where a query definition declares an empty result invalid (DAT-068), returning no rows must fail exactly as a failure does (DAT-086). Where it declares one valid, the table must publish with its headers and a declared statement that there is nothing to show, never as blank space a reader cannot tell from a defect (**TAB** owns the rendering)",
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 227
+      "line": 345
     },
     {
       "id": "DAT-050",
@@ -4201,7 +4507,25 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 243
+      "line": 370
+    },
+    {
+      "id": "DAT-109",
+      "area": "DAT",
+      "statement": "A timeout must be a deadline over the whole execution, and reaching any limit must cancel the work at the source, not only in the connector",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 371
+    },
+    {
+      "id": "DAT-110",
+      "area": "DAT",
+      "statement": "A single value larger than the result size limit must fail the execution",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 372
     },
     {
       "id": "DAT-051",
@@ -4210,16 +4534,16 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 244
+      "line": 373
     },
     {
       "id": "DAT-052",
       "area": "DAT",
       "statement": "A query definition must be able to declare how long its result may be cached, and the default must be no caching rather than some",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 245
+      "line": 374
     },
     {
       "id": "DAT-053",
@@ -4228,16 +4552,16 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 246
+      "line": 375
     },
     {
       "id": "DAT-071",
       "area": "DAT",
-      "statement": "The total volume of query execution a tenant may run at once - across documents, baselines, refreshes and publications - must be limited and throttled, and this area owns that limit (**ADM** owns reporting its cost, DAT-053). A throttled execution must be a named, retryable failure, never a truncated or partial result (DAT-045, DAT-051) (**DAT-Q06**)",
+      "statement": "The total volume of query execution a tenant may run at once - across document creations, checks for and acceptances of source revisions, and sample runs - must be limited and throttled, and this area owns that limit (**ADM** owns reporting its cost, DAT-053). A throttled execution must be a named, retryable failure, never a truncated or partial result (DAT-045, DAT-051) (**DAT-Q06**)",
       "tranche": "T3",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 247
+      "line": 376
     },
     {
       "id": "DAT-054",
@@ -4246,16 +4570,34 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 259
+      "line": 394
     },
     {
       "id": "DAT-055",
       "area": "DAT",
       "statement": "A connector must declare its capabilities - parameter binding, key columns, row limits, pass-through identity - and the product must refuse to rely on one it has not declared",
       "tranche": "T5",
+      "status": "Superseded by DAT-078",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 395
+    },
+    {
+      "id": "DAT-078",
+      "area": "DAT",
+      "statement": "A connector must declare whether it supports end-user identity, and by which mechanism (DAT-076), and the product must refuse to rely on one it has not declared",
+      "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 260
+      "line": 396
+    },
+    {
+      "id": "DAT-079",
+      "area": "DAT",
+      "statement": "A connector must declare its other capabilities - parameter binding, key columns and row limits - and the product must refuse to rely on one it has not declared",
+      "tranche": "T5",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 397
     },
     {
       "id": "DAT-056",
@@ -4264,16 +4606,43 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 261
+      "line": 398
+    },
+    {
+      "id": "DAT-112",
+      "area": "DAT",
+      "statement": "Under asserted end-user identity, the connection's account must hold no privilege on the data of its own",
+      "tranche": "Constraint",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 399
+    },
+    {
+      "id": "DAT-113",
+      "area": "DAT",
+      "statement": "Under asserted end-user identity, the assertion must be one the query text cannot change, or the query text must be generated by the product",
+      "tranche": "Constraint",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 400
+    },
+    {
+      "id": "DAT-114",
+      "area": "DAT",
+      "statement": "A connection that has carried a user's identity must be reset, by a means shown to clear it, or discarded, before it is reused",
+      "tranche": "Constraint",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 401
     },
     {
       "id": "DAT-073",
       "area": "DAT",
-      "statement": "Where a connector can report cheaply that data has changed - a row version, an entity tag, a modified timestamp - it must declare that as a capability (DAT-055), and staleness detection (DAT-036) must use what is declared rather than re-running the query to find out",
+      "statement": "Where a connector can report cheaply that data has changed - a row version, an entity tag, a modified timestamp - it must declare that as a capability (DAT-079), and a check for a source revision (DAT-084) must use what is declared rather than re-running the query to find out",
       "tranche": "T5",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 262
+      "line": 402
     },
     {
       "id": "GEN-001",
@@ -4449,8 +4818,8 @@
     {
       "id": "GEN-012",
       "area": "GEN",
-      "statement": "A thin assistant capability must be available from T2 - drafting against the current document - so that this governance is exercised early",
-      "tranche": "T2",
+      "statement": "A thin assistant capability - drafting against the current document - must be the first of the assistant's capabilities built, so that this governance is exercised against real use before the rest is",
+      "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
       "line": 101
@@ -4462,7 +4831,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 121
+      "line": 124
     },
     {
       "id": "GEN-048",
@@ -4471,7 +4840,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 122
+      "line": 125
     },
     {
       "id": "GEN-049",
@@ -4480,7 +4849,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 123
+      "line": 126
     },
     {
       "id": "GEN-050",
@@ -4489,7 +4858,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 124
+      "line": 127
     },
     {
       "id": "GEN-051",
@@ -4498,7 +4867,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 125
+      "line": 128
     },
     {
       "id": "GEN-052",
@@ -4507,7 +4876,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 126
+      "line": 129
     },
     {
       "id": "GEN-060",
@@ -4516,7 +4885,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 127
+      "line": 130
     },
     {
       "id": "GEN-053",
@@ -4525,7 +4894,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 128
+      "line": 131
     },
     {
       "id": "GEN-054",
@@ -4534,7 +4903,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 129
+      "line": 132
     },
     {
       "id": "GEN-055",
@@ -4543,7 +4912,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 130
+      "line": 133
     },
     {
       "id": "GEN-013",
@@ -4552,7 +4921,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 158
+      "line": 161
     },
     {
       "id": "GEN-014",
@@ -4561,7 +4930,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 159
+      "line": 162
     },
     {
       "id": "GEN-015",
@@ -4570,7 +4939,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 160
+      "line": 163
     },
     {
       "id": "GEN-016",
@@ -4579,7 +4948,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 161
+      "line": 164
     },
     {
       "id": "GEN-017",
@@ -4588,7 +4957,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 167
+      "line": 170
     },
     {
       "id": "GEN-018",
@@ -4597,7 +4966,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 168
+      "line": 171
     },
     {
       "id": "GEN-019",
@@ -4606,7 +4975,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 169
+      "line": 172
     },
     {
       "id": "GEN-020",
@@ -4615,7 +4984,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 170
+      "line": 173
     },
     {
       "id": "GEN-021",
@@ -4624,7 +4993,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 171
+      "line": 174
     },
     {
       "id": "GEN-022",
@@ -4633,7 +5002,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 182
+      "line": 185
     },
     {
       "id": "GEN-023",
@@ -4642,7 +5011,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 183
+      "line": 186
     },
     {
       "id": "GEN-024",
@@ -4651,7 +5020,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 184
+      "line": 187
     },
     {
       "id": "GEN-025",
@@ -4660,7 +5029,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 185
+      "line": 188
     },
     {
       "id": "GEN-026",
@@ -4669,7 +5038,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 186
+      "line": 189
     },
     {
       "id": "GEN-040",
@@ -4678,7 +5047,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 187
+      "line": 190
     },
     {
       "id": "GEN-041",
@@ -4687,7 +5056,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 188
+      "line": 191
     },
     {
       "id": "GEN-042",
@@ -4696,7 +5065,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 189
+      "line": 192
     },
     {
       "id": "GEN-027",
@@ -4705,7 +5074,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 206
+      "line": 209
     },
     {
       "id": "GEN-028",
@@ -4714,7 +5083,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 207
+      "line": 210
     },
     {
       "id": "GEN-029",
@@ -4723,7 +5092,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 208
+      "line": 211
     },
     {
       "id": "GEN-030",
@@ -4732,7 +5101,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 209
+      "line": 212
     },
     {
       "id": "GEN-031",
@@ -4741,7 +5110,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 210
+      "line": 213
     },
     {
       "id": "GEN-038",
@@ -4750,7 +5119,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 211
+      "line": 214
     },
     {
       "id": "GEN-032",
@@ -4759,7 +5128,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 212
+      "line": 215
     },
     {
       "id": "GEN-033",
@@ -4768,7 +5137,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 223
+      "line": 226
     },
     {
       "id": "GEN-034",
@@ -4777,7 +5146,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 224
+      "line": 227
     },
     {
       "id": "GEN-035",
@@ -4786,7 +5155,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 225
+      "line": 228
     },
     {
       "id": "GEN-036",
@@ -4795,7 +5164,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 226
+      "line": 229
     },
     {
       "id": "GEN-037",
@@ -4804,7 +5173,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 227
+      "line": 230
     },
     {
       "id": "GEN-044",
@@ -4813,7 +5182,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 228
+      "line": 231
     },
     {
       "id": "IAM-001",
@@ -4963,7 +5332,7 @@
       "id": "IAM-008",
       "area": "IAM",
       "statement": "Users should be provisioned and de-provisioned by SCIM where the customer supports it, with a documented manual path where they do not",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
       "line": 92
@@ -4981,7 +5350,7 @@
       "id": "IAM-010",
       "area": "IAM",
       "statement": "A user disabled at the identity provider must lose access without waiting for a token to expire",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
       "line": 94
@@ -4990,7 +5359,7 @@
       "id": "IAM-011",
       "area": "IAM",
       "statement": "A tenant must be able to federate with more than one identity provider, because contractors and acquisitions do not share a directory",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
       "line": 95
@@ -5071,7 +5440,7 @@
       "id": "IAM-056",
       "area": "IAM",
       "statement": "A change to a user's group membership at the identity provider must take effect within a stated bound: applied on receipt where the provider pushes it (IAM-008), and otherwise re-read at a declared interval and at every re-authentication. The bound must be stated and tested, not left to whenever a token happens to be renewed",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
       "line": 104
@@ -5089,7 +5458,7 @@
       "id": "IAM-065",
       "area": "IAM",
       "statement": "Signing-key rotation at a provider must be picked up without a manual step, and a key that cannot be resolved must refuse the authentication rather than accept an assertion it cannot verify",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
       "line": 106
@@ -5099,9 +5468,18 @@
       "area": "IAM",
       "statement": "Signing out (IAM-039) or revoking a token (IAM-035) must stop further authorised data flowing on any connection already open, within a stated bound, and must not wait for that connection to end. A connection that cannot be terminated must stop delivering and must surface an authentication failure rather than continuing quietly",
       "tranche": "Constraint",
-      "status": "Specified",
+      "status": "Superseded by IAM-082",
       "document": "IAM-identity-tenancy-and-access-control.md",
       "line": 107
+    },
+    {
+      "id": "IAM-082",
+      "area": "IAM",
+      "statement": "Signing out (IAM-039) or revoking a token (IAM-035) must stop further authorised data flowing on any connection already open, within a stated bound, and must not wait for that connection to end. A connection that cannot be terminated must stop delivering and must surface an authentication failure rather than continuing quietly The work it stops must record the sign-out or the revocation as its reason",
+      "tranche": "Constraint",
+      "status": "Specified",
+      "document": "IAM-identity-tenancy-and-access-control.md",
+      "line": 108
     },
     {
       "id": "IAM-068",
@@ -5110,7 +5488,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 108
+      "line": 109
     },
     {
       "id": "IAM-069",
@@ -5119,16 +5497,16 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 109
+      "line": 110
     },
     {
       "id": "IAM-070",
       "area": "IAM",
       "statement": "The permission model must name high-risk administrative acts separately from `administer`, each grantable through a role and explainable in the effective-permission view (IAM-029 to IAM-031): whole-tenant export, audit-log export, applying and releasing a legal hold, initiating suspension or closure, granting support access, rotating a secret, configuring an external service, and configuring webhooks or notification channels",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 110
+      "line": 111
     },
     {
       "id": "IAM-059",
@@ -5137,7 +5515,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 111
+      "line": 112
     },
     {
       "id": "IAM-060",
@@ -5146,7 +5524,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 112
+      "line": 113
     },
     {
       "id": "IAM-061",
@@ -5155,7 +5533,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 113
+      "line": 114
     },
     {
       "id": "IAM-072",
@@ -5164,7 +5542,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 114
+      "line": 115
     },
     {
       "id": "IAM-014",
@@ -5173,16 +5551,16 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 158
+      "line": 159
     },
     {
       "id": "IAM-015",
       "area": "IAM",
       "statement": "Content must be movable between spaces within a tenant, and moving it must re-evaluate its permissions rather than carrying the old ones",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 159
+      "line": 160
     },
     {
       "id": "IAM-016",
@@ -5191,7 +5569,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 160
+      "line": 161
     },
     {
       "id": "IAM-017",
@@ -5200,7 +5578,7 @@
       "tranche": "T4",
       "status": "Superseded by IAM-074",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 161
+      "line": 162
     },
     {
       "id": "IAM-074",
@@ -5209,7 +5587,7 @@
       "tranche": "T4",
       "status": "Withdrawn",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 162
+      "line": 163
     },
     {
       "id": "IAM-018",
@@ -5218,7 +5596,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 178
+      "line": 179
     },
     {
       "id": "IAM-019",
@@ -5227,16 +5605,34 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 179
+      "line": 180
     },
     {
       "id": "IAM-020",
       "area": "IAM",
       "statement": "The right to see a data connection's results must be separately grantable from the right to read the document containing them",
       "tranche": "T2",
+      "status": "Superseded by IAM-083",
+      "document": "IAM-identity-tenancy-and-access-control.md",
+      "line": 181
+    },
+    {
+      "id": "IAM-083",
+      "area": "IAM",
+      "statement": "A dataset must be able to carry a read grant of its own, separate from the right to read the document holding it, and a reader without that grant must see the value marked as withheld, never the value",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 180
+      "line": 182
+    },
+    {
+      "id": "IAM-084",
+      "area": "IAM",
+      "statement": "A person who may not see every value a document holds must not be able to publish it, so that what is published is what its publisher sees",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "IAM-identity-tenancy-and-access-control.md",
+      "line": 183
     },
     {
       "id": "IAM-021",
@@ -5245,7 +5641,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 181
+      "line": 184
     },
     {
       "id": "IAM-022",
@@ -5254,7 +5650,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 182
+      "line": 185
     },
     {
       "id": "IAM-023",
@@ -5263,7 +5659,7 @@
       "tranche": "T1",
       "status": "Superseded by IAM-080",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 183
+      "line": 186
     },
     {
       "id": "IAM-080",
@@ -5272,7 +5668,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 184
+      "line": 187
     },
     {
       "id": "IAM-081",
@@ -5281,7 +5677,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 185
+      "line": 188
     },
     {
       "id": "IAM-062",
@@ -5290,7 +5686,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 186
+      "line": 189
     },
     {
       "id": "IAM-073",
@@ -5299,7 +5695,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 187
+      "line": 190
     },
     {
       "id": "IAM-024",
@@ -5308,7 +5704,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 220
+      "line": 226
     },
     {
       "id": "IAM-025",
@@ -5317,7 +5713,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 221
+      "line": 227
     },
     {
       "id": "IAM-026",
@@ -5326,7 +5722,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 222
+      "line": 228
     },
     {
       "id": "IAM-027",
@@ -5335,16 +5731,16 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 223
+      "line": 229
     },
     {
       "id": "IAM-028",
       "area": "IAM",
       "statement": "Moving an artifact must recompute its effective permissions rather than carrying the ones it had",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 224
+      "line": 230
     },
     {
       "id": "IAM-063",
@@ -5353,7 +5749,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 225
+      "line": 231
     },
     {
       "id": "IAM-029",
@@ -5362,7 +5758,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 242
+      "line": 248
     },
     {
       "id": "IAM-030",
@@ -5371,7 +5767,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 243
+      "line": 249
     },
     {
       "id": "IAM-031",
@@ -5380,16 +5776,16 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 244
+      "line": 250
     },
     {
       "id": "IAM-032",
       "area": "IAM",
       "statement": "An administrator must be able to evaluate permissions as another user without assuming their identity",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 245
+      "line": 251
     },
     {
       "id": "IAM-033",
@@ -5398,7 +5794,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 256
+      "line": 262
     },
     {
       "id": "IAM-034",
@@ -5407,7 +5803,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 257
+      "line": 263
     },
     {
       "id": "IAM-035",
@@ -5416,7 +5812,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 258
+      "line": 264
     },
     {
       "id": "IAM-036",
@@ -5425,7 +5821,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 259
+      "line": 265
     },
     {
       "id": "IAM-037",
@@ -5434,16 +5830,16 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 260
+      "line": 266
     },
     {
       "id": "IAM-038",
       "area": "IAM",
       "statement": "Session lifetime and idle timeout must be configurable per tenant",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 271
+      "line": 277
     },
     {
       "id": "IAM-039",
@@ -5452,7 +5848,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 272
+      "line": 278
     },
     {
       "id": "IAM-040",
@@ -5461,7 +5857,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 273
+      "line": 279
     },
     {
       "id": "IAM-045",
@@ -5470,7 +5866,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 279
+      "line": 285
     },
     {
       "id": "IAM-046",
@@ -5479,7 +5875,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 280
+      "line": 286
     },
     {
       "id": "IAM-047",
@@ -5488,7 +5884,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 281
+      "line": 287
     },
     {
       "id": "IAM-048",
@@ -5497,7 +5893,7 @@
       "tranche": "Constraint",
       "status": "Superseded by IAM-071",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 282
+      "line": 288
     },
     {
       "id": "IAM-049",
@@ -5506,7 +5902,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 283
+      "line": 289
     },
     {
       "id": "IAM-050",
@@ -5515,7 +5911,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 284
+      "line": 290
     },
     {
       "id": "IAM-051",
@@ -5524,7 +5920,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 285
+      "line": 291
     },
     {
       "id": "IAM-071",
@@ -5533,7 +5929,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 286
+      "line": 292
     },
     {
       "id": "IAM-057",
@@ -5542,7 +5938,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 287
+      "line": 293
     },
     {
       "id": "IMP-001",
@@ -5800,7 +6196,7 @@
       "id": "IMP-039",
       "area": "IMP",
       "statement": "The product's own export format must be importable, so that an export can be restored into a tenant. IMP-003's attended rule exists for the split judgement a legacy document needs; content that is already components needs no such judgement and must not be forced through one",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
       "line": 120
@@ -5863,7 +6259,7 @@
       "id": "IMP-021",
       "area": "IMP",
       "statement": "The export must be tested by a test that reads it back and compares, rather than asserted in a contract",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
       "line": 153
@@ -5872,7 +6268,7 @@
       "id": "IMP-022",
       "area": "IMP",
       "statement": "An export must be requestable by a tenant administrator without asking anybody",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
       "line": 154
@@ -5890,7 +6286,7 @@
       "id": "IMP-024",
       "area": "IMP",
       "statement": "Single documents, spaces and publications must be exportable individually as well",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
       "line": 156
@@ -5908,7 +6304,7 @@
       "id": "IMP-040",
       "area": "IMP",
       "statement": "The requester must be able to choose whether a partial export follows references outside its scope, and the export must record which choice was made",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
       "line": 158
@@ -5980,7 +6376,7 @@
       "id": "LIB-001",
       "area": "LIB",
       "statement": "Every library record must belong to a space and be permissioned by it (**IAM**)",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
       "line": 40
@@ -6016,7 +6412,7 @@
       "id": "LIB-005",
       "area": "LIB",
       "statement": "Where a record is used must be listable (**REU-006**)",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
       "line": 44
@@ -6061,7 +6457,7 @@
       "id": "LIB-043",
       "area": "LIB",
       "statement": "Two records may carry the same label in different spaces, because a label is not an identity (LIB-002). Where a shared record and a private one collide by label, both must be offered with the space each came from named, and the author chooses",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
       "line": 49
@@ -6349,7 +6745,7 @@
       "id": "LIB-020",
       "area": "LIB",
       "statement": "A vocabulary must be a named list of permitted values, each with a label and a stable identifier",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
       "line": 178
@@ -6367,7 +6763,7 @@
       "id": "LIB-021",
       "area": "LIB",
       "statement": "A metadata field must be able to draw its permitted values from a vocabulary (**TPL-008**)",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Superseded by MET-003",
       "document": "LIB-reference-libraries.md",
       "line": 180
@@ -6403,7 +6799,7 @@
       "id": "LIB-053",
       "area": "LIB",
       "statement": "A vocabulary must declare the order its values are offered in, and that order must be deterministic rather than whatever the store returns",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
       "line": 184
@@ -6412,7 +6808,7 @@
       "id": "LIB-054",
       "area": "LIB",
       "statement": "A value must be able to carry an optional description, shown where the value is chosen",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
       "line": 185
@@ -6421,7 +6817,7 @@
       "id": "LIB-055",
       "area": "LIB",
       "statement": "A value must be able to be **deprecated** - still offered, marked, with its replacement named - as a state before **retired** (LIB-023), which is no longer offered and still valid where used. This is the term side's behaviour (LIB-018) applied to values",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
       "line": 186
@@ -6493,7 +6889,7 @@
       "id": "LIB-030",
       "area": "LIB",
       "statement": "A library must be shareable between spaces within a tenant, so that a house glossary is maintained once",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
       "line": 230
@@ -7528,7 +7924,7 @@
       "id": "MET-039",
       "area": "MET",
       "statement": "A user field's value must remain readable - shown as no longer active - after that user is de-provisioned (**IAM-008**). A value must never become empty because the user it names has left",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
       "line": 109
@@ -7546,7 +7942,7 @@
       "id": "MET-003",
       "area": "MET",
       "statement": "A field must be able to draw its permitted values from a vocabulary (**LIB**) rather than taking free text, whether the vocabulary is maintained in the tenant or takes its values from an external source (**LIB-058**). _Replaces TPL-008 and LIB-021, which said this twice_",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
       "line": 111
@@ -7708,7 +8104,7 @@
       "id": "MET-014",
       "area": "MET",
       "statement": "Changing a component's type must be an explicit, audited act, taking effect from the component's next version. Versions already cut must keep the type they were cut under",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
       "line": 187
@@ -7834,7 +8230,7 @@
       "id": "MET-025",
       "area": "MET",
       "statement": "A field, a schema and a component type must each record where it is used - by schemas, component types, templates and relationship types, and through them how many artifacts - and changing one must show what the change affects before it is made (**DAT-016** is the same rule for a query definition)",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "MET-metadata-and-component-types.md",
       "line": 264
@@ -8105,9 +8501,27 @@
       "area": "PUB",
       "statement": "Widow and orphan control, keep-with-next and keep-together must be declared by style, passed to each engine as that engine's own rule, and shown by the publishing regression corpus to hold wherever the page allows",
       "tranche": "T1",
-      "status": "Specified",
+      "status": "Superseded by PUB-106",
       "document": "PUB-publishing-and-output.md",
       "line": 84
+    },
+    {
+      "id": "PUB-106",
+      "area": "PUB",
+      "statement": "Widow and orphan control, keep-with-next and keep-together must be declared by style, passed to the PDF's engine as that engine's own rule, and shown by the publishing regression corpus to hold in the PDF wherever the page allows",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "PUB-publishing-and-output.md",
+      "line": 85
+    },
+    {
+      "id": "PUB-107",
+      "area": "PUB",
+      "statement": "Widow and orphan control, keep-with-next and keep-together declared by style must be passed to Word as Word's own rule, and the publishing regression corpus's cases, opened in Word, must show them holding in Word's own pages wherever the page allows",
+      "tranche": "T8",
+      "status": "Specified",
+      "document": "PUB-publishing-and-output.md",
+      "line": 86
     },
     {
       "id": "PUB-019",
@@ -8116,7 +8530,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 85
+      "line": 87
     },
     {
       "id": "PUB-020",
@@ -8125,7 +8539,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 86
+      "line": 88
     },
     {
       "id": "PUB-021",
@@ -8134,7 +8548,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 87
+      "line": 89
     },
     {
       "id": "PUB-022",
@@ -8143,7 +8557,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-096",
       "document": "PUB-publishing-and-output.md",
-      "line": 88
+      "line": 90
     },
     {
       "id": "PUB-096",
@@ -8152,7 +8566,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 89
+      "line": 91
     },
     {
       "id": "PUB-097",
@@ -8161,7 +8575,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 90
+      "line": 92
     },
     {
       "id": "PUB-068",
@@ -8170,7 +8584,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 91
+      "line": 93
     },
     {
       "id": "PUB-069",
@@ -8179,7 +8593,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 92
+      "line": 94
     },
     {
       "id": "PUB-070",
@@ -8188,16 +8602,16 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 93
+      "line": 95
     },
     {
       "id": "PUB-023",
       "area": "PUB",
       "statement": "Word must be a first-class output, not a convenience export",
-      "tranche": "T1",
+      "tranche": "T8",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 110
+      "line": 119
     },
     {
       "id": "PUB-024",
@@ -8206,7 +8620,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 111
+      "line": 120
     },
     {
       "id": "PUB-025",
@@ -8215,7 +8629,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 112
+      "line": 121
     },
     {
       "id": "PUB-026",
@@ -8224,7 +8638,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 113
+      "line": 122
     },
     {
       "id": "PUB-027",
@@ -8233,7 +8647,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 114
+      "line": 123
     },
     {
       "id": "PUB-028",
@@ -8242,7 +8656,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 115
+      "line": 124
     },
     {
       "id": "PUB-029",
@@ -8251,7 +8665,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 116
+      "line": 125
     },
     {
       "id": "PUB-065",
@@ -8260,7 +8674,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 117
+      "line": 126
     },
     {
       "id": "PUB-066",
@@ -8269,7 +8683,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 118
+      "line": 127
     },
     {
       "id": "PUB-067",
@@ -8278,7 +8692,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 119
+      "line": 128
     },
     {
       "id": "PUB-078",
@@ -8287,7 +8701,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 120
+      "line": 129
     },
     {
       "id": "PUB-030",
@@ -8296,7 +8710,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-090",
       "document": "PUB-publishing-and-output.md",
-      "line": 137
+      "line": 153
     },
     {
       "id": "PUB-090",
@@ -8305,7 +8719,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-103",
       "document": "PUB-publishing-and-output.md",
-      "line": 138
+      "line": 154
     },
     {
       "id": "PUB-103",
@@ -8314,7 +8728,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 139
+      "line": 155
     },
     {
       "id": "PUB-104",
@@ -8323,7 +8737,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-105",
       "document": "PUB-publishing-and-output.md",
-      "line": 140
+      "line": 156
     },
     {
       "id": "PUB-105",
@@ -8332,7 +8746,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 141
+      "line": 157
     },
     {
       "id": "PUB-031",
@@ -8341,7 +8755,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 142
+      "line": 158
     },
     {
       "id": "PUB-032",
@@ -8350,7 +8764,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 143
+      "line": 159
     },
     {
       "id": "PUB-033",
@@ -8359,7 +8773,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 144
+      "line": 160
     },
     {
       "id": "PUB-034",
@@ -8368,7 +8782,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 145
+      "line": 161
     },
     {
       "id": "PUB-035",
@@ -8377,7 +8791,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-100",
       "document": "PUB-publishing-and-output.md",
-      "line": 146
+      "line": 162
     },
     {
       "id": "PUB-100",
@@ -8386,7 +8800,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 147
+      "line": 163
     },
     {
       "id": "PUB-101",
@@ -8395,7 +8809,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 148
+      "line": 164
     },
     {
       "id": "PUB-036",
@@ -8404,7 +8818,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-091",
       "document": "PUB-publishing-and-output.md",
-      "line": 149
+      "line": 165
     },
     {
       "id": "PUB-091",
@@ -8413,7 +8827,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 150
+      "line": 166
     },
     {
       "id": "PUB-080",
@@ -8422,7 +8836,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 151
+      "line": 167
     },
     {
       "id": "PUB-037",
@@ -8431,7 +8845,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 170
+      "line": 186
     },
     {
       "id": "PUB-038",
@@ -8440,7 +8854,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 171
+      "line": 187
     },
     {
       "id": "PUB-039",
@@ -8449,7 +8863,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 172
+      "line": 188
     },
     {
       "id": "PUB-040",
@@ -8458,7 +8872,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 173
+      "line": 189
     },
     {
       "id": "PUB-041",
@@ -8467,7 +8881,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 174
+      "line": 190
     },
     {
       "id": "PUB-042",
@@ -8476,7 +8890,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 175
+      "line": 191
     },
     {
       "id": "PUB-043",
@@ -8485,7 +8899,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 191
+      "line": 207
     },
     {
       "id": "PUB-063",
@@ -8494,7 +8908,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 192
+      "line": 208
     },
     {
       "id": "PUB-064",
@@ -8503,7 +8917,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-085",
       "document": "PUB-publishing-and-output.md",
-      "line": 193
+      "line": 209
     },
     {
       "id": "PUB-085",
@@ -8512,7 +8926,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-102",
       "document": "PUB-publishing-and-output.md",
-      "line": 194
+      "line": 210
     },
     {
       "id": "PUB-102",
@@ -8521,7 +8935,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 195
+      "line": 211
     },
     {
       "id": "PUB-044",
@@ -8530,7 +8944,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 196
+      "line": 212
     },
     {
       "id": "PUB-045",
@@ -8539,7 +8953,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 197
+      "line": 213
     },
     {
       "id": "PUB-082",
@@ -8548,7 +8962,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 198
+      "line": 214
     },
     {
       "id": "PUB-046",
@@ -8557,7 +8971,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 199
+      "line": 215
     },
     {
       "id": "PUB-075",
@@ -8566,7 +8980,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 200
+      "line": 216
     },
     {
       "id": "PUB-076",
@@ -8575,7 +8989,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 201
+      "line": 217
     },
     {
       "id": "PUB-077",
@@ -8584,7 +8998,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 202
+      "line": 218
     },
     {
       "id": "PUB-047",
@@ -8593,7 +9007,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 227
+      "line": 243
     },
     {
       "id": "PUB-093",
@@ -8602,7 +9016,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 228
+      "line": 244
     },
     {
       "id": "PUB-048",
@@ -8611,7 +9025,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 229
+      "line": 245
     },
     {
       "id": "PUB-049",
@@ -8620,7 +9034,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 230
+      "line": 246
     },
     {
       "id": "PUB-050",
@@ -8629,7 +9043,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 231
+      "line": 247
     },
     {
       "id": "PUB-057",
@@ -8638,7 +9052,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 232
+      "line": 248
     },
     {
       "id": "PUB-058",
@@ -8647,7 +9061,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 233
+      "line": 249
     },
     {
       "id": "PUB-059",
@@ -8656,7 +9070,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 234
+      "line": 250
     },
     {
       "id": "PUB-060",
@@ -8665,7 +9079,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 235
+      "line": 251
     },
     {
       "id": "PUB-073",
@@ -8674,7 +9088,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 236
+      "line": 252
     },
     {
       "id": "PUB-074",
@@ -8683,7 +9097,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 237
+      "line": 253
     },
     {
       "id": "PUB-081",
@@ -8692,7 +9106,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 238
+      "line": 254
     },
     {
       "id": "PUB-083",
@@ -8701,7 +9115,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 239
+      "line": 255
     },
     {
       "id": "PUB-084",
@@ -8710,7 +9124,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 240
+      "line": 256
     },
     {
       "id": "PUB-051",
@@ -8719,7 +9133,7 @@
       "tranche": "Constraint",
       "status": "Superseded by PUB-072",
       "document": "PUB-publishing-and-output.md",
-      "line": 270
+      "line": 286
     },
     {
       "id": "PUB-052",
@@ -8728,7 +9142,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 271
+      "line": 287
     },
     {
       "id": "PUB-053",
@@ -8737,7 +9151,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 272
+      "line": 288
     },
     {
       "id": "PUB-071",
@@ -8746,7 +9160,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 273
+      "line": 289
     },
     {
       "id": "PUB-072",
@@ -8755,7 +9169,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 274
+      "line": 290
     },
     {
       "id": "PUB-094",
@@ -8764,7 +9178,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 275
+      "line": 291
     },
     {
       "id": "PUB-079",
@@ -8773,7 +9187,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 276
+      "line": 292
     },
     {
       "id": "PUB-054",
@@ -8782,7 +9196,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 292
+      "line": 308
     },
     {
       "id": "PUB-055",
@@ -8791,7 +9205,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 293
+      "line": 309
     },
     {
       "id": "PUB-056",
@@ -8800,7 +9214,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 294
+      "line": 310
     },
     {
       "id": "REL-001",
@@ -9841,7 +10255,7 @@
       "id": "SCH-004",
       "area": "SCH",
       "statement": "An asset must be findable by its caption, alt text and filename as well as its metadata (**AST-027**)",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
       "line": 45
@@ -9904,7 +10318,7 @@
       "id": "SCH-009",
       "area": "SCH",
       "statement": "A permission change must take effect in search promptly, and the delay must be stated rather than assumed",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
       "line": 72
@@ -10309,7 +10723,7 @@
       "id": "SCH-028",
       "area": "SCH",
       "statement": "Indexing must be resumable and re-runnable without downtime",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
       "line": 167
@@ -10327,7 +10741,7 @@
       "id": "SCH-030",
       "area": "SCH",
       "statement": "Indexing failures must be visible to an administrator, because content that silently fails to index is content that has disappeared",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
       "line": 169
@@ -10920,7 +11334,7 @@
     {
       "id": "STR-072",
       "area": "STR",
-      "statement": "Opening a document of five hundred outline nodes, four hundred of them component references, and showing the result of each structural act on it - an insert, a removal, a retitle, a move, a promotion, a demotion and where a section starts - must take the interface at or under 250 ms at p95, with no measured sample above 500 ms: the time from the act to its result painted, less the time the service spends answering the requests it waits on, measured in a browser against the running service on a declared reference configuration recorded beside the result",
+      "statement": "Opening a document of five hundred outline nodes, four hundred of them component references, from within the application - from the documents list, the interface already running, never its address loaded into a fresh page - and showing the result of each structural act on it - an insert, a removal, a retitle, a move, a promotion, a demotion and where a section starts - must take the interface at or under 250 ms at p95, with no measured sample above 500 ms: the time from the act to its result painted, less the time the service spends answering the requests it waits on, measured in a browser against the running service on a declared reference configuration recorded beside the result",
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
@@ -11083,7 +11497,7 @@
       "id": "STY-007",
       "area": "STY",
       "statement": "A style should be able to derive from another and inherit its unstated properties; the chain must be finite and must be checked for cycles",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Superseded by STY-056",
       "document": "STY-styles-and-presentation-themes.md",
       "line": 41
@@ -11092,7 +11506,7 @@
       "id": "STY-056",
       "area": "STY",
       "statement": "A style must be able to derive from another and inherit its unstated properties. The chain must be finite and must be checked for cycles",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
       "line": 42
@@ -11101,7 +11515,7 @@
       "id": "STY-057",
       "area": "STY",
       "statement": "Resolving a derived style must take each property from the nearest ancestor that states it, and the resolved set - every property and where it came from - must be inspectable (STY-035)",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
       "line": 43
@@ -11326,7 +11740,7 @@
       "id": "STY-063",
       "area": "STY",
       "statement": "An admonition style must declare, for each type in the vocabulary, its label, its icon where it has one, its border and background treatment, and the paragraph style its content takes",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
       "line": 135
@@ -11335,7 +11749,7 @@
       "id": "STY-064",
       "area": "STY",
       "statement": "The vocabulary of admonition types must be the catalogue's, and content must take it from there (**CNT-120**) rather than each declaring its own",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
       "line": 136
@@ -11407,7 +11821,7 @@
       "id": "STY-026",
       "area": "STY",
       "statement": "Moving a document to a different theme must be an administrative act, never an authoring one, and must be audited",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
       "line": 158
@@ -11443,7 +11857,7 @@
       "id": "STY-067",
       "area": "STY",
       "statement": "Before a new theme version is adopted, which documents it would change must be listable - STY-034 one level up - so that a theme bump is a decision with a visible blast radius rather than a surprise across a tenant",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
       "line": 162
@@ -11452,7 +11866,7 @@
       "id": "STY-072",
       "area": "STY",
       "statement": "Adding a theme must be possible without a code change or a release, on the same terms as adding a style (STY-029) or a citation style (STY-023)",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
       "line": 163
@@ -11461,7 +11875,7 @@
       "id": "STY-029",
       "area": "STY",
       "statement": "An administrator must be able to add a style to a catalogue without a code change or a release",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
       "line": 182
@@ -11470,7 +11884,7 @@
       "id": "STY-030",
       "area": "STY",
       "statement": "A style added that way must immediately be selectable by authors and honoured by every output format",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
       "line": 183
@@ -11479,7 +11893,7 @@
       "id": "STY-031",
       "area": "STY",
       "statement": "A style must not be deletable while anything references it, and its uses must be listable",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
       "line": 184
@@ -11488,7 +11902,7 @@
       "id": "STY-032",
       "area": "STY",
       "statement": "Adding, changing and deleting a style must be audited, including what changed",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
       "line": 185
@@ -11497,7 +11911,7 @@
       "id": "STY-033",
       "area": "STY",
       "statement": "A tenant must be able to restrict which styles authors may choose, so that a catalogue can hold more than a house style permits",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
       "line": 186
@@ -11506,7 +11920,7 @@
       "id": "STY-034",
       "area": "STY",
       "statement": "Changing a style must show what it will affect before the change is made",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
       "line": 187
@@ -11569,7 +11983,7 @@
       "id": "STY-081",
       "area": "STY",
       "statement": "Every style property that both Word and the PDF render must be verified, by an automated suite, to render in a Word document at the value the PDF of the same content renders it, within the same tolerances as STY-080, a difference allowed only where STY-060's list of approved deviations names it",
-      "tranche": "T1",
+      "tranche": "T8",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
       "line": 199
@@ -11608,7 +12022,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 220
+      "line": 226
     },
     {
       "id": "STY-040",
@@ -11617,7 +12031,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 221
+      "line": 227
     },
     {
       "id": "STY-041",
@@ -11626,7 +12040,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 222
+      "line": 228
     },
     {
       "id": "STY-042",
@@ -11635,7 +12049,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 223
+      "line": 229
     },
     {
       "id": "STY-045",
@@ -11644,16 +12058,16 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 224
+      "line": 230
     },
     {
       "id": "STY-046",
       "area": "STY",
       "statement": "A tenant must be able to supply its own typefaces, asserting the licence it holds them under, and the product must not redistribute an uploaded face beyond the tenant that supplied it",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 225
+      "line": 231
     },
     {
       "id": "STY-047",
@@ -11662,7 +12076,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 226
+      "line": 232
     },
     {
       "id": "STY-048",
@@ -11671,7 +12085,7 @@
       "tranche": "T1",
       "status": "Superseded by STY-074",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 227
+      "line": 233
     },
     {
       "id": "STY-074",
@@ -11680,7 +12094,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 228
+      "line": 234
     },
     {
       "id": "STY-075",
@@ -11689,7 +12103,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 229
+      "line": 235
     },
     {
       "id": "STY-049",
@@ -11698,7 +12112,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 230
+      "line": 236
     },
     {
       "id": "STY-052",
@@ -11707,7 +12121,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 231
+      "line": 237
     },
     {
       "id": "STY-062",
@@ -11716,43 +12130,43 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 232
+      "line": 238
     },
     {
       "id": "STY-043",
       "area": "STY",
       "statement": "A catalogue must be exportable and importable, so that a house style can move between spaces and tenants",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 266
+      "line": 272
     },
     {
       "id": "STY-044",
       "area": "STY",
       "statement": "An import must report anything it could not represent rather than dropping it",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 267
+      "line": 273
     },
     {
       "id": "STY-071",
       "area": "STY",
       "statement": "An import must validate that every typeface, catalogue and style the imported catalogue references exists in the destination, and must report what does not at import time rather than leaving it to fail at publish (STY-027)",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 268
+      "line": 274
     },
     {
       "id": "STY-073",
       "area": "STY",
       "statement": "An exported catalogue must re-import into an equivalent catalogue, and that round trip must be covered by a test rather than asserted",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 269
+      "line": 275
     },
     {
       "id": "TAB-001",
@@ -11784,7 +12198,7 @@
     {
       "id": "TAB-004",
       "area": "TAB",
-      "statement": "A column the query did not return must fail rather than render empty (**DAT-044**)",
+      "statement": "A column the query did not return must fail rather than render empty (**DAT-086**)",
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
@@ -11811,7 +12225,7 @@
     {
       "id": "TAB-036",
       "area": "TAB",
-      "statement": "Every declaration this area names - which columns appear and in what order, headers, units, width overrides, sorts, grouping, totals, formatting overrides, the empty state, any reshaping and the wide-table strategy - must live in the table's definition and must address a column by the key the query declares (**DAT-011**, **DAT-012**), never by its position in the result",
+      "statement": "Every declaration this area names - which columns appear and in what order, headers, units, width overrides, sorts, grouping, totals, formatting overrides, the empty state, any reshaping and the wide-table strategy - must live in the table's definition and must address a column by the key the query declares (**DAT-080**, **DAT-012**), never by its position in the result",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
@@ -11910,7 +12324,7 @@
     {
       "id": "TAB-047",
       "area": "TAB",
-      "statement": "A total computed here rather than returned by the query (TAB-010) must record its inputs and its rule in provenance, so that a number on the page that no query returned can still be explained (**DAT-040**)",
+      "statement": "A total computed here rather than returned by the query (TAB-010) must record its inputs and its rule in provenance, so that a number on the page that no query returned can still be explained (**DAT-085**)",
       "tranche": "T2",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
@@ -12298,7 +12712,7 @@
       "id": "TPL-005",
       "area": "TPL",
       "statement": "A template must be testable by creating a throwaway document from it, without that document entering the space",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
       "line": 52
@@ -12334,7 +12748,7 @@
       "id": "TPL-008",
       "area": "TPL",
       "statement": "A field must be able to draw its permitted values from a controlled vocabulary rather than being free text (**LIB**)",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Superseded by MET-003",
       "document": "TPL-templates-and-document-instantiation.md",
       "line": 77
@@ -12551,9 +12965,18 @@
       "area": "TPL",
       "statement": "Whether a binding's query runs at creation and is pinned, or stays live, must follow the binding mode (**DAT-034**) rather than being a template setting",
       "tranche": "T2",
-      "status": "Specified",
+      "status": "Superseded by TPL-065",
       "document": "TPL-templates-and-document-instantiation.md",
       "line": 131
+    },
+    {
+      "id": "TPL-065",
+      "area": "TPL",
+      "statement": "A binding's query must run when a document is created from its template, and its result must be stored (**DAT-083**); the binding's mode, checked or pinned (**DAT-082**), must govern only how source revisions are looked for, and must not be a template setting",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "TPL-templates-and-document-instantiation.md",
+      "line": 132
     },
     {
       "id": "TPL-024",
@@ -12562,7 +12985,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 132
+      "line": 133
     },
     {
       "id": "TPL-025",
@@ -12571,7 +12994,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 133
+      "line": 134
     },
     {
       "id": "TPL-026",
@@ -12580,25 +13003,25 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 134
+      "line": 135
     },
     {
       "id": "TPL-050",
       "area": "TPL",
       "statement": "Creating a document must record who created it and when, on the document and in the audit log (**LIF-026**, **LIF-027**), alongside the template version TPL-025 records",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 135
+      "line": 136
     },
     {
       "id": "TPL-048",
       "area": "TPL",
       "statement": "A throwaway test document (TPL-005) must be discarded when the test ends and must never become reachable. Anything it produced - a binding run, a derived asset - must go with it",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 136
+      "line": 137
     },
     {
       "id": "TPL-027",
@@ -12607,7 +13030,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 146
+      "line": 147
     },
     {
       "id": "TPL-028",
@@ -12616,7 +13039,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 147
+      "line": 148
     },
     {
       "id": "TPL-029",
@@ -12625,7 +13048,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 148
+      "line": 149
     },
     {
       "id": "TPL-030",
@@ -12634,7 +13057,7 @@
       "tranche": "T1",
       "status": "Withdrawn",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 149
+      "line": 150
     },
     {
       "id": "TPL-044",
@@ -12643,7 +13066,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 150
+      "line": 151
     },
     {
       "id": "TPL-031",
@@ -12652,16 +13075,16 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 166
+      "line": 167
     },
     {
       "id": "TPL-032",
       "area": "TPL",
       "statement": "It must be possible to list the documents created from a given template version",
-      "tranche": "T2",
+      "tranche": "T7",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 167
+      "line": 168
     },
     {
       "id": "TPL-033",
@@ -12670,7 +13093,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 168
+      "line": 169
     },
     {
       "id": "TPL-034",
@@ -12679,7 +13102,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 169
+      "line": 170
     },
     {
       "id": "TPL-035",
@@ -12688,7 +13111,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 170
+      "line": 171
     },
     {
       "id": "TPL-058",
@@ -12697,7 +13120,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 171
+      "line": 172
     },
     {
       "id": "TPL-036",
@@ -12706,7 +13129,7 @@
       "tranche": "T1",
       "status": "Superseded by TPL-055",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 182
+      "line": 183
     },
     {
       "id": "TPL-037",
@@ -12715,7 +13138,7 @@
       "tranche": "T1",
       "status": "Superseded by MET-022",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 183
+      "line": 184
     },
     {
       "id": "TPL-038",
@@ -12724,7 +13147,7 @@
       "tranche": "T1",
       "status": "Superseded by MET-021",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 184
+      "line": 185
     },
     {
       "id": "TPL-043",
@@ -12733,7 +13156,7 @@
       "tranche": "Constraint",
       "status": "Superseded by TPL-057",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 185
+      "line": 186
     },
     {
       "id": "TPL-055",
@@ -12742,7 +13165,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 186
+      "line": 187
     },
     {
       "id": "TPL-056",
@@ -12751,7 +13174,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 187
+      "line": 188
     },
     {
       "id": "TPL-057",
@@ -12760,7 +13183,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 188
+      "line": 189
     },
     {
       "id": "TPL-039",
@@ -12769,7 +13192,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 212
+      "line": 213
     },
     {
       "id": "TPL-040",
@@ -12778,7 +13201,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 213
+      "line": 214
     },
     {
       "id": "TPL-047",
@@ -12787,7 +13210,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 214
+      "line": 215
     },
     {
       "id": "VER-001",
@@ -13494,109 +13917,115 @@
       "id": "DAT-N01",
       "statement": "**Not an ETL tool.** Reshaping, joining and aggregating happen in the source or in the query, not in a pipeline this product owns",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 268
+      "line": 420
     },
     {
       "id": "DAT-N02",
       "statement": "**No writing back to a source.** Every connection is read-only, and a connector that could write would make this product part of somebody's change-control boundary",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 269
+      "line": 421
     },
     {
       "id": "DAT-N03",
       "statement": "**No ad-hoc queries written by document authors.** A query is a reviewed artifact; an author chooses one and supplies parameters",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 270
+      "line": 422
     },
     {
       "id": "DAT-N04",
       "statement": "**No dashboards and no exploratory analysis.** Scope §8 is explicit, and a report is not a BI tool with prose around it",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 271
+      "line": 423
     },
     {
       "id": "DAT-N05",
       "statement": "**No revising the source.** A revision (DAT-057) changes what this document says, never what the source system holds. DAT-N02 is why: a connection that could write back would put this product inside somebody else's change control",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 272
+      "line": 424
     },
     {
       "id": "DAT-N06",
       "statement": "**No unmarked revision.** There is no way to make a hand-entered value look like a queried one (DAT-059), and no setting that turns the marking off",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 273
+      "line": 425
+    },
+    {
+      "id": "DAT-N07",
+      "statement": "**No uploaded file as a data source.** An upload is a push, and a push can never be checked for a source revision. A file is read from S3-compatible storage or over HTTP (DAT-074)",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 426
     },
     {
       "id": "GEN-N01",
       "statement": "**No autonomous publishing.** Nothing a model produces reaches a reader without a person accepting it",
       "document": "GEN-generative-ai.md",
-      "line": 240
+      "line": 243
     },
     {
       "id": "GEN-N02",
       "statement": "**Not a model host.** The product calls endpoints; it does not serve models",
       "document": "GEN-generative-ai.md",
-      "line": 241
+      "line": 244
     },
     {
       "id": "GEN-N03",
       "statement": "**No training on customer content.** This product does not train on it. An endpoint that does may only be used where that is stated in configuration (GEN-031)",
       "document": "GEN-generative-ai.md",
-      "line": 242
+      "line": 245
     },
     {
       "id": "GEN-N04",
       "statement": "**No tool the product does not define.** The assistant's tools are the product's own capabilities and nothing else (GEN-007) - a rule about what it may **do**, never about what a user may **ask** (GEN-047, GEN-050)",
       "document": "GEN-generative-ai.md",
-      "line": 243
+      "line": 246
     },
     {
       "id": "GEN-N05",
       "statement": "**No shared personal prompt.** A personal prompt is private until somebody promotes it (GEN-055); there is no setting that shares one, and none that lets a template bind one",
       "document": "GEN-generative-ai.md",
-      "line": 244
+      "line": 247
     },
     {
       "id": "GEN-N06",
       "statement": "**No silent discard.** A generated proposal leaves the record only by somebody discarding it deliberately, and the fact that they did stays (GEN-040, GEN-041)",
       "document": "GEN-generative-ai.md",
-      "line": 245
+      "line": 248
     },
     {
       "id": "IAM-N01",
       "statement": "**Not an identity provider.** Authentication federates to the customer's provider, or to a Google account where the tenant has none. The product holds no password (IAM-042)",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 310
+      "line": 316
     },
     {
       "id": "IAM-N02",
       "statement": "**No permission finer than a component.** A component is the unit of reuse and of review; permissions inside one would have to travel with it into every document that uses it",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 311
+      "line": 317
     },
     {
       "id": "IAM-N03",
       "statement": "**No sharing between tenants.** An outsider participates as a guest principal inside the host tenant (section 11), never as a bridge between two. Cross-tenant sharing is deferred rather than refused - see [ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md)",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 312
+      "line": 318
     },
     {
       "id": "IAM-N04",
       "statement": "**No enforcement in the renderer.** The renderer is untrusted in both deliveries; what it hides is presentation, and the service refuses regardless",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 313
+      "line": 319
     },
     {
       "id": "IAM-N05",
       "statement": "**No permission outside a role** (IAM-062). A grant binds a role to a principal or a group at a level; there is no per-user permission set beside it, because section 8 could not explain one",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 314
+      "line": 320
     },
     {
       "id": "IAM-N06",
       "statement": "**No vendor account inside a tenant** once it is bootstrapped (IAM-061). Support reaches a tenant through access that tenant granted, bounded and can revoke (**ADM-023**), and by no other route",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 315
+      "line": 321
     },
     {
       "id": "IMP-N01",
@@ -13770,25 +14199,25 @@
       "id": "PUB-N01",
       "statement": "**Not a prepress system.** No imposition, colour separation, trapping or bleed management",
       "document": "PUB-publishing-and-output.md",
-      "line": 300
+      "line": 316
     },
     {
       "id": "PUB-N02",
       "statement": "**No web publishing channel, and no anonymous distribution.** The output is documents, not a site. A report meant for the public goes on a web server, and the product's involvement ends at the file ([ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md))",
       "document": "PUB-publishing-and-output.md",
-      "line": 301
+      "line": 317
     },
     {
       "id": "PUB-N03",
       "statement": "**No editing of output.** A published artifact is produced from a baseline; correcting it means correcting the document and publishing again",
       "document": "PUB-publishing-and-output.md",
-      "line": 302
+      "line": 318
     },
     {
       "id": "PUB-N04",
       "statement": "**Google Docs is not held to the fidelity bar**, and must not be sold as though it were",
       "document": "PUB-publishing-and-output.md",
-      "line": 303
+      "line": 319
     },
     {
       "id": "REL-N01",
@@ -13908,31 +14337,31 @@
       "id": "STY-N01",
       "statement": "**No per-document and no per-author overrides.** A document that needs a different look uses a different theme (CNT-N08)",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 275
+      "line": 281
     },
     {
       "id": "STY-N02",
       "statement": "**No page geometry.** Size, margins, running heads and columns belong to the publishing layout",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 276
+      "line": 282
     },
     {
       "id": "STY-N03",
       "statement": "**No stylesheet or code supplied by a tenant.** Extension is declarative, from a fixed set of properties. Arbitrary style code would be an injection surface and would make every output format a rendering engine",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 277
+      "line": 283
     },
     {
       "id": "STY-N04",
       "statement": "**Not a design tool.** A theme is configured, not drawn",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 278
+      "line": 284
     },
     {
       "id": "STY-N05",
       "statement": "**No inverting content in dark mode.** The application's chrome may go dark; the document canvas stays the theme's paper and ink, because a theme's colours were chosen for paper",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 279
+      "line": 285
     },
     {
       "id": "TAB-N01",
@@ -13962,25 +14391,25 @@
       "id": "TPL-N01",
       "statement": "**No document that stays synchronised with its template.** Moving forward is a migration, taken deliberately (section 9)",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 220
+      "line": 221
     },
     {
       "id": "TPL-N02",
       "statement": "**No template inheritance in the first instance.** A template that derives from another is a reasonable idea and an unreasonable amount of consequence; see TPL-Q02",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 221
+      "line": 222
     },
     {
       "id": "TPL-N03",
       "statement": "**No definitions owned here that another area owns.** A template references a theme, a layout, a query set and a prompt library; it does not contain them",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 222
+      "line": 223
     },
     {
       "id": "TPL-N04",
       "statement": "**Not a form builder.** A metadata schema describes a document, not a data-entry application",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 223
+      "line": 224
     },
     {
       "id": "VER-N01",
@@ -14300,147 +14729,147 @@
       "question": "**May a block binding produce a chart as well as a table?** A declared chart in a report is ordinary in this market and is not the exploratory analysis §8 rules out - but it needs a declared chart type and encodings, resolved by a style",
       "settledBy": "Whether a first customer's reports contain generated charts. If yes it is an **STY** catalogue plus a renderer, not a BI tool",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 279
+      "line": 432
     },
     {
       "id": "DAT-Q02",
-      "question": "**How is \"the source has moved\" detected cheaply (DAT-036)?** Re-running every query to find out whether anything changed defeats the point of pinning",
+      "question": "**How is \"the source has moved\" detected cheaply (DAT-084)?** Re-running every query to find out whether anything changed defeats the point of pinning",
       "settledBy": "What connectors can actually offer - a row version, an etag, a modified timestamp - which differs by source. Whatever the answer, it is declared per connector under DAT-073 rather than assumed of all of them",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 280
+      "line": 433
     },
     {
       "id": "DAT-Q03",
       "question": "**What does a pinned value mean to a reader who cannot see the source (DAT-024)?** They see a number obtained under somebody else's access",
-      "settledBy": "A decision with **IAM**: whether pass-through connections may be used in documents with a wider readership",
+      "settledBy": "**Settled.** The document's permission governs who reads a binding's stored result, and the source's own rules only who may fetch or accept one; accepting a result obtained under one's own identity warns that everyone who may read the document will see it (DAT-090, DAT-091). See [ADR-0035](../../decisions/0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md)",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 281
+      "line": 434
     },
     {
       "id": "DAT-Q04",
       "question": "**Do query definitions need to compose?** One query over the result of another is a common request and a common way to end up with an ETL tool nobody meant to build",
       "settledBy": "A customer requirement that cannot be met by writing one query in the source",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 282
+      "line": 435
     },
     {
       "id": "DAT-Q05",
       "question": "**How much does a published document show about a revision (DAT-059, DAT-062)?** That a value was revised, or also what the query had returned and why somebody disagreed with it",
       "settledBy": "A decision with **PUB**, and the first customer whose output a regulator reads. Provenance holds both halves either way; this is about what the page shows",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 283
+      "line": 436
     },
     {
       "id": "DAT-Q06",
       "question": "**What is the aggregate execution limit (DAT-071), and is it per tenant, per connection or per source?** A baseline with four hundred live bindings is one document to an author and a denial of service to a source",
       "settledBy": "Measurement against a real source, and what connectors report about their own capacity. The limit exists either way; the number and its shape do not yet",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 284
+      "line": 437
     },
     {
       "id": "GEN-Q01",
       "question": "**Does accepted generated content stay marked?** Keeping the mark makes GEN-026 answerable for ever; removing it treats accepted text as authored",
       "settledBy": "A regulatory view. The safer answer is to keep the record even after the mark stops showing",
       "document": "GEN-generative-ai.md",
-      "line": 251
+      "line": 254
     },
     {
       "id": "GEN-Q02",
       "question": "**May a model see content the user can read but should not send outside the tenant?** Permission and data residency are different questions",
       "settledBy": "A decision with **IAM** and **ADM**, forced by the first customer with residency rules",
       "document": "GEN-generative-ai.md",
-      "line": 252
+      "line": 255
     },
     {
       "id": "GEN-Q03",
       "question": "**How is a prompt tested?** A prompt is a versioned artifact whose behaviour is not deterministic, which makes review hard to define",
       "settledBy": "Whether prompt evaluation belongs in the product or beside it",
       "document": "GEN-generative-ai.md",
-      "line": 253
+      "line": 256
     },
     {
       "id": "GEN-Q04",
       "question": "**Does the assistant get memory across sessions?** Useful, and a second store of customer content with its own permission problem",
       "settledBy": "Whether the value survives the governance it would need",
       "document": "GEN-generative-ai.md",
-      "line": 254
+      "line": 257
     },
     {
       "id": "GEN-Q05",
       "question": "**Who configures the guardrails (GEN-049), and how much may a tenant change?** A tenant that can weaken them has a product liability; one that cannot has a compliance department it cannot satisfy",
       "settledBy": "A decision taken with the first regulated customer, and a view on what the product refuses on its own behalf rather than on a tenant's",
       "document": "GEN-generative-ai.md",
-      "line": 255
+      "line": 258
     },
     {
       "id": "GEN-Q06",
       "question": "**Is a conversation transcript retained, and who can see it?** Distinct from GEN-Q04: that asks whether the assistant remembers, this asks whether the record survives and is discoverable",
       "settledBy": "**LIF** retention, and a legal view. A transcript is customer content with a second copy of whatever it retrieved",
       "document": "GEN-generative-ai.md",
-      "line": 256
+      "line": 259
     },
     {
       "id": "IAM-Q01",
       "question": "**Pure federation, or a first-party identity provider with federation as an option?**",
       "settledBy": "**Settled.** Federation, plus Google-authenticated accounts where a tenant has no provider yet, and never a local password. See [ADR-0009](../../decisions/0009-federation-and-google-accounts-no-local-passwords.md)",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 321
+      "line": 327
     },
     {
       "id": "IAM-Q02",
       "question": "**Is the component really the finest useful grain (IAM-N02)?** Section-level permission is asked for in regulated submissions, where one annex has a narrower readership than its report",
       "settledBy": "A customer requirement that cannot be met by putting the annex in its own space",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 322
+      "line": 328
     },
     {
       "id": "IAM-Q03",
       "question": "**Is there anonymous or link-based read for a published artifact?**",
       "settledBy": "**Settled.** Link-based, never anonymous: a publication is shared to a named recipient who proves who they are once (PUB-057 to PUB-060). See [ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md)",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 323
+      "line": 329
     },
     {
       "id": "IAM-Q04",
       "question": "**How does cross-tenant collaboration work, if at all?**",
       "settledBy": "**Settled for now.** Guest principals inside the host tenant, and true cross-tenant sharing deferred until customers' clients become customers themselves. See [ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md)",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 324
+      "line": 330
     },
     {
       "id": "IAM-Q05",
       "question": "**What happens to a guest's attribution when their access is revoked?** Their comments and accepted suggestions are part of the audited record of how the document reached its wording, and a name that vanishes from a five-year-old baseline is the failure this specification keeps finding. An erasure request points the other way",
       "settledBy": "Legal advice on where attribution in an audited record sits against a right to erasure, which is a question about the regime rather than about the product",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 325
+      "line": 331
     },
     {
       "id": "IAM-Q06",
       "question": "**Is the same human guesting for three tenants three unrelated principals?** ADR-0008 implies yes, and a shared directory across tenants would be a convenience that quietly crosses the isolation boundary",
       "settledBy": "Whether a guest ever needs to see their work across tenants in one place, which nobody has yet asked for",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 326
+      "line": 332
     },
     {
       "id": "IAM-Q07",
       "question": "**What makes IAM-010 and IAM-035 immediate, and what does the check cost?** Short-lived tokens with refresh, an introspection call per request, or a revocation list each buy immediacy at a different price, and the answer constrains every service the product ever has",
       "settledBy": "An architecture decision, which this one owes and does not yet have. IAM-055 states the property the answer must have",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 327
+      "line": 333
     },
     {
       "id": "IAM-Q08",
       "question": "**How many days is the timetable in IAM-006 and IAM-058?**",
       "settledBy": "**ADM-Q06**, which asks the same question from the administrative end. One clock, one number, one answer",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 328
+      "line": 334
     },
     {
       "id": "IAM-Q09",
       "question": "**May a tenant buy a grace window for an identity provider outage (IAM-064)?** Failing closed is correct and means an outage at the provider is an outage of the product",
       "settledBy": "A customer with an availability expectation that collides with failing closed, and a view on whether that risk is theirs to accept",
       "document": "IAM-identity-tenancy-and-access-control.md",
-      "line": 329
+      "line": 335
     },
     {
       "id": "IMP-Q01",
@@ -14650,35 +15079,35 @@
       "question": "**Which pagination and PDF engine?**",
       "settledBy": "**Settled.** Typst, rendering the resolved content model through one fixed template. See [ADR-0013](../../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md)",
       "document": "PUB-publishing-and-output.md",
-      "line": 309
+      "line": 325
     },
     {
       "id": "PUB-Q02",
       "question": "**Does Google Docs export survive at all?** It exists because customers ask for it and cannot express what the product is for, and it now has a second problem: writing to a user's Google Docs needs Drive scopes, which are restricted, which means app verification and a periodic security assessment - exactly what IAM-044 and [ADR-0009](../../decisions/0009-federation-and-google-accounts-no-local-passwords.md) were taken to avoid",
       "settledBy": "Whether a customer wants it enough to accept both that it is visibly worse and that it carries a compliance cost nothing else in the product does",
       "document": "PUB-publishing-and-output.md",
-      "line": 310
+      "line": 326
     },
     {
       "id": "PUB-Q03",
       "question": "**Is PDF/A required, and at which conformance level?** Archival and submission requirements differ by regime, and the levels are not interchangeable",
       "settledBy": "The first customer with a submission requirement that names one",
       "document": "PUB-publishing-and-output.md",
-      "line": 311
+      "line": 327
     },
     {
       "id": "PUB-Q04",
       "question": "**How is preview made fast enough (CNT-096) while using the same pipeline (PUB-006)?**",
       "settledBy": "**Settled.** Typst compiles incrementally, reusing unchanged layout between compiles: an edit reaches page 40 of a 300-page document in under half a second, whatever page it is on. The one difference is PUB-061. See [ADR-0013](../../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md). Since [ADR-0027](../../decisions/0027-the-warm-range-preview-leaves-t1.md) this answers T3's warm preview; T1's is the whole document, compiled cold, and CNT-096 is withdrawn",
       "document": "PUB-publishing-and-output.md",
-      "line": 312
+      "line": 328
     },
     {
       "id": "PUB-Q05",
       "question": "**Can an incremental compilation be made byte-identical to a clean one (PUB-076)?** Reusing layout between compiles is what makes preview fast; producing the same bytes either way is what makes PUB-043 checkable",
       "settledBy": "Measurement against the engine. If it cannot, the answer is that preview compiles incrementally and publication always compiles clean - which costs seconds on a path that already takes thirty",
       "document": "PUB-publishing-and-output.md",
-      "line": 313
+      "line": 329
     },
     {
       "id": "REL-Q01",
@@ -14832,35 +15261,35 @@
       "question": "**Are catalogues tenant-wide, or per space?** A consultancy working for two clients may need two house styles that authors must not confuse",
       "settledBy": "Whether early customers serve more than one end client from one tenant. Likely yes in this market",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 285
+      "line": 291
     },
     {
       "id": "STY-Q02",
       "question": "**Does STY-N03 survive a real house style?** Declarative properties cover most of typography and none of the last five per cent somebody's brand guideline insists on",
       "settledBy": "The first house style that cannot be expressed. The answer is probably to widen the declared property set rather than open an escape hatch",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 286
+      "line": 292
     },
     {
       "id": "STY-Q03",
       "question": "**Who supplies typefaces, and who holds the licence?**",
       "settledBy": "**Settled.** Product-supplied faces are open-licence only; a customer's brand face is supplied by the customer under the customer's own licence. See [ADR-0010](../../decisions/0010-open-licence-typefaces-only.md)",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 287
+      "line": 293
     },
     {
       "id": "STY-Q04",
       "question": "**Does a theme need variants - screen against print, light against dark?**",
       "settledBy": "**Settled for the editor.** No: the canvas stays paper when the application goes dark (STY-N05). Whether the HTML reading format needs a screen palette is left to its design. See [themes.md](../../design/themes.md)",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 288
+      "line": 294
     },
     {
       "id": "STY-Q05",
       "question": "**What contrast ratio binds a customer's own brand palette (STY-069)?** A house style whose colours fail 4.5:1 is a real thing, and refusing it outright refuses the customer",
       "settledBy": "Legal and commercial advice with the first brand that fails. The likely answer is that the product's own themes must pass while a tenant's are warned rather than refused, which is a different requirement from the one written today",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 289
+      "line": 295
     },
     {
       "id": "TAB-Q01",
@@ -14895,28 +15324,28 @@
       "question": "**Can a document be created without a template at all?** A blank document is an obvious thing to want and an easy way to bypass every guarantee here",
       "settledBy": "Whether early users need one. The likely answer is a minimal default template rather than no template",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 229
+      "line": 230
     },
     {
       "id": "TPL-Q02",
       "question": "**Do templates need to inherit (TPL-N02)?** An organisation with twelve report types that share eleven twelfths of their structure will ask",
       "settledBy": "The first customer with a family of templates. It interacts badly with versioning, since a change to a parent is a change to every child",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 230
+      "line": 231
     },
     {
       "id": "TPL-Q03",
       "question": "**How much may a parameter change after instantiation (TPL-021)?** Changing the site a report is about invalidates every bound value in it",
       "settledBy": "Whether re-parameterising an existing document is a real workflow or a wish. If real, it is closer to a migration than an edit",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 231
+      "line": 232
     },
     {
       "id": "TPL-Q04",
       "question": "**Does a required component (TPL-014) float or pin?** Boilerplate that updates everywhere is the point of reuse; boilerplate that changes inside an approved document is not",
       "settledBy": "A decision with **VER** and **LIF** about whether an approved document may contain a floating reference at all",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 232
+      "line": 233
     },
     {
       "id": "VER-Q01",
@@ -16608,6 +17037,10 @@
           "howItIsMet": "The document route, the contributions route, the numbering route and an outline act are each measured in the service suite over a document of 500 nodes and 400 occurrences, against p95 250 ms and a maximum of 500 ms, after five warm-up calls that are not measured samples, with the configuration recorded beside the result. A run on a named machine is held to both; a run on a shared CI runner, whose speed varies by more than the budget itself, records both and is held to neither (issues #179 and #188), so a green CI run does not show the budget met"
         },
         {
+          "id": "STR-072",
+          "howItIsMet": "Opened from within the application - from the documents list, the interface already running - and every act the outline offers are measured in the browser suite (`tests/browser/src/budgets.test.ts`) over STR-063's document, the interface's share against p95 250 ms and a maximum of 500 ms, on the reference machine, whose configuration each run records beside its samples"
+        },
+        {
           "id": "STR-040",
           "howItIsMet": "`contents(conditioned, numbering, depth)` lists every node to the depth, numbered or not, a reference's title left to its caller"
         },
@@ -16951,10 +17384,6 @@
           "howItIsMet": "The domain's theme reader refuses a text colour below 4.5:1, or 3:1 for large text, against any background it can stand on, and the store refuses what the reader refuses, so a theme is checked when it is saved ([Themes in the PDF](#themes-in-the-pdf), TH-G)"
         },
         {
-          "id": "STY-049",
-          "howItIsMet": "Glyph coverage is checked at resolution, against the pinned files' character maps, before any renderer runs"
-        },
-        {
           "id": "STY-050",
           "howItIsMet": "Vertical space between two blocks is the first block's space after plus the second block's space before, in every output"
         },
@@ -17017,6 +17446,10 @@
         {
           "id": "TAB-032",
           "howItIsMet": "The same, from the table's side"
+        },
+        {
+          "id": "PUB-106",
+          "howItIsMet": "Widow and orphan control, keep-with-next and keep-together are paragraph style properties, each passed to Typst as its own rule - the two costs, `sticky`, `breakable: false` - as measured; the publishing regression corpus's four keep cases show each holding in the PDF wherever the page allows ([Themes in the PDF](#themes-in-the-pdf))"
         }
       ]
     },
@@ -17872,13 +18305,13 @@
     {
       "id": "CNT-074",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4058,
+      "line": 4144,
       "kind": "title"
     },
     {
       "id": "CNT-075",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4215,
+      "line": 4301,
       "kind": "title"
     },
     {
@@ -17890,7 +18323,7 @@
     {
       "id": "CNT-150",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4952,
+      "line": 5038,
       "kind": "title"
     },
     {
@@ -17920,7 +18353,7 @@
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4513,
+      "line": 4599,
       "kind": "title"
     },
     {
@@ -17944,13 +18377,13 @@
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4717,
+      "line": 4803,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 4553,
+      "line": 4639,
       "kind": "title"
     },
     {
@@ -17981,6 +18414,12 @@
       "id": "STR-065",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
       "line": 2627,
+      "kind": "title"
+    },
+    {
+      "id": "STR-045",
+      "file": "apps/web/src/structure/position.test.ts",
+      "line": 122,
       "kind": "title"
     },
     {
@@ -18236,6 +18675,12 @@
       "kind": "title"
     },
     {
+      "id": "PUB-106",
+      "file": "apps/worker/src/regression.test.ts",
+      "line": 1287,
+      "kind": "title"
+    },
+    {
       "id": "STY-008",
       "file": "apps/worker/src/regression.test.ts",
       "line": 1295,
@@ -18358,49 +18803,49 @@
     {
       "id": "PUB-029",
       "file": "apps/worker/src/word-check.test.ts",
-      "line": 2305,
+      "line": 2306,
       "kind": "title"
     },
     {
       "id": "CNT-045",
       "file": "apps/worker/src/word.test.ts",
-      "line": 1650,
+      "line": 1651,
       "kind": "title"
     },
     {
       "id": "PUB-066",
       "file": "apps/worker/src/word.test.ts",
-      "line": 1194,
+      "line": 1195,
       "kind": "title"
     },
     {
       "id": "PUB-100",
       "file": "apps/worker/src/word.test.ts",
-      "line": 1300,
+      "line": 1301,
       "kind": "title"
     },
     {
       "id": "STR-071",
       "file": "apps/worker/src/word.test.ts",
-      "line": 937,
+      "line": 938,
       "kind": "title"
     },
     {
       "id": "STY-079",
       "file": "apps/worker/src/word.test.ts",
-      "line": 985,
+      "line": 986,
       "kind": "title"
     },
     {
       "id": "TAB-039",
       "file": "apps/worker/src/word.test.ts",
-      "line": 1233,
+      "line": 1234,
       "kind": "title"
     },
     {
       "id": "TAB-049",
       "file": "apps/worker/src/word.test.ts",
-      "line": 1233,
+      "line": 1234,
       "kind": "title"
     },
     {
@@ -19990,7 +20435,7 @@
     {
       "id": "CNT-085",
       "file": "packages/domain/src/theme/ooxml.test.ts",
-      "line": 454,
+      "line": 465,
       "kind": "title"
     },
     {
@@ -20080,85 +20525,85 @@
     {
       "id": "CNT-084",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1103,
+      "line": 1121,
       "kind": "title"
     },
     {
       "id": "CNT-085",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1059,
+      "line": 1077,
       "kind": "title"
     },
     {
       "id": "CNT-128",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1085,
+      "line": 1103,
       "kind": "title"
     },
     {
       "id": "PUB-024",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 616,
+      "line": 634,
       "kind": "title"
     },
     {
       "id": "PUB-025",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 3157,
+      "line": 3214,
       "kind": "title"
     },
     {
       "id": "PUB-026",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 3574,
+      "line": 3631,
       "kind": "title"
     },
     {
       "id": "PUB-031",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 2468,
+      "line": 2525,
       "kind": "title"
     },
     {
       "id": "PUB-034",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1103,
+      "line": 1121,
       "kind": "title"
     },
     {
       "id": "PUB-067",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 4092,
+      "line": 4149,
       "kind": "title"
     },
     {
       "id": "PUB-069",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1118,
+      "line": 1136,
       "kind": "title"
     },
     {
       "id": "PUB-100",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 4482,
+      "line": 4539,
       "kind": "title"
     },
     {
       "id": "STR-071",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 2959,
+      "line": 3016,
       "kind": "title"
     },
     {
       "id": "STY-052",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1207,
+      "line": 1225,
       "kind": "title"
     },
     {
       "id": "STY-079",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 2613,
+      "line": 2670,
       "kind": "title"
     },
     {
@@ -20366,15 +20811,21 @@
       "kind": "title"
     },
     {
+      "id": "STR-072",
+      "file": "tests/browser/src/budgets.test.ts",
+      "line": 268,
+      "kind": "title"
+    },
+    {
       "id": "STR-035",
       "file": "tests/browser/src/navigation.test.ts",
-      "line": 207,
+      "line": 313,
       "kind": "title"
     },
     {
       "id": "STR-045",
       "file": "tests/browser/src/navigation.test.ts",
-      "line": 242,
+      "line": 348,
       "kind": "title"
     },
     {

@@ -43,15 +43,15 @@ hundreds of thinly-described tools and degrade every model that touched it.
 | **API-006** | An error must name what failed and, where relevant, which requirement or rule refused it                                                                                                                                                                                                                                                                                                                          | T1         | Specified             |
 | **API-007** | Listing endpoints must page consistently, with a stable order and an opaque cursor                                                                                                                                                                                                                                                                                                                                | T1         | Specified             |
 | **API-008** | Mutating requests must be idempotent when given an idempotency key, so that a retry cannot create a second document                                                                                                                                                                                                                                                                                               | T1         | Specified             |
-| **API-009** | Rate limits must be declared, and a limited response must say when to retry                                                                                                                                                                                                                                                                                                                                       | T2         | Superseded by API-051 |
+| **API-009** | Rate limits must be declared, and a limited response must say when to retry                                                                                                                                                                                                                                                                                                                                       | T7         | Superseded by API-051 |
 | **API-037** | A mutating request against a versioned resource must carry a precondition naming the version it was read at, and the server must refuse a mismatch with a distinct machine-readable code (API-005) naming the version the resource is at now                                                                                                                                                                      | T1         | Specified             |
 | **API-038** | There must be no unconditional overwrite: a mutating request with no precondition must be refused rather than treated as latest-wins                                                                                                                                                                                                                                                                              | Constraint | Specified             |
 | **API-039** | A component lock (**COL-005**) must hold at the API exactly as it does in the interface: a mutating request against a component another identity holds must be refused, naming the holder and when the lock is expected to release (**COL-007**)                                                                                                                                                                  | Constraint | Specified             |
 | **API-047** | Every response must carry a request identifier, echoing the caller's own where one was given, and that identifier must appear in the server's logs and in any error the response reports (API-005)                                                                                                                                                                                                                | T1         | Specified             |
 | **API-050** | The synchronous surface must declare availability and latency objectives of its own, and must be measured in production against them (**ADM-016**, **ADM-020**). Realtime already has one in API-036 (**API-Q07**)                                                                                                                                                                                                | T3         | Specified             |
-| **API-051** | Rate limits must be declared in the API specification itself, so that a contract test can verify them (API-003), and a limited response must say when to retry                                                                                                                                                                                                                                                    | T2         | Specified             |
+| **API-051** | Rate limits must be declared in the API specification itself, so that a contract test can verify them (API-003), and a limited response must say when to retry                                                                                                                                                                                                                                                    | T7         | Specified             |
 | **API-053** | Authentication and authorisation failures must follow the **IAM** contract and its distinction between unauthenticated and forbidden, rather than inventing a second vocabulary here                                                                                                                                                                                                                              | Constraint | Specified             |
-| **API-054** | A realtime connection must re-check authorisation on a stated interval as well as at connect and reconnect (API-016), so that a permission withdrawn mid-connection takes effect without waiting for a reconnection that may never come (**IAM-067**)                                                                                                                                                             | Constraint | Specified             |
+| **API-054** | A realtime connection must re-check authorisation on a stated interval as well as at connect and reconnect (API-016), so that a permission withdrawn mid-connection takes effect without waiting for a reconnection that may never come (**IAM-082**)                                                                                                                                                             | Constraint | Specified             |
 | **API-055** | Webhook subscriptions must be administrable: created, changed and removed by an entitled administrator, declaring the endpoint, the event types selected, and the signing key with a rotation path. Every such change must be audited (**LIF-064**), and subscriptions must be carried in the configuration export (**ADM-005**)                                                                                  | T5         | Specified             |
 | **API-056** | Every failure surfaced to a user, an administrator or an integrator must use the structured error contract in API-005 and API-006, with a stable machine-readable identifier. Every request, job, event, webhook delivery, realtime message, notification and publishing-pipeline stage must carry a correlation identifier that appears in logs, in diagnostics (**ADM-036**) and in any error reported about it | Constraint | Specified             |
 | **API-057** | Submitting a job (API-040) or a bulk operation must be safely retryable: an idempotency key or equivalent must make a retry return the original work rather than starting a second export, publication, cohort or report. Where an operation cannot be idempotent, the specification must say what a retry does                                                                                                   | T3         | Specified             |
@@ -295,6 +295,36 @@ is an edit.
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
 | Requirements | 60, of which 2 superseded | 61, of which 3 superseded |
+
+### Ken's re-tranching of T2, 2026-09-29
+
+Not a review. Ken narrowed T2 to the data spine - connections, query definitions, parameters,
+bindings, provenance, revising a bound value by hand, tabular presentation and field formatting,
+and only what those directly depend on - and moved the rest of what T2 held to a new tranche, T7,
+the administration and the library, and Word's fidelity to the PDF to T8, the last, recorded by
+[ADR-0033](../../decisions/0033-t2-is-the-data-spine.md). A row moving tranche whole keeps its
+identifier, and only its tranche changes.
+
+| What was found                                                                            | Change                                                     |
+| ----------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| API-051 declares rate limits in the API specification; nothing in the data spine sets one | **API-051 moved to T7**, with API-009, which it supersedes |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 61, of which 3 superseded | 61, of which 3 superseded |
+
+### Ken's decisions on data connectivity (ADR-0035), 2026-09-30
+
+Not a review. Ken's decisions on data connectivity, recorded by [ADR-0035](../../decisions/0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md), superseded IAM-067 by
+IAM-082, which adds that the stopped work records the sign-out or the revocation as its reason.
+
+| What was found                        | Change                                   |
+| ------------------------------------- | ---------------------------------------- |
+| API-054 cites IAM-067, now superseded | Edited for clarity: it cites **IAM-082** |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 61, of which 3 superseded | 61, of which 3 superseded |
 
 ### From requirement issue #352, 2026-09-29
 

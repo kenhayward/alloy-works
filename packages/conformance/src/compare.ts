@@ -1,6 +1,7 @@
 import {
   EDGES,
   type Measured,
+  type MeasuredFill,
   type MeasuredImage,
   type MeasuredMarker,
   type MeasuredRules,
@@ -81,13 +82,15 @@ const round = (value: number) => Math.round(value * 100) / 100;
  *   paragraph is set from the start, where the equation's width moves nothing before it; where its
  *   paragraph is centred or set to the end, the line's length is the maths engine's and not compared.
  * - **The step from one baseline to the next**, in the order the page reads them, wherever both stand in
- *   the component's own flow and the PDF sets both on one page: running text, lists, quotations,
+ *   the component's own flow and each output sets both on one page: running text, lists, quotations,
  *   preformatted text, a table's caption, cells and note, a figure's caption, and the sections' and
  *   the component's headings above them. A mark's run is its line's, so its step is nought; the step
  *   into a line held open by something taller or deeper than its text - an image, a run larger than
  *   its text, a list's marker - is compared as any other (issue #331); and a script, lowered or raised
  *   by the engine's own measure and the browser's rather than the theme's (themes.md, issue #332), is
- *   compared only for which way it moves.
+ *   compared only for which way it moves. The caller may set lines `apart`, whose steps in and out
+ *   are not compared: Word's measurement sets apart a floated figure's caption, whose place on the
+ *   page is pagination's, and the line holding an equation, which Word sets in another face.
  */
 export function compare(
   tokens: readonly Token[],
@@ -95,6 +98,7 @@ export function compare(
   pdf: ReadonlyMap<string, Measured>,
   alignment: (token: Token) => Alignment,
   record: (property: string, by: number) => void = () => {},
+  apart: ReadonlySet<string> = new Set(),
 ): Difference[] {
   const differences: Difference[] = [];
   const differ = (token: Token, property: string, e: Difference['editor'], p: Difference['pdf']) =>
@@ -162,7 +166,11 @@ export function compare(
     if (!previous) return;
     const [e, p] = [editor.get(token.text)!, pdf.get(token.text)!];
     const [pe, pp] = [editor.get(previous.text)!, pdf.get(previous.text)!];
-    if (pp.page !== p.page) return;
+    // Both on one page in each: a step over a page break is the page's, which the editor has none of
+    // and Word breaks where it does (PUB-065).
+    if (pp.page !== p.page || pe.page !== e.page) return;
+    // A line the caller sets apart is stepped neither into nor out of.
+    if (apart.has(token.text) || apart.has(previous.text)) return;
     length(token, `step from ${previous.text}`, e.baseline - pe.baseline, p.baseline - pp.baseline);
   });
 
@@ -229,10 +237,10 @@ export function compareImages(
 
 /**
  * Every rule on the edges of each cell: where its edge runs against the cell's text - the table style's
- * padding - how thick it is drawn and its colour, a rule none of either being nought thick. Where the
- * PDF breaks the table between a cell and the one above or below it, that edge is the page's - the
- * outer rule framing each page's part, the header repeated - and is not compared, since the editor has
- * no page.
+ * padding - how thick it is drawn and its colour, a rule none of either being nought thick. Where
+ * either output breaks the table between a cell and the one above or below it, that edge is the
+ * page's - the outer rule framing each page's part, the header repeated - and is not compared: the
+ * editor has no page, and Word breaks its pages where it does (PUB-065).
  */
 export function compareRules(
   tokens: readonly Token[],
@@ -244,18 +252,20 @@ export function compareRules(
 ): Difference[] {
   const differences: Difference[] = [];
   const cells = tokens.filter((each) => each.where === 'cell');
-  /** The cell nearest above or below, in the editor's column, and whether the PDF sets it apart. */
+  /** The cell nearest above or below in the column, and whether either output sets it apart. */
   const brokenFrom = (token: Token, way: -1 | 1): boolean => {
     const [here, page] = [shown.get(token.text), printed.get(token.text)?.page];
     if (!here) return false;
+    // Down the column in reading order: a page's lines after the page before's.
+    const down = (m: Measured) => m.page * 100_000 + m.baseline;
     const next = cells
       .map((each) => shown.get(each.text))
       .filter((each): each is Measured => each !== undefined && Math.abs(each.x - here.x) < 1)
-      .filter((each) => (each.baseline - here.baseline) * way > 1)
-      .sort(
-        (a, b) => Math.abs(a.baseline - here.baseline) - Math.abs(b.baseline - here.baseline),
-      )[0];
-    return next !== undefined && printed.get(next.token)?.page !== page;
+      .filter((each) => (down(each) - down(here)) * way > 1)
+      .sort((a, b) => Math.abs(down(a) - down(here)) - Math.abs(down(b) - down(here)))[0];
+    return (
+      next !== undefined && (printed.get(next.token)?.page !== page || next.page !== here.page)
+    );
   };
   for (const token of cells) {
     const [e, p] = [editor.get(token.text), pdf.get(token.text)];
@@ -348,6 +358,39 @@ export function compareMarkers(
       ['marker colour', e.colour, p.colour],
     ] as const) {
       if (a !== b) differ(property, a, b);
+    }
+  }
+  return differences;
+}
+
+/**
+ * **Each fill's edges against its words** (the W15 plan, W15-G), what STY-080 leaves out only because
+ * the editor paints a block's fill by its own means: its left and right across the measure and its top
+ * and foot against the baseline, each within half a point, where both outputs fill behind a token; and
+ * a fill one output paints behind a token and the other does not. Not a mark's run, whose fill is its
+ * paragraph's; nor a footnote's or a caption's, which the PDF does not set (issue #330).
+ */
+export function compareFills(
+  tokens: readonly Token[],
+  editor: ReadonlyMap<string, MeasuredFill>,
+  pdf: ReadonlyMap<string, MeasuredFill>,
+  record: (property: string, by: number) => void = () => {},
+): Difference[] {
+  const differences: Difference[] = [];
+  const outside = new Set(['mark', 'footnote', 'caption']);
+  for (const token of tokens.filter((each) => !outside.has(each.where))) {
+    const [e, p] = [editor.get(token.text), pdf.get(token.text)];
+    const differ = (property: string, a: number | boolean, b: number | boolean) =>
+      differences.push({ token: token.text, what: token.what, property, editor: a, pdf: b });
+    if (!e && !p) continue;
+    if (!e || !p) {
+      differ('fill found', Boolean(e), Boolean(p));
+      continue;
+    }
+    for (const edge of ['left', 'right', 'top', 'bottom'] as const) {
+      record(`fill ${edge}`, Math.abs(e[edge] - p[edge]));
+      if (Math.abs(e[edge] - p[edge]) > TOLERANCE)
+        differ(`fill ${edge}`, round(e[edge]), round(p[edge]));
     }
   }
   return differences;

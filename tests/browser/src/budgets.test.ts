@@ -261,10 +261,11 @@ describe('the navigation budgets over a document of five hundred nodes', () => {
     fixture = await fiveHundred(api());
   }, 1_800_000);
 
-  // Cites nothing: opened cold, the document misses STR-072's number (the interface's share 334 ms at
-  // p95 on the reference machine, W13.3), so STR-072 is not claimed until Ken decides (B-K). Opened
-  // from the list it is held to it; cold it is recorded.
-  it("opens a document of five hundred nodes within the interface's share of the budget, from the documents list, and records it opened cold", async ({
+  // STR-072 is an open from within the application (Ken, 2026-09-29; ADR-0033), so the open from the
+  // documents list is held to it. Opened cold, the interface's share is recorded and not held: it is
+  // over the number (334 ms at p95 on the reference machine, W13.3), and CNT-179's test holds the
+  // whole time a cold open takes.
+  it("STR-072 opens a document of five hundred nodes from the documents list within the interface's share of the budget, and records it opened cold", async ({
     task,
   }) => {
     await withPage(async (page) => {
@@ -286,12 +287,11 @@ describe('the navigation budgets over a document of five hundred nodes', () => {
         all[0]!.interface,
         BUDGETS.interface,
       );
-      // Recorded, and not held: see above.
+      // The cold open recorded, and not held: see above.
     });
   }, 600_000);
 
-  // Cites nothing while STR-072 is not claimed: see the open's test above.
-  it("shows each structural act on the outline within the interface's share of the budget: insert, remove, retitle, Starts on, move, demote and promote", async ({
+  it("STR-072 shows each structural act on the outline within the interface's share of the budget: insert, remove, retitle, Starts on, move, demote and promote", async ({
     task,
   }) => {
     await withPage(async (page) => {

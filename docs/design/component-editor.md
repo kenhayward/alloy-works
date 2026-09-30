@@ -192,7 +192,7 @@ to API-008) - are [service-foundations.md](service-foundations.md)'s.
 | CNT-113, COL-026                            | Seeing what this session changed needs the comparison algorithm, which [storage-and-versioning.md](storage-and-versioning.md) leaves for its own design                                                                                                           |
 | COL-007, API-036                            | Showing a held lock to others and delivering the change are [realtime.md](realtime.md)'s, which this design extends to a component opened on its own                                                                                                              |
 | COL-009                                     | Taking a lock from an idle holder, with a warning and an audit, is not in the minimal lock. The row supports it; the act is not designed                                                                                                                          |
-| MET-021, MET-029                            | This panel validates as values change and shows a departed user as no longer active - for a component. MET-021 covers a document's and a section's fields too, and [definitions.md](definitions.md) claims it for all three; MET-029 was split, and MET-039 is T2 |
+| MET-021, MET-029                            | This panel validates as values change and shows a departed user as no longer active - for a component. MET-021 covers a document's and a section's fields too, and [definitions.md](definitions.md) claims it for all three; MET-029 was split, and MET-039 is T7 |
 | API-037, API-038, API-047, API-051, API-053 | Preconditions, request identifiers, rate limits and the authentication contract are honoured by every route below, but they are rules for every route in the product, not something this design is the realisation of                                             |
 | STY-066                                     | A draft resolving against its document's theme needs a document. Styles and typefaces that fail to resolve are marked - see [Unresolvable content](#unresolvable-content)                                                                                         |
 | STY-070                                     | Claimed by [themes.md](themes.md#the-theme-in-the-editor): the coverage data an unresolvable glyph needs comes to the editor from `packages/fonts` (ET-D)                                                                                                         |
@@ -590,7 +590,7 @@ is never numbered, and its panel has no such box - **Replace image**, which uplo
 the same figure, keeping its caption, identity, number and whether it is numbered, and **Delete
 figure**. Changing the image's own default description - a new
 asset version - is not in the panel: it changes every figure that inherits it, which is an asset
-library's act, and T2's.
+library's act, and T7's.
 
 **Identity is the figure's block `id`**, as for every caption-bearing block (CNT-081), so replacing the
 image keeps the figure's number and every cross-reference to it.
@@ -996,7 +996,7 @@ before confirming (MET-036).
 ## Metadata alongside
 
 The **metadata panel** sits beside the surface in the same view. It shows the component's type - read-only
-in T1, since changing it is MET-014, T2 - and its effective fields in resolution order (metadata.md).
+in T1, since changing it is MET-014, T7 - and its effective fields in resolution order (metadata.md).
 
 | Data type   | Input                                                                                                                                                                                                                  |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

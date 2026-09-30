@@ -31,6 +31,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { FONT_DIRECTORY, loadPinnedFonts, pinnedFacesByHash } from './fonts.js';
 import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { defaultTheme } from './testing/theme.js';
+import { inWordsTurn } from './testing/word-turn.js';
 import { createTypst, typstBinaryPath } from './typst.js';
 
 /**
@@ -174,19 +175,22 @@ describe.runIf(WORD_CHECK)("the Word check's export-only mode, where Word is (W1
     );
     await writeFile(join(FOLDER, 'measured-typst.pdf'), pdf);
 
-    await run(
-      'powershell.exe',
-      [
-        '-NoProfile',
-        '-ExecutionPolicy',
-        'Bypass',
-        '-File',
-        SCRIPT,
-        '-Folder',
-        FOLDER,
-        '-ExportOnly',
-      ],
-      { timeout: 300_000, windowsHide: true },
+    // In the suite's turn at Word: the Word check and the other Word file start Words of their own.
+    await inWordsTurn(() =>
+      run(
+        'powershell.exe',
+        [
+          '-NoProfile',
+          '-ExecutionPolicy',
+          'Bypass',
+          '-File',
+          SCRIPT,
+          '-Folder',
+          FOLDER,
+          '-ExportOnly',
+        ],
+        { timeout: 300_000, windowsHide: true },
+      ),
     );
     exported = JSON.parse(await readFile(join(FOLDER, 'word.json'), 'utf8')) as Exported[];
     const word = exported.find((each) => each.name === 'measured');

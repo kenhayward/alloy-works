@@ -3,6 +3,147 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.127.6 - 2026-09-30 (PR #359)
+
+### Changed
+
+- **What the first data release must do is now written down in its requirements, as decided.** The
+  requirements for connecting to your data now say that every value placed in a document is kept
+  with it, that a preview or a publish never goes back to the source, and that the source is asked
+  only when a person acts: placing a value, creating a document from a template, checking for
+  something newer, accepting it, or trying a query out. A value can be checked each time its
+  document is opened or never checked, and a newer one waits beside it until somebody accepts it.
+  Who can read a kept value is decided by who can read the document, and accepting data fetched as
+  yourself warns you first. The requirements also cover building a query without writing SQL, SQL as
+  a separately granted fallback, files in S3-compatible storage as CSV, spreadsheets or JSON, image
+  columns with their descriptions, one fixed list of column types, limits that stop the work at the
+  source, and stricter rules for connections that act as the person asking. Uploading a file as a
+  data source is not among them, and caching results is left for a later release. Nothing is built
+  yet.
+- **Hiding one value from some of a document's readers comes later.** Letting a set of data carry a
+  read permission of its own, so that some readers of a document see it marked as withheld, moves
+  to a later tranche, T7, together with a rule that only somebody who can see every value may
+  publish. Until then, whoever can read a document can read all of it.
+
+## 0.127.5 - 2026-09-30 (PR #358)
+
+### Changed
+
+- **The plan for connecting to your data is decided, and it is simpler and steadier than the one
+  proposed.** Data in a document is the data you saw: every value taken from your database, web
+  service or files is kept with the document, so a preview, a publish and every reader show the same
+  thing, and publishing never goes back to the source. When the source has something newer, it is
+  offered beside what you have and never swapped in; nothing changes until somebody accepts it, and
+  accepting is recorded. If you accept data you fetched as yourself, you are warned first that
+  everyone who can read the document will see it. You build a query by choosing a table, its
+  columns, filters and a sort rather than writing code; SQL stays available for advanced users where
+  the connection allows it safely. Data can also come from files in S3-compatible storage, as CSV,
+  spreadsheets or JSON, and a column can carry images, each described or marked decorative.
+  Uploading a file as a data source is not part of the first data release. Nothing is built yet;
+  this is the decision the data release will be designed from.
+
+## 0.127.4 - 2026-09-30 (PR #357)
+
+### Added
+
+- **The experiment on connecting to your data is finished, and its answer is written down as a
+  proposed decision.** A query against your database, web service or spreadsheet will run in a
+  separate part of the system that cannot reach anything inside our own, so a connection pointed at
+  us goes nowhere, however its address is spelled. Your connection's password or key is opened only
+  there, and never appears in an error, a log or a connection test. "Running as you" works for a web
+  service through your own sign-in provider, and for a database by the connection telling the
+  database who you are, under rules that stop one person seeing another's rows; for an uploaded file
+  it has no meaning. A value taken from your data is recorded in one exact form, so the same data
+  checks out the same from any source and any time zone, and a query that runs too long, returns too
+  much or loses precision fails by name rather than giving you less than it should. The decision is
+  proposed for review, together with the requirement changes the experiment suggests.
+
+## 0.127.3 - 2026-09-29 (PR #356)
+
+### Added
+
+- **Connecting to your data starts with an experiment, written down before it runs.** Before the
+  data release is designed, a short, time-boxed experiment will settle the questions that are hard to
+  change later: where a query against your database, web service or spreadsheet runs, and how it is
+  kept from reaching anything inside our own systems; what "running as you" can honestly mean for
+  each kind of source, including when a document is published after you have signed out; and how a
+  value taken from your data is recorded so that it reads back the same every time. The brief names
+  the requirements it may send back for rewording, rather than quietly working around them.
+
+## 0.127.2 - 2026-09-29 (PR #355)
+
+### Changed
+
+- **The next release is about data, and only data.** Tranche T2 now holds what it takes to put live
+  data into a document: connections to your systems, the queries run against them, a template's
+  parameters feeding those queries, values and tables bound into the text, where each value came
+  from, correcting a bound value by hand, and how a bound table is laid out and its numbers
+  formatted. Everything else that had gathered in T2 (user provisioning and single sign-on with more
+  than one provider, the asset library, reference libraries and vocabularies, export and import,
+  administration through the API, and adding styles or themes without a release) moves to a new
+  tranche, T7. Matching Word's rendering to the PDF moves to T8, the last. A decision record explains
+  the split.
+- **The drafting assistant arrives with the rest of the AI features, in T5**, rather than early in
+  T2, because even a small one needs the model connections, governance and cost controls that T5
+  builds.
+- **Opening a document within its budget now means opening it from inside the application**, from
+  the documents list. Opened that way, and for every change to its outline, a five-hundred-node
+  document meets its number, and the requirement is now claimed. Loading a document's address into a
+  fresh page is still measured and recorded.
+
+## 0.127.1 - 2026-09-29 (PR #354)
+
+### Changed
+
+- **Matching Word to the PDF has moved to a later release.** Word's own rendering of a publication
+  was measured against the PDF and does not match it everywhere yet: tables, filled paragraphs, a
+  line holding an image or a larger word, and a few other cases are still more than half a point
+  apart. Closing the gap would take several more pieces of work, one of which would change how the
+  PDF itself is laid out, so it moves to tranche T2, which a new decision record explains. Nothing
+  changes in what you publish today: Word output is still checked by opening it in Word, and the
+  measurement keeps running there, failing on any difference beyond what it has recorded.
+- **Keeping lines together across a page break is promised for the PDF in this release**, and
+  shown by the publishing checks. Word is given the same rules, but checking where Word itself breaks
+  its pages moves to a later release with the rest of the Word measurement.
+
+## 0.127.0 - 2026-09-29 (PR #349)
+
+### Added
+
+- **Word is measured against the PDF.** On a machine with Word, the same checks that hold the editor
+  to the PDF now hold Word's own rendering of a publication to it, under eight themes: every size and
+  position to within half a point, and every face, weight, slant, colour, underline and fill exactly.
+  Word does not match the PDF everywhere yet: 1,186 differences of ten kinds are left - tables,
+  filled paragraphs, a line holding an image or a larger word, sizes Word rounds to half points, a
+  list's number beside centred text, a heading's number. The check records exactly what is left and
+  fails on anything else: another difference of any kind, even a small one, one grown larger, one
+  gone, or a colour it does not list by name.
+
+### Fixed
+
+- **A Word document now has the theme's paper colour.** Word's page was white under every theme.
+- **A paragraph with no fill of its own is no longer painted in the fill of the style it is based
+  on** in Word.
+- **The text of a filled block, such as preformatted text, stands where the PDF puts it** in Word,
+  rather than 2pt further in on each side. Where the block's padding is small, its fill in Word now
+  reaches up to about 2pt beyond its text on each side, a little further than in the PDF.
+- **A table's header column keeps its own rule in Word** where the rule between the other columns is
+  wider, as in the PDF.
+
+## 0.126.1 - 2026-09-29 (PR #351)
+
+### Fixed
+
+- **A link to a part of a document keeps that part where it opened.** Following a link to a section
+  took the page to it, but what stands above it kept changing height as the page finished loading -
+  the document's styles and typefaces can arrive a moment after its text - and nothing moved the page
+  to follow. The section's heading could end a few pixels under the page's header, or off the screen
+  altogether. The page now keeps the section just below the header while the text above it settles,
+  and lets it go once the page has finished loading, or the moment you scroll - with the wheel, the
+  keyboard, the scrollbar or a search in the page - click or choose another part. Scrolling or
+  clicking while the page is still waiting for the text now keeps it from jumping at all (issue #350,
+  issue #341).
+
 ## 0.126.0 - 2026-09-29 (PR #348)
 
 ### Added

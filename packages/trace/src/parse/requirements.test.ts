@@ -83,6 +83,19 @@ describe('parsing an area document', () => {
     expect(() => parseAreaDocument(document, text)).toThrow(/ZZZ-invented-area\.md:1/);
   });
 
+  // T7 and T8 arrived with the re-tranching of 2026-09-29 (ADR-0033): T2 narrowed to the data spine,
+  // the rest of it a tranche of its own, and Word's fidelity to the PDF the last.
+  it('reads a row in T7 and a row in T8, the two tranches after T6', () => {
+    const text = [
+      '| **ZZZ-009** | A widget must be importable | T7 | Specified |',
+      '| **ZZZ-010** | A widget must look the same in Word | T8 | Specified |',
+    ].join('\n');
+
+    const tranches = parseAreaDocument(document, text).requirements.map((row) => row.tranche);
+
+    expect(tranches).toEqual(['T7', 'T8']);
+  });
+
   it('refuses a statement that binds nothing', () => {
     const text = '| **ZZZ-005** | A widget is quite nice | T1 | Specified |';
 
@@ -147,7 +160,10 @@ describe('the real corpus', () => {
     // 1369, from 1368: STR-063, the service's share of STR-039's budget (issue #119), narrowed.
     // 1368, from 1367: IAM-073, a number revealing nothing a reader may not read (issue #130), narrowed.
     // 1367, from 1366: STR-062 (issue #73).
-    // 1478, from 1477 (2026-09-29): API-062 adds the versioned, navigable and token-executable developer API reference (issue #352).
+    // 1525, from 1524 (2026-09-30): API-062 adds the versioned, navigable and token-executable developer API reference (issue #352).
+    // 1524, from 1522 (2026-09-30): IAM-083 and IAM-084 (T7) supersede IAM-020, Ken's answer that a dataset's own read grant comes later and the document's permission alone governs in T2.
+    // 1522, from 1479 (2026-09-30): ADR-0035, Ken's decisions on data connectivity - DAT-074 to DAT-114 (41 rows; twelve supersede DAT-002, 006, 008, 011, 017, 023, 034, 035, 036, 040, 044 and 055), IAM-082 superseding IAM-067 and TPL-065 superseding TPL-023. Non-requirements 118, from 117: DAT-N07, no uploaded file as a source. DAT-052 moves whole to T7.
+    // 1479, from 1477 (2026-09-29): ADR-0032, Word's fidelity to the PDF leaves T1 - PUB-106 (T1, the PDF's) and PUB-107 (T2, Word's own pages) supersede PUB-092.
     // 1477, from 1476 (2026-09-29): PUB-105 supersedes PUB-104, the Matterhorn review made before each release rather than on each change (issue #344).
     // 1476, from 1474 (2026-09-29): W13.3 - STR-072 supersedes STR-039 (issue #134) and CNT-179 supersedes CNT-076 (issue #339), the navigation budgets with numbers.
     // 1474, from 1472 (2026-09-28): W13.4 - STY-080 and STY-081 supersede STY-053, the editor and Word each measured against the PDF (issue #328).
@@ -164,8 +180,8 @@ describe('the real corpus', () => {
     // metadata and component types superseded - a template assigning schemas rather than owning
     // one, a component's type in its closed set, and relationship types using the same schemas.
     // Superseded rows keep their place, so the count only ever rises.
-    expect(total((document) => document.requirements)).toBe(1478);
-    expect(total((document) => document.nonRequirements)).toBe(117);
+    expect(total((document) => document.requirements)).toBe(1525);
+    expect(total((document) => document.nonRequirements)).toBe(118);
     expect(total((document) => document.questions)).toBe(135);
   });
 });

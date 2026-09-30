@@ -106,9 +106,9 @@ depend on the order a store happened to return them in.
 | **MET-028** | A date-and-time value must carry its offset from UTC, so that it names one instant. A date and a time must carry no offset                                                                                                                                                      | T1      | Specified             |
 | **MET-029** | A user field's value must be a user of this tenant, and must remain readable - shown as no longer active - after that user is de-provisioned (**IAM-008**). A value must never become empty because the user it names has left                                                  | T1      | Superseded by MET-038 |
 | **MET-038** | A user field's value must be a user of this tenant                                                                                                                                                                                                                              | T1      | Specified             |
-| **MET-039** | A user field's value must remain readable - shown as no longer active - after that user is de-provisioned (**IAM-008**). A value must never become empty because the user it names has left                                                                                     | T2      | Specified             |
+| **MET-039** | A user field's value must remain readable - shown as no longer active - after that user is de-provisioned (**IAM-008**). A value must never become empty because the user it names has left                                                                                     | T7      | Specified             |
 | **MET-030** | A field holding several values must hold no value twice and must keep its values in the order they were given, and must be able to declare the most values it may hold. For such a field, required must mean at least one value, and a default must be a list of values         | T1      | Specified             |
-| **MET-003** | A field must be able to draw its permitted values from a vocabulary (**LIB**) rather than taking free text, whether the vocabulary is maintained in the tenant or takes its values from an external source (**LIB-058**). _Replaces TPL-008 and LIB-021, which said this twice_ | T2      | Specified             |
+| **MET-003** | A field must be able to draw its permitted values from a vocabulary (**LIB**) rather than taking free text, whether the vocabulary is maintained in the tenant or takes its values from an external source (**LIB-058**). _Replaces TPL-008 and LIB-021, which said this twice_ | T7      | Specified             |
 | **MET-032** | A field drawing on a vocabulary whose values come from an external source (**LIB-058**) must be validated against the values held in the tenant and never against the source, so that neither authoring nor publishing depends on reaching it                                   | T6      | Specified             |
 | **MET-004** | Whether a value is valid must depend on its field alone: the same value for the same field must never be valid on one artifact and invalid on another                                                                                                                           | T1      | Specified             |
 
@@ -184,7 +184,7 @@ template that needs no prompt library.
 | **MET-012** | A tenant must declare a default component type, which may assign no schemas, so that creating or importing a component always has a type to take                                                               | T1         | Superseded by MET-042 |
 | **MET-042** | Every tenant must have a declared default component type, which may assign no schemas, so that creating a component always has a type to take                                                                  | T1         | Specified             |
 | **MET-013** | A component's fields must come from its component type and never from a document that references it, so that a component referenced by documents made from different templates carries the same fields in each | Constraint | Specified             |
-| **MET-014** | Changing a component's type must be an explicit, audited act, taking effect from the component's next version. Versions already cut must keep the type they were cut under                                     | T2         | Specified             |
+| **MET-014** | Changing a component's type must be an explicit, audited act, taking effect from the component's next version. Versions already cut must keep the type they were cut under                                     | T7         | Specified             |
 
 ## 6. Values, versions and change
 
@@ -261,7 +261,7 @@ permission that can be granted to somebody who holds neither.
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
 | **MET-031** | The name of a field, of a schema and of a component type must each be unique within the tenant among definitions of its kind (**REL-040** is the same rule for a relationship type)                                                                                                                        | T1         | Specified |
 | **MET-024** | Managing fields, schemas and component types must be a permission of its own, grantable without tenant administration and separate from designing templates (**TPL-006**, **IAM**)                                                                                                                         | T1         | Specified |
-| **MET-025** | A field, a schema and a component type must each record where it is used - by schemas, component types, templates and relationship types, and through them how many artifacts - and changing one must show what the change affects before it is made (**DAT-016** is the same rule for a query definition) | T2         | Specified |
+| **MET-025** | A field, a schema and a component type must each record where it is used - by schemas, component types, templates and relationship types, and through them how many artifacts - and changing one must show what the change affects before it is made (**DAT-016** is the same rule for a query definition) | T7         | Specified |
 | **MET-026** | Deleting a field, a schema or a component type that anything uses must be refused, naming what depends on it. It must never cascade                                                                                                                                                                        | Constraint | Specified |
 | **MET-027** | A field, a schema and a component type must each be deprecable: no longer offered for new use, still valid wherever it is used, with a replacement namable (**REL-037** and **LIB-055** are the same state elsewhere)                                                                                      | T3         | Specified |
 
@@ -394,3 +394,20 @@ is an edit.
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
 | Requirements | 41, of which 3 superseded | 42, of which 4 superseded |
+
+### Ken's re-tranching of T2, 2026-09-29
+
+Not a review. Ken narrowed T2 to the data spine - connections, query definitions, parameters,
+bindings, provenance, revising a bound value by hand, tabular presentation and field formatting,
+and only what those directly depend on - and moved the rest of what T2 held to a new tranche, T7,
+the administration and the library, and Word's fidelity to the PDF to T8, the last, recorded by
+[ADR-0033](../../decisions/0033-t2-is-the-data-spine.md). A row moving tranche whole keeps its
+identifier, and only its tranche changes.
+
+| What was found                                                                                                                                                                                                                          | Change                                                |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| MET-003's vocabulary-backed fields wait on LIB's vocabularies, which move; MET-014's audited change of type, MET-025's where-used and MET-039's departed user, which waits on SCIM (IAM-008), are metadata's management, not the data's | **MET-003, MET-014, MET-025 and MET-039 moved to T7** |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 42, of which 4 superseded | 42, of which 4 superseded |

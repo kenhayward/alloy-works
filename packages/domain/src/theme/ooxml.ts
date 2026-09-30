@@ -235,22 +235,26 @@ function wordStyleName(style: ResolvedParagraphStyle, depth: number | undefined)
 }
 
 /**
- * Where a background is padded: Word pads a fill by borders in its own colour spaced from the text,
- * and its fill then reaches this much past that spacing - the border's width and more of Word's own,
- * measured for the Word slice at 1.9 to 2.0pt with a half-point border, whatever the spacing. The
- * indents take the padding and this, so the fill stands at the style's own indents, as the PDF's
- * panel does; the text stands this much further in than the PDF's.
- */
-const PANEL_REACH = 2;
-
-/**
  * How far in from a style's own indents its text stands in Word: where it has a background, its
- * padding and `PANEL_REACH`, which the projection adds to its indents; otherwise nothing. The Word
- * writer asks it where a container moves a paragraph in from its style's indents (Word 2).
+ * padding, which the projection adds to its indents, so the text stands where the PDF's does
+ * (measured in Word's own PDF, W15.2); otherwise nothing. The Word writer asks it where a container
+ * moves a paragraph in from its style's indents (Word 2).
  */
 export function panelInset(properties: ResolvedParagraphStyle['properties']): number {
-  return properties.background === 'none' ? 0 : properties.padding + PANEL_REACH;
+  return properties.background === 'none' ? 0 : properties.padding;
 }
+
+/**
+ * **How far Word's fill reaches past a border's spacing across the text**, before it and after it, in
+ * points: the half-point border's width and more of Word's own, measured in Word's own PDF of the
+ * measured fixture under eight themes (W15.2) at 1.88 to 1.90 before the text and 2.06 to 2.08 after
+ * it, whatever the spacing (Word 2 measured 1.9 to 2.0). So a border is spaced across by the padding
+ * less this, and the fill stands at the style's own indents, as the PDF's panel does, within Word's
+ * whole points; where the padding is less than the reach, the fill stands out by what is left. Word 2
+ * had the indents take the reach instead, so the fill stood there and the text 2pt further in than the
+ * PDF's. Above and below, Word's fill reaches no further than the spacing and the border.
+ */
+const PANEL_REACH = { left: 1.9, right: 2.07 } as const;
 
 /** A border's width in eighths of a point: a half point, as the measurement was made with. */
 const PANEL_BORDER = 4;
@@ -274,11 +278,14 @@ function paragraphStyle(
   const filled = p.background !== 'none';
   const inset = panelInset(p);
   const fill = filled ? hex(p.background) : '';
-  const border = (side: string) =>
-    filled
-      ? `<w:${side} w:val="single" w:sz="${PANEL_BORDER}" ` +
-        `w:space="${Math.min(MOST_BORDER_SPACE, Math.round(p.padding))}" w:color="${fill}"/>`
-      : `<w:${side} w:val="nil"/>`;
+  const border = (side: 'top' | 'left' | 'bottom' | 'right') => {
+    if (!filled) return `<w:${side} w:val="nil"/>`;
+    const reach = side === 'left' || side === 'right' ? PANEL_REACH[side] : 0;
+    const space = Math.min(MOST_BORDER_SPACE, Math.max(0, Math.round(p.padding - reach)));
+    return (
+      `<w:${side} w:val="single" w:sz="${PANEL_BORDER}" ` + `w:space="${space}" w:color="${fill}"/>`
+    );
+  };
   return (
     `<w:style w:type="paragraph" w:styleId="${style.id}">` +
     `<w:name w:val="${escapeXml(wordStyleName(style, depth))}"/>` +
@@ -293,8 +300,10 @@ function paragraphStyle(
       : depth === undefined
         ? '<w:numPr><w:ilvl w:val="0"/><w:numId w:val="0"/></w:numPr>'
         : `<w:numPr><w:ilvl w:val="${depth - 1}"/><w:numId w:val="${headingList}"/></w:numPr>`) +
-    `<w:pBdr>${['top', 'left', 'bottom', 'right'].map(border).join('')}</w:pBdr>` +
-    (filled ? `<w:shd w:val="clear" w:color="auto" w:fill="${fill}"/>` : '<w:shd w:val="nil"/>') +
+    `<w:pBdr>${(['top', 'left', 'bottom', 'right'] as const).map(border).join('')}</w:pBdr>` +
+    // No fill is a fill of `auto`, stated: `nil` leaves the fill of the style it is based on, which Word
+    // then paints (measured in Word, W15.2).
+    `<w:shd w:val="clear" w:color="auto" w:fill="${filled ? fill : 'auto'}"/>` +
     onOff('suppressAutoHyphens', !p.hyphenate) +
     `<w:spacing w:before="${twips(p.spaceBefore)}" w:after="${twips(p.spaceAfter)}" ` +
     `w:line="${twips(p.lineSpacing)}" w:lineRule="atLeast"/>` +

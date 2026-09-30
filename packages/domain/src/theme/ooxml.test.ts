@@ -263,32 +263,40 @@ describe('projectStylesXml, paragraph properties', () => {
     });
   });
 
-  it('draws a background as a fill padded by borders in its own colour, pulled back into the column by its indents', () => {
-    // The default preformatted panel: #f0f0f0, padded 6pt.
-    const side = { 'w:val': 'single', 'w:sz': '4', 'w:space': '6', 'w:color': 'F0F0F0' };
+  it('draws a background as a fill padded by borders in its own colour, its text in from its indents by the padding', () => {
+    // The default preformatted panel: #f0f0f0, padded 6pt - above and below by the borders' spacing,
+    // and across by as much less as Word's fill reaches past it, 1.9pt before the text and 2.07 after
+    // it (measured in Word's own PDF, W15.2), so the fill stands at the style's indents as the PDF's.
+    const side = (space: string) => ({
+      'w:val': 'single',
+      'w:sz': '4',
+      'w:space': space,
+      'w:color': 'F0F0F0',
+    });
     const panel = styleElements('preformatted');
     const bdr = panel.findIndex((e) => e.name === 'w:pBdr');
     expect(panel.slice(bdr + 1, bdr + 5)).toEqual(
-      ['w:top', 'w:left', 'w:bottom', 'w:right'].map((name) => ({
-        kind: 'self',
-        name,
-        attrs: side,
-      })),
+      [
+        ['w:top', '6'],
+        ['w:left', '4'],
+        ['w:bottom', '6'],
+        ['w:right', '4'],
+      ].map(([name, space]) => ({ kind: 'self', name, attrs: side(space!) })),
     );
     expect(attrs('preformatted', 'w:shd')).toEqual({
       'w:val': 'clear',
       'w:color': 'auto',
       'w:fill': 'F0F0F0',
     });
-    // Measured: Word's fill reaches 2pt past the border's spacing, so the indents are the padding
-    // and 2pt more, and the fill stands at the column's edges.
+    // The indents are the padding, so the text stands where the PDF's does (measured in Word's own
+    // PDF, W15.2).
     expect(attrs('preformatted', 'w:ind')).toEqual({
-      'w:left': '160',
-      'w:right': '160',
+      'w:left': '120',
+      'w:right': '120',
       'w:firstLine': '0',
     });
 
-    // Beside an indent of its own, the panel stands at the indent.
+    // Beside an indent of its own, the text stands the padding inside the indent.
     const inputs = defaultInputs();
     inputs.catalogues.paragraph.styles = inputs.catalogues.paragraph.styles.map((style) =>
       style.id === 'preformatted'
@@ -297,7 +305,7 @@ describe('projectStylesXml, paragraph properties', () => {
     );
     expect(
       attrs('preformatted', 'w:ind', projectStylesXml(resolved(inputs), BRITISH)),
-    ).toMatchObject({ 'w:left': '360', 'w:right': '240' });
+    ).toMatchObject({ 'w:left': '320', 'w:right': '200' });
   });
 
   it('states no fill and no border where a style has no background, so none is inherited, and pads nothing', () => {
@@ -310,14 +318,17 @@ describe('projectStylesXml, paragraph properties', () => {
         attrs: { 'w:val': 'nil' },
       })),
     );
-    expect(attrs('body', 'w:shd')).toEqual({ 'w:val': 'nil' });
+    // A fill of none, stated: Word keeps the fill a `w:shd` of `nil` leaves unsaid from the style it is
+    // based on, and painted a lead paragraph in its filled body's colour (measured in Word, W15.2).
+    const none = { 'w:val': 'clear', 'w:color': 'auto', 'w:fill': 'auto' };
+    expect(attrs('body', 'w:shd')).toEqual(none);
 
     // Padding without a fill draws nothing, as in every other output.
     const inputs = defaultInputs();
     inputs.catalogues.paragraph.base.padding = 9;
     const from = projectStylesXml(resolved(inputs), BRITISH);
     expect(attrs('body', 'w:ind', from)).toMatchObject({ 'w:left': '0', 'w:right': '0' });
-    expect(attrs('body', 'w:shd', from)).toEqual({ 'w:val': 'nil' });
+    expect(attrs('body', 'w:shd', from)).toEqual(none);
   });
 
   it("spaces a padded border by Word's whole points, at most 31", () => {

@@ -38,9 +38,9 @@ until it had somewhere to live both ends were assuming it.
 | **STY-004** | Content must reference a style by identity and must carry no appearance of its own                                                                                                                   | Constraint | Specified             |
 | **STY-005** | Every style must have a stable identifier, allocated once and never reused                                                                                                                           | T1         | Specified             |
 | **STY-006** | A style must declare what it may be applied to, and applying it to anything else must be refused rather than ignored                                                                                 | T1         | Specified             |
-| **STY-007** | A style should be able to derive from another and inherit its unstated properties; the chain must be finite and must be checked for cycles                                                           | T2         | Superseded by STY-056 |
-| **STY-056** | A style must be able to derive from another and inherit its unstated properties. The chain must be finite and must be checked for cycles                                                             | T2         | Specified             |
-| **STY-057** | Resolving a derived style must take each property from the nearest ancestor that states it, and the resolved set - every property and where it came from - must be inspectable (STY-035)             | T2         | Specified             |
+| **STY-007** | A style should be able to derive from another and inherit its unstated properties; the chain must be finite and must be checked for cycles                                                           | T7         | Superseded by STY-056 |
+| **STY-056** | A style must be able to derive from another and inherit its unstated properties. The chain must be finite and must be checked for cycles                                                             | T7         | Specified             |
+| **STY-057** | Resolving a derived style must take each property from the nearest ancestor that states it, and the resolved set - every property and where it came from - must be inspectable (STY-035)             | T7         | Specified             |
 | **STY-061** | Every named error in this area must carry a stable machine-readable identifier as well as a human message, so that it can be cited in documentation, matched in automation and counted (**API-005**) | Constraint | Specified             |
 
 **STY-056 replaces STY-007 because "should" left inheritance optional and nothing else covered its
@@ -132,8 +132,8 @@ mapping is (STY-010).
 
 | ID          | Requirement                                                                                                                                                                             | Tranche    | Status    |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **STY-063** | An admonition style must declare, for each type in the vocabulary, its label, its icon where it has one, its border and background treatment, and the paragraph style its content takes | T2         | Specified |
-| **STY-064** | The vocabulary of admonition types must be the catalogue's, and content must take it from there (**CNT-120**) rather than each declaring its own                                        | T2         | Specified |
+| **STY-063** | An admonition style must declare, for each type in the vocabulary, its label, its icon where it has one, its border and background treatment, and the paragraph style its content takes | T7         | Specified |
+| **STY-064** | The vocabulary of admonition types must be the catalogue's, and content must take it from there (**CNT-120**) rather than each declaring its own                                        | T7         | Specified |
 | **STY-065** | An admonition whose type the theme's catalogue does not contain must fail the publish with a named error, on the same terms as any other missing style (STY-027)                        | Constraint | Specified |
 
 **STY-064 is where this was previously ambiguous in two documents at once.** CNT-120 takes the
@@ -155,12 +155,12 @@ list, in one place, and a theme that adds `regulatory` adds it for both.
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
 | **STY-024** | A theme must bind one catalogue of each kind, and must be a versioned artifact                                                                                                                                                               | T1         | Specified |
 | **STY-025** | A template must bind a theme (**TPL**), and a document must take the theme its template binds                                                                                                                                                | T1         | Specified |
-| **STY-026** | Moving a document to a different theme must be an administrative act, never an authoring one, and must be audited                                                                                                                            | T2         | Specified |
+| **STY-026** | Moving a document to a different theme must be an administrative act, never an authoring one, and must be audited                                                                                                                            | T7         | Specified |
 | **STY-027** | Where a document references a style the theme does not contain, publishing must fail with a named error rather than substituting a default                                                                                                   | Constraint | Specified |
 | **STY-028** | A baseline must pin the theme version it published under, so that re-publishing an approved document cannot change how it looks                                                                                                              | T3         | Specified |
 | **STY-066** | A draft must resolve against the theme version its document is bound to. Publishing a new theme version must not change how a draft looks under its author; moving a document to a newer version must be a deliberate, audited act (STY-026) | Constraint | Specified |
-| **STY-067** | Before a new theme version is adopted, which documents it would change must be listable - STY-034 one level up - so that a theme bump is a decision with a visible blast radius rather than a surprise across a tenant                       | T2         | Specified |
-| **STY-072** | Adding a theme must be possible without a code change or a release, on the same terms as adding a style (STY-029) or a citation style (STY-023)                                                                                              | T2         | Specified |
+| **STY-067** | Before a new theme version is adopted, which documents it would change must be listable - STY-034 one level up - so that a theme bump is a decision with a visible blast radius rather than a surprise across a tenant                       | T7         | Specified |
+| **STY-072** | Adding a theme must be possible without a code change or a release, on the same terms as adding a style (STY-029) or a citation style (STY-023)                                                                                              | T7         | Specified |
 
 **STY-066 and STY-067 cover the seam most likely to bite.** A baseline pins its theme version
 (STY-028) and a draft pinned nothing, so a tenant publishing theme v4 could have re-rendered every
@@ -179,12 +179,12 @@ one day, and a theme change months later re-renders something that was signed.
 
 | ID          | Requirement                                                                                                                     | Tranche | Status    |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
-| **STY-029** | An administrator must be able to add a style to a catalogue without a code change or a release                                  | T2      | Specified |
-| **STY-030** | A style added that way must immediately be selectable by authors and honoured by every output format                            | T2      | Specified |
-| **STY-031** | A style must not be deletable while anything references it, and its uses must be listable                                       | T2      | Specified |
-| **STY-032** | Adding, changing and deleting a style must be audited, including what changed                                                   | T2      | Specified |
-| **STY-033** | A tenant must be able to restrict which styles authors may choose, so that a catalogue can hold more than a house style permits | T2      | Specified |
-| **STY-034** | Changing a style must show what it will affect before the change is made                                                        | T2      | Specified |
+| **STY-029** | An administrator must be able to add a style to a catalogue without a code change or a release                                  | T7      | Specified |
+| **STY-030** | A style added that way must immediately be selectable by authors and honoured by every output format                            | T7      | Specified |
+| **STY-031** | A style must not be deletable while anything references it, and its uses must be listable                                       | T7      | Specified |
+| **STY-032** | Adding, changing and deleting a style must be audited, including what changed                                                   | T7      | Specified |
+| **STY-033** | A tenant must be able to restrict which styles authors may choose, so that a catalogue can hold more than a house style permits | T7      | Specified |
+| **STY-034** | Changing a style must show what it will affect before the change is made                                                        | T7      | Specified |
 
 ## 11. Resolution
 
@@ -196,7 +196,7 @@ one day, and a theme change months later re-renders something that was signed.
 | **STY-038** | Style resolution must be deterministic: the same content, style and theme version must always produce the same appearance                                                                                                                                                                                                                                                                                                                                                                                                            | Constraint | Specified             |
 | **STY-053** | Every style property must be verified, by an automated suite, to render the same measured value in each output format that renders it - in the editor, in PDF and in Word                                                                                                                                                                                                                                                                                                                                                            | T1         | Superseded by STY-080 |
 | **STY-080** | Every style property that both the editor and the PDF render must be verified, by an automated suite over the default theme and generated ones, to render in the editor at the value the PDF of the same content renders it: each length - where text starts, the step between two baselines, a size, a rule's width and where it runs, an image's size - within half a point, and each face, weight, posture, colour, underline and fill exactly. A difference is allowed only where STY-060's list of approved deviations names it | T1         | Specified             |
-| **STY-081** | Every style property that both Word and the PDF render must be verified, by an automated suite, to render in a Word document at the value the PDF of the same content renders it, within the same tolerances as STY-080, a difference allowed only where STY-060's list of approved deviations names it                                                                                                                                                                                                                              | T1         | Specified             |
+| **STY-081** | Every style property that both Word and the PDF render must be verified, by an automated suite, to render in a Word document at the value the PDF of the same content renders it, within the same tolerances as STY-080, a difference allowed only where STY-060's list of approved deviations names it                                                                                                                                                                                                                              | T8         | Specified             |
 | **STY-058** | The editor must render every declared property of every paragraph and character style as the theme declares it, not a sample of them, so that STY-080's suite tests nothing STY-036 did not oblige (CNT-082, CNT-097)                                                                                                                                                                                                                                                                                                                | T1         | Specified             |
 | **STY-060** | The conformance suites (STY-080, STY-081) must each carry an explicit list of approved cross-format deviations - the Word typeface substitution in STY-052 is the only one today - and a deviation not on that list must fail. Determinism (STY-038) is a claim about one format given one input, never that every format renders identically                                                                                                                                                                                        | Constraint | Specified             |
 | **STY-070** | Where a style or a glyph will not resolve, the editor must render an explicit unresolvable marker rather than a silent default, so that the failure appears while somebody can still fix it (STY-027 and STY-049 are the publish behaviours)                                                                                                                                                                                                                                                                                         | T1         | Specified             |
@@ -207,6 +207,12 @@ measured value in the editor and in Word as in the PDF; STY-052 mandates a subst
 licence forbids embedding.
 Without a list of sanctioned deviations the suite either fails on exactly the faces STY-052 exists to
 serve, or quietly excuses whatever it happens to find.
+
+**STY-081 is T8's, and its suite is built.** Word was measured against the PDF in T1 by the kit and
+the tolerances STY-080 is measured by, and does not agree yet; the measurement stays as an exact
+record of what is left, and closing it left T1
+([ADR-0032](../../decisions/0032-words-fidelity-to-the-pdf-leaves-t1.md)) for T8, the last tranche
+([ADR-0033](../../decisions/0033-t2-is-the-data-spine.md)).
 
 **STY-070 completes the fail-loud philosophy at the end where somebody can act.** Publishing refuses
 a missing style (STY-027) or a missing glyph (STY-049); until now the editor could have shown a
@@ -222,7 +228,7 @@ day earlier.
 | **STY-041** | A theme must record the licence under which each typeface is held, and whether that licence permits embedding it in published output                                                                                                                                     | T1         | Specified             |
 | **STY-042** | Publishing must refuse to embed a typeface whose licence does not permit it, and must say so rather than quietly substituting                                                                                                                                            | T1         | Specified             |
 | **STY-045** | Typefaces supplied with the product must be open-licence, on terms that permit embedding in published output and redistribution with the software                                                                                                                        | Constraint | Specified             |
-| **STY-046** | A tenant must be able to supply its own typefaces, asserting the licence it holds them under, and the product must not redistribute an uploaded face beyond the tenant that supplied it                                                                                  | T2         | Specified             |
+| **STY-046** | A tenant must be able to supply its own typefaces, asserting the licence it holds them under, and the product must not redistribute an uploaded face beyond the tenant that supplied it                                                                                  | T7         | Specified             |
 | **STY-047** | A typeface must be a versioned artifact, and a baseline must pin the exact files it published with rather than the theme version that named them                                                                                                                         | Constraint | Specified             |
 | **STY-048** | The default theme must cover the scripts the supported locales admit (**LOC-038**), the bidirectional text CNT-059 admits, and the mathematics CNT requires, because a face that cannot set them makes those requirements undeliverable                                  | T1         | Superseded by STY-074 |
 | **STY-074** | The default theme must cover the Latin, Greek, Cyrillic and Hebrew scripts, and the mathematics CNT requires, because a face that cannot set them makes those requirements undeliverable                                                                                 | T1         | Specified             |
@@ -263,10 +269,10 @@ wrongly. Arabic, which CNT-059 admits, is refused that way until STY-075.
 
 | ID          | Requirement                                                                                                                                                                                                                    | Tranche | Status    |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- | --------- |
-| **STY-043** | A catalogue must be exportable and importable, so that a house style can move between spaces and tenants                                                                                                                       | T2      | Specified |
-| **STY-044** | An import must report anything it could not represent rather than dropping it                                                                                                                                                  | T2      | Specified |
-| **STY-071** | An import must validate that every typeface, catalogue and style the imported catalogue references exists in the destination, and must report what does not at import time rather than leaving it to fail at publish (STY-027) | T2      | Specified |
-| **STY-073** | An exported catalogue must re-import into an equivalent catalogue, and that round trip must be covered by a test rather than asserted                                                                                          | T2      | Specified |
+| **STY-043** | A catalogue must be exportable and importable, so that a house style can move between spaces and tenants                                                                                                                       | T7      | Specified |
+| **STY-044** | An import must report anything it could not represent rather than dropping it                                                                                                                                                  | T7      | Specified |
+| **STY-071** | An import must validate that every typeface, catalogue and style the imported catalogue references exists in the destination, and must report what does not at import time rather than leaving it to fail at publish (STY-027) | T7      | Specified |
+| **STY-073** | An exported catalogue must re-import into an equivalent catalogue, and that round trip must be covered by a test rather than asserted                                                                                          | T7      | Specified |
 
 ## 14. Non-requirements
 
@@ -433,3 +439,41 @@ against the PDF now, and Word waits for Word itself. The rows arrived as issue #
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
 | Requirements | 79, of which 5 superseded | 81, of which 6 superseded |
+
+### Ken's answer to Word measured (W15.2), 2026-09-29
+
+Not a review. W15.2 of the [W15 plan](../../plans/2026-09-29-w15-word-measured.md) measured Word's
+own rendering against the PDF of the same content, in Word 16.0 build 16.0.20326, by the kit and the
+tolerances STY-080 is measured by, and left 1,186 differences of ten kinds after four fixes on Word's
+side. Ken decided that W15 stops after W15.2 and that Word's fidelity to the PDF leaves T1, recorded
+by [ADR-0032](../../decisions/0032-words-fidelity-to-the-pdf-leaves-t1.md). A row moving tranche whole
+keeps its identifier, and only its tranche changes.
+
+| What was found                                                                                                                                                                                          | Change                                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| STY-081's suite exists and runs where Word is, and finds Word short of the PDF in ten kinds: closing them is two slices on Word's side, one changing published PDFs by ADR-0014's rule, and Ken's calls | **STY-081 moved to T2**, with PUB-023. The measurement stays, a characterization of exactly what W15.2 left, failing anything else                                                 |
+| STY-060 asks each suite for its list of approved deviations, and a deviation on neither to fail. The editor's holds; Word's holds what is left by kind rather than failing it                           | Not changed, a constraint: its Word half is met when STY-081's suite fails every difference not on its list, in T2                                                                 |
+| STY-049 refuses a character the theme's faces cannot set; Word draws a maths character Cambria Math lacks from another face                                                                             | Not changed, a constraint. Judging Cambria Math's coverage was W15.4's and is not built; the report still names the unchecked maths face once for a document that sets an equation |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 81, of which 6 superseded | 81, of which 6 superseded |
+
+### Ken's re-tranching of T2, 2026-09-29
+
+Not a review. Ken narrowed T2 to the data spine - connections, query definitions, parameters,
+bindings, provenance, revising a bound value by hand, tabular presentation and field formatting,
+and only what those directly depend on - and moved the rest of what T2 held to a new tranche, T7,
+the administration and the library, and Word's fidelity to the PDF to T8, the last, recorded by
+[ADR-0033](../../decisions/0033-t2-is-the-data-spine.md). A row moving tranche whole keeps its
+identifier, and only its tranche changes.
+
+| What was found                                                                                                                                                                                                                                                                                                                                                                                                                                   | Change                                                              |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| STY-014 and STY-077, field formatting and alignment by column type in a table style, are how a bound table's columns take their formats (TAB-012, TAB-046, DAT-033)                                                                                                                                                                                                                                                                              | Kept in T2                                                          |
+| Derived styles (STY-056, STY-057), admonition styles (STY-063, STY-064), a change of theme as an audited administrative act (STY-026), a theme version's blast radius (STY-067), adding a style or a theme without a release (STY-029 to STY-034, STY-072), a tenant's own typefaces (STY-046) and a catalogue's export and import (STY-043, STY-044, STY-071, STY-073) are the catalogue's administration, and a bound value needs none of them | **All eighteen moved to T7**, with STY-007, superseded by STY-056   |
+| STY-081, Word's rendering held to the PDF's, was T2's since ADR-0032 only because T2 was the next tranche                                                                                                                                                                                                                                                                                                                                        | **STY-081 moved to T8**, the last tranche, with PUB-023 and PUB-107 |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 81, of which 6 superseded | 81, of which 6 superseded |
