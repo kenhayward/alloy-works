@@ -12,7 +12,7 @@ import {
 import { dataFailureSchema } from './failures.js';
 import { limitCeilings } from './limits.js';
 import { checkParameterValues, type ParameterValues } from './parameters.js';
-import { lexPostgres } from './sql.js';
+import { lexPostgres, RAN_MAX_CHARACTERS } from './sql.js';
 
 /**
  * The connector's requests and answers (data.md, "One request, one answer"; the D1 plan, D1-E), parsed
@@ -182,8 +182,12 @@ export const describeAnswerSchema = z.union([
 ]);
 export type DescribeAnswer = z.infer<typeof describeAnswerSchema>;
 
-/** The most a run's request may be, in bytes: its definition - SQL of up to 100,000 characters - and values. */
-export const RUN_REQUEST_MAX_BYTES = 256 * 1024;
+/**
+ * The most a run's or a describe's request may be, in bytes: the service's own body limit, 1 MiB, which
+ * holds a definition - at most `DEFINITION_MAX_BYTES` - and the values sent to sample it, and room for
+ * the connection and its sealed credential, so that nothing the service accepts is refused here.
+ */
+export const RUN_REQUEST_MAX_BYTES = 1024 * 1024 + 64 * 1024;
 
 /** A parameter's value as it crosses the interface: canonical text, a boolean, null, or a list. */
 const canonicalValue = z.union([z.string(), z.boolean(), z.null()]);
@@ -257,9 +261,6 @@ export const canonicalResultSchema = z
   .refine((result) => result.rows.every((row) => row.length === result.columns.length), {
     message: 'Every row has a cell for each column',
   });
-
-/** The longest SQL a run reports it ran: its text, with each marker written `$n::type` and each fragment placed. */
-const RAN_MAX_CHARACTERS = 300_000;
 
 /**
  * A run's answer (D2-K): the canonical result as a JSON value, its SHA-256 checksum, which the service

@@ -1,6 +1,12 @@
 import type { AddressInfo } from 'node:net';
 
-import { connectionTarget, credentialContext, SEALED } from '@alloy-works/domain';
+import {
+  connectionTarget,
+  credentialContext,
+  DEFINITION_MAX_BYTES,
+  RUN_REQUEST_MAX_BYTES,
+  SEALED,
+} from '@alloy-works/domain';
 import { openSecret } from '@alloy-works/sealing';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -156,7 +162,7 @@ describe("the connector's interface", () => {
     expect((await fetch(`${url}/v1/seal`)).status).toBe(404);
   });
 
-  it('takes a run and a SQL describe of up to 256 KiB, a seal or a test of up to 64 KiB, and refuses a statement that does not lex 400', async () => {
+  it('takes a run and a SQL describe of up to 1 MiB and 64 KiB, a seal or a test of up to 64 KiB, and refuses a statement that does not lex 400', async () => {
     const { url } = await started();
     const id = column('id', { base: 'integer' });
     // Nearly 100,000 characters of SQL, over 64 KiB and under 256 KiB, are a run's and a describe's.
@@ -178,7 +184,36 @@ describe("the connector's interface", () => {
       columns: [{ name: 'id', sourceType: 'integer', proposed: { base: 'integer' } }],
       parameters: [],
     });
-    const huge = `select 1 /* ${'x'.repeat(257 * 1024)} */`;
+    // A definition at its size bound, with a value, is a run's too.
+    const values: string[] = [];
+    const bounded = () =>
+      draft('select id from sample.site where {{label}} is not null order by id', [id], {
+        parameters: [
+          {
+            name: 'label',
+            type: { base: 'text' },
+            required: true,
+            list: false,
+            permitted: { values },
+          },
+        ],
+      });
+    const request = () =>
+      runRequest(settings(), PASSWORDS.reader, bounded(), { label: values[0] ?? '' });
+    const bytes = () => Buffer.byteLength(JSON.stringify(request().definition));
+    for (;;) {
+      values.push(`${values.length}${'一'.repeat(980)}`);
+      if (bytes() > DEFINITION_MAX_BYTES - 16) break;
+    }
+    values.pop();
+    values.push(`${values.length}`);
+    const left = DEFINITION_MAX_BYTES - bytes();
+    values[values.length - 1] += '一'.repeat(Math.floor(left / 3)) + 'a'.repeat(left % 3);
+    expect(bytes()).toBe(DEFINITION_MAX_BYTES);
+    const atBound = await post(url, '/v1/run', request());
+    expect(atBound.status).toBe(200);
+    expect(await atBound.json()).toMatchObject({ outcome: 'ok', rowCount: 3 });
+    const huge = `select 1 /* ${'x'.repeat(RUN_REQUEST_MAX_BYTES)} */`;
     expect(
       (await post(url, '/v1/run', runRequest(settings(), 'x', draft(huge, [id])))).status,
     ).toBe(413);

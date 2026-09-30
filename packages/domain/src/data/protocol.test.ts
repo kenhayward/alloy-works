@@ -395,6 +395,6 @@ describe("the connector's protocol for a run and a SQL describe (the D2 plan)", 
     expect(describing('select {{nothing}}')).toBe(false);
     expect(describing('select {{#site}}')).toBe(false);
     expect(describing('select 1', [...draft.parameters, ...draft.parameters])).toBe(false);
-    expect(RUN_REQUEST_MAX_BYTES).toBe(256 * 1024);
+    expect(RUN_REQUEST_MAX_BYTES).toBe(1024 * 1024 + 64 * 1024);
   });
 });

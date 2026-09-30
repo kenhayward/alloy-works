@@ -11,6 +11,8 @@ import {
   type QueryDefinition,
 } from './definition.js';
 import { defaultLimits, limitCeilings } from './limits.js';
+import { canonicalJson } from '../stored/canonical.js';
+import { bindPostgres } from './sql.js';
 
 const CONNECTION = '00000000-0000-4000-8000-00000000c0c0';
 
@@ -488,5 +490,78 @@ describe('a query definition', () => {
     expect(parseDraftDefinition(draft)).toEqual(draft);
     expect(() => parseDraftDefinition({ ...draft, key: ['nothing'] })).toThrow(DefinitionRefused);
     expect(draftDefinitionSchema.safeParse({ ...draft, title: 'x' }).success).toBe(false);
+  });
+
+  it('is at most 512 KiB of canonical JSON, so that it can always be sent to be run', () => {
+    const LIMIT = 512 * 1024;
+    const bytes = (value: unknown) => new TextEncoder().encode(canonicalJson(value)).length;
+    /** A definition whose canonical JSON is exactly `size` bytes, its bulk a text parameter's permitted values. */
+    const sized = (size: number) => {
+      const values: string[] = [];
+      const made = () =>
+        withParameters(
+          [
+            ...definition().parameters,
+            {
+              name: 'label',
+              type: { base: 'text' },
+              required: false,
+              list: false,
+              permitted: { values },
+            },
+          ],
+          'select id, taken, value from sample.reading where site = {{site}} and {{label}} is not null order by {{#sort}}',
+        );
+      // Whole values of three-byte characters while more than one would still fit, then one value
+      // made up to the size exactly: three-byte characters, then single bytes.
+      for (;;) {
+        values.push(`${values.length}${'一'.repeat(980)}`);
+        if (bytes(made()) > size - 16) break;
+      }
+      values.pop();
+      values.push(`${values.length}`);
+      const left = size - bytes(made());
+      values[values.length - 1] += '一'.repeat(Math.floor(left / 3)) + 'a'.repeat(left % 3);
+      const whole = made();
+      expect(bytes(whole)).toBe(size);
+      return whole;
+    };
+    expect(refusedAt(sized(LIMIT))).toEqual([]);
+    expect(refusedAt(sized(LIMIT + 1))).toEqual(['']);
+    // A draft is held to the same bound: this one is over it without its title and description.
+    const { title, description, retired, ...draft } = sized(LIMIT + 1000);
+    void [title, description, retired];
+    expect(bytes(draft)).toBeGreaterThan(LIMIT);
+    expect(() => parseDraftDefinition(draft)).toThrow(DefinitionRefused);
+  });
+
+  it('binds to at most 300,000 characters of SQL with its longest fragments, so that what ran can always be reported', () => {
+    const LIMIT = 300_000;
+    const fragment = `/*${'x'.repeat(1996)}*/`;
+    /** SQL placing the longest fragment 149 times, padded by a comment to bind to `length` exactly. */
+    const binding = (length: number) => {
+      const placed = `select 1::int8 as id, {{site}} as site${' {{#sort}}'.repeat(149)}`;
+      const sort: Parameter = {
+        name: 'sort',
+        type: { base: 'text' },
+        required: true,
+        list: false,
+        variation: [
+          { key: 'short', sql: '/**/' },
+          { key: 'long', sql: fragment },
+        ],
+      };
+      const site = definition().parameters[0]!;
+      const unpadded = bindPostgres(withParameters([site, sort], placed), {
+        site: '1',
+        sort: 'long',
+      });
+      const pad = length - unpadded.text.length;
+      const made = withParameters([site, sort], `${placed} /*${'y'.repeat(pad - 5)}*/`);
+      expect(bindPostgres(made, { site: '1', sort: 'long' }).text.length).toBe(length);
+      return made;
+    };
+    expect(refusedAt(binding(LIMIT))).toEqual([]);
+    expect(refusedAt(binding(LIMIT + 1))).toEqual(['fetch.text']);
   });
 });

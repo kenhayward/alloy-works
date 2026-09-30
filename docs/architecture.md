@@ -2797,7 +2797,9 @@ OpenAPI document from offering the header; a key sent is ignored.
 | `GET /v1/health`    | `{ ok: true }`, to anybody                                                                                                                                                                                                                                                                                                                                                                                      |
 
 Every `POST` carries `Bearer <CONNECTOR_KEY>`, compared by SHA-256 digest in constant time; a body over
-64 KiB is 413 - 256 KiB for a run and a describe, which carry a statement of up to 100,000 characters - a malformed one 400 `request_invalid`, and a supervisor already running
+64 KiB is 413 - 1 MiB and 64 KiB for a run and a describe, the service's own body limit and room for
+the connection and its sealed credential, since a run carries a definition of up to 512 KiB and the
+values it is sampled with - a malformed one 400 `request_invalid`, and a supervisor already running
 `CONNECTOR_MAX_CHILDREN` children answers 503 `connector_busy`. **The supervisor holds the sealing key
 and never meets a source**: it opens the one credential a request carries and spawns a fresh Node
 child with an empty environment, writing it one line - the request, the opened secret and the guard's
@@ -2912,7 +2914,9 @@ hold its title and description, the one connection it names by artifact id, its 
   its limits and whether it is retired (`packages/domain/src/data/definition.ts`). A value is marked
   `{{name}}` and a fragment `{{#name}}` (D2-B), found by `lexPostgres`, a PostgreSQL lexer that
   refuses a marker inside a string, a quoted identifier, a dollar-quoted body or a comment, and a `$1`
-  of the author's own. Every string is NFC already or the write is refused (D2-F), since a version's
+  of the author's own. A definition is at most 512 KiB of canonical JSON and binds to at most
+  300,000 characters of SQL with its longest fragments, so every one that passes can be run. Every
+  string is NFC already or the write is refused (D2-F), since a version's
   digest composes and the source does not. `parseQueryDefinitionForWrite` holds every write path to
   the shape and the checks; the database's `definition-references.ts` holds the connection named to one
   of the tenant's in service, under the connection's artifact lock, and refuses a version retiring a

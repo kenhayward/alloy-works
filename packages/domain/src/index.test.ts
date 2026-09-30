@@ -383,6 +383,7 @@ describe('the domain package', () => {
         // Data, D2: a query definition's shape and checks, PostgreSQL's lexer and binder, a
         // parameter value's check, the canonical result, the run and a SQL describe on the
         // interface, and the limits a run takes (data.md; the D2 plan).
+        'DEFINITION_MAX_BYTES',
         'DefinitionRefused',
         'PARAMETER_NAME',
         'QUERY_DEFINITION_SCHEMA_VERSION',
@@ -396,6 +397,7 @@ describe('the domain package', () => {
         'valueTypeSchema',
         'bindPostgres',
         'lexPostgres',
+        'RAN_MAX_CHARACTERS',
         'checkParameterValues',
         'MAX_LIST_ITEMS',
         'MAX_TEXT_VALUE',

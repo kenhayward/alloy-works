@@ -15,6 +15,7 @@ import {
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
 import {
   canonicalResultBytes,
+  DEFINITION_MAX_BYTES,
   dataFailureCodes,
   dataFailures,
   limitCeilings,
@@ -744,6 +745,53 @@ describe('query definitions through the service', () => {
       settings: settings({ name: 'Retiring', retired: true }),
     });
     expect(retiring.statusCode).toBe(200);
+  });
+
+  it('samples a definition at the size bound, with its values, through the connector', async () => {
+    const source = await connection('At the bound');
+    connector.mode = 'answer';
+    connector.run = ranOk([['1', 'North']]);
+    const values: string[] = [];
+    const made = () =>
+      draft(source.id, {
+        parameters: [
+          { name: 'site', type: { base: 'integer' }, required: true, list: false },
+          {
+            name: 'label',
+            type: { base: 'text' },
+            required: false,
+            list: false,
+            permitted: { values },
+          },
+        ],
+        fetch: {
+          kind: 'sql',
+          text: 'select id, name from sample.site where id = {{site}} and {{label}} is not null order by id',
+        },
+      });
+    const bytes = (value: unknown) => Buffer.byteLength(JSON.stringify(value), 'utf8');
+    // Permitted values of three-byte characters up to the bound exactly.
+    for (;;) {
+      values.push(`${values.length}${'一'.repeat(980)}`);
+      if (bytes(made()) > DEFINITION_MAX_BYTES - 16) break;
+    }
+    values.pop();
+    values.push(`${values.length}`);
+    const left = DEFINITION_MAX_BYTES - bytes(made());
+    values[values.length - 1] += '一'.repeat(Math.floor(left / 3)) + 'a'.repeat(left % 3);
+    const atBound = made();
+    expect(bytes(atBound)).toBe(DEFINITION_MAX_BYTES);
+
+    const before = runsAsked();
+    const answer = await sample('ada', source.id, atBound, { site: '1', label: values[0]! });
+    expect(answer.json()).toMatchObject({ outcome: 'ok', rowCount: 1 });
+    expect(runsAsked()).toBe(before + 1);
+    // One byte more is the author's to fix, refused before the connector is asked.
+    values[values.length - 1] += 'a';
+    const over = await sample('ada', source.id, made(), { site: '1' });
+    expect(over.statusCode).toBe(400);
+    expect(over.json()).toMatchObject({ code: 'definition_invalid' });
+    expect(runsAsked()).toBe(before + 1);
   });
 
   it("names a definition's connection only to a caller who may read the connection, and shows its identity to every reader", async () => {

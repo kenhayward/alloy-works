@@ -510,6 +510,14 @@ unchanged. A decomposed literal is written with PostgreSQL's `U&'...'` escapes. 
 fetch is SQL alone** (D2-D); the builder's tree arrives with D4 as an arm, refusing nothing stored, so
 every D2 definition needs `write_sql`.
 
+**Every definition that passes its checks can be run.** Its canonical JSON is at most 512 KiB of
+UTF-8, and the longest SQL it can bind to - its text with each variation marker replaced by its
+longest fragment and each value marker by its placeholder - at most 300,000 characters, the most a
+run reports it ran; either past its bound is refused `definition_invalid`, naming the size, on every
+write and on a sample's draft. A run's request to the connector may be 1 MiB and 64 KiB, the
+service's own body limit and room for the connection and its sealed credential, so a definition at
+its bound, with the values it is sampled with, always fits.
+
 ### Parameters
 
 ```ts

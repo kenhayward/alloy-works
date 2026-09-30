@@ -22,6 +22,7 @@ export type { Attribution, DataFailure, DataFailureCode, SourceRefusal } from '.
 export { columnTypeSchema, valueTypeSchema } from './columns.js';
 export type { ColumnBase, ColumnType, ValueType } from './columns.js';
 export {
+  DEFINITION_MAX_BYTES,
   DefinitionRefused,
   PARAMETER_NAME,
   QUERY_DEFINITION_SCHEMA_VERSION,
@@ -40,7 +41,7 @@ export type {
   Parameter,
   QueryDefinition,
 } from './definition.js';
-export { bindPostgres, lexPostgres } from './sql.js';
+export { bindPostgres, lexPostgres, RAN_MAX_CHARACTERS } from './sql.js';
 export type { BoundStatement, BoundValue, LexProblem, SqlPiece } from './sql.js';
 export { checkParameterValues, MAX_LIST_ITEMS, MAX_TEXT_VALUE } from './parameters.js';
 export type { ParameterProblem, ParameterRule, ParameterValues } from './parameters.js';

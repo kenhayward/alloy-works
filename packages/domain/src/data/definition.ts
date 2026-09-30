@@ -5,7 +5,8 @@ import { valueProblem, compareCanonical, type CanonicalValue } from './canonical
 import { valueTypeSchema, type ValueType } from './columns.js';
 import { limitCeilings } from './limits.js';
 import { MAX_COLUMNS } from './columns.js';
-import { lexPostgres } from './sql.js';
+import { canonicalJson } from '../stored/canonical.js';
+import { lexPostgres, longestBinding, RAN_MAX_CHARACTERS } from './sql.js';
 
 /**
  * A query definition version (data.md, "What a query definition version holds"; the D2 plan, task 1):
@@ -23,7 +24,15 @@ const CONTROL = /\p{Cc}/u;
 /** Any control character but a line feed. */
 const CONTROL_BUT_LINE_FEED = /(?!\n)\p{Cc}/u;
 
+/**
+ * The most a definition may be, in bytes of its canonical JSON's UTF-8: so that one, with the values it
+ * is sampled with, always fits a run's request (`RUN_REQUEST_MAX_BYTES`).
+ */
+export const DEFINITION_MAX_BYTES = 512 * 1024;
+
 const characters = (value: string) => [...value].length;
+/** A whole number with its thousands separated by commas, as the product writes one. */
+const grouped = (value: number) => String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 const utf8Bytes = (value: string) => new TextEncoder().encode(value).length;
 
 const storable = (what: string) =>
@@ -217,6 +226,23 @@ export function checkQueryDefinition(
   const problems: DefinitionProblem[] = [];
   const problem = (path: string, message: string) =>
     problems.push({ rule: 'definition_invalid', path, message });
+
+  // Every definition that passes can be run: it fits a run's request, and what it binds to can be
+  // reported as what ran.
+  const size = utf8Bytes(canonicalJson(definition));
+  if (size > DEFINITION_MAX_BYTES) {
+    problem(
+      '',
+      `A definition is at most 512 KiB (${grouped(DEFINITION_MAX_BYTES)} bytes); this one is ${grouped(size)}`,
+    );
+  }
+  const longest = longestBinding(definition);
+  if (longest !== undefined && longest > RAN_MAX_CHARACTERS) {
+    problem(
+      'fetch.text',
+      `The SQL binds to at most ${grouped(RAN_MAX_CHARACTERS)} characters with its longest fragments; this binds to ${grouped(longest)}`,
+    );
+  }
 
   // Every string, already composed: a digest canonicalises to NFC, and would not tell two spellings of
   // one SQL text apart, where the source does (D2-F).

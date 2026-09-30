@@ -25,8 +25,8 @@ import {
 export const MAX_BODY_BYTES = 64 * 1024;
 
 /**
- * The most a body may be on each path: a run's and a describe's hold a definition's SQL, of up to
- * 100,000 characters, and its values (the D2 plan, task 3); a seal's and a test's no more than D1's.
+ * The most a body may be on each path: a run's and a describe's hold a definition, of up to 512 KiB,
+ * and its values (the D2 plan, task 3 and final review 2); a seal's and a test's no more than D1's.
  */
 const bodyLimits: Readonly<Record<string, number>> = {
   '/v1/seal': MAX_BODY_BYTES,
@@ -64,7 +64,7 @@ function authenticated(request: IncomingMessage, keyDigest: Buffer): boolean {
  * `connector-private`. `seal`, `test`, `describe` - of the relations, or of a statement - and `run`
  * need the service's key; `health` answers anybody. A named failure is an answer (200); a malformed
  * request is 400 `request_invalid`; an unauthenticated one 401 with no body; a body over its path's
- * limit - 256 KiB for a run or a describe, 64 KiB otherwise - 413; a full supervisor 503
+ * limit - 1 MiB and 64 KiB for a run or a describe, 64 KiB otherwise - 413; a full supervisor 503
  * `connector_busy`. One log line a request but a health
  * probe, holding neither the body nor the answer.
  */

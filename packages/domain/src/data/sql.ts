@@ -166,6 +166,56 @@ const POSTGRES_TYPES = {
   boolean: 'boolean',
 } as const satisfies Record<ValueType['base'], string>;
 
+/**
+ * The longest SQL a run reports it ran, in UTF-16 code units as a string's length counts them: its
+ * text, with each marker written as its placeholder and each fragment placed. A definition that could
+ * bind to more is refused when it is written (`longestBinding`), so no run is refused for it.
+ */
+export const RAN_MAX_CHARACTERS = 300_000;
+
+/** The placeholder a value marker is written as: the driver's n-th parameter, cast to its type. */
+function placeholder(number: number, parameter: Parameter): string {
+  return `$${number}::${POSTGRES_TYPES[parameter.type.base]}${parameter.list ? '[]' : ''}`;
+}
+
+/**
+ * The length of the longest SQL a definition can bind to, as `RAN_MAX_CHARACTERS` counts it: its text
+ * with each variation marker replaced by its longest fragment and each value marker by its
+ * placeholder, as `bindPostgres` writes them. Undefined where the SQL does not lex, or a marker names
+ * no parameter of its kind, which the definition's checks refuse on their own.
+ */
+export function longestBinding(
+  definition: Pick<QueryDefinition, 'parameters' | 'fetch'>,
+): number | undefined {
+  const pieces = lexPostgres(definition.fetch.text);
+  if (!Array.isArray(pieces)) return undefined;
+  const declared = new Map<string, Parameter>(
+    definition.parameters.map((parameter) => [parameter.name, parameter]),
+  );
+  const numbers = new Map<string, number>();
+  let length = 0;
+  for (const piece of pieces) {
+    if (piece.kind === 'text') {
+      length += piece.text.length;
+      continue;
+    }
+    const parameter = declared.get(piece.name);
+    if (!parameter) return undefined;
+    if (piece.kind === 'variation') {
+      if (parameter.variation === undefined) return undefined;
+      length += Math.max(...parameter.variation.map((each) => each.sql.length));
+      continue;
+    }
+    let number = numbers.get(piece.name);
+    if (number === undefined) {
+      number = numbers.size + 1;
+      numbers.set(piece.name, number);
+    }
+    length += placeholder(number, parameter).length;
+  }
+  return length;
+}
+
 /** A value as the driver is handed it: its canonical text, a list's as an array, or null. */
 export type BoundValue = string | readonly string[] | null;
 
@@ -225,7 +275,7 @@ export function bindPostgres(
       number = bound.length;
       numbers.set(piece.name, number);
     }
-    text += `$${number}::${POSTGRES_TYPES[parameter.type.base]}${parameter.list ? '[]' : ''}`;
+    text += placeholder(number, parameter);
   }
   return { text, values: bound };
 }

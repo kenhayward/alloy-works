@@ -1,6 +1,12 @@
 import { randomBytes } from 'node:crypto';
 import { sealSecret } from '@alloy-works/db';
-import type { DescribeAnswer, DescribeSqlAnswer, RunAnswer, TestAnswer } from '@alloy-works/domain';
+import {
+  RUN_REQUEST_MAX_BYTES,
+  type DescribeAnswer,
+  type DescribeSqlAnswer,
+  type RunAnswer,
+  type TestAnswer,
+} from '@alloy-works/domain';
 
 /** The key a harness's service presents to its fake connector: invented, and made afresh. */
 export const FAKE_CONNECTOR_KEY = randomBytes(32).toString('base64');
@@ -40,6 +46,13 @@ export function fakeConnector(): FakeConnector {
     run: { outcome: 'failed', failure: { code: 'connector_error', attribution: 'connector' } },
     fetch: (async (url: string | URL | Request, init?: RequestInit) => {
       const path = new URL(String(url)).pathname;
+      // A run's and a describe's body are held to the real connector's limit, as its door holds them.
+      if (
+        (path === '/v1/run' || path === '/v1/describe') &&
+        Buffer.byteLength(String(init?.body ?? ''), 'utf8') > RUN_REQUEST_MAX_BYTES
+      ) {
+        return new Response(null, { status: 413 });
+      }
       const body = JSON.parse(String(init?.body ?? 'null')) as Record<string, unknown>;
       if (new Headers(init?.headers).get('authorization') !== `Bearer ${FAKE_CONNECTOR_KEY}`) {
         return new Response(null, { status: 401 });
