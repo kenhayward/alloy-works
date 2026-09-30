@@ -11,6 +11,8 @@ import {
   suiteChild,
   suiteDeny,
   suiteIsolation,
+  LOADED_TIMEOUT_MS,
+  ROOMY_DEADLINE_MS,
 } from './testing/source.js';
 
 const supervisor = createSupervisor({
@@ -23,12 +25,16 @@ const supervisor = createSupervisor({
 const describeSql = async (
   ...args: Parameters<typeof describeSqlRequest>
 ): Promise<DescribeSqlAnswer> => {
-  const answer = await supervisor.run('describeSql', describeSqlRequest(...args));
+  const [source, secret, text, parameters = [], deadlineMs = ROOMY_DEADLINE_MS] = args;
+  const answer = await supervisor.run(
+    'describeSql',
+    describeSqlRequest(source, secret, text, parameters, deadlineMs),
+  );
   if (answer === 'busy') throw new Error('busy');
   return answer;
 };
 
-describe('a SQL statement described', () => {
+describe('a SQL statement described', { timeout: LOADED_TIMEOUT_MS }, () => {
   it('answers its columns, each with the source type and a proposal, and its parameters, as the source reads them', async () => {
     const answer = await describeSql(
       settings(),

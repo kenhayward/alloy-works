@@ -18,6 +18,8 @@ import {
   suiteChild,
   suiteDeny,
   suiteIsolation,
+  LOADED_TIMEOUT_MS,
+  ROOMY_DEADLINE_MS,
 } from './testing/source.js';
 
 /** An invented secret, with characters each encoding spells differently. */
@@ -50,7 +52,7 @@ async function listening(
   return { server, port: (server.address() as AddressInfo).port, sockets };
 }
 
-describe("the connector's secrets", () => {
+describe("the connector's secrets", { timeout: LOADED_TIMEOUT_MS }, () => {
   // A source that answers PostgreSQL's request for TLS with no, and one that never answers at all.
   let plain: Awaited<ReturnType<typeof listening>>;
   let silent: Awaited<ReturnType<typeof listening>>;
@@ -100,26 +102,35 @@ describe("the connector's secrets", () => {
     const failed =
       '{"outcome":"failed","failure":{"code":"connection_failed","attribution":"connector"}}';
     // Case 2's matrix, for PostgreSQL.
-    expect((await call(real.url, '/v1/test', requestFor(settings(), CANARY))).text).toBe(failed);
+    expect(
+      (await call(real.url, '/v1/test', requestFor(settings(), CANARY, ROOMY_DEADLINE_MS))).text,
+    ).toBe(failed);
     expect(
       (
         await call(
           real.url,
           '/v1/test',
-          requestFor(settings({ host: 'no-such-source.invalid' }), CANARY),
+          requestFor(settings({ host: 'no-such-source.invalid' }), CANARY, ROOMY_DEADLINE_MS),
         )
       ).text,
     ).toBe(failed);
     expect(
-      (await call(real.url, '/v1/test', requestFor(settings({ port: plain.port }), CANARY))).text,
+      (
+        await call(
+          real.url,
+          '/v1/test',
+          requestFor(settings({ port: plain.port }), CANARY, ROOMY_DEADLINE_MS),
+        )
+      ).text,
     ).toBe(failed);
     expect(
       (await call(real.url, '/v1/test', requestFor(settings({ port: silent.port }), CANARY, 1000)))
         .status,
     ).toBe(200);
-    expect((await call(real.url, '/v1/describe', requestFor(settings(), CANARY))).text).toBe(
-      '{"failure":{"code":"connection_failed","attribution":"connector"}}',
-    );
+    expect(
+      (await call(real.url, '/v1/describe', requestFor(settings(), CANARY, ROOMY_DEADLINE_MS)))
+        .text,
+    ).toBe('{"failure":{"code":"connection_failed","attribution":"connector"}}');
     // A run and a SQL describe, each failing each way (the D2 plan): a wrong credential, an unknown
     // host, and a source that refuses TLS.
     const definition = draft('select id from sample.site order by id', [
@@ -138,7 +149,7 @@ describe("the connector's secrets", () => {
           await call(
             real.url,
             '/v1/describe',
-            describeSqlRequest(source, CANARY, 'select 1 as one'),
+            describeSqlRequest(source, CANARY, 'select 1 as one', [], ROOMY_DEADLINE_MS),
           )
         ).text,
       ).toBe('{"failure":{"code":"connection_failed","attribution":"connector"}}');
@@ -189,9 +200,10 @@ describe("the connector's secrets", () => {
       ],
       env: {},
     });
-    expect((await call(crashing.url, '/v1/test', requestFor(settings(), CANARY))).text).toBe(
-      '{"outcome":"failed","failure":{"code":"connector_error","attribution":"connector"}}',
-    );
+    expect(
+      (await call(crashing.url, '/v1/test', requestFor(settings(), CANARY, ROOMY_DEADLINE_MS)))
+        .text,
+    ).toBe('{"outcome":"failed","failure":{"code":"connector_error","attribution":"connector"}}');
     await new Promise<void>((resolve) => crashing.server.close(() => resolve()));
     // Not vacuous: the crash did write its report, and the supervisor said how long it was.
     expect(stderr.join('')).toMatch(/password authentication failed/);

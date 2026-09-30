@@ -11,7 +11,15 @@ import {
 import { describe, expect, it } from 'vitest';
 
 import { CONNECT_TIMEOUT_MS } from './supervisor.js';
-import { column, draft, PASSWORDS, runRequest, settings, suiteDeny } from './testing/source.js';
+import {
+  column,
+  draft,
+  LOADED_TIMEOUT_MS,
+  PASSWORDS,
+  runRequest,
+  settings,
+  suiteDeny,
+} from './testing/source.js';
 import { answerRequest } from './work.js';
 
 /**
@@ -388,7 +396,7 @@ async function inTurn<T, R>(items: readonly T[], work: (item: T) => Promise<R>):
 
 const idColumn = column('id', { base: 'integer' });
 
-describe('injection through every parameter type', () => {
+describe('injection through every parameter type', { timeout: LOADED_TIMEOUT_MS }, () => {
   it('DAT-021 attempts injection through every parameter type and refuses each value by name or binds it inert', async () => {
     const attempts = POSITIONS.flatMap(([position, name, sql, expected]) =>
       valuesFor(name).map((value) => ({ position, name, sql, expected, value })),

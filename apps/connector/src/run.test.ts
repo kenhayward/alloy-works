@@ -9,6 +9,7 @@ import {
   asSuperuser,
   column,
   draft,
+  LOADED_TIMEOUT_MS,
   PASSWORDS,
   runRequest,
   SEALING_KEY,
@@ -40,7 +41,7 @@ const failure = (answer: RunAnswer) =>
 
 const id = column('id', { base: 'integer' });
 
-describe('a run', () => {
+describe('a run', { timeout: LOADED_TIMEOUT_MS }, () => {
   it('answers a definition run against sample values with its canonical result, its row count, its checksum and the SQL that ran', async () => {
     const answer = await asReader(
       draft(

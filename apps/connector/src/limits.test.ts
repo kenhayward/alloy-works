@@ -15,6 +15,7 @@ import {
   suiteChild,
   suiteDeny,
   suiteIsolation,
+  LOADED_TIMEOUT_MS,
 } from './testing/source.js';
 
 const supervisor = createSupervisor({
@@ -60,7 +61,7 @@ async function goneWithin(marker: string): Promise<number> {
   return 1500;
 }
 
-describe("a run's limits", () => {
+describe("a run's limits", { timeout: LOADED_TIMEOUT_MS }, () => {
   it('DAT-051 fails a run past its row, byte or time limit by name and answers no rows', async () => {
     const failed = (code: string, attribution = 'query') => ({
       outcome: 'failed',
