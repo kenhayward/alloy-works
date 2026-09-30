@@ -225,6 +225,30 @@ describe('a query definition', () => {
         problems: [{ rule: 'definition_invalid', path: 'connection' }],
       });
     }
+    // And a connection, never another kind's artifact in its place.
+    const component = await service.withTenant(production, async (trx) => {
+      const answer = await createComponent(trx, {
+        spaceId: general,
+        title: 'Not a connection either',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: ada,
+      });
+      if (answer.answer !== 'created') throw new Error(answer.answer);
+      return answer.version.artifactId;
+    });
+    expect(
+      await service.withTenant(production, (trx) =>
+        createQueryDefinition(trx, {
+          author: ada,
+          spaceId: general,
+          definition: definition(component),
+        }),
+      ),
+    ).toMatchObject({
+      answer: 'definition.refused',
+      problems: [{ rule: 'definition_invalid', path: 'connection' }],
+    });
 
     // Its every change is a version: a version once cut is never changed or removed.
     const second = await version(first, { title: 'Readings by site, oldest first' });
