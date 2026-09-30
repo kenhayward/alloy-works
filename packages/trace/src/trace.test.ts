@@ -67,6 +67,7 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
+    // 1524, from 1522 (2026-09-30): IAM-083 and IAM-084 (T7) supersede IAM-020, Ken's answer that a dataset's own read grant comes later and the document's permission alone governs in T2.
     // 1522, from 1479 (2026-09-30): ADR-0035, Ken's decisions on data connectivity - DAT-074 to DAT-114 (41 rows; twelve supersede DAT-002, 006, 008, 011, 017, 023, 034, 035, 036, 040, 044 and 055), IAM-082 superseding IAM-067 and TPL-065 superseding TPL-023. Non-requirements 118, from 117: DAT-N07, no uploaded file as a source. DAT-052 moves whole to T7.
     // 1479, unchanged (2026-09-29): ADR-0033, T2 narrowed to the data spine - 82 rows move whole to T7, STY-081, PUB-023 and PUB-107 to T8, and GEN-012 to T5, each keeping its identifier.
     // 1479, from 1477 (2026-09-29): ADR-0032, Word's fidelity to the PDF leaves T1 - PUB-106 (T1, the PDF's) and PUB-107 (T2, Word's own pages) supersede PUB-092.
@@ -77,7 +78,7 @@ describe('the committed trace.json', () => {
     // 1471, from 1470 (2026-09-28): W14.7's final review - CNT-178 supersedes CNT-148, because macOS chooses its spelling checker's languages itself.
     // 1470, from 1458 (2026-09-28): the T1 audit's last decisions and rewordings: CNT-176 and CNT-177, PUB-098 to PUB-104, IAM-080 and IAM-081 supersede the rows they split, and STY-079 is new (issue #306).
     // 1458, from 1449 (2026-09-26): the rewordings Ken agreed after the T1 audit (K7, and W1's three): CNT-171 to CNT-175, STR-070, MET-042, STY-078 and API-061 supersede the rows they reword.
-    expect(model.requirements).toHaveLength(1522);
+    expect(model.requirements).toHaveLength(1524);
     expect(model.nonRequirements).toHaveLength(118);
     expect(model.questions).toHaveLength(135);
     // 506, from 505 (2026-09-29): ADR-0033 - structure.md claims STR-072, an open from within the application on Ken's answer, measured green by the browser suite's budgets.test.ts; T2's re-tranching to T7 and T8 moves claims with their rows and drops none.

@@ -20,6 +20,10 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   source, and stricter rules for connections that act as the person asking. Uploading a file as a
   data source is not among them, and caching results is left for a later release. Nothing is built
   yet.
+- **Hiding one value from some of a document's readers comes later.** Letting a set of data carry a
+  read permission of its own, so that some readers of a document see it marked as withheld, moves
+  to a later tranche, T7, together with a rule that only somebody who can see every value may
+  publish. Until then, whoever can read a document can read all of it.
 
 ## 0.127.5 - 2026-09-30 (PR #358)
 
