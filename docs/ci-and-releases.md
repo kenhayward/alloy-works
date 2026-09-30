@@ -23,6 +23,10 @@ The whole-system job builds the compose stack and drives it, and a third job rea
 | The whole system  | Browser           | `pnpm test:browser`                                 | **Yes**         |
 | Traceability gate | Traceability gate | `pnpm trace gate`                                   | **Yes**         |
 
+The end-to-end and browser steps set every address their suite drives, to the stack the job has just
+started: neither suite has a default, and each refuses to run with any of its targets unset, so no
+run can reach a stack it was not pointed at ([deploy/README.md](../deploy/README.md#running-the-suites-against-a-stack)).
+
 Install is deliberately **not** `continue-on-error`: a lock file that will not install should stop
 the run, because every step after it would be testing a tree nobody agreed to. And it is
 `--frozen-lockfile`, never a loose install - a loose install can resolve a different tree than the

@@ -5,9 +5,15 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.test.ts'],
     // The tests that need no stack run in `pnpm test` from vitest.pin.config.ts instead.
-    exclude: [...configDefaults.exclude, 'src/chromium-release.test.ts', 'src/undecided.test.ts'],
+    exclude: [
+      ...configDefaults.exclude,
+      'src/chromium-release.test.ts',
+      'src/undecided.test.ts',
+      'src/targets.test.ts',
+    ],
     // Signed in once for the run, in the browser through the stand-in's own page, and in Node for the
-    // fixtures the tests make through the API (the W13 plan's B-B and B-C).
+    // fixtures the tests make through the API (the W13 plan's B-B and B-C). It imports the suite's
+    // addresses first, which refuse the run before any request when a target is unset (#363).
     globalSetup: ['src/testing/setup.ts'],
     // One file at a time: the budgets W13.3 adds want a quiet machine, and every file drives the one
     // stack (B-F).

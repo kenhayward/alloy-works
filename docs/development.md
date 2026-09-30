@@ -451,7 +451,10 @@ docker compose -f deploy/compose.yaml up -d --build --wait
 Open `http://dev.acme.localhost:8088`: the page says **Development**, offers **Sign in**, and after
 signing in as Ada says who you are. **Make a sample** adds one as `queued`, and it becomes `done` on
 its own a second or two later, because the stream said so rather than the page asking again. The
-same environment also answers at `http://127.0.0.1:8088`, which is what `tests/e2e` uses.
+same environment also answers at `http://127.0.0.1:8088`, which is how `tests/e2e` addresses a stack.
+Neither `tests/e2e` nor `tests/browser` is ever pointed at this one: each refuses to run until it is
+told which stack to drive, and belongs on a stack of its own
+([deploy/README.md](../deploy/README.md#running-the-suites-against-a-stack)).
 
 **The renderer from source**, when you are changing it:
 
@@ -521,14 +524,15 @@ about 120 MB, from Google's public bucket, checked against its hash and unpacked
 
 ```bash
 pnpm --filter @alloy-works/browser fetch-chromium   # Chromium 153.0.8010.12, checked against its hash
-docker compose -f deploy/compose.yaml up -d --build --wait
-pnpm test:browser
 ```
 
-It reaches the stack at `http://dev.acme.localhost:8088`, which Chromium resolves itself, and its
-fixtures through the API at `127.0.0.1`. A stack on other ports is named by `ALLOY_BROWSER_SERVICE`,
-`ALLOY_BROWSER_API` and `ALLOY_BROWSER_IDP`; [docs/testing.md](testing.md#the-browser-suite) has the
-rest, including how to run a second stack beside the one you work against. After a change to the
+It reaches a stack at a `*.localhost` name, which Chromium resolves itself, and its fixtures through
+the API at `127.0.0.1`. **It has no default stack**: it refuses to run until `ALLOY_BROWSER_SERVICE`,
+`ALLOY_BROWSER_API`, `ALLOY_BROWSER_IDP`, `ALLOY_BROWSER_DATABASE` and `ALLOY_BROWSER_STORE_AT` are
+all set, since it signs in, makes content and writes themes into the database of whatever stack they
+name. Point them at a second stack beside the one you work against, never at that one;
+[deploy/README.md](../deploy/README.md#running-the-suites-against-a-stack) has the commands and
+[docs/testing.md](testing.md#the-browser-suite) the rest. After a change to the
 renderer, rebuild the stack's `service` image before running it: the suite drives what the image
 serves, not the source.
 
@@ -542,8 +546,8 @@ pnpm format        # prettier --check (use `pnpm exec prettier --write .` to fix
 pnpm typecheck     # tsc --noEmit in every workspace
 pnpm build         # domain (emits dist/) then the renderer and the shell
 pnpm test          # every suite in every workspace, apart from those needing the stack (below)
-pnpm test:e2e      # the whole system, which needs the stack up first
-pnpm test:browser  # the renderer in the pinned Chromium, against the stack (below)
+pnpm test:e2e      # the whole system, against a stack of your own named by ALLOY_E2E_* (deploy/README.md)
+pnpm test:browser  # the renderer in the pinned Chromium, against a stack named by ALLOY_BROWSER_*
 ```
 
 `build`, `typecheck` and `test` run through Turborepo, which builds `@alloy-works/domain` first
