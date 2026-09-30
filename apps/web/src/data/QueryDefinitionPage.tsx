@@ -147,8 +147,8 @@ function Step({ title, children }: { readonly title: string; readonly children: 
 }
 
 /**
- * A choice and its label, joined by `for`: a label wrapping a select would name it with every
- * option's text as well as its own words, as a browser and an assistive technology read it.
+ * A select or a text area and its label, joined by `for`: a label wrapping one would hold every
+ * option's text, or the text first typed, beside its own words, and be read so.
  */
 function Choice({
   label,
@@ -325,14 +325,16 @@ function ParameterFields({
         </Choice>
       )}
       {!variation && parameter.permitted === 'values' && (
-        <label>
-          Permitted values, one to a line
-          <textarea
-            rows={3}
-            value={parameter.values}
-            onChange={(event) => onChange({ ...parameter, values: event.target.value })}
-          />
-        </label>
+        <Choice label="Permitted values, one to a line">
+          {(id) => (
+            <textarea
+              id={id}
+              rows={3}
+              value={parameter.values}
+              onChange={(event) => onChange({ ...parameter, values: event.target.value })}
+            />
+          )}
+        </Choice>
       )}
       {!variation && parameter.permitted === 'range' && (
         <>
@@ -438,10 +440,16 @@ function ValueField({
     );
   }
   return parameter.list ? (
-    <label>
-      {parameter.name}
-      <textarea rows={3} value={value} onChange={(event) => onChange(event.target.value)} />
-    </label>
+    <Choice label={parameter.name}>
+      {(id) => (
+        <textarea
+          id={id}
+          rows={3}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+        />
+      )}
+    </Choice>
   ) : (
     <label>
       {parameter.name}
@@ -813,29 +821,33 @@ export function QueryDefinitionPage({
                   onChange={(event) => change({ title: event.target.value })}
                 />
               </label>
-              <label>
-                Description
-                <textarea
-                  rows={2}
-                  value={draft.description}
-                  onChange={(event) => change({ description: event.target.value })}
-                />
-              </label>
+              <Choice label="Description">
+                {(id) => (
+                  <textarea
+                    id={id}
+                    rows={2}
+                    value={draft.description}
+                    onChange={(event) => change({ description: event.target.value })}
+                  />
+                )}
+              </Choice>
             </div>
           </Step>
 
           <Step title="SQL and parameters">
             <div className={styles['form']}>
-              <label>
-                SQL
-                <textarea
-                  className={styles['code']}
-                  rows={8}
-                  spellCheck={false}
-                  value={draft.sql}
-                  onChange={(event) => change({ sql: event.target.value })}
-                />
-              </label>
+              <Choice label="SQL">
+                {(id) => (
+                  <textarea
+                    id={id}
+                    className={styles['code']}
+                    rows={8}
+                    spellCheck={false}
+                    value={draft.sql}
+                    onChange={(event) => change({ sql: event.target.value })}
+                  />
+                )}
+              </Choice>
               <p className={styles['hint']}>
                 Write a value as {'{{name}}'} and a fragment as {'{{#name}}'}, each naming a
                 parameter below. A value is always sent apart from the SQL, never placed in it.
