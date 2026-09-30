@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { loadConnectorConfig } from './config.js';
+import { loadConnectorConfig, takeConnectorConfig } from './config.js';
 
 const KEY = Buffer.alloc(32, 1).toString('base64');
 const SEALING = Buffer.alloc(32, 2).toString('base64');
@@ -43,6 +43,18 @@ describe("the connector's configuration", () => {
       maxChildren: 2,
       logLevel: 'silent',
     });
+  });
+
+  it('reads its two keys once and deletes them from the environment it read them from', () => {
+    const env: Record<string, string | undefined> = { ...base, LOG_LEVEL: 'error' };
+    const config = takeConnectorConfig(env);
+    expect(config.logLevel).toBe('error');
+    expect(env).toEqual({ CONNECTOR_DENY: 'none', LOG_LEVEL: 'error' });
+    // Refused, it still deletes them: nothing is left to a crash report either way.
+    const refused: Record<string, string | undefined> = { ...base, CONNECTOR_DENY: undefined };
+    expect(() => takeConnectorConfig(refused)).toThrow(/CONNECTOR_DENY/);
+    expect(refused).not.toHaveProperty('CONNECTOR_KEY');
+    expect(refused).not.toHaveProperty('CONNECTOR_SEALING_KEY');
   });
 
   it('refuses to start without its keys or its deny list, naming the variable and never its value', () => {

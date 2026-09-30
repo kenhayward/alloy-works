@@ -3,8 +3,8 @@
 // 127.0.0.1 alone at ALLOY_TEST_SOURCE_PORT (5434 unless said otherwise). Never the development
 // stack's database, and never a port anything else is on.
 //
-//   node scripts/source.mjs start   starts it, or says it is already running, and waits until it answers
-//   node scripts/source.mjs stop    removes it
+//   node scripts/source.js start   starts it, or says it is already running, and waits until it answers
+//   node scripts/source.js stop    removes it
 import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
@@ -79,6 +79,6 @@ const command = process.argv[2];
 if (command === 'start') start();
 else if (command === 'stop') stop();
 else {
-  console.error('Usage: node scripts/source.mjs start|stop');
+  console.error('Usage: node scripts/source.js start|stop');
   process.exit(2);
 }

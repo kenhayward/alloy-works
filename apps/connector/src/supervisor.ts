@@ -180,8 +180,9 @@ export function createSupervisor(options: {
       stderrBytes += chunk.length;
     });
     options.onStderrBytes?.(stderrBytes);
-    if (outcome.kind === 'timeout') return failed(kind, 'timeout');
-    if (outcome.kind === 'ended') return failed(kind, 'connector_error');
+    if (outcome.kind !== 'answer') {
+      return failed(kind, outcome.kind === 'timeout' ? 'timeout' : 'connector_error');
+    }
     const parsed = (kind === 'test' ? testAnswerSchema : describeAnswerSchema).safeParse(
       outcome.answer,
     );

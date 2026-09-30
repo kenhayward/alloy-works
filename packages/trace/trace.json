@@ -17758,6 +17758,42 @@
   ],
   "citations": [
     {
+      "id": "DAT-056",
+      "file": "apps/connector/src/package.test.ts",
+      "line": 52,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-075",
+      "file": "apps/connector/src/postgres.test.ts",
+      "line": 66,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-103",
+      "file": "apps/connector/src/postgres.test.ts",
+      "line": 103,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-114",
+      "file": "apps/connector/src/postgres.test.ts",
+      "line": 123,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-005",
+      "file": "apps/connector/src/secrets.test.ts",
+      "line": 56,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-056",
+      "file": "apps/connector/src/supervisor.test.ts",
+      "line": 29,
+      "kind": "title"
+    },
+    {
       "id": "CNT-178",
       "file": "apps/desktop/src/shell.test.ts",
       "line": 156,

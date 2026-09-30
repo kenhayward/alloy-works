@@ -118,6 +118,19 @@ export function loadConnectorConfig(
   };
 }
 
+/**
+ * The configuration, read once, and the two keys deleted from the environment they were read from -
+ * whether or not it was refused - so no child, dump or report of this process finds them there.
+ */
+export function takeConnectorConfig(env: Record<string, string | undefined>): ConnectorConfig {
+  try {
+    return loadConnectorConfig(env);
+  } finally {
+    delete env.CONNECTOR_KEY;
+    delete env.CONNECTOR_SEALING_KEY;
+  }
+}
+
 /** The ranges a production connector refuses: the built-in ones, and the deployment's. */
 export function productionDeny(config: Pick<ConnectorConfig, 'deny'>): readonly string[] {
   return [...builtInDenied, ...config.deny];
