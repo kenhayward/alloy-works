@@ -3,6 +3,16 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.129.2 - 2026-09-30 (PR #371)
+
+### Fixed
+
+- **The build no longer fails at random on a busy machine.** One of the connector's tests, which
+  checks that every kind of failure to reach a database is reported the same way, could run out of
+  time while every package's tests ran at once, and report a timeout instead. It now allows the
+  time a busy machine needs, and still checks everything it did. Nothing about connections changes
+  for you.
+
 ## 0.129.1 - 2026-09-30 (PR #368)
 
 ### Added
