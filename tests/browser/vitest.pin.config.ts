@@ -9,7 +9,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['src/chromium-release.test.ts', 'src/undecided.test.ts'],
+    include: ['src/chromium-release.test.ts', 'src/undecided.test.ts', 'src/targets.test.ts'],
     // Pinned rather than left implicit: the default reporter varies by platform, and a run
     // that swallows console output on Windows makes a noisy suite look pristine locally.
     reporters: ['default', 'json'],

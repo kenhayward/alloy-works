@@ -52,7 +52,7 @@
       "outputs": [],
       "cache": false
     },
-    "@alloy-works/e2e#test": {
+    "@alloy-works/e2e#test:e2e": {
       "dependsOn": ["^build"],
       "outputs": [],
       "cache": false,

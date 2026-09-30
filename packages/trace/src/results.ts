@@ -152,8 +152,8 @@ const HOUR_MS = 60 * 60 * 1000;
 
 /**
  * The reports `pnpm test` never writes, because their suites drive a running stack: `pnpm test:e2e`'s
- * and `pnpm test:browser`'s. (The browser workspace's own `test`, its pin's tests, writes
- * `browser-pin.json` and is part of `pnpm test`.)
+ * and `pnpm test:browser`'s. (Each of those workspaces' own `test`, its pin's tests, writes
+ * `e2e-pin.json` or `browser-pin.json` and is part of `pnpm test`.)
  */
 const NEEDS_THE_STACK: ReadonlySet<string> = new Set(['e2e', 'browser']);
 
@@ -161,7 +161,7 @@ const NEEDS_THE_STACK: ReadonlySet<string> = new Set(['e2e', 'browser']);
  * Whether a set of JSON reports is coherent enough to trust for `verify`. Nothing cleans
  * `.trace-results`, and each `vitest.config.ts` overwrites only its own file, so left unchecked a
  * report can silently outlive the run that produced it: `tests/e2e`'s report is never refreshed by
- * `pnpm test` (which deliberately excludes it), a filtered run such as
+ * `pnpm test` (which deliberately runs only its pin), a filtered run such as
  * `pnpm --filter X test somefile` writes a truncated report, and a suite that dies before writing
  * leaves the previous pass in place. Any of those makes `Verified` a number computed from a run that
  * never happened, which is worse than not computing it at all.

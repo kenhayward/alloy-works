@@ -14,19 +14,17 @@ import {
   type Theme,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
-import { API } from './addresses.js';
+import { API, DATABASE } from './addresses.js';
 
 /**
  * **Where the suite writes a theme** (the W13 plan's B-C, its one exception): nothing in T1 makes a
  * theme through a route, so the themes W13.4 measures are written into the stack's own database by
  * `@alloy-works/db`'s theme writers, `addCatalogueVersion` and `addThemeVersion` - the store's own,
  * which refuse whatever the reader refuses, contrast among it (STY-069) - under the development
- * environment's tenant, found by the address the fixtures reach it at. The login is the service's own,
- * the compose stack's local default, which may take the tenant's role as the service does.
+ * environment's tenant, found by the address the fixtures reach it at, in the database the run names
+ * as `ALLOY_BROWSER_DATABASE` (`addresses.ts`), never a default. The login is the service's own, which
+ * may take the tenant's role as the service does.
  */
-export const DATABASE =
-  process.env.ALLOY_BROWSER_DATABASE ??
-  'postgres://aw_service:aw_service_dev@127.0.0.1:5432/alloy_dev';
 
 /**
  * A theme to write: one of the kit's measured themes (`@alloy-works/conformance`), its content but for

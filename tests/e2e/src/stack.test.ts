@@ -5,19 +5,22 @@ import { createApiClient, followStream } from '@alloy-works/api-client';
 import { completeAtStandIn } from '@alloy-works/stand-in-idp/testing';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { readPdf, spoken } from './pdf.js';
+import { e2eTargets } from './targets.js';
 
 /**
  * The whole system, as a person's browser would meet it: the service, a worker, the database, the
  * object store and the sign-in provider, all in containers. Addressed as 127.0.0.1 rather than
  * `dev.acme.localhost`, because how a machine resolves `*.localhost` is not this test's business.
+ * Every address is one the run was given: the suite has no default (`targets.ts`).
  */
-const SERVICE = process.env.ALLOY_E2E_SERVICE ?? 'http://127.0.0.1:8088';
+const TARGETS = e2eTargets(process.env);
+const SERVICE = TARGETS.service;
 /** What the provider calls itself, which is what the service sends the browser to. */
-const IDP_ISSUER = process.env.ALLOY_E2E_IDP_ISSUER ?? 'http://idp.localhost:9090';
+const IDP_ISSUER = TARGETS.idpIssuer;
 /** Where it actually answers, so this suite needs no opinion about resolving `*.localhost`. */
-const IDP = process.env.ALLOY_E2E_IDP ?? 'http://127.0.0.1:9090';
+const IDP = TARGETS.idp;
 /** Where the object store actually answers; the name it signs by is a browser's business. */
-const STORE_AT = process.env.ALLOY_E2E_STORE_AT ?? '127.0.0.1';
+const STORE_AT = TARGETS.storeAt;
 
 /**
  * Follows a link the object store signed. The store's own name is part of what was signed, so it

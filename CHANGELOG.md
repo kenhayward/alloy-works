@@ -3,6 +3,18 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.128.3 - 2026-09-30 (PR #TBD)
+
+### Fixed
+
+- **The whole-system and browser test suites no longer run against a stack they were not pointed
+  at.** They used to fall back to the development stack's addresses when theirs were not set, so a
+  run with nothing set could sign in to a developer's own stack and leave documents, publications,
+  previews and images there. Each suite now refuses to start until every address it needs is set, and
+  names the ones that are missing. To run one, bring up a stack of your own and set its addresses, as
+  `deploy/README.md` shows; CI sets them for you, and `pnpm test` no longer starts the whole-system
+  suite at all (issue #363).
+
 ## 0.128.2 - 2026-09-30 (PR #362)
 
 ### Fixed
