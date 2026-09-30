@@ -8,7 +8,8 @@ import { definitionKinds } from '@alloy-works/domain';
  * theme and a catalogue, added by 0024: the tenant's, usable from every space (STY-002's purpose). A
  * template, added by 0028, lives in one space (TPL-001) and is no content kind: `create` and `edit`
  * do not reach it, `design` does (access.md). A connection, added by 0044, lives in one space too and
- * is no content kind either: `administer` makes and changes it (data.md).
+ * is no content kind either: `administer` makes and changes it (data.md). A query definition, added by
+ * 0046, lives in one space and is authored, `edit` in its space making and changing it (data.md).
  */
 export const artifactKinds = [
   'component',
@@ -21,6 +22,7 @@ export const artifactKinds = [
   'catalogue',
   'template',
   'connection',
+  'queryDefinition',
 ] as const;
 
 export type ArtifactKind = (typeof artifactKinds)[number];
@@ -37,4 +39,5 @@ export const spacedKinds = [
   'asset',
   'template',
   'connection',
+  'queryDefinition',
 ] as const satisfies readonly ArtifactKind[];

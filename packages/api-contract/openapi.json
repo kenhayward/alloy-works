@@ -1769,7 +1769,8 @@
                               "design",
                               "manage_definitions",
                               "administer",
-                              "use_connection"
+                              "use_connection",
+                              "write_sql"
                             ]
                           },
                           "allowed": {
@@ -2052,7 +2053,8 @@
                               "design",
                               "manage_definitions",
                               "administer",
-                              "use_connection"
+                              "use_connection",
+                              "write_sql"
                             ]
                           },
                           "allowed": {
@@ -28820,7 +28822,8 @@
                                 "design",
                                 "manage_definitions",
                                 "administer",
-                                "use_connection"
+                                "use_connection",
+                                "write_sql"
                               ]
                             },
                             "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -31379,7 +31382,8 @@
                                 "design",
                                 "manage_definitions",
                                 "administer",
-                                "use_connection"
+                                "use_connection",
+                                "write_sql"
                               ]
                             }
                           }
@@ -32361,7 +32365,8 @@
                                   "asset",
                                   "field",
                                   "metadataSchema",
-                                  "componentType"
+                                  "componentType",
+                                  "queryDefinition"
                                 ]
                               },
                               "artifactId": {
@@ -40477,7 +40482,8 @@
                                 "design",
                                 "manage_definitions",
                                 "administer",
-                                "use_connection"
+                                "use_connection",
+                                "write_sql"
                               ]
                             },
                             "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -40740,7 +40746,7 @@
                     "description": "1 to 80 characters, trimmed"
                   },
                   "scopes": {
-                    "maxItems": 10,
+                    "maxItems": 11,
                     "type": "array",
                     "items": {
                       "type": "string",
@@ -40754,7 +40760,8 @@
                         "design",
                         "manage_definitions",
                         "administer",
-                        "use_connection"
+                        "use_connection",
+                        "write_sql"
                       ]
                     },
                     "description": "The permissions it may use: a mask over its creator's grants, never a grant"
@@ -40810,7 +40817,8 @@
                           "design",
                           "manage_definitions",
                           "administer",
-                          "use_connection"
+                          "use_connection",
+                          "write_sql"
                         ]
                       },
                       "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"

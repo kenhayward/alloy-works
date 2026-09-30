@@ -435,6 +435,17 @@ export interface ConnectionTestTable {
   credential_id: ColumnType<string | null, string, never>;
 }
 
+/**
+ * The tenant's lowered limits (0046; the D2 plan, D2-N): one row, each limit null where not lowered.
+ * The runtime role changes the three and nothing else.
+ */
+export interface DataPolicyTable {
+  singleton: ColumnType<boolean, never, never>;
+  rows: ColumnType<number | null, never, number | null>;
+  bytes: ColumnType<number | null, never, number | null>;
+  seconds: ColumnType<number | null, never, number | null>;
+}
+
 export interface TenantTables {
   component_lock: ComponentLockTable;
   iteration: IterationTable;
@@ -481,6 +492,7 @@ export interface TenantTables {
   idempotency_record: IdempotencyRecordTable;
   connection_credential: ConnectionCredentialTable;
   connection_test: ConnectionTestTable;
+  data_policy: DataPolicyTable;
 }
 
 /** A transaction inside withTenant: what every read and write of tenant data is given. */

@@ -15,6 +15,7 @@ import { canonicaliseOutline, type OutlineDocument } from '../structure/outline.
 import type { TemplateDefinition } from '../template/definition.js';
 import type { Catalogue, Catalogue1, Theme } from '../theme/schema.js';
 import type { ConnectionSettings } from '../data/connection.js';
+import type { QueryDefinition } from '../data/definition.js';
 
 /**
  * What a component version says (ADR-0024): its content, its metadata values, the values it did not
@@ -92,9 +93,21 @@ export type ConnectionSubstance = {
   readonly content: ConnectionSettings;
 };
 
+/**
+ * A query definition version says its definition, and nothing else (data.md, "What a query definition
+ * version holds"). The shared rule: its arrays - parameters, variations, columns, key, order - keep
+ * their order, which is part of their meaning, and no member in it is named by its author (D2-E), so
+ * no name-keyed rule can reach one. Its strings are NFC already (D2-F).
+ */
+export type QueryDefinitionSubstance = {
+  readonly kind: 'queryDefinition';
+  readonly content: QueryDefinition;
+};
+
 export type VersionSubstance =
   | ComponentSubstance
   | ConnectionSubstance
+  | QueryDefinitionSubstance
   | TemplateSubstance
   | DefinitionSubstance
   | DocumentSubstance

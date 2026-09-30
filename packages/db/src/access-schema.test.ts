@@ -105,7 +105,7 @@ describe('the access tables', () => {
     ).rejects.toThrow(/role_permissions_closed/);
   });
 
-  it("admits use_connection to a role's permissions and a token's scopes, and refuses use_connections and write_sql", async () => {
+  it("admits use_connection and write_sql to a role's permissions and a token's scopes, and refuses use_connections and write_sqls", async () => {
     const token = (scopes: string) =>
       sql`insert into api_token (principal_id, name, token_hash, scopes, expires_at)
           values (${ada}, ${`Token ${scopes}`}, ${randomBytes(32).toString('hex')}, ${`{${scopes}}`}::text[], now() + interval '1 day')`;
@@ -115,8 +115,14 @@ describe('the access tables', () => {
       ),
     );
     await service.withTenant(production, (trx) => token('use_connection').execute(trx));
-    // write_sql joins with the check that reads it, in D2 (the D1 plan, D1-P).
-    for (const permission of ['use_connections', 'write_sql']) {
+    // write_sql joined with the check that reads it, in D2 (the D2 plan, D2-A).
+    await service.withTenant(production, (trx) =>
+      sql`insert into role (name, permissions) values ('SQL author', array['read', 'use_connection', 'write_sql'])`.execute(
+        trx,
+      ),
+    );
+    await service.withTenant(production, (trx) => token('write_sql').execute(trx));
+    for (const permission of ['use_connections', 'write_sqls']) {
       await expect(
         service.withTenant(production, (trx) =>
           sql`insert into role (name, permissions) values (${`Only ${permission}`}, ${`{${permission}}`}::text[])`.execute(

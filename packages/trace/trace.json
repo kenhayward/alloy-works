@@ -19230,7 +19230,7 @@
     {
       "id": "IAM-062",
       "file": "packages/db/src/access-schema.test.ts",
-      "line": 155,
+      "line": 161,
       "kind": "title"
     },
     {
@@ -19272,13 +19272,19 @@
     {
       "id": "DAT-001",
       "file": "packages/db/src/connections.test.ts",
-      "line": 150,
+      "line": 151,
       "kind": "title"
     },
     {
       "id": "DAT-003",
       "file": "packages/db/src/connections.test.ts",
-      "line": 376,
+      "line": 377,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-065",
+      "file": "packages/db/src/connections.test.ts",
+      "line": 753,
       "kind": "title"
     },
     {
@@ -19474,6 +19480,18 @@
       "kind": "title"
     },
     {
+      "id": "DAT-009",
+      "file": "packages/db/src/query-definitions.test.ts",
+      "line": 182,
+      "kind": "title"
+    },
+    {
+      "id": "VER-057",
+      "file": "packages/db/src/query-definitions.test.ts",
+      "line": 243,
+      "kind": "title"
+    },
+    {
       "id": "IAM-075",
       "file": "packages/db/src/queue.test.ts",
       "line": 82,
@@ -19572,13 +19590,19 @@
     {
       "id": "SCH-054",
       "file": "packages/db/src/search.test.ts",
-      "line": 125,
+      "line": 160,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-055",
+      "file": "packages/db/src/search.test.ts",
+      "line": 334,
       "kind": "title"
     },
     {
       "id": "SCH-066",
       "file": "packages/db/src/search.test.ts",
-      "line": 283,
+      "line": 394,
       "kind": "title"
     },
     {
@@ -20538,7 +20562,7 @@
     {
       "id": "SCH-002",
       "file": "packages/domain/src/search/entries.test.ts",
-      "line": 56,
+      "line": 59,
       "kind": "title"
     },
     {

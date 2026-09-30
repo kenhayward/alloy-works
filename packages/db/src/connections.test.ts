@@ -16,6 +16,7 @@ import {
   setConnectionCredential,
 } from './connections.js';
 import { grant } from './grants.js';
+import { createQueryDefinition, recordQueryDefinitionVersion } from './queryDefinitions.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
@@ -747,5 +748,80 @@ describe('a connection', () => {
       [inQuality.id],
     );
     expect(entries.rows).toEqual([{ n: 0 }]);
+  });
+
+  it('DAT-065 refuses to retire a connection a definition that is not retired still names, naming it, and retires it once that definition is retired', async () => {
+    const used = await made({ name: 'Used source' });
+    const inGeneral = await service.withTenant(production, async (trx) => {
+      const answer = await createQueryDefinition(trx, {
+        author: ada,
+        spaceId: general,
+        definition: {
+          schemaVersion: 1,
+          title: 'Sites',
+          description: '',
+          connection: used.id,
+          parameters: [],
+          fetch: { kind: 'sql', text: 'select id from sample.site order by id' },
+          columns: [{ name: 'id', from: { column: 'id' }, type: { base: 'integer' } }],
+          key: ['id'],
+          order: [{ column: 'id', direction: 'ascending' }],
+          empty: 'valid',
+          limits: { rows: 100, bytes: 100_000, seconds: 10 },
+          retired: false,
+        },
+      });
+      if (answer.answer !== 'created') throw new Error(answer.answer);
+      return answer.definition;
+    });
+    const retire = (author: string, openedFrom = used.version.id) =>
+      service.withTenant(production, (trx) =>
+        recordConnectionVersion(trx, {
+          author,
+          id: used.id,
+          openedFrom,
+          settings: { ...used.settings, retired: true },
+        }),
+      );
+    // Refused, naming the definition to who may read it and counting it to who may not; nothing cut.
+    expect(await retire(ada)).toEqual({
+      answer: 'connection.in_use',
+      definitions: { readable: [{ id: inGeneral.id, title: 'Sites', retired: false }], others: 0 },
+    });
+    expect(await retire(grace)).toEqual({
+      answer: 'connection.in_use',
+      definitions: { readable: [], others: 1 },
+    });
+    // Nothing cascades, and nothing is left pointing at nothing: the connection is as it was.
+    const still = await service.withTenant(production, (trx) => readConnection(trx, used.id));
+    expect(still?.version.id).toBe(used.version.id);
+    expect(still?.settings.retired).toBe(false);
+    // The same refusal on every path that cuts a version, recordVersion itself among them.
+    await expect(
+      service.withTenant(production, (trx) =>
+        recordVersion(trx, {
+          artifactId: used.id,
+          openedFrom: used.version.id,
+          author: ada,
+          substance: { kind: 'connection', content: { ...used.settings, retired: true } },
+        }),
+      ),
+    ).rejects.toThrow(/in use/);
+
+    // Once the definition is retired, the connection retires.
+    const retiredDefinition = await service.withTenant(production, (trx) =>
+      recordQueryDefinitionVersion(trx, {
+        author: ada,
+        id: inGeneral.id,
+        openedFrom: inGeneral.version.id,
+        definition: { ...inGeneral.definition, retired: true },
+      }),
+    );
+    expect(retiredDefinition.answer).toBe('recorded');
+    const retired = await retire(ada);
+    expect(retired).toMatchObject({
+      answer: 'recorded',
+      connection: { settings: { retired: true } },
+    });
   });
 });

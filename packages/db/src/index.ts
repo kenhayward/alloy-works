@@ -357,6 +357,19 @@ export {
   type LatestConnectionTest,
   type StoredConnection,
 } from './connections.js';
+export {
+  createQueryDefinition,
+  dataPolicy,
+  definitionsNaming,
+  listReadableQueryDefinitions,
+  readQueryDefinition,
+  recordQueryDefinitionVersion,
+  setDataPolicy,
+  type NamingDefinitions,
+  type QueryDefinitionAnswer,
+  type QueryDefinitionSummary,
+  type StoredQueryDefinition,
+} from './queryDefinitions.js';
 export { numberingInputs, type NumberingInputs, type OccurrenceResolution } from './numbering.js';
 export {
   createComponent,

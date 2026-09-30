@@ -45,8 +45,11 @@ describe('a role', () => {
       starterRoles.filter((role) => role.permissions.includes('publish')).map((role) => role.name),
     ).toEqual(['Publisher']);
     const held = new Set(starterRoles.flatMap((role) => role.permissions));
-    // Every permission a starting role could hold, but using a connection, which is always granted
-    // on purpose (data.md, "Permissions").
-    expect(permissions.filter((permission) => !held.has(permission))).toEqual(['use_connection']);
+    // Every permission a starting role could hold, but using a connection and writing SQL against
+    // one, which are always granted on purpose (data.md, "Permissions").
+    expect(permissions.filter((permission) => !held.has(permission))).toEqual([
+      'use_connection',
+      'write_sql',
+    ]);
   });
 });

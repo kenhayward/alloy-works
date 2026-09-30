@@ -21,6 +21,7 @@ export type {
   ThemeSubstance,
   CatalogueSubstance,
   ConnectionSubstance,
+  QueryDefinitionSubstance,
   VersionSubstance,
 } from './version/substance.js';
 

@@ -1,4 +1,5 @@
 import type { AssetVersionContent } from '../assets/version.js';
+import type { QueryDefinition } from '../data/definition.js';
 import { equationAlternative } from '../content/admission/mathml.js';
 import type { BlockNode } from '../content/model/blocks.js';
 import type { ContentDocument } from '../content/model/document.js';
@@ -24,6 +25,8 @@ export const searchKinds = [
   'field',
   'metadataSchema',
   'componentType',
+  // A query definition, by its title, description, columns and connection (SCH-055; the D2 plan, D2-S).
+  'queryDefinition',
 ] as const;
 
 export type SearchKind = (typeof searchKinds)[number];
@@ -128,7 +131,8 @@ export type SearchSource =
   | { readonly kind: 'asset'; readonly content: AssetVersionContent }
   | { readonly kind: 'field'; readonly content: FieldDefinition }
   | { readonly kind: 'metadataSchema'; readonly content: MetadataSchemaDefinition }
-  | { readonly kind: 'componentType'; readonly content: ComponentTypeDefinition };
+  | { readonly kind: 'componentType'; readonly content: ComponentTypeDefinition }
+  | { readonly kind: 'queryDefinition'; readonly content: QueryDefinition };
 
 /** The names a version's words are rendered with, read by the store. */
 export interface SearchContext {
@@ -138,6 +142,8 @@ export interface SearchContext {
   readonly schemas: ReadonlyMap<string, string>;
   /** Each person's name, by their principal's id. */
   readonly people: ReadonlyMap<string, string>;
+  /** Each connection's latest name, by its artifact's id: what a query definition is found by. */
+  readonly connections?: ReadonlyMap<string, string>;
 }
 
 /** Composed (SCH-012), and every run of white space one space: words, not layout. */
@@ -293,7 +299,9 @@ const named = (names: readonly (string | undefined)[]) =>
  * SCH-002): a component's title, blocks and values; a document's title and values, and each of its
  * sections as an entry of its own; a publication by its document's title and its version; a template
  * by its name and its starting sections; an asset by its description; a definition by its name, and
- * what it groups or assigns by theirs.
+ * what it groups or assigns by theirs; a query definition by its title, its description, its columns'
+ * names and its connection's name - never its SQL, which would put every author's SQL in every
+ * reader's results (D2-S).
  */
 export function entriesOf(source: SearchSource, context: SearchContext): SearchEntryDraft[] {
   const entry = (
@@ -374,6 +382,18 @@ export function entriesOf(source: SearchSource, context: SearchContext): SearchE
           titled(source.content.name, fields === '' ? [] : [{ place: 'fields', text: fields }]),
         ),
       ];
+    }
+    case 'queryDefinition': {
+      const { content } = source;
+      const texts: SearchText[] = [];
+      const add = (place: string, said: string) => {
+        const text = words(said);
+        if (text !== '') texts.push({ place, text });
+      };
+      add('description', content.description);
+      add('columns', content.columns.map((column) => column.name).join(' '));
+      add('connection', context.connections?.get(content.connection) ?? '');
+      return [entry(content.title, 'simple', titled(content.title, texts))];
     }
     case 'componentType': {
       const schemas = named(

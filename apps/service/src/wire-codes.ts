@@ -51,6 +51,7 @@ const WIRE_CODES = {
   'connection.invalid': 'connection_invalid',
   'identity.not_supported': 'identity_not_supported',
   'connection.retired': 'connection_retired',
+  'connection.in_use': 'connection_in_use',
   'credential.missing': 'credential_missing',
   'credential.target_changed': 'credential_target_changed',
 } as const satisfies Record<string, string>;
@@ -90,6 +91,9 @@ const RULES: Partial<Record<DottedCode, string>> = {
   'field.breaks_default': 'MET-037',
   // An identity a connection's type's connector does not declare (data.md, "The connection").
   'identity.not_supported': 'DAT-078',
+  // A connection a query definition in service still names is not retired (data.md, "Rotation, where
+  // used and retiring").
+  'connection.in_use': 'DAT-065',
 };
 
 /** The wire's spelling of a store's dotted answer. */

@@ -1553,7 +1553,8 @@ describe('access everywhere', () => {
                 'Allowed at the whole environment, by Author allowed to the group Authors.',
               ]
             : [
-                permission.replaceAll('_', ' '),
+                // SQL is an initialism, and reads as one.
+                permission === 'write_sql' ? 'write SQL' : permission.replaceAll('_', ' '),
                 'Refused',
                 `Refused: nothing grants it at ${place.nowhere}.`,
               ],

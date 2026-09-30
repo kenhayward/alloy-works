@@ -370,11 +370,12 @@ async function seedProcedure(trx: TenantTransaction, space: string, author: stri
 }
 
 /**
- * Development only: somebody who may use a connection. No starting role holds `use_connection`, so using
- * one is always granted on purpose (data.md, "Permissions"); this makes a role of the environment's own,
- * Connection user, holding `read` and `use_connection`, and allows it to Ada on General, where she may
- * already make a connection as the environment's administrator. Nobody else holds it. Safe to run
- * again.
+ * Development only: somebody who may use a connection and write SQL against one. No starting role holds
+ * `use_connection` or `write_sql`, so either is always granted on purpose (data.md, "Permissions"); this
+ * makes a role of the environment's own, Connection user, holding `read`, `use_connection` and
+ * `write_sql` (D2-T), and allows it to Ada on General, where she may already make a connection as the
+ * environment's administrator. Nobody else holds it. Safe to run again, and a role D1's setup made
+ * gains `write_sql`.
  */
 export async function seedDevelopmentConnectionUse(
   trx: TenantTransaction,
@@ -386,11 +387,19 @@ export async function seedDevelopmentConnectionUse(
     .select('id')
     .where('name', '=', 'General')
     .executeTakeFirstOrThrow();
+  const held = ['read', 'use_connection', 'write_sql'] as const;
   let role = await findRole(trx, 'Connection user');
   if (!role) {
-    const made = await createRole(trx, 'Connection user', ['read', 'use_connection']);
+    const made = await createRole(trx, 'Connection user', held);
     if (!('role' in made)) throw new Error(`Connection user was refused: ${made.refused}`);
     role = made.role;
+  } else if (!role.permissions.includes('write_sql')) {
+    // Made by D1's setup, before a definition could be written: it gains write_sql (D2-T).
+    await trx
+      .updateTable('role')
+      .set({ permissions: [...held] })
+      .where('id', '=', role.id)
+      .execute();
   }
   const answer = await grant(trx, {
     roleId: role.id,

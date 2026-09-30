@@ -65,6 +65,7 @@ export const SearchKind = z.enum([
   'field',
   'metadataSchema',
   'componentType',
+  'queryDefinition',
 ]);
 
 export const SearchResultView = z.object({

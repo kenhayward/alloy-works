@@ -1925,7 +1925,7 @@ export interface operations {
                         target: string;
                         permissions: {
                             /** @enum {string} */
-                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection";
+                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql";
                             allowed: boolean;
                         }[];
                     };
@@ -2048,7 +2048,7 @@ export interface operations {
                         target: string;
                         permissions: {
                             /** @enum {string} */
-                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection";
+                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql";
                             allowed: boolean;
                             /**
                              * @description capped: an external principal, refused whatever the grants say. scoped: allowed by the grants, and refused to the API token a request was made with, which is not scoped to it
@@ -12157,7 +12157,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -13073,7 +13073,7 @@ export interface operations {
                         items: {
                             id: string;
                             name: string;
-                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection")[];
+                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql")[];
                         }[];
                         /** @description The cursor for the next page, or null at the end */
                         next: string | null;
@@ -13469,7 +13469,7 @@ export interface operations {
                         capped: boolean;
                         items: {
                             /** @enum {string} */
-                            kind: "component" | "document" | "section" | "publication" | "template" | "asset" | "field" | "metadataSchema" | "componentType";
+                            kind: "component" | "document" | "section" | "publication" | "template" | "asset" | "field" | "metadataSchema" | "componentType" | "queryDefinition";
                             artifactId: string;
                             /** @description A section's outline node; null for anything else */
                             node: string | null;
@@ -16767,7 +16767,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -16884,7 +16884,7 @@ export interface operations {
                     /** @description 1 to 80 characters, trimmed */
                     name: string;
                     /** @description The permissions it may use: a mask over its creator's grants, never a grant */
-                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection")[];
+                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql")[];
                     /**
                      * Format: date-time
                      * @description When it stops working: required, in the future and at most 365 days away
@@ -16918,7 +16918,7 @@ export interface operations {
                         /** @description What the person called it, to tell their tokens apart */
                         name: string;
                         /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection")[];
+                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql")[];
                         createdAt: string;
                         /** @description When it stops working; nothing extends a token */
                         expiresAt: string;

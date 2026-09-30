@@ -24,6 +24,7 @@ describe('the rule behind a refusal', () => {
       ['schema.conflict', 'schema_conflict', 'MET-040'],
       ['field.breaks_default', 'field_breaks_default', 'MET-037'],
       ['identity.not_supported', 'identity_not_supported', 'DAT-078'],
+      ['connection.in_use', 'connection_in_use', 'DAT-065'],
     ];
     for (const [dotted, code, rule] of ruled) {
       const { body } = toErrorBody(refused(409, dotted, 'Refused.'), 'trace-1');

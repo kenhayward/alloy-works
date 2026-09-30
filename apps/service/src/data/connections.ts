@@ -276,6 +276,15 @@ export function connectionHandlers(
             { current },
           );
         });
+      case 'connection.in_use':
+        // A query definition in service still names it (DAT-065): those the caller may read, by
+        // title, and the rest counted. The contract's words for it are D2's service task's.
+        throw refused(
+          409,
+          'connection.in_use',
+          'This connection is used by a query definition that is not retired.',
+          { definitions: answer.definitions },
+        );
       case 'space.missing':
       case 'connection.missing':
         throw notFound();
