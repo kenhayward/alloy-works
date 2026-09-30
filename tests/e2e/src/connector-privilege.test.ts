@@ -78,7 +78,8 @@ process.stdin.on('end', () => {
       createInDist: attempt(() => fs.writeFileSync('/app/dist/probe-written.js', 'x')),
       createInApp: attempt(() => fs.writeFileSync('/app/probe-written', 'x')),
       modules: attempt(() => fs.writeFileSync('/app/node_modules/probe-written.js', 'x')),
-      // Shared memory and message queues, where one child could leave something for the next.
+      // The file views of shared memory and message queues, where one child could leave something for
+      // the next; the IPC namespace itself, which no file view closes, is asked further down.
       shm: attempt(() => fs.writeFileSync('/dev/shm/probe-written', 'x')),
       mqueue: attempt(() => fs.writeFileSync('/dev/mqueue/probe-written', 'x')),
       tmp: attempt(() => fs.writeFileSync('/tmp/probe-written', 'x')),
@@ -193,7 +194,7 @@ describe("the connector's children", () => {
     expect(probed.supervisorNoNewPrivs).toBe('1');
   });
 
-  it("gives a child no way to change the connector's code, or to leave anything for another child in shared memory, a message queue or a file", () => {
+  it("gives a child no way to change the connector's code, or to leave anything for another child in /dev/shm, /dev/mqueue or a file", () => {
     for (const [what, result] of Object.entries(probed.writes)) {
       expect(['EACCES', 'EROFS', 'EPERM', 'ENOENT'], what).toContain(result);
     }
@@ -257,5 +258,162 @@ describe("the connector's container", () => {
     const max = docker(['exec', connectorId(), 'cat', '/sys/fs/cgroup/pids.max']);
     expect(max).toMatch(/^\d+$/);
     expect(Number(max)).toBeLessThanOrEqual(256);
+  });
+});
+
+/**
+ * System V IPC - shared memory, message queues and semaphore sets - and POSIX message queues live in
+ * the container's one IPC namespace, not in its filesystem, and outlive the process that made them:
+ * the sweep ends a child's processes, never what it made there. So a child that could make one could
+ * leave data for whichever child comes next, as another user, serving another connection. Asked of
+ * Perl, which the image carries as Debian's essential `perl-base` and whose builtins make the calls
+ * Node has no binding for; a POSIX queue by its raw system call, since `/dev/mqueue` is only a view of
+ * the namespace's queues. Every refusal is reported by its errno's name, never a value read.
+ */
+const IPC_PERL = String.raw`
+use strict;
+require Config;
+my ($mode, $key) = @ARGV;
+$key = int($key);
+my $needle = 'd1-ipc-needle';
+my $arm = $Config::Config{archname} =~ /^aarch64/;
+my ($MQ_OPEN, $MQ_UNLINK, $MQ_SEND, $MQ_RECEIVE) = $arm ? (180, 181, 182, 183) : (240, 241, 242, 243);
+my $mq = 'd1probe' . $key;
+my %r;
+sub err { return 'errno:' . ($! + 0); }
+if ($mode eq 'create') {
+  my $own = 'd1probe-own-' . $$;
+  my $shm = shmget(0, 4096, 01000 | 0600);
+  if (defined $shm) { $r{shm} = 'created'; shmctl($shm, 0, 0); } else { $r{shm} = err(); }
+  my $msg = msgget(0, 01000 | 0600);
+  if (defined $msg) { $r{msg} = 'created'; msgctl($msg, 0, 0); } else { $r{msg} = err(); }
+  my $sem = semget(0, 1, 01000 | 0600);
+  if (defined $sem) { $r{sem} = 'created'; semctl($sem, 0, 0, 0); } else { $r{sem} = err(); }
+  my $fd = syscall($MQ_OPEN, $own, 0100 | 02, 0600, 0);
+  if ($fd >= 0) { $r{mq} = 'created'; syscall($MQ_UNLINK, $own); } else { $r{mq} = err(); }
+} elsif ($mode eq 'leave') {
+  my $shm = shmget($key, 4096, 01000 | 0666);
+  $r{shm} = defined $shm ? (shmwrite($shm, $needle, 0, length $needle) ? 'written' : err()) : err();
+  my $msg = msgget($key, 01000 | 0666);
+  $r{msg} = defined $msg ? (msgsnd($msg, pack('l! a*', 1, $needle), 04000) ? 'written' : err()) : err();
+  my $sem = semget($key, 1, 01000 | 0666);
+  $r{sem} = defined $sem ? (semop($sem, pack('s!3', 0, 7, 0)) ? 'written' : err()) : err();
+  my $fd = syscall($MQ_OPEN, $mq, 0100 | 02, 0666, 0);
+  $r{mq} = $fd >= 0 ? (syscall($MQ_SEND, $fd, $needle, length($needle), 0, 0) == 0 ? 'written' : err()) : err();
+} elsif ($mode eq 'read') {
+  my $shm = shmget($key, 0, 0);
+  if (defined $shm) { my $buf = ''; $r{shm} = shmread($shm, $buf, 0, length $needle) ? ($buf eq $needle ? 'read' : 'empty') : err(); } else { $r{shm} = err(); }
+  my $msg = msgget($key, 0);
+  if (defined $msg) { my $buf = ''; $r{msg} = msgrcv($msg, $buf, 4096, 0, 04000) ? (index($buf, $needle) >= 0 ? 'read' : 'empty') : err(); } else { $r{msg} = err(); }
+  my $sem = semget($key, 0, 0);
+  if (defined $sem) { my $value = semctl($sem, 0, 12, 0); $r{sem} = defined $value ? ($value == 7 ? 'read' : 'empty') : err(); } else { $r{sem} = err(); }
+  my $fd = syscall($MQ_OPEN, $mq, 04000, 0, 0);
+  if ($fd >= 0) { my $buf = "\0" x 65536; my $got = syscall($MQ_RECEIVE, $fd, $buf, 65536, 0, 0); $r{mq} = $got >= 0 ? (index($buf, $needle) >= 0 ? 'read' : 'empty') : err(); } else { $r{mq} = err(); }
+} elsif ($mode eq 'clean') {
+  my $shm = shmget($key, 0, 0); shmctl($shm, 0, 0) if defined $shm;
+  my $msg = msgget($key, 0); msgctl($msg, 0, 0) if defined $msg;
+  my $sem = semget($key, 0, 0); semctl($sem, 0, 0, 0) if defined $sem;
+  syscall($MQ_UNLINK, $mq);
+  $r{clean} = 'done';
+}
+print '{' . join(',', map { '"' . $_ . '":"' . $r{$_} . '"' } sort keys %r) . '}';
+`;
+
+/** The child: runs Perl as its own user with an empty environment, and names each errno it met. */
+const IPC_CHILD = String.raw`
+const { spawnSync } = require('node:child_process');
+const names = Object.fromEntries(Object.entries(require('node:os').constants.errno).map(([name, value]) => [value, name]));
+let input = '';
+process.stdin.on('data', (chunk) => { input += chunk; });
+process.stdin.on('end', () => {
+  const { mode, key, perl } = JSON.parse(input.split('\n')[0]);
+  const run = spawnSync('/usr/bin/perl', ['-e', perl, mode, String(key)], { encoding: 'utf8', env: {}, timeout: 20000 });
+  if (run.error || run.status !== 0) {
+    process.stdout.write(JSON.stringify({ perl: run.error ? run.error.code : 'status ' + run.status, stderr: String(run.stderr).slice(0, 500) }) + '\n');
+    return;
+  }
+  const answer = JSON.parse(run.stdout);
+  for (const [what, result] of Object.entries(answer)) {
+    const errno = /^errno:(\d+)$/.exec(result);
+    if (errno) answer[what] = names[Number(errno[1])] || result;
+  }
+  // The limits that refuse it, which a child may not raise.
+  try { require('node:fs').writeFileSync('/proc/sys/kernel/shmmni', '4096'); answer.raise = 'done'; }
+  catch (error) { answer.raise = error.code || 'error'; }
+  process.stdout.write(JSON.stringify({ uid: process.getuid(), ...answer }) + '\n');
+});
+`;
+
+/**
+ * Runs each step as a child the supervisor spawns - its `childSpawn` and `runChild`, at slots the
+ * running supervisor never hands out - and sweeps the slot's user after each, as the supervisor does.
+ */
+const IPC_LAUNCHER = String.raw`
+let input = '';
+process.stdin.on('data', (chunk) => { input += chunk; });
+process.stdin.on('end', async () => {
+  const { childSpawn, runChild, sweepUser } = await import('file:///app/dist/supervisor.js');
+  const { key, perl, steps } = JSON.parse(input);
+  const results = [];
+  for (const step of steps) {
+    const spec = childSpawn({ path: 'ipc', execArgv: ['-e', process.argv[1]] }, undefined, step.slot);
+    let stderr = '';
+    const outcome = await runChild(spec, JSON.stringify({ mode: step.mode, key, perl }), 30000, (chunk) => { stderr += chunk; });
+    await sweepUser(spec.uid);
+    results.push({ ...outcome, stderr: stderr.slice(0, 2000) });
+  }
+  process.stdout.write(JSON.stringify(results));
+});
+`;
+
+type IpcAnswer = Readonly<Record<string, string | number>>;
+
+describe("the connector's children and the container's IPC", () => {
+  let created: IpcAnswer;
+  let left: IpcAnswer;
+  let read: IpcAnswer;
+
+  beforeAll(() => {
+    // A key of this run's own, so a run never meets what an earlier one left.
+    const key = 0x0d1000 + Math.floor(Math.random() * 0xfff);
+    const steps = [
+      { slot: 63, mode: 'create' },
+      { slot: 60, mode: 'leave' },
+      { slot: 61, mode: 'read' },
+      // Whatever the first left, removed as its own user, whatever the outcome.
+      { slot: 60, mode: 'clean' },
+    ];
+    const results = JSON.parse(
+      docker(
+        ['exec', '-i', connectorId(), 'node', '-e', IPC_LAUNCHER, IPC_CHILD],
+        JSON.stringify({ key, perl: IPC_PERL, steps }),
+      ),
+    ) as { kind: string; answer?: IpcAnswer; stderr: string }[];
+    for (const [index, result] of results.entries()) {
+      expect(result.kind, `step ${index} answered: ${result.stderr}`).toBe('answer');
+      expect(
+        result.answer!.perl,
+        `step ${index}: ${JSON.stringify(result.answer)}`,
+      ).toBeUndefined();
+    }
+    [created, left, read] = results.map((each) => each.answer!);
+  }, 300_000);
+
+  it('refuses a child a System V shared-memory segment, message queue and semaphore set, and a POSIX message queue', () => {
+    expect(created.uid).toBe(20063);
+    for (const what of ['shm', 'msg', 'sem', 'mq']) {
+      expect(['ENOSPC', 'EINVAL', 'EPERM', 'EACCES', 'ENOSYS', 'EMFILE'], what).toContain(
+        created[what],
+      );
+    }
+    expect(['EROFS', 'EACCES', 'EPERM']).toContain(created.raise);
+  });
+
+  it('lets nothing one child leaves in IPC be read by the next, a different user, once the first is swept', () => {
+    expect([left.uid, read.uid]).toEqual([20060, 20061]);
+    for (const what of ['shm', 'msg', 'sem', 'mq']) {
+      expect(left[what], what).not.toBe('written');
+      expect(read[what], what).toBe('ENOENT');
+    }
   });
 });

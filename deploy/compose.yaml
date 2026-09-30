@@ -170,18 +170,32 @@ services:
       CONNECTOR_DENY: none
       LOG_LEVEL: info
     # Root with three capabilities and no others: to run each child as a user of its own, and to kill
-    # it (deploy/Dockerfile says why root). Read-only, and with no IPC namespace of its own to share -
-    # no /dev/shm, and no message queue a child may make - so neither it nor a child writes anything
-    # another child could read. Under Docker's init, which reaps whatever the supervisor's sweep kills,
-    # so a child's leftovers never linger as zombies; and at most 256 processes and threads, where
-    # nine Node processes - the supervisor and eight children - run about a dozen threads each, so a
-    # child that forks runs out of its container's allowance long before the host's.
+    # it (deploy/Dockerfile says why root). Read-only, so neither it nor a child writes a file another
+    # child could read. A private IPC namespace (`ipc: none`: no /dev/shm, and /dev/mqueue a read-only
+    # tmpfs) with every limit in it zero: System V shared memory, message queues and semaphore sets,
+    # and POSIX message queues, live in the namespace and not in any file, and outlive the child that
+    # made one - the sweep ends processes, not them - so none may be made at all, by the supervisor or
+    # a child. A child has no capability to raise a limit, and /proc/sys is read-only; nothing here
+    # uses them. Docker sets these only in a container's own IPC namespace, never with `ipc: host`.
+    # Under Docker's init, which reaps whatever the supervisor's sweep kills, so a child's leftovers
+    # never linger as zombies; and at most 256 processes and threads, where nine Node processes - the
+    # supervisor and eight children - run about a dozen threads each, so a child that forks runs out
+    # of its container's allowance long before the host's.
     cap_drop: [ALL]
     cap_add: [SETUID, SETGID, KILL]
     security_opt: ['no-new-privileges:true']
     read_only: true
     ipc: none
     tmpfs: ['/dev/mqueue:ro,size=4k']
+    sysctls:
+      kernel.shmmni: '0'
+      kernel.shmall: '0'
+      kernel.shmmax: '0'
+      kernel.msgmni: '0'
+      kernel.msgmnb: '0'
+      kernel.msgmax: '0'
+      kernel.sem: '0 0 0 0'
+      fs.mqueue.queues_max: '0'
     init: true
     pids_limit: 256
     networks:

@@ -657,7 +657,10 @@ it. `ALLOY_E2E_COMPOSE_PROJECT` names the compose project it inspects, and has n
 target does. `connector-privilege.test.ts` spawns a probe inside the running connector exactly as its
 supervisor spawns a child, and requires it to be a user of its own that finds neither key anywhere it
 can read - the supervisor's `/proc` entries, any other process's, any file - and can change nothing
-of the connector's code. `connections.test.ts` makes a connection to the
+of the connector's code. It has such a child try, through Perl, to make a System V shared-memory
+segment, message queue and semaphore set and a POSIX message queue, each refused, and has one child
+leave data in each for the next, a different user, to find none of it once the first is swept.
+`connections.test.ts` makes a connection to the
 development source through the whole system, sets its password, tests it and lists its tables.
 
 What it does **not** cover, and where that lives instead: refusing another environment's session,

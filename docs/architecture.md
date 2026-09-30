@@ -2809,17 +2809,23 @@ child's; when a child ends, anything still running as its user is killed before 
 again - beside the answer, which does not wait for it, the slot held until it ends. Compose runs the
 connector under Docker's init, which reaps what the sweep kills - the supervisor, as process 1, reaped
 none, and each lingered as a zombie that every later sweep read - with at most 256 processes and
-threads (`pids_limit`), and with no IPC namespace to share (`ipc: none`, so no `/dev/shm`) and a
-read-only `/dev/mqueue`, so nothing a child writes is there for another. The supervisor runs as root with SETUID, SETGID and KILL alone and `no-new-privileges`, in a
+threads (`pids_limit`), and in an IPC namespace of its own (`ipc: none`, so no `/dev/shm`, and a
+read-only `/dev/mqueue`) whose limits compose's `sysctls` set to zero - `kernel.shmmni`, `shmall`,
+`shmmax`, `msgmni`, `msgmnb`, `msgmax`, `kernel.sem` and `fs.mqueue.queues_max` - so no System V
+shared-memory segment, message queue or semaphore set, and no POSIX message queue, can be made there
+by anyone: they live in the namespace, not in a file, and outlive the child that made one, which the
+sweep does not end. So nothing a child leaves is there for another. The supervisor runs as root with SETUID, SETGID and KILL alone and `no-new-privileges`, in a
 read-only container whose code is root's: root because a non-root user can hold a capability only as
 an ambient one, which would survive the switch to the child's user and pass to the child. `main.ts`
 refuses to start unless a child spawned as every child is runs as its own user and cannot read the
 supervisor's environment (`verifyChildIsolation`); the suite runs its children with no switch, a
 parameter as its deny list is. `tests/e2e`'s `connector-privilege.test.ts` spawns such a child in the
 running connector and asks it to find either key anywhere it can read - the supervisor's `/proc`
-entries found by its command line, and the init's - to change the code, and to write shared memory, a
-message queue or a file; it leaves a process running, which the sweep must end and the init reap, and
-reads the container's process limit. The request and answer schemas are
+entries found by its command line, and the init's - to change the code, and to write `/dev/shm`,
+`/dev/mqueue` or a file; it leaves a process running, which the sweep must end and the init reap, and
+reads the container's process limit. Through Perl, which the image carries as Debian's essential
+`perl-base`, a child tries to make each kind of IPC object and to raise the limit, and one child, as
+slot 60's user, leaves data in each for the next, slot 61's, to read after it is swept. The request and answer schemas are
 `packages/domain/src/data/protocol.ts`, parsed on both sides.
 
 **The service** finds the connector at `CONNECTOR_URL` with `SECRET_CONNECTOR_KEY`, both or neither;

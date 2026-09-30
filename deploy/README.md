@@ -93,9 +93,15 @@ so, rather than run children that could read its keys.
 It also runs under Docker's init (`init: true`), which reaps what the supervisor kills of a child's
 leftovers - without it they linger as zombies, and every later sweep reads them all; with at most 256
 processes and threads (`pids_limit: 256`), where the supervisor and eight children run about a dozen
-threads each, so a child that forks exhausts its container's allowance and not the host's; and with no
-IPC namespace to share (`ipc: none`, so no `/dev/shm`) and a read-only `/dev/mqueue`, so a child can
-leave nothing there for the next. A deployment should give it the same.
+threads each, so a child that forks exhausts its container's allowance and not the host's; and with an
+IPC namespace of its own (`ipc: none`, so no `/dev/shm`, and a read-only `/dev/mqueue`) whose limits
+are all zero (`sysctls`: `kernel.shmmni`, `kernel.shmall`, `kernel.shmmax`, `kernel.msgmni`,
+`kernel.msgmnb`, `kernel.msgmax`, `kernel.sem` and `fs.mqueue.queues_max`). System V shared memory,
+message queues and semaphore sets, and POSIX message queues, live in that namespace rather than in a
+file, and outlive the child that made one - the sweep ends a child's processes, not them - so with the
+limits at zero none can be made at all, and a child can leave nothing there for the next. Nothing in
+the connector uses them. Docker sets these only for a container with an IPC namespace of its own, never
+with `ipc: host`. A deployment should give it the same.
 
 ### A source to connect to: the `sources` profile
 

@@ -27,8 +27,9 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   and sits on networks of its own with no route to the rest of Alloy Works but the service that asks
   it. The development stack starts it; `--profile sources` adds a sample database to connect to (see
   deploy/README.md). A deployment runs it as compose does, with three capabilities and a read-only
-  filesystem, or it refuses to start, and should give it compose's init, process limit and no shared
-  memory as well.
+  filesystem, or it refuses to start, and should give it compose's init, process limit, and IPC
+  limits of zero - so no request's process can leave shared memory, a message queue or a semaphore
+  for the next - as well.
 
 ## 0.128.4 - 2026-09-30 (PR #366)
 
