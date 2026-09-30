@@ -113,6 +113,8 @@ describe('the service', () => {
     expect(redirect.headers.location).toBe('/docs/v1/');
     const html = await at('/docs/v1/');
     expect(html.statusCode).toBe(200);
+    // What the page says to a person carries plain hyphens and dots, as every product string does.
+    expect(html.body).not.toMatch(/[\u2013\u2014\u2026]/);
     const scalarPath = html.body.match(/\/docs\/v1\/scalar-[0-9a-f]{16}\.js/)?.[0];
     expect(scalarPath).toBeDefined();
     expect(html.headers['content-security-policy']).toContain("connect-src 'self'");

@@ -49,7 +49,7 @@ const clientScript = String.raw`
   for (const [index, route] of routes.entries()) {
     const option = document.createElement('option');
     option.value = String(index);
-    option.textContent = route.method + ' ' + route.path + ' — ' + route.details.summary;
+    option.textContent = route.method + ' ' + route.path + ' - ' + route.details.summary;
     operation.append(option);
   }
   function selectRoute() {
@@ -110,7 +110,7 @@ const clientScript = String.raw`
       if (!payload) { answer.textContent = 'Choose a file to upload.'; return; }
       contentType = 'application/octet-stream';
     }
-    answer.textContent = 'Sending…';
+    answer.textContent = 'Sending...';
     try {
       const response = await fetch(url, {
         method: route.method,
@@ -153,7 +153,7 @@ body{margin:0;font-family:system-ui,sans-serif}#explorer{padding:1rem 2rem;borde
 #answer{white-space:pre-wrap;overflow:auto}#fields label{display:block}
 </style></head><body>
 <section id="explorer"><h1>Alloy Works API reference</h1><p>Environment: <strong id="environment"></strong>. Token requests omit your browser session; your token is not saved and disappears on reload.</p>
-<label>Personal API token <input id="token" type="password" autocomplete="off" spellcheck="false" placeholder="awt_…"></label>
+<label>Personal API token <input id="token" type="password" autocomplete="off" spellcheck="false" placeholder="awt_..."></label>
 <label>Operation <select id="operation"></select></label><div id="fields"></div>
 <textarea id="body" aria-label="JSON request body" placeholder="JSON request body" hidden></textarea>
 <input id="file" type="file" aria-label="File to upload" hidden>
