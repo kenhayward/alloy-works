@@ -1,6 +1,6 @@
 # 0034 - Data connectors run apart, as a declared identity, and pin a canonical result
 
-- **Status:** Proposed
+- **Status:** Superseded by 0035
 - **Date:** 2026-09-30
 
 ## Context
