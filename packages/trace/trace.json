@@ -3693,7 +3693,7 @@
     {
       "id": "DAT-007",
       "area": "DAT",
-      "statement": "Creating, changing and deleting a connection must be audited, including which fields changed but never their values",
+      "statement": "Creating, changing and deleting a connection must be audited, including which fields changed, but never a credential's value",
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
@@ -4269,7 +4269,7 @@
     {
       "id": "DAT-093",
       "area": "DAT",
-      "statement": "Accepting a source revision must create a new dataset version and move only that document's binding to it. Another document referencing the same dataset must keep its version until somebody accepts there",
+      "statement": "A source revision must be recorded as a new dataset version when it is found, and accepting it must move only that document's binding to that version. Another document referencing the same dataset must keep its version until somebody accepts there",
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
@@ -4296,7 +4296,7 @@
     {
       "id": "DAT-089",
       "area": "DAT",
-      "statement": "A source must be queried only when a person acts: placing a binding, creating a document from a template, checking for or accepting a source revision, or a query author's sample run (DAT-014)",
+      "statement": "A source must be queried only when a person acts: placing a binding, creating a document from a template, checking for or accepting a source revision, a query author's sample run (DAT-014), or describing a source's tables for a query or testing a connection (DAT-075)",
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
