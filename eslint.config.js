@@ -35,6 +35,12 @@ export default tseslint.config(
     files: ['spikes/word-measure/**/*.mjs'],
     languageOptions: { ecmaVersion: 2023, sourceType: 'module', globals: { ...globals.node } },
   },
+  {
+    // The data connector spike's harness: throwaway, outside CI, node programs run in its own
+    // containers. Its rules are set after the presets, below.
+    files: ['spikes/data-connectors/**/*.mjs'],
+    languageOptions: { ecmaVersion: 2023, sourceType: 'module', globals: { ...globals.node } },
+  },
   ...tseslint.configs.recommended,
   {
     files: ['**/*.{js,ts,tsx}'],
@@ -59,6 +65,20 @@ export default tseslint.config(
     rules: {
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
+    },
+  },
+  {
+    // The data connector spike's findings rest on its programs as they ran, so the rules that would
+    // ask for an edit to one - an ignored error, a leftover variable, a NUL searched for on purpose -
+    // are off here rather than the code changed after the measurement. Last, so no preset turns
+    // them back on.
+    files: ['spikes/data-connectors/**/*.mjs'],
+    rules: {
+      'no-empty': 'off',
+      'no-useless-assignment': 'off',
+      'preserve-caught-error': 'off',
+      'no-control-regex': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
     },
   },
 );

@@ -3,6 +3,22 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.127.4 - 2026-09-30 (PR #357)
+
+### Added
+
+- **The experiment on connecting to your data is finished, and its answer is written down as a
+  proposed decision.** A query against your database, web service or spreadsheet will run in a
+  separate part of the system that cannot reach anything inside our own, so a connection pointed at
+  us goes nowhere, however its address is spelled. Your connection's password or key is opened only
+  there, and never appears in an error, a log or a connection test. "Running as you" works for a web
+  service through your own sign-in provider, and for a database by the connection telling the
+  database who you are, under rules that stop one person seeing another's rows; for an uploaded file
+  it has no meaning. A value taken from your data is recorded in one exact form, so the same data
+  checks out the same from any source and any time zone, and a query that runs too long, returns too
+  much or loses precision fails by name rather than giving you less than it should. The decision is
+  proposed for review, together with the requirement changes the experiment suggests.
+
 ## 0.127.3 - 2026-09-29 (PR #356)
 
 ### Added
