@@ -36,10 +36,10 @@ footnotes is a spreadsheet-grade subsystem and that is not what this product is.
 | **TAB-001** | A bound table must be able to select which of a result's columns appear, and in what order                                                                                                                                                                                                                                                                                           | T2         | Specified             |
 | **TAB-002** | A column must be able to carry a header different from the name the query returned                                                                                                                                                                                                                                                                                                   | T2         | Specified             |
 | **TAB-003** | A column header must be able to carry a unit, and units must be presentable separately from values                                                                                                                                                                                                                                                                                   | T2         | Specified             |
-| **TAB-004** | A column the query did not return must fail rather than render empty (**DAT-044**)                                                                                                                                                                                                                                                                                                   | T2         | Specified             |
+| **TAB-004** | A column the query did not return must fail rather than render empty (**DAT-086**)                                                                                                                                                                                                                                                                                                   | T2         | Specified             |
 | **TAB-005** | Column width should be governed by the table style, with a declared override where a column must not wrap                                                                                                                                                                                                                                                                            | T2         | Superseded by TAB-035 |
 | **TAB-035** | Column width must be governed by the table style, with a declared override where a column must not wrap                                                                                                                                                                                                                                                                              | T2         | Specified             |
-| **TAB-036** | Every declaration this area names - which columns appear and in what order, headers, units, width overrides, sorts, grouping, totals, formatting overrides, the empty state, any reshaping and the wide-table strategy - must live in the table's definition and must address a column by the key the query declares (**DAT-011**, **DAT-012**), never by its position in the result | Constraint | Specified             |
+| **TAB-036** | Every declaration this area names - which columns appear and in what order, headers, units, width overrides, sorts, grouping, totals, formatting overrides, the empty state, any reshaping and the wide-table strategy - must live in the table's definition and must address a column by the key the query declares (**DAT-080**, **DAT-012**), never by its position in the result | Constraint | Specified             |
 | **TAB-048** | Selecting the same result column more than once must be refused unless each selection carries a distinct header, so that a value shown twice - raw and rounded, say - is a deliberate presentation rather than a duplicated column                                                                                                                                                   | T2         | Specified             |
 
 **TAB-036 answers "what carries the declaration", which review was right that no row said.** Every
@@ -66,7 +66,7 @@ scientific or engineering reader expects.
 | **TAB-043** | Grouping must be declarable on more than one column, nesting in a declared order, and the relationship with a declared sort (TAB-007) must be stated: groups order first, and the sort applies within each group       | T2      | Specified |
 | **TAB-042** | A group heading must stay with the first row of its group, and a subtotal with the last row of its, across a page break. How that is achieved is the table style's (**STY-013**); that it must hold is this document's | T2      | Specified |
 | **TAB-044** | The aggregations available for a total or a subtotal must be a closed set - sum, count, minimum, maximum and mean - named on the column. Anything else must be computed by the query (TAB-020, TAB-N02)                | T2      | Specified |
-| **TAB-047** | A total computed here rather than returned by the query (TAB-010) must record its inputs and its rule in provenance, so that a number on the page that no query returned can still be explained (**DAT-040**)          | T2      | Specified |
+| **TAB-047** | A total computed here rather than returned by the query (TAB-010) must record its inputs and its rule in provenance, so that a number on the page that no query returned can still be explained (**DAT-085**)          | T2      | Specified |
 
 **TAB-042 is the realistic bad case in a measurement table, and it sat between two documents.**
 TAB-008 requires group headings and TAB-032 defers break behaviour to the table style, and neither
@@ -194,10 +194,10 @@ of [the publishing design](../../design/publishing.md#tables), filed as issue #2
 
 | This document      | Rests on                                                                           |
 | ------------------ | ---------------------------------------------------------------------------------- |
-| TAB-036            | DAT-011, DAT-012 - a column is addressed by the key the query declares             |
+| TAB-036            | DAT-080, DAT-012 - a column is addressed by the key the query declares             |
 | TAB-042            | STY-013 - the table style says how a break behaves                                 |
 | TAB-045            | LOC-028, CNT-140 - the locale a document publishes in                              |
-| TAB-047            | DAT-040 - provenance for a number no query returned                                |
+| TAB-047            | DAT-085 - provenance for a number no query returned                                |
 | TAB-039 to TAB-041 | PUB-090, PUB-031 and PUB-032 - tagged output, reading order and header association |
 | TAB-035 to TAB-048 | [The v1 review](<../../reviews/TAB - Tabular presentation.md>); section 13         |
 | Section 6          | Scope §7.5, pivot pushed into the query layer                                      |
@@ -290,3 +290,18 @@ Not a review. [W14.4](../../plans/2026-09-28-w14-publishing-finished.md) landed 
 | What was found                                                  | Change                                                                                                                                                                                                                                                                    |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | TAB-034 cited STR-023, superseded by STR-070 and now by STR-071 | TAB-034 now cites **STR-071**, a clarity edit: "numbered by the outline" is how the outline numbers a table, which STR-071 says, a table the author marked unnumbered taking no number. A caption is still required of every table, unnumbered or not, so no row is added |
+
+### Ken's decisions on data connectivity (ADR-0035), 2026-09-30
+
+Not a review. Ken's decisions on data connectivity, recorded by [ADR-0035](../../decisions/0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md), superseded three rows
+this area cites. Each citation is repointed; none of these rows changes what it asks.
+
+| What was found                                                                         | Change                                                                               |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| TAB-004 cites DAT-044, a failed query failing the publish; a publish now runs no query | Edited for clarity: it cites **DAT-086**, a failed query failing the act that ran it |
+| TAB-036 cites DAT-011, now superseded by DAT-080's closed list of column types         | Edited for clarity: it cites **DAT-080**, and its traceability row too               |
+| TAB-047 cites DAT-040, now superseded by DAT-085's provenance record                   | Edited for clarity: it cites **DAT-085**, and its traceability row too               |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 51, of which 4 superseded | 51, of which 4 superseded |
