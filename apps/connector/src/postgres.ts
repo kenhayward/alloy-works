@@ -12,6 +12,36 @@ import pg from 'pg';
 /** The oldest source whose catalogue the test reads: `pg_write_all_data` arrived with 14. */
 export const OLDEST_SERVER_VERSION = 140000;
 
+/** A source asked for the password in a form it could read: refused before anything is sent. */
+export class AuthenticationRefused extends Error {}
+
+/**
+ * A client that authenticates by SCRAM-SHA-256 alone (the D1 fix, C3). node-postgres answers
+ * `AuthenticationCleartextPassword` with the password and `AuthenticationMD5Password` with a digest
+ * as good as it, to whatever server asked, and `tls: 'require'` checks no certificate: an
+ * administrator who pointed a connection at a server of their own would be handed the stored
+ * password. SCRAM proves the password without sending it. Both handlers are node-postgres 8's, which
+ * `authentication.test.ts` holds to a server that asks each way.
+ */
+class ScramOnlyClient extends pg.Client {
+  private refuse(): void {
+    (
+      this as unknown as { connection: { emit(event: 'error', error: Error): void } }
+    ).connection.emit(
+      'error',
+      new AuthenticationRefused('The source asked for the password in a form it could read'),
+    );
+  }
+
+  _handleAuthCleartextPassword(): void {
+    this.refuse();
+  }
+
+  _handleAuthMD5Password(): void {
+    this.refuse();
+  }
+}
+
 /** Opens a client to the checked address, as the connection's account, over TLS. */
 export async function connectPostgres(
   settings: ConnectionSettings,
@@ -20,7 +50,7 @@ export async function connectPostgres(
   timing: { readonly connectTimeoutMs: number; readonly statementTimeoutMs: number },
 ): Promise<pg.Client> {
   const { source } = settings;
-  const client = new pg.Client({
+  const client = new ScramOnlyClient({
     host: address,
     port: source.port,
     database: source.database,
