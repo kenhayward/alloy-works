@@ -70,11 +70,19 @@ export function settings(
   };
 }
 
-/** A request for these settings, its secret sealed as the connector's `seal` would. */
+/**
+ * A request for these settings, its secret sealed as the connector's `seal` would.
+ *
+ * The default deadline is the suite's, not the product's: the service's test deadline stays ten
+ * seconds (D1-R). A failure answers no sooner than the five-second floor, and CI runs every
+ * package's suite at once, so a loaded runner can take a child past ten seconds before it answers
+ * and turn a test's `connection_failed` into the runner's `timeout` (#370). A test that means to
+ * see a timeout passes a small deadline of its own.
+ */
 export function requestFor(
   source: ConnectionSettings,
   secret: string,
-  deadlineMs = 10_000,
+  deadlineMs = 30_000,
 ): TestRequest {
   const connection = { id: randomUUID(), version: randomUUID() };
   return {
