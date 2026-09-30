@@ -638,4 +638,83 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       });
     });
   });
+
+  it("passes axe on Connections, New connection and a connection's page, each worked by keyboard alone", async ({
+    task,
+  }) => {
+    await withPage(async (page) => {
+      const check = async (state: string, arrival: Arrival) => {
+        await arrive(arrival);
+        await checkAxe(page, state, task.meta, arrival);
+      };
+      /** Tab until `target` holds the focus, as a person with no pointer reaches it. */
+      const tabTo = async (target: Locator) => {
+        for (let presses = 0; presses < 60; presses += 1) {
+          if (await target.evaluate((element) => element === document.activeElement)) return;
+          await page.keyboard.press('Tab');
+        }
+        throw new Error(`${String(target)} was never reached by Tab`);
+      };
+
+      await page.goto(`${SERVICE}/#/components`);
+      await arrive({ shows: page.getByRole('heading', { name: 'Components', level: 1 }) });
+      const toConnections = page
+        .getByRole('navigation', { name: 'Workspace' })
+        .getByRole('link', { name: 'Connections' });
+      await tabTo(toConnections);
+      await page.keyboard.press('Enter');
+      const list = page.getByRole('region', { name: 'Connections', exact: true });
+      await check('the connections list', {
+        shows: [
+          page.getByRole('heading', { name: 'Connections', level: 1 }),
+          list
+            .getByRole('table')
+            .or(list.getByText('There are no connections you may read.', { exact: true })),
+        ],
+      });
+
+      // New connection, by keyboard: the dialog opens on its first field.
+      await tabTo(page.getByRole('button', { name: 'New connection' }));
+      await page.keyboard.press('Enter');
+      const dialog = page.getByRole('dialog', { name: 'New connection' });
+      await check('a new connection', { shows: dialog.getByRole('button', { name: 'Create' }) });
+      const name = `Readings ${Date.now()}`;
+      for (const [label, value] of [
+        ['Name', name],
+        ['Host', 'source-postgres'],
+        ['Database', 'readings'],
+        ['Account', 'reader'],
+      ] as const) {
+        await tabTo(dialog.getByLabel(label, { exact: true }));
+        await page.keyboard.type(value);
+      }
+      await tabTo(dialog.getByRole('button', { name: 'Create' }));
+      await page.keyboard.press('Enter');
+      await check('a connection', {
+        shows: [
+          page.getByRole('heading', { name, level: 1 }),
+          page.getByRole('button', { name: 'Save version' }),
+        ],
+        hides: [dialog],
+      });
+
+      // Its password set, which tests it straight after, against the development source.
+      const credential = page.getByRole('region', { name: 'Credential' });
+      await tabTo(credential.getByLabel('Password'));
+      await page.keyboard.type('source-reader-dev-password');
+      await tabTo(credential.getByRole('button', { name: 'Set' }));
+      await page.keyboard.press('Enter');
+      await check('a connection with its password set and tested', {
+        shows: [credential.getByText('Connected.'), credential.getByText(/^Set by Ada on /)],
+      });
+
+      // Its tables, listed.
+      await tabTo(page.getByRole('button', { name: 'List tables' }));
+      await page.keyboard.press('Enter');
+      const tables = page.getByRole('table', { name: 'Tables and views' });
+      await check("a connection's tables", {
+        shows: tables.getByRole('cell', { name: 'sample.site', exact: true }),
+      });
+    });
+  });
 });

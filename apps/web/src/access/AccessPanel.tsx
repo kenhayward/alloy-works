@@ -38,7 +38,10 @@ type HeadingLevel = 2 | 3 | 4 | 5;
 const HEADINGS = ['h2', 'h3', 'h4', 'h5', 'h6'] as const;
 
 export interface AccessPanelProps {
-  /** What access is managed to: a component, a document, a template, a space or the environment. */
+  /**
+   * What access is managed to: a component, a document, a template, a connection, a space or the
+   * environment.
+   */
   readonly at: AccessAt;
   readonly client: Client;
   /**
@@ -374,6 +377,14 @@ export function AccessPanel({ at, client, headingLevel = 2 }: AccessPanelProps) 
       });
       return namedFrom(data, response.status, (view) =>
         isRecord(view.definition) ? view.definition.name : undefined,
+      );
+    }
+    if (kind === 'connection') {
+      const { data, response } = await client.GET('/v1/connections/{id}', {
+        params: { path: { id } },
+      });
+      return namedFrom(data, response.status, (view) =>
+        isRecord(view.settings) ? view.settings.name : undefined,
       );
     }
     const { data, response } = await client.GET('/v1/components/{id}', {

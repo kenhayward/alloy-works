@@ -28,6 +28,12 @@ describe('the module an address belongs to', () => {
     expect(moduleOf('#/templates')).toBe('Templates');
   });
 
+  it('names Connections for the list, a connection and its access', () => {
+    expect(moduleOf('#/connections')).toBe('Connections');
+    expect(moduleOf(`#/connections/${COMPONENT}`)).toBe('Connections');
+    expect(moduleOf(`#/connections/${COMPONENT}/access`)).toBe('Connections');
+  });
+
   it('names Search for a search, with its query or without', () => {
     expect(moduleOf('#/search')).toBe('Search');
     expect(moduleOf('#/search?q=lever%20arm')).toBe('Search');
