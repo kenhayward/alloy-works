@@ -11,6 +11,7 @@ import {
   type QueryDefinition,
 } from './definition.js';
 import { defaultLimits, limitCeilings } from './limits.js';
+import { checkParameterValues } from './parameters.js';
 import { canonicalJson } from '../stored/canonical.js';
 import { bindPostgres } from './sql.js';
 
@@ -490,6 +491,31 @@ describe('a query definition', () => {
     expect(parseDraftDefinition(draft)).toEqual(draft);
     expect(() => parseDraftDefinition({ ...draft, key: ['nothing'] })).toThrow(DefinitionRefused);
     expect(draftDefinitionSchema.safeParse({ ...draft, title: 'x' }).success).toBe(false);
+  });
+
+  it("counts a permitted text value's length in characters, as a parameter's value is counted", () => {
+    const astral = String.fromCodePoint(0x1f600);
+    const permitting = (value: string) =>
+      withParameters(
+        [
+          {
+            name: 'label',
+            type: { base: 'text' },
+            required: true,
+            list: false,
+            permitted: { values: [value] },
+          },
+        ],
+        'select id, taken, value from sample.reading where {{label}} is not null order by id',
+      );
+    // A thousand characters beyond the Basic Multilingual Plane are two thousand UTF-16 units.
+    expect(refusedAt(permitting(astral.repeat(1000)))).toEqual([]);
+    expect(
+      checkParameterValues(permitting(astral.repeat(1000)).parameters, {
+        label: astral.repeat(1000),
+      }),
+    ).toEqual([]);
+    expect(refusedAt(permitting(astral.repeat(1001)))).toEqual(['parameters.0.permitted']);
   });
 
   it('is at most 512 KiB of canonical JSON, so that it can always be sent to be run', () => {

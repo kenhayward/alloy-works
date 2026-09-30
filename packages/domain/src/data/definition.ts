@@ -4,6 +4,7 @@ import { storableText } from '../stored/storable.js';
 import { valueProblem, compareCanonical, type CanonicalValue } from './canonical.js';
 import { valueTypeSchema, type ValueType } from './columns.js';
 import { limitCeilings } from './limits.js';
+import { MAX_TEXT_VALUE } from './parameters.js';
 import { MAX_COLUMNS } from './columns.js';
 import { canonicalJson } from '../stored/canonical.js';
 import { lexPostgres, longestBinding, RAN_MAX_CHARACTERS } from './sql.js';
@@ -65,7 +66,15 @@ const sourceName = (what: string) =>
     })
     .refine((value) => !CONTROL.test(value), { message: `${what} holds no control character` });
 
-const canonicalValue = z.union([storable('A value').max(1000), z.boolean(), z.null()]);
+// A permitted value's text is counted in characters, as a parameter's value is (D2-R), never left to
+// how the schema library happens to count a string's length.
+const canonicalValue = z.union([
+  storable('A value').refine((value) => characters(value) <= MAX_TEXT_VALUE, {
+    message: 'A value is at most 1,000 characters',
+  }),
+  z.boolean(),
+  z.null(),
+]);
 
 const permitted = z.union([
   z.strictObject({ values: z.array(canonicalValue) }),
