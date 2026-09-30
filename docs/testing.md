@@ -659,7 +659,9 @@ supervisor spawns a child, and requires it to be a user of its own that finds ne
 can read - the supervisor's `/proc` entries, any other process's, any file - and can change nothing
 of the connector's code. It has such a child try, through Perl, to make a System V shared-memory
 segment, message queue and semaphore set and a POSIX message queue, each refused, and has one child
-leave data in each for the next, a different user, to find none of it once the first is swept.
+leave data in each for the next, a different user, to find none of it once the first is swept. It
+starts the connector's image once more, as compose does but with none of the IPC limits, and again
+with all but one, and requires it to refuse each time, naming every limit that is not zero and no other.
 `connections.test.ts` makes a connection to the
 development source through the whole system, sets its password, tests it and lists its tables.
 

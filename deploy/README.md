@@ -101,7 +101,8 @@ message queues and semaphore sets, and POSIX message queues, live in that namesp
 file, and outlive the child that made one - the sweep ends a child's processes, not them - so with the
 limits at zero none can be made at all, and a child can leave nothing there for the next. Nothing in
 the connector uses them. Docker sets these only for a container with an IPC namespace of its own, never
-with `ipc: host`. A deployment should give it the same.
+with `ipc: host`. A deployment must give it the limits: without every one of them at zero it refuses to
+start, naming each that is not, as it does without its capabilities.
 
 ### A source to connect to: the `sources` profile
 

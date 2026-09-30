@@ -398,7 +398,7 @@ capabilities that switching and killing another user take, the connector's code 
 not the child's to write, and the connector refuses to start unless a child spawned as every child is
 proves it cannot read the supervisor's environment. Its container lets no child make shared memory,
 a message queue or a semaphore set - in a file, or in its IPC namespace, where one would outlive the
-child that made it - so nothing passes between children that way, bounds how many processes they may start, and runs under an init that reaps what
+child that made it, and the connector refuses to start where one could be made - so nothing passes between children that way, bounds how many processes they may start, and runs under an init that reaps what
 the supervisor kills of a child's leftovers. Case 2 priced it at 41 ms p50 against 5 ms
 for a warm process - negligible now that a source is queried only when a person acts. It is revisited
 if an act comes to run hundreds of queries, as a document made from a large template might.

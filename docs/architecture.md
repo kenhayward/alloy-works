@@ -2818,14 +2818,18 @@ sweep does not end. So nothing a child leaves is there for another. The supervis
 read-only container whose code is root's: root because a non-root user can hold a capability only as
 an ambient one, which would survive the switch to the child's user and pass to the child. `main.ts`
 refuses to start unless a child spawned as every child is runs as its own user and cannot read the
-supervisor's environment (`verifyChildIsolation`); the suite runs its children with no switch, a
-parameter as its deny list is. `tests/e2e`'s `connector-privilege.test.ts` spawns such a child in the
+supervisor's environment (`verifyChildIsolation`), and unless every one of those IPC limits reads
+zero from `/proc/sys` (`verifyIpcClosed`, whose decision is `ipcRefusal` in `ipc.ts`: the values in,
+the refusal naming each limit that is not zero out); the suite runs its children with no switch, a
+parameter as its deny list is, and never runs either check but with a spawn or a reader of its own. `tests/e2e`'s `connector-privilege.test.ts` spawns such a child in the
 running connector and asks it to find either key anywhere it can read - the supervisor's `/proc`
 entries found by its command line, and the init's - to change the code, and to write `/dev/shm`,
 `/dev/mqueue` or a file; it leaves a process running, which the sweep must end and the init reap, and
 reads the container's process limit. Through Perl, which the image carries as Debian's essential
 `perl-base`, a child tries to make each kind of IPC object and to raise the limit, and one child, as
-slot 60's user, leaves data in each for the next, slot 61's, to read after it is swept. The request and answer schemas are
+slot 60's user, leaves data in each for the next, slot 61's, to read after it is swept; and the
+connector's image, started again as compose starts it but without the IPC limits, and with all but
+one, refuses each time, naming every limit that is not zero. The request and answer schemas are
 `packages/domain/src/data/protocol.ts`, parsed on both sides.
 
 **The service** finds the connector at `CONNECTOR_URL` with `SECRET_CONNECTOR_KEY`, both or neither;
@@ -2873,16 +2877,16 @@ where the person may administer a space; a connection's page saves its settings 
 replaces its password through a field emptied as it is sent, tests it, lists its tables, retires and
 reinstates it, and manages its access.
 
-| Where                                    | What                                                                                                 |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `domain: src/data/`                      | The settings and their check, the protocol's schemas, the failures and their attribution, the limits |
-| `sealing: src/seal.ts`                   | The sealing scheme, and its purposes                                                                 |
-| `db: src/connections.ts`                 | Making, reading and versioning a connection; its credential rows; its tests; the listing             |
-| `connector: src/`                        | `config.ts`, `server.ts`, `supervisor.ts`, `child.ts` and `work.ts`, `guard.ts`, `postgres.ts`       |
-| `service: src/data/`                     | `connector.ts`, the client, and `connections.ts`, the routes                                         |
-| `api-contract: src/connections.ts`       | The seven routes                                                                                     |
-| `web: src/data/`                         | The Connections list and a connection's page                                                         |
-| `deploy/compose.yaml`, `deploy/sources/` | The connector, its two networks, and the development source in the `sources` profile                 |
+| Where                                    | What                                                                                                     |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `domain: src/data/`                      | The settings and their check, the protocol's schemas, the failures and their attribution, the limits     |
+| `sealing: src/seal.ts`                   | The sealing scheme, and its purposes                                                                     |
+| `db: src/connections.ts`                 | Making, reading and versioning a connection; its credential rows; its tests; the listing                 |
+| `connector: src/`                        | `config.ts`, `server.ts`, `supervisor.ts`, `ipc.ts`, `child.ts` and `work.ts`, `guard.ts`, `postgres.ts` |
+| `service: src/data/`                     | `connector.ts`, the client, and `connections.ts`, the routes                                             |
+| `api-contract: src/connections.ts`       | The seven routes                                                                                         |
+| `web: src/data/`                         | The Connections list and a connection's page                                                             |
+| `deploy/compose.yaml`, `deploy/sources/` | The connector, its two networks, and the development source in the `sources` profile                     |
 
 ## Containers and images
 

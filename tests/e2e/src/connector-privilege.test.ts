@@ -1,4 +1,6 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
+
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import { e2eTargets } from './targets.js';
@@ -419,4 +421,84 @@ describe("the connector's children and the container's IPC", () => {
       expect(read[what], what).toBe('ENOENT');
     }
   });
+});
+
+/** The IPC limits compose sets to zero in the connector's own namespace, as `docker run` spells them. */
+const IPC_SYSCTLS: Readonly<Record<string, string>> = {
+  'kernel.shmmni': '0',
+  'kernel.shmall': '0',
+  'kernel.shmmax': '0',
+  'kernel.msgmni': '0',
+  'kernel.msgmnb': '0',
+  'kernel.msgmax': '0',
+  'kernel.sem': '0 0 0 0',
+  'fs.mqueue.queues_max': '0',
+};
+
+/**
+ * The running connector's own image, started once more as compose starts it - the three capabilities,
+ * read-only, an IPC namespace of its own, under Docker's init - but on no network, with keys of its
+ * own, and with only the `sysctls` given. How it ended, and what it wrote to standard error.
+ */
+function startWith(sysctls: Readonly<Record<string, string>>): {
+  readonly status: number | null;
+  readonly stderr: string;
+} {
+  const image = docker(['inspect', '--format', '{{.Image}}', connectorId()]);
+  // Named, so one that starts after all - the refusal missing - is removed rather than left running.
+  const name = `${PROJECT}-connector-start-${randomBytes(4).toString('hex')}`;
+  const run = spawnSync(
+    'docker',
+    [
+      'run',
+      '--rm',
+      '--name',
+      name,
+      '--network',
+      'none',
+      '--cap-drop',
+      'ALL',
+      ...['SETUID', 'SETGID', 'KILL'].flatMap((cap) => ['--cap-add', cap]),
+      '--security-opt',
+      'no-new-privileges:true',
+      '--read-only',
+      '--ipc',
+      'none',
+      '--tmpfs',
+      '/dev/mqueue:ro,size=4k',
+      '--init',
+      '--pids-limit',
+      '256',
+      ...Object.entries(sysctls).flatMap(([name, value]) => ['--sysctl', `${name}=${value}`]),
+      // Keys of this container's own, thrown away with it: it refuses before it could use either.
+      ...['CONNECTOR_KEY', 'CONNECTOR_SEALING_KEY'].flatMap((name) => [
+        '-e',
+        `${name}=${randomBytes(32).toString('base64')}`,
+      ]),
+      '-e',
+      'CONNECTOR_DENY=none',
+      image,
+    ],
+    { encoding: 'utf8', timeout: 60_000 },
+  );
+  spawnSync('docker', ['rm', '--force', name], { encoding: 'utf8', timeout: 60_000 });
+  return { status: run.status, stderr: run.stderr };
+}
+
+describe("the connector's start", () => {
+  it('refuses to start unless every IPC limit is zero, naming each one that is not', () => {
+    const bare = startWith({});
+    expect(bare.status, bare.stderr).toBe(1);
+    expect(bare.stderr).toContain('System V or POSIX IPC');
+    for (const limit of Object.keys(IPC_SYSCTLS)) expect(bare.stderr).toContain(limit);
+
+    // Every limit but one: it names that one alone, so it read each of the others as zero.
+    const allButOne = Object.fromEntries(
+      Object.entries(IPC_SYSCTLS).filter(([name]) => name !== 'fs.mqueue.queues_max'),
+    );
+    const one = startWith(allButOne);
+    expect(one.status, one.stderr).toBe(1);
+    expect(one.stderr).toContain('fs.mqueue.queues_max');
+    for (const limit of Object.keys(allButOne)) expect(one.stderr).not.toContain(limit);
+  }, 300_000);
 });
