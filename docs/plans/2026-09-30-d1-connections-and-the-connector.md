@@ -496,5 +496,5 @@ changelog: the next Minor.
 
 ## How this plan was made
 
-About 45 minutes of wall-clock time and about 70 tool calls, Q1 and Q2 among them; the plan is about
-370 lines.
+About 25 minutes of wall-clock time and about 85 tool calls, Q1 and Q2 among them (about 8 minutes
+of the time); the plan is 500 lines once Prettier has widened its tables.
