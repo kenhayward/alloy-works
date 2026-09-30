@@ -259,7 +259,7 @@ describe('a connection', () => {
     expect(retired.answer).toBe('recorded');
   });
 
-  it("DAT-007 records each change to a connection's settings as a version, retiring among them, and each credential set as a row naming who and when and never the value", async () => {
+  it("records each change to a connection's settings as a version, retiring among them, and each credential set as a row naming who and when and never the value", async () => {
     const first = await made();
     const moved = await service.withTenant(production, (trx) =>
       recordConnectionVersion(trx, {

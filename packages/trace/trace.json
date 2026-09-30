@@ -17766,31 +17766,25 @@
     {
       "id": "DAT-075",
       "file": "apps/connector/src/postgres.test.ts",
-      "line": 66,
-      "kind": "title"
-    },
-    {
-      "id": "DAT-103",
-      "file": "apps/connector/src/postgres.test.ts",
-      "line": 103,
+      "line": 67,
       "kind": "title"
     },
     {
       "id": "DAT-114",
       "file": "apps/connector/src/postgres.test.ts",
-      "line": 123,
+      "line": 124,
       "kind": "title"
     },
     {
       "id": "DAT-005",
       "file": "apps/connector/src/secrets.test.ts",
-      "line": 56,
+      "line": 63,
       "kind": "title"
     },
     {
       "id": "DAT-056",
       "file": "apps/connector/src/supervisor.test.ts",
-      "line": 29,
+      "line": 37,
       "kind": "title"
     },
     {
@@ -17892,25 +17886,25 @@
     {
       "id": "DAT-004",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 192,
+      "line": 194,
       "kind": "title"
     },
     {
       "id": "DAT-049",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 304,
+      "line": 315,
       "kind": "title"
     },
     {
       "id": "DAT-075",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 232,
+      "line": 236,
       "kind": "title"
     },
     {
       "id": "DAT-078",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 496,
+      "line": 645,
       "kind": "rule"
     },
     {
@@ -18342,13 +18336,13 @@
     {
       "id": "DAT-004",
       "file": "apps/web/src/data/connections.test.tsx",
-      "line": 352,
+      "line": 358,
       "kind": "title"
     },
     {
       "id": "DAT-075",
       "file": "apps/web/src/data/connections.test.tsx",
-      "line": 305,
+      "line": 306,
       "kind": "title"
     },
     {
@@ -19188,7 +19182,7 @@
     {
       "id": "API-012",
       "file": "packages/api-contract/src/openapi.test.ts",
-      "line": 179,
+      "line": 189,
       "kind": "title"
     },
     {
@@ -19278,13 +19272,7 @@
     {
       "id": "DAT-003",
       "file": "packages/db/src/connections.test.ts",
-      "line": 356,
-      "kind": "title"
-    },
-    {
-      "id": "DAT-007",
-      "file": "packages/db/src/connections.test.ts",
-      "line": 262,
+      "line": 365,
       "kind": "title"
     },
     {
@@ -21228,13 +21216,19 @@
     {
       "id": "DAT-056",
       "file": "tests/e2e/src/connector-isolation.test.ts",
-      "line": 146,
+      "line": 148,
       "kind": "title"
     },
     {
       "id": "DAT-089",
       "file": "tests/e2e/src/connector-isolation.test.ts",
-      "line": 222,
+      "line": 224,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-056",
+      "file": "tests/e2e/src/connector-privilege.test.ts",
+      "line": 154,
       "kind": "title"
     },
     {

@@ -101,7 +101,7 @@ describe('the connector against a PostgreSQL source', () => {
     });
   });
 
-  it('DAT-103 finds an account that may write at the source not read-only, once it has authenticated', async () => {
+  it('finds an account that may write at the source not read-only, once it has authenticated', async () => {
     expect(
       await supervisor.run('test', requestFor(settings({ account: 'writer' }), PASSWORDS.writer)),
     ).toEqual({
