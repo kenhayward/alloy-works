@@ -191,6 +191,23 @@ interface TypeRow {
   readonly typtypmod: number;
 }
 
+/**
+ * Types by OID, each named as the product reads it: a built-in's name only where it is PostgreSQL's
+ * own, in `pg_catalog`, and `citext` only where it is the extension's, its input function `citextin`
+ * beside it. Any other type is nameless here, whatever it is called: an account can make a type named
+ * `int8` or `bool` in a schema of its own, and a name alone would admit it as the built-in (D2-L). An
+ * enum is text wherever it is, by its kind; a domain is followed to its base.
+ */
+const TYPES_BY_OID = `
+select t.oid::int as oid,
+       case when t.typnamespace = 'pg_catalog'::regnamespace then t.typname
+            when t.typname = 'citext' and p.proname = 'citextin'
+                 and p.pronamespace = t.typnamespace then 'citext'
+            else '' end as typname,
+       t.typtype::text as typtype, t.typbasetype::int as typbasetype, t.typtypmod
+  from pg_type t left join pg_proc p on p.oid = t.typinput
+ where t.oid = any($1::oid[])`;
+
 /** A numeric's precision and scale from its type modifier, as PostgreSQL packs them. */
 function numericModifier(typmod: number): { precision: number; scale: number } {
   const packed = typmod - 4;
@@ -302,11 +319,7 @@ export async function describeRelations(
   const types = new Map<number, TypeRow>();
   let wanted = [...new Set(columns.rows.map((each) => each.type))];
   while (wanted.length > 0) {
-    const rows = await client.query<TypeRow>(
-      `select oid::int as oid, typname, typtype::text as typtype, typbasetype::int as typbasetype,
-              typtypmod from pg_type where oid = any($1::oid[])`,
-      [wanted],
-    );
+    const rows = await client.query<TypeRow>(TYPES_BY_OID, [wanted]);
     for (const row of rows.rows) types.set(row.oid, row);
     wanted = rows.rows
       .filter((row) => row.typtype === 'd' && !types.has(row.typbasetype))
@@ -416,11 +429,7 @@ export async function sourceTypes(
   const rows = new Map<number, TypeRow>();
   let wanted = [...new Set(types.map((each) => each.oid))];
   while (wanted.length > 0) {
-    const found = await client.query<TypeRow>(
-      `select oid::int as oid, typname, typtype::text as typtype, typbasetype::int as typbasetype,
-              typtypmod from pg_type where oid = any($1::oid[])`,
-      [wanted],
-    );
+    const found = await client.query<TypeRow>(TYPES_BY_OID, [wanted]);
     for (const row of found.rows) rows.set(row.oid, row);
     wanted = found.rows
       .filter((row) => row.typtype === 'd' && !rows.has(row.typbasetype))

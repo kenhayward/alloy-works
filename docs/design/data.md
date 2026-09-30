@@ -654,6 +654,8 @@ result. **What a declared type admits from PostgreSQL** (D2-L): text from `text`
 `bpchar`, `name`, `citext`, `uuid`, `json`, `jsonb`, `xml` and any enum; integer from `int2`,
 `int4`, `int8` and `numeric`; decimal from those four; date from `date`; time from `time`; local
 date-time from `timestamp`; instant from `timestamptz`; boolean from `bool`; a domain by its base.
+Each built-in is admitted only from `pg_catalog`, and `citext` only where it is the extension's, its
+input function `citextin`: an account can make a type named `int8` or `bool` in a schema of its own.
 Any other type is `result_mismatch`, naming the column, and the author casts it in the SQL. A value
 with more digits or places than its declaration is `precision_lost`; one no canonical form holds - a
 numeric `NaN` or infinity, an infinite date or timestamp, a year before 1 or after 9999, a time of

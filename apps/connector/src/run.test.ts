@@ -86,6 +86,44 @@ describe('a run', { timeout: LOADED_TIMEOUT_MS }, () => {
     expect(answer.durationMs).toBeGreaterThanOrEqual(0);
   });
 
+  it("admits a built-in type only from pg_catalog, and citext only where it is the extension's, never a lookalike of another schema's", async () => {
+    // Types an account could make in a schema of its own, named as the built-ins are.
+    await asSuperuser((client) =>
+      client.query(`
+        drop schema if exists lookalike cascade;
+        create schema lookalike;
+        create type lookalike.int8 as enum ('7');
+        create type lookalike.bool as enum ('true');
+        create type lookalike.citext as (a text);
+        grant usage on schema lookalike to reader;
+      `),
+    );
+    try {
+      const b = column('b', { base: 'boolean' });
+      const t = column('t', { base: 'text' });
+      for (const [text, columns, refused] of [
+        [`select '7'::lookalike.int8 as id`, [id], 'id'],
+        [`select 1::int8 as id, 'true'::lookalike.bool as b`, [id, b], 'b'],
+        [`select 1::int8 as id, row('x')::lookalike.citext as t`, [id, t], 't'],
+      ] as const) {
+        expect(failure(await asReader(draft(text, [...columns]))), text).toMatchObject({
+          code: 'result_mismatch',
+          column: refused,
+        });
+      }
+      // An enum is text wherever it is, whatever it is called.
+      expect(
+        await asReader(draft(`select 1::int8 as id, '7'::lookalike.int8 as t`, [id, t])),
+      ).toMatchObject({ outcome: 'ok', result: { rows: [['1', '7']] } });
+      // And the built-ins themselves are admitted as ever.
+      expect(
+        await asReader(draft(`select 1::pg_catalog.int8 as id, true as b`, [id, b])),
+      ).toMatchObject({ outcome: 'ok', result: { rows: [['1', true]] } });
+    } finally {
+      await asSuperuser((client) => client.query('drop schema lookalike cascade'));
+    }
+  });
+
   it('DAT-106 refuses a result whose columns, types, order or key do not fit the declaration, by name, and never adjusts it', async () => {
     const name = column('name', { base: 'text' });
     const cases: readonly [string, Parameters<typeof asReader>[0], Record<string, unknown>][] = [
