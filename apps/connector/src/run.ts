@@ -24,7 +24,9 @@ import { finishResult } from './result.js';
  * declaration before anything is computed; then run a page of 500 rows at a time, so the source
  * computes no more than is read, every value the server's text. The bytes read from the source after
  * the statement is sent are counted at the socket, and the rows as they arrive: past a limit, or at the
- * deadline, the socket is destroyed, which the source's 250 ms connection check turns into a cancel.
+ * deadline, the socket is destroyed and the statement cancelled at the source by the protocol's
+ * CancelRequest, which is waited for before the child answers. Neither is left to the source's own
+ * connection check or statement timeout, both of which the author's SQL can turn off (DAT-109).
  */
 
 /** Rows a page: the source hands over this many, and computes no more until they are read. */
@@ -56,6 +58,7 @@ export async function runStatement(
   values: ParameterValues,
   limits: Limits,
   deadline: number,
+  cancel: () => Promise<void>,
 ): Promise<RunAnswer> {
   const started = Date.now();
   const bound = bindPostgres(definition, values);
@@ -95,7 +98,7 @@ export async function runStatement(
 
     const remaining = Math.max(1, Math.floor(deadline - Date.now()));
     await client.query(`set local statement_timeout = ${remaining}`);
-    const rows = await readRows(client, bound, definition, places, limits, deadline);
+    const rows = await readRows(client, bound, definition, places, limits, deadline, cancel);
     const finished = finishResult(rows, definition, limits);
     if ('failure' in finished) return failed(finished.failure);
     return {
@@ -128,6 +131,7 @@ function readRows(
   places: readonly number[],
   limits: Limits,
   deadline: number,
+  cancel: () => Promise<void>,
 ): Promise<CanonicalValue[][]> {
   return new Promise((resolve, reject) => {
     const socket = socketOf(client);
@@ -135,11 +139,14 @@ function readRows(
     let received = 0;
     let kept = 0;
     let stopped: DataFailure | undefined;
+    let cancelled: Promise<void> = Promise.resolve();
     const stop = (failure: DataFailure) => {
       if (stopped) return;
       stopped = failure;
-      // The source notices within a quarter of a second, and cancels the statement (Q2; DAT-109).
+      // Nothing more is read, and the statement is cancelled at the source, whatever the author's SQL
+      // set its connection check or its timeout to (DAT-109).
       socket.destroy();
+      cancelled = cancel();
     };
     const counting = (chunk: Buffer) => {
       received += chunk.length;
@@ -149,10 +156,11 @@ function readRows(
       () => stop(dataFailure('timeout')),
       Math.max(0, deadline - Date.now()),
     );
+    // An answer waits for the cancel to be sent, so the child does not exit before it is.
     const settle = (outcome: () => void) => {
       clearTimeout(timer);
       socket.removeListener('data', counting);
-      outcome();
+      void cancelled.then(outcome);
     };
 
     // `rows` is the driver's own, though its types leave it out: a portal read a page at a time.

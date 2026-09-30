@@ -1,4 +1,4 @@
-import { isIP } from 'node:net';
+import { connect, isIP } from 'node:net';
 
 import {
   DESCRIBE_BUDGET_BYTES,
@@ -93,6 +93,51 @@ export async function connectPostgres(
   client.on('error', () => {});
   await client.connect();
   return client;
+}
+
+/** How long a cancel is waited for, at the most, before the child answers and exits. */
+export const CANCEL_WAIT_MS = 300;
+
+/** PostgreSQL's CancelRequest code: 1234 in the high 16 bits, 5678 in the low (protocol 3.0). */
+const CANCEL_REQUEST_CODE = 80877102;
+
+/**
+ * Asks the source to cancel whatever a client's backend is running (DAT-109): the protocol's
+ * CancelRequest, carrying the backend's process id and secret key, on a fresh connection to the same
+ * checked address the client dialled - never a name resolved again, which could now answer another
+ * address. The source reads it before any authentication and closes the connection; this waits for
+ * that, or `waitMs`, whichever is sooner, and never fails: a cancel is a best effort beside the socket
+ * the caller has already destroyed. The source's own settings cannot refuse it, where the author's SQL
+ * can turn off both `client_connection_check_interval` and `statement_timeout`.
+ */
+export function cancelBackend(
+  address: string,
+  port: number,
+  client: pg.Client,
+  waitMs = CANCEL_WAIT_MS,
+): Promise<void> {
+  const { processID, secretKey } = client as unknown as {
+    processID: number | null;
+    secretKey: number | null;
+  };
+  if (typeof processID !== 'number' || typeof secretKey !== 'number') return Promise.resolve();
+  return new Promise((resolve) => {
+    const packet = Buffer.alloc(16);
+    packet.writeInt32BE(16, 0);
+    packet.writeInt32BE(CANCEL_REQUEST_CODE, 4);
+    packet.writeInt32BE(processID, 8);
+    packet.writeInt32BE(secretKey, 12);
+    const socket = connect({ host: address, port });
+    const done = () => {
+      clearTimeout(timer);
+      socket.destroy();
+      resolve();
+    };
+    const timer = setTimeout(done, waitMs);
+    socket.on('error', done);
+    socket.on('close', done);
+    socket.once('connect', () => socket.end(packet));
+  });
 }
 
 /** The source's version, as `server_version_num`. */

@@ -2941,8 +2941,11 @@ commits. The connector binds by its own type's binder, `bindPostgres`, each mark
 never sent (DAT-019); in its child it describes the bound statement first and holds its columns to the
 declaration by D2-L's admissions, then runs it `BEGIN READ ONLY` a page of 500 rows at a time,
 counting the bytes that arrive at the socket and what it keeps, and stopping at a limit or the
-deadline by destroying the socket, which the source's connection check turns into a cancel (DAT-051,
-DAT-109, DAT-110). Every value is the server's text in UTC and ISO, turned into ADR-0035's canonical
+deadline by destroying the socket and sending the protocol's CancelRequest for the run's backend, on
+a fresh connection to the same checked address, which it waits for (up to 300 ms) before answering
+(DAT-051, DAT-109, DAT-110): the source's connection check and statement timeout are both settings
+the author's SQL can turn off. The child's deadline runs from its process's start, so it stops a run
+before the supervisor's kill a second after the deadline. Every value is the server's text in UTC and ISO, turned into ADR-0035's canonical
 form or refused `precision_lost` or `value_unrepresentable`; the rows are checked in the declared
 order - text by code point, so a text sort key is ordered `COLLATE "C"` - or sorted as a multiset
 (D2-M, DAT-106, DAT-107), and hashed with SHA-256 over `canonicalResultBytes`. The service holds the

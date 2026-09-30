@@ -1,4 +1,4 @@
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import type { RunAnswer, RunRequest } from '@alloy-works/domain';
 import { describe, expect, it } from 'vitest';
@@ -113,12 +113,70 @@ describe("a run's limits", { timeout: LOADED_TIMEOUT_MS }, () => {
         { rows: 1000 },
         'row_limit',
       ],
+      [
+        // The author's own SQL turns off the source's check that its client is gone: a limit still
+        // stops the statement, because the child cancels it rather than trusting the check.
+        'dat109-unchecked',
+        `select g::int8 as id, repeat('x', 1000) as pad from generate_series(1, 5000) g
+          where set_config('client_connection_check_interval', '0', false) is not null
+            and (g <= 100 or pg_sleep(20) is not null)`,
+        { bytes: 50_000 },
+        'byte_limit',
+      ],
+      [
+        // And the statement timeout too, which the source re-arms at each page it is asked for: the
+        // deadline still stops the statement, by the child's own timer and its cancel.
+        'dat109-untimed',
+        `select g::int8 as id, '' as pad from generate_series(1, 100000) g
+          where set_config('client_connection_check_interval', '0', false) is not null
+            and set_config('statement_timeout', '0', false) is not null
+            and (g <= 600 or pg_sleep(20) is not null)`,
+        { seconds: 2 },
+        'timeout',
+      ],
     ] as const;
+    const pad = column('pad', { base: 'text' });
     for (const [marker, text, limits, code] of cases) {
-      const answer = await asReader(`${text} /* ${marker} */`, [id], limits);
+      const columns = text.includes(' as pad ') ? [id, pad] : [id];
+      const answer = await asReader(`${text} /* ${marker} */`, columns, limits);
       expect(answer, marker).toMatchObject({ outcome: 'failed', failure: { code } });
       expect(await goneWithin(marker), marker).toBeLessThan(1000);
     }
+
+    // A child slow to start still reaches its deadline, and cancels, before the supervisor kills it
+    // a second after: its deadline runs from when its process started, not from when it was ready.
+    const slow = createSupervisor({
+      sealingKey: SEALING_KEY,
+      deny: suiteDeny,
+      maxChildren: 1,
+      spec: childSpawn(
+        {
+          path: suiteChild.path,
+          execArgv: [
+            ...suiteChild.execArgv,
+            '--import',
+            pathToFileURL(fileURLToPath(new URL('./testing/slow-start.ts', import.meta.url))).href,
+          ],
+        },
+        suiteIsolation,
+      ),
+    });
+    const [, text, limits] = cases.find(([marker]) => marker === 'dat109-untimed')!;
+    const started = Date.now();
+    const answer = await slow.run(
+      'run',
+      runRequest(
+        settings(),
+        PASSWORDS.reader,
+        draft(`${text} /* dat109-slow */`, [id, pad]),
+        {},
+        { limits },
+      ),
+    );
+    expect(answer).toMatchObject({ outcome: 'failed', failure: { code: 'timeout' } });
+    // Not vacuous: the child was slow to start, and still answered before the kill.
+    expect(Date.now() - started).toBeGreaterThan(1500);
+    expect(await goneWithin('dat109-slow')).toBeLessThan(1000);
   });
 
   it('DAT-110 fails a run whose single value is larger than the byte limit, byte_limit, with the child holding no more than the limit', async () => {

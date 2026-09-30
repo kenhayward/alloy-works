@@ -20,7 +20,7 @@ async function main(): Promise<number> {
   } catch {
     return 2;
   }
-  const answer = await answerRequest(request);
+  const answer = await answerRequest(request, { startedAt: Math.floor(performance.timeOrigin) });
   await new Promise<void>((resolve) =>
     process.stdout.write(`${JSON.stringify(answer)}\n`, () => resolve()),
   );

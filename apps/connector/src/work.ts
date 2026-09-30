@@ -15,6 +15,7 @@ import type pg from 'pg';
 import { describedColumns, describeStatement, QUERY_CANCELED, sourceRefused } from './describe.js';
 import { guardedAddress, type Lookup } from './guard.js';
 import {
+  cancelBackend,
   connectPostgres,
   describeRelations,
   OLDEST_SERVER_VERSION,
@@ -78,10 +79,12 @@ async function describeSql(
  */
 export async function answerRequest(
   request: ChildRequest,
-  options: { readonly lookup?: Lookup } = {},
+  options: { readonly lookup?: Lookup; readonly startedAt?: number } = {},
 ): Promise<Answer> {
   const started = Date.now();
-  const deadline = started + request.request.deadlineMs;
+  // The child's deadline runs from when its process started, as the supervisor's does from the spawn,
+  // so it stops a run and cancels it before the supervisor's kill a second after (DAT-109).
+  const deadline = (options.startedAt ?? started) + request.request.deadlineMs;
   let client: pg.Client | undefined;
   try {
     const address = await guardedAddress(request.request.settings.source.host, {
@@ -114,6 +117,7 @@ export async function answerRequest(
             request.request.values as ParameterValues,
             request.request.limits,
             deadline,
+            () => cancelBackend(address.address, request.request.settings.source.port, client!),
           );
         default:
           throw failedWith('connector_error');
