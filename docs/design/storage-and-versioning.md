@@ -69,7 +69,9 @@ designation applied to a row in that chain rather than a second history beside i
 | **VER-042** | Every version row records a version digest - SHA-256 over the canonical serialisation of the version's substance - which anybody holding the row can recompute (ADR-0024)                                                                                                                                                                    |
 
 **VER-057, query definitions, is met by the same mechanism** - one more `artifact_kind` beside those
-VER-056 names - and is claimed when DAT's T2 design lands, which says what a query definition holds.
+VER-056 names - and is claimed by [data.md](data.md), DAT's T2 design, which says what a query
+definition holds. A connection and a dataset are two more kinds on the same terms; a dataset version is
+one recorded result, and a baseline pins it through `baseline_pin` as it pins any version.
 
 **A gap beside VER-008 and VER-042: a definition can be recorded against a version already cut.**
 `version_definition` takes inserts only, on the same terms as the version row, but an insert naming a

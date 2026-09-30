@@ -17,7 +17,8 @@ history, search, relationships, presence and locks, and the fan-out that keeps s
 files - assets, fonts, published outputs - are objects in S3-compatible storage. Anything heavy runs
 in workers: publishing is a job claimed from a queue in Postgres, run through a pinned Typst binary
 and our own Word writer; a preview is the same pipeline asked for the whole document, and a preview kept
-warm per open document is T3's (ADR-0027). The rules that matter -
+warm per open document is T3's (ADR-0027). From T2, a tenant's own data sources are reached by one
+more container, the connector, on a network of its own and only when a person acts (ADR-0035). The rules that matter -
 what a component is, how a theme resolves, how Word is written - live once, in `packages/domain`,
 and the renderer, the service and the workers all import them.
 
@@ -68,7 +69,10 @@ flowchart TB
         preview["Preview workers, T3<br/>typst watch per open document"]
         db[("PostgreSQL + pgvector<br/>a schema per tenant<br/>+ a platform schema")]
         objects[("Object storage<br/>S3-compatible")]
+        connector["Connector, T2<br/>TypeScript on Node<br/>a process per request"]
     end
+
+    sources[("Tenants' data sources")]
 
     browser -- "HTTPS: API requests,<br/>Server-Sent Events" --> service
     desktop -- "the same" --> service
@@ -78,17 +82,20 @@ flowchart TB
     workers -- "claim jobs; SQL as the tenant's role" --> db
     workers -- "fonts in, outputs out" --> objects
     preview -- "fonts" --> objects
+    service -- "one request, one answer;<br/>a private network" --> connector
+    connector -- "its own network,<br/>no route to the platform" --> sources
 ```
 
-| Container          | Technology                                             | Does                                                                                                                     | Decided in                                                                                        |
-| ------------------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
-| Renderer           | React, TypeScript, Vite (`apps/web`)                   | The whole interface, in both deliveries                                                                                  | [ADR-0003](../decisions/0003-one-renderer-two-deliveries.md)                                      |
-| Desktop app        | Electron (`apps/desktop`)                              | Loads the renderer in a window; operating-system conveniences through the platform bridge                                | [ADR-0003](../decisions/0003-one-renderer-two-deliveries.md), scope §9 decision 2                 |
-| Web service        | TypeScript on Node LTS                                 | The system of record: the API (OpenAPI), realtime streams, the MCP facade, sign-in, every permission decision            | [ADR-0019](../decisions/0019-platform-typescript-service-publishing-workers-object-storage.md)    |
-| Publishing workers | TypeScript on Node, a pinned Typst binary              | Publishing jobs: resolve, project to Typst data and Word parts, render, store; other heavy or retried work as it arrives | [ADR-0013](../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md), ADR-0019 |
-| Preview workers    | The same image, running `typst watch`                  | T3's (ADR-0027). One warm compilation per open document, so an edit reuses the layout that did not change                | ADR-0013, ADR-0019, ADR-0027                                                                      |
-| PostgreSQL         | PostgreSQL with pgvector                               | Everything but binaries: versions, search, relationships, presence, locks, the job queue, the realtime fan-out           | [ADR-0008](../decisions/0008-schema-per-tenant-isolation.md), 0012, 0016, 0017, 0018              |
-| Object storage     | Any S3-compatible store; SeaweedFS in the compose file | Assets, pinned fonts, published PDF and Word files, keyed by content hash                                                | ADR-0019                                                                                          |
+| Container          | Technology                                             | Does                                                                                                                     | Decided in                                                                                         |
+| ------------------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| Renderer           | React, TypeScript, Vite (`apps/web`)                   | The whole interface, in both deliveries                                                                                  | [ADR-0003](../decisions/0003-one-renderer-two-deliveries.md)                                       |
+| Desktop app        | Electron (`apps/desktop`)                              | Loads the renderer in a window; operating-system conveniences through the platform bridge                                | [ADR-0003](../decisions/0003-one-renderer-two-deliveries.md), scope §9 decision 2                  |
+| Web service        | TypeScript on Node LTS                                 | The system of record: the API (OpenAPI), realtime streams, the MCP facade, sign-in, every permission decision            | [ADR-0019](../decisions/0019-platform-typescript-service-publishing-workers-object-storage.md)     |
+| Publishing workers | TypeScript on Node, a pinned Typst binary              | Publishing jobs: resolve, project to Typst data and Word parts, render, store; other heavy or retried work as it arrives | [ADR-0013](../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md), ADR-0019  |
+| Preview workers    | The same image, running `typst watch`                  | T3's (ADR-0027). One warm compilation per open document, so an edit reuses the layout that did not change                | ADR-0013, ADR-0019, ADR-0027                                                                       |
+| PostgreSQL         | PostgreSQL with pgvector                               | Everything but binaries: versions, search, relationships, presence, locks, the job queue, the realtime fan-out           | [ADR-0008](../decisions/0008-schema-per-tenant-isolation.md), 0012, 0016, 0017, 0018               |
+| Object storage     | Any S3-compatible store; SeaweedFS in the compose file | Assets, pinned fonts, published PDF and Word files, keyed by content hash                                                | ADR-0019                                                                                           |
+| Connector          | TypeScript on Node (`apps/connector`), T2              | The only process that opens a source credential or reaches a tenant's source: one request, in a fresh process, at a time | [ADR-0035](../decisions/0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md) |
 
 `packages/domain` is not a container but it is the reason there is one language: the content
 schema, the theme resolver and the Word writer are imported by the renderer, the service and the
@@ -198,18 +205,30 @@ the tenant's prefix, and recorded as an asset version once a worker's `ingest` j
 ([assets.md](assets.md)); until then nothing can place it. Downloads are signed links the service issues
 after checking permission, so the object store never decides who may read anything.
 
+### Data, T2
+
+A tenant's own source is queried only when a person present acts - placing a binding, opening a
+document with checked bindings, a query author's sample run, a connection test - and only by the
+**connector**, which the service asks with one request and which answers one canonical, checksummed
+result or one named failure ([ADR-0035](../decisions/0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md)).
+The connector opens the source credential, sealed with a key only it holds, in a fresh process for that
+request, on a network of its own with no route to the platform. The service stores the result as an
+object keyed by its checksum and records it as a dataset version; the editor, a preview and a publish
+read that stored result, and the worker never reaches the connector. See [data.md](data.md).
+
 ## Tenant isolation across the containers
 
 ADR-0008 enforces isolation at the data layer. Across several containers that has to hold in each of
 them, not only in the service (IAM-002):
 
-| Where           | How                                                                                                                             |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| PostgreSQL      | The service and workers act as the tenant's role, which can reach only that tenant's schema                                     |
-| The job queue   | Rows in the platform schema carry a tenant, a kind and ids - never content; the worker assumes the tenant's role to do the work |
-| Realtime        | A channel per tenant, carrying ids; each instance decides what each viewer hears                                                |
-| Object storage  | Keys under the tenant's prefix, reached with credentials scoped to it; readers get signed links, never credentials              |
-| Logs and traces | A tenant id for diagnosis, never content (ADM-022)                                                                              |
+| Where           | How                                                                                                                                                                                  |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| PostgreSQL      | The service and workers act as the tenant's role, which can reach only that tenant's schema                                                                                          |
+| The job queue   | Rows in the platform schema carry a tenant, a kind and ids - never content; the worker assumes the tenant's role to do the work                                                      |
+| Realtime        | A channel per tenant, carrying ids; each instance decides what each viewer hears                                                                                                     |
+| Object storage  | Keys under the tenant's prefix, reached with credentials scoped to it; readers get signed links, never credentials                                                                   |
+| Logs and traces | A tenant id for diagnosis, never content (ADM-022)                                                                                                                                   |
+| The connector   | A fresh process per request, handed one tenant's one credential, sealed to that tenant; on a network with no route to the platform, reached only by the service ([data.md](data.md)) |
 
 ## The desktop app
 
@@ -221,29 +240,36 @@ the operating system - has less to do now that the service is the system of reco
 ## Deployment
 
 **For development and small installations, one compose file**: the service, a worker (which also
-serves previews), PostgreSQL with pgvector, and SeaweedFS as the object store. It is the same set of
-containers as a large installation, fewer of each.
+serves previews), PostgreSQL with pgvector, and SeaweedFS as the object store - and, from T2, the
+connector on two networks of its own: one shared only with the service, one out to tenants' sources.
+It is the same set of containers as a large installation, fewer of each.
 
 **Production hosting is not decided** - which cloud, and whether customers may host the system
 themselves. It is open in scope §10, hinging on data residency (ADM-Q01). The containers above
 constrain it only a little: a managed Postgres must offer pgvector, and the store must speak S3.
 
+**Hosting must isolate the connector** (ADR-0035): production must guarantee that the connector's
+network has no route to any platform service, including through a host that publishes a platform
+port - the data connector spike found exactly that leak on Docker Desktop - and that isolation is
+verified on production's own platform before connectors ship.
+
 ## Where each part is designed
 
-| Part                                           | Design                                                                                                                                                      |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Versions, baselines, derived data              | [storage-and-versioning.md](storage-and-versioning.md)                                                                                                      |
-| Themes and their three projections             | [themes.md](themes.md)                                                                                                                                      |
-| Word output                                    | [word-output.md](word-output.md)                                                                                                                            |
-| Search                                         | [search.md](search.md)                                                                                                                                      |
-| Relationships and traversal                    | [relationships.md](relationships.md)                                                                                                                        |
-| Realtime                                       | [realtime.md](realtime.md)                                                                                                                                  |
-| The content model and the editor               | Not yet designed; T1. The schema draft in `packages/domain/src/content/` is its starting point                                                              |
-| Tenancy, identity and access                   | The request path, sessions and roles in [service-foundations.md](service-foundations.md); permissions not yet designed; T1                                  |
-| Documents, outlines, numbering and links       | [structure.md](structure.md)                                                                                                                                |
-| The publishing pipeline - resolve and template | [publishing.md](publishing.md)                                                                                                                              |
-| The API surface                                | Conventions in [service-foundations.md](service-foundations.md); the endpoints themselves not yet designed; T1                                              |
-| Data, collaboration, reuse, AI, interchange    | Later tranches, designed when their tranche arrives. The data's design waits on the [data connector spike](../specification/spikes/Data_Connector_Spike.md) |
+| Part                                           | Design                                                                                                                                    |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Versions, baselines, derived data              | [storage-and-versioning.md](storage-and-versioning.md)                                                                                    |
+| Themes and their three projections             | [themes.md](themes.md)                                                                                                                    |
+| Word output                                    | [word-output.md](word-output.md)                                                                                                          |
+| Search                                         | [search.md](search.md)                                                                                                                    |
+| Relationships and traversal                    | [relationships.md](relationships.md)                                                                                                      |
+| Realtime                                       | [realtime.md](realtime.md)                                                                                                                |
+| The content model and the editor               | Not yet designed; T1. The schema draft in `packages/domain/src/content/` is its starting point                                            |
+| Tenancy, identity and access                   | The request path, sessions and roles in [service-foundations.md](service-foundations.md); permissions not yet designed; T1                |
+| Documents, outlines, numbering and links       | [structure.md](structure.md)                                                                                                              |
+| The publishing pipeline - resolve and template | [publishing.md](publishing.md)                                                                                                            |
+| The API surface                                | Conventions in [service-foundations.md](service-foundations.md); the endpoints themselves not yet designed; T1                            |
+| Connections, query definitions and datasets    | [data.md](data.md); the editor's side of a binding and the publish's binding stage in `bindings.md`, designed after data.md's third slice |
+| Collaboration, reuse, AI, interchange          | Later tranches, designed when their tranche arrives                                                                                       |
 
 ## Open questions
 

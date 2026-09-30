@@ -82,6 +82,9 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1525);
     expect(model.nonRequirements).toHaveLength(118);
     expect(model.questions).toHaveLength(135);
+    // 569, from 507 (2026-09-30): data.md, DAT's T2 design (ADR-0035), claims 62 - 49 of T2's DAT rows, the DAT constraints it meets
+    // (DAT-003, 004, 018, 043, 045, 056, 065, 081, 108, 113, 114), VER-057 and SCH-055; DAT-013 and DAT-112 are named gaps, and the
+    // editor's and the publish's rows wait for bindings.md.
     // 507, from 506 (2026-09-30): service-foundations.md claims API-062, the versioned, hierarchical and explicitly token-executed API reference (issue #352).
     // 506, from 505 (2026-09-29): ADR-0033 - structure.md claims STR-072, an open from within the application on Ken's answer, measured green by the browser suite's budgets.test.ts; T2's re-tranching to T7 and T8 moves claims with their rows and drops none.
     // 505, from 506 (2026-09-29): ADR-0032 - themes.md stops claiming STY-049: Word borrows a character Cambria Math lacks, and refusing it (W15-K) moved to T2.
@@ -229,7 +232,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(507);
+    ).toBe(569);
   });
 });
 
