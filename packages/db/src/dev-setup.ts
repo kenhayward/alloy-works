@@ -7,7 +7,7 @@ import { inviteFirstAdministrator } from './first-administrator.js';
 import { migrate } from './migrate.js';
 import { tenantNames } from './names.js';
 import { addHostnames, createTenant } from './provision.js';
-import { sealingKey } from './seal.js';
+import { sealingKey } from '@alloy-works/sealing';
 import { configureOrganisationSignIn, permitGoogleSignIn } from './sign-in.js';
 import { createTenantDatabase } from './tenant-database.js';
 import { TEST_PASSWORDS } from './testing/database.js';

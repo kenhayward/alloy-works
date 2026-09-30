@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
 import { provisionTenant } from './provision.js';
-import { openSecret } from './seal.js';
+import { openSecret } from '@alloy-works/sealing';
 import { configureOrganisationSignIn } from './sign-in.js';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
 

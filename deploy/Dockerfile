@@ -39,6 +39,7 @@ COPY packages/fonts/package.json packages/fonts/
 COPY packages/domain/package.json packages/domain/
 COPY packages/objects/package.json packages/objects/
 COPY packages/readers/package.json packages/readers/
+COPY packages/sealing/package.json packages/sealing/
 COPY packages/stand-in-idp/package.json packages/stand-in-idp/
 # Only what the containers need: this is what keeps Electron and the renderer out of the image.
 RUN pnpm install --frozen-lockfile \

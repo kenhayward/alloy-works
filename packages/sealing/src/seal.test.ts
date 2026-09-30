@@ -31,6 +31,19 @@ describe('a sealed secret', () => {
     expect(() => openSecret(key, 'object-store', 'acme', signIn)).toThrow(SealedSecretRefused);
   });
 
+  it('IAM-075 seals a source credential to its tenant and to source-credential, so it opens for neither another tenant nor another purpose', () => {
+    const sealed = sealSecret(key, 'source-credential', 'acme', SECRET);
+    expect(openSecret(key, 'source-credential', 'acme', sealed)).toBe(SECRET);
+    expect(() => openSecret(key, 'sign-in', 'acme', sealed)).toThrow(SealedSecretRefused);
+    expect(() => openSecret(key, 'object-store', 'acme', sealed)).toThrow(SealedSecretRefused);
+    expect(() => openSecret(key, 'source-credential', 'acmedev', sealed)).toThrow(
+      SealedSecretRefused,
+    );
+    // And the reverse: a sign-in secret copied into a credential row opens as nothing.
+    const signIn = sealSecret(key, 'sign-in', 'acme', SECRET);
+    expect(() => openSecret(key, 'source-credential', 'acme', signIn)).toThrow(SealedSecretRefused);
+  });
+
   it('opens an object store secret sealed by the scheme before it moved here, so no stored credential is lost', () => {
     expect(openSecret(VECTOR_KEY, 'object-store', 'acme', VECTOR)).toBe(VECTOR_SECRET);
   });

@@ -19414,12 +19414,6 @@
       "kind": "title"
     },
     {
-      "id": "IAM-075",
-      "file": "packages/db/src/seal.test.ts",
-      "line": 22,
-      "kind": "title"
-    },
-    {
       "id": "SCH-034",
       "file": "packages/db/src/search-facets.test.ts",
       "line": 382,
@@ -21043,6 +21037,12 @@
       "id": "CNT-171",
       "file": "packages/readers/src/markdown.test.ts",
       "line": 189,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-075",
+      "file": "packages/sealing/src/seal.test.ts",
+      "line": 22,
       "kind": "title"
     },
     {

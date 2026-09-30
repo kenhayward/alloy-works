@@ -6,8 +6,10 @@ export class SealedSecretRefused extends Error {}
 /**
  * What a sealed secret is for. It is authenticated with the secret, so a secret sealed for one use
  * will not open as another: an object store credential copied into a sign-in row opens as nothing.
+ * `source-credential` is a connection's credential, sealed and opened only by the connector, with a
+ * key of its own that the service never holds.
  */
-export type SealPurpose = 'object-store' | 'sign-in';
+export type SealPurpose = 'object-store' | 'sign-in' | 'source-credential';
 
 const VERSION = 'v1';
 const IV_BYTES = 12;

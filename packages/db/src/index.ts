@@ -143,7 +143,7 @@ export {
   sealSecret,
   SealedSecretRefused,
   type SealPurpose,
-} from './seal.js';
+} from '@alloy-works/sealing';
 export {
   listenToTenants,
   notifyTenant,
