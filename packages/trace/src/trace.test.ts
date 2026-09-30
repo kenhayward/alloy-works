@@ -582,6 +582,10 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 577, from 570 (2026-09-30): D1 - apps/service: DAT-004, DAT-075 and DAT-049 in
+  // connection-routes.test.ts, DAT-078 by the rule a refusal names there, DAT-005 in
+  // data-secrets.test.ts and DAT-089 in connector-boundary.test.ts; DAT-003 in packages/api-contract's
+  // openapi.test.ts.
   // 570, from 564 (2026-09-30): D1 - apps/connector: DAT-056 in supervisor.test.ts and package.test.ts,
   // DAT-075, DAT-103 and DAT-114 in postgres.test.ts, and DAT-005 in secrets.test.ts.
   // 564, from 561 (2026-09-30): D1 - DAT-001, DAT-007 and DAT-003 in packages/db's connections.test.ts.
@@ -740,7 +744,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(570);
+    expect(model.citations).toHaveLength(577);
   });
 
   it('cites no identifier the corpus does not hold', () => {

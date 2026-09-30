@@ -86,4 +86,11 @@ export interface RouteContract {
     readonly maxBytes: number;
   };
   readonly responses: Readonly<Record<number, RouteResponse>>;
+  /**
+   * `false` where a mutating route takes no idempotency key: a key sent is ignored, and nothing of the
+   * request or its answer is recorded (the D1 plan, D1-S). A record keeps a digest of the request's
+   * body, which for a credential is a digest of the secret. Absent, a permission-checked mutating
+   * route takes one.
+   */
+  readonly idempotencyKey?: false;
 }

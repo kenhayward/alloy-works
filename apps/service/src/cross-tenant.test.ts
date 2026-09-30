@@ -8,6 +8,7 @@ import {
   createDocument,
   createDefinition,
   createGroup,
+  createConnection,
   createTemplate,
   createTenant,
   DEFAULT_LAYOUT_ID,
@@ -52,6 +53,22 @@ const SESSION = '11111111-1111-4111-8111-111111111111';
 /** A month from when the suite loads: an expiry any token route accepts. */
 const IN_A_MONTH = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
+/** A connection's settings any environment takes. */
+const aConnection = () => ({
+  schemaVersion: 1,
+  name: 'Readings',
+  description: '',
+  type: 'postgres',
+  source: {
+    host: 'source-postgres',
+    port: 5432,
+    database: 'readings',
+    account: 'reader',
+    tls: 'require',
+  },
+  identity: { kind: 'service' },
+  retired: false,
+});
 /** A template definition any environment resolves: the default theme and layout, one section. */
 const aTemplate = () => ({
   schemaVersion: TEMPLATE_SCHEMA_VERSION,
@@ -142,6 +159,12 @@ const OTHER_TENANT_IDS: Readonly<
   createTemplate: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getTemplate: async (tenant, db) => ({ id: await templateIdIn(tenant, db) }),
   recordTemplateVersion: async (tenant, db) => ({ id: await templateIdIn(tenant, db) }),
+  createConnection: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  getConnection: async (tenant, db) => ({ id: await connectionIdIn(tenant, db) }),
+  recordConnectionVersion: async (tenant, db) => ({ id: await connectionIdIn(tenant, db) }),
+  setConnectionCredential: async (tenant, db) => ({ id: await connectionIdIn(tenant, db) }),
+  testConnection: async (tenant, db) => ({ id: await connectionIdIn(tenant, db) }),
+  describeConnection: async (tenant, db) => ({ id: await connectionIdIn(tenant, db) }),
   getDefinition: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
   recordDefinitionVersion: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
   revokeToken: async (tenant, db) => ({ id: (await tokenIn(tenant, db)).token }),
@@ -166,6 +189,11 @@ const VALID_INPUT: Readonly<
   createDocument: { payload: { title: 'Elsewhere', language: 'en-GB', direction: 'ltr' } },
   createTemplate: { payload: { definition: aTemplate() } },
   recordTemplateVersion: { payload: { openedFrom: SESSION, definition: aTemplate() } },
+  createConnection: { payload: { settings: aConnection() } },
+  recordConnectionVersion: { payload: { openedFrom: SESSION, settings: aConnection() } },
+  setConnectionCredential: { payload: { secret: 'an-invented-password' } },
+  testConnection: { payload: {} },
+  describeConnection: { payload: {} },
   createDefinition: {
     payload: {
       kind: 'field',
@@ -352,6 +380,33 @@ const templateIdIn = (tenant: Tenant, db: TenantDatabase) =>
     });
     if (made.answer !== 'created') throw new Error(`refused: ${made.answer}`);
     return made.template.id;
+  });
+
+/** A connection in environment B's General space, made as the route makes one. */
+const connectionIdIn = (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(tenant, async (trx) => {
+    const general = await trx
+      .selectFrom('space')
+      .select('id')
+      .where('name', '=', 'General')
+      .executeTakeFirstOrThrow();
+    const administrator = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const made = await createConnection(trx, {
+      spaceId: general.id,
+      settings: aConnection(),
+      author: administrator.id,
+    });
+    if (made.answer !== 'created') throw new Error(`refused: ${made.answer}`);
+    return made.connection.id;
   });
 
 const documentIdIn = (tenant: Tenant, db: TenantDatabase) =>

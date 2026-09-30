@@ -24,7 +24,13 @@ import type { TenantTransaction } from './tables.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
 import { versionDigests } from './version-digest.js';
-import { latestVersion, readVersion, substanceOf } from './versions.js';
+import {
+  createArtifact,
+  latestVersion,
+  readVersion,
+  recordVersion,
+  substanceOf,
+} from './versions.js';
 
 const ISSUER = 'https://idp.example';
 const SECRET = 'an-invented-source-password';
@@ -209,6 +215,48 @@ describe('a connection', () => {
       }),
     );
     expect(nowhere).toEqual({ answer: 'space.missing' });
+  });
+
+  it('refuses a connection made retired on every path that makes one, createArtifact as well as createConnection', async () => {
+    // The stored-shape check's row 10: `true` is refused when a connection is made, whatever makes
+    // it. A direct createArtifact is how testing/every-kind.ts and any later caller make one.
+    const before = await queryAs(
+      db.adminUrl,
+      `select count(*)::int as n from ${production.schema}.artifact where kind = 'connection'`,
+    );
+    await expect(
+      service.withTenant(production, (trx) =>
+        createArtifact(trx, {
+          spaceId: general,
+          author: ada,
+          substance: { kind: 'connection', content: settings({ retired: true }) },
+        }),
+      ),
+    ).rejects.toMatchObject({
+      problems: [{ rule: 'connection_invalid', path: 'retired' }],
+    });
+    const after = await queryAs(
+      db.adminUrl,
+      `select count(*)::int as n from ${production.schema}.artifact where kind = 'connection'`,
+    );
+    expect(after.rows).toEqual(before.rows);
+    // A later version may retire it: that is what retiring is.
+    const inService = await service.withTenant(production, (trx) =>
+      createArtifact(trx, {
+        spaceId: general,
+        author: ada,
+        substance: { kind: 'connection', content: settings() },
+      }),
+    );
+    const retired = await service.withTenant(production, (trx) =>
+      recordVersion(trx, {
+        artifactId: inService.artifactId,
+        openedFrom: inService.id,
+        author: ada,
+        substance: { kind: 'connection', content: settings({ retired: true }) },
+      }),
+    );
+    expect(retired.answer).toBe('recorded');
   });
 
   it("DAT-007 records each change to a connection's settings as a version, retiring among them, and each credential set as a row naming who and when and never the value", async () => {

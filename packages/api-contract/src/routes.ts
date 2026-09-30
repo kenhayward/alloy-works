@@ -1,5 +1,6 @@
 import { assetRoutes } from './assets.js';
 import { componentRoutes } from './components.js';
+import { connectionRoutes } from './connections.js';
 import { definitionRoutes } from './definitions.js';
 import { peopleRoutes } from './people.js';
 import { presentationRoutes } from './presentation.js';
@@ -271,6 +272,7 @@ export const routes = {
   ...groupRoutes,
   ...assetRoutes,
   ...templateRoutes,
+  ...connectionRoutes,
   ...definitionRoutes,
   ...peopleRoutes,
   ...searchRoutes,

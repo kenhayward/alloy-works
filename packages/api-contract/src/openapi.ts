@@ -285,7 +285,9 @@ export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument 
   for (const route of ordered) {
     const documentation = documentationFor(route);
     const keyed =
-      (route.method !== 'GET' && route.access.check === 'permission') ||
+      (route.method !== 'GET' &&
+        route.access.check === 'permission' &&
+        route.idempotencyKey !== false) ||
       route.operationId === 'requestSample';
     const responses: Json = {};
     for (const [status, declared] of Object.entries(route.responses)) {

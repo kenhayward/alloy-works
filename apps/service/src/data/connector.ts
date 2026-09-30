@@ -1,0 +1,110 @@
+import {
+  dataFailure,
+  describeAnswerSchema,
+  sealAnswerSchema,
+  testAnswerSchema,
+  type DataFailure,
+  type DescribeAnswer,
+  type DescribeRequest,
+  type SealAnswer,
+  type TestAnswer,
+  type TestRequest,
+} from '@alloy-works/domain';
+import type { z } from 'zod';
+
+/**
+ * What the connector answered, or why there is no answer: it is full (`connector_busy`), or anything
+ * else went wrong on the way - unreachable, a status that is not an answer, a body that does not
+ * parse, no answer in time - which is `connector_unavailable` (the D1 plan, D1-Q). Never the error's
+ * own words, which could carry what the request did.
+ */
+export type Answered<T> =
+  | { readonly answer: T }
+  | {
+      readonly refused: DataFailure & {
+        readonly code: 'connector_busy' | 'connector_unavailable';
+      };
+    };
+
+export interface ConnectorClient {
+  seal(tenant: string, secret: string): Promise<Answered<SealAnswer>>;
+  test(request: TestRequest): Promise<Answered<TestAnswer>>;
+  describe(request: DescribeRequest): Promise<Answered<DescribeAnswer>>;
+}
+
+/** How long a seal may take: it opens no source. */
+const SEAL_MS = 10_000;
+/** How long past a request's own deadline the service waits before giving up on the connector. */
+const SLACK_MS = 2_000;
+
+type Refused = Extract<Answered<never>, { readonly refused: unknown }>;
+
+const refusedFor = (code: 'connector_busy' | 'connector_unavailable'): Refused => ({
+  refused: { code, attribution: dataFailure(code).attribution },
+});
+
+const unavailable = (): Refused => refusedFor('connector_unavailable');
+
+/**
+ * The service's client of the connector (the D1 plan, task 5): HTTP and JSON on `connector-private`,
+ * the shared key in a header, every answer parsed by the protocol's own schema. The one module that
+ * reaches the connector, imported by the connection routes alone (DAT-089).
+ */
+export function createConnectorClient(options: {
+  readonly url: string;
+  readonly key: string;
+  readonly fetch?: typeof globalThis.fetch;
+}): ConnectorClient {
+  const send = options.fetch ?? globalThis.fetch;
+  const base = options.url.replace(/\/+$/, '');
+
+  async function ask<S extends z.ZodType>(
+    path: string,
+    body: unknown,
+    schema: S,
+    timeoutMs: number,
+  ): Promise<Answered<z.infer<S>>> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await send(`${base}${path}`, {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${options.key}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      const text = await response.text();
+      if (response.status === 503) {
+        const busy = safeJson(text) as { code?: unknown } | undefined;
+        if (busy?.code === 'connector_busy') return refusedFor('connector_busy');
+        return unavailable();
+      }
+      if (response.status !== 200) return unavailable();
+      const parsed = schema.safeParse(safeJson(text));
+      return parsed.success ? { answer: parsed.data as z.infer<S> } : unavailable();
+    } catch {
+      // Unreachable, refused, reset or given up on: said the same way, and none of it repeated.
+      return unavailable();
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  return {
+    seal: (tenant, secret) => ask('/v1/seal', { tenant, secret }, sealAnswerSchema, SEAL_MS),
+    test: (request) => ask('/v1/test', request, testAnswerSchema, request.deadlineMs + SLACK_MS),
+    describe: (request) =>
+      ask('/v1/describe', request, describeAnswerSchema, request.deadlineMs + SLACK_MS),
+  };
+}
+
+function safeJson(text: string): unknown {
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return undefined;
+  }
+}

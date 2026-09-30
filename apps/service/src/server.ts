@@ -5,7 +5,7 @@ import { buildApp } from './app.js';
 import { describeConfig, loadConfig } from './config.js';
 import { createObjectStores } from '@alloy-works/objects';
 import { createOidcClient } from './oidc.js';
-import { environmentSecrets, serviceSealingKey } from './secrets.js';
+import { connectorSettings, environmentSecrets, serviceSealingKey } from './secrets.js';
 
 const config = loadConfig(process.env);
 const db = createTenantDatabase(config.databaseUrl);
@@ -15,6 +15,8 @@ const secrets = environmentSecrets(process.env);
 // service does not start, since no environment could sign anybody in through its own provider.
 const key = serviceSealingKey(secrets);
 const objects = config.objectStore ? createObjectStores(config.objectStore, key) : undefined;
+// The connector, where one is configured: its address and the key it is asked with, or neither.
+const connector = connectorSettings(config.connectorUrl, secrets);
 const app = buildApp({
   db,
   logLevel: config.logLevel,
@@ -25,6 +27,7 @@ const app = buildApp({
   ...(config.google ? { google: config.google } : {}),
   ...(objects ? { objects } : {}),
   ...(config.rendererRoot ? { rendererRoot: config.rendererRoot } : {}),
+  ...(connector ? { connector } : {}),
 });
 
 const stop = async (signal: string) => {

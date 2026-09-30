@@ -287,6 +287,126 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The connections the caller may read, each with its space and whether it is ready
+         * @description Lists the connections the caller may read, with whether each has a credential and how its last test went.
+         */
+        get: operations["listConnections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/connections/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A connection at its latest version, whether its credential is set, and its last test
+         * @description Returns the latest connection version, whether a credential is set and by whom and when, and its last test. The credential itself is never returned.
+         */
+        get: operations["getConnection"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/connections/{id}/credential": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set or replace a connection's credential, then test the connection with it
+         * @description Sets or replaces the connection credential, then tests the connection with it. The credential is sealed at once and never returned; this route takes no idempotency key.
+         */
+        put: operations["setConnectionCredential"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/connections/{id}/describe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * List the tables and views a connection's account may read, with each column
+         * @description Lists the tables and views the connection account may read, with each column and the type proposed for it.
+         */
+        post: operations["describeConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/connections/{id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test a connection: whether it reaches its source and signs in, and what it found
+         * @description Tests whether the connection reaches its source and signs in. A failure gives one reason, the same whatever went wrong, and every test is recorded.
+         */
+        post: operations["testConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/connections/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cut a connection's next version from the one the caller opened; retiring among them
+         * @description Records the next connection version from the version the caller opened. Retiring and reinstating a connection are versions too.
+         */
+        post: operations["recordConnectionVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/definitions": {
         parameters: {
             query?: never;
@@ -1185,6 +1305,26 @@ export interface paths {
          * @description Creates a component in the named space at its first version. The caller needs permission to create there.
          */
         post: operations["createComponent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/spaces/{space}/connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make a connection in this space, at version 0.1
+         * @description Creates a connection to a PostgreSQL source in the named space. It holds no credential until one is set.
+         */
+        post: operations["createConnection"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4383,6 +4523,1594 @@ export interface operations {
                             schemas: string[];
                             detail: string;
                         }[];
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listConnections: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: string;
+                sort?: "name" | "changed";
+                order?: "asc" | "desc";
+                spaces?: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of connections */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example",
+                     *       "total": -9007199254740991,
+                     *       "facets": {
+                     *         "spaces": []
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            id: string;
+                            name: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            /** @enum {string} */
+                            type: "postgres";
+                            retired: boolean;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            credentialSet: boolean;
+                            lastTest: {
+                                /** @enum {string} */
+                                outcome: "ok" | "failed";
+                                at: string;
+                            } | null;
+                            /** @description When its latest version was made */
+                            changedAt: string;
+                        }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                        /** @description How many there are with the filters in force, as of the walk this page belongs to */
+                        total: number;
+                        /** @description Each filter the listing takes, counted with the others in force and its own left out */
+                        facets: {
+                            spaces: {
+                                /** @description What to filter by to leave these */
+                                value: string;
+                                label: string;
+                                count: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getConnection: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The connection */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "settings": {
+                     *         "schemaVersion": 1,
+                     *         "name": "example",
+                     *         "description": "example",
+                     *         "type": "postgres",
+                     *         "source": {
+                     *           "host": "example",
+                     *           "port": 1,
+                     *           "database": "example",
+                     *           "account": "example",
+                     *           "tls": "require"
+                     *         },
+                     *         "identity": {
+                     *           "kind": "service"
+                     *         },
+                     *         "retired": false
+                     *       },
+                     *       "credential": {
+                     *         "set": false
+                     *       },
+                     *       "lastTest": {
+                     *         "outcome": "ok",
+                     *         "findings": [],
+                     *         "at": "example",
+                     *         "by": {
+                     *           "id": "example",
+                     *           "name": "example"
+                     *         },
+                     *         "version": "example"
+                     *       },
+                     *       "mayAdminister": false,
+                     *       "mayUse": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        settings: {
+                            /** @constant */
+                            schemaVersion: 1;
+                            name: string;
+                            description: string;
+                            /** @constant */
+                            type: "postgres";
+                            source: {
+                                host: string;
+                                port: number;
+                                database: string;
+                                account: string;
+                                /** @enum {string} */
+                                tls: "require" | "verifyFull";
+                            };
+                            identity: {
+                                /** @constant */
+                                kind: "service";
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "delegated";
+                                tokenEndpoint: string;
+                                audience: string;
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "asserted";
+                                /** @enum {string} */
+                                attribute: "email" | "subject";
+                                /** @enum {string} */
+                                assertion?: "sessionContext" | "executeAs";
+                            };
+                            retired: boolean;
+                        };
+                        credential: {
+                            /** @constant */
+                            set: false;
+                        } | {
+                            /** @constant */
+                            set: true;
+                            setBy: {
+                                id: string;
+                                /** @description Their name, or their address where they have none */
+                                name: string | null;
+                            };
+                            setAt: string;
+                        };
+                        lastTest: {
+                            /** @enum {string} */
+                            outcome: "ok" | "failed";
+                            findings: "account_not_read_only"[];
+                            failure?: {
+                                /** @description Stable and machine-readable */
+                                code: string;
+                                /**
+                                 * @description Whose failure it is: the source's side, the query's author, or the product
+                                 * @enum {string}
+                                 */
+                                attribution: "connector" | "query" | "product";
+                                message: string;
+                            };
+                            at: string;
+                            by: {
+                                id: string;
+                                /** @description Their name, or their address where they have none */
+                                name: string | null;
+                            };
+                            /** @description The connection version it tested */
+                            version: string;
+                        } | null;
+                        /** @description Whether the caller may change it and set its credential */
+                        mayAdminister: boolean;
+                        /** @description Whether the caller may test it and list its tables */
+                        mayUse: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a connection the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such connection in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    setConnectionCredential: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "secret": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The credential, a password for a PostgreSQL source. Never answered by any route */
+                    secret: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Set: who set it and when, never the credential, and the test run straight after */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "credential": {
+                     *         "set": false
+                     *       },
+                     *       "test": {
+                     *         "outcome": "ok",
+                     *         "findings": [],
+                     *         "at": "example"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        credential: {
+                            /** @constant */
+                            set: false;
+                        } | {
+                            /** @constant */
+                            set: true;
+                            setBy: {
+                                id: string;
+                                /** @description Their name, or their address where they have none */
+                                name: string | null;
+                            };
+                            setAt: string;
+                        };
+                        test: {
+                            /** @constant */
+                            outcome: "ok";
+                            /** @description What the test found of the account once it had signed in */
+                            findings: "account_not_read_only"[];
+                            at: string;
+                        } | {
+                            /** @constant */
+                            outcome: "failed";
+                            failure: {
+                                /** @description Stable and machine-readable */
+                                code: string;
+                                /**
+                                 * @description Whose failure it is: the source's side, the query's author, or the product
+                                 * @enum {string}
+                                 */
+                                attribution: "connector" | "query" | "product";
+                                message: string;
+                            };
+                            at: string;
+                        };
+                    };
+                };
+            };
+            /** @description The credential is empty, longer than 4,096 bytes, or holds U+0000 */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the connection but may not administer it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such connection in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `connection_retired`: a retired connection takes none */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                    };
+                };
+            };
+            /** @description `connector_unavailable`: no connector is configured or it did not answer; `connector_busy`: it is full */
+            503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    describeConnection: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /** @example {} */
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description The source's tables and views */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "relations": [],
+                     *       "truncated": false
+                     *     }
+                     */
+                    "application/json": {
+                        relations: {
+                            schema: string;
+                            name: string;
+                            /** @enum {string} */
+                            kind: "table" | "view" | "materializedView" | "foreignTable" | "partitionedTable";
+                            columns: {
+                                name: string;
+                                sourceType: string;
+                                nullable: boolean;
+                                /** @description The column type the source proposes, or null where the author must declare one */
+                                proposed: {
+                                    [key: string]: unknown;
+                                } | null;
+                            }[];
+                        }[];
+                        /** @description Whether there were more than the connector lists */
+                        truncated: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the connection but may not use it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such connection in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                    };
+                };
+            };
+            /** @description `connection_failed`: the source could not be reached or signed in to; `connector_error`: the connector failed */
+            502: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                    };
+                };
+            };
+            /** @description `connector_unavailable`: no connector is configured or it did not answer; `connector_busy`: it is full */
+            503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                    };
+                };
+            };
+            /** @description `timeout`: the source did not answer in time */
+            504: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    testConnection: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /** @example {} */
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description Tested, and recorded against the version tested: ok with its findings, or one reason */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "outcome": "ok",
+                     *       "findings": [],
+                     *       "at": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        /** @constant */
+                        outcome: "ok";
+                        /** @description What the test found of the account once it had signed in */
+                        findings: "account_not_read_only"[];
+                        at: string;
+                    } | {
+                        /** @constant */
+                        outcome: "failed";
+                        failure: {
+                            /** @description Stable and machine-readable */
+                            code: string;
+                            /**
+                             * @description Whose failure it is: the source's side, the query's author, or the product
+                             * @enum {string}
+                             */
+                            attribution: "connector" | "query" | "product";
+                            message: string;
+                        };
+                        at: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the connection but may not use it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such connection in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                    };
+                };
+            };
+            /** @description `connector_unavailable`: no connector is configured or it did not answer; `connector_busy`: it is full */
+            503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    recordConnectionVersion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "openedFrom": "00000000-0000-4000-8000-000000000001",
+                 *       "settings": {
+                 *         "schemaVersion": 1,
+                 *         "name": "example",
+                 *         "description": "example",
+                 *         "type": "postgres",
+                 *         "source": {
+                 *           "host": "example",
+                 *           "port": 1,
+                 *           "database": "example",
+                 *           "account": "example",
+                 *           "tls": "require"
+                 *         },
+                 *         "identity": {
+                 *           "kind": "service"
+                 *         },
+                 *         "retired": false
+                 *       }
+                 *     }
+                 */
+                "application/json": {
+                    openedFrom: string & (unknown & unknown);
+                    settings: {
+                        /** @constant */
+                        schemaVersion: 1;
+                        name: string;
+                        description: string;
+                        /** @constant */
+                        type: "postgres";
+                        source: {
+                            host: string;
+                            port: number;
+                            database: string;
+                            account: string;
+                            /** @enum {string} */
+                            tls: "require" | "verifyFull";
+                        };
+                        identity: {
+                            /** @constant */
+                            kind: "service";
+                        } | {
+                            /** @constant */
+                            kind: "endUser";
+                            /** @constant */
+                            mechanism: "delegated";
+                            tokenEndpoint: string;
+                            audience: string;
+                        } | {
+                            /** @constant */
+                            kind: "endUser";
+                            /** @constant */
+                            mechanism: "asserted";
+                            /** @enum {string} */
+                            attribute: "email" | "subject";
+                            /** @enum {string} */
+                            assertion?: "sessionContext" | "executeAs";
+                        };
+                        retired: boolean;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description The connection at its latest version: the one cut, or the one before where nothing changed */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "settings": {
+                     *         "schemaVersion": 1,
+                     *         "name": "example",
+                     *         "description": "example",
+                     *         "type": "postgres",
+                     *         "source": {
+                     *           "host": "example",
+                     *           "port": 1,
+                     *           "database": "example",
+                     *           "account": "example",
+                     *           "tls": "require"
+                     *         },
+                     *         "identity": {
+                     *           "kind": "service"
+                     *         },
+                     *         "retired": false
+                     *       },
+                     *       "credential": {
+                     *         "set": false
+                     *       },
+                     *       "lastTest": {
+                     *         "outcome": "ok",
+                     *         "findings": [],
+                     *         "at": "example",
+                     *         "by": {
+                     *           "id": "example",
+                     *           "name": "example"
+                     *         },
+                     *         "version": "example"
+                     *       },
+                     *       "mayAdminister": false,
+                     *       "mayUse": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        settings: {
+                            /** @constant */
+                            schemaVersion: 1;
+                            name: string;
+                            description: string;
+                            /** @constant */
+                            type: "postgres";
+                            source: {
+                                host: string;
+                                port: number;
+                                database: string;
+                                account: string;
+                                /** @enum {string} */
+                                tls: "require" | "verifyFull";
+                            };
+                            identity: {
+                                /** @constant */
+                                kind: "service";
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "delegated";
+                                tokenEndpoint: string;
+                                audience: string;
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "asserted";
+                                /** @enum {string} */
+                                attribute: "email" | "subject";
+                                /** @enum {string} */
+                                assertion?: "sessionContext" | "executeAs";
+                            };
+                            retired: boolean;
+                        };
+                        credential: {
+                            /** @constant */
+                            set: false;
+                        } | {
+                            /** @constant */
+                            set: true;
+                            setBy: {
+                                id: string;
+                                /** @description Their name, or their address where they have none */
+                                name: string | null;
+                            };
+                            setAt: string;
+                        };
+                        lastTest: {
+                            /** @enum {string} */
+                            outcome: "ok" | "failed";
+                            findings: "account_not_read_only"[];
+                            failure?: {
+                                /** @description Stable and machine-readable */
+                                code: string;
+                                /**
+                                 * @description Whose failure it is: the source's side, the query's author, or the product
+                                 * @enum {string}
+                                 */
+                                attribution: "connector" | "query" | "product";
+                                message: string;
+                            };
+                            at: string;
+                            by: {
+                                id: string;
+                                /** @description Their name, or their address where they have none */
+                                name: string | null;
+                            };
+                            /** @description The connection version it tested */
+                            version: string;
+                        } | null;
+                        /** @description Whether the caller may change it and set its credential */
+                        mayAdminister: boolean;
+                        /** @description Whether the caller may test it and list its tables */
+                        mayUse: boolean;
+                    };
+                };
+            };
+            /** @description `connection_invalid` or `identity_not_supported`: the settings are refused by rule, each problem named */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        problems?: {
+                            /** @enum {string} */
+                            rule: "connection_invalid" | "identity_not_supported";
+                            path?: string;
+                            message?: string;
+                            type?: string;
+                            mechanism?: string;
+                        }[];
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            settings: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                name: string;
+                                description: string;
+                                /** @constant */
+                                type: "postgres";
+                                source: {
+                                    host: string;
+                                    port: number;
+                                    database: string;
+                                    account: string;
+                                    /** @enum {string} */
+                                    tls: "require" | "verifyFull";
+                                };
+                                identity: {
+                                    /** @constant */
+                                    kind: "service";
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "delegated";
+                                    tokenEndpoint: string;
+                                    audience: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "asserted";
+                                    /** @enum {string} */
+                                    attribute: "email" | "subject";
+                                    /** @enum {string} */
+                                    assertion?: "sessionContext" | "executeAs";
+                                };
+                                retired: boolean;
+                            };
+                            credential: {
+                                /** @constant */
+                                set: false;
+                            } | {
+                                /** @constant */
+                                set: true;
+                                setBy: {
+                                    id: string;
+                                    /** @description Their name, or their address where they have none */
+                                    name: string | null;
+                                };
+                                setAt: string;
+                            };
+                            lastTest: {
+                                /** @enum {string} */
+                                outcome: "ok" | "failed";
+                                findings: "account_not_read_only"[];
+                                failure?: {
+                                    /** @description Stable and machine-readable */
+                                    code: string;
+                                    /**
+                                     * @description Whose failure it is: the source's side, the query's author, or the product
+                                     * @enum {string}
+                                     */
+                                    attribution: "connector" | "query" | "product";
+                                    message: string;
+                                };
+                                at: string;
+                                by: {
+                                    id: string;
+                                    /** @description Their name, or their address where they have none */
+                                    name: string | null;
+                                };
+                                /** @description The connection version it tested */
+                                version: string;
+                            } | null;
+                            /** @description Whether the caller may change it and set its credential */
+                            mayAdminister: boolean;
+                            /** @description Whether the caller may test it and list its tables */
+                            mayUse: boolean;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the connection but may not administer it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such connection in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `version_precondition`: the connection has a newer version than the one named */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        problems?: {
+                            /** @enum {string} */
+                            rule: "connection_invalid" | "identity_not_supported";
+                            path?: string;
+                            message?: string;
+                            type?: string;
+                            mechanism?: string;
+                        }[];
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            settings: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                name: string;
+                                description: string;
+                                /** @constant */
+                                type: "postgres";
+                                source: {
+                                    host: string;
+                                    port: number;
+                                    database: string;
+                                    account: string;
+                                    /** @enum {string} */
+                                    tls: "require" | "verifyFull";
+                                };
+                                identity: {
+                                    /** @constant */
+                                    kind: "service";
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "delegated";
+                                    tokenEndpoint: string;
+                                    audience: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "asserted";
+                                    /** @enum {string} */
+                                    attribute: "email" | "subject";
+                                    /** @enum {string} */
+                                    assertion?: "sessionContext" | "executeAs";
+                                };
+                                retired: boolean;
+                            };
+                            credential: {
+                                /** @constant */
+                                set: false;
+                            } | {
+                                /** @constant */
+                                set: true;
+                                setBy: {
+                                    id: string;
+                                    /** @description Their name, or their address where they have none */
+                                    name: string | null;
+                                };
+                                setAt: string;
+                            };
+                            lastTest: {
+                                /** @enum {string} */
+                                outcome: "ok" | "failed";
+                                findings: "account_not_read_only"[];
+                                failure?: {
+                                    /** @description Stable and machine-readable */
+                                    code: string;
+                                    /**
+                                     * @description Whose failure it is: the source's side, the query's author, or the product
+                                     * @enum {string}
+                                     */
+                                    attribution: "connector" | "query" | "product";
+                                    message: string;
+                                };
+                                at: string;
+                                by: {
+                                    id: string;
+                                    /** @description Their name, or their address where they have none */
+                                    name: string | null;
+                                };
+                                /** @description The connection version it tested */
+                                version: string;
+                            } | null;
+                            /** @description Whether the caller may change it and set its credential */
+                            mayAdminister: boolean;
+                            /** @description Whether the caller may test it and list its tables */
+                            mayUse: boolean;
+                        };
                     };
                 };
             };
@@ -13153,6 +14881,441 @@ export interface operations {
             };
             /** @description component_type_missing: no such component type in this environment */
             409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    createConnection: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "settings": {
+                 *         "schemaVersion": 1,
+                 *         "name": "example",
+                 *         "description": "example",
+                 *         "type": "postgres",
+                 *         "source": {
+                 *           "host": "example",
+                 *           "port": 1,
+                 *           "database": "example",
+                 *           "account": "example",
+                 *           "tls": "require"
+                 *         },
+                 *         "identity": {
+                 *           "kind": "service"
+                 *         },
+                 *         "retired": false
+                 *       }
+                 *     }
+                 */
+                "application/json": {
+                    settings: {
+                        /** @constant */
+                        schemaVersion: 1;
+                        name: string;
+                        description: string;
+                        /** @constant */
+                        type: "postgres";
+                        source: {
+                            host: string;
+                            port: number;
+                            database: string;
+                            account: string;
+                            /** @enum {string} */
+                            tls: "require" | "verifyFull";
+                        };
+                        identity: {
+                            /** @constant */
+                            kind: "service";
+                        } | {
+                            /** @constant */
+                            kind: "endUser";
+                            /** @constant */
+                            mechanism: "delegated";
+                            tokenEndpoint: string;
+                            audience: string;
+                        } | {
+                            /** @constant */
+                            kind: "endUser";
+                            /** @constant */
+                            mechanism: "asserted";
+                            /** @enum {string} */
+                            attribute: "email" | "subject";
+                            /** @enum {string} */
+                            assertion?: "sessionContext" | "executeAs";
+                        };
+                        retired: boolean;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Made, at version 0.1 */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "settings": {
+                     *         "schemaVersion": 1,
+                     *         "name": "example",
+                     *         "description": "example",
+                     *         "type": "postgres",
+                     *         "source": {
+                     *           "host": "example",
+                     *           "port": 1,
+                     *           "database": "example",
+                     *           "account": "example",
+                     *           "tls": "require"
+                     *         },
+                     *         "identity": {
+                     *           "kind": "service"
+                     *         },
+                     *         "retired": false
+                     *       },
+                     *       "credential": {
+                     *         "set": false
+                     *       },
+                     *       "lastTest": {
+                     *         "outcome": "ok",
+                     *         "findings": [],
+                     *         "at": "example",
+                     *         "by": {
+                     *           "id": "example",
+                     *           "name": "example"
+                     *         },
+                     *         "version": "example"
+                     *       },
+                     *       "mayAdminister": false,
+                     *       "mayUse": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        settings: {
+                            /** @constant */
+                            schemaVersion: 1;
+                            name: string;
+                            description: string;
+                            /** @constant */
+                            type: "postgres";
+                            source: {
+                                host: string;
+                                port: number;
+                                database: string;
+                                account: string;
+                                /** @enum {string} */
+                                tls: "require" | "verifyFull";
+                            };
+                            identity: {
+                                /** @constant */
+                                kind: "service";
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "delegated";
+                                tokenEndpoint: string;
+                                audience: string;
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "asserted";
+                                /** @enum {string} */
+                                attribute: "email" | "subject";
+                                /** @enum {string} */
+                                assertion?: "sessionContext" | "executeAs";
+                            };
+                            retired: boolean;
+                        };
+                        credential: {
+                            /** @constant */
+                            set: false;
+                        } | {
+                            /** @constant */
+                            set: true;
+                            setBy: {
+                                id: string;
+                                /** @description Their name, or their address where they have none */
+                                name: string | null;
+                            };
+                            setAt: string;
+                        };
+                        lastTest: {
+                            /** @enum {string} */
+                            outcome: "ok" | "failed";
+                            findings: "account_not_read_only"[];
+                            failure?: {
+                                /** @description Stable and machine-readable */
+                                code: string;
+                                /**
+                                 * @description Whose failure it is: the source's side, the query's author, or the product
+                                 * @enum {string}
+                                 */
+                                attribution: "connector" | "query" | "product";
+                                message: string;
+                            };
+                            at: string;
+                            by: {
+                                id: string;
+                                /** @description Their name, or their address where they have none */
+                                name: string | null;
+                            };
+                            /** @description The connection version it tested */
+                            version: string;
+                        } | null;
+                        /** @description Whether the caller may change it and set its credential */
+                        mayAdminister: boolean;
+                        /** @description Whether the caller may test it and list its tables */
+                        mayUse: boolean;
+                    };
+                };
+            };
+            /** @description `connection_invalid` or `identity_not_supported`: the settings are refused by rule, each problem named */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        problems?: {
+                            /** @enum {string} */
+                            rule: "connection_invalid" | "identity_not_supported";
+                            path?: string;
+                            message?: string;
+                            type?: string;
+                            mechanism?: string;
+                        }[];
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            settings: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                name: string;
+                                description: string;
+                                /** @constant */
+                                type: "postgres";
+                                source: {
+                                    host: string;
+                                    port: number;
+                                    database: string;
+                                    account: string;
+                                    /** @enum {string} */
+                                    tls: "require" | "verifyFull";
+                                };
+                                identity: {
+                                    /** @constant */
+                                    kind: "service";
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "delegated";
+                                    tokenEndpoint: string;
+                                    audience: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "asserted";
+                                    /** @enum {string} */
+                                    attribute: "email" | "subject";
+                                    /** @enum {string} */
+                                    assertion?: "sessionContext" | "executeAs";
+                                };
+                                retired: boolean;
+                            };
+                            credential: {
+                                /** @constant */
+                                set: false;
+                            } | {
+                                /** @constant */
+                                set: true;
+                                setBy: {
+                                    id: string;
+                                    /** @description Their name, or their address where they have none */
+                                    name: string | null;
+                                };
+                                setAt: string;
+                            };
+                            lastTest: {
+                                /** @enum {string} */
+                                outcome: "ok" | "failed";
+                                findings: "account_not_read_only"[];
+                                failure?: {
+                                    /** @description Stable and machine-readable */
+                                    code: string;
+                                    /**
+                                     * @description Whose failure it is: the source's side, the query's author, or the product
+                                     * @enum {string}
+                                     */
+                                    attribution: "connector" | "query" | "product";
+                                    message: string;
+                                };
+                                at: string;
+                                by: {
+                                    id: string;
+                                    /** @description Their name, or their address where they have none */
+                                    name: string | null;
+                                };
+                                /** @description The connection version it tested */
+                                version: string;
+                            } | null;
+                            /** @description Whether the caller may change it and set its credential */
+                            mayAdminister: boolean;
+                            /** @description Whether the caller may test it and list its tables */
+                            mayUse: boolean;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the space but may not administer it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space in this environment, or none the caller may read */
+            404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

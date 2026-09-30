@@ -48,6 +48,10 @@ const WIRE_CODES = {
   'assignment.conflict': 'assignment_conflict',
   'schema.conflict': 'schema_conflict',
   'field.breaks_default': 'field_breaks_default',
+  'connection.invalid': 'connection_invalid',
+  'identity.not_supported': 'identity_not_supported',
+  'connection.retired': 'connection_retired',
+  'credential.missing': 'credential_missing',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;
@@ -83,6 +87,8 @@ const RULES: Partial<Record<DottedCode, string>> = {
   'assignment.conflict': 'MET-008',
   'schema.conflict': 'MET-040',
   'field.breaks_default': 'MET-037',
+  // An identity a connection's type's connector does not declare (data.md, "The connection").
+  'identity.not_supported': 'DAT-078',
 };
 
 /** The wire's spelling of a store's dotted answer. */

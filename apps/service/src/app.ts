@@ -46,6 +46,7 @@ import {
 } from './access.js';
 import { assetHandlers, type BinaryBody } from './assets.js';
 import { componentHandlers } from './components.js';
+import { connectionHandlers, type ConnectorOptions } from './data/connections.js';
 import type { GoogleSettings } from './config.js';
 import { documentHandlers } from './documents.js';
 import { registerDocs } from './docs.js';
@@ -127,6 +128,11 @@ export interface AppOptions extends HttpOptions {
   /** Where the built renderer is; without it the service answers the API and nothing else. */
   readonly rendererRoot?: string;
   readonly tenantCacheMs?: number;
+  /**
+   * Where the connector answers and the key it is asked with (the D1 plan, D1-F); without it every
+   * data act is refused `connector_unavailable`.
+   */
+  readonly connector?: ConnectorOptions;
 }
 
 /** Holds a sign-in's state for the browser that started it, so no other browser can finish it. */
@@ -404,6 +410,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...componentHandlers(db, tenantOf, principalOf),
     ...documentHandlers(db, tenantOf, principalOf),
     ...templateHandlers(db, tenantOf, principalOf),
+    ...connectionHandlers(db, tenantOf, principalOf, options.connector),
     ...definitionHandlers(db, tenantOf, principalOf),
     ...searchHandlers(db, tenantOf, principalOf),
     ...presentationHandlers(db, tenantOf),
@@ -882,7 +889,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
         : {}),
       handler: permissionChecked(
         name,
-        route.method !== 'GET',
+        // A route that takes no idempotency key keeps no record of its request (D1-S).
+        route.method !== 'GET' && route.idempotencyKey !== false,
         route.access,
         handlers[name],
         route.responses[200]?.binary !== undefined,

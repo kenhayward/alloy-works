@@ -17802,13 +17802,13 @@
     {
       "id": "API-053",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 445,
+      "line": 473,
       "kind": "title"
     },
     {
       "id": "IAM-030",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 395,
+      "line": 423,
       "kind": "title"
     },
     {
@@ -17890,9 +17890,45 @@
       "kind": "title"
     },
     {
+      "id": "DAT-004",
+      "file": "apps/service/src/connection-routes.test.ts",
+      "line": 192,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-049",
+      "file": "apps/service/src/connection-routes.test.ts",
+      "line": 304,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-075",
+      "file": "apps/service/src/connection-routes.test.ts",
+      "line": 232,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-078",
+      "file": "apps/service/src/connection-routes.test.ts",
+      "line": 496,
+      "kind": "rule"
+    },
+    {
+      "id": "DAT-089",
+      "file": "apps/service/src/connector-boundary.test.ts",
+      "line": 27,
+      "kind": "title"
+    },
+    {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 624,
+      "line": 679,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-005",
+      "file": "apps/service/src/data-secrets.test.ts",
+      "line": 143,
       "kind": "title"
     },
     {
@@ -18090,7 +18126,7 @@
     {
       "id": "API-007",
       "file": "apps/service/src/listing-routes.test.ts",
-      "line": 230,
+      "line": 254,
       "kind": "title"
     },
     {
@@ -19140,13 +19176,19 @@
     {
       "id": "API-012",
       "file": "packages/api-contract/src/openapi.test.ts",
-      "line": 118,
+      "line": 179,
       "kind": "title"
     },
     {
       "id": "API-062",
       "file": "packages/api-contract/src/openapi.test.ts",
       "line": 9,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-003",
+      "file": "packages/api-contract/src/openapi.test.ts",
+      "line": 91,
       "kind": "title"
     },
     {
@@ -19218,19 +19260,19 @@
     {
       "id": "DAT-001",
       "file": "packages/db/src/connections.test.ts",
-      "line": 144,
+      "line": 150,
       "kind": "title"
     },
     {
       "id": "DAT-003",
       "file": "packages/db/src/connections.test.ts",
-      "line": 308,
+      "line": 356,
       "kind": "title"
     },
     {
       "id": "DAT-007",
       "file": "packages/db/src/connections.test.ts",
-      "line": 214,
+      "line": 262,
       "kind": "title"
     },
     {

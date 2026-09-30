@@ -9,6 +9,7 @@ import {
   parseLayout,
   templateDefinitionSchema,
   parseOutlineDocument,
+  ConnectionRefused,
   parseConnection,
   parseConnectionForWrite,
   type CatalogueSubstance,
@@ -251,6 +252,17 @@ export async function createArtifact(
   // and its theme and catalogues by the one that makes themes one (0024).
   if (substance.kind === 'layout' || substance.kind === 'theme' || substance.kind === 'catalogue') {
     throw new Error(`A ${substance.kind} is created by its migration, not by createArtifact`);
+  }
+  // A connection is made in service, whatever makes it: retiring is a later version of one that was
+  // in use (the D1 plan's stored-shape check, row 10). A first version is only ever written here.
+  if (substance.kind === 'connection' && substance.content.retired) {
+    throw new ConnectionRefused([
+      {
+        rule: 'connection_invalid',
+        path: 'retired',
+        message: 'A connection is made in service; retiring it is a later version',
+      },
+    ]);
   }
   const artifact = await trx
     .insertInto('artifact')

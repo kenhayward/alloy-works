@@ -6,6 +6,7 @@ import {
   bootstrapCluster,
   createArtifact,
   createAssetUpload,
+  createConnection,
   createDocument,
   createGroup,
   createRole,
@@ -70,6 +71,24 @@ const aTemplate = () => ({
   changes: { add: true, remove: true, reorder: true },
 });
 
+/** A connection's settings any environment takes. */
+const aConnection = () =>
+  ({
+    schemaVersion: 1,
+    name: 'Readings',
+    description: '',
+    type: 'postgres',
+    source: {
+      host: 'source-postgres',
+      port: 5432,
+      database: 'readings',
+      account: 'reader',
+      tls: 'require',
+    },
+    identity: { kind: 'service' },
+    retired: false,
+  }) as const;
+
 describe('routes that check a permission', () => {
   let db: TestDatabase;
   let idp: StandInProvider;
@@ -85,6 +104,7 @@ describe('routes that check a permission', () => {
   let report: string;
   let reportPublication: string;
   let plan: string;
+  let readings: string;
   let clinicalImage: string;
   let graceAuthors: string;
 
@@ -233,6 +253,14 @@ describe('routes that check a permission', () => {
       });
       if (template.answer !== 'created') throw new Error(`refused: ${template.answer}`);
       plan = template.template.id;
+      // And a connection in Clinical, which a route reading, changing or using it must refuse.
+      const connection = await createConnection(trx, {
+        spaceId: clinical,
+        settings: aConnection(),
+        author: ids.ada!,
+      });
+      if (connection.answer !== 'created') throw new Error(`refused: ${connection.answer}`);
+      readings = connection.connection.id;
       // And an image in Clinical, made as the `ingest` job makes one, over an object that need not
       // exist: a route reading it must refuse before it reads the store.
       const upload = await createAssetUpload(trx, {
@@ -706,6 +734,28 @@ describe('routes that check a permission', () => {
       payload: { definition: aTemplate() },
     }),
     getTemplate: () => ({ url: `/v1/templates/${plan}`, status: 404 }),
+    createConnection: () => ({
+      url: `/v1/spaces/${clinical}/connections`,
+      status: 404,
+      payload: { settings: aConnection() },
+    }),
+    getConnection: () => ({ url: `/v1/connections/${readings}`, status: 404 }),
+    recordConnectionVersion: () => ({
+      url: `/v1/connections/${readings}/versions`,
+      status: 404,
+      payload: { openedFrom: MISSING, settings: aConnection() },
+    }),
+    setConnectionCredential: () => ({
+      url: `/v1/connections/${readings}/credential`,
+      status: 404,
+      payload: { secret: 'an-invented-password' },
+    }),
+    testConnection: () => ({ url: `/v1/connections/${readings}/test`, status: 404, payload: {} }),
+    describeConnection: () => ({
+      url: `/v1/connections/${readings}/describe`,
+      status: 404,
+      payload: {},
+    }),
     listDefinitions: () => ({ url: '/v1/definitions', status: 403 }),
     createDefinition: () => ({
       url: '/v1/definitions',
