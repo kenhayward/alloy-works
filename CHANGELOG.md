@@ -3,6 +3,23 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.127.5 - 2026-09-30 (PR #358)
+
+### Changed
+
+- **The plan for connecting to your data is decided, and it is simpler and steadier than the one
+  proposed.** Data in a document is the data you saw: every value taken from your database, web
+  service or files is kept with the document, so a preview, a publish and every reader show the same
+  thing, and publishing never goes back to the source. When the source has something newer, it is
+  offered beside what you have and never swapped in; nothing changes until somebody accepts it, and
+  accepting is recorded. If you accept data you fetched as yourself, you are warned first that
+  everyone who can read the document will see it. You build a query by choosing a table, its
+  columns, filters and a sort rather than writing code; SQL stays available for advanced users where
+  the connection allows it safely. Data can also come from files in S3-compatible storage, as CSV,
+  spreadsheets or JSON, and a column can carry images, each described or marked decorative.
+  Uploading a file as a data source is not part of the first data release. Nothing is built yet;
+  this is the decision the data release will be designed from.
+
 ## 0.127.4 - 2026-09-30 (PR #357)
 
 ### Added

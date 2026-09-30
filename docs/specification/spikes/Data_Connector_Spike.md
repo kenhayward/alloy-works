@@ -1,8 +1,9 @@
 # Data connector spike
 
 > **Status: Complete; decided in
-> [ADR-0034](../../decisions/0034-data-connectors-run-apart-as-a-declared-identity.md), which is
-> Proposed.** Findings are in [`Data_Connector_Spike_Findings.md`](Data_Connector_Spike_Findings.md),
+> [ADR-0035](../../decisions/0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md),
+> which superseded the first record written from it,
+> [ADR-0034](../../decisions/0034-data-connectors-run-apart-as-a-declared-identity.md).** Findings are in [`Data_Connector_Spike_Findings.md`](Data_Connector_Spike_Findings.md),
 > and are not edited afterwards. It runs before any of T2 is designed
 > ([ADR-0033](../../decisions/0033-t2-is-the-data-spine.md)). It follows the shape of
 > [`Publishing_Engine_Spike.md`](Publishing_Engine_Spike.md): hard cases, named gates, a written
