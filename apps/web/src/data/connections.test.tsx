@@ -421,6 +421,23 @@ describe('a connection on its own page', () => {
     expect(within(saving).getByLabelText('Description')).toHaveValue('Moved to the new server.');
   });
 
+  it('keeps a change typed into the settings while the connection is tested', async () => {
+    const user = userEvent.setup();
+    const { client } = service({
+      connection: view({
+        credential: { set: true, setBy: { id: 'ada', name: 'Ada' }, setAt: '2026-09-30T09:00:00Z' },
+      }),
+    });
+    render(<ConnectionPage client={client} id={READINGS} />);
+    const saving = await screen.findByRole('region', { name: 'Settings' });
+    await user.type(within(saving).getByLabelText('Description'), ' Unsaved.');
+    await user.click(screen.getByRole('button', { name: 'Test' }));
+    expect(await screen.findByText('Connected.')).toBeInTheDocument();
+    expect(within(saving).getByLabelText('Description')).toHaveValue(
+      'The sites and their readings. Unsaved.',
+    );
+  });
+
   it('retires a connection and reinstates it, each a version', async () => {
     const user = userEvent.setup();
     const { client, asked } = service();

@@ -140,6 +140,19 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
     }
   }, [client, id, show]);
 
+  /**
+   * Reads the connection again after a test or a credential, keeping whatever is typed into the
+   * settings: only a version saved, or one somebody else saved first, replaces those.
+   */
+  const refresh = useCallback(async () => {
+    try {
+      const { data } = await client.GET('/v1/connections/{id}', { params: { path: { id } } });
+      if (isConnectionView(data)) setConnection(data);
+    } catch {
+      // What is shown stays; the next act reads it again.
+    }
+  }, [client, id]);
+
   useEffect(() => {
     void load();
   }, [load]);
@@ -243,7 +256,7 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
         });
         if (isRecord(data) && isTested(data.test)) {
           setRotation(data.test);
-          await load();
+          await refresh();
           return;
         }
         setRotation(
@@ -266,7 +279,7 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
         });
         if (isTested(data)) {
           setTested(data);
-          await load();
+          await refresh();
           return;
         }
         setTested(refusalText(error, 'The connection could not be tested. Try again.'));
