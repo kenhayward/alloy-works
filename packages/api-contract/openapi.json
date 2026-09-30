@@ -34037,7 +34037,11 @@
                                     "type": "string"
                                   },
                                   "name": {
-                                    "type": "string"
+                                    "description": "Its latest name, or null where the caller may not read the connection",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
                                   }
                                 },
                                 "required": [
@@ -34049,7 +34053,7 @@
                                 "type": "null"
                               }
                             ],
-                            "description": "The connection it names, by its latest name"
+                            "description": "The connection it names"
                           },
                           "retired": {
                             "type": "boolean"
@@ -34922,7 +34926,11 @@
                               "type": "string"
                             },
                             "name": {
-                              "type": "string"
+                              "description": "Its name, or null where the caller may not read the connection",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
                             },
                             "identity": {
                               "type": "string",
@@ -36454,7 +36462,11 @@
                               "type": "string"
                             },
                             "name": {
-                              "type": "string"
+                              "description": "Its name, or null where the caller may not read the connection",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
                             },
                             "identity": {
                               "type": "string",
@@ -37247,7 +37259,11 @@
                                   "type": "string"
                                 },
                                 "name": {
-                                  "type": "string"
+                                  "description": "Its name, or null where the caller may not read the connection",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
                                 },
                                 "identity": {
                                   "type": "string",
@@ -38108,7 +38124,11 @@
                                   "type": "string"
                                 },
                                 "name": {
-                                  "type": "string"
+                                  "description": "Its name, or null where the caller may not read the connection",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
                                 },
                                 "identity": {
                                   "type": "string",
@@ -39381,7 +39401,7 @@
                                 "type": "string"
                               },
                               "place": {
-                                "description": "Where it matched best: `title`, `block:<id>`, `field:<id>`, `section:<key>`, `description`, `fields`, `schemas`, `columns` or `connection`",
+                                "description": "Where it matched best: `title`, `block:<id>`, `field:<id>`, `section:<key>`, `description`, `fields`, `schemas` or `columns`",
                                 "type": [
                                   "string",
                                   "null"
@@ -46830,7 +46850,11 @@
                               "type": "string"
                             },
                             "name": {
-                              "type": "string"
+                              "description": "Its name, or null where the caller may not read the connection",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
                             },
                             "identity": {
                               "type": "string",
@@ -47623,7 +47647,11 @@
                                   "type": "string"
                                 },
                                 "name": {
-                                  "type": "string"
+                                  "description": "Its name, or null where the caller may not read the connection",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
                                 },
                                 "identity": {
                                   "type": "string",
@@ -48484,7 +48512,11 @@
                                   "type": "string"
                                 },
                                 "name": {
-                                  "type": "string"
+                                  "description": "Its name, or null where the caller may not read the connection",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
                                 },
                                 "identity": {
                                   "type": "string",

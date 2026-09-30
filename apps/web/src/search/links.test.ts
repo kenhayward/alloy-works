@@ -51,7 +51,7 @@ describe("a search result's link and place", () => {
     expect(whereFound('fields', fields)).toBe('In the fields it groups');
     expect(whereFound('schemas', fields)).toBe('In the schemas it assigns');
     expect(whereFound('columns', fields)).toBe('In its column names');
-    expect(whereFound('connection', fields)).toBe("In its connection's name");
+    expect(whereFound('connection', fields)).toBeNull();
     expect(whereFound(null, fields)).toBeNull();
   });
 });

@@ -15,7 +15,7 @@ import { pathToFileURL } from 'node:url';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
-import { createConnection, recordConnectionVersion } from './connections.js';
+import { createConnection } from './connections.js';
 import { createComponent } from './creation.js';
 import { grant } from './grants.js';
 import { DEFAULT_LAYOUT_ID } from './layouts.js';
@@ -331,8 +331,8 @@ describe("search's projection, written with every version", () => {
     });
   });
 
-  it("SCH-055 finds a query definition by its title, description, a column's name or its connection's name, and by the connection's new name once it is renamed", async () => {
-    const { connection, definition } = await service.withTenant(production, async (trx) => {
+  it("SCH-055 finds a query definition by its title, description or a column's name, and never by its SQL or its connection's name", async () => {
+    const { definition } = await service.withTenant(production, async (trx) => {
       const made = await createConnection(trx, {
         author: ada,
         spaceId: general,
@@ -352,7 +352,7 @@ describe("search's projection, written with every version", () => {
         },
       });
       if (answer.answer !== 'created') throw new Error(answer.answer);
-      return { connection: made.connection, definition: answer.definition };
+      return { definition: answer.definition };
     });
     const places = (trx: TenantTransaction, words: string) =>
       found(trx, words).then((rows) =>
@@ -367,28 +367,11 @@ describe("search's projection, written with every version", () => {
         places(trx, 'sample'),
       ]),
     );
-    expect([title, description, column, named]).toEqual([
-      ['title'],
-      ['description'],
-      ['columns'],
-      ['connection'],
-    ]);
-    // Never by its SQL.
+    expect([title, description, column]).toEqual([['title'], ['description'], ['columns']]);
+    // Never by its SQL, nor by its connection's name, which a reader of the definition may not be
+    // allowed to read.
     expect(sql_).toEqual([]);
-
-    // Renaming the connection rewrites the entry in the same transaction.
-    const [renamed, before] = await service.withTenant(production, async (trx) => {
-      const answer = await recordConnectionVersion(trx, {
-        author: ada,
-        id: connection.id,
-        openedFrom: connection.version.id,
-        settings: { ...connection.settings, name: 'Newt warehouse' },
-      });
-      if (answer.answer !== 'recorded') throw new Error(answer.answer);
-      return Promise.all([places(trx, 'newt'), places(trx, 'kestrel')]);
-    });
-    expect(renamed).toEqual(['connection']);
-    expect(before).toEqual([]);
+    expect(named).toEqual([]);
   });
 
   it('SCH-066 makes a new version findable by its words in the next transaction', async () => {

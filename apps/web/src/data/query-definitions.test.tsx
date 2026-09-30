@@ -462,4 +462,53 @@ describe('the query definition page', () => {
       expect(screen.queryByRole('button', { name })).toBeNull();
     }
   });
+
+  it('says a connection its reader may not read is one, and links to nothing', async () => {
+    const hidden = {
+      ...view(),
+      mayEdit: false,
+      mayRun: false,
+      connection: { id: READINGS, name: null, identity: 'service', retired: false },
+    };
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const path = new URL(request.url).pathname;
+      if (path === `/v1/query-definitions/${DEFINITION}`) return json(200, hidden);
+      if (path === '/v1/query-definitions') {
+        return json(200, {
+          items: [
+            {
+              id: DEFINITION,
+              title: 'Site by id',
+              space: { id: GENERAL, name: 'General' },
+              connection: { id: READINGS, name: null },
+              retired: false,
+              version: { id: FIRST, number: '0.1' },
+              changedAt: '2026-09-30T09:00:00.000Z',
+            },
+          ],
+          next: null,
+          total: 1,
+          facets: { spaces: [] },
+        });
+      }
+      return json(200, { items: [], next: null, total: 0, facets: { spaces: [] } });
+    }) as unknown as typeof fetch;
+    const client = createApiClient({ baseUrl: 'http://definitions.test', fetch: fetching });
+    const { unmount } = render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    expect(await screen.findByRole('heading', { name: 'Site by id' })).toBeInTheDocument();
+    expect(screen.getByText(/Runs against a connection you may not read/)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /connection/i })).toBeNull();
+    unmount();
+
+    render(<QueryDefinitions client={client} />);
+    const table = await screen.findByRole('table');
+    const row = within(table).getAllByRole('row')[1]!;
+    expect(within(row).getByText('A connection you may not read')).toBeInTheDocument();
+    expect(
+      within(row)
+        .getAllByRole('link')
+        .map((each) => each.textContent),
+    ).toEqual(['Site by id']);
+  });
 });

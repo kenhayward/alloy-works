@@ -27,6 +27,9 @@ import { isRecord, refusalText } from './shapes.js';
 type Client = ReturnType<typeof createApiClient>;
 
 /** A definition as the service answers it, checked before it is read. */
+/** What a connection the person may not read is called, where its name is withheld. */
+const UNREADABLE_CONNECTION = 'A connection you may not read';
+
 interface DefinitionView {
   readonly id: string;
   readonly space: { readonly id: string; readonly name: string };
@@ -34,7 +37,8 @@ interface DefinitionView {
   readonly definition: QueryDefinition;
   readonly connection: {
     readonly id: string;
-    readonly name: string;
+    /** Null where the person may not read the connection. */
+    readonly name: string | null;
     readonly retired: boolean;
   } | null;
   readonly mayEdit: boolean;
@@ -61,7 +65,9 @@ function isDefinitionView(value: unknown): value is DefinitionView {
     typeof statement.text === 'string' &&
     Array.isArray(definition.parameters) &&
     Array.isArray(definition.columns) &&
-    (connection === null || (isRecord(connection) && typeof connection.name === 'string')) &&
+    (connection === null ||
+      (isRecord(connection) &&
+        (connection.name === null || typeof connection.name === 'string'))) &&
     typeof value.mayEdit === 'boolean' &&
     typeof value.mayRun === 'boolean'
   );
@@ -592,7 +598,7 @@ export function QueryDefinitionPage({
     ...(shown !== null &&
     shown.connection !== null &&
     !(places?.connections ?? []).some((each) => each.id === shown.connection!.id)
-      ? [{ id: shown.connection.id, name: shown.connection.name }]
+      ? [{ id: shown.connection.id, name: shown.connection.name ?? UNREADABLE_CONNECTION }]
       : []),
   ];
 
@@ -766,6 +772,8 @@ export function QueryDefinitionPage({
             Runs against{' '}
             {shown.connection === null ? (
               'a connection that is no longer there'
+            ) : shown.connection.name === null ? (
+              'a connection you may not read'
             ) : (
               <a href={connectionLink(shown.connection.id)}>{shown.connection.name}</a>
             )}

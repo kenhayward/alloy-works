@@ -59,7 +59,7 @@ checksummed result or one named failure.
 | **DAT-114** | No source connection is reused: the child process that opened it closes it and exits with its one request, so a connection that carried a user's identity is always discarded                                                                                                                             |
 | **DAT-009** | `queryDefinition` is an artifact kind in one space whose version carries a `title` and exactly one `connection`, a connection artifact's identifier                                                                                                                                                       |
 | **VER-057** | A query definition versions through `artifact_version` by `recordVersion`, with an author, `schemaVersion`, the digest and the insert-only grant every artifact has; a change is a new version from `openedFrom`                                                                                          |
-| **SCH-055** | `queryDefinition` is a search kind, its entry written with each version from its title, description, column names and its connection's name                                                                                                                                                               |
+| **SCH-055** | `queryDefinition` is a search kind, its entry written with each version from its title, description and column names                                                                                                                                                                                      |
 | **DAT-010** | Each parameter declares `name`, `type` from the column vocabulary but `image`, `required`, `list`, and `permitted` values as a list or a range                                                                                                                                                            |
 | **DAT-019** | A variation is a parameter whose permitted values are the keys of fragments the definition declares; its value selects one as an own property and is never placed in the query                                                                                                                            |
 | **DAT-020** | Every value is checked against its declaration before the connector is asked, and a value that fails refuses the act, `parameter_invalid`, naming the parameter, the rule and the value                                                                                                                   |
@@ -670,8 +670,9 @@ definition names, or it is declared decorative (DAT-097's declaration; its failu
 ### Searchable
 
 `queryDefinition` joins `searchKinds` (SCH-055). Its entry is written with each version, as every
-kind's is, from its title, its description, its column names and its connection's name; renaming a
-connection rewrites the entries of the definitions naming it, in the same transaction. A connection
+kind's is, from its title, its description and its column names. Not from its connection's name: a
+reader of a definition need not be able to read the connection it names, and the name is the
+connection's to show. A connection
 and a dataset are not search entries in T2: a connection is found on its space's Connections page,
 and a dataset is read only through a document.
 
@@ -881,7 +882,7 @@ is a pass of its latest version and credential that did not find its account abl
 | `GET /v1/connections/{id}/uses`             | `read` on the connection                                        | Where it is used                                                                                                             |
 | `POST /v1/spaces/{space}/query-definitions` | `edit` on the space, `use_connection`, `write_sql` for SQL      | Makes a definition at 0.1                                                                                                    |
 | `GET /v1/query-definitions`                 | Signed in                                                       | The definitions the caller may read                                                                                          |
-| `GET /v1/query-definitions/{id}`            | `read` on the definition                                        | Its latest version, and its connection's name and identity                                                                   |
+| `GET /v1/query-definitions/{id}`            | `read` on the definition                                        | Its latest version, its connection's identity, and its connection's name where the caller may read the connection            |
 | `POST /v1/query-definitions/{id}/versions`  | `edit` on the definition, `use_connection`, `write_sql` for SQL | Cuts a version from `openedFrom`; retiring is a version too                                                                  |
 | `GET /v1/query-definitions/{id}/uses`       | `read` on the definition                                        | Where it is used                                                                                                             |
 | `GET /v1/documents/{id}/bindings`           | `read` on the document                                          | Each binding's resolution, its dataset version's provenance, and any waiting revision                                        |

@@ -18,7 +18,8 @@ interface Item {
   readonly id: string;
   readonly title: string;
   readonly space: { readonly id: string; readonly name: string };
-  readonly connection: { readonly id: string; readonly name: string } | null;
+  /** Its name null where the person may not read the connection. */
+  readonly connection: { readonly id: string; readonly name: string | null } | null;
   readonly retired: boolean;
   readonly changedAt: string;
 }
@@ -46,7 +47,8 @@ function asItems(items: readonly unknown[]): Item[] {
     isRecord(item.space) &&
     typeof item.space.name === 'string' &&
     (item.connection === null ||
-      (isRecord(item.connection) && typeof item.connection.name === 'string'))
+      (isRecord(item.connection) &&
+        (item.connection.name === null || typeof item.connection.name === 'string')))
       ? [item as unknown as Item]
       : [],
   );
@@ -175,6 +177,8 @@ export function QueryDefinitions({ client }: { readonly client: Client }) {
                     <td>
                       {item.connection === null ? (
                         'None'
+                      ) : item.connection.name === null ? (
+                        'A connection you may not read'
                       ) : (
                         <a href={connectionLink(item.connection.id)}>{item.connection.name}</a>
                       )}

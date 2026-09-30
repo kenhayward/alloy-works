@@ -79,7 +79,7 @@ export const SearchResultView = z.object({
     .string()
     .nullable()
     .describe(
-      'Where it matched best: `title`, `block:<id>`, `field:<id>`, `section:<key>`, `description`, `fields`, `schemas`, `columns` or `connection`',
+      'Where it matched best: `title`, `block:<id>`, `field:<id>`, `section:<key>`, `description`, `fields`, `schemas` or `columns`',
     ),
   passage: z
     .array(z.object({ text: z.string(), matched: z.boolean() }))

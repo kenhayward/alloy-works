@@ -4,6 +4,7 @@ import {
   parseQueryDefinitionForWrite,
   type DefinitionProblem,
   type QueryDefinition,
+  type ReadableSet,
   type TenantLimits,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
@@ -190,14 +191,29 @@ export async function recordQueryDefinitionVersion(
   }
 }
 
+/** Whether a readable set holds an artifact in a space: the readable-set predicate, for one row. */
+function mayReadArtifact(
+  readable: ReadableSet,
+  artifact: { readonly id: string; readonly spaceId: string | null },
+): boolean {
+  return (
+    readable.included.includes(artifact.id) ||
+    ((artifact.spaceId === null ? readable.tenant : readable.spaces.includes(artifact.spaceId)) &&
+      !readable.excluded.includes(artifact.id))
+  );
+}
+
 /** One query definition as a listing shows it. */
 export interface QueryDefinitionSummary {
   readonly id: string;
   readonly title: string;
   readonly retired: boolean;
   readonly space: { readonly id: string; readonly name: string };
-  /** The connection it names, by its latest name; null where that is no connection any more. */
-  readonly connection: { readonly id: string; readonly name: string } | null;
+  /**
+   * The connection it names, by its latest name where the principal may read the connection and null
+   * otherwise; itself null where that is no connection any more.
+   */
+  readonly connection: { readonly id: string; readonly name: string | null } | null;
   readonly version: { readonly id: string; readonly revision: number; readonly version: number };
   /** When its latest version was made. */
   readonly changedAt: Date;
@@ -281,7 +297,8 @@ export async function listReadableQueryDefinitions(
     version_no: number;
     created_at: Date;
   }>(trx, base(), types, request.order ?? byDefault, limit, request.after);
-  // Each connection's latest name, read for the page's rows alone.
+  // Each connection's latest name, read for the page's rows alone, and told only where the principal
+  // may read the connection: reading a definition is not reading what it names.
   const connectionIds = [...new Set(rows.map((row) => row.connection))].filter((id) =>
     UUID.test(id),
   );
@@ -289,16 +306,22 @@ export async function listReadableQueryDefinitions(
     connectionIds.length === 0
       ? []
       : await trx
-          .selectFrom('artifact_version')
-          .select(['artifact_id', sql<string>`content ->> 'name'`.as('name')])
-          .distinctOn('artifact_id')
-          .where('artifact_id', 'in', connectionIds)
-          .where('kind', '=', 'connection')
-          .orderBy('artifact_id')
-          .orderBy('revision_no', 'desc')
-          .orderBy('version_no', 'desc')
+          .selectFrom('artifact_version as v')
+          .innerJoin('artifact as a', 'a.id', 'v.artifact_id')
+          .select(['v.artifact_id', 'a.space_id', sql<string>`v.content ->> 'name'`.as('name')])
+          .distinctOn('v.artifact_id')
+          .where('v.artifact_id', 'in', connectionIds)
+          .where('v.kind', '=', 'connection')
+          .orderBy('v.artifact_id')
+          .orderBy('v.revision_no', 'desc')
+          .orderBy('v.version_no', 'desc')
           .execute();
-  const named = new Map(names.map((row) => [row.artifact_id, row.name]));
+  const named = new Map(
+    names.map((row) => [
+      row.artifact_id,
+      mayReadArtifact(readable, { id: row.artifact_id, spaceId: row.space_id }) ? row.name : null,
+    ]),
+  );
   return {
     items: rows.map((row) => ({
       id: row.id,
@@ -343,11 +366,7 @@ export async function definitionsNaming(
     (each) => !options.inService || !each.retired,
   );
   const readable = await loadReadableSet(trx, principalId);
-  const mayRead = (each: { readonly id: string; readonly spaceId: string }) =>
-    readable !== undefined &&
-    (readable.included.includes(each.id) ||
-      (readable.spaces.includes(each.spaceId) && !readable.excluded.includes(each.id)));
-  const shown = naming.filter(mayRead);
+  const shown = naming.filter((each) => readable !== undefined && mayReadArtifact(readable, each));
   return {
     readable: shown.map(({ id, title, retired }) => ({ id, title, retired })),
     others: naming.length - shown.length,

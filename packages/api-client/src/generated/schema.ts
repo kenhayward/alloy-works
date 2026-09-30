@@ -14070,10 +14070,11 @@ export interface operations {
                                 id: string;
                                 name: string;
                             };
-                            /** @description The connection it names, by its latest name */
+                            /** @description The connection it names */
                             connection: {
                                 id: string;
-                                name: string;
+                                /** @description Its latest name, or null where the caller may not read the connection */
+                                name: string | null;
                             } | null;
                             retired: boolean;
                             version: {
@@ -14364,7 +14365,8 @@ export interface operations {
                         /** @description The connection it names, at its latest version */
                         connection: {
                             id: string;
-                            name: string;
+                            /** @description Its name, or null where the caller may not read the connection */
+                            name: string | null;
                             /**
                              * @description Whose identity the connection runs a query as
                              * @enum {string}
@@ -14818,7 +14820,8 @@ export interface operations {
                         /** @description The connection it names, at its latest version */
                         connection: {
                             id: string;
-                            name: string;
+                            /** @description Its name, or null where the caller may not read the connection */
+                            name: string | null;
                             /**
                              * @description Whose identity the connection runs a query as
                              * @enum {string}
@@ -14996,7 +14999,8 @@ export interface operations {
                             /** @description The connection it names, at its latest version */
                             connection: {
                                 id: string;
-                                name: string;
+                                /** @description Its name, or null where the caller may not read the connection */
+                                name: string | null;
                                 /**
                                  * @description Whose identity the connection runs a query as
                                  * @enum {string}
@@ -15235,7 +15239,8 @@ export interface operations {
                             /** @description The connection it names, at its latest version */
                             connection: {
                                 id: string;
-                                name: string;
+                                /** @description Its name, or null where the caller may not read the connection */
+                                name: string | null;
                                 /**
                                  * @description Whose identity the connection runs a query as
                                  * @enum {string}
@@ -15717,7 +15722,7 @@ export interface operations {
                                 name: string;
                             } | null;
                             changedAt: string;
-                            /** @description Where it matched best: `title`, `block:<id>`, `field:<id>`, `section:<key>`, `description`, `fields`, `schemas`, `columns` or `connection` */
+                            /** @description Where it matched best: `title`, `block:<id>`, `field:<id>`, `section:<key>`, `description`, `fields`, `schemas` or `columns` */
                             place: string | null;
                             /** @description Words from that place, about thirty, each matched word a piece of its own */
                             passage: {
@@ -18585,7 +18590,8 @@ export interface operations {
                         /** @description The connection it names, at its latest version */
                         connection: {
                             id: string;
-                            name: string;
+                            /** @description Its name, or null where the caller may not read the connection */
+                            name: string | null;
                             /**
                              * @description Whose identity the connection runs a query as
                              * @enum {string}
@@ -18763,7 +18769,8 @@ export interface operations {
                             /** @description The connection it names, at its latest version */
                             connection: {
                                 id: string;
-                                name: string;
+                                /** @description Its name, or null where the caller may not read the connection */
+                                name: string | null;
                                 /**
                                  * @description Whose identity the connection runs a query as
                                  * @enum {string}
@@ -19002,7 +19009,8 @@ export interface operations {
                             /** @description The connection it names, at its latest version */
                             connection: {
                                 id: string;
-                                name: string;
+                                /** @description Its name, or null where the caller may not read the connection */
+                                name: string | null;
                                 /**
                                  * @description Whose identity the connection runs a query as
                                  * @enum {string}

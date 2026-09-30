@@ -745,4 +745,50 @@ describe('query definitions through the service', () => {
     });
     expect(retiring.statusCode).toBe(200);
   });
+
+  it("names a definition's connection only to a caller who may read the connection, and shows its identity to every reader", async () => {
+    const hidden = await connection('Hidden Warehouse Name');
+    await allow(ids.ada!, roles.Author!, { kind: 'space', id: quality });
+    const made = await create('ada', definition(hidden.id, { title: 'Quality counts' }), quality);
+    expect(made.statusCode, made.body).toBe(200);
+    const { id } = made.json<DefinitionBody>();
+    // Alice reads Quality alone: the definition is hers to read, the connection in General is not.
+    const reader = await tenantDb.withTenant(
+      tenant,
+      async (trx) => (await findRole(trx, 'Reader'))!,
+    );
+    await allow(ids.alice!, reader.id, { kind: 'space', id: quality });
+    expect((await call('alice', 'GET', `/v1/connections/${hidden.id}`)).statusCode).toBe(404);
+
+    const read = await call('alice', 'GET', `/v1/query-definitions/${id}`);
+    expect(read.statusCode).toBe(200);
+    expect(read.json<DefinitionBody>().connection).toEqual({
+      id: hidden.id,
+      name: null,
+      identity: 'service',
+      retired: false,
+    });
+    const listed = await call('alice', 'GET', '/v1/query-definitions');
+    expect(listed.json<{ items: { id: string; connection: unknown }[] }>().items).toEqual([
+      expect.objectContaining({ id, connection: { id: hidden.id, name: null } }),
+    ]);
+    const searched = await call('alice', 'GET', '/v1/search?q=Warehouse');
+    expect(searched.statusCode).toBe(200);
+    expect(searched.body).not.toContain('Hidden');
+    expect(searched.json<{ items?: unknown[] }>().items ?? []).toEqual([]);
+    // Nothing Alice was answered names it.
+    expect(`${read.body}${listed.body}`).not.toContain('Hidden');
+
+    // Ada may read the connection, and is told its name.
+    expect(
+      (await call('ada', 'GET', `/v1/query-definitions/${id}`)).json<DefinitionBody>().connection,
+    ).toMatchObject({ name: 'Hidden Warehouse Name' });
+    expect(
+      (await call('ada', 'GET', `/v1/query-definitions?spaces=${quality}`)).json<{
+        items: { connection: unknown }[];
+      }>().items,
+    ).toEqual([
+      expect.objectContaining({ connection: { id: hidden.id, name: 'Hidden Warehouse Name' } }),
+    ]);
+  });
 });

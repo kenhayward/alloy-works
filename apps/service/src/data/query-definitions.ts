@@ -35,7 +35,11 @@ import { connectionFacts, decideSqlAt, maySqlWith, requireSqlPermitted } from '.
  * path a version is written by (D2-P).
  */
 
-/** A definition as the routes answer it, with what the caller may do with it. */
+/**
+ * A definition as the routes answer it, with what the caller may do with it. Its connection's name is
+ * told only to a caller who may read the connection; its identity and whether it is retired are told
+ * to every reader of the definition, who must see as whom its query runs (DAT-022).
+ */
 async function definitionView(
   trx: TenantTransaction,
   caller: Caller,
@@ -45,6 +49,7 @@ async function definitionView(
   const connection = await readConnection(trx, stored.definition.connection);
   const atConnection = await connectionFacts(trx, caller, stored.definition.connection);
   const mayRun = atConnection !== undefined && maySqlWith(atConnection);
+  const mayReadConnection = atConnection !== undefined && decide('read', atConnection).allowed;
   return {
     id: stored.id,
     space: stored.space,
@@ -55,7 +60,7 @@ async function definitionView(
         ? null
         : {
             id: connection.id,
-            name: connection.settings.name,
+            name: mayReadConnection ? connection.settings.name : null,
             identity: connection.settings.identity.kind,
             retired: connection.settings.retired,
           },

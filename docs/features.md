@@ -629,7 +629,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   it. SQL runs only on a connection whose latest test found its account read-only, and **write SQL**
   is held by no starting role, so it is granted on purpose. An administrator of the environment can
   lower the most rows, bytes and seconds any run may take, through the API. Search finds a query
-  definition by its title, its description, its column names and its connection's name. Nothing is
+  definition by its title, its description and its column names; a definition names its connection
+  only to somebody who may read the connection. Nothing is
   kept from a run: there is no dataset or bound value yet.
 - **Search.** **Search**, beside Components, Documents and Publications, finds everything you may read
   by its words, and nothing you may not: components, documents and each of their sections,

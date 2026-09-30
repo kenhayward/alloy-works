@@ -33,7 +33,10 @@ export const QueryDefinitionView = z.object({
   connection: z
     .object({
       id: z.string(),
-      name: z.string(),
+      name: z
+        .string()
+        .nullable()
+        .describe('Its name, or null where the caller may not read the connection'),
       identity: z
         .enum(['service', 'endUser'])
         .describe('Whose identity the connection runs a query as'),
@@ -57,9 +60,15 @@ export const QueryDefinitionSummary = z.object({
   title: z.string(),
   space: z.object({ id: z.string(), name: z.string() }),
   connection: z
-    .object({ id: z.string(), name: z.string() })
+    .object({
+      id: z.string(),
+      name: z
+        .string()
+        .nullable()
+        .describe('Its latest name, or null where the caller may not read the connection'),
+    })
     .nullable()
-    .describe('The connection it names, by its latest name'),
+    .describe('The connection it names'),
   retired: z.boolean(),
   version: z.object({ id: z.string(), number: z.string() }),
   changedAt: z.string().describe('When its latest version was made'),

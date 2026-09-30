@@ -78,6 +78,5 @@ export function whereFound(
   if (place === 'fields') return 'In the fields it groups';
   if (place === 'schemas') return 'In the schemas it assigns';
   if (place === 'columns') return 'In its column names';
-  if (place === 'connection') return "In its connection's name";
   return null;
 }

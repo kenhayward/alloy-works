@@ -39,7 +39,6 @@ const context: SearchContext = {
   ]),
   schemas: new Map([[SIGN_OFF, 'Sign-off']]),
   people: new Map([[ADA, 'Ada Lovelace']]),
-  connections: new Map([[CONNECTION, 'Readings warehouse']]),
 };
 
 const text = (value: string) => ({ type: 'text', value, marks: [] });
@@ -287,7 +286,7 @@ describe('what search reads from a version', () => {
     ]);
   });
 
-  it("reads a query definition by its title, its description, its columns' names and its connection's name, and never its SQL", () => {
+  it("reads a query definition by its title, its description and its columns' names, and never its SQL or its connection", () => {
     const definition: QueryDefinition = {
       schemaVersion: 1,
       title: 'Readings by site',
@@ -317,19 +316,16 @@ describe('what search reads from a version', () => {
         title: 'Readings by site',
         description: 'Each reading at a site.',
         columns: 'id Taken at',
-        connection: 'Readings warehouse',
       },
     ]);
-    // A connection the store could not name says nothing, and an empty description is no place.
+    // An empty description is no place.
     const [entry] = entriesOf(
-      {
-        kind: 'queryDefinition',
-        content: { ...definition, description: '', connection: ASSET_VERSION },
-      },
+      { kind: 'queryDefinition', content: { ...definition, description: '' } },
       context,
     );
     expect(places(entry!)).toEqual({ title: 'Readings by site', columns: 'id Taken at' });
     expect(JSON.stringify(entry)).not.toContain('sample.reading');
+    expect(JSON.stringify(entry)).not.toContain(CONNECTION);
   });
 
   it('composes what it reads, so two spellings a reader cannot tell apart are one', () => {

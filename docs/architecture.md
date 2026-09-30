@@ -2916,8 +2916,9 @@ hold its title and description, the one connection it names by artifact id, its 
   digest composes and the source does not. `parseQueryDefinitionForWrite` holds every write path to
   the shape and the checks; the database's `definition-references.ts` holds the connection named to one
   of the tenant's in service, under the connection's artifact lock, and refuses a version retiring a
-  connection a definition in service names (DAT-065). Search indexes its title, description, column
-  names and connection's name, rewritten when the connection is renamed (SCH-055).
+  connection a definition in service names (DAT-065). Search indexes its title, description and column
+  names (SCH-055), never its connection's name, which a reader of the definition may not be allowed
+  to read.
 
 **Who may write SQL is decided at the connection**: `write_sql`, which no starting role holds, and
 `use_connection` there, walked from the connection as every permission is (DAT-101), with `edit` in
@@ -2948,16 +2949,16 @@ column, its row and, for `source_refused`, the source's SQLSTATE and message. A 
 statement binds each fragment by its first key, describes it without running it (Q1), and answers its
 columns with a proposal each (DAT-105), a query's failure as 400.
 
-| Route                                       | Needs                                                         | Does                                                                                                     |
-| ------------------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `GET /v1/query-definitions`                 | A session                                                     | The definitions the caller may read, by space and by connection                                          |
-| `POST /v1/spaces/{space}/query-definitions` | `edit` in it; `use_connection`, `write_sql` at the connection | Makes one at 0.1                                                                                         |
-| `GET /v1/query-definitions/{id}`            | `read`                                                        | Its latest version, its connection's name, identity and whether retired, `mayEdit` and `mayRun`          |
-| `POST /v1/query-definitions/{id}/versions`  | `edit`; `use_connection`, `write_sql` at the connection       | Its next version from `openedFrom`; retiring and reinstating among them                                  |
-| `POST /v1/connections/{id}/sample`          | `use_connection`, `write_sql`                                 | The sample run; nothing is stored and no idempotency record kept                                         |
-| `POST /v1/connections/{id}/describe`        | `use_connection`; `write_sql` with `sql`                      | A statement's result columns, never run                                                                  |
-| `GET /v1/connections/{id}/uses`             | `read`                                                        | The definitions naming it by their latest versions: those the caller may read by title, the rest counted |
-| `GET` and `PUT /v1/settings/data`           | A session; `administer` at the tenant to change               | The tenant's lowered limits and the ceilings                                                             |
+| Route                                       | Needs                                                         | Does                                                                                                                                 |
+| ------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET /v1/query-definitions`                 | A session                                                     | The definitions the caller may read, by space and by connection, each connection named where the caller may read it                  |
+| `POST /v1/spaces/{space}/query-definitions` | `edit` in it; `use_connection`, `write_sql` at the connection | Makes one at 0.1                                                                                                                     |
+| `GET /v1/query-definitions/{id}`            | `read`                                                        | Its latest version; its connection's identity and whether retired, and its name where the caller may read it; `mayEdit` and `mayRun` |
+| `POST /v1/query-definitions/{id}/versions`  | `edit`; `use_connection`, `write_sql` at the connection       | Its next version from `openedFrom`; retiring and reinstating among them                                                              |
+| `POST /v1/connections/{id}/sample`          | `use_connection`, `write_sql`                                 | The sample run; nothing is stored and no idempotency record kept                                                                     |
+| `POST /v1/connections/{id}/describe`        | `use_connection`; `write_sql` with `sql`                      | A statement's result columns, never run                                                                                              |
+| `GET /v1/connections/{id}/uses`             | `read`                                                        | The definitions naming it by their latest versions: those the caller may read by title, the rest counted                             |
+| `GET` and `PUT /v1/settings/data`           | A session; `administer` at the tenant to change               | The tenant's lowered limits and the ceilings                                                                                         |
 
 A retiring version of a connection a definition in service names is refused `connection_in_use`,
 naming and counting the definitions the same way, and the credential route's answer carries them as

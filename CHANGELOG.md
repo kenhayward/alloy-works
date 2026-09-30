@@ -28,7 +28,9 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 - **Where a connection is used.** A connection's page lists the query definitions that use it, and a
   connection still used cannot be retired: the page names what to retire first. Setting a password
   whose test fails names the query definitions that depend on it.
-- **Search finds query definitions** by their title, description, column names and connection's name.
+- **Search finds query definitions** by their title, description and column names. A query
+  definition names its connection only to somebody who may read that connection; anybody else who
+  reads the definition is told it runs against a connection they may not read, and as whom.
 - **Limits on a query run for the whole environment.** An administrator can lower the most rows,
   bytes and seconds any run may take, through the API; a run takes the lower of its own and these.
 

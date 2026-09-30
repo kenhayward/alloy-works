@@ -17,9 +17,8 @@ import {
   type SearchSource,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
-import { latestDefinitionsNaming } from './definition-references.js';
 import type { TenantTransaction } from './tables.js';
-import { latestVersion, readVersion, type StoredVersion } from './versions.js';
+import { readVersion, type StoredVersion } from './versions.js';
 
 /**
  * Search's projection, written (docs/design/search.md, "Written with the version"; SCH-066): an
@@ -100,11 +99,9 @@ async function contextFor(trx: TenantTransaction, source: SearchSource): Promise
     }
   }
 
-  // A query definition is found by its connection's latest name (D2-S).
-  const connectionIds = source.kind === 'queryDefinition' ? [source.content.connection] : [];
   const contents = await latestContents(
     trx,
-    [...fieldIds, ...schemaIds, ...connectionIds].filter((id) => UUID.test(id)),
+    [...fieldIds, ...schemaIds].filter((id) => UUID.test(id)),
   );
   const named = <K extends DefinitionKind>(kind: K, id: string) => {
     const latest = contents.get(id);
@@ -131,15 +128,9 @@ async function contextFor(trx: TenantTransaction, source: SearchSource): Promise
           .select(['id', 'display_name'])
           .where('id', 'in', [...new Set(known)])
           .execute();
-  const connections = new Map<string, string>();
-  for (const id of connectionIds) {
-    const name = (contents.get(id)?.content as { readonly name?: unknown } | undefined)?.name;
-    if (typeof name === 'string') connections.set(id, name);
-  }
   return {
     fields,
     schemas,
-    connections,
     people: new Map(
       names.flatMap((row) => (row.display_name === null ? [] : [[row.id, row.display_name]])),
     ),
@@ -244,16 +235,6 @@ async function write(
  * called by `insertVersion` for every version the chain writes, in that version's transaction.
  */
 export async function indexVersion(trx: TenantTransaction, version: StoredVersion): Promise<void> {
-  // A connection is not searched itself, but the definitions naming it are found by its name: a
-  // version renaming it rewrites their entries, in its own transaction (SCH-055; D2-S).
-  if (version.kind === 'connection') {
-    if (!(await projected(trx))) return;
-    for (const naming of await latestDefinitionsNaming(trx, version.artifactId)) {
-      const latest = await latestVersion(trx, naming.id);
-      if (latest) await indexVersion(trx, latest);
-    }
-    return;
-  }
   if (!versioned.has(version.kind) || !(await projected(trx))) return;
   const source = sourceOf(version);
   const artifact = await trx
