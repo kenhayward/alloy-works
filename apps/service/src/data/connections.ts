@@ -291,6 +291,7 @@ export function connectionHandlers(
           lastTest: item.lastTest && {
             outcome: item.lastTest.outcome,
             at: item.lastTest.at.toISOString(),
+            version: item.lastTest.version,
           },
           changedAt: item.changedAt.toISOString(),
         })),

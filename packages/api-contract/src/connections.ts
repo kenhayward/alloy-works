@@ -144,7 +144,13 @@ export const ConnectionSummary = z.object({
   credentialSet: z
     .boolean()
     .describe('Whether a credential is set for where the connection now signs in'),
-  lastTest: z.object({ outcome: z.enum(['ok', 'failed']), at: z.string() }).nullable(),
+  lastTest: z
+    .object({
+      outcome: z.enum(['ok', 'failed']),
+      at: z.string(),
+      version: z.string().describe('The version it tested, which need not be the latest'),
+    })
+    .nullable(),
   changedAt: z.string().describe('When its latest version was made'),
 });
 export const ConnectionList = z.object({

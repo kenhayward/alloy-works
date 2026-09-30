@@ -86,6 +86,20 @@ function credentialText(credential: ConnectionView['credential']): string {
     : `${set}.`;
 }
 
+/**
+ * The last test in words - and, where it was of an earlier version, only that: a pass of settings
+ * since changed says nothing of these (the D1 fix, C7).
+ */
+function lastTestText(view: ConnectionView): string {
+  const last = view.lastTest;
+  if (last === null) return 'Not tested yet.';
+  const when = `on ${longDate(last.at)} by ${nameOf(last.by)}`;
+  if (last.version !== view.version.id) {
+    return `Not tested since this version. The last test, of an earlier version, was ${when}.`;
+  }
+  return `Last tested ${when}: ${last.outcome === 'ok' ? 'connected' : 'could not connect'}.`;
+}
+
 /** One of the page's parts, a region named by its heading. */
 function Part({ title, children }: { readonly title: string; readonly children: React.ReactNode }) {
   const id = useId();
@@ -135,10 +149,30 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
   const [busy, setBusy] = useState<string | null>(null);
   const working = useRef(false);
 
-  const show = useCallback((view: ConnectionView) => {
+  const shownVersion = useRef<string | null>(null);
+
+  /**
+   * Shows the connection as read. What a test, a credential or a describe answered was of the version
+   * shown then: a new one - saved here, retired, reinstated or saved by somebody else - makes it the
+   * earlier version's, so it goes (the D1 fix, C7).
+   */
+  const hold = useCallback((view: ConnectionView) => {
+    if (shownVersion.current !== null && shownVersion.current !== view.version.id) {
+      setTested(null);
+      setRotation(null);
+      setTables(null);
+    }
+    shownVersion.current = view.version.id;
     setConnection(view);
-    setDraft(draftOf(view.settings));
   }, []);
+
+  const show = useCallback(
+    (view: ConnectionView) => {
+      hold(view);
+      setDraft(draftOf(view.settings));
+    },
+    [hold],
+  );
 
   const load = useCallback(async () => {
     try {
@@ -159,11 +193,11 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
   const refresh = useCallback(async () => {
     try {
       const { data } = await client.GET('/v1/connections/{id}', { params: { path: { id } } });
-      if (isConnectionView(data)) setConnection(data);
+      if (isConnectionView(data)) hold(data);
     } catch {
       // What is shown stays; the next act reads it again.
     }
-  }, [client, id]);
+  }, [client, id, hold]);
 
   useEffect(() => {
     void load();
@@ -380,13 +414,7 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
 
       {view.mayUse && !retired && (
         <Part title="Test">
-          <p>
-            {view.lastTest === null
-              ? 'Not tested yet.'
-              : `Last tested on ${longDate(view.lastTest.at)} by ${nameOf(view.lastTest.by)}: ${
-                  view.lastTest.outcome === 'ok' ? 'connected' : 'could not connect'
-                }.`}
-          </p>
+          <p>{lastTestText(view)}</p>
           <button type="button" disabled={busy !== null} onClick={test}>
             Test
           </button>

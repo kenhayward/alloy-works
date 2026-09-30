@@ -4605,6 +4605,8 @@ export interface operations {
                                 /** @enum {string} */
                                 outcome: "ok" | "failed";
                                 at: string;
+                                /** @description The version it tested, which need not be the latest */
+                                version: string;
                             } | null;
                             /** @description When its latest version was made */
                             changedAt: string;

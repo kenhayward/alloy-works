@@ -28,8 +28,14 @@ interface Item {
   readonly name: string;
   readonly space: { readonly id: string; readonly name: string };
   readonly retired: boolean;
+  readonly version: { readonly id: string };
   readonly credentialSet: boolean;
-  readonly lastTest: { readonly outcome: 'ok' | 'failed'; readonly at: string } | null;
+  /** The last test, and the version it tested, which need not be the latest. */
+  readonly lastTest: {
+    readonly outcome: 'ok' | 'failed';
+    readonly at: string;
+    readonly version: string;
+  } | null;
   readonly changedAt: string;
 }
 
@@ -310,9 +316,11 @@ export function Connections({ client }: { readonly client: Client }) {
                     <td>
                       {item.lastTest === null
                         ? 'Not tested'
-                        : item.lastTest.outcome === 'ok'
-                          ? 'Connected'
-                          : 'Could not connect'}
+                        : item.lastTest.version !== item.version.id
+                          ? 'Not tested since this version'
+                          : item.lastTest.outcome === 'ok'
+                            ? 'Connected'
+                            : 'Could not connect'}
                     </td>
                     <td className={styles['muted']}>
                       <time dateTime={item.changedAt}>{whenChanged(item.changedAt)}</time>

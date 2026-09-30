@@ -57,6 +57,8 @@ export interface ConnectionView {
     readonly failure?: Failure;
     readonly at: string;
     readonly by: Named;
+    /** The version it tested, which need not be the one shown. */
+    readonly version: string;
   } | null;
   readonly mayAdminister: boolean;
   readonly mayUse: boolean;
@@ -138,6 +140,7 @@ export function isConnectionView(value: unknown): value is ConnectionView {
       (isRecord(lastTest) &&
         (lastTest.outcome === 'ok' || lastTest.outcome === 'failed') &&
         typeof lastTest.at === 'string' &&
+        typeof lastTest.version === 'string' &&
         isNamed(lastTest.by))) &&
     typeof value.mayAdminister === 'boolean' &&
     typeof value.mayUse === 'boolean'

@@ -656,7 +656,7 @@ describe('a connection', () => {
         version: { id: inQuality.version.id, revision: 0, version: 1 },
         changedAt: expect.any(Date),
         credentialSet: true,
-        lastTest: { outcome: 'ok', at: expect.any(Date) },
+        lastTest: { outcome: 'ok', at: expect.any(Date), version: inQuality.version.id },
       },
     ]);
     expect(listed!.facets.spaces).toEqual([{ value: quality, label: 'Quality', count: 1 }]);

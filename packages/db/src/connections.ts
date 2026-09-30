@@ -381,7 +381,12 @@ export interface ConnectionSummary {
   /** When its latest version was made. */
   readonly changedAt: Date;
   readonly credentialSet: boolean;
-  readonly lastTest: { readonly outcome: 'ok' | 'failed'; readonly at: Date } | null;
+  /** The last test, and the version it tested, which need not be the latest (the D1 fix, C7). */
+  readonly lastTest: {
+    readonly outcome: 'ok' | 'failed';
+    readonly at: Date;
+    readonly version: string;
+  } | null;
 }
 
 /**
@@ -478,7 +483,7 @@ export async function listReadableConnections(
       ? []
       : await trx
           .selectFrom('connection_test')
-          .select(['connection_id', 'outcome', 'tested_at'])
+          .select(['connection_id', 'outcome', 'tested_at', 'connection_version_id'])
           .distinctOn('connection_id')
           .where('connection_id', 'in', ids)
           .orderBy('connection_id')
@@ -487,7 +492,10 @@ export async function listReadableConnections(
   // Set, and for the target the latest version names: a credential for another is no credential.
   const latestDigest = new Map(credentials.map((row) => [row.connection_id, row.target_digest]));
   const lastTests = new Map(
-    tests.map((row) => [row.connection_id, { outcome: row.outcome, at: row.tested_at }]),
+    tests.map((row) => [
+      row.connection_id,
+      { outcome: row.outcome, at: row.tested_at, version: row.connection_version_id },
+    ]),
   );
   return {
     items: rows.map((row) => ({

@@ -8476,11 +8476,16 @@
                                   },
                                   "at": {
                                     "type": "string"
+                                  },
+                                  "version": {
+                                    "type": "string",
+                                    "description": "The version it tested, which need not be the latest"
                                   }
                                 },
                                 "required": [
                                   "outcome",
-                                  "at"
+                                  "at",
+                                  "version"
                                 ]
                               },
                               {

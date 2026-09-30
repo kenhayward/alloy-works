@@ -75,6 +75,7 @@ function service(
 ) {
   const asked: Asked[] = [];
   let held = options.connection ?? view();
+  let cuts = 0;
   const administers = options.administers ?? [GENERAL];
   const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
@@ -94,8 +95,19 @@ function service(
             retired: false,
             version: { id: FIRST, number: '0.1' },
             credentialSet: true,
-            lastTest: { outcome: 'ok', at: '2026-09-30T09:00:00.000Z' },
+            lastTest: { outcome: 'ok', at: '2026-09-30T09:00:00.000Z', version: FIRST },
             changedAt: '2026-09-30T09:00:00.000Z',
+          },
+          {
+            id: '77777777-7777-4777-8777-777777777777',
+            name: 'Moved',
+            space: { id: GENERAL, name: 'General' },
+            type: 'postgres',
+            retired: false,
+            version: { id: SECOND, number: '0.2' },
+            credentialSet: true,
+            lastTest: { outcome: 'ok', at: '2026-09-30T09:00:00.000Z', version: FIRST },
+            changedAt: '2026-09-30T10:00:00.000Z',
           },
           {
             id: '66666666-6666-4666-8666-666666666666',
@@ -156,7 +168,12 @@ function service(
       held = {
         ...held,
         settings: sent.settings,
-        version: { ...(held.version as object), id: SECOND, number: '0.2' },
+        // Each version cut is a version of its own, as the service's are.
+        version: {
+          ...(held.version as object),
+          id: cuts++ === 0 ? SECOND : crypto.randomUUID(),
+          number: `0.${cuts + 1}`,
+        },
       };
       return json(200, held);
     }
@@ -244,9 +261,13 @@ describe('the Connections list', () => {
     );
     expect(within(rows[1]!).getByText('Set')).toBeInTheDocument();
     expect(within(rows[1]!).getByText('Connected')).toBeInTheDocument();
-    expect(within(rows[2]!).getByText(/Old ledger/)).toBeInTheDocument();
-    expect(within(rows[2]!).getByText('Retired')).toBeInTheDocument();
-    expect(within(rows[2]!).getByText('Not set')).toBeInTheDocument();
+    // A pass of an earlier version is not this version's.
+    expect(within(rows[2]!).getByText('Moved')).toBeInTheDocument();
+    expect(within(rows[2]!).getByText('Not tested since this version')).toBeInTheDocument();
+    expect(within(rows[2]!).queryByText('Connected')).toBeNull();
+    expect(within(rows[3]!).getByText(/Old ledger/)).toBeInTheDocument();
+    expect(within(rows[3]!).getByText('Retired')).toBeInTheDocument();
+    expect(within(rows[3]!).getByText('Not set')).toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'Space' })).toBeInTheDocument();
   });
 
@@ -411,6 +432,52 @@ describe('a connection on its own page', () => {
       ),
     ).toBeInTheDocument();
     expect(within(credential).getByRole('button', { name: 'Set again' })).toBeInTheDocument();
+  });
+
+  it("says a connection's last test was of an earlier version, and forgets an answer on the page once a version is cut", async () => {
+    const user = userEvent.setup();
+    const credential = {
+      set: true,
+      setBy: { id: 'ada', name: 'Ada' },
+      setAt: '2026-09-30T09:00:00Z',
+      targetChanged: false,
+    };
+    const lastTest = {
+      outcome: 'ok',
+      findings: [],
+      at: '2026-09-30T09:30:00.000Z',
+      by: { id: 'ada', name: 'Ada' },
+      version: '88888888-8888-4888-8888-888888888888',
+    };
+    const { client } = service({ connection: view({ credential, lastTest }) });
+    render(<ConnectionPage client={client} id={READINGS} />);
+    const testing = await screen.findByRole('region', { name: 'Test' });
+    expect(
+      within(testing).getByText(
+        'Not tested since this version. The last test, of an earlier version, was on 30 September 2026 by Ada.',
+      ),
+    ).toBeInTheDocument();
+    expect(within(testing).queryByText(/connected/i)).toBeNull();
+
+    // Tested now, then a version cut: the answer on the page was the earlier version's, so it goes.
+    await user.click(within(testing).getByRole('button', { name: 'Test' }));
+    expect(await within(testing).findByText('Connected.')).toBeInTheDocument();
+    const saving = screen.getByRole('region', { name: 'Settings' });
+    await user.type(within(saving).getByLabelText('Description'), ' Again.');
+    await user.click(within(saving).getByRole('button', { name: 'Save version' }));
+    await waitFor(() => expect(screen.queryByText('Connected.')).toBeNull());
+
+    // And across Retire and Reinstate, with what the credential's own test said.
+    await user.type(
+      within(screen.getByRole('region', { name: 'Credential' })).getByLabelText('Password'),
+      CANARY,
+    );
+    await user.click(screen.getByRole('button', { name: 'Replace' }));
+    expect(await screen.findByText('Connected.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Retire' }));
+    await user.click(await screen.findByRole('button', { name: 'Reinstate' }));
+    await screen.findByRole('button', { name: 'Retire' });
+    expect(screen.queryByText('Connected.')).toBeNull();
   });
 
   it('saves a version, and says so when somebody else saved one first', async () => {

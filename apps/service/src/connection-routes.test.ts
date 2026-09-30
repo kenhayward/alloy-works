@@ -561,6 +561,15 @@ describe('connections through the service', () => {
       ).json<ConnectionBody>();
       expect(read.version.id).toBe(renamed.json<ConnectionBody>().version.id);
       expect(read.lastTest?.version).toBe(connection.version.id);
+      // The listing says which version its last test was of, too.
+      const listed = await call('ada', 'GET', '/v1/connections');
+      expect(listed.json<{ items: Json[] }>().items).toContainEqual(
+        expect.objectContaining({
+          id: connection.id,
+          version: expect.objectContaining({ id: read.version.id }),
+          lastTest: expect.objectContaining({ outcome: 'ok', version: connection.version.id }),
+        }),
+      );
     } finally {
       release();
       connector.hold = undefined;
