@@ -815,10 +815,10 @@ Taken as recommended, approved by Ken on 2026-09-30.
 | DA-U | Every failure is a named code attributed to the connector, the query or the product                                                                                                          |
 | DA-V | Built in eight slices, D1 to D8, each with its own plan, `bindings.md` designed after D3                                                                                                     |
 
-### Settled while writing, for Ken's review
+### Settled while writing, approved by Ken on 2026-09-30
 
-Not in the design Ken approved; each is what the approved design needed to be built, and open to
-reversal.
+Not in the design as Ken first approved it; each is what that design needed to be built, and Ken
+approved them the same day.
 
 | #     | Decision                                                                                                                                                                                                                                                                                      |
 | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
