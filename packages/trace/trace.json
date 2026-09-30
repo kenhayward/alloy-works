@@ -20112,7 +20112,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 375,
+      "line": 380,
       "kind": "title"
     },
     {
@@ -21228,7 +21228,7 @@
     {
       "id": "DAT-056",
       "file": "tests/e2e/src/connector-privilege.test.ts",
-      "line": 154,
+      "line": 160,
       "kind": "title"
     },
     {
