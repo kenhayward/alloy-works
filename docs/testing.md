@@ -21,6 +21,7 @@ Exceptions - throwaway spikes, generated code, pure configuration - need a human
 | `apps/desktop`    | Vitest | node        | The shell's pure decisions - target resolution, the bridge contract |
 | `tests/e2e`       | Vitest | node        | The whole system in containers, driven over HTTP                    |
 | `tests/browser`   | Vitest | node        | The renderer in a pinned Chromium, against the whole system         |
+| `apps/connector`  | Vitest | node        | The connector, against a PostgreSQL of its own on `127.0.0.1:5434`  |
 
 `pnpm test` runs every suite but the last two, which need a running stack - apart from the browser
 workspace's pin tests, which need none; `pnpm test:e2e` and `pnpm test:browser` run those. The reporter is **pinned explicitly** in every `vitest.config`: left
@@ -204,6 +205,33 @@ setup (`apps/worker/src/testing/database-setup.ts`) sets them once for the run w
 `bootstrapTestLoginRoles`, and each file prepares only its own database with `prepareDatabase`, which
 creates and alters no role (the one cluster-wide row it can write, an existing tenant's membership of
 `aw_tenant`, a fresh database never has). `bootstrapCluster` is still the two together, for everything else.
+
+## The connector suite and its source
+
+`apps/connector` runs its supervisor, its child and its PostgreSQL work against a source of its own:
+the pinned PostgreSQL image and the seed `deploy/compose.yaml`'s `source-postgres` uses
+(`deploy/sources/postgres.sql`), TLS on, published on `127.0.0.1` alone.
+
+```bash
+pnpm --filter @alloy-works/connector source        # starts it, or finds it running, and waits for it
+pnpm --filter @alloy-works/connector source:stop   # removes it
+```
+
+It listens on `ALLOY_TEST_SOURCE_PORT`, 5434 unless said otherwise, and never 5432 - the port the
+development stack's own database is on. CI's build job starts it in a step before `pnpm test`;
+without it the supervisor, postgres, secrets and server suites fail, having no source to reach.
+
+**Loopback is always refused by the guard**, and the suite's source is on loopback, so the suite
+hands the child a deny list without `127.0.0.0/8` through a function parameter, never through
+configuration; `guard.test.ts` holds the production policy to refusing loopback whatever
+`CONNECTOR_DENY` says (the D1 plan, D1-K). The child is `src/child.ts` run through `--import tsx`, a
+parameter too, where the built connector runs `dist/child.js`. A port that is filtered rather than
+refused is stood in for by a listener that accepts and never answers, so the five-second connect
+timeout is what it costs on any machine.
+
+The service's suite never reaches a connector: `apps/service/src/test/fake-connector.ts` is a
+hand-written one, answered through `fetch`, that seals with a key of its own and answers each request
+as a test tells it to, or fails as a real one can - unreachable, full, broken or talking nonsense.
 
 ## The regression corpus and veraPDF
 
@@ -585,6 +613,18 @@ Two things it deliberately does not ask of the machine running it:
   itself by, so that name stays in the `Host` header and only the socket is pointed somewhere
   reachable. `completeAtStandIn` does the same for the sign-in provider. Every address it uses can
   be overridden: `ALLOY_E2E_SERVICE`, `ALLOY_E2E_IDP`, `ALLOY_E2E_IDP_ISSUER`, `ALLOY_E2E_STORE_AT`.
+
+**It asks Docker what the connector can reach.** The stack runs with `--profile sources`, and
+`connector-isolation.test.ts` starts a throwaway `node:24-bookworm-slim` container in each of the
+connector's, the worker's and the service's network namespaces - the connector's image carries no
+probe - and tries every name, address and published port over TCP: from the connector, only its source
+and the service on `connector-private` answer; from the worker, the connector never does; from the
+service, the connector does and the source never. It publishes a listener of its own on every host
+address, which the stack never does, and requires an ordinary container to reach it through the host
+before requiring the connector not to, so the leak the spike found is tried on whatever engine runs
+it. `ALLOY_E2E_COMPOSE_PROJECT` names the compose project it inspects, `alloy-works` unless said
+otherwise; set it for a stack under another name. `connections.test.ts` makes a connection to the
+development source through the whole system, sets its password, tests it and lists its tables.
 
 What it does **not** cover, and where that lives instead: refusing another environment's session,
 which is `cross-tenant.test.ts` in the service, because Node's `fetch` will not let a test set the

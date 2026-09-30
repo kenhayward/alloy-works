@@ -242,7 +242,10 @@ the operating system - has less to do now that the service is the system of reco
 **For development and small installations, one compose file**: the service, a worker (which also
 serves previews), PostgreSQL with pgvector, and SeaweedFS as the object store - and, from T2, the
 connector on two networks of its own: one shared only with the service, one out to tenants' sources.
-It is the same set of containers as a large installation, fewer of each.
+It is the same set of containers as a large installation, fewer of each. **The connector is built in
+development** (D1): `deploy/compose.yaml` runs it on `connector-private` and `connector-egress`, both
+internal with an isolated gateway, and a development source in the `sources` profile
+([architecture.md](../architecture.md#data-connections)).
 
 **Production hosting is not decided** - which cloud, and whether customers may host the system
 themselves. It is open in scope §10, hinging on data residency (ADM-Q01). The containers above
@@ -251,7 +254,14 @@ constrain it only a little: a managed Postgres must offer pgvector, and the stor
 **Hosting must isolate the connector** (ADR-0035): production must guarantee that the connector's
 network has no route to any platform service, including through a host that publishes a platform
 port - the data connector spike found exactly that leak on Docker Desktop - and that isolation is
-verified on production's own platform before connectors ship.
+verified on production's own platform before connectors ship. **D1 found it is a Linux leak too, and
+how compose closes it** ([the D1 plan](../plans/2026-09-30-d1-connections-and-the-connector.md), Q2):
+on a plain network every port the host publishes on all addresses answers the connector; an
+`internal` network still gives the host an address on its bridge, where any host process listening on
+all addresses answers; an internal network whose bridge gateway is `isolated` (Docker Engine 28 or
+later) answers nothing of the host or the platform, on Linux and on Docker Desktop for Windows alike.
+Production's egress reaches the internet, so it cannot be internal: that isolation is hosting's to
+give, and the whole-system suite's isolation test is the check to run on it.
 
 ## Where each part is designed
 

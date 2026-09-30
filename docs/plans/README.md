@@ -576,7 +576,7 @@ built in the eight slices its build order names, each planned when its turn come
 
 | #   | Plan                                                                            | Builds                                                                                                                                                                                                                              | Status  |
 | --- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| D1  | [Connections and the connector](2026-09-30-d1-connections-and-the-connector.md) | The connection kind and its sealed credential, `use_connection`, `apps/connector` with a process per request, the address guard, PostgreSQL's test and describe, the connector's networks in compose and CI, and a Connections page | Planned |
+| D1  | [Connections and the connector](2026-09-30-d1-connections-and-the-connector.md) | The connection kind and its sealed credential, `use_connection`, `apps/connector` with a process per request, the address guard, PostgreSQL's test and describe, the connector's networks in compose and CI, and a Connections page | Built   |
 
 ## Publishing
 

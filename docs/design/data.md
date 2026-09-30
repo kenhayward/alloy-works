@@ -169,6 +169,10 @@ In `packages/domain/src/data/connection.ts`, a zod schema and a check:
 }
 ```
 
+**D1 admits `type: 'postgres'` alone** (the D1 plan, D1-C): `sqlServer`, `http` and `s3` each arrive
+as an arm with their slice, which refuses nothing stored, and every write refuses an identity its
+type's connector does not declare, so only `service` can be written until D7 declares `asserted`.
+
 **What a version holds is what anybody who may read it sees**: never a secret. A database source
 names its `account`, the login it runs as, beside its host, so the connection's readers see what it
 runs as and a changed account is a version (DAT-007); only the password is the credential. The check
@@ -697,7 +701,10 @@ a binding is resolved.
   the caller may read by name and counts the rest. When [relationships.md](relationships.md)'s
   reference index is built, a binding is one more reference it records.
 - **Retiring** a connection or a definition shows its uses first; a connection is refused while a
-  definition that is not retired names it (DAT-065). Nothing is deleted.
+  definition that is not retired names it (DAT-065). Nothing is deleted. D1 builds retiring and
+  reinstating, each a version, and refuses a test, a describe and a credential on a retired
+  connection, `connection_retired`; where used, and the refusal to retire one in use, arrive with D2,
+  when there is a definition to name (the D1 plan, D1-O).
 
 ### Audit
 
@@ -728,6 +735,14 @@ the act has them, the binding and the document (DAT-086). A failed act records n
 | `sql_not_permitted`       | product     | A SQL fetch on a connection that refuses one (DAT-102, DAT-103)                                |
 | `parameter_invalid`       | product     | A value failed its declaration before anything ran (DAT-020)                                   |
 | `binding_unresolved`      | product     | A publish met a binding with no stored result - raised by the publish (DAT-087, `bindings.md`) |
+| `source_unsupported`      | connector   | The source signed the account in and is older than PostgreSQL 14, which a test cannot check    |
+| `connector_error`         | connector   | The connector's child ended without an answer                                                  |
+| `connector_unavailable`   | product     | No connector is configured, or it did not answer; nothing was asked of the source              |
+| `connector_busy`          | product     | The connector was running as many requests as it may                                           |
+
+The last four were added by the D1 plan (D1-M, D1-Q). A failure is answered with its HTTP status by
+where it arose: a failed test is an answer, 200; describe's `connection_failed`, `connector_error` and
+`source_unsupported` are 502 and `timeout` 504; `connector_unavailable` and `connector_busy` 503.
 
 ## Routes
 
