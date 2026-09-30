@@ -44,6 +44,7 @@ function collect(bytes, names, budget) {
 }
 
 function parseXml(text, handlers) {
+  if (!text) return; // an absent part (styles, shared strings) is allowed
   const p = new SaxesParser();
   p.on('opentag', (t) => handlers.open?.(t.name, t.attributes));
   p.on('closetag', (t) => handlers.close?.(t.name));

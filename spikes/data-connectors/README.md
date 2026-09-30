@@ -48,15 +48,16 @@ Inspect those two with `docker exec` rather than a published port.
 cd spikes/data-connectors
 docker build -t aw-dc-agent:latest .                        # the Node image with pg and tedious
 docker compose -p aw-data-connectors up -d                  # the whole stack
-bash load-sqlserver.sh                                      # SQL Server has no init hook: both schema files
+bash load-sqlserver.sh                                      # SQL Server has no init hook: the three schema files
 curl -s -X POST http://127.0.0.1:15706/svc/setup            # the tenant's schema in platform-pg (case 4)
 
 docker compose -p aw-data-connectors down -v                # take down and wipe volumes
 ```
 
-`source-pg` loads `init/source-pg.sql` and then `init/source-pg-phase2.sql` automatically on first
-start (roles, RLS, Ada/Grace rows). They are mounted as `01-` and `02-` because the entrypoint runs
-them in name order, and unnumbered the phase 2 file sorts first and fails on a role not yet made.
+`source-pg` loads `init/source-pg.sql`, `init/source-pg-phase2.sql` and `init/source-pg-phase3.sql`
+automatically on first start (roles, RLS, Ada/Grace rows, and phase 3's tables). They are mounted as
+`01-`, `02-` and `03-` because the entrypoint runs them in name order, and unnumbered the phase 2 file
+sorts first and fails on a role not yet made.
 After a change to `lib/` or any `*.mjs`, rebuild the image and
 `docker compose -p aw-data-connectors up -d --force-recreate caller connector` (and any other service
 running the changed file).
@@ -96,6 +97,32 @@ the findings as a claim.
 | `lib/service.mjs`    | The caller as service and worker: sessions and the provider tokens they would hold, publish jobs under the three options, pins with provenance, the result cache, sign-out            |
 | `case3.mjs`          | Case 3's driver, against the connector directly                                                                                                                                       |
 | `case4.mjs`          | Case 4's driver, through the caller's `/svc/*` routes                                                                                                                                 |
+
+### Phase 3 pieces (cases 5 to 7)
+
+Cases 5 to 7 run in a **one-shot container** on `aw-dc-sources` - the connector's network - with the
+harness's current source copied in, so an edit needs no image rebuild (a change to `package.json`
+does). They reach the two databases directly and start their own fake HTTP source beside themselves.
+
+```bash
+bash run.sh case5.mjs > dcp3-case5.json                            # ~1 s: 3,792 binding attempts
+bash run.sh case6.mjs > dcp3-case6.json                            # ~1 min: every source, 100 runs, order
+bash run.sh case6.mjs -e MODE=tz -e TZ=Pacific/Kiritimati > dcp3-case6-tz.json   # checksums in another zone
+bash run.sh case7.mjs --memory 3g > dcp3-case7.json                # ~5 min: limits; readers in child processes
+```
+
+| File                          | What it is                                                                                                  |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `init/*-phase3.sql`           | `param_probe`, `typed_result`, `unordered`, `many`; a view that calls `set_config`; `ada_login`; `IntList`  |
+| `lib/types.mjs`               | The declared types and each one's canonical text; a `NamedFailure` for every refusal                        |
+| `lib/params.mjs`              | The parameter declaration, DAT-020's validation, and the three binders (SQL, HTTP builder, file filters)    |
+| `lib/canon.mjs`               | The canonical result document, RFC 8785 serialisation and the SHA-256 checksum                              |
+| `lib/xlsx-own.mjs`            | The XLSX reader over `fflate` and `saxes`, byte- and row-bounded, and serial-date conversion                |
+| `lib/fixtures.mjs`            | Case 6's logical result, and the CSV and two workbooks (1900 and 1904) written by hand                      |
+| `lib/limits.mjs`              | Row, byte and time limits for HTTP, CSV, Postgres (a cursor) and SQL Server (a cancelled stream)            |
+| `lib/bombs.mjs`               | Inputs that expand far past their size, generated in memory and never written out expanded                  |
+| `fake-data-api.mjs`           | The fake HTTP source: an echo, typed JSON, oversized, gzip, drip, slow and lying-length responses          |
+| `case5.mjs` ... `case7.mjs`   | The drivers; `probe-node.mjs` checks the Node features the canonical form leans on                          |
 
 ## Credentials
 

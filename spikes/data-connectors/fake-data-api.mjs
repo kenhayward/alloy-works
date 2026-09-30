@@ -38,7 +38,8 @@ function* filler(total) {
   yield Buffer.from('[');
   let sent = 1;
   while (sent + unit.length + 1 < total) { yield unit; sent += unit.length; }
-  yield Buffer.from('{}]'.slice(0, Math.max(1, total - sent)));
+  const rest = total - sent; // pad so the body is exactly as long as its Content-Length
+  yield Buffer.from(' '.repeat(Math.max(0, rest - 3)) + '{}]'.slice(-Math.min(3, rest)));
 }
 
 const server = http.createServer(async (req, res) => {
