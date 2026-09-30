@@ -72,6 +72,8 @@ describe('the rule behind a refusal', () => {
       // guards (data.md, "Rotation, where used and retiring"), which no requirement names as such.
       'connection.retired',
       'credential.missing',
+      // A credential set for where the connection no longer signs in (data.md, DA-AF).
+      'credential.target_changed',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),
