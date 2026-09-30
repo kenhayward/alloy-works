@@ -1,10 +1,19 @@
 import { z } from 'zod';
 
+import { storableText } from '../stored/storable.js';
+
 /**
  * The version of a connection's own payload (data.md, "The connection"), recorded in it and migrated
  * like any stored shape when it changes.
  */
 export const CONNECTION_SCHEMA_VERSION = 1;
+
+/**
+ * Refuses a string Postgres cannot store in a version's `jsonb` - a lone half of a surrogate pair -
+ * so it is the caller's mistake, naming the member, and never a failure on the way to the database.
+ */
+const storable = (what: string) => (schema: z.ZodString) =>
+  schema.refine(storableText, { message: `${what} holds a character that cannot be stored` });
 
 /** Any control character: C0, DEL and C1. */
 const CONTROL = /\p{Cc}/u;
@@ -14,8 +23,7 @@ const CONTROL_BUT_LINE_FEED = /(?!\n)\p{Cc}/u;
 const utf8Bytes = (value: string) => new TextEncoder().encode(value).length;
 const characters = (value: string) => [...value].length;
 
-const name = z
-  .string()
+const name = storable('A name')(z.string())
   .refine((value) => characters(value) >= 1 && characters(value) <= 200, {
     message: 'A name is 1 to 200 characters',
   })
@@ -24,8 +32,7 @@ const name = z
   })
   .refine((value) => !CONTROL.test(value), { message: 'A name holds no control character' });
 
-const description = z
-  .string()
+const description = storable('A description')(z.string())
   .refine((value) => characters(value) <= 2000, {
     message: 'A description is at most 2,000 characters',
   })
@@ -109,29 +116,30 @@ function isCanonicalHost(value: string): boolean {
   return isDnsName(value);
 }
 
-/** PostgreSQL's identifier length, NAMEDATALEN less one, in bytes; U+0000 no string can hold. */
+/**
+ * PostgreSQL's identifier length, NAMEDATALEN less one, in bytes; U+0000 no string can hold. `what`
+ * with its article: "A database", "An account".
+ */
 const sourceName = (what: string) =>
-  z
-    .string()
+  storable(what)(z.string())
     .refine((value) => utf8Bytes(value) >= 1 && utf8Bytes(value) <= 63, {
-      message: `A ${what} is 1 to 63 bytes of UTF-8`,
+      message: `${what} is 1 to 63 bytes of UTF-8`,
     })
-    .refine((value) => !value.includes('\u0000'), { message: `A ${what} holds no U+0000` });
+    .refine((value) => !value.includes('\u0000'), { message: `${what} holds no U+0000` });
 
 const postgresSource = z.strictObject({
   host: z.string().refine(isCanonicalHost, {
     message: 'A host is a lower-case name or a canonical address: no path, port, zone or number',
   }),
   port: z.number().int().min(1).max(65535),
-  database: sourceName('database'),
-  account: sourceName('account'),
+  database: sourceName('A database'),
+  account: sourceName('An account'),
   // No `disable`: a credential never crosses a network in the clear. A private CA arrives as an
   // optional member, which refuses nothing stored.
   tls: z.enum(['require', 'verifyFull']),
 });
 
-const bounded = z
-  .string()
+const bounded = storable('A value')(z.string())
   .min(1)
   .max(2048)
   .refine((value) => !CONTROL.test(value), { message: 'No control character' });

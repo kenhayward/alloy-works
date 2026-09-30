@@ -124,6 +124,45 @@ describe('a connection version', () => {
     }
   });
 
+  it('refuses a lone surrogate in every string of the settings, naming the member, as a string Postgres cannot store', () => {
+    const lone = ['\uD800', '\uDC00', 'a\uD83Db', 'z\uDE00'];
+    for (const path of [
+      ['name'],
+      ['description'],
+      ['source', 'database'],
+      ['source', 'account'],
+      ['source', 'host'],
+      ['identity', 'tokenEndpoint'],
+    ]) {
+      for (const text of lone) {
+        const value =
+          path[0] === 'identity'
+            ? withMember(['identity'], {
+                kind: 'endUser',
+                mechanism: 'delegated',
+                tokenEndpoint: `https://idp.example/${text}`,
+                audience: 'source',
+              })
+            : withMember(path, `Read${text}ings`.toLowerCase());
+        const problems = refusal(value);
+        expect(problems.length, `${path.join('.')} ${JSON.stringify(text)}`).toBeGreaterThan(0);
+        expect(
+          problems.some(
+            (problem) => problem.rule === 'connection_invalid' && problem.path === path.join('.'),
+          ),
+          `${path.join('.')} ${JSON.stringify(text)}`,
+        ).toBe(true);
+      }
+    }
+    // A pair whole is taken where the member takes it.
+    expect(refusal(withMember(['name'], 'Readings 😀'))).toEqual([]);
+    // And the words read as English: an account, a database.
+    const [account] = refusal(withMember(['source', 'account'], ''));
+    expect(account).toMatchObject({ message: 'An account is 1 to 63 bytes of UTF-8' });
+    const [database] = refusal(withMember(['source', 'database'], ''));
+    expect(database).toMatchObject({ message: 'A database is 1 to 63 bytes of UTF-8' });
+  });
+
   it('DAT-078 refuses a connection whose identity its connector does not declare, identity_not_supported', () => {
     expect(connectorIdentities.postgres).toEqual([]);
     const asserted = withMember(['identity'], {

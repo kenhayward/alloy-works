@@ -643,6 +643,19 @@ describe('connections through the service', () => {
     expect(invalid.json()).toMatchObject({ code: 'invalid_request' });
     expect(invalid.json<{ message: string }>().message).toContain('settings.source.host');
     expect(invalid.body).not.toContain('127.1');
+    // A string Postgres cannot store is the caller's mistake too, wherever it is: never a 500.
+    for (const [member, over] of [
+      ['settings.name', { name: 'Read\uD800ings' }],
+      ['settings.description', { description: 'The \uDC00 sites.' }],
+      ['settings.source.database', { source: { ...settings().source, database: 'read\uD800' } }],
+      ['settings.source.account', { source: { ...settings().source, account: 'rea\uDC00der' } }],
+    ] as const) {
+      const unstorable = await call('ada', 'POST', `/v1/spaces/${general}/connections`, {
+        settings: settings(over as Partial<ConnectionSettings>),
+      });
+      expect(unstorable.statusCode, member).toBe(400);
+      expect(unstorable.json<{ message: string }>().message, member).toContain(member);
+    }
     const asserted = await call('ada', 'POST', `/v1/spaces/${general}/connections`, {
       settings: settings({
         identity: { kind: 'endUser', mechanism: 'asserted', attribute: 'email' },
