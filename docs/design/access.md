@@ -79,14 +79,15 @@ enforcing it cannot disagree.
 | IAM-056                   | Provider groups are re-read at sign-in and at no other time, so a removal at the provider takes effect at the next sign-in. That is not the stated, tested bound IAM-056 asks for                                                                                                                                                                              |
 | IAM-015, IAM-028          | Moving an artifact is T7. Because nothing is copied down, a move is an update of `space_id` and the next decision is already right - but the act of moving is not designed                                                                                                                                                                                     |
 | IAM-016                   | Referencing across spaces is T4; `readableSet` below is what it will call. Re-checking at publish, IAM-017's, is now PUB-094's for every component in T1, and [publishing.md](publishing.md) claims it: the publisher's permission is decided at the publication (decision C)                                                                                  |
-| IAM-020, IAM-070          | A data connection's results are T2's, and the named high-risk acts T7's. Each arrives as a new permission in the closed set, which is a code change with a migration of the check constraint and nothing more                                                                                                                                                  |
+| IAM-070                   | The named high-risk acts are T7's. Each arrives as a new permission in the closed set, which is a code change with a migration of the check constraint and nothing more                                                                                                                                                                                        |
+| IAM-083, IAM-084          | IAM-020, a data connection's results separately grantable, is superseded by these two, both T7's: a dataset's own read grant, and publishing only by one who sees every value. In T2 a stored result is read on the document's permission ([data.md](data.md), ADR-0035)                                                                                       |
 | IAM-032                   | Evaluating as another user is T7. `explain` already takes the principal as a parameter, so it is a route and a permission, not a new model                                                                                                                                                                                                                     |
 | IAM-005, IAM-010, IAM-033 | Tenant-scoping of derived data is each derived store's; a disabled user losing access is the session check's; service identities are the token design's                                                                                                                                                                                                        |
 
 ## Spaces
 
 A **space** is `id`, `name` - unique within the tenant - and when it was created. Content artifacts
-live in exactly one: a component, a document (which holds its own outline), a template, an asset, a query definition.
+live in exactly one: a component, a document (which holds its own outline), a template, an asset, and from T2 a connection, a query definition and a dataset ([data.md](data.md)).
 **Definitions live in no space**: a field, a metadata schema and a component type are tenant-wide
 (MET-001, MET-005, MET-010), and so is a style catalogue (STY-002), because MET and STY both decided a
 definition is shared across spaces. `artifact.space_id` is required for a content kind and forbidden
@@ -112,6 +113,10 @@ service's checks are code and a permission no check reads would be a promise wit
 | `design`             | Create or change a template                                                                    | The template, or the space for creating one |
 | `manage_definitions` | Create or change a field, a metadata schema or a component type                                | The tenant                                  |
 | `administer`         | Change grants at this level and below; at the tenant, also spaces, roles and groups            | The level                                   |
+
+**Two more arrive with T2's data** ([data.md](data.md)), each decided at a connection: `use_connection`,
+to run anything against it, and `write_sql`, to save a query definition whose fetch is SQL against it.
+They are not built; adding them migrates `role_permissions_closed` and `api_token_scopes_closed`.
 
 **`design` is `edit` for templates, and separate from it on purpose.** TPL-006 says designing a
 template and writing a document are different jobs, and MET-024 names designing templates as

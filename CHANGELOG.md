@@ -3,6 +3,19 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.128.1 - 2026-09-30 (PR #360)
+
+### Added
+
+- **How connecting to your own data will work, and the plan for its first part.** Nothing you can use
+  yet. The design says how the product will connect to your databases, web services and file stores:
+  an administrator makes a connection in a space and sets its password or key, which is locked away
+  and never shown again, even to them; a query runs against it only when a person asks, in a separate
+  part of the system that can reach your source and nothing of the product's own; and every value a
+  document holds from a source is kept with the document, so a preview or a publish never goes back to
+  the source. The first part to be built lets an administrator make a connection to a PostgreSQL
+  database, set its password, test it and see its tables.
+
 ## 0.128.0 - 2026-09-30 (PR #353)
 
 ### Added

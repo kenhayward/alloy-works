@@ -3693,7 +3693,7 @@
     {
       "id": "DAT-007",
       "area": "DAT",
-      "statement": "Creating, changing and deleting a connection must be audited, including which fields changed but never their values",
+      "statement": "Creating, changing and deleting a connection must be audited, including which fields changed, but never a credential's value",
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
@@ -4269,7 +4269,7 @@
     {
       "id": "DAT-093",
       "area": "DAT",
-      "statement": "Accepting a source revision must create a new dataset version and move only that document's binding to it. Another document referencing the same dataset must keep its version until somebody accepts there",
+      "statement": "A source revision must be recorded as a new dataset version when it is found, and accepting it must move only that document's binding to that version. Another document referencing the same dataset must keep its version until somebody accepts there",
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
@@ -4296,7 +4296,7 @@
     {
       "id": "DAT-089",
       "area": "DAT",
-      "statement": "A source must be queried only when a person acts: placing a binding, creating a document from a template, checking for or accepting a source revision, or a query author's sample run (DAT-014)",
+      "statement": "A source must be queried only when a person acts: placing a binding, creating a document from a template, checking for or accepting a source revision, a query author's sample run (DAT-014), or describing a source's tables for a query or testing a connection (DAT-075)",
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
@@ -15993,6 +15993,259 @@
         {
           "id": "AST-039",
           "howItIsMet": "Inherited alternative text carries the asset's language; a figure's own text takes the language of the component holding it"
+        }
+      ]
+    },
+    {
+      "document": "data.md",
+      "owns": [
+        {
+          "id": "DAT-001",
+          "howItIsMet": "`connection` is an artifact kind in one space of one tenant's schema; its version carries a `name` and the settings of one source ([The connection](#the-connection))"
+        },
+        {
+          "id": "DAT-074",
+          "howItIsMet": "A connection's `type` is `postgres`, `sqlServer`, `http` or `s3`, and a query definition's fetch reads CSV, XLSX, JSON or JSON Lines from an S3 object or an HTTP response; every one is pulled by the connector"
+        },
+        {
+          "id": "DAT-003",
+          "howItIsMet": "The credential is sealed into `connection_credential` in the tenant's schema, with a key only the connector holds; no route answers it, so it is write-only from every client"
+        },
+        {
+          "id": "DAT-004",
+          "howItIsMet": "`GET /v1/connections/{id}` answers `credential: { set, setBy, setAt }` from the latest credential row, and nothing a route answers carries the sealed value or the secret"
+        },
+        {
+          "id": "DAT-005",
+          "howItIsMet": "The secret is opened only in the connector's per-request child, goes in a header never a URL, and is kept out of every log, telemetry event, export, crash report and error; the spike's case 2 matrix becomes a test for each path, in the service and in the connector"
+        },
+        {
+          "id": "DAT-075",
+          "howItIsMet": "`test` answers `ok`, or `connection_failed` alike for a refused or filtered port, an unknown host, a guarded address and a wrong credential, naming no address and echoing no credential; checks of the authenticated account are reported after it by name ([The connection test](#the-connection-test))"
+        },
+        {
+          "id": "DAT-007",
+          "howItIsMet": "Every change to a connection's settings is a version, so what changed is a comparison of two versions; every credential set or replaced is a row naming who and when and never the value; a connection is never deleted, and retiring it is a version"
+        },
+        {
+          "id": "DAT-076",
+          "howItIsMet": "`identity` is `service`, or `endUser` by `delegated` or `asserted`; a delegated act needs the provider access token a session through the tenant's own provider holds, so a Google-route session or a personal API token is refused, `identity_unavailable`"
+        },
+        {
+          "id": "DAT-078",
+          "howItIsMet": "Each connection type's connector declares the mechanisms it supports - `postgres` and `sqlServer` asserted, `http` delegated, `s3` none - and a connection version declaring another is refused, `identity_not_supported`"
+        },
+        {
+          "id": "DAT-064",
+          "howItIsMet": "Where a connection is used - the definitions naming it and, through their bindings and resolutions, the documents - is computed when asked, `GET /v1/connections/{id}/uses`, and the retire screen shows it before it proceeds"
+        },
+        {
+          "id": "DAT-065",
+          "howItIsMet": "Nothing deletes a connection; retiring one is refused, `connection_in_use`, naming each definition that is not itself retired and names it, so no definition is left pointing at nothing and nothing cascades"
+        },
+        {
+          "id": "DAT-066",
+          "howItIsMet": "Setting a credential inserts a row and cuts no version, so no stored result or resolution changes; the service tests the connection at once and, on a failure, reports it once, naming every definition that names the connection"
+        },
+        {
+          "id": "DAT-056",
+          "howItIsMet": "The connector holds no platform credential and has no route to the platform; each request runs in a fresh process handed one opened credential, which exits with the request"
+        },
+        {
+          "id": "DAT-113",
+          "howItIsMet": "On PostgreSQL an asserted identity runs only builder-generated text, the SQL fallback refused; on SQL Server the assertion is a `read_only` `SESSION_CONTEXT` key or `EXECUTE AS USER ... WITH COOKIE` with the cookie held by the connector"
+        },
+        {
+          "id": "DAT-114",
+          "howItIsMet": "No source connection is reused: the child process that opened it closes it and exits with its one request, so a connection that carried a user's identity is always discarded"
+        },
+        {
+          "id": "DAT-009",
+          "howItIsMet": "`queryDefinition` is an artifact kind in one space whose version carries a `title` and exactly one `connection`, a connection artifact's identifier"
+        },
+        {
+          "id": "VER-057",
+          "howItIsMet": "A query definition versions through `artifact_version` by `recordVersion`, with an author, `schemaVersion`, the digest and the insert-only grant every artifact has; a change is a new version from `openedFrom`"
+        },
+        {
+          "id": "SCH-055",
+          "howItIsMet": "`queryDefinition` is a search kind, its entry written with each version from its title, description, column names and its connection's name"
+        },
+        {
+          "id": "DAT-010",
+          "howItIsMet": "Each parameter declares `name`, `type` from the column vocabulary but `image`, `required`, `list`, and `permitted` values as a list or a range"
+        },
+        {
+          "id": "DAT-019",
+          "howItIsMet": "A variation is a parameter whose permitted values are the keys of fragments the definition declares; its value selects one as an own property and is never placed in the query"
+        },
+        {
+          "id": "DAT-020",
+          "howItIsMet": "Every value is checked against its declaration before the connector is asked, and a value that fails refuses the act, `parameter_invalid`, naming the parameter, the rule and the value"
+        },
+        {
+          "id": "DAT-081",
+          "howItIsMet": "A database value is the driver's bound parameter; an HTTP value is placed by a builder that encodes it for its position and refuses what that position cannot carry; a file's is a typed filter over canonical rows. No path splices a value into text"
+        },
+        {
+          "id": "DAT-018",
+          "howItIsMet": "Sources, columns, joins and conditions are the definition's own structure or text; a parameter supplies a value or, as a variation, selects among declared fragments, so no parameter changes a query's shape"
+        },
+        {
+          "id": "DAT-021",
+          "howItIsMet": "The connector's suite runs the spike's case 5 values - 3,792 hostile and ill-typed - through every parameter type and every binder, and each is refused by name or bound inert"
+        },
+        {
+          "id": "DAT-099",
+          "howItIsMet": "A database definition's fetch is `builder`, a saved query tree, unless it is `sql`; the connector generates the dialect's SQL from the tree at each run, and provenance keeps what ran"
+        },
+        {
+          "id": "DAT-100",
+          "howItIsMet": "The tree's format, version 1, admits several sources, joins, nested queries as sources, grouping and aggregates from the start, though T2's screens offer one source"
+        },
+        {
+          "id": "DAT-101",
+          "howItIsMet": "Saving a definition whose fetch is `sql` needs `write_sql`, a permission of its own decided at the connection it names"
+        },
+        {
+          "id": "DAT-102",
+          "howItIsMet": "A `sql` fetch is refused, `sql_not_permitted`, on a PostgreSQL connection whose identity is asserted, when saved and when run"
+        },
+        {
+          "id": "DAT-103",
+          "howItIsMet": "The connection test checks, where the source can say - PostgreSQL's and SQL Server's catalogues - that the account holds no write privilege, and a `sql` fetch is refused on a connection whose last test did not find it read-only"
+        },
+        {
+          "id": "DAT-104",
+          "howItIsMet": "An `http` fetch is a request template - method, path segments, query, headers and a JSON body, each part fixed or a parameter - with the format and, for JSON, a pointer to the rows"
+        },
+        {
+          "id": "DAT-095",
+          "howItIsMet": "JSON is read at a JSON Pointer to an array of objects or as JSON Lines; each column maps by a pointer relative to the row; a number is read from its source text; a nested value is refused, `nested_value`, unless its column is text"
+        },
+        {
+          "id": "DAT-080",
+          "howItIsMet": "A column's type is one of `text`, `integer`, `decimal` with precision and scale, `date`, `time`, `localDateTime`, `instant` with a fractional precision, `boolean` or `image`; a value not exact in its type is refused by name, never rounded"
+        },
+        {
+          "id": "DAT-105",
+          "howItIsMet": "The columns are the second step: proposed from `describe` for the builder and SQL, from the sample for HTTP and files, and saved only as the author confirms each"
+        },
+        {
+          "id": "DAT-106",
+          "howItIsMet": "The connector checks every run against the declared columns and order and refuses, `result_mismatch`, a result that does not fit, never adjusting it"
+        },
+        {
+          "id": "DAT-107",
+          "howItIsMet": "A definition's `order` is a total order that includes every key column, or `multiset`; the connector hashes the rows in that order or sorted by their canonical text"
+        },
+        {
+          "id": "DAT-068",
+          "howItIsMet": "A definition declares `empty: 'valid'` or `'invalid'`, and a run of no rows against `invalid` fails, `empty_result`"
+        },
+        {
+          "id": "DAT-050",
+          "howItIsMet": "A definition declares rows, bytes and seconds; a tenant setting lowers each, and a run takes the lesser"
+        },
+        {
+          "id": "DAT-109",
+          "howItIsMet": "The connector's deadline covers the whole execution, and a limit reached cancels at the source: a PostgreSQL cancel request, a SQL Server attention, an aborted HTTP or S3 exchange"
+        },
+        {
+          "id": "DAT-110",
+          "howItIsMet": "Bytes are counted as they arrive, so a single value past the byte limit fails the execution, `byte_limit`"
+        },
+        {
+          "id": "DAT-051",
+          "howItIsMet": "Reaching the row, byte or time limit is `row_limit`, `byte_limit` or `timeout`, and nothing is stored"
+        },
+        {
+          "id": "DAT-045",
+          "howItIsMet": "A result cut by a limit is a failure and is never stored, so nothing can publish it as complete"
+        },
+        {
+          "id": "DAT-108",
+          "howItIsMet": "Where an S3 object or an HTTP response states a length, a digest or a row count apart from its framing, the connector checks what arrived against it and refuses, `result_incomplete`, what does not match"
+        },
+        {
+          "id": "DAT-096",
+          "howItIsMet": "An `image` column declares `base64` or `binary`; the connector admits only a PNG or a JPEG by the asset door's header reading, the cell is the stored hash, and `ingest` decodes it before the dataset version is recorded"
+        },
+        {
+          "id": "DAT-014",
+          "howItIsMet": "`POST /v1/connections/{id}/sample` runs a draft definition with sample parameters, shows the result and its proposed columns, and stores nothing - so it runs before anything depends on the definition"
+        },
+        {
+          "id": "DAT-015",
+          "howItIsMet": "Every change to a definition is a version, and a binding names its definition with an optional `version`: present pins it, absent floats at latest"
+        },
+        {
+          "id": "DAT-016",
+          "howItIsMet": "Where a definition is used - the bindings naming it and the documents resolving them - is computed when asked, and the definition's editor shows it before a version is saved"
+        },
+        {
+          "id": "DAT-025",
+          "howItIsMet": "`use_connection`, decided at the connection, is needed to run anything against it; reading a document that holds its results needs only `read` on the document"
+        },
+        {
+          "id": "DAT-077",
+          "howItIsMet": "A query runs at the source as the identity its connection declares, so the source's own rules decide the rows; an `s3` connection's identity may only be `service`"
+        },
+        {
+          "id": "DAT-090",
+          "howItIsMet": "A stored result is read only through a document that resolves to it, on `read` on that document; fetching or accepting one asks `use_connection` and runs as the person"
+        },
+        {
+          "id": "DAT-092",
+          "howItIsMet": "`dataset` is an artifact kind; each recorded result is an immutable version of it, named by an insert-only `dataset_name`, and a resolution names exactly one dataset version"
+        },
+        {
+          "id": "DAT-083",
+          "howItIsMet": "Every binding a document resolves, checked or pinned, is resolved to a dataset version, whose content is its provenance record"
+        },
+        {
+          "id": "DAT-085",
+          "howItIsMet": "A dataset version's content records the definition and connection with their versions, the canonical parameters, the SQL or request that ran, the identity, the time, the row count, `canonical: 1`, and the SHA-256 checksum; its own identifier is the dataset version"
+        },
+        {
+          "id": "DAT-043",
+          "howItIsMet": "A dataset version is an `artifact_version`, insert-only, which a baseline pins as it pins any version; its rows are an object nothing sweeps while anything names it"
+        },
+        {
+          "id": "DAT-093",
+          "howItIsMet": "Accepting adds a resolution row for that document's binding alone; another document holding the same dataset keeps its row, and its version, until somebody accepts there"
+        },
+        {
+          "id": "DAT-084",
+          "howItIsMet": "A check compares a fresh result with the one held only where the opener's identity key is the dataset's; a different checksum is recorded as a dataset version and answered as a waiting revision"
+        },
+        {
+          "id": "DAT-037",
+          "howItIsMet": "Accepting is its own route, and its resolution row names the version the binding held, the version it holds after, who and when"
+        },
+        {
+          "id": "DAT-089",
+          "howItIsMet": "Only the service calls the connector, only from a route a person calls - resolve, check, a sample run, describe and test - and neither the worker nor a publish nor a preview has a route to it"
+        },
+        {
+          "id": "DAT-086",
+          "howItIsMet": "Each act succeeds whole or fails by one named failure identifying the definition and, where the act has them, the binding and the document; a failed act records nothing"
+        },
+        {
+          "id": "DAT-049",
+          "howItIsMet": "Every failure carries `attribution`: `connector`, `query` or `product`, fixed per code ([Failures](#failures))"
+        },
+        {
+          "id": "DAT-029",
+          "howItIsMet": "A binding names its definition in `query`, its `parameters`, and, inline, `take`, the value it takes"
+        },
+        {
+          "id": "DAT-030",
+          "howItIsMet": "A binding's parameter is `{ literal }` or `{ document }`, a document parameter by name, read from the document's parameter set when the binding is resolved"
+        },
+        {
+          "id": "DAT-067",
+          "howItIsMet": "An inline binding's `take` is `{ column }`, of a result of exactly one row, or `{ key, column }`; the schema admits nothing else, so a binding identifying neither is refused when it is written"
         }
       ]
     },

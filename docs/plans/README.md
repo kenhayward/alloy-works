@@ -566,6 +566,18 @@ comes.
 | 15  | [W15: Word measured](2026-09-29-w15-word-measured.md)                               | Word's own rendering measured against the PDF of the same content by the editor's reader and comparison, over eight themes; Word's pages keeping what the styles keep; a maths character Word's face lacks refused by name; and a baseline kind for what only a run where Word is can verify                  | Done (W15.0: PR #346; W15.1: PR #348; W15.2: PR #349; stopped after W15.2 by ADR-0032)                                       |
 | 16  | [API documentation](2026-09-29-api-documentation.md)                                | The versioned authoritative OpenAPI document and a hierarchical, fully described, self-hosted reference that executes token-enabled operations with an explicitly entered personal token and never an ambient session                                                                                         | Done (PR #353)                                                                                                               |
 
+## Data
+
+T2, the data spine ([ADR-0033](../decisions/0033-t2-is-the-data-spine.md)): connections to a tenant's
+own sources, query definitions, stored results and the connector, designed in
+[data.md](../design/data.md) under
+[ADR-0035](../decisions/0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md) and
+built in the eight slices its build order names, each planned when its turn comes.
+
+| #   | Plan                                                                            | Builds                                                                                                                                                                                                                              | Status  |
+| --- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| D1  | [Connections and the connector](2026-09-30-d1-connections-and-the-connector.md) | The connection kind and its sealed credential, `use_connection`, `apps/connector` with a process per request, the address guard, PostgreSQL's test and describe, the connector's networks in compose and CI, and a Connections page | Planned |
+
 ## Publishing
 
 A document version to a PDF somebody can download, cite and keep, designed in

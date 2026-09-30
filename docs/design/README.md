@@ -33,6 +33,7 @@ understand the storage layer, rather than something to be thrown away.
 | [templates.md](templates.md)                           | A template, a document made from one, and what the document keeps of it                                       |
 | [definitions.md](definitions.md)                       | Fields, schemas and component types made and changed, and values written, shown and held at publication       |
 | [document-view.md](document-view.md)                   | A document read and authored on one page: one scroll, boundaries, modes, navigation and versions              |
+| [data.md](data.md)                                     | Connections, query definitions and stored results, and the connector: the one process that reaches a source   |
 
 ## Why these are not one per requirement area
 
