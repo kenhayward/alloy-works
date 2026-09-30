@@ -12,6 +12,7 @@ import {
   newDraft,
   parametersOf,
   proposedColumns,
+  unconfirmed,
   sampleDefinition,
   sampleValues,
   type ColumnDraft,
@@ -520,6 +521,9 @@ export function QueryDefinitionPage({
   const [saved, setSaved] = useState<string[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const working = useRef(false);
+  // The draft as it is now, for an answer that arrives after it was asked for.
+  const latest = useRef(draft);
+  latest.current = draft;
 
   const show = useCallback((shown: DefinitionView) => {
     setView(shown);
@@ -587,8 +591,11 @@ export function QueryDefinitionPage({
   const mayEdit = isNew || (shown !== null && shown.mayEdit);
   const mayRun = isNew || (shown !== null && shown.mayRun);
   const change = (over: Partial<DefinitionDraft>) => setDraft((held) => ({ ...held, ...over }));
+  /** A change to the SQL or its parameters, which may change what it returns: asked again of each column. */
+  const changeStatement = (over: Pick<Partial<DefinitionDraft>, 'sql' | 'parameters'>) =>
+    setDraft((held) => ({ ...held, ...over, columns: unconfirmed(held.columns) }));
   const setParameter = (at: number, parameter: ParameterDraft) =>
-    change({
+    changeStatement({
       parameters: draft.parameters.map((held, place) => (place === at ? parameter : held)),
     });
   const setColumn = (at: number, column: ColumnDraft) =>
@@ -614,6 +621,7 @@ export function QueryDefinitionPage({
         setDescribed(['Choose a connection first.']);
         return;
       }
+      const sent = { sql: draft.sql, parameters: JSON.stringify(draft.parameters) };
       try {
         const { data, error } = await client.POST('/v1/connections/{id}/describe', {
           params: { path: { id: draft.connection } },
@@ -621,10 +629,17 @@ export function QueryDefinitionPage({
         });
         const answer: unknown = data;
         if (isRecord(answer) && Array.isArray(answer.columns)) {
-          const proposed = proposedColumns(answer.columns as never, draft.columns);
+          // An answer for a statement changed since it was sent describes another one: dropped.
+          const now = latest.current;
+          if (now.sql !== sent.sql || JSON.stringify(now.parameters) !== sent.parameters) {
+            setDescribed(['The SQL changed while it was described. Describe it again.']);
+            return;
+          }
+          // Merged into the columns as they are now, keeping a confirmation made meanwhile.
+          const proposed = proposedColumns(answer.columns as never, now.columns);
           setDraft((held) => ({
             ...held,
-            columns: proposed,
+            columns: proposedColumns(answer.columns as never, held.columns),
             key: held.key.filter((name) => proposed.some((each) => each.name === name)),
             order:
               held.order === 'multiset'
@@ -852,7 +867,7 @@ export function QueryDefinitionPage({
                     rows={8}
                     spellCheck={false}
                     value={draft.sql}
-                    onChange={(event) => change({ sql: event.target.value })}
+                    onChange={(event) => changeStatement({ sql: event.target.value })}
                   />
                 )}
               </Choice>
@@ -867,13 +882,17 @@ export function QueryDefinitionPage({
                   parameter={parameter}
                   onChange={(changed) => setParameter(at, changed)}
                   onRemove={() =>
-                    change({ parameters: draft.parameters.filter((_, place) => place !== at) })
+                    changeStatement({
+                      parameters: draft.parameters.filter((_, place) => place !== at),
+                    })
                   }
                 />
               ))}
               <button
                 type="button"
-                onClick={() => change({ parameters: [...draft.parameters, NEW_PARAMETER] })}
+                onClick={() =>
+                  changeStatement({ parameters: [...draft.parameters, NEW_PARAMETER] })
+                }
               >
                 Add parameter
               </button>

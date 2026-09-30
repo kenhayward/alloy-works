@@ -292,10 +292,27 @@ export function draftOf(definition: QueryDefinition): DefinitionDraft {
   };
 }
 
+/** Two typed types alike, member by member. */
+const sameType = (one: TypeDraft, other: TypeDraft) =>
+  one.base === other.base &&
+  one.precision === other.precision &&
+  one.scale === other.scale &&
+  one.fraction === other.fraction;
+
+/**
+ * The columns as they are, each to be confirmed again: what the SQL or a parameter changed may have
+ * changed what the statement returns, so nothing is saved until the author has looked again (DAT-105).
+ */
+export function unconfirmed(columns: readonly ColumnDraft[]): ColumnDraft[] {
+  return columns.map((column) => (column.confirmed ? { ...column, confirmed: false } : column));
+}
+
 /**
  * The columns a describe proposed (DAT-105), each to be confirmed: the source's type where it proposed
- * one, and none where the author must declare it. A column already declared by that name keeps what
- * was declared and confirmed, so describing again after an edit asks only about what is new.
+ * one, and none where the author must declare it. A column already confirmed by that name stays so
+ * where the source proposes the type it was confirmed as, so describing again asks only about what is
+ * new or changed; one the source now proposes otherwise takes the proposal, and one it proposes
+ * nothing for keeps its type, each to be confirmed again.
  */
 export function proposedColumns(
   described: readonly {
@@ -307,7 +324,18 @@ export function proposedColumns(
 ): ColumnDraft[] {
   return described.map((column) => {
     const declared = held.find((each) => each.name === column.name);
-    if (declared?.confirmed) return { ...declared, sourceType: column.sourceType };
+    const proposed = column.proposed === null ? null : typeDraftOf(column.proposed);
+    if (declared?.confirmed) {
+      if (proposed !== null && sameType(proposed, declared.type)) {
+        return { ...declared, sourceType: column.sourceType };
+      }
+      return {
+        ...declared,
+        sourceType: column.sourceType,
+        type: proposed ?? declared.type,
+        confirmed: false,
+      };
+    }
     return {
       name: column.name,
       sourceType: column.sourceType,

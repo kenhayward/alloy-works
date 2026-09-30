@@ -67,7 +67,7 @@ interface Asked {
 function service(
   options: {
     sqlWriter?: boolean;
-    describe?: () => Response;
+    describe?: () => Response | Promise<Response>;
     sample?: () => Response;
     version?: (body: { openedFrom: string; definition: Record<string, unknown> }) => Response;
   } = {},
@@ -433,6 +433,108 @@ describe('the query definition page', () => {
     });
     await user.click(await screen.findByRole('button', { name: 'Reinstate' }));
     expect(await screen.findByText('Reinstated.')).toBeInTheDocument();
+  });
+
+  it('withdraws Save version once the SQL or a parameter changes, until every column is confirmed again', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    await screen.findByRole('heading', { name: 'Site by id' });
+    expect(screen.getByRole('button', { name: 'Save version' })).toBeInTheDocument();
+    const confirmAll = async () => {
+      const columns = screen.getByRole('table', { name: 'Columns' });
+      for (const name of ['id', 'name']) {
+        await user.click(within(columns).getByRole('button', { name: `Confirm ${name}` }));
+      }
+    };
+
+    // The SQL changed: what it returns may have too, so each column is to be confirmed again.
+    await user.type(screen.getByLabelText('SQL'), ' ');
+    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    expect(screen.getByText('Confirm every column to save.')).toBeInTheDocument();
+    await confirmAll();
+    expect(screen.getByRole('button', { name: 'Save version' })).toBeInTheDocument();
+
+    // And so with a parameter.
+    const parameter = screen.getByRole('group', { name: 'Parameter 1' });
+    await user.click(within(parameter).getByLabelText('Required'));
+    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    await confirmAll();
+    expect(screen.getByRole('button', { name: 'Save version' })).toBeInTheDocument();
+  });
+
+  it('asks again about a column whose type the source now proposes otherwise, and keeps the rest confirmed', async () => {
+    const user = userEvent.setup();
+    const { client } = service({
+      describe: () =>
+        json(200, {
+          columns: [
+            { name: 'id', sourceType: 'integer', proposed: { base: 'integer' } },
+            { name: 'name', sourceType: 'date', proposed: { base: 'date' } },
+          ],
+          parameters: ['bigint'],
+        }),
+    });
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    await screen.findByRole('heading', { name: 'Site by id' });
+    await user.click(screen.getByRole('button', { name: 'Describe' }));
+    await screen.findByText('2 columns proposed. Confirm the type of each.');
+    const [, id, name] = within(screen.getByRole('table', { name: 'Columns' })).getAllByRole('row');
+    expect(within(id!).getByText('Confirmed')).toBeInTheDocument();
+    expect(within(name!).getByRole('button', { name: 'Confirm name' })).toBeInTheDocument();
+    expect(within(name!).getByLabelText('Type of name')).toHaveValue('date');
+    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+  });
+
+  it("merges a describe's answer into the columns as they are when it arrives, and drops one for SQL since changed", async () => {
+    const user = userEvent.setup();
+    const answers: ((response: Response) => void)[] = [];
+    const { client } = service({
+      describe: () => new Promise<Response>((resolve) => answers.push(resolve)),
+    });
+    const proposal = () =>
+      json(200, {
+        columns: [
+          { name: 'id', sourceType: 'integer', proposed: { base: 'integer' } },
+          { name: 'name', sourceType: 'text', proposed: { base: 'text' } },
+        ],
+        parameters: ['bigint'],
+      });
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    await screen.findByRole('heading', { name: 'Site by id' });
+    const sql = screen.getByLabelText('SQL');
+    await user.type(sql, ' ');
+
+    // A confirmation made while a describe is on its way is kept when it arrives.
+    await user.click(screen.getByRole('button', { name: 'Describe' }));
+    await waitFor(() => expect(answers).toHaveLength(1));
+    await user.click(screen.getByRole('button', { name: 'Confirm id' }));
+    answers[0]!(proposal());
+    await screen.findByText('2 columns proposed. Confirm the type of each.');
+    const columns = screen.getByRole('table', { name: 'Columns' });
+    const [, id, name] = within(columns).getAllByRole('row');
+    expect(within(id!).getByText('Confirmed')).toBeInTheDocument();
+    expect(within(name!).getByRole('button', { name: 'Confirm name' })).toBeInTheDocument();
+
+    // One answering for SQL changed since it was sent is dropped, and says so.
+    await user.click(screen.getByRole('button', { name: 'Describe' }));
+    await waitFor(() => expect(answers).toHaveLength(2));
+    await user.type(sql, 'x');
+    answers[1]!(
+      json(200, {
+        columns: [{ name: 'other', sourceType: 'text', proposed: { base: 'text' } }],
+        parameters: [],
+      }),
+    );
+    expect(
+      await screen.findByText('The SQL changed while it was described. Describe it again.'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('table', { name: 'Columns' }))
+        .getAllByRole('row')
+        .slice(1)
+        .map((row) => within(row).getAllByRole('cell')[0]!.textContent),
+    ).toEqual(['id', 'name']);
   });
 
   it('shows a definition to somebody who may read it and change nothing', async () => {
