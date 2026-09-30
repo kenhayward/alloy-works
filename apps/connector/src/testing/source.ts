@@ -84,13 +84,12 @@ export function settings(
 }
 
 /**
- * The budget a test of runs against the source takes, and the deadline its requests are given where
- * the deadline is not what it shows: room for CI's runner, where every package's suite runs at once
- * and a statement took twenty to thirty times as long as it does alone. A test measuring a deadline,
- * a cancel or a memory peak keeps its own bound; these are budget, never the property.
+ * The budget a test of runs against the source takes: room for CI's runner, where every package's
+ * suite runs at once and a statement took twenty to thirty times as long as it does alone. A test
+ * measuring a deadline, a cancel or a memory peak keeps its own bound; this is budget, never the
+ * property. A request's own deadline has room from `requestFor`'s default.
  */
 export const LOADED_TIMEOUT_MS = 240_000;
-export const ROOMY_DEADLINE_MS = 30_000;
 
 /**
  * A request for these settings, its secret sealed as the connector's `seal` would.
@@ -204,7 +203,6 @@ export function describeSqlRequest(
   secret: string,
   text: string,
   parameters: Parameter[] = [],
-  deadlineMs?: number,
 ): DescribeSqlRequest {
-  return { ...requestFor(source, secret, deadlineMs), sql: { text, parameters } };
+  return { ...requestFor(source, secret), sql: { text, parameters } };
 }
