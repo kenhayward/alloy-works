@@ -1,29 +1,44 @@
 import { z } from 'zod';
 
+/**
+ * The most columns a relation a describe lists, or a definition declares, may have: a table holds at
+ * most 1,600, and a view's select list at most 1,664 (PostgreSQL's `MaxTupleAttributeNumber`).
+ */
+export const MAX_COLUMNS = 1664;
+
 const fraction = z.number().int().min(0).max(6);
 
+const text = z.strictObject({ base: z.literal('text') });
+const integer = z.strictObject({ base: z.literal('integer') });
+const decimal = z
+  .strictObject({
+    base: z.literal('decimal'),
+    precision: z.number().int().min(1).max(1000),
+    scale: z.number().int().min(0).max(1000),
+  })
+  .refine((type) => type.scale <= type.precision, {
+    message: 'A decimal has no more places than digits',
+  });
+const date = z.strictObject({ base: z.literal('date') });
+const time = z.strictObject({ base: z.literal('time'), fraction });
+const localDateTime = z.strictObject({ base: z.literal('localDateTime'), fraction });
+const instant = z.strictObject({ base: z.literal('instant'), fraction });
+const boolean = z.strictObject({ base: z.literal('boolean') });
+
 /**
- * A column's type (data.md, "The columns, a second step"; DAT-080): the eight bases and `image`. In D1
- * only a describe's proposal carries one, and a proposal is never an image; a definition stores them
- * from D2, when this shape becomes a stored one and its stored-shape check is that plan's.
+ * A column's type (data.md, "The columns, a second step"; DAT-080): the eight bases and `image`. A
+ * describe's proposal is never an image, and neither is a D2 definition's column or parameter, which
+ * take `valueTypeSchema`; an image column arrives with D8.
  */
 export const columnTypeSchema = z.discriminatedUnion('base', [
-  z.strictObject({ base: z.literal('text') }),
-  z.strictObject({ base: z.literal('integer') }),
-  z
-    .strictObject({
-      base: z.literal('decimal'),
-      precision: z.number().int().min(1).max(1000),
-      scale: z.number().int().min(0).max(1000),
-    })
-    .refine((type) => type.scale <= type.precision, {
-      message: 'A decimal has no more places than digits',
-    }),
-  z.strictObject({ base: z.literal('date') }),
-  z.strictObject({ base: z.literal('time'), fraction }),
-  z.strictObject({ base: z.literal('localDateTime'), fraction }),
-  z.strictObject({ base: z.literal('instant'), fraction }),
-  z.strictObject({ base: z.literal('boolean') }),
+  text,
+  integer,
+  decimal,
+  date,
+  time,
+  localDateTime,
+  instant,
+  boolean,
   z.strictObject({
     base: z.literal('image'),
     encoding: z.enum(['base64', 'binary']),
@@ -32,3 +47,20 @@ export const columnTypeSchema = z.discriminatedUnion('base', [
 ]);
 
 export type ColumnType = z.infer<typeof columnTypeSchema>;
+
+/** The eight bases a value can have: a parameter's type, and a D2 column's (the D2 plan, rows 5 and 9). */
+export const valueTypeSchema = z.discriminatedUnion('base', [
+  text,
+  integer,
+  decimal,
+  date,
+  time,
+  localDateTime,
+  instant,
+  boolean,
+]);
+
+export type ValueType = z.infer<typeof valueTypeSchema>;
+
+/** A column type's base, as a canonical result names each column's type (ADR-0035). */
+export type ColumnBase = ColumnType['base'];

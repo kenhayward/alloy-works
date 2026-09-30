@@ -1,9 +1,11 @@
 import { z } from 'zod';
 
 import { storableText } from '../stored/storable.js';
-import { columnTypeSchema } from './columns.js';
+import { columnTypeSchema, MAX_COLUMNS, valueTypeSchema } from './columns.js';
 import { connectionSettingsSchema } from './connection.js';
+import { draftDefinitionSchema, parameterSchema } from './definition.js';
 import { dataFailureSchema } from './failures.js';
+import { limitCeilings } from './limits.js';
 
 /**
  * The connector's requests and answers (data.md, "One request, one answer"; the D1 plan, D1-E), parsed
@@ -131,11 +133,7 @@ const sourceName = sourceNameSchema;
 export const SOURCE_TYPE_MAX_BYTES = 1024;
 export const sourceTypeSchema = sourceText(SOURCE_TYPE_MAX_BYTES);
 
-/**
- * The most columns a relation a describe lists may have: a table holds at most 1,600, and a view's
- * select list at most 1,664 (PostgreSQL's `MaxTupleAttributeNumber`).
- */
-export const MAX_COLUMNS = 1664;
+export { MAX_COLUMNS };
 /** The most relations a describe lists, past which it says `truncated` (the connector's own cap). */
 export const MAX_DESCRIBED_RELATIONS = 2000;
 
@@ -177,16 +175,148 @@ export const describeAnswerSchema = z.union([
 ]);
 export type DescribeAnswer = z.infer<typeof describeAnswerSchema>;
 
+/** The most a run's request may be, in bytes: its definition - SQL of up to 100,000 characters - and values. */
+export const RUN_REQUEST_MAX_BYTES = 256 * 1024;
+
+/** A parameter's value as it crosses the interface: canonical text, a boolean, null, or a list. */
+const canonicalValue = z.union([z.string(), z.boolean(), z.null()]);
+const parameterValuesSchema = z.record(
+  z.string(),
+  z.union([canonicalValue, z.array(canonicalValue)]),
+);
+
+const limit = (ceiling: number) => z.number().int().min(1).max(ceiling);
+const limitsSchema = z.strictObject({
+  rows: limit(limitCeilings.rows),
+  bytes: limit(limitCeilings.bytes),
+  seconds: limit(limitCeilings.seconds),
+});
+
 /**
- * The one line the supervisor writes to a child's standard input: the request, the one opened secret,
- * the guard's ranges, and the connect timeout and failure floor (D1-H, D1-L). Never the sealing key.
+ * A run (the D2 plan, D2-I and D2-Q): the connection, its sealed credential, the definition being run -
+ * a draft or a version's, its columns declared - the parameter values, already checked by the service
+ * against their declarations, the limits the run takes, and its deadline, at most the time ceiling.
+ * The connector binds the values by its own type's binder, so what it ran is its own to report.
  */
-export const childRequestSchema = z.strictObject({
-  kind: z.enum(['test', 'describe']),
-  request: testRequestSchema,
+export const runRequestSchema = testRequestSchema
+  .extend({
+    definition: draftDefinitionSchema,
+    values: parameterValuesSchema,
+    limits: limitsSchema,
+    deadlineMs: z
+      .number()
+      .int()
+      .min(1000)
+      .max(limitCeilings.seconds * 1000),
+  })
+  .refine((request) => request.definition.connection === request.connection.id, {
+    message: 'A run runs a definition of the connection it is sent for',
+  });
+export type RunRequest = z.infer<typeof runRequestSchema>;
+
+/** A base as a canonical result names a column's type: the eight and image (ADR-0035, form 1). */
+const columnBase = z.enum([
+  'text',
+  'integer',
+  'decimal',
+  'date',
+  'time',
+  'localDateTime',
+  'instant',
+  'boolean',
+  'image',
+]);
+
+/** A result in canonical form (ADR-0035): its columns, and rows of strings, booleans and null. */
+export const canonicalResultSchema = z
+  .strictObject({
+    columns: z
+      .array(z.tuple([z.string(), columnBase]))
+      .min(1)
+      .max(MAX_COLUMNS),
+    rows: z.array(z.array(canonicalValue)).max(limitCeilings.rows),
+  })
+  .refine((result) => result.rows.every((row) => row.length === result.columns.length), {
+    message: 'Every row has a cell for each column',
+  });
+
+/** The longest SQL a run reports it ran: its text, with each marker written `$n::type` and each fragment placed. */
+const RAN_MAX_CHARACTERS = 300_000;
+
+/**
+ * A run's answer (D2-K): the canonical result as a JSON value, its SHA-256 checksum, which the service
+ * checks against the bytes it serialises, the row count, the SQL that ran and how long it took - or
+ * one named failure.
+ */
+export const runAnswerSchema = z.discriminatedUnion('outcome', [
+  z
+    .strictObject({
+      outcome: z.literal('ok'),
+      result: canonicalResultSchema,
+      checksum: z.string().regex(/^[0-9a-f]{64}$/),
+      rowCount: z.number().int().min(0),
+      ran: z.strictObject({ sql: z.string().max(RAN_MAX_CHARACTERS) }),
+      durationMs: z.number().int().min(0),
+    })
+    .refine((answer) => answer.rowCount === answer.result.rows.length, {
+      message: 'The row count is the number of rows',
+    }),
+  z.strictObject({ outcome: z.literal('failed'), failure: dataFailureSchema }),
+]);
+export type RunAnswer = z.infer<typeof runAnswerSchema>;
+
+/**
+ * A SQL statement described without being run (D2-G; Q1): its text with its markers, and the
+ * parameters it declares, so the connector can bind it as a run would.
+ */
+export const describeSqlRequestSchema = testRequestSchema.extend({
+  sql: z.strictObject({
+    text: draftDefinitionSchema.shape.fetch.shape.text,
+    parameters: z.array(parameterSchema).max(50),
+  }),
+});
+export type DescribeSqlRequest = z.infer<typeof describeSqlRequestSchema>;
+
+/**
+ * What a statement's result would be: each column's name, the source's type and its proposal, and each
+ * parameter's type as the source reads it - or one named failure.
+ */
+export const describeSqlAnswerSchema = z.union([
+  z.strictObject({
+    columns: z
+      .array(
+        z.strictObject({
+          name: sourceName,
+          sourceType: sourceTypeSchema,
+          proposed: valueTypeSchema.nullable(),
+        }),
+      )
+      .max(MAX_COLUMNS),
+    parameters: z.array(sourceTypeSchema).max(50),
+  }),
+  z.strictObject({ failure: dataFailureSchema }),
+]);
+export type DescribeSqlAnswer = z.infer<typeof describeSqlAnswerSchema>;
+
+const childMembers = {
   secret,
   deny: z.array(z.string()),
   connectTimeoutMs: z.number().int().min(1).max(60_000),
   failureFloorMs: z.number().int().min(0).max(60_000),
-});
+};
+
+/**
+ * The one line the supervisor writes to a child's standard input: the request, the one opened secret,
+ * the guard's ranges, and the connect timeout and failure floor (D1-H, D1-L). Never the sealing key.
+ */
+export const childRequestSchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('test'), request: testRequestSchema, ...childMembers }),
+  z.strictObject({ kind: z.literal('describe'), request: testRequestSchema, ...childMembers }),
+  z.strictObject({ kind: z.literal('run'), request: runRequestSchema, ...childMembers }),
+  z.strictObject({
+    kind: z.literal('describeSql'),
+    request: describeSqlRequestSchema,
+    ...childMembers,
+  }),
+]);
 export type ChildRequest = z.infer<typeof childRequestSchema>;

@@ -4,10 +4,16 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import type { ConnectionSettings } from './connection.js';
+import type { DraftDefinition } from './definition.js';
 import {
   childRequestSchema,
   describeAnswerSchema,
   describeRequestSchema,
+  describeSqlAnswerSchema,
+  describeSqlRequestSchema,
+  RUN_REQUEST_MAX_BYTES,
+  runAnswerSchema,
+  runRequestSchema,
   SEALED,
   sealAnswerSchema,
   sealRequestSchema,
@@ -248,5 +254,135 @@ describe("the connector's protocol", () => {
       }),
       'more relations than a describe lists',
     ).toBe(false);
+  });
+});
+
+const draft: DraftDefinition = {
+  schemaVersion: 1,
+  connection: '0b6a3c4d-1e2f-4a5b-8c7d-9e0f1a2b3c4d',
+  parameters: [{ name: 'site', type: { base: 'integer' }, required: true, list: false }],
+  fetch: { kind: 'sql', text: 'select id, name from sample.site where id = {{site}}' },
+  columns: [
+    { name: 'id', from: { column: 'id' }, type: { base: 'integer' } },
+    { name: 'name', from: { column: 'name' }, type: { base: 'text' } },
+  ],
+  key: ['id'],
+  order: [{ column: 'id', direction: 'ascending' }],
+  empty: 'valid',
+  limits: { rows: 100, bytes: 1_000_000, seconds: 10 },
+};
+
+const runRequest = {
+  ...testRequest,
+  definition: draft,
+  values: { site: '1' },
+  limits: { rows: 100, bytes: 1_000_000, seconds: 10 },
+  deadlineMs: 10_000,
+};
+
+const checksum = 'a'.repeat(64);
+
+describe("the connector's protocol for a run and a SQL describe (the D2 plan)", () => {
+  it('round-trips a run, its answer and its failure, and a SQL describe and its answer', () => {
+    const cases: readonly [{ parse: (value: unknown) => unknown }, unknown][] = [
+      [runRequestSchema, runRequest],
+      [
+        runAnswerSchema,
+        {
+          outcome: 'ok',
+          result: {
+            columns: [
+              ['id', 'integer'],
+              ['name', 'text'],
+            ],
+            rows: [['1', 'North weir']],
+          },
+          checksum,
+          rowCount: 1,
+          ran: { sql: 'select id, name from sample.site where id = $1::int8' },
+          durationMs: 4,
+        },
+      ],
+      [
+        runAnswerSchema,
+        {
+          outcome: 'failed',
+          failure: {
+            code: 'source_refused',
+            attribution: 'query',
+            source: { sqlstate: '22012', message: 'division by zero' },
+          },
+        },
+      ],
+      [
+        describeSqlRequestSchema,
+        { ...testRequest, sql: { text: draft.fetch.text, parameters: draft.parameters } },
+      ],
+      [
+        describeSqlAnswerSchema,
+        {
+          columns: [
+            { name: 'id', sourceType: 'integer', proposed: { base: 'integer' } },
+            { name: 'ratio', sourceType: 'double precision', proposed: null },
+          ],
+          parameters: ['bigint'],
+        },
+      ],
+      [describeSqlAnswerSchema, { failure: { code: 'result_mismatch', attribution: 'query' } }],
+      [
+        childRequestSchema,
+        {
+          kind: 'run',
+          request: runRequest,
+          secret: 'invented-password',
+          deny: [],
+          connectTimeoutMs: 5000,
+          failureFloorMs: 5000,
+        },
+      ],
+      [
+        childRequestSchema,
+        {
+          kind: 'describeSql',
+          request: { ...testRequest, sql: { text: 'select 1 as one', parameters: [] } },
+          secret: 'invented-password',
+          deny: [],
+          connectTimeoutMs: 5000,
+          failureFloorMs: 5000,
+        },
+      ],
+    ];
+    for (const [schema, value] of cases) {
+      expect(schema.parse(JSON.parse(JSON.stringify(value)))).toEqual(value);
+    }
+  });
+
+  it("refuses a run's answer that does not hold together: a row of the wrong width, a number, a count that is not its rows', a checksum that is not hex", () => {
+    const ok = {
+      outcome: 'ok',
+      result: { columns: [['id', 'integer']], rows: [['1']] },
+      checksum,
+      rowCount: 1,
+      ran: { sql: 'select 1' },
+      durationMs: 4,
+    };
+    const takes = (value: unknown) => runAnswerSchema.safeParse(value).success;
+    expect(takes(ok)).toBe(true);
+    expect(takes({ ...ok, result: { ...ok.result, rows: [['1', '2']] } })).toBe(false);
+    expect(takes({ ...ok, result: { ...ok.result, rows: [[1]] } })).toBe(false);
+    expect(takes({ ...ok, result: { ...ok.result, columns: [['id', 'float']] } })).toBe(false);
+    expect(takes({ ...ok, rowCount: 2 })).toBe(false);
+    expect(takes({ ...ok, checksum: 'A'.repeat(64) })).toBe(false);
+    expect(takes({ ...ok, durationMs: -1 })).toBe(false);
+  });
+
+  it("refuses a run whose definition, values or limits are not a run's, and a deadline past the time ceiling", () => {
+    const takes = (value: unknown) => runRequestSchema.safeParse(value).success;
+    expect(takes({ ...runRequest, deadlineMs: 120_000 })).toBe(true);
+    expect(takes({ ...runRequest, deadlineMs: 120_001 })).toBe(false);
+    expect(takes({ ...runRequest, definition: { ...draft, title: 'x' } })).toBe(false);
+    expect(takes({ ...runRequest, limits: { rows: 0, bytes: 1, seconds: 1 } })).toBe(false);
+    expect(takes({ ...runRequest, values: { site: 1 } })).toBe(false);
+    expect(RUN_REQUEST_MAX_BYTES).toBe(256 * 1024);
   });
 });

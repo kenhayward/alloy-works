@@ -20110,15 +20110,33 @@
       "kind": "title"
     },
     {
+      "id": "DAT-010",
+      "file": "packages/domain/src/data/definition.test.ts",
+      "line": 81,
+      "kind": "title"
+    },
+    {
       "id": "DAT-049",
       "file": "packages/domain/src/data/failures.test.ts",
-      "line": 6,
+      "line": 12,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-019",
+      "file": "packages/domain/src/data/sql.test.ts",
+      "line": 146,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-081",
+      "file": "packages/domain/src/data/sql.test.ts",
+      "line": 79,
       "kind": "title"
     },
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 387,
+      "line": 423,
       "kind": "title"
     },
     {
