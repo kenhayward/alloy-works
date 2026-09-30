@@ -1,0 +1,27 @@
+{
+  "name": "@alloy-works/connector",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "start": "node dist/main.js",
+    "source": "node scripts/source.mjs start",
+    "source:stop": "node scripts/source.mjs stop"
+  },
+  "dependencies": {
+    "@alloy-works/domain": "workspace:^",
+    "@alloy-works/sealing": "workspace:^",
+    "pg": "^8.23.0",
+    "zod": "^4.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "@types/pg": "^8.23.1",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.0"
+  }
+}
