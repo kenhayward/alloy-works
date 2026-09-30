@@ -141,6 +141,7 @@ describe('API tokens, from the account chip', () => {
       'Design',
       'Manage definitions',
       'Administer',
+      'Use connection',
     ]);
     expect(offered).toHaveLength(tokenScopes.length);
     expect(within(form).queryByRole('checkbox', { name: 'Read' })).toBeNull();
