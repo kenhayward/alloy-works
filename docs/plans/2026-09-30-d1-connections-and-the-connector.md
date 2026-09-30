@@ -500,6 +500,15 @@ Answered on 2026-09-30: 1, 2 and 3 as recommended. 4 and 5 are left to the build
    body; that was not read while planning. Task 5's DAT-005 test asserts no record holds the secret,
    either way.
 
+## Changed while building
+
+| Found                                                                                                                                                                                                                        | Change                                                                                                                                                               |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A tenant's identifier is not a UUID: the platform's `tenant.id` is `^[0-9a-z]{1,40}$` (platform migration 0001), and every seal is bound to it                                                                               | The protocol's `tenant` is that pattern, not `uuid`                                                                                                                  |
+| `source_unsupported` (D1-M) is a test's failure, and a failure crosses the interface as a `DataFailure`, but it was in neither data.md's table nor D1-Q's three                                                              | It joins `dataFailures`, attributed to the connector, as the fourth code the plan adds                                                                               |
+| Row 5 refuses a number that is not a canonical address, but an IPv4-mapped IPv6 address (`::ffff:172.31.10.11`, `::ffff:7f00:1`) is a second spelling of an IPv4 address, and a DNS label may not begin or end with a hyphen | Both are refused at write: an IPv4 address's one spelling is its dotted quad, and a label is RFC 1123's. Tighter, so it refuses nothing a later rule would take back |
+| A failure crossing the interface could carry an attribution other than its code's                                                                                                                                            | `dataFailureSchema` refuses one whose attribution is not `dataFailures[code]`, so neither side can re-attribute a failure                                            |
+
 ## How this plan was made
 
 About 25 minutes of wall-clock time and about 85 tool calls, Q1 and Q2 among them (about 8 minutes

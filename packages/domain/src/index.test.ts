@@ -341,6 +341,33 @@ describe('the domain package', () => {
         'FOURTH_DEFAULT_CATALOGUE_VERSIONS',
         'FOURTH_DEFAULT_THEME',
         'FOURTH_DEFAULT_THEME_VERSION',
+        // Data, D1: a connection's settings and their check, the data failures and their
+        // attribution, the column types a describe proposes, the connector's protocol, and the
+        // limits (data.md; the D1 plan).
+        'CONNECTION_SCHEMA_VERSION',
+        'ConnectionRefused',
+        'checkConnection',
+        'connectionSettingsSchema',
+        'connectorIdentities',
+        'parseConnection',
+        'parseConnectionForWrite',
+        'dataFailure',
+        'dataFailureCodes',
+        'dataFailures',
+        'columnTypeSchema',
+        'SEALED',
+        'SEALED_MAX_BYTES',
+        'SECRET_MAX_BYTES',
+        'childRequestSchema',
+        'describeAnswerSchema',
+        'describeRequestSchema',
+        'relationSchema',
+        'sealAnswerSchema',
+        'sealRequestSchema',
+        'testAnswerSchema',
+        'testRequestSchema',
+        'defaultLimits',
+        'limitCeilings',
       ].sort(),
     );
   });

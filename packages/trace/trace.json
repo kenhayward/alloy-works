@@ -19996,9 +19996,27 @@
       "kind": "title"
     },
     {
+      "id": "DAT-001",
+      "file": "packages/domain/src/data/connection.test.ts",
+      "line": 53,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-078",
+      "file": "packages/domain/src/data/connection.test.ts",
+      "line": 127,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-049",
+      "file": "packages/domain/src/data/failures.test.ts",
+      "line": 6,
+      "kind": "title"
+    },
+    {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 348,
+      "line": 375,
       "kind": "title"
     },
     {
