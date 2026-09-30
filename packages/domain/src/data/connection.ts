@@ -244,3 +244,16 @@ export function connectionTarget(settings: Pick<ConnectionSettings, 'type' | 'so
   const { host, port, database, account, tls } = settings.source;
   return JSON.stringify([settings.type, host, port, database, account, tls]);
 }
+
+/**
+ * What a connection's credential is sealed to beside the tenant (DA-AF): the connection's own id and
+ * its target. The target alone would let a sealed row copied to another connection of the tenant's
+ * with the same target open there (the D1 fix, round two); with the id, it opens for the connection
+ * it was set on and no other.
+ */
+export function credentialContext(
+  connectionId: string,
+  settings: Pick<ConnectionSettings, 'type' | 'source'>,
+): string {
+  return JSON.stringify([connectionId, connectionTarget(settings)]);
+}

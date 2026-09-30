@@ -21,6 +21,8 @@ export interface FakeConnector {
   describe: DescribeAnswer;
   /** Where set, a test and a describe wait for it before answering: a source that is slow. */
   hold?: Promise<void> | undefined;
+  /** Where set, a seal waits for it before answering: a connector that is slow to seal. */
+  sealHold?: Promise<void> | undefined;
 }
 
 export function fakeConnector(): FakeConnector {
@@ -47,6 +49,7 @@ export function fakeConnector(): FakeConnector {
           return new Response('<html>', { status: 200 });
       }
       fake.asked.push({ path, body });
+      if (path === '/v1/seal' && fake.sealHold) await fake.sealHold;
       if (path === '/v1/seal') {
         return Response.json({
           sealed: sealSecret(

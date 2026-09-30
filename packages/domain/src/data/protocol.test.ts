@@ -32,6 +32,7 @@ const settings: ConnectionSettings = {
 };
 
 const sealed = 'v1.AAAAAAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBB.Q0NDQw';
+const CONNECTION = '5c1d0c6e-8f9a-4b1e-9d6a-3f2b7c4e5a10';
 
 const testRequest = {
   requestId: '6f1c2a0e-8a4b-4c1e-9d7a-1b2c3d4e5f60',
@@ -48,7 +49,10 @@ const testRequest = {
 describe("the connector's protocol", () => {
   it('round-trips each request and answer', () => {
     const cases: readonly [{ parse: (value: unknown) => unknown }, unknown][] = [
-      [sealRequestSchema, { tenant: 'acme', secret: 'invented-password', settings }],
+      [
+        sealRequestSchema,
+        { tenant: 'acme', connection: CONNECTION, secret: 'invented-password', settings },
+      ],
       [sealAnswerSchema, { sealed }],
       [testRequestSchema, testRequest],
       [describeRequestSchema, testRequest],
@@ -132,13 +136,26 @@ describe("the connector's protocol", () => {
       'é'.repeat(2049),
     ];
     for (const secret of refused) {
-      expect(sealRequestSchema.safeParse({ tenant: 'acme', secret, settings }).success).toBe(false);
+      expect(
+        sealRequestSchema.safeParse({ tenant: 'acme', connection: CONNECTION, secret, settings })
+          .success,
+      ).toBe(false);
     }
     expect(
-      sealRequestSchema.safeParse({ tenant: 'acme', secret: 'p'.repeat(4096), settings }).success,
+      sealRequestSchema.safeParse({
+        tenant: 'acme',
+        connection: CONNECTION,
+        secret: 'p'.repeat(4096),
+        settings,
+      }).success,
     ).toBe(true);
     expect(
-      sealRequestSchema.safeParse({ tenant: 'acme', secret: 'é'.repeat(2048), settings }).success,
+      sealRequestSchema.safeParse({
+        tenant: 'acme',
+        connection: CONNECTION,
+        secret: 'é'.repeat(2048),
+        settings,
+      }).success,
     ).toBe(true);
   });
 

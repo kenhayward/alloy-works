@@ -353,6 +353,7 @@ describe('the domain package', () => {
         'parseConnectionForWrite',
         // What a credential is bound to, and the bounds of what the connector answers (the D1 fix).
         'connectionTarget',
+        'credentialContext',
         'CONNECTOR_ANSWER_MAX_BYTES',
         'MAX_COLUMNS',
         // A describe's budget, its type's bound, and the name and type a child checks each item by

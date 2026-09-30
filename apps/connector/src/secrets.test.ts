@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { createServer, type AddressInfo, type Server, type Socket } from 'node:net';
 import { fileURLToPath } from 'node:url';
 
@@ -131,6 +132,7 @@ describe("the connector's secrets", () => {
     expect(
       await call(real.url, '/v1/seal', {
         tenant: 'Not A Tenant',
+        connection: randomUUID(),
         secret: CANARY,
         settings: settings(),
       }),
@@ -139,8 +141,14 @@ describe("the connector's secrets", () => {
       text: '{"code":"request_invalid"}',
     });
     expect(
-      (await call(real.url, '/v1/seal', { tenant: 'acme', secret: CANARY, settings: settings() }))
-        .status,
+      (
+        await call(real.url, '/v1/seal', {
+          tenant: 'acme',
+          connection: randomUUID(),
+          secret: CANARY,
+          settings: settings(),
+        })
+      ).status,
     ).toBe(200);
     await new Promise<void>((resolve) => real.server.close(() => resolve()));
 

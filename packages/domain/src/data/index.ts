@@ -3,6 +3,7 @@ export {
   ConnectionRefused,
   checkConnection,
   connectionTarget,
+  credentialContext,
   connectionSettingsSchema,
   connectorIdentities,
   parseConnection,

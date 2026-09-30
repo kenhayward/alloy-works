@@ -437,9 +437,10 @@ describe('connections through the service', () => {
     const put = () =>
       call('ada', 'PUT', `/v1/connections/${connection.id}/credential`, { secret: SECRET });
     expect((await put()).statusCode).toBe(200);
-    // Sealed for the settings it will be used with.
+    // Sealed for the connection and the settings it will be used with.
     const sealing = connector.asked.filter((each) => each.path === '/v1/seal').at(-1)!;
     expect((sealing.body as { settings: unknown }).settings).toEqual(connection.settings);
+    expect((sealing.body as { connection: unknown }).connection).toBe(connection.id);
 
     // A new name keeps it.
     const renamed = await call('ada', 'POST', `/v1/connections/${connection.id}/versions`, {
@@ -495,6 +496,57 @@ describe('connections through the service', () => {
     expect(
       (await call('ada', 'POST', `/v1/connections/${connection.id}/test`, {})).statusCode,
     ).toBe(200);
+  });
+
+  it('records a credential against the target it was sealed for, where a version moving the connection is saved while it is sealed, and says it must be set again', async () => {
+    const connection = await make({ name: 'Raced' });
+    await allow(ids.ada!, connectionUser, { kind: 'artifact', id: connection.id });
+    connector.mode = 'answer';
+    connector.test = { outcome: 'ok', findings: [] };
+    let release!: () => void;
+    connector.sealHold = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    try {
+      const before = connector.asked.length;
+      const putting = call('ada', 'PUT', `/v1/connections/${connection.id}/credential`, {
+        secret: SECRET,
+      });
+      const until = Date.now() + 5000;
+      while (
+        !connector.asked.slice(before).some((each) => each.path === '/v1/seal') &&
+        Date.now() < until
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      // Somebody points the connection elsewhere while the connector seals for where it was.
+      const moved = await call('ada', 'POST', `/v1/connections/${connection.id}/versions`, {
+        openedFrom: connection.version.id,
+        settings: settings({
+          name: 'Raced',
+          source: { ...settings().source, host: 'elsewhere.example' },
+        }),
+      });
+      expect(moved.statusCode, moved.body).toBe(200);
+      release();
+      const put = await putting;
+      expect(put.statusCode, put.body).toBe(200);
+      expect(put.json<{ credential: Json }>().credential).toMatchObject({
+        set: true,
+        targetChanged: true,
+      });
+      const read = await call('ada', 'GET', `/v1/connections/${connection.id}`);
+      expect(read.json<ConnectionBody>().credential).toMatchObject({
+        set: true,
+        targetChanged: true,
+      });
+      const tested = await call('ada', 'POST', `/v1/connections/${connection.id}/test`, {});
+      expect(tested.statusCode).toBe(409);
+      expect(tested.json()).toMatchObject({ code: 'credential_target_changed' });
+    } finally {
+      release();
+      connector.sealHold = undefined;
+    }
   });
 
   it('holds nothing of access while the connector works: a grant is made at once while a test and a describe wait on a slow source, and the test is recorded against the version it tested', async () => {

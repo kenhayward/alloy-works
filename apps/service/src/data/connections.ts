@@ -360,9 +360,14 @@ export function connectionHandlers(
       // unusable (the D1 fix, C3). Sealing reaches no source, so it is done in the deciding
       // transaction, with the write it answers; only the test waits for a source, after the commit.
       const { sealed } = answered(
-        await connected().seal(tenantOf(request).id, secret, connection.settings),
+        await connected().seal(tenantOf(request).id, connection.id, secret, connection.settings),
       );
-      const set = await setConnectionCredential(trx, { id, sealed, by: principalId });
+      const set = await setConnectionCredential(trx, {
+        id,
+        sealed,
+        by: principalId,
+        sealedFor: connection.settings,
+      });
       if (set.answer !== 'set') {
         if (set.answer === 'connection.missing') throw notFound();
         throw refused(409, 'connection.retired', 'This connection is retired, so it runs nothing.');

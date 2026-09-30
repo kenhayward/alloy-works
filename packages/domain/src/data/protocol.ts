@@ -52,11 +52,13 @@ const sealed = z
   .regex(SEALED, { message: 'Not a sealed value this scheme wrote' });
 
 /**
- * A secret to seal, and the connection settings whose target it is sealed to (the D1 fix, C3): it
- * opens only for a request whose settings name the same type, host, port, database, account and TLS.
+ * A secret to seal, the connection it is set on, and the connection settings whose target it is
+ * sealed to (the D1 fix, C3 and round two): it opens only for a request naming that connection, whose
+ * settings name the same type, host, port, database, account and TLS.
  */
 export const sealRequestSchema = z.strictObject({
   tenant,
+  connection: z.uuid(),
   secret,
   settings: connectionSettingsSchema,
 });

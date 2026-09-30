@@ -198,13 +198,20 @@ export type CredentialState =
 
 /**
  * Adds a credential row: the sealed value the connector answered, who set it, by the database's clock
- * when (DAT-003, DAT-007), and the digest of the target it was sealed for - the latest version's, read
- * here - so a later version pointing elsewhere leaves it unusable. It cuts no version (DAT-066). A
+ * when (DAT-003, DAT-007), and the digest of the target it was sealed for - `sealedFor`, the settings
+ * the caller handed the connector, never the latest version's as read here, which a version saved
+ * while the connector sealed would have moved (the D1 fix, round two). A later version pointing
+ * elsewhere, that one included, leaves it unusable and says so. It cuts no version (DAT-066). A
  * retired connection takes none.
  */
 export async function setConnectionCredential(
   trx: TenantTransaction,
-  input: { readonly id: string; readonly sealed: string; readonly by: string },
+  input: {
+    readonly id: string;
+    readonly sealed: string;
+    readonly by: string;
+    readonly sealedFor: Pick<ConnectionSettings, 'type' | 'source'>;
+  },
 ): Promise<
   | { readonly answer: 'set'; readonly credential: CredentialState & { readonly set: true } }
   | { readonly answer: 'connection.missing' | 'connection.retired' }
@@ -218,7 +225,7 @@ export async function setConnectionCredential(
       connection_id: input.id,
       sealed: input.sealed,
       set_by: input.by,
-      target_digest: targetDigest(current.settings),
+      target_digest: targetDigest(input.sealedFor),
     })
     .execute();
   const credential = await credentialOf(trx, input.id);

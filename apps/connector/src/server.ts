@@ -2,7 +2,7 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 
 import {
-  connectionTarget,
+  credentialContext,
   sealRequestSchema,
   testRequestSchema,
   type SealAnswer,
@@ -128,7 +128,7 @@ export function createConnectorServer(options: {
           'source-credential',
           parsed.data.tenant,
           parsed.data.secret,
-          connectionTarget(parsed.data.settings),
+          credentialContext(parsed.data.connection, parsed.data.settings),
         ),
       };
       return send(200, answer);

@@ -312,7 +312,12 @@ describe('a connection', () => {
     });
     const value = sealed();
     const set = await service.withTenant(production, (trx) =>
-      setConnectionCredential(trx, { id: first.id, sealed: value, by: grace }),
+      setConnectionCredential(trx, {
+        id: first.id,
+        sealed: value,
+        by: grace,
+        sealedFor: retired.connection.settings,
+      }),
     );
     expect(set).toMatchObject({ answer: 'set' });
     const credential = await service.withTenant(production, (trx) => credentialOf(trx, first.id));
@@ -330,7 +335,12 @@ describe('a connection', () => {
     // Replaced: the latest row is the credential, and the earlier one is still there to say when.
     const replacement = sealSecret(key, 'source-credential', production.id, 'another-invented-one');
     await service.withTenant(production, (trx) =>
-      setConnectionCredential(trx, { id: first.id, sealed: replacement, by: ada }),
+      setConnectionCredential(trx, {
+        id: first.id,
+        sealed: replacement,
+        by: ada,
+        sealedFor: retired.connection.settings,
+      }),
     );
     expect(
       await service.withTenant(production, (trx) => usableCredentialOf(trx, first.id)),
@@ -430,8 +440,13 @@ describe('a connection', () => {
       service.withTenant(production, (trx) => usableCredentialOf(trx, connection.id));
     const state = () => service.withTenant(production, (trx) => credentialOf(trx, connection.id));
     const set = () =>
-      service.withTenant(production, (trx) =>
-        setConnectionCredential(trx, { id: connection.id, sealed: sealed(), by: ada }),
+      service.withTenant(production, async (trx) =>
+        setConnectionCredential(trx, {
+          id: connection.id,
+          sealed: sealed(),
+          by: ada,
+          sealedFor: (await readConnection(trx, connection.id))!.settings,
+        }),
       );
 
     expect(await usable()).toEqual({ answer: 'missing' });
@@ -631,7 +646,12 @@ describe('a connection', () => {
   it('is found on its space by who may read it, with whether a credential is set and its last test, and never in search', async () => {
     const inQuality = await made({ name: 'Quality source' }, quality);
     await service.withTenant(production, (trx) =>
-      setConnectionCredential(trx, { id: inQuality.id, sealed: sealed(), by: ada }),
+      setConnectionCredential(trx, {
+        id: inQuality.id,
+        sealed: sealed(),
+        by: ada,
+        sealedFor: inQuality.settings,
+      }),
     );
     await service.withTenant(production, (trx) =>
       recordConnectionTest(trx, {

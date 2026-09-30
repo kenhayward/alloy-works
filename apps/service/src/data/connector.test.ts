@@ -10,6 +10,7 @@ import { createConnectorClient } from './connector.js';
 const KEY = 'aW52ZW50ZWQtY29ubmVjdG9yLWtleS1mb3ItdGVzdHMhIQ==';
 const SEALED = `v1.${'a'.repeat(16)}.${'b'.repeat(22)}.${'c'.repeat(40)}`;
 const SECRET = 'an-invented-canary-password';
+const CONNECTION = '5c1d0c6e-8f9a-4b1e-9d6a-3f2b7c4e5a10';
 
 const settings: ConnectionSettings = {
   schemaVersion: 1,
@@ -55,7 +56,9 @@ describe("the service's connector client", () => {
   it('seals a secret with the key in a header, and answers the sealed value it parsed', async () => {
     const { asked, fetch } = answering(200, { sealed: SEALED });
     const client = createConnectorClient({ url: 'http://connector:8090', key: KEY, fetch });
-    expect(await client.seal('acme1', SECRET, settings)).toEqual({ answer: { sealed: SEALED } });
+    expect(await client.seal('acme1', CONNECTION, SECRET, settings)).toEqual({
+      answer: { sealed: SEALED },
+    });
     expect(asked).toHaveLength(1);
     expect(asked[0]!.url).toBe('http://connector:8090/v1/seal');
     expect(asked[0]!.init.method).toBe('POST');
@@ -64,6 +67,7 @@ describe("the service's connector client", () => {
     expect(asked[0]!.url).not.toContain(SECRET);
     expect(JSON.parse(String(asked[0]!.init.body))).toEqual({
       tenant: 'acme1',
+      connection: CONNECTION,
       secret: SECRET,
       settings,
     });
@@ -109,7 +113,7 @@ describe("the service's connector client", () => {
     ]) {
       const client = createConnectorClient({ url: 'http://c', key: KEY, fetch });
       const answers = [
-        await client.seal('acme1', SECRET, settings),
+        await client.seal('acme1', CONNECTION, SECRET, settings),
         await client.test(request()),
         await client.describe(request()),
       ];

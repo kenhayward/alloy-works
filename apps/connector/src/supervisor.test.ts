@@ -173,7 +173,7 @@ describe('the supervisor', () => {
     expect(Date.now() - started).toBeGreaterThanOrEqual(1450);
   });
 
-  it('opens a credential only for the target it was sealed for, answering connection_failed without a child for any other', async () => {
+  it('opens a credential only for the connection and the target it was sealed for, answering connection_failed without a child for any other', async () => {
     let spawned = 0;
     const supervisor = createSupervisor({
       sealingKey: SEALING_KEY,
@@ -192,6 +192,14 @@ describe('the supervisor', () => {
     // The same sealed value, with the connection pointed at a server of somebody else's.
     const moved = { ...sealedFor, settings: settings({ host: 'elsewhere.example' }) };
     expect(await supervisor.run('test', moved)).toEqual({
+      outcome: 'failed',
+      failure: { code: 'connection_failed', attribution: 'connector' },
+    });
+    expect(spawned).toBe(1);
+    // The same sealed value copied to another connection with the same target: it opens for the
+    // connection it was sealed for alone.
+    const copied = { ...sealedFor, connection: { id: randomUUID(), version: randomUUID() } };
+    expect(await supervisor.run('test', copied)).toEqual({
       outcome: 'failed',
       failure: { code: 'connection_failed', attribution: 'connector' },
     });

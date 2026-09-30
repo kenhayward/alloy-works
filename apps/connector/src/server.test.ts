@@ -1,6 +1,6 @@
 import type { AddressInfo } from 'node:net';
 
-import { connectionTarget, SEALED } from '@alloy-works/domain';
+import { connectionTarget, credentialContext, SEALED } from '@alloy-works/domain';
 import { openSecret } from '@alloy-works/sealing';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -65,17 +65,32 @@ describe("the connector's interface", () => {
       body: typeof body === 'string' ? body : JSON.stringify(body),
     });
 
-  it("seals a secret to a value SEALED matches, which opens only with the connector's key, the tenant's id and the connection's target", async () => {
+  it("seals a secret to a value SEALED matches, which opens only with the connector's key, the tenant's id, the connection's id and its target", async () => {
     const { url } = await started();
+    const connection = '5c1d0c6e-8f9a-4b1e-9d6a-3f2b7c4e5a10';
     const response = await post(url, '/v1/seal', {
       tenant: 'acme',
+      connection,
       secret: 'an-invented-password',
       settings: settings(),
     });
     expect(response.status).toBe(200);
     const { sealed } = (await response.json()) as { sealed: string };
     expect(sealed).toMatch(SEALED);
-    const target = connectionTarget(settings());
+    const target = credentialContext(connection, settings());
+    // Not for another connection with the same target, which a copied row would claim to be.
+    expect(() =>
+      openSecret(
+        SEALING_KEY,
+        'source-credential',
+        'acme',
+        sealed,
+        credentialContext('0b8f3a2c-1d4e-4f5a-8b6c-7d9e0f1a2b3c', settings()),
+      ),
+    ).toThrow();
+    expect(() =>
+      openSecret(SEALING_KEY, 'source-credential', 'acme', sealed, connectionTarget(settings())),
+    ).toThrow();
     expect(openSecret(SEALING_KEY, 'source-credential', 'acme', sealed, target)).toBe(
       'an-invented-password',
     );
@@ -94,7 +109,13 @@ describe("the connector's interface", () => {
       settings({ tls: 'verifyFull' }),
     ]) {
       expect(() =>
-        openSecret(SEALING_KEY, 'source-credential', 'acme', sealed, connectionTarget(moved)),
+        openSecret(
+          SEALING_KEY,
+          'source-credential',
+          'acme',
+          sealed,
+          credentialContext(connection, moved),
+        ),
       ).toThrow();
     }
   });

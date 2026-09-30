@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   CONNECTOR_ANSWER_MAX_BYTES,
-  connectionTarget,
+  credentialContext,
   dataFailure,
   describeAnswerSchema,
   testAnswerSchema,
@@ -222,14 +222,14 @@ export function createSupervisor(options: {
     const started = Date.now();
     let secret: string;
     try {
-      // Opened only for the target it was sealed for: a version pointing the connection anywhere
-      // else opens nothing (the D1 fix, C3).
+      // Opened only for the connection and the target it was sealed for: a version pointing the
+      // connection anywhere else, or the row copied to another connection, opens nothing (DA-AF).
       secret = openSecret(
         options.sealingKey,
         'source-credential',
         request.tenant,
         request.sealed,
-        connectionTarget(request.settings),
+        credentialContext(request.connection.id, request.settings),
       );
     } catch {
       // A credential that does not open fails to authenticate, as a wrong one does, and takes as long.
