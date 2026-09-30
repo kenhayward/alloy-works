@@ -30,6 +30,15 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   filesystem, or it refuses to start, and should give it compose's init, process limit and no shared
   memory as well.
 
+## 0.128.4 - 2026-09-30 (PR #366)
+
+### Fixed
+
+- **Pointing the tests at another database now works with `pnpm test`.** Setting
+  `ALLOY_TEST_DATABASE_URL` or `ALLOY_TEST_OBJECT_STORE` used to be dropped before the suites saw it,
+  so they ran against your development database and object store instead of the one you named. They
+  now reach the suites, and a test fails if a new one is ever left out (issue #365).
+
 ## 0.128.3 - 2026-09-30 (PR #364)
 
 ### Fixed

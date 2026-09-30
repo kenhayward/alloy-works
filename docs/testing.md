@@ -106,7 +106,11 @@ Each test file creates a database of its own (`aw_test_` and random hex) and dro
 Roles are shared by the whole server, so test tenants use ids beginning `test`, which the harness
 removes with the database; the files run one at a time because they share the login roles. CI runs
 the same suite against a Postgres service container. Point `ALLOY_TEST_DATABASE_URL` at another
-server to use one.
+server to use one, and `ALLOY_TEST_OBJECT_STORE` (with `_KEY` and `_SECRET`) at another object store.
+Turbo runs `pnpm test` in strict environment mode, so every `ALLOY_TEST_` variable a suite reads is
+listed in `turbo.json`'s `globalPassThroughEnv`, and `packages/db/src/testing/turbo-env.test.ts`
+fails when one is missing: an unlisted variable never reaches the suites, which then quietly run
+against the development stack's Postgres and object store instead (issue #365).
 
 **The version chain's load test is not part of `pnpm test`.** `pnpm --filter @alloy-works/db test:load`
 seeds a throwaway database with a tenant's worth of components and versions and measures cutting,
