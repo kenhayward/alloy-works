@@ -7,7 +7,7 @@ import { sql } from 'kysely';
 import { currentDefinitionsFor, defaultComponentType } from './creation.js';
 import { grant } from './grants.js';
 import { DEFAULT_LAYOUT_ID } from './layouts.js';
-import { findRole } from './roles.js';
+import { createRole, findRole } from './roles.js';
 import type { TenantTransaction } from './tables.js';
 import { createTemplate } from './templates.js';
 import { DEFAULT_THEME_ID } from './themes.js';
@@ -367,4 +367,39 @@ async function seedProcedure(trx: TenantTransaction, space: string, author: stri
       definitions: definitionsFor(definitions.type, definitions.schemas, definitions.fields),
     },
   });
+}
+
+/**
+ * Development only: somebody who may use a connection. No starting role holds `use_connection`, so using
+ * one is always granted on purpose (data.md, "Permissions"); this makes a role of the environment's own,
+ * Connection user, holding `read` and `use_connection`, and allows it to Ada on General, where she may
+ * already make a connection as the environment's administrator. Nobody else holds it. Safe to run
+ * again.
+ */
+export async function seedDevelopmentConnectionUse(
+  trx: TenantTransaction,
+  input: DevelopmentContent,
+): Promise<void> {
+  const ada = await person(trx, input.issuer, 'ada', 'Ada', true);
+  const general = await trx
+    .selectFrom('space')
+    .select('id')
+    .where('name', '=', 'General')
+    .executeTakeFirstOrThrow();
+  let role = await findRole(trx, 'Connection user');
+  if (!role) {
+    const made = await createRole(trx, 'Connection user', ['read', 'use_connection']);
+    if (!('role' in made)) throw new Error(`Connection user was refused: ${made.refused}`);
+    role = made.role;
+  }
+  const answer = await grant(trx, {
+    roleId: role.id,
+    subject: { principal: ada },
+    level: { kind: 'space', id: general.id },
+    effect: 'allow',
+    grantedBy: ada,
+  });
+  if ('refused' in answer && answer.refused !== 'grant.duplicate') {
+    throw new Error(`Connection user on General was refused: ${answer.refused}`);
+  }
 }

@@ -2,7 +2,7 @@
 // reachable at acme.localhost and dev.acme.localhost. Safe to run again.
 import pg from 'pg';
 import { bootstrapCluster } from './bootstrap.js';
-import { seedDevelopmentContent } from './dev-content.js';
+import { seedDevelopmentConnectionUse, seedDevelopmentContent } from './dev-content.js';
 import { inviteFirstAdministrator } from './first-administrator.js';
 import { migrate } from './migrate.js';
 import { tenantNames } from './names.js';
@@ -109,6 +109,11 @@ for (const environment of environments) {
   if (seeded.created) {
     console.log(`Made "Install the printer" at ${environment.hostnames[0]}, for Ada and Grace`);
   }
+  // And Ada may use a connection in General: no starting role holds `use_connection`.
+  await serviceDb.withTenant(
+    { id: environment.tenant.id, schema: tenant.schema, role: tenant.role },
+    (trx) => seedDevelopmentConnectionUse(trx, { issuer: standInIssuer }),
+  );
 }
 await serviceDb.close();
 // The development environment also takes Google accounts, the stand-in playing Google. Nobody is

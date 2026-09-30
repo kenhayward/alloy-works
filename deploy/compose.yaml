@@ -118,8 +118,15 @@ services:
       GOOGLE_CLIENT_ID: alloy-google-dev
       SIGN_IN_HOST: signin.localhost:${SERVICE_PORT:-8088}
       ALLOW_INSECURE_ISSUERS: 'true'
+      # The connector, on the network only the two of them share, and the key the service presents
+      # to it: the connector's CONNECTOR_KEY. A development-only value, as every key here is.
+      CONNECTOR_URL: http://connector:8090
+      SECRET_CONNECTOR_KEY: ZGV2ZWxvcG1lbnQtb25seS1jb25uZWN0b3Ita2V5LTE=
     ports:
       - '127.0.0.1:${SERVICE_PORT:-8088}:${SERVICE_PORT:-8088}'
+    networks:
+      - default
+      - connector-private
     depends_on:
       setup:
         condition: service_completed_successfully
@@ -142,6 +149,84 @@ services:
     depends_on:
       setup:
         condition: service_completed_successfully
+
+  # The one process that reaches a tenant's own source (data.md, "The connector"). It is on two
+  # networks and no others: `connector-private`, which it shares with the service alone, and
+  # `connector-egress`, out to the sources. Neither carries the platform or the host (the D1 plan,
+  # D1-I), so it has no route to the database, the store, the provider or anything the host
+  # publishes. It holds no platform credential: only the key the service presents and the key it
+  # seals credentials with, both development-only values. CONNECTOR_DENY is `none` because the
+  # networks already hold it apart; a deployment whose networks do not lists its ranges there.
+  connector:
+    build:
+      # The repo root, because the images are built from the whole workspace; this file and the
+      # Dockerfile live here, one level down.
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: connector
+    environment:
+      CONNECTOR_KEY: ZGV2ZWxvcG1lbnQtb25seS1jb25uZWN0b3Ita2V5LTE=
+      CONNECTOR_SEALING_KEY: ZGV2ZWxvcG1lbnQtb25seS1zZWFsaW5nLWtleS0wMDE=
+      CONNECTOR_DENY: none
+      LOG_LEVEL: info
+    networks:
+      - connector-private
+      - connector-egress
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:8090/v1/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  # Development and CI only, in the `sources` profile: a tenant's own PostgreSQL, seeded with a
+  # sample, a read-only account `reader` and an account `writer` that may insert (D1-J). It is on
+  # `connector-egress` alone and publishes no port, so only the connector reaches it. Pinned by digest,
+  # as the connector's own suite pins it. Every password in the seed is an invented development value.
+  source-postgres:
+    image: postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+    profiles: [sources]
+    command:
+      [
+        'postgres',
+        '-c',
+        'ssl=on',
+        '-c',
+        'ssl_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem',
+        '-c',
+        'ssl_key_file=/etc/ssl/private/ssl-cert-snakeoil.key',
+      ]
+    environment:
+      POSTGRES_PASSWORD: source-postgres-dev-password
+      POSTGRES_DB: readings
+    volumes:
+      - ./sources/postgres.sql:/docker-entrypoint-initdb.d/postgres.sql:ro
+    networks:
+      - connector-egress
+    healthcheck:
+      # Over TCP: the image seeds on a server listening on its socket alone, then restarts it.
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U postgres']
+      interval: 2s
+      timeout: 5s
+      retries: 45
+
+# The connector's two networks (the D1 plan, D1-I): internal, so nothing on them is routed anywhere
+# else, and with no address for the host on their bridge, so no process the host runs - and no port
+# it publishes - answers there. Docker Engine 28 or later.
+networks:
+  connector-private:
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.gateway_mode_ipv4: isolated
+  connector-egress:
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.gateway_mode_ipv4: isolated
 
 volumes:
   postgres-data:

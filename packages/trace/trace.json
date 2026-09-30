@@ -21208,6 +21208,24 @@
       "kind": "title"
     },
     {
+      "id": "DAT-075",
+      "file": "tests/e2e/src/connections.test.ts",
+      "line": 59,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-056",
+      "file": "tests/e2e/src/connector-isolation.test.ts",
+      "line": 146,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-089",
+      "file": "tests/e2e/src/connector-isolation.test.ts",
+      "line": 222,
+      "kind": "title"
+    },
+    {
       "id": "AST-005",
       "file": "tests/e2e/src/stack.test.ts",
       "line": 483,

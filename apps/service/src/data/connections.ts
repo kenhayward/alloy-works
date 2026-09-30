@@ -349,7 +349,7 @@ export function connectionHandlers(
       return {
         credential: {
           set: true as const,
-          setBy: set.credential.setBy,
+          setBy: { id: set.credential.setBy.id, name: set.credential.setBy.name },
           setAt: set.credential.setAt.toISOString(),
         },
         test: tested,

@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
 
-# One file, four targets. `build` installs and builds what the containers need; `tools` keeps the
-# whole workspace for the compose stack's setup and stand-in provider; `service` and `worker` carry
-# only their own production tree.
+# One file, five targets. `build` installs and builds what the containers need; `tools` keeps the
+# whole workspace for the compose stack's setup and stand-in provider; `service`, `worker` and
+# `connector` carry only their own production tree.
 #
 # Debian rather than Alpine: glibc is the surface native modules are built against, and image size is
 # not what matters for a system that ships as a compose file.
@@ -26,6 +26,7 @@ WORKDIR /repo
 FROM base AS build
 # The manifests first, so a change to source does not reinstall the world.
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY apps/connector/package.json apps/connector/
 COPY apps/desktop/package.json apps/desktop/
 COPY apps/service/package.json apps/service/
 COPY apps/web/package.json apps/web/
@@ -46,19 +47,23 @@ RUN pnpm install --frozen-lockfile \
       --filter "@alloy-works/service..." \
       --filter "@alloy-works/worker..." \
       --filter "@alloy-works/stand-in-idp..." \
-      --filter "@alloy-works/web..."
+      --filter "@alloy-works/web..." \
+      --filter "@alloy-works/connector..."
 # version.json too: the renderer's build reads the canonical version from it for Administration's About.
 COPY tsconfig.base.json version.json ./
 COPY packages/ packages/
+COPY apps/connector/ apps/connector/
 COPY apps/service/ apps/service/
 COPY apps/web/ apps/web/
 COPY apps/worker/ apps/worker/
 RUN pnpm --filter "@alloy-works/service..." build \
  && pnpm --filter "@alloy-works/worker..." build \
- && pnpm --filter "@alloy-works/web..." build
+ && pnpm --filter "@alloy-works/web..." build \
+ && pnpm --filter "@alloy-works/connector..." build
 # Each app, with its own production dependencies and nothing else.
 RUN pnpm deploy --filter @alloy-works/service --prod /prod/service \
- && pnpm deploy --filter @alloy-works/worker --prod /prod/worker
+ && pnpm deploy --filter @alloy-works/worker --prod /prod/worker \
+ && pnpm deploy --filter @alloy-works/connector --prod /prod/connector
 
 # Development only: the whole workspace, so the compose stack can prepare a database and run the
 # stand-in provider. No deployed installation runs this.
@@ -115,4 +120,16 @@ RUN /opt/verapdf/verapdf --version
 WORKDIR /app
 COPY --from=build --chown=node:node /prod/worker ./
 USER node
+CMD ["node", "dist/main.js"]
+
+# The connector (data.md, "The connector"): its own production tree and nothing of the platform's - no
+# database library, no object store, no service. It holds only its two keys, and reaches a tenant's
+# source from a network with no route to the platform. `dist/child.js` beside `dist/main.js` is the
+# per-request child the supervisor spawns.
+FROM base AS connector
+ENV NODE_ENV=production
+WORKDIR /app
+COPY --from=build --chown=node:node /prod/connector ./
+USER node
+EXPOSE 8090
 CMD ["node", "dist/main.js"]

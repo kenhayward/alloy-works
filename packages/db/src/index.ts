@@ -295,7 +295,11 @@ export {
   type CutAnswer,
   type ReleaseAnswer,
 } from './promotion.js';
-export { seedDevelopmentContent, type SeededContent } from './dev-content.js';
+export {
+  seedDevelopmentConnectionUse,
+  seedDevelopmentContent,
+  type SeededContent,
+} from './dev-content.js';
 export {
   countReadableComponents,
   listReadableComponents,

@@ -13,9 +13,10 @@ together, and what the ignore list keeps out of a build.
 
 | File                      | What it is                                                                        |
 | ------------------------- | --------------------------------------------------------------------------------- |
-| `Dockerfile`              | Every image the system runs as, as four targets sharing one install and one build |
+| `Dockerfile`              | Every image the system runs as, as five targets sharing one install and one build |
 | `Dockerfile.dockerignore` | What never enters a build context: `node_modules`, `dist`, the docs, this folder  |
 | `compose.yaml`            | The whole system for development, and the shape a small installation takes        |
+| `sources/postgres.sql`    | The seed of the development source in the `sources` profile                       |
 | `.env.example`            | The ports the stack publishes, with their defaults; copy to `.env` to change them |
 | `service.env.example`     | Settings for running the service **from source**; copy to `service.env`           |
 | `worker.env.example`      | The same for the worker; copy to `worker.env`                                     |
@@ -55,9 +56,48 @@ worker run from source. [`docs/development.md`](../docs/development.md) is that 
 | `setup`        | `tools`                    | runs once, then exits | Migrations, two invented environments, a store credential each |
 | `service`      | `service`                  | `127.0.0.1:8088`      | The API, and the renderer beside it                            |
 | `worker`       | `worker`                   | no port               | Claims jobs and runs them, carrying Typst and veraPDF          |
+| `connector`    | `connector`                | no port               | Reaches a tenant's own data sources, and nothing else          |
 
 `service` and `worker` wait for `setup` to finish, and `setup` waits for the database and the store
 to be healthy, so one `up` is enough from nothing.
+
+### The connector and its two networks
+
+`connector` is the one process that reaches a tenant's own source
+([data.md](../docs/design/data.md#the-connector)). It is on two networks and no others:
+`connector-private`, which it shares with the service alone and which carries the service's requests
+to it on port 8090, and `connector-egress`, out to the sources. Both are `internal: true` with
+`com.docker.network.bridge.gateway_mode_ipv4: isolated`, so neither is routed anywhere else and
+neither gives the host an address on its bridge: from the connector, nothing of the platform
+answers - not the database, the store, the provider or the worker, by name or by address - and no
+port the host publishes answers either, on any address. **That option needs Docker Engine 28 or
+later**; The worker is on neither network, so it has no
+address for the connector at all. `tests/e2e`'s `connector-isolation.test.ts` asks the running
+stack all of this on every CI run, and on Docker Desktop for Windows (engine 29.8.1) it holds as it
+does on Linux: a port published on every address, and a process on the Windows host listening on
+every address, each answer an ordinary container through the host and neither answers the
+connector.
+
+The service reaches it at `CONNECTOR_URL` with the key in `SECRET_CONNECTOR_KEY`; without the two
+the service still starts, and every data act answers `connector_unavailable`.
+
+### A source to connect to: the `sources` profile
+
+`source-postgres` is a PostgreSQL of a tenant's own for development and CI, pinned by digest, TLS on
+with the image's own snakeoil pair, and seeded by `sources/postgres.sql`: a database `readings`, a
+schema `sample` with `site`, `reading` and a view `site_summary`, a read-only account `reader`
+(`source-reader-dev-password`) and an account `writer` (`source-writer-dev-password`) that may add
+readings. It is on `connector-egress` alone and publishes no port, so only the connector reaches it.
+It starts only when asked for:
+
+```bash
+docker compose -f deploy/compose.yaml --profile sources up -d --build --wait
+```
+
+or with `COMPOSE_PROFILES=sources` in `deploy/.env`. Then, signed in as Ada, **Connections** makes a
+connection in General to host `source-postgres`, port `5432`, database `readings`, account `reader`,
+TLS `require`; setting its password tests it. `pnpm dev:setup` gives Ada a development role,
+**Connection user**, holding `use_connection` on General, since no starting role holds it.
 
 Open **`http://dev.acme.localhost:8088`** once it is up. The page names the environment, offers a
 way in, and the stand-in will sign you in as Ada, Grace or Alice. The same environment also answers
@@ -83,21 +123,23 @@ whole workspace. Run these **from the root**:
 ```bash
 docker build -f deploy/Dockerfile --target service -t alloy-works-service .
 docker build -f deploy/Dockerfile --target worker -t alloy-works-worker .
+docker build -f deploy/Dockerfile --target connector -t alloy-works-connector .
 ```
 
 `Dockerfile.dockerignore` is read in preference to any `.dockerignore` at the context root, which is
 how the ignore list stays next to the file it belongs to. If you rename the Dockerfile, rename that
 with it: nothing fails loudly when it stops matching, the build just gets slower and fatter.
 
-| Target    | Carries                                                                                                             |
-| --------- | ------------------------------------------------------------------------------------------------------------------- |
-| `build`   | The workspaces the containers need, installed and built; the others copy from it                                    |
-| `tools`   | The whole workspace, for the setup step and the stand-in provider. Development only                                 |
-| `service` | `apps/service` and its production dependencies, plus the built renderer                                             |
-| `worker`  | The same for `apps/worker`, plus the pinned Typst binary, checked against its hash, and veraPDF on Debian's Java 17 |
+| Target      | Carries                                                                                                                            |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `build`     | The workspaces the containers need, installed and built; the others copy from it                                                   |
+| `tools`     | The whole workspace, for the setup step and the stand-in provider. Development only                                                |
+| `service`   | `apps/service` and its production dependencies, plus the built renderer                                                            |
+| `worker`    | The same for `apps/worker`, plus the pinned Typst binary, checked against its hash, and veraPDF on Debian's Java 17                |
+| `connector` | `apps/connector` and its production dependencies - the domain, the sealing package, `pg` and `zod` - and nothing of the platform's |
 
-Neither shipped image carries development tooling, test files or Electron. Both run as the `node`
-user. CI builds both on every pull request, for x86-64, and runs each entry point; nothing is pushed
+No shipped image carries development tooling, test files or Electron. Each runs as the `node`
+user. CI builds each on every pull request, for x86-64, and runs each entry point; nothing is pushed
 anywhere, because where they would be pushed comes with hosting.
 
 **The worker image builds for x86-64 and arm64.** Typst is downloaded for the architecture being
@@ -187,6 +229,14 @@ files above set the same ones for a run from source; these are the ones worth kn
 | `SIGN_IN_HOST`, `GOOGLE_CLIENT_ID` | service                | The Google route; set together or not at all                                                                                          |
 | `DEV_EXTRA_HOSTNAME`               | setup                  | An extra address for the development environment                                                                                      |
 | `ALLOY_SERVICE_URL`                | the desktop app        | Which environment its window opens                                                                                                    |
+| `CONNECTOR_URL`                    | service                | Where the connector answers, `http://connector:8090` in the stack; set with `SECRET_CONNECTOR_KEY`, or neither                        |
+| `SECRET_CONNECTOR_KEY`             | service                | The key the service presents to the connector: the connector's `CONNECTOR_KEY`                                                        |
+| `CONNECTOR_KEY`                    | connector              | 32 bytes of base64 the service must present; read once at start and deleted from the environment                                      |
+| `CONNECTOR_SEALING_KEY`            | connector              | 32 bytes of base64, another key, that seals and opens every source credential; the service never holds it                             |
+| `CONNECTOR_DENY`                   | connector              | Required: the platform's own address ranges, as CIDRs separated by commas, or `none` where the networks already hold it apart         |
+| `CONNECTOR_PORT`, `CONNECTOR_HOST` | connector              | Where it listens, `8090` on every address unset                                                                                       |
+| `CONNECTOR_MAX_CHILDREN`           | connector              | How many requests run at once, each in a fresh process, 8 unset; the next is answered `connector_busy`                                |
+| `COMPOSE_PROFILES`                 | Compose                | `sources` starts the development source with every `up`                                                                               |
 
 Secrets arrive as `SECRET_*` variables and never reach a log: the configuration the service logs at
 start-up names them, never their values. veraPDF, a child of the worker, is started with `PATH`, the

@@ -60,7 +60,8 @@
         "ALLOY_E2E_SERVICE",
         "ALLOY_E2E_IDP",
         "ALLOY_E2E_IDP_ISSUER",
-        "ALLOY_E2E_STORE_AT"
+        "ALLOY_E2E_STORE_AT",
+        "ALLOY_E2E_COMPOSE_PROJECT"
       ]
     },
     "@alloy-works/browser#test:browser": {
