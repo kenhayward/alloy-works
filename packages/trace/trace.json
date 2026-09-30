@@ -17766,19 +17766,19 @@
     {
       "id": "DAT-075",
       "file": "apps/connector/src/postgres.test.ts",
-      "line": 67,
+      "line": 68,
       "kind": "title"
     },
     {
       "id": "DAT-114",
       "file": "apps/connector/src/postgres.test.ts",
-      "line": 124,
+      "line": 125,
       "kind": "title"
     },
     {
       "id": "DAT-005",
       "file": "apps/connector/src/secrets.test.ts",
-      "line": 63,
+      "line": 64,
       "kind": "title"
     },
     {
@@ -17886,25 +17886,25 @@
     {
       "id": "DAT-004",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 194,
+      "line": 200,
       "kind": "title"
     },
     {
       "id": "DAT-049",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 315,
+      "line": 322,
       "kind": "title"
     },
     {
       "id": "DAT-075",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 236,
+      "line": 243,
       "kind": "title"
     },
     {
       "id": "DAT-078",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 667,
+      "line": 823,
       "kind": "rule"
     },
     {
@@ -18336,13 +18336,13 @@
     {
       "id": "DAT-004",
       "file": "apps/web/src/data/connections.test.tsx",
-      "line": 379,
+      "line": 411,
       "kind": "title"
     },
     {
       "id": "DAT-075",
       "file": "apps/web/src/data/connections.test.tsx",
-      "line": 327,
+      "line": 359,
       "kind": "title"
     },
     {
@@ -19272,7 +19272,7 @@
     {
       "id": "DAT-003",
       "file": "packages/db/src/connections.test.ts",
-      "line": 365,
+      "line": 376,
       "kind": "title"
     },
     {
@@ -20112,7 +20112,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 380,
+      "line": 387,
       "kind": "title"
     },
     {
@@ -21228,7 +21228,7 @@
     {
       "id": "DAT-056",
       "file": "tests/e2e/src/connector-privilege.test.ts",
-      "line": 160,
+      "line": 175,
       "kind": "title"
     },
     {
