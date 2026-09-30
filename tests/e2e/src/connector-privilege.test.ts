@@ -7,9 +7,9 @@ import { e2eTargets } from './targets.js';
  * What a connector's child can do inside the connector's own container (the D1 fix, C1 and C2), asked
  * of the running stack. A probe is spawned inside the connector's container exactly as the supervisor
  * spawns a child - by the built `childSpawn` and `runChild` in `/app/dist/supervisor.js`, with the
- * production policy - while the real supervisor, holding both keys, is process 1 beside it. The probe
- * is told the keys on its standard input, never on a command line or in an environment, and reports
- * only where it found them.
+ * production policy - while the real supervisor, holding both keys, runs beside it under Docker's init,
+ * which Docker hands the same environment. The probe is told the keys on its standard input, never on
+ * a command line or in an environment, and reports only where it found them.
  */
 const PROJECT = e2eTargets(process.env).composeProject;
 
@@ -51,18 +51,26 @@ process.stdin.on('end', () => {
   const needles = JSON.parse(input.split('\n')[0]).map((each) => Buffer.from(each));
   const holds = (bytes) => needles.some((needle) => bytes.includes(needle));
   const attempt = (work) => { try { work(); return 'done'; } catch (error) { return error.code || 'error'; } };
-  const status = fs.readFileSync('/proc/1/status', 'utf8');
+  // The supervisor by its command line, whatever its number: under an init it is not process 1.
+  const supervisor = fs.readdirSync('/proc').filter((name) => /^\d+$/.test(name)).find((pid) => {
+    try { return fs.readFileSync('/proc/' + pid + '/cmdline', 'utf8').split('\0').includes('dist/main.js'); } catch { return false; }
+  });
+  const status = fs.readFileSync('/proc/' + supervisor + '/status', 'utf8');
   const result = {
     uid: process.getuid(),
     gid: process.getgid(),
+    supervisorPid: Number(supervisor),
     supervisorUid: Number(/^Uid:\s+(\d+)/m.exec(status)[1]),
     supervisorCaps: /^CapEff:\s+([0-9a-f]+)/m.exec(status)[1],
     supervisorNoNewPrivs: /^NoNewPrivs:\s+(\d)/m.exec(status)[1],
     ownCaps: /^CapEff:\s+([0-9a-f]+)/m.exec(fs.readFileSync('/proc/self/status', 'utf8'))[1],
-    environ: attempt(() => fs.readFileSync('/proc/1/environ')),
-    mem: attempt(() => fs.closeSync(fs.openSync('/proc/1/mem', 'r'))),
-    fd: attempt(() => fs.readdirSync('/proc/1/fd')),
-    kill: attempt(() => process.kill(1, 0)),
+    environ: attempt(() => fs.readFileSync('/proc/' + supervisor + '/environ')),
+    // Process 1, the supervisor or the init that started it, which Docker hands the same environment.
+    initEnviron: attempt(() => fs.readFileSync('/proc/1/environ')),
+    mem: attempt(() => fs.closeSync(fs.openSync('/proc/' + supervisor + '/mem', 'r'))),
+    fd: attempt(() => fs.readdirSync('/proc/' + supervisor + '/fd')),
+    kill: attempt(() => process.kill(Number(supervisor), 0)),
+    killInit: attempt(() => process.kill(1, 0)),
     becomeRoot: attempt(() => process.setuid(0)),
     writes: {
       child: attempt(() => fs.appendFileSync('/app/dist/child.js', '')),
@@ -70,6 +78,10 @@ process.stdin.on('end', () => {
       createInDist: attempt(() => fs.writeFileSync('/app/dist/probe-written.js', 'x')),
       createInApp: attempt(() => fs.writeFileSync('/app/probe-written', 'x')),
       modules: attempt(() => fs.writeFileSync('/app/node_modules/probe-written.js', 'x')),
+      // Shared memory and message queues, where one child could leave something for the next.
+      shm: attempt(() => fs.writeFileSync('/dev/shm/probe-written', 'x')),
+      mqueue: attempt(() => fs.writeFileSync('/dev/mqueue/probe-written', 'x')),
+      tmp: attempt(() => fs.writeFileSync('/tmp/probe-written', 'x')),
     },
     found: [],
   };
@@ -122,14 +134,17 @@ process.stdin.on('end', async () => {
 interface Probed {
   readonly uid: number;
   readonly gid: number;
+  readonly supervisorPid: number;
   readonly supervisorUid: number;
   readonly supervisorCaps: string;
   readonly supervisorNoNewPrivs: string;
   readonly ownCaps: string;
   readonly environ: string;
+  readonly initEnviron: string;
   readonly mem: string;
   readonly fd: string;
   readonly kill: string;
+  readonly killInit: string;
   readonly becomeRoot: string;
   readonly becomeSupervisor: string;
   readonly writes: Readonly<Record<string, string>>;
@@ -159,13 +174,16 @@ describe("the connector's children", () => {
 
   it("DAT-056 runs each child as a user of its own, which cannot read the supervisor's keys through /proc or any file", () => {
     expect(probed.found).toEqual([]);
+    expect(probed.supervisorPid).toBeGreaterThan(0);
     expect(probed.environ).toBe('EACCES');
+    expect(probed.initEnviron).toBe('EACCES');
     expect(probed.uid).not.toBe(0);
     expect(probed.uid).not.toBe(probed.supervisorUid);
     expect(probed.gid).not.toBe(0);
     expect(probed.mem).toBe('EACCES');
     expect(probed.fd).toBe('EACCES');
     expect(probed.kill).toBe('EPERM');
+    expect(probed.killInit).toBe('EPERM');
     expect(probed.becomeRoot).toBe('EPERM');
     expect(probed.becomeSupervisor).toBe('EPERM');
     // The child holds no capability; the supervisor exactly KILL, SETGID and SETUID (bits 5 to 7),
@@ -175,9 +193,69 @@ describe("the connector's children", () => {
     expect(probed.supervisorNoNewPrivs).toBe('1');
   });
 
-  it("gives a child no way to change the connector's code", () => {
+  it("gives a child no way to change the connector's code, or to leave anything for another child in shared memory, a message queue or a file", () => {
     for (const [what, result] of Object.entries(probed.writes)) {
-      expect(['EACCES', 'EROFS', 'EPERM'], what).toContain(result);
+      expect(['EACCES', 'EROFS', 'EPERM', 'ENOENT'], what).toContain(result);
     }
+  });
+});
+
+/**
+ * A child that leaves a process running, as a compromised driver might: it starts one, detached, and
+ * answers. Run inside the container as the supervisor runs a child, at slot 62 - which the running
+ * supervisor never hands out - then swept as the supervisor sweeps a slot's user. What is left running
+ * as that user afterwards, in any state, is reported by number and state.
+ */
+const LEAVER = String.raw`
+const { spawn } = require('node:child_process');
+const left = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { detached: true, stdio: 'ignore' });
+left.unref();
+process.stdout.write(JSON.stringify({ left: left.pid }) + '\n');
+process.exit(0);
+`;
+
+const SWEEPER = String.raw`
+const fs = require('node:fs');
+const as = (uid) => fs.readdirSync('/proc').filter((name) => /^\d+$/.test(name)).flatMap((pid) => {
+  try {
+    const status = fs.readFileSync('/proc/' + pid + '/status', 'utf8');
+    const ids = /^Uid:\s+(\d+)/m.exec(status);
+    return ids && Number(ids[1]) === uid ? [{ pid: Number(pid), state: /^State:\s+(\S)/m.exec(status)[1] }] : [];
+  } catch { return []; }
+});
+(async () => {
+  const { childSpawn, runChild, sweepUser } = await import('file:///app/dist/supervisor.js');
+  const spec = childSpawn({ path: 'leaver', execArgv: ['-e', process.argv[1]] }, undefined, 62);
+  const outcome = await runChild(spec, '', 30000);
+  const before = as(spec.uid);
+  await sweepUser(spec.uid);
+  let after = as(spec.uid);
+  for (let waited = 0; after.length > 0 && waited < 3000; waited += 100) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    after = as(spec.uid);
+  }
+  process.stdout.write(JSON.stringify({ outcome, before, after }));
+})();
+`;
+
+describe("the connector's container", () => {
+  it('ends what a child leaves running and reaps it, leaving no process of its user behind, not even a zombie', () => {
+    const swept = JSON.parse(
+      docker(['exec', '-i', connectorId(), 'node', '-e', SWEEPER, LEAVER], ''),
+    ) as {
+      outcome: { kind: string; answer?: { left: number } };
+      before: { pid: number; state: string }[];
+      after: { pid: number; state: string }[];
+    };
+    expect(swept.outcome.kind).toBe('answer');
+    // The child's leftover was running as the slot's user before the sweep.
+    expect(swept.before.map((each) => each.pid)).toContain(swept.outcome.answer!.left);
+    expect(swept.after).toEqual([]);
+  });
+
+  it('holds the container to a bounded number of processes, so a child that forks cannot exhaust the host', () => {
+    const max = docker(['exec', connectorId(), 'cat', '/sys/fs/cgroup/pids.max']);
+    expect(max).toMatch(/^\d+$/);
+    expect(Number(max)).toBeLessThanOrEqual(256);
   });
 });

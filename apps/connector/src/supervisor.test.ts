@@ -238,6 +238,8 @@ describe('the supervisor', () => {
     await running[1];
     // The slot's user is swept of anything its child left running, and only then used again.
     expect(swept).toEqual([CHILD_USER_BASE + 1]);
+    // Handed out again once its sweep has ended, which is after the answer.
+    await new Promise((resolve) => setTimeout(resolve, 10));
     const fourth = ask();
     await new Promise((resolve) => setTimeout(resolve, 10));
     expect(started[3]!.uid).toBe(CHILD_USER_BASE + 1);
@@ -246,6 +248,35 @@ describe('the supervisor', () => {
     expect([...swept].sort()).toEqual(
       [CHILD_USER_BASE, CHILD_USER_BASE + 1, CHILD_USER_BASE + 1, CHILD_USER_BASE + 2].sort(),
     );
+    expect(supervisor.active()).toBe(0);
+  });
+
+  it("answers without waiting for a slot's sweep, and holds the slot until the sweep has ended", async () => {
+    let endSweep: () => void = () => {};
+    const supervisor = createSupervisor({
+      sealingKey: SEALING_KEY,
+      deny: suiteDeny,
+      maxChildren: 1,
+      spawn: async () => ({ kind: 'answer', answer: { outcome: 'ok', findings: [] }, pid: 2 }),
+      // A sweep that reads a crowded /proc takes as long as it takes.
+      sweep: () =>
+        new Promise<void>((resolve) => {
+          endSweep = resolve;
+        }),
+    });
+    const ask = () => supervisor.run('test', requestFor(settings(), PASSWORDS.reader));
+    const answer = await Promise.race([
+      ask(),
+      new Promise((resolve) => setTimeout(() => resolve('waited on the sweep'), 1000)),
+    ]);
+    expect(answer).toEqual({ outcome: 'ok', findings: [] });
+    // The slot's user may still be running something, so the slot is not handed out yet.
+    expect(await ask()).toBe('busy');
+    endSweep();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(await ask()).toEqual({ outcome: 'ok', findings: [] });
+    endSweep();
+    await new Promise((resolve) => setTimeout(resolve, 10));
     expect(supervisor.active()).toBe(0);
   });
 

@@ -217,6 +217,7 @@ export function createSupervisor(options: {
     kind: K,
     request: TestRequest,
     slot: number,
+    sweeping: (done: Promise<void>) => void,
   ): Promise<AnswerOf<K>> {
     const started = Date.now();
     let secret: string;
@@ -251,8 +252,10 @@ export function createSupervisor(options: {
         stderrBytes += chunk.length;
       });
     } finally {
-      // Nothing the child started outlives it into the next request its user serves.
-      if (spec.uid !== undefined) await sweep(spec.uid).catch(() => {});
+      // Nothing the child started outlives it into the next request its user serves. The sweep reads
+      // every process in /proc, so it runs beside the answer rather than before it, and the slot -
+      // and so its user - is handed out again only once it has ended.
+      if (spec.uid !== undefined) sweeping(sweep(spec.uid).catch(() => {}));
     }
     options.onStderrBytes?.(stderrBytes);
     if (outcome.kind !== 'answer') {
@@ -269,11 +272,20 @@ export function createSupervisor(options: {
       const slot = free.shift();
       if (slot === undefined) return Promise.resolve('busy');
       active += 1;
-      return work(kind, request, slot).finally(() => {
+      let swept: Promise<void> = Promise.resolve();
+      const answer = work(kind, request, slot, (done) => {
+        swept = done;
+      }).finally(() => {
         active -= 1;
-        free.push(slot);
-        free.sort((a, b) => a - b);
       });
+      void answer
+        .catch(() => {})
+        .then(() => swept)
+        .then(() => {
+          free.push(slot);
+          free.sort((a, b) => a - b);
+        });
+      return answer;
     },
     active: () => active,
   };

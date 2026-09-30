@@ -170,11 +170,20 @@ services:
       CONNECTOR_DENY: none
       LOG_LEVEL: info
     # Root with three capabilities and no others: to run each child as a user of its own, and to kill
-    # it (deploy/Dockerfile says why root). Read-only, so neither it nor a child writes anything.
+    # it (deploy/Dockerfile says why root). Read-only, and with no IPC namespace of its own to share -
+    # no /dev/shm, and no message queue a child may make - so neither it nor a child writes anything
+    # another child could read. Under Docker's init, which reaps whatever the supervisor's sweep kills,
+    # so a child's leftovers never linger as zombies; and at most 256 processes and threads, where
+    # nine Node processes - the supervisor and eight children - run about a dozen threads each, so a
+    # child that forks runs out of its container's allowance long before the host's.
     cap_drop: [ALL]
     cap_add: [SETUID, SETGID, KILL]
     security_opt: ['no-new-privileges:true']
     read_only: true
+    ipc: none
+    tmpfs: ['/dev/mqueue:ro,size=4k']
+    init: true
+    pids_limit: 256
     networks:
       - connector-private
       - connector-egress
