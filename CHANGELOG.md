@@ -7,11 +7,11 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 
 ### Fixed
 
-- **The build no longer fails at random on a busy machine.** One of the connector's tests, which
-  checks that every kind of failure to reach a database is reported the same way, could run out of
-  time while every package's tests ran at once, and report a timeout instead. It now allows the
-  time a busy machine needs, and still checks everything it did. Nothing about connections changes
-  for you.
+- **The build no longer fails at random on a busy machine.** The connector's tests that check how
+  a failure to reach or sign in to a database is reported could run out of time while every
+  package's tests ran at once, and see a timeout instead. They now allow the time a busy machine
+  needs, and still check everything they did. A connection's test in the product keeps its
+  ten-second limit: nothing about connections changes for you.
 
 ## 0.129.1 - 2026-09-30 (PR #368)
 

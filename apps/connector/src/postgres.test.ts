@@ -80,14 +80,10 @@ describe('the connector against a PostgreSQL source', () => {
         PASSWORDS.reader,
       ],
     ] as const;
-    // The request's deadline is not what this shows, and a loaded runner (every package's suite at
-    // once under turbo on CI) can take a child past the default ten seconds before it answers, so
-    // the deadline leaves room: a timeout here would be the runner's, not the connector's (#370).
-    const deadlineMs = 30_000;
     const answers = await Promise.all(
       cases.map(async ([what, source, secret]) => {
         const started = Date.now();
-        const answer = await supervisor.run('test', requestFor(source, secret, deadlineMs));
+        const answer = await supervisor.run('test', requestFor(source, secret));
         return { what, answer: JSON.stringify(answer), ms: Date.now() - started };
       }),
     );
@@ -101,10 +97,7 @@ describe('the connector against a PostgreSQL source', () => {
     }
     // And a describe says the same.
     expect(
-      await supervisor.run(
-        'describe',
-        requestFor(settings(), 'not-the-reader-password', deadlineMs),
-      ),
+      await supervisor.run('describe', requestFor(settings(), 'not-the-reader-password')),
     ).toEqual({
       failure: { code: 'connection_failed', attribution: 'connector' },
     });
