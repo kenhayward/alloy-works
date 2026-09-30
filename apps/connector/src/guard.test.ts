@@ -67,6 +67,36 @@ describe('the address guard', () => {
     expect(await guardedAddress('nowhere.example.test', { ...policy, lookup })).toBe('refused');
   });
 
+  it('refuses a platform or loopback address spelled IPv4-compatible or through NAT64, and a name resolving to one', async () => {
+    const lookup = lookupFrom({
+      'compatible.example.test': [['::7f00:1']],
+      'translated.example.test': [['64:ff9b::a9fe:a9fe']],
+    });
+    for (const host of [
+      '::7f00:1',
+      '::127.0.0.1',
+      '[::7f00:1]',
+      '::ac1f:a0b',
+      '::172.31.10.11',
+      '64:ff9b::7f00:1',
+      '64:ff9b::127.0.0.1',
+      '64:ff9b::ac1f:a0b',
+      '64:ff9b::a9fe:a9fe',
+      '64:ff9b::0.0.0.0',
+      'compatible.example.test',
+      'translated.example.test',
+    ]) {
+      expect(await guardedAddress(host, { ...policy, lookup }), host).toBe('refused');
+    }
+    // The source, spelled either way, is the source, dialled as the IPv4 address it is.
+    for (const host of ['::ac1f:1415', '64:ff9b::ac1f:1415', '64:ff9b::172.31.20.21']) {
+      expect(await guardedAddress(host, policy), host).toEqual({ address: SOURCE, family: 4 });
+    }
+    // And the unspecified address and loopback stay IPv6's own, refused as ever.
+    expect(await guardedAddress('::', policy)).toBe('refused');
+    expect(await guardedAddress('::1', policy)).toBe('refused');
+  });
+
   it('normalises a host to what the operating system would dial', () => {
     expect(normaliseHost('2887715339')).toEqual({
       kind: 'address',

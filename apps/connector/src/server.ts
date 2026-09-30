@@ -48,8 +48,8 @@ function authenticated(request: IncomingMessage, keyDigest: Buffer): boolean {
  * The connector's interface (the D1 plan, D1-E): HTTP/1.1 and JSON on `connector-private`. `seal`,
  * `test` and `describe` need the service's key; `health` answers anybody. A named failure is an
  * answer (200); a malformed request is 400 `request_invalid`; an unauthenticated one 401 with no body;
- * a body over 64 KiB 413; a full supervisor 503 `connector_busy`. One log line a request, holding
- * neither the body nor the answer.
+ * a body over 64 KiB 413; a full supervisor 503 `connector_busy`. One log line a request but a health
+ * probe, holding neither the body nor the answer.
  */
 export function createConnectorServer(options: {
   readonly config: ConnectorConfig;
@@ -151,6 +151,8 @@ export function createConnectorServer(options: {
       })
       .then(({ status, stderrBytes: written }) => {
         if (config.logLevel === 'silent' || (config.logLevel === 'error' && status < 500)) return;
+        // The health check probes every two seconds: a line for each would bury every request.
+        if (request.method === 'GET' && (request.url ?? '').split('?')[0] === '/v1/health') return;
         log(
           JSON.stringify({
             at: new Date(started).toISOString(),

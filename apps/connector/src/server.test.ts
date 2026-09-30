@@ -131,11 +131,19 @@ describe("the connector's interface", () => {
     expect((await fetch(`${url}/v1/seal`)).status).toBe(404);
   });
 
-  it('answers health to anybody', async () => {
-    const { url } = await started();
-    const response = await fetch(`${url}/v1/health`);
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ ok: true });
+  it('answers health to anybody, and logs none of it: a probe every two seconds is no request', async () => {
+    const { url, lines } = await started();
+    for (let probe = 0; probe < 3; probe += 1) {
+      const response = await fetch(`${url}/v1/health`);
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ ok: true });
+    }
+    // A request that is not a probe is still logged, after it.
+    await fetch(`${url}/v1/nothing`, { method: 'POST', body: '{}' });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(lines.map((line) => (JSON.parse(line) as { path: string }).path)).toEqual([
+      '/v1/nothing',
+    ]);
   });
 
   it('tests and describes through a child, and logs one line a request with neither body nor answer', async () => {

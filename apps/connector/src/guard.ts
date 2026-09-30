@@ -70,19 +70,33 @@ function groups(address: string): number[] | undefined {
   return [...front, ...Array<number>(tail === undefined ? 0 : zeros).fill(0), ...back];
 }
 
-/** An IPv4-mapped IPv6 address as the IPv4 address it is, or undefined for any other. */
-function mapped(address: string): string | undefined {
+/**
+ * An IPv6 address that carries an IPv4 address in its last 32 bits, as that IPv4 address - so the
+ * guard checks the address it reaches - or undefined for any other: IPv4-mapped (`::ffff:0:0/96`),
+ * IPv4-compatible (`::/96`, deprecated, but still a second spelling of `::7f00:1` for 127.0.0.1), and
+ * the well-known NAT64 prefix (`64:ff9b::/96`, RFC 6052), through which a translator reaches the
+ * IPv4 address it names. `::` and `::1` are IPv6's own, and the ranges deny them as such.
+ */
+function embedded(address: string): string | undefined {
   const all = groups(address);
-  if (!all || !all.slice(0, 5).every((each) => each === 0) || all[5] !== 0xffff) return undefined;
-  return dotted(((all[6]! << 16) | all[7]!) >>> 0);
+  if (!all) return undefined;
+  const last = dotted(((all[6]! << 16) | all[7]!) >>> 0);
+  const zeros = (upTo: number) => all.slice(0, upTo).every((each) => each === 0);
+  if (zeros(5) && all[5] === 0xffff) return last;
+  if (zeros(6) && (all[6] !== 0 || all[7]! > 1)) return last;
+  if (all[0] === 0x64 && all[1] === 0xff9b && all.slice(2, 6).every((each) => each === 0)) {
+    return last;
+  }
+  return undefined;
 }
 
 const LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 
 /**
  * A host normalised to what the operating system will dial (case 1's spellings): decimal, octal,
- * hexadecimal and short IPv4 forms, an IPv4-mapped IPv6 address, a trailing dot and brackets. A zone,
- * a path, a port, a user and anything else a name cannot be are refused.
+ * hexadecimal and short IPv4 forms, an IPv6 address carrying an IPv4 one - mapped, compatible or
+ * NAT64 - a trailing dot and brackets. A zone, a path, a port, a user and anything else a name cannot
+ * be are refused.
  */
 export function normaliseHost(raw: string): NormalisedHost {
   let host = raw;
@@ -92,7 +106,7 @@ export function normaliseHost(raw: string): NormalisedHost {
     if (!isIPv6(host)) return REFUSED;
   }
   if (isIPv6(host)) {
-    const four = mapped(host);
+    const four = embedded(host);
     return four
       ? { kind: 'address', address: four, family: 4 }
       : { kind: 'address', address: host.toLowerCase(), family: 6 };
