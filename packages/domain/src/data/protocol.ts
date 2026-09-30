@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { storableText } from '../stored/storable.js';
 import { columnTypeSchema } from './columns.js';
 import { connectionSettingsSchema } from './connection.js';
 import { dataFailureSchema } from './failures.js';
@@ -12,6 +13,13 @@ import { dataFailureSchema } from './failures.js';
 
 /** The sealing scheme's shape, as migration 0042 holds a sealed sign-in secret to it. */
 export const SEALED = /^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]+$/;
+
+/**
+ * The most an answer of the connector's may be, in bytes: a child's answer is cut off past it by the
+ * supervisor, and the service stops reading one past it. A describe of 2,000 relations fits many
+ * times over.
+ */
+export const CONNECTOR_ANSWER_MAX_BYTES = 32 * 1024 * 1024;
 
 /** A secret's longest, in UTF-8 bytes. */
 export const SECRET_MAX_BYTES = 4096;
@@ -84,23 +92,52 @@ export const testAnswerSchema = z.discriminatedUnion('outcome', [
 ]);
 export type TestAnswer = z.infer<typeof testAnswerSchema>;
 
+/**
+ * Text a source says of itself, bounded: 1 to `bytes` bytes of UTF-8, no control character, and
+ * nothing Postgres could not store. What a hostile source answers is shown on a page and, from D2,
+ * kept: it is held to what a real one can say rather than to whatever it sends.
+ */
+const sourceText = (bytes: number) =>
+  z
+    .string()
+    .refine((value) => utf8Bytes(value) >= 1 && utf8Bytes(value) <= bytes, {
+      message: `1 to ${bytes} bytes of UTF-8`,
+    })
+    .refine((value) => !/\p{Cc}/u.test(value) && storableText(value), {
+      message: 'No control character, and nothing that cannot be stored',
+    });
+
+/** A PostgreSQL name: NAMEDATALEN less one, 63 bytes, the most the catalogue holds. */
+const sourceName = sourceText(63);
+
+/** The most columns a PostgreSQL table holds. */
+export const MAX_COLUMNS = 1600;
+/** The most relations a describe lists, past which it says `truncated` (the connector's own cap). */
+export const MAX_DESCRIBED_RELATIONS = 2000;
+
 export const relationSchema = z.strictObject({
-  schema: z.string(),
-  name: z.string(),
+  schema: sourceName,
+  name: sourceName,
   kind: z.enum(['table', 'view', 'materializedView', 'foreignTable', 'partitionedTable']),
-  columns: z.array(
-    z.strictObject({
-      name: z.string(),
-      sourceType: z.string(),
-      nullable: z.boolean(),
-      proposed: columnTypeSchema.nullable(),
-    }),
-  ),
+  columns: z
+    .array(
+      z.strictObject({
+        name: sourceName,
+        // `format_type`'s text: a qualified, quoted name with its modifier and array bounds.
+        sourceType: sourceText(256),
+        nullable: z.boolean(),
+        proposed: columnTypeSchema.nullable(),
+      }),
+    )
+    .max(MAX_COLUMNS),
 });
 export type Relation = z.infer<typeof relationSchema>;
 
 export const describeAnswerSchema = z.union([
-  z.strictObject({ relations: z.array(relationSchema), truncated: z.boolean() }),
+  z.strictObject({
+    relations: z.array(relationSchema).max(MAX_DESCRIBED_RELATIONS),
+    truncated: z.boolean(),
+  }),
   z.strictObject({ failure: dataFailureSchema }),
 ]);
 export type DescribeAnswer = z.infer<typeof describeAnswerSchema>;

@@ -3,6 +3,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
 import {
+  CONNECTOR_ANSWER_MAX_BYTES,
   connectionTarget,
   dataFailure,
   describeAnswerSchema,
@@ -99,7 +100,7 @@ export type SpawnChild = (
 ) => Promise<ChildOutcome>;
 
 /** The most a child may answer: a describe of 2,000 relations fits many times over. */
-const MAX_ANSWER_BYTES = 32 * 1024 * 1024;
+const MAX_ANSWER_BYTES = CONNECTOR_ANSWER_MAX_BYTES;
 /** How long past its deadline a child is let run before it is killed. */
 const GRACE_MS = 1000;
 

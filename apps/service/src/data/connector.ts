@@ -1,4 +1,5 @@
 import {
+  CONNECTOR_ANSWER_MAX_BYTES,
   dataFailure,
   describeAnswerSchema,
   sealAnswerSchema,
@@ -59,8 +60,11 @@ export function createConnectorClient(options: {
   readonly url: string;
   readonly key: string;
   readonly fetch?: typeof globalThis.fetch;
+  /** The most of an answer read before it is given up on; the connector's own cap unless a test says. */
+  readonly maxAnswerBytes?: number;
 }): ConnectorClient {
   const send = options.fetch ?? globalThis.fetch;
+  const maxAnswerBytes = options.maxAnswerBytes ?? CONNECTOR_ANSWER_MAX_BYTES;
   const base = options.url.replace(/\/+$/, '');
 
   async function ask<S extends z.ZodType>(
@@ -81,7 +85,8 @@ export function createConnectorClient(options: {
         body: JSON.stringify(body),
         signal: controller.signal,
       });
-      const text = await response.text();
+      const text = await bounded(response, maxAnswerBytes, controller);
+      if (text === undefined) return unavailable();
       if (response.status === 503) {
         const busy = safeJson(text) as { code?: unknown } | undefined;
         if (busy?.code === 'connector_busy') return refusedFor('connector_busy');
@@ -105,6 +110,33 @@ export function createConnectorClient(options: {
     describe: (request) =>
       ask('/v1/describe', request, describeAnswerSchema, request.deadlineMs + SLACK_MS),
   };
+}
+
+/**
+ * A response's body as text, read no further than `max` bytes: past it the request is abandoned and
+ * the answer is undefined, so a connector answering without end costs the service no more than that.
+ */
+async function bounded(
+  response: Response,
+  max: number,
+  controller: AbortController,
+): Promise<string | undefined> {
+  if (!response.body) return '';
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let bytes = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    bytes += value.byteLength;
+    if (bytes > max) {
+      controller.abort();
+      await reader.cancel().catch(() => {});
+      return undefined;
+    }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks).toString('utf8');
 }
 
 function safeJson(text: string): unknown {

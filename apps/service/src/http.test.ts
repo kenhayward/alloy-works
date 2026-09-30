@@ -53,6 +53,12 @@ function testApp() {
     // Cast: the declared statuses type the reply, and the point is a status that is not one.
     reply.status(418 as 200).send({ name: 'Ada', password: 'leak' } as unknown as { name: string }),
   );
+  // A data failure that is the source's, as a describe answers one: a 502 laid at the connector.
+  app.get('/source-failed', async () => {
+    throw new AppError(502, 'connection_failed', 'Could not connect.', undefined, {
+      attribution: 'connector',
+    });
+  });
   // A refusal at a status this route does not list, carrying a member it does not declare either.
   app.get('/refused-undeclared', { schema: { response: { 200: Named } } }, async () => {
     throw new AppError(409, 'held', 'Somebody else has this.', undefined, {
@@ -186,6 +192,27 @@ describe('the HTTP layer', () => {
       const response = await app.inject({ url: '/named', headers: { 'x-request-id': unfit } });
       expect(response.headers['x-request-id'], JSON.stringify(unfit)).toMatch(TRACE);
     }
+  });
+
+  it("logs a source's failure as the source's, a warning without a stack, and the service's own as an error", async () => {
+    const { app, logs } = testApp();
+    const failed = await app.inject('/source-failed');
+    expect(failed.statusCode).toBe(502);
+    const broken = await app.inject('/broken');
+    expect(broken.statusCode).toBe(500);
+    const logged = logs.lines.map(
+      (line) =>
+        JSON.parse(line) as { level: number; msg?: string; err?: unknown; attribution?: string },
+    );
+    const source = logged.filter((line) => line.attribution === 'connector');
+    expect(source).toEqual([
+      expect.objectContaining({ level: 40, msg: 'the source failed', code: 'connection_failed' }),
+    ]);
+    expect(source[0]).not.toHaveProperty('err');
+    // No error line for it: the one error is the service's own.
+    const errors = logged.filter((line) => line.level >= 50);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatchObject({ msg: 'request failed', err: expect.anything() });
   });
 
   it('labels every log line of a request with its trace id', async () => {

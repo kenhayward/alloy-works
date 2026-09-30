@@ -14,6 +14,9 @@ export type { Attribution, DataFailure, DataFailureCode } from './failures.js';
 export { columnTypeSchema } from './columns.js';
 export type { ColumnType } from './columns.js';
 export {
+  CONNECTOR_ANSWER_MAX_BYTES,
+  MAX_COLUMNS,
+  MAX_DESCRIBED_RELATIONS,
   SEALED,
   SEALED_MAX_BYTES,
   SECRET_MAX_BYTES,

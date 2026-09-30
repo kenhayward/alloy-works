@@ -59,7 +59,7 @@ import { settingsHandlers } from './settings.js';
 import { editingHandlers } from './editing.js';
 import { AppError, storageUnavailable, toErrorBody } from './errors.js';
 import { admitGoogleAccount } from './google.js';
-import { createHttp, type HttpOptions } from './http.js';
+import { createHttp, logFailure, type HttpOptions } from './http.js';
 import { groupHandlers } from './groups.js';
 import { invitationHandlers } from './invitations.js';
 import { managingAccessHandlers } from './managing-access.js';
@@ -895,7 +895,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
                   : error,
                 request.id,
               );
-              if (status >= 500) request.log.error({ err: error }, 'request failed');
+              logFailure(request, error, status);
               return reply.status(status).send(body);
             },
           }

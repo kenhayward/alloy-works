@@ -168,4 +168,57 @@ describe("the connector's protocol", () => {
       expect(testAnswerSchema.safeParse({ outcome: 'ok', findings }).success).toBe(false);
     }
   });
+
+  it("bounds what a source may say of its relations: names as PostgreSQL's own, a type's text, and no control character", () => {
+    const relation = (
+      over: Record<string, unknown> = {},
+      column: Record<string, unknown> = {},
+    ) => ({
+      relations: [
+        {
+          schema: 'sample',
+          name: 'site',
+          kind: 'table',
+          columns: [
+            { name: 'id', sourceType: 'integer', nullable: false, proposed: null, ...column },
+          ],
+          ...over,
+        },
+      ],
+      truncated: false,
+    });
+    const takes = (value: unknown) => describeAnswerSchema.safeParse(value).success;
+    // NAMEDATALEN less one, in bytes, is as long as a name PostgreSQL holds.
+    expect(takes(relation({ schema: 's'.repeat(63), name: 'é'.repeat(31) + 'x' }))).toBe(true);
+    expect(takes(relation({}, { name: 'c'.repeat(63), sourceType: 't'.repeat(256) }))).toBe(true);
+    for (const [what, value] of [
+      ['a schema of 64 bytes', relation({ schema: 's'.repeat(64) })],
+      ['a name of 64 bytes', relation({ name: 'é'.repeat(32) })],
+      ['an empty name', relation({ name: '' })],
+      ['a column of 64 bytes', relation({}, { name: 'c'.repeat(64) })],
+      ['a type of 257 bytes', relation({}, { sourceType: 't'.repeat(257) })],
+      ['a name with a line feed', relation({ name: 'si\nte' })],
+      ['a column with an escape', relation({}, { name: 'i\u001bd' })],
+      ['a type with a C1 control', relation({}, { sourceType: 'int\u0085eger' })],
+      ['a schema with a lone surrogate', relation({ schema: 'sam\ud800ple' })],
+      [
+        'more columns than a table holds',
+        relation({
+          columns: Array.from({ length: 1601 }, (_, n) => ({
+            name: `c${n}`,
+            sourceType: 'integer',
+            nullable: true,
+            proposed: null,
+          })),
+        }),
+      ],
+    ] as const) {
+      expect(takes(value), what).toBe(false);
+    }
+    const one = relation().relations[0];
+    expect(
+      takes({ relations: Array.from({ length: 2001 }, () => one), truncated: true }),
+      'more relations than a describe lists',
+    ).toBe(false);
+  });
 });

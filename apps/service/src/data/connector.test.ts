@@ -1,5 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import type { ConnectionSettings, TestRequest } from '@alloy-works/domain';
+import {
+  CONNECTOR_ANSWER_MAX_BYTES,
+  type ConnectionSettings,
+  type TestRequest,
+} from '@alloy-works/domain';
 import { describe, expect, it } from 'vitest';
 import { createConnectorClient } from './connector.js';
 
@@ -133,4 +137,35 @@ describe("the service's connector client", () => {
     expect(took).toBeLessThan(6000);
     expect(signal?.aborted).toBe(true);
   }, 10_000);
+
+  it('reads no more of an answer than its cap, and answers one past it as connector_unavailable', async () => {
+    let pulled = 0;
+    const flood = (async () =>
+      new Response(
+        new ReadableStream<Uint8Array>({
+          pull(controller) {
+            if (pulled >= 1024 * 1024) {
+              controller.close();
+              return;
+            }
+            pulled += 1024;
+            controller.enqueue(new Uint8Array(1024).fill(0x20));
+          },
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      )) as typeof globalThis.fetch;
+    const client = createConnectorClient({
+      url: 'http://c',
+      key: KEY,
+      fetch: flood,
+      maxAnswerBytes: 64 * 1024,
+    });
+    expect(await client.describe(request())).toMatchObject({
+      refused: { code: 'connector_unavailable' },
+    });
+    // It stopped reading at the cap, rather than holding all of it first.
+    expect(pulled).toBeLessThan(256 * 1024);
+    // And the cap by default is the connector's own for a child's answer.
+    expect(CONNECTOR_ANSWER_MAX_BYTES).toBe(32 * 1024 * 1024);
+  });
 });
