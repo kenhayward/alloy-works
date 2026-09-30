@@ -3,6 +3,17 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.129.1 - 2026-09-30 (PR #368)
+
+### Added
+
+- **The plan for writing queries against a connection.** Nothing you can use yet. It says how
+  somebody allowed to write SQL on a connection will write a query in a space, with named values
+  filled in when it runs, confirm each column the database proposes, run it against sample values to
+  see exactly what it returns - or the one reason it failed - and save it as a version; how every
+  value is passed to the database separately from the SQL, so a value can never change the query;
+  and how a connection shows which queries use it, and cannot be retired while one still does.
+
 ## 0.129.0 - 2026-09-30 (PR #367)
 
 ### Added

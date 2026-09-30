@@ -1,0 +1,456 @@
+# D2: Query definitions and the sample run
+
+> **A sketch**, built in one pull request, test-first, with one final whole-branch review before it
+> opens that is asked for a break of its own against every citation. It builds D2 of
+> [data.md](../design/data.md)'s build order, under
+> [ADR-0035](../decisions/0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md),
+> on what [the D1 plan](2026-09-30-d1-connections-and-the-connector.md) built. data.md's decisions
+> DA-A to DA-AF were approved by Ken on 2026-09-30. This plan's own decisions, D2-A to D2-V below,
+> were approved by Ken on 2026-09-30, every one as recommended.
+
+**Goal:** an author holding `write_sql` on a PostgreSQL connection writes a query definition in a
+space - SQL with named parameters, a variation, the columns proposed by the source and confirmed one
+by one, a key, an order, whether empty is valid, and limits - runs it against sample values and sees
+the canonical, checksummed result or one named failure, and saves it as a version; the definitions
+are found by search, a connection says which definitions name it, and a connection a definition
+still names cannot be retired. Nothing is stored from a run: no dataset, no binding, no resolution.
+
+| PR   | Holds                                                                                                               | Version |
+| ---- | ------------------------------------------------------------------------------------------------------------------- | ------- |
+| D2.0 | This plan                                                                                                           | Build   |
+| D2.1 | The build: the definition kind, `write_sql`, the SQL binder, the run and its canonical result, the routes, the page | Minor   |
+
+## What the two named questions answered
+
+Both were run against a source container of this plan's own (the suite's image and seed, published on
+`127.0.0.1:5471`), never the development stack, and removed afterwards. `pg` is 8.23.0, as pinned.
+
+**Q1: can the connector describe a SQL statement's result shape without running it? Yes.** A
+submittable handed to `client.query` that sends the protocol's Parse, Describe (statement) and Sync,
+listening on the connection for `parameterDescription` and `noData` (the client routes neither) and
+taking `rowDescription` and `readyForQuery` as a query does, answered in 0 to 1 ms:
+
+| Statement                                                             | Answer                                                                                           |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `select id, name, depth, opened from sample.site where id = $1::int4` | parameters `[int4]`; `id` int4, `name` text, `depth` numeric typmod 524294 (8, 2), `opened` date |
+| `select * from sample.reading`                                        | `taken` timestamptz typmod 3, `value` numeric (12, 4), `local_time` timestamp typmod -1          |
+| `select sum(value), max(taken), count(*) from sample.reading`         | numeric and timestamptz with typmod -1: no precision to propose                                  |
+| `select $1 as v`                                                      | parameter `text`: an uncast parameter is text                                                    |
+| `select pg_sleep(5)`                                                  | answered in 0 ms: **nothing ran**                                                                |
+| `insert into sample.reading ... returning id`, as `writer`            | a row description, and **no row inserted** (3 before, 3 after)                                   |
+| `select 1; select 2`                                                  | the source's `cannot insert multiple commands into a prepared statement`                         |
+| `select * from sample.restricted`, which `reader` may not select      | described: names and types come from the catalogue, which any account may read; not run here     |
+
+On an error the client drops its active query before `readyForQuery`, so the submittable must finish
+in `handleError`, not wait; the client was usable afterwards. **It changes the plan in one way**:
+describe answers a statement's shape with no run at all, so columns can be proposed from the source's
+metadata before a sample (DAT-105), as data.md says for SQL.
+
+**Q2: can the child stop one value larger than the byte limit before the driver has it? Yes, at the
+socket.** A child under `--max-old-space-size=256` asked for `repeat('x', n)` as `reader`, over TLS,
+counting the bytes of every `data` event on `client.connection.stream` (the TLS socket once
+negotiated) after the query is sent and destroying it past 5 MiB:
+
+| Value   | Counting at the socket                                | Not counting                 |
+| ------- | ----------------------------------------------------- | ---------------------------- |
+| 1 MiB   | complete, 1,048,649 bytes counted, 8 ms, 65 MiB peak  | -                            |
+| 100 MiB | **`byte_limit`** at 5,251,072 bytes, 307 ms, 73 MiB   | complete, **329 MiB** peak   |
+| 400 MiB | **`byte_limit`** at 5,251,072 bytes, 1,229 ms, 79 MiB | complete, **1,121 MiB** peak |
+
+A second session found no backend of the child's left in `pg_stat_activity` a second later
+(`client_connection_check_interval` is 250 ms, as D1 sets it). **Two things follow.** DAT-110 can be
+met for PostgreSQL, which case 7 had left to the source. And **`--max-old-space-size` bounds none of
+this**: a `Buffer` lives outside the heap, so the 400 MiB value took 1,121 MiB in a child D1 had
+thought bounded at 256 - the socket count is the bound, and the container needs a memory limit behind
+it (D2-J).
+
+## Decisions
+
+Approved by Ken on 2026-09-30, every one as recommended; the column beside each is what it was chosen
+over.
+
+| #    | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Instead of                                                                                                                                                                                                                                                       |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D2-A | **One tenant migration, `0046_query_definitions.sql`**: `queryDefinition` in the three artifact checks and in search's kind check, `write_sql` in the two closed sets, and `data_policy`, a one-row table as `editing_policy` is, holding the tenant's lowered `rows`, `bytes` and `seconds`, each null where not lowered                                                                                                                                                                                                                                                                                                             | A migration per table                                                                                                                                                                                                                                            |
+| D2-B | **Markers are `{{name}}` for a value and `{{#name}}` for a variation**, the spike's, which its 3,792 attempts ran through. A marker is found by a PostgreSQL lexer in `packages/domain`, and one inside a string, a quoted identifier, a dollar-quoted body or a comment is refused when the definition is written, `definition_invalid`, naming its line. data.md's `:site` is amended                                                                                                                                                                                                                                               | `:site`, which PostgreSQL's own `::` cast and an array slice `a[1:n]` also spell, so every `::` and slice would have to be told apart from a parameter                                                                                                           |
+| D2-C | **The binder writes each value marker as `$n::type`** by its declaration - integer `int8`, decimal `numeric`, text `text`, date `date`, time `time`, local date-time `timestamp`, instant `timestamptz`, boolean `boolean`, a list as that type's array - and hands the canonical text of each value to the driver as the n-th parameter. A marker used twice binds once. The SQL that ran, recorded as provenance in D3 and shown by a sample now, is the rewritten text                                                                                                                                                             | Leaving the source to infer a parameter's type from where it stands, where an uncast one is text (Q1), so a declared integer could be compared as text                                                                                                           |
+| D2-D | **A D2 definition's fetch admits `{ kind: 'sql', text }` alone**; `builder` arrives with D4 as an arm, which refuses nothing stored. So every D2 definition needs `write_sql`. Asserted identity is not declared until D7, so DAT-102's refusal is D7's                                                                                                                                                                                                                                                                                                                                                                               | Admitting the builder's tree before D4 has generated SQL from one                                                                                                                                                                                                |
+| D2-E | **The definition's shape gains `retired: boolean`**, which data.md's lacks and DAT-065's "a definition that is not itself retired" needs; and **a variation is an array, `[{ key, sql }]`**, not data.md's record                                                                                                                                                                                                                                                                                                                                                                                                                     | A record keyed by the author's words: a member named `marks` would meet the canonical form's one name-keyed rule, and `__proto__` and `constructor` need a lookup that cannot reach the prototype (case 5). An array is looked up by `key` and neither can arise |
+| D2-F | **Every string a definition holds must already be NFC**, or the write is refused, `definition_invalid`, naming the member. A version's digest canonicalises strings to NFC (ADR-0024), so two SQL texts differing only in normalisation - which the source compares as different, and a canonical result keeps apart (ADR-0035) - would share a digest, and the edit between them would be answered unchanged. A decomposed literal is written with PostgreSQL's `U&'...'` escapes                                                                                                                                                    | A kind-specific digest without NFC, which would be a second canonical form for versions; or normalising the SQL on the page, which silently changes what a literal matches                                                                                       |
+| D2-G | **Describe takes a SQL statement**: `POST /v1/connections/{id}/describe` with `{ sql: { text, parameters } }` answers the statement's columns - name, source type and proposal, by D1's map - and never runs it (Q1). It needs `write_sql` as well as `use_connection`, since only a SQL author has a statement to describe. A statement that describes to no columns is `result_mismatch`                                                                                                                                                                                                                                            | Proposing columns only from a sample, which would run the statement before its author has confirmed anything                                                                                                                                                     |
+| D2-H | **Two failure codes join data.md's table**: `source_refused` (query), the source refused the statement - a syntax error, a permission, a division by zero - carrying the source's SQLSTATE and its message cut to 1,000 characters; and `value_unrepresentable` (query), a value no canonical form of its declared type can hold: a numeric `NaN` or infinity, an infinite date or timestamp, a date before year 1 or after 9999. D2 answers the source's message only to a caller holding `write_sql`; who else sees one is D3's                                                                                                     | `connector_error` for a statement the source refused, which would blame the product for the author's SQL                                                                                                                                                         |
+| D2-I | **A sample run is a run**: `POST /v1/connections/{id}/sample` takes a draft definition with its columns declared, and sample values; the service validates the values (DAT-020) and checks the connection may run SQL (DAT-103); the connector runs it exactly as D3's resolve will; the service checks the checksum; the answer is the first 100 rows, the row count, the checksum, the SQL that ran and its time - or one named failure, which is an answer (200), as a failed test is. Nothing is stored, and no idempotency record is kept                                                                                        | A lighter preview run, which would let a definition pass its sample and fail its first resolve                                                                                                                                                                   |
+| D2-J | **The byte limit counts both what arrives and what is kept**: the bytes read from the source after the statement is sent, at the child's socket (Q2), and the canonical result's bytes; either past the limit is `byte_limit`. **Compose gives the connector `mem_limit: 3g`**, a backstop for what the count does not see: eight children at the ceiling hold about 200 MiB each                                                                                                                                                                                                                                                     | The canonical bytes alone, which a single value would pass only after the driver held it whole; or trusting `--max-old-space-size`, which Q2 showed does not bound a `Buffer`                                                                                    |
+| D2-K | **The run's answer carries the canonical result as a JSON value, not a string**; the service serialises it with the domain's `canonicalResultBytes` and refuses, `connector_error`, one whose SHA-256 is not the answer's checksum. The limit's ceiling, 25 MiB, fits the 32 MiB answer cap                                                                                                                                                                                                                                                                                                                                           | A string, whose every quote would be escaped - up to twice the size, past the cap - or base64, a third larger                                                                                                                                                    |
+| D2-L | **What a declared type admits from PostgreSQL** (DAT-106): text from `text`, `varchar`, `bpchar`, `name`, `citext`, `uuid`, `json`, `jsonb`, `xml` and any enum; integer from `int2`, `int4`, `int8` and `numeric`; decimal from those four; date from `date`; time from `time`; local date-time from `timestamp`; instant from `timestamptz`; boolean from `bool`; a domain by its base. Any other source type is `result_mismatch`, naming the column, and the author casts it in the SQL. A value with more digits or places than its declaration is `precision_lost`; a null key is `result_mismatch`                             | Text from any type, whose server text would then be the value: a `float8` or an `interval` would be stored as whatever the session's settings printed                                                                                                            |
+| D2-M | **A declared order is checked, never imposed.** The connector compares each row with the one before by the product's comparison - numbers and times by value, `false` before `true`, **text by code point**, nulls last ascending and first descending as PostgreSQL's default - and refuses `result_mismatch`, naming the first pair out of order or two rows with one key. So a text sort key is ordered `COLLATE "C"` in the SQL, and the page says so when a run is refused for it. `multiset` sorts the rows by their canonical text, code point by code point. This answers data.md's open question on collation for PostgreSQL | The connector sorting the rows itself, which DAT-106 forbids ("never adjusted"); or trusting the source's order under its collation, where a nondeterministic collation ties two distinct keys and the checksum moves                                            |
+| D2-N | **Limits**: a definition's are whole numbers from 1 to the ceilings, checked on write; `GET` and `PUT /v1/settings/data` read and set the tenant's lowered ones, as the editing settings are, `administer` at the tenant to change; a run takes the least of each. No page shows the tenant's yet                                                                                                                                                                                                                                                                                                                                     | A tenant page now, which the Administration modal's redesign (T7) will want to place                                                                                                                                                                             |
+| D2-O | **Where used, for a connection**: `GET /v1/connections/{id}/uses` answers the definitions naming it by their latest versions, the ones the caller may read by title and the rest counted; D3 adds the documents. **Retiring a connection is refused, `connection_in_use`**, while a definition that is not retired names it, naming and counting them the same way (DAT-065). The credential route's answer gains `dependents`, the same list, when its test fails. **A definition's own uses (DAT-016) arrive with D3's bindings**, as D1-O held back a connection's                                                                 | A definition's `uses` route answering "not used" to every call                                                                                                                                                                                                   |
+| D2-P | **A definition names a connection that is not retired, and the author must hold `use_connection` and `write_sql` on it**, when it is made and at every version (DA-Z). The connection is checked to be a connection of the tenant in the one place every version is written, not only by the route. A retired definition keeps its versions and can be reinstated by a version                                                                                                                                                                                                                                                        | Checking the reference in the route alone, which `testing/every-kind.ts` and any later caller would skip                                                                                                                                                         |
+| D2-Q | **The run in the child**: `BEGIN READ ONLY`, the statement through `pg`'s `Query` with `rows: 500`, so the source hands over a page at a time and no more is computed than is read; every value the server's text (`types` returning it unparsed), with `TimeZone=UTC` and `DateStyle=ISO, YMD` set in the connection's options; the row count checked as each row arrives; at a limit, the socket destroyed, which the source's 250 ms connection check turns into a cancel (Q2); at the deadline, `statement_timeout` as D1 sets it, and the supervisor's kill. No new dependency                                                   | `pg-cursor`, which does what `rows` already does; `pg`'s own parsers, which case 6 found lose microseconds and move a time in a daylight-saving gap                                                                                                              |
+| D2-R | **Parameter values**: in canonical form exactly, as the page writes them - an instant with `Z`, a decimal without trailing zeros - so what is validated is what is bound; text at most 1,000 characters, no U+0000 and no lone surrogate; an integer within 64 bits; a list at most 50 items, none null or a list. A failure is `parameter_invalid` with the parameter, the rule - `required`, `type`, `permitted`, `range`, `list`, `precision`, `scale`, `zone` or `variation` - and the value                                                                                                                                      | Accepting other spellings and converting them, which would validate one text and bind another                                                                                                                                                                    |
+| D2-S | **Search**: `queryDefinition` joins the search kinds; its entry is its title, description, column names and its connection's name, and renaming a connection rewrites its definitions' entries in the same transaction (SCH-055). The Search page's kind filter gains "Query definitions"                                                                                                                                                                                                                                                                                                                                             | Searching the SQL text, which data.md does not ask for and which would put every author's SQL in every reader's results                                                                                                                                          |
+| D2-T | **The development role Connection user gains `write_sql`**, so Ada can write a definition in development; no starting role gains it (data.md)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Ada unable to try the page without a grant made by hand                                                                                                                                                                                                          |
+| D2-U | **The page is built from the existing kit, with no interface design**, as D1's was: Query definitions beside Connections, in layout A with a space facet, and the editor at `#/query-definitions/{id}` in five steps - the connection; the SQL and its parameters; **Describe**, which proposes the columns, each confirmed by the author; **Run sample**; the key, order, empty and limits - then **Save version**. The designed screens come with D4's builder, which will redraw the second step                                                                                                                                   | Waiting for a design before any definition can be written                                                                                                                                                                                                        |
+| D2-V | **DAT-021 and DAT-081 are cited in D2 for the one binder there is**, PostgreSQL's, whose every parameter type the hostile suite runs; D5 and D6 add their binders' cases to the same suite. DAT-015, DAT-016, DAT-045, DAT-064, DAT-066 and DAT-086 wait for D3, whose bindings, resolutions and stored results they speak of                                                                                                                                                                                                                                                                                                         | Leaving both uncited until D6, when every path they constrain in D2 is shown                                                                                                                                                                                     |
+
+## Global constraints
+
+- Test titles cite only what they show, checked with `pnpm trace show <ID>`, in a literal title; an
+  `it.each` title cites nothing, and a `rule:` field in a test cites its requirement.
+- Each test is watched fail: a new test before the code, or, where the code exists, by breaking it.
+- No em or en dash in user-facing text, and no real names, addresses or paths in a fixture.
+- `pnpm typecheck`, `pnpm lint`, `pnpm format`, the affected suites, then `pnpm trace generate` after
+  Prettier and `pnpm trace pins`; pins from the tool, never by hand. The full suite before the pull
+  request, and its CI log read, `##[error]` and every step's exit code included.
+- A stored shape is checked against every write path it admits (below).
+- Every trigger or function reading a table reads it by `tg_table_schema`.
+- **No secret in a URL, an argument, an environment variable of a child, a log line, an error or an
+  answer**; the sample and describe paths join D1's DAT-005 tests.
+- **Never test against the development stack's compose project, its database on 5432 or its store on 8333.** Every suite run sets `ALLOY_TEST_DATABASE_URL`, `ALLOY_TEST_OBJECT_STORE` with its key and
+  secret, and `ALLOY_TEST_SOURCE_PORT` to the build's own; every whole-system or browser run sets
+  every `ALLOY_E2E_*` and `ALLOY_BROWSER_*` target to a compose project of the build's own.
+
+## The stored-shape check
+
+**The write paths.** A definition version: `POST /v1/spaces/{space}/query-definitions` to
+`createQueryDefinition` to `createArtifact`, and `POST /v1/query-definitions/{id}/versions` to
+`recordQueryDefinitionVersion` to `recordVersion` - both through `prepare` in
+`packages/db/src/versions.ts`, which calls `parseQueryDefinitionForWrite` (the shape, then the checks:
+the lexer, the markers against the parameters, the key within the columns, the order, the limits,
+NFC). **The connection it names** is checked where a version is written with a transaction in hand -
+`createArtifact` and `recordVersion`'s kind hook, the one place every definition version passes - to
+be an artifact of kind `connection` in the tenant whose latest version is not retired; the
+permissions are the route's. Read back through `substanceOf` with `parseQueryDefinition`, the shape
+alone, so a check widened later never makes a stored version unreadable. `testing/every-kind.ts` makes
+one, naming a connection it makes. `data_policy`: `setDataPolicy` alone.
+
+**The canonical form.** A version is canonicalised by the shared rule, `canonicalJson` with no set
+rule: its arrays - parameters, variations, columns, key, order - keep their order, which is part of
+their meaning, and no member anywhere is named by the author (D2-E), so no name-keyed rule can reach
+one. Strings are NFC already (D2-F), so the rule's normalisation changes nothing. Proved: two member
+orders give one digest; the stored row's digests recompute from `jsonb`; a text differing only in
+normalisation is refused rather than answered unchanged.
+
+| #   | Member              | Validated on every write path by                                                                                                                                                                                                | Loose or tight                                       | Points at, and who checks                                                            |
+| --- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| 1   | `schemaVersion`     | `z.literal(1)`                                                                                                                                                                                                                  | Tight                                                | Nothing                                                                              |
+| 2   | `title`             | 1 to 200 characters, equal to its trim, no control, NFC                                                                                                                                                                         | Tight; not unique in a space, as templates' are not  | Nothing                                                                              |
+| 3   | `description`       | 0 to 2,000 characters, no control but a line feed, NFC                                                                                                                                                                          | Tight                                                | Nothing                                                                              |
+| 4   | `connection`        | A UUID                                                                                                                                                                                                                          | Tight                                                | A connection of the tenant, not retired: `createArtifact` and `recordVersion` (D2-P) |
+| 5   | `parameters`        | At most 50; each a strict object; `name` `^[a-z][a-z0-9_]{0,62}$`, unique; `type` a column type but image; `required`, `list` booleans                                                                                          | Tight                                                | The fetch's markers: each parameter used, each marker declared                       |
+| 6   | `permitted`         | Absent, `{ values }` - 1 to 200 distinct canonical values of the type - or `{ minimum?, maximum? }`, at least one, canonical, minimum not above maximum, for integer, decimal and the four times alone                          | Tight                                                | Nothing                                                                              |
+| 7   | `variation`         | Absent, or 1 to 50 `{ key, sql }`: `key` as a name, unique; `sql` 1 to 2,000 characters, NFC, lexing whole, holding no marker; only on a required text parameter that is not a list and has no `permitted`                      | Tight; an array, not a record (D2-E)                 | Its `{{#name}}` marker                                                               |
+| 8   | `fetch`             | `{ kind: 'sql', text }`: 1 to 100,000 characters, NFC, lexing whole (no unterminated string, identifier, dollar quote or comment), every marker outside all four, naming a declared parameter of its kind, every parameter used | Tight; `builder` an arm with D4 (D2-D)               | The parameters                                                                       |
+| 9   | `columns`           | 1 to 1,664; `name` 1 to 63 bytes, no control, NFC, unique; `from: { column }` as a source name; `type` a column type but image                                                                                                  | Tight; image with D8, other `from` forms with D6     | The source's columns, checked at each run (D2-L)                                     |
+| 10  | `key`               | Distinct names of declared columns, at most 32                                                                                                                                                                                  | Tight                                                | The columns                                                                          |
+| 11  | `order`             | `'multiset'`, or 1 to 32 `{ column, direction }` of distinct declared columns including every key column, with a key that is not empty                                                                                          | Tight: an order without a key is not total (DAT-107) | The columns and the key                                                              |
+| 12  | `empty`             | `'valid' \| 'invalid'`                                                                                                                                                                                                          | Tight                                                | Nothing                                                                              |
+| 13  | `limits`            | `rows`, `bytes`, `seconds`: whole numbers from 1 to `limitCeilings`                                                                                                                                                             | Tight; a ceiling raised later refuses nothing stored | Nothing                                                                              |
+| 14  | `retired`           | A boolean; `true` refused when a definition is made                                                                                                                                                                             | Tight                                                | Nothing                                                                              |
+| 15  | `data_policy`       | One row; each of `rows`, `bytes`, `seconds` null or from 1 to its ceiling                                                                                                                                                       | Tight                                                | Nothing                                                                              |
+| 16  | The two closed sets | `role_permissions_closed` and `api_token_scopes_closed`, each gaining `write_sql` alone                                                                                                                                         | Tight                                                | Nothing                                                                              |
+
+## Task 1: The domain
+
+All in `packages/domain/src/data/`, exported from the package's surface; zod and no platform.
+
+```ts
+// definition.ts
+export type QueryDefinition = {
+  schemaVersion: 1;
+  title: string;
+  description: string;
+  connection: string;
+  parameters: Parameter[];
+  fetch: { kind: 'sql'; text: string };
+  columns: Column[];
+  key: string[];
+  order: { column: string; direction: 'ascending' | 'descending' }[] | 'multiset';
+  empty: 'valid' | 'invalid';
+  limits: { rows: number; bytes: number; seconds: number };
+  retired: boolean;
+};
+export type Parameter = {
+  name: string;
+  type: ParameterType;
+  required: boolean;
+  list: boolean;
+  permitted?: { values: CanonicalValue[] } | { minimum?: CanonicalValue; maximum?: CanonicalValue };
+  variation?: { key: string; sql: string }[];
+};
+export type Column = { name: string; from: { column: string }; type: ParameterType }; // image with D8
+export type CanonicalValue = string | boolean | null;
+export function parseQueryDefinition(value: unknown): QueryDefinition; // the shape; read-back
+export function checkQueryDefinition(d: QueryDefinition): DefinitionProblem[]; // rows 5 to 13
+export function parseQueryDefinitionForWrite(value: unknown): QueryDefinition; // throws DefinitionRefused
+export type DefinitionProblem = { rule: 'definition_invalid'; path: string; message: string };
+export const draftDefinitionSchema: z.ZodType<DraftDefinition>; // the sample's draft: the shape
+// less title, description and retired, its columns declared
+
+// sql.ts - the PostgreSQL lexer and the binder
+export type SqlPiece =
+  | { kind: 'text'; text: string }
+  | { kind: 'value'; name: string }
+  | { kind: 'variation'; name: string };
+export function lexPostgres(text: string): SqlPiece[] | { problem: string; line: number };
+export function bindPostgres(
+  d: Pick<QueryDefinition, 'parameters' | 'fetch'>,
+  values: ParameterValues,
+): { text: string; values: (string | string[] | null)[] };
+
+// parameters.ts - DAT-010, DAT-019, DAT-020
+export type ParameterValues = Record<string, CanonicalValue | CanonicalValue[]>;
+export function checkParameterValues(
+  parameters: Parameter[],
+  values: ParameterValues,
+): ParameterProblem[];
+export type ParameterProblem = {
+  parameter: string;
+  rule:
+    | 'required'
+    | 'type'
+    | 'permitted'
+    | 'range'
+    | 'list'
+    | 'precision'
+    | 'scale'
+    | 'zone'
+    | 'variation';
+  value: string;
+};
+
+// canonical.ts - ADR-0035's canonical form version 1
+export const CANONICAL_FORM = 1;
+export type CanonicalResult = { columns: [string, ColumnBase][]; rows: CanonicalValue[][] };
+export function isCanonical(type: ColumnType, value: CanonicalValue): boolean;
+export function compareCanonical(type: ColumnType, a: CanonicalValue, b: CanonicalValue): number;
+export function orderRows(result, definition): CanonicalResult | { mismatch: string }; // D2-M
+export function canonicalResultBytes(result: CanonicalResult): string; // RFC 8785; no NFC (ADR-0035)
+```
+
+`protocol.ts` gains `RunRequest` (the tenant, the connection's id, version and settings, the sealed
+credential, the definition, the bound values, the effective limits, a deadline), `RunAnswer`
+(`{ outcome: 'ok', result: CanonicalResult, checksum, rowCount, ran: { sql }, durationMs }` or
+`{ outcome: 'failed', failure }`), `DescribeSqlRequest` and `DescribeSqlAnswer` (`{ columns:
+{ name, sourceType, proposed }[], parameters: string[] }` or a failure); `ChildRequest.kind` gains
+`'run'` and `'describeSql'`. `failures.ts` gains D2-H's two codes, and a `DataFailure` may carry
+`source: { sqlstate, message }` for `source_refused` and `column` or `row` where a failure names one.
+`limits.ts` gains `effectiveLimits(definition, tenant)`. `search/entries.ts` gains `queryDefinition`.
+
+**Tests:**
+
+- `definition.test.ts`: `DAT-010 declares each parameter's name, type, whether required, and its
+permitted values or range, or refuses the declaration by rule`; uncited, because each shows only
+  the declaration half of its requirement and the connector's or the service's test shows the rest:
+  a title and exactly one connection (DAT-009), each column's type from the closed list (DAT-080), an
+  order refused unless total over a key and `multiset` taken (DAT-107), `empty` (DAT-068), the limits
+  within the ceilings (DAT-050); and every row of the stored-shape table refused by its rule, NFC
+  refused (D2-F), a variation keyed `__proto__` or `constructor` looked up as nothing, a version's
+  digest the same for any member order.
+- `sql.test.ts`: uncited, the lexer over literals (`'it''s {{x}}'`, `E'\\' {{x}}'`, `$tag$ {{x}} $tag$`,
+  `"{{x}}"`, `-- {{x}}`, nested `/* /* {{x}} */ */`), each refused as a marker in the wrong place,
+  and `::int8`, `a[1:2]` and `{{ x }}` read as text; `DAT-081 binds every value as the driver's
+parameter and never places one in the text` (the bound text holds only `$n::type` where each marker
+  stood, and each value is in `values`, for every type and a list); `DAT-019 places a variation's
+declared fragment by its key, and never the key itself`.
+- `parameters.test.ts`, uncited: a value failing its declaration named with the parameter, the rule
+  and the value, one case per rule; the service's DAT-020 test shows it happens before anything runs.
+- `canonical.test.ts`: uncited, per type the canonical spellings taken and the rest refused (a
+  trailing fractional zero, `-0`, a leading zero, an instant without `Z`, seven places); `compare`
+  ordering times whose fractions differ in length (`...:00.5` after `...:00`) and text by code point
+  across an astral character; `canonicalResultBytes` equal to case 6's expected checksum over its
+  three rows, and keeping composed and decomposed `café` apart.
+- `failures.test.ts`: the DAT-049 test gains D2-H's two codes.
+
+## Task 2: The permission, the migration and the database
+
+1. **`write_sql`** joins `permissions` and `externalCap` in `packages/domain/src/access/permissions.ts`;
+   no starting role gains it; `decide` walks it from the artifact as `use_connection` is walked. The
+   D1 tests that expected it refused (`access-schema.test.ts`, `permissions.test.ts`) now expect it
+   admitted.
+2. **`0046_query_definitions.sql`** (D2-A): the three artifact checks gain `'queryDefinition'` (the
+   author check between `set constraints ... immediate` and `deferred`, as 0044 does); the closed sets
+   rewritten with `write_sql`; search's kind check gains `'queryDefinition'`; `data_policy (singleton
+boolean primary key default true check (singleton), rows integer, bytes integer, seconds integer)`,
+   each checked against its ceiling, the runtime role granted `select`, `insert` and `update` on the
+   three limits.
+3. **`packages/db/src/queryDefinitions.ts`**: `createQueryDefinition(trx, { author, spaceId,
+definition })`, `readQueryDefinition(trx, id)`, `recordQueryDefinitionVersion(trx, { author, id,
+openedFrom, definition })` answering as `recordConnectionVersion` does, `listReadableQueryDefinitions`
+   as `listReadableConnections` pages, `definitionsNaming(trx, principal, connectionId)` answering
+   `{ readable: { id, title, retired }[], others: number }` from latest versions. `connections.ts`'s
+   retiring version refuses `connection.in_use` with the same list; `dataPolicy` and `setDataPolicy`.
+   `artifactKinds`, `spacedKinds`, `VersionSubstance`, `prepare`, `substanceOf`, the search entry
+   writer and every test holding each kind to a decision gain the kind. `dev-content.ts`'s Connection
+   user role gains `write_sql` (D2-T).
+4. **Tests** (`packages/db`):
+   - `query-definitions.test.ts`: `DAT-009 makes a query definition in one space of the tenant's own
+schema, as an artifact whose every change is a version, naming exactly one connection`; `VER-057 versions a query definition by the chain every
+artifact uses: an author, the schema version, both digests and the version it was opened from`;
+     uncited, a definition naming another kind's artifact, an unknown id or a retired connection
+     refused through `createArtifact` itself; a stale `openedFrom` refused; an unchanged version
+     answered unchanged.
+   - `connections.test.ts`: `DAT-065 refuses to retire a connection a definition that is not retired
+still names, naming it, and retires it once that definition is retired`.
+   - `search.test.ts`: `SCH-055 finds a query definition by its title, description, a column's name or
+its connection's name, and by the connection's new name once it is renamed`.
+   - `query-definition-migration.test.ts`, uncited, **fresh against upgraded**, as D1's 0044 test.
+
+## Task 3: The connector
+
+`apps/connector` gains no dependency.
+
+| File           | Holds                                                                                                                                                                                                                                                    |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `server.ts`    | `POST /v1/run` and the describe path taking `sql`; the body limit rises to 256 KiB for a run's definition and values                                                                                                                                     |
+| `work.ts`      | `answerRequest` gains `run` and `describeSql`                                                                                                                                                                                                            |
+| `postgres.ts`  | The session's `TimeZone` and `DateStyle` in its options; `types` answering the server's text (D2-Q)                                                                                                                                                      |
+| `describe.ts`  | `describeStatement(client, text)`: Q1's submittable, finishing in `handleError`; `sourceRefused(error)`: the SQLSTATE and the message, cut                                                                                                               |
+| `run.ts`       | `runStatement(client, bound, definition, limits, deadline)`: `BEGIN READ ONLY`, the `Query` with `rows: 500`, the socket's byte count (Q2), the row count, stopping at a limit by destroying the socket, the row description checked against the columns |
+| `from-text.ts` | `fromPostgresText(oid, text, declared)`: D2-L's admission, then the server's ISO text to the canonical form - `2026-09-01 08:00:00.123+00` to `2026-09-01T08:00:00.123Z`, `1234.5600` to `1234.56` - or `precision_lost`, `value_unrepresentable`        |
+| `result.ts`    | The rows checked by the domain's `orderRows` (D2-M), empty against the declaration, the canonical bytes held to the limit, and the SHA-256 checksum                                                                                                      |
+
+**Tests** (`apps/connector`, against the suite's source; the seed gains `sample.typed`, case 6's three
+rows in PostgreSQL's types, and `sample.unordered`, 30 rows with ties):
+
+- `run.test.ts`: uncited, a definition run against sample values answering the canonical result,
+  its row count and checksum (DAT-014 asks it from the interface: task 5); `DAT-106 refuses a result whose columns, types, order or key do not
+fit the declaration, by name, and never adjusts it` (a column renamed, a `float8`, rows out of
+  order, a text key ordered without `COLLATE "C"`, two rows with one key); `DAT-107 hashes rows in a
+declared total order, or as a multiset, so rewriting unchanged rows moves no checksum` (case 6's
+  twenty rewrites of `sample.unordered`, one checksum each way); `DAT-068 fails a run of no rows
+where empty is invalid, empty_result`; `DAT-080 refuses a value not exact in its declared type by
+name and never rounds it` (`precision_lost` for places past the scale and a fraction past the
+  declared precision, `value_unrepresentable` for `NaN` and `infinity`); uncited, `source_refused`
+  carrying the SQLSTATE, and a write refused inside the read-only transaction as `writer`.
+- `limits.test.ts`: `DAT-051 fails a run past its row, byte or time limit by name and answers no
+rows`; `DAT-109 cancels the statement at the source when a limit or the deadline is reached` (a
+  `pg_sleep(20)` and a CPU-bound sum, each gone from `pg_stat_activity` within a second, observed
+  from a separate session); `DAT-110 fails a run whose single value is larger than the byte limit,
+byte_limit, with the child holding no more than the limit` (`repeat('x', 100 MiB)` under 5 MiB,
+  the child's peak under 150 MiB).
+- `checksum.test.ts`: uncited, `one result reads to one checksum in every time zone` - case 6's
+  three rows run in children whose `TZ` is `Pacific/Kiritimati`, `Europe/London` and
+  `America/St_Johns`, equal to the domain test's checksum.
+- `hostile.test.ts`: `DAT-021 attempts injection through every parameter type and refuses each
+value by name or binds it inert` - case 5's hostile and ill-typed values for PostgreSQL, ported from
+  `spikes/data-connectors/`, each through text, integer, decimal, date, instant, boolean, a
+  permitted value, a list of integers and a list of texts, scored against the value read as data;
+  `DAT-018 lets no parameter change the query's shape: a marker in a table's or a column's place is
+refused by the source, and a variation's key never reaches it`.
+- `describe.test.ts`: uncited, a statement described with its columns proposed and nothing run
+  (`pg_sleep`, and an `insert ... returning` as `writer` adding no row).
+- `secrets.test.ts`: the DAT-005 matrix gains a run and a SQL describe failing each way.
+
+## Task 4: The service and the contract
+
+| Route                                       | Access                                                                  | Body                                    | Answer                                                                                                                       |
+| ------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `POST /v1/spaces/{space}/query-definitions` | `edit` on the space; `use_connection` and `write_sql` on the connection | `{ definition }`                        | `QueryDefinitionView { id, space, version, definition, connection: { id, name, identity, retired }, mayEdit, mayRun }`       |
+| `GET /v1/query-definitions`                 | Signed in                                                               | `?spaces=&connection=&cursor=&limit=`   | `{ items: { id, space, title, connection, retired, changedAt }[], next? }`                                                   |
+| `GET /v1/query-definitions/{id}`            | `read` on it                                                            |                                         | `QueryDefinitionView`                                                                                                        |
+| `POST /v1/query-definitions/{id}/versions`  | `edit` on it; `use_connection` and `write_sql` on the connection        | `{ openedFrom, definition }`            | `QueryDefinitionView`; 409 `version_precondition` with the current one                                                       |
+| `POST /v1/connections/{id}/describe`        | `use_connection`; `write_sql` with `sql`                                | `{}` or `{ sql: { text, parameters } }` | D1's relations, or `{ columns, parameters }`, or a failure by D1-Q's status                                                  |
+| `POST /v1/connections/{id}/sample`          | `use_connection` and `write_sql`                                        | `{ definition, values }`                | `{ outcome: 'ok', rows (the first 100), rowCount, checksum, ran, durationMs } \| { outcome: 'failed', failure }`, 200 (D2-I) |
+| `GET /v1/connections/{id}/uses`             | `read` on it                                                            |                                         | `{ definitions: { readable, others } }` (D2-O)                                                                               |
+| `GET /v1/settings/data`, `PUT` the same     | Signed in; `administer` at the tenant to change                         | `{ rows?, bytes?, seconds? }`           | The tenant's lowered limits and the ceilings                                                                                 |
+
+A save, describe with `sql` and a sample are refused, `sql_not_permitted` (409), on a connection
+whose latest test is not an `ok` of its latest version and credential without `account_not_read_only`,
+naming which (`untested`, `not_read_only`) - DAT-103. Describe and sample decide and read inside the
+deciding transaction and ask the connector after it commits (D1's `AfterCommit`), and take no
+idempotency key. `refused` gains `definition.invalid`, `connection.in_use` and the parameter problems.
+The connection's `PUT .../credential` answer gains `dependents`; its retiring version answers 409
+`connection_in_use`. OpenAPI and the client regenerated; each route documented as #353 requires.
+
+**Tests** (`apps/service`, the hand-written fake connector gaining `run` and `describeSql`):
+
+- `query-definition-routes.test.ts`: `DAT-101 lets only a principal holding write_sql on the connection
+save or run SQL against it, decided at the connection` (an Author in the space with `use_connection`
+  alone refused; a grant of `write_sql` on the connection alone allows; on another connection it does
+  not); `DAT-103 refuses SQL on a connection whose latest test did not find its account read-only`
+  (untested, failed, a finding, an earlier version's test and an earlier credential's each refused;
+  a current clean test allows); `DAT-020 refuses a sample whose values fail their declaration by name
+before the connector is asked`; `DAT-050 runs a sample under the least of the definition's limits
+and the tenant's`; `DAT-049 answers a run's failure with its attribution`; uncited, the listing,
+  a stale `openedFrom`, a retired connection named.
+- `connection-routes.test.ts`: `DAT-065 refuses to retire a connection a definition still names,
+naming the definitions the caller may read and counting the rest`; uncited, `uses` the same way, and
+  a failed rotation's `dependents`.
+- `data-secrets.test.ts` and `connector-boundary.test.ts`: the DAT-005 and DAT-089 tests gain the
+  sample and describe paths.
+
+## Task 5: The page
+
+1. `apps/web/src/data/`: `QueryDefinitions.tsx`, the list in layout A with a space facet, beside
+   Connections; **New query definition** offered where the person may edit a space and holds
+   `write_sql` on some connection. `QueryDefinitionPage.tsx` at `#/query-definitions/{id}` and
+   `#/query-definitions/new`, D2-U's five steps: the connection, from those the person may write SQL
+   against; the SQL in a monospace text area with its parameters beside it - name, type, required,
+   list, permitted values or range, and a variation's keys and fragments; **Describe**, listing each
+   proposed column with its source type and a type chosen by the author, **Confirm** on each, and
+   "Declare a type for this column" where none is proposed; values for each parameter and **Run
+   sample**, showing the rows, how many, the checksum's first twelve characters and the SQL that ran,
+   or the failure in words - "Rows are not in the declared order: row 12 comes before row 11. Order
+   text columns with COLLATE "C"." among them; key, order, empty and limits; **Save version**, offered
+   once every column is confirmed; **Retire** and **Reinstate**.
+2. `ConnectionPage.tsx` gains **Used by**, and says why a retire was refused; the Search page's kind
+   filter gains "Query definitions".
+3. **Tests** (`apps/web`, a fake client): `DAT-105 proposes each column from the source's metadata
+and saves none until the author has confirmed every one`; `DAT-014 runs a definition against sample
+values from its page and shows the result or the one reason it failed`; uncited, the list, New,
+   a precondition, Retire and Reinstate, Used by, and the page saying `sql_not_permitted` in words.
+4. `tests/browser`, uncited: the definition page and its steps pass axe-core's WCAG 2.2 AA rules and
+   are worked by keyboard alone.
+
+## Task 6: Deployment and the whole system
+
+1. `deploy/sources/postgres.sql` gains `sample.typed` and `sample.unordered` (task 3), `select` on
+   both to `reader` and `writer`; `deploy/compose.yaml` gives the connector `mem_limit: 3g` (D2-J).
+2. `tests/e2e/src/query-definitions.test.ts`: uncited, `runs a definition against a real source
+through the connector, over the whole system` (a definition on `source-postgres` as `reader` made,
+   described, sampled with a parameter and a variation, saved); `DAT-103 refuses SQL on a connection
+whose account can write at the source, over the whole system` (`writer`'s test finding it, then a
+   save refused). Every target from `tests/e2e/src/targets.ts`, as D1's.
+
+## Task 7: Docs and the release
+
+`docs/design/data.md`: D2-B's markers, D2-D, D2-E's shape, D2-F, D2-G, D2-H's codes and D2-L and
+D2-M folded in as Ken decides them, the collation question answered for PostgreSQL. `docs/architecture.md`:
+the definition kind, migration 0046, the run and the canonical result, the connector's new paths.
+`docs/features.md` and the README: query definitions written, sampled and searched; nothing stored.
+`docs/testing.md`: the connector suite's new tables. This plan's row: Built. The changelog: the next
+Minor.
+
+## Verification
+
+- **Suites**, each alone while building, every target set to the build's own: `packages/domain`,
+  `packages/db`, `apps/connector` (with the suite's source on the build's own port), `apps/service`,
+  `packages/api-contract`, `apps/web`, `apps/desktop`; then the full `pnpm test`, and `pnpm test:e2e`
+  and `pnpm test:browser` against a compose project of the build's own with `--profile sources`.
+- **CI**: the build job runs the connector's suite against its source; the whole-system job runs the
+  e2e test above; the traceability gate reads both.
+- **By hand, before the pull request**, in a compose project of the build's own: a definition written
+  on the page against `source-postgres` as `reader`, described, sampled, refused for an order without
+  `COLLATE "C"`, and saved; the same SQL refused on a connection as `writer`.
+
+## Questions for Ken before the build
+
+Answered on 2026-09-30: all five as recommended.
+
+1. **D2-B**: `{{name}}` markers, against data.md's `:site`. Recommended.
+2. **D2-M**: a text sort key ordered by code point (`COLLATE "C"`), checked rather than imposed; the
+   cost is that an author ordering by a name under the database's own collation is refused, in words
+   that say what to write. Recommended over the connector sorting, which DAT-106 forbids.
+3. **D2-F**: refusing text that is not NFC anywhere in a definition. Recommended over a second
+   canonical form for versions.
+4. **D2-U**: the editor built from the kit with no design, the designed screens coming with D4's
+   builder. Recommended, as D1's page was.
+5. **D2-J**: a 3 GiB memory limit on the connector's container, which your development stack takes
+   too once rebuilt. Recommended.
+
+## How this plan was made
+
+About 45 minutes of wall-clock time and about 45 tool calls, Q1 and Q2 among them (about 6 minutes);
+the plan is about 450 lines once Prettier has widened its tables.
