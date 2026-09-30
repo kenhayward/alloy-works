@@ -56,6 +56,12 @@ export const CredentialState = z.discriminatedUnion('set', [
         'Whether the host, port, database, account or TLS has changed since it was set: if so it is ' +
           'never used again, and must be set again',
       ),
+    setBeforeBinding: z
+      .boolean()
+      .describe(
+        'Whether it was set before credentials were bound to where a connection signs in: if so it ' +
+          'is never used, and must be set again, though nothing changed',
+      ),
   }),
 ]);
 export type CredentialState = z.infer<typeof CredentialState>;
@@ -234,7 +240,7 @@ const retiredOrUnset = {
   description:
     '`connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; ' +
     '`credential_target_changed`: the host, port, database, account or TLS changed after the credential ' +
-    'was set, so the password must be set again',
+    'was set, or it was set before credentials were bound to a target, so the password must be set again',
   schema: DataRefusal,
 } as const;
 

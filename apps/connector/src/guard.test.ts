@@ -88,13 +88,37 @@ describe('the address guard', () => {
     ]) {
       expect(await guardedAddress(host, { ...policy, lookup }), host).toBe('refused');
     }
-    // The source, spelled either way, is the source, dialled as the IPv4 address it is.
-    for (const host of ['::ac1f:1415', '64:ff9b::ac1f:1415', '64:ff9b::172.31.20.21']) {
-      expect(await guardedAddress(host, policy), host).toEqual({ address: SOURCE, family: 4 });
+    // The source, spelled either way, passes, and is dialled as given: on an IPv6-only network a
+    // NAT64 address is the only way to it, and the address it carries is not reachable at all.
+    for (const host of ['::ac1f:1415', '64:ff9b::ac1f:1415']) {
+      expect(await guardedAddress(host, policy), host).toEqual({ address: host, family: 6 });
     }
+    expect(await guardedAddress('64:ff9b::172.31.20.21', policy)).toEqual({
+      address: '64:ff9b::ac1f:1415',
+      family: 6,
+    });
     // And the unspecified address and loopback stay IPv6's own, refused as ever.
     expect(await guardedAddress('::', policy)).toBe('refused');
     expect(await guardedAddress('::1', policy)).toBe('refused');
+  });
+
+  it("refuses a platform or loopback address through RFC 8215's local-use NAT64 prefix, wherever in it the address is carried, and dials a permitted one as given", async () => {
+    for (const host of [
+      // 127.0.0.1 at /96, /64, /56 and /48 of 64:ff9b:1::/48, as RFC 6052 lays each out.
+      '64:ff9b:1::7f00:1',
+      '64:ff9b:1:0:7f:0:100:0',
+      '64:ff9b:1:7f:0:1::',
+      '64:ff9b:1:7f00:0:100::',
+      // 169.254.169.254 at /48, and the platform at /64.
+      '64:ff9b:1:a9fe:a9:fe00::',
+      '64:ff9b:1:0:ac:1f0a:b00:0',
+    ]) {
+      expect(await guardedAddress(host, policy), host).toBe('refused');
+    }
+    expect(await guardedAddress('64:ff9b:1::ac1f:1415', policy)).toEqual({
+      address: '64:ff9b:1::ac1f:1415',
+      family: 6,
+    });
   });
 
   it('normalises a host to what the operating system would dial', () => {

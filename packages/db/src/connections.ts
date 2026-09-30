@@ -194,6 +194,11 @@ export type CredentialState =
       readonly setBy: Named;
       readonly setAt: Date;
       readonly targetChanged: boolean;
+      /**
+       * Set before migration 0045 bound credentials to a target: it names none, so it is never used,
+       * though nothing about the connection changed (the D1 fix, round two). `targetChanged` is true.
+       */
+      readonly setBeforeBinding: boolean;
     };
 
 /**
@@ -269,6 +274,7 @@ export async function credentialOf(trx: TenantTransaction, id: string): Promise<
     setBy: { id: row.set_by, name: row.display_name ?? row.email ?? null },
     setAt: row.set_at,
     targetChanged: !current || row.target_digest !== targetDigest(current.settings),
+    setBeforeBinding: row.target_digest === null,
   };
 }
 
@@ -283,11 +289,12 @@ export async function usableCredentialOf(
   id: string,
 ): Promise<
   | { readonly answer: 'usable'; readonly sealed: string; readonly credentialId: string }
-  | { readonly answer: 'missing' | 'target_changed' }
+  | { readonly answer: 'missing' | 'target_changed' | 'unbound' }
 > {
   if (!UUID.test(id)) return { answer: 'missing' };
   const row = await latestCredential(trx, id);
   if (!row) return { answer: 'missing' };
+  if (row.target_digest === null) return { answer: 'unbound' };
   const current = await readConnection(trx, id);
   if (!current || row.target_digest !== targetDigest(current.settings)) {
     return { answer: 'target_changed' };

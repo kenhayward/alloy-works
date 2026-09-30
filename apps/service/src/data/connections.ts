@@ -131,6 +131,7 @@ async function connectionView(
           setBy: credential.setBy,
           setAt: credential.setAt.toISOString(),
           targetChanged: credential.targetChanged,
+          setBeforeBinding: credential.setBeforeBinding,
         }
       : { set: false },
     lastTest: last
@@ -183,6 +184,14 @@ export function connectionHandlers(
     }
     if (credential.answer === 'missing') {
       throw refused(409, 'credential.missing', 'This connection has no credential set yet.');
+    }
+    if (credential.answer === 'unbound') {
+      throw refused(
+        409,
+        'credential.target_changed',
+        "This connection's password was set before this version of the product. Set the password " +
+          'again to use it.',
+      );
     }
     throw refused(
       409,
@@ -388,6 +397,7 @@ export function connectionHandlers(
         setBy: { id: set.credential.setBy.id, name: set.credential.setBy.name },
         setAt: set.credential.setAt.toISOString(),
         targetChanged: set.credential.targetChanged,
+        setBeforeBinding: set.credential.setBeforeBinding,
       };
       const tenant = tenantOf(request);
       // Tested straight after, as the rotation act (DA-T), once the credential is committed. A

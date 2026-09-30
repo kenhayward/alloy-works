@@ -71,6 +71,13 @@ export async function connectPostgres(
       rejectUnauthorized: source.tls === 'verifyFull',
     },
     connectionTimeoutMillis: timing.connectTimeoutMs,
+    // Every connection is TLS, so SCRAM is bound to the channel where the source offers
+    // SCRAM-SHA-256-PLUS: a relay between the child and the source, which `tls: 'require'` does not
+    // detect, cannot pass the exchange on, since the binding names the certificate the child saw
+    // (the D1 fix, round two). A source that offers plain SCRAM alone is still signed in to, with the
+    // client's word that it could have bound, so a real source that offers binding refuses a relay
+    // that strips the offer; refusing plain SCRAM would refuse poolers and proxies that cannot bind.
+    enableChannelBinding: true,
     application_name: 'alloy-connector',
     // The source notices a client gone within a quarter of a second, and stops a statement at the
     // request's deadline whatever the driver does (case 7).

@@ -9,7 +9,16 @@ import { BlockList, isIPv4, isIPv6 } from 'node:net';
  */
 
 export type NormalisedHost =
-  | { readonly kind: 'address'; readonly address: string; readonly family: 4 | 6 }
+  | {
+      readonly kind: 'address';
+      readonly address: string;
+      readonly family: 4 | 6;
+      /**
+       * The IPv4 addresses an IPv6 address carries, which the guard checks beside it: the address is
+       * dialled as given, and a translator or the kernel reaches what it carries.
+       */
+      readonly carries?: readonly string[];
+    }
   | { readonly kind: 'name'; readonly name: string }
   | { readonly kind: 'refused' };
 
@@ -70,24 +79,75 @@ function groups(address: string): number[] | undefined {
   return [...front, ...Array<number>(tail === undefined ? 0 : zeros).fill(0), ...back];
 }
 
+/** An address's 128 bits, as a string of ones and zeros, from its eight groups. */
+const bitsOf = (all: readonly number[]) =>
+  all.map((each) => each.toString(2).padStart(16, '0')).join('');
+
+/** An IPv4 address's text from 32 bits written as ones and zeros. */
+const dottedBits = (bits: string) => dotted(parseInt(bits, 2) >>> 0);
+
 /**
- * An IPv6 address that carries an IPv4 address in its last 32 bits, as that IPv4 address - so the
- * guard checks the address it reaches - or undefined for any other: IPv4-mapped (`::ffff:0:0/96`),
- * IPv4-compatible (`::/96`, deprecated, but still a second spelling of `::7f00:1` for 127.0.0.1), and
- * the well-known NAT64 prefix (`64:ff9b::/96`, RFC 6052), through which a translator reaches the
- * IPv4 address it names. `::` and `::1` are IPv6's own, and the ranges deny them as such.
+ * The IPv4 addresses a NAT64 address in RFC 8215's local-use prefix, `64:ff9b:1::/48`, may carry. A
+ * translator there embeds its IPv4 address after a prefix of 48, 56, 64 or 96 bits, as RFC 6052 lays
+ * each out - bits 64 to 71, the u-octet, skipped and zero, and the bits after the address zero - and
+ * which it uses is its own configuration. So every layout the address is well formed under is read,
+ * and the /96 layout always is; the guard refuses the address if any of them is denied.
  */
-function embedded(address: string): string | undefined {
+function localUseCarried(all: readonly number[]): string[] {
+  const bits = bitsOf(all);
+  const carried = [dottedBits(bits.slice(96))];
+  if (bits.slice(64, 72) !== '0'.repeat(8)) return carried;
+  // The address's bits with the u-octet taken out: RFC 6052's layouts below 96 read these.
+  const skipped = bits.slice(0, 64) + bits.slice(72);
+  for (const prefix of [48, 56, 64]) {
+    if (/^0*$/.test(skipped.slice(prefix + 32)))
+      carried.push(dottedBits(skipped.slice(prefix, prefix + 32)));
+  }
+  return carried;
+}
+
+/**
+ * How an IPv6 address that carries an IPv4 address is dialled and checked - or undefined for any
+ * other. IPv4-mapped (`::ffff:0:0/96`) is the IPv4 address itself, which the kernel dials, so it is
+ * normalised to it. The others are dialled as given, and the IPv4 addresses they carry are checked
+ * beside them: IPv4-compatible (`::/96`, deprecated, but a second spelling of `::7f00:1` for
+ * 127.0.0.1), the well-known NAT64 prefix (`64:ff9b::/96`, RFC 6052), and RFC 8215's local-use one
+ * (`64:ff9b:1::/48`), through which a translator reaches the IPv4 address it names. On an IPv6-only
+ * network a NAT64 address is the only way to an IPv4 source, so dialling what it carries instead
+ * would reach nothing. `::` and `::1` are IPv6's own, and the ranges deny them as such.
+ */
+function embedded(
+  address: string,
+): { readonly mapped: string } | { readonly carries: readonly string[] } | undefined {
   const all = groups(address);
   if (!all) return undefined;
   const last = dotted(((all[6]! << 16) | all[7]!) >>> 0);
   const zeros = (upTo: number) => all.slice(0, upTo).every((each) => each === 0);
-  if (zeros(5) && all[5] === 0xffff) return last;
-  if (zeros(6) && (all[6] !== 0 || all[7]! > 1)) return last;
+  if (zeros(5) && all[5] === 0xffff) return { mapped: last };
+  if (zeros(6) && (all[6] !== 0 || all[7]! > 1)) return { carries: [last] };
   if (all[0] === 0x64 && all[1] === 0xff9b && all.slice(2, 6).every((each) => each === 0)) {
-    return last;
+    return { carries: [last] };
+  }
+  if (all[0] === 0x64 && all[1] === 0xff9b && all[2] === 1) {
+    return { carries: localUseCarried(all) };
   }
   return undefined;
+}
+
+/** An IPv6 address's text as Node spells it, lower case and shortest. */
+function canonical(address: string): string {
+  const all = groups(address)!;
+  const hex = all.map((each) => each.toString(16));
+  // The longest run of two or more zero groups, the first where two tie, becomes `::`.
+  let best = { at: -1, length: 0 };
+  for (let at = 0; at < 8;) {
+    let length = 0;
+    while (at + length < 8 && all[at + length] === 0) length += 1;
+    if (length > best.length && length > 1) best = { at, length };
+    at += length === 0 ? 1 : length;
+  }
+  if (best.at < 0) return hex.join(':');
+  return `${hex.slice(0, best.at).join(':')}::${hex.slice(best.at + best.length).join(':')}`;
 }
 
 const LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
@@ -107,9 +167,13 @@ export function normaliseHost(raw: string): NormalisedHost {
   }
   if (isIPv6(host)) {
     const four = embedded(host);
-    return four
-      ? { kind: 'address', address: four, family: 4 }
-      : { kind: 'address', address: host.toLowerCase(), family: 6 };
+    if (four && 'mapped' in four) return { kind: 'address', address: four.mapped, family: 4 };
+    return {
+      kind: 'address',
+      address: four ? canonical(host) : host.toLowerCase(),
+      family: 6,
+      ...(four ? { carries: four.carries } : {}),
+    };
   }
   if (host.endsWith('.')) host = host.slice(0, -1);
   if (isIPv4(host)) return { kind: 'address', address: host, family: 4 };
@@ -150,9 +214,9 @@ export async function guardedAddress(
 ): Promise<{ readonly address: string; readonly family: 4 | 6 } | 'refused'> {
   const normalised = normaliseHost(host);
   if (normalised.kind === 'refused') return 'refused';
-  let candidates: { address: string; family: 4 | 6 }[];
+  let candidates: { address: string; family: 4 | 6; carries?: readonly string[] }[];
   if (normalised.kind === 'address') {
-    candidates = [{ address: normalised.address, family: normalised.family }];
+    candidates = [normalised];
   } else {
     let answers: readonly { readonly address: string; readonly family: number }[];
     try {
@@ -164,13 +228,16 @@ export async function guardedAddress(
     for (const answer of answers) {
       const again = normaliseHost(answer.address);
       if (again.kind !== 'address') return 'refused';
-      candidates.push({ address: again.address, family: again.family });
+      candidates.push(again);
     }
   }
   if (candidates.length === 0) return 'refused';
   const denied = blockListOf(policy.deny);
   for (const candidate of candidates) {
     if (denied.check(candidate.address, candidate.family === 6 ? 'ipv6' : 'ipv4')) return 'refused';
+    // And whatever IPv4 address it carries, which a translator or the kernel would reach.
+    if (candidate.carries?.some((four) => denied.check(four, 'ipv4'))) return 'refused';
   }
-  return candidates[0]!;
+  const { address, family } = candidates[0]!;
+  return { address, family };
 }

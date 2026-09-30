@@ -326,6 +326,7 @@ describe('a connection', () => {
       setBy: { id: grace, name: 'Grace' },
       setAt: expect.any(Date),
       targetChanged: false,
+      setBeforeBinding: false,
     });
     expect(JSON.stringify(credential)).not.toContain(value);
     expect(JSON.stringify(credential)).not.toContain(SECRET);
@@ -456,7 +457,11 @@ describe('a connection', () => {
       sealed: expect.any(String),
       credentialId: expect.any(String),
     });
-    expect(await state()).toMatchObject({ set: true, targetChanged: false });
+    expect(await state()).toMatchObject({
+      set: true,
+      targetChanged: false,
+      setBeforeBinding: false,
+    });
 
     // A change to anything but the target keeps the credential.
     await cut({}, { name: 'Readings, renamed', description: 'Moved.' });
@@ -485,7 +490,9 @@ describe('a connection', () => {
         trx,
       ),
     );
-    expect(await usable()).toEqual({ answer: 'target_changed' });
+    expect(await usable()).toEqual({ answer: 'unbound' });
+    // Said so as its own case: nothing changed, it was set before credentials were bound.
+    expect(await state()).toMatchObject({ set: true, targetChanged: true, setBeforeBinding: true });
     // And the runtime role cannot write a target of its own shape.
     await expect(
       service.withTenant(production, (trx) =>

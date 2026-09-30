@@ -9010,13 +9010,18 @@
                             "targetChanged": {
                               "type": "boolean",
                               "description": "Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again"
+                            },
+                            "setBeforeBinding": {
+                              "type": "boolean",
+                              "description": "Whether it was set before credentials were bound to where a connection signs in: if so it is never used, and must be set again, though nothing changed"
                             }
                           },
                           "required": [
                             "set",
                             "setBy",
                             "setAt",
-                            "targetChanged"
+                            "targetChanged",
+                            "setBeforeBinding"
                           ]
                         }
                       ]
@@ -9481,13 +9486,18 @@
                             "targetChanged": {
                               "type": "boolean",
                               "description": "Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again"
+                            },
+                            "setBeforeBinding": {
+                              "type": "boolean",
+                              "description": "Whether it was set before credentials were bound to where a connection signs in: if so it is never used, and must be set again, though nothing changed"
                             }
                           },
                           "required": [
                             "set",
                             "setBy",
                             "setAt",
-                            "targetChanged"
+                            "targetChanged",
+                            "setBeforeBinding"
                           ]
                         }
                       ]
@@ -10208,7 +10218,7 @@
             }
           },
           "409": {
-            "description": "`connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, so the password must be set again",
+            "description": "`connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, or it was set before credentials were bound to a target, so the password must be set again",
             "content": {
               "application/json": {
                 "schema": {
@@ -10725,7 +10735,7 @@
             }
           },
           "409": {
-            "description": "`connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, so the password must be set again",
+            "description": "`connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, or it was set before credentials were bound to a target, so the password must be set again",
             "content": {
               "application/json": {
                 "schema": {
@@ -11363,13 +11373,18 @@
                             "targetChanged": {
                               "type": "boolean",
                               "description": "Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again"
+                            },
+                            "setBeforeBinding": {
+                              "type": "boolean",
+                              "description": "Whether it was set before credentials were bound to where a connection signs in: if so it is never used, and must be set again, though nothing changed"
                             }
                           },
                           "required": [
                             "set",
                             "setBy",
                             "setAt",
-                            "targetChanged"
+                            "targetChanged",
+                            "setBeforeBinding"
                           ]
                         }
                       ]
@@ -11849,13 +11864,18 @@
                                 "targetChanged": {
                                   "type": "boolean",
                                   "description": "Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again"
+                                },
+                                "setBeforeBinding": {
+                                  "type": "boolean",
+                                  "description": "Whether it was set before credentials were bound to where a connection signs in: if so it is never used, and must be set again, though nothing changed"
                                 }
                               },
                               "required": [
                                 "set",
                                 "setBy",
                                 "setAt",
-                                "targetChanged"
+                                "targetChanged",
+                                "setBeforeBinding"
                               ]
                             }
                           ]
@@ -12409,13 +12429,18 @@
                                 "targetChanged": {
                                   "type": "boolean",
                                   "description": "Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again"
+                                },
+                                "setBeforeBinding": {
+                                  "type": "boolean",
+                                  "description": "Whether it was set before credentials were bound to where a connection signs in: if so it is never used, and must be set again, though nothing changed"
                                 }
                               },
                               "required": [
                                 "set",
                                 "setBy",
                                 "setAt",
-                                "targetChanged"
+                                "targetChanged",
+                                "setBeforeBinding"
                               ]
                             }
                           ]
@@ -36248,13 +36273,18 @@
                             "targetChanged": {
                               "type": "boolean",
                               "description": "Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again"
+                            },
+                            "setBeforeBinding": {
+                              "type": "boolean",
+                              "description": "Whether it was set before credentials were bound to where a connection signs in: if so it is never used, and must be set again, though nothing changed"
                             }
                           },
                           "required": [
                             "set",
                             "setBy",
                             "setAt",
-                            "targetChanged"
+                            "targetChanged",
+                            "setBeforeBinding"
                           ]
                         }
                       ]
@@ -36734,13 +36764,18 @@
                                 "targetChanged": {
                                   "type": "boolean",
                                   "description": "Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again"
+                                },
+                                "setBeforeBinding": {
+                                  "type": "boolean",
+                                  "description": "Whether it was set before credentials were bound to where a connection signs in: if so it is never used, and must be set again, though nothing changed"
                                 }
                               },
                               "required": [
                                 "set",
                                 "setBy",
                                 "setAt",
-                                "targetChanged"
+                                "targetChanged",
+                                "setBeforeBinding"
                               ]
                             }
                           ]

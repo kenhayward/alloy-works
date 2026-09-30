@@ -54,4 +54,31 @@ describe("the connector's authentication", () => {
       }
     }
   });
+
+  it('binds SCRAM to the TLS channel where the source offers it, so a relay cannot pass the exchange on, and flags that it could have where the source does not', async () => {
+    for (const [asking, mechanism, header] of [
+      ['scram-plus', 'SCRAM-SHA-256-PLUS', 'p=tls-server-end-point'],
+      // A source, or a relay stripping the offer, that offers no binding: plain SCRAM, with the
+      // client's word that it supports binding, which a real source that offered it refuses.
+      ['scram', 'SCRAM-SHA-256', 'y'],
+    ] as const) {
+      const source = await fakeSource(asking);
+      try {
+        await supervisor.run(
+          'test',
+          requestFor(settings({ port: source.port, account: 'reader' }), PASSWORD),
+        );
+        const first = source.received.find((each) => each.type === 'p');
+        expect(first, asking).toBeDefined();
+        // SASLInitialResponse: the mechanism, a zero byte, its length, and the client's first message.
+        const end = first!.body.indexOf(0);
+        expect(first!.body.subarray(0, end).toString('utf8'), asking).toBe(mechanism);
+        const message = first!.body.subarray(end + 5).toString('utf8');
+        expect(message.split(',')[0], asking).toBe(header);
+        expect(first!.body.includes(Buffer.from(PASSWORD)), asking).toBe(false);
+      } finally {
+        await source.close();
+      }
+    }
+  });
 });

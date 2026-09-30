@@ -433,6 +433,28 @@ describe('a connection on its own page', () => {
     ).not.toContain(CANARY);
   });
 
+  it('says a password set before this version of the product must be set again, without saying anything changed', async () => {
+    const { client } = service({
+      connection: view({
+        credential: {
+          set: true,
+          setBy: { id: 'ada', name: 'Ada' },
+          setAt: '2026-09-30T09:00:00Z',
+          targetChanged: true,
+          setBeforeBinding: true,
+        },
+      }),
+    });
+    render(<ConnectionPage client={client} id={READINGS} />);
+    expect(
+      await screen.findByText(
+        'Set by Ada on 30 September 2026, before this version of the product. Set the password again to use this connection.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/host, port, database/)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Set again' })).toBeInTheDocument();
+  });
+
   it('says the password must be set again once a version changes where the connection signs in', async () => {
     const user = userEvent.setup();
     const setBy = { id: 'ada', name: 'Ada' };

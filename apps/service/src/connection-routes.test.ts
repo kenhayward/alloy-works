@@ -34,7 +34,13 @@ interface ConnectionBody {
   settings: ConnectionSettings;
   credential:
     | { set: false }
-    | { set: true; setBy: { id: string; name: string }; setAt: string; targetChanged: boolean };
+    | {
+        set: true;
+        setBy: { id: string; name: string };
+        setAt: string;
+        targetChanged: boolean;
+        setBeforeBinding: boolean;
+      };
   lastTest: null | {
     outcome: 'ok' | 'failed';
     findings: string[];
@@ -213,6 +219,7 @@ describe('connections through the service', () => {
       setBy: { id: ids.ada, name: 'Ada' },
       setAt: expect.stringMatching(/^\d{4}-\d\d-\d\dT/),
       targetChanged: false,
+      setBeforeBinding: false,
     });
     const listed = await call('grace', 'GET', '/v1/connections');
     answers.push(listed.body);
@@ -496,6 +503,41 @@ describe('connections through the service', () => {
     expect(
       (await call('ada', 'POST', `/v1/connections/${connection.id}/test`, {})).statusCode,
     ).toBe(200);
+  });
+
+  it('says a credential set before credentials were bound to a target was set before this version of the product, and uses it for nothing', async () => {
+    const connection = await make({ name: 'Unbound' });
+    await allow(ids.ada!, connectionUser, { kind: 'artifact', id: connection.id });
+    connector.mode = 'answer';
+    // A row as migration 0045 found one: sealed, and naming no target.
+    await tenantDb.withTenant(tenant, (trx) =>
+      trx
+        .insertInto('connection_credential')
+        // No target_digest, which the table's type requires of every row written now.
+        .values({
+          connection_id: connection.id,
+          sealed: `v1.${'a'.repeat(16)}.${'b'.repeat(22)}.${'c'.repeat(40)}`,
+          set_by: ids.ada!,
+        } as never)
+        .execute(),
+    );
+    const read = await call('ada', 'GET', `/v1/connections/${connection.id}`);
+    expect(read.json<ConnectionBody>().credential).toMatchObject({
+      set: true,
+      targetChanged: true,
+      setBeforeBinding: true,
+    });
+    const before = connector.asked.length;
+    for (const path of ['test', 'describe']) {
+      const answer = await call('ada', 'POST', `/v1/connections/${connection.id}/${path}`, {});
+      expect(answer.statusCode, path).toBe(409);
+      expect(answer.json(), path).toMatchObject({
+        code: 'credential_target_changed',
+        message:
+          "This connection's password was set before this version of the product. Set the password again to use it.",
+      });
+    }
+    expect(connector.asked.length).toBe(before);
   });
 
   it('records a credential against the target it was sealed for, where a version moving the connection is saved while it is sealed, and says it must be set again', async () => {

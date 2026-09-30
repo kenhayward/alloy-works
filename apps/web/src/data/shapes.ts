@@ -39,6 +39,8 @@ export type Credential =
       readonly setBy: Named;
       readonly setAt: string;
       readonly targetChanged: boolean;
+      /** Set before credentials were bound to a target: never used, though nothing changed. */
+      readonly setBeforeBinding?: boolean;
     };
 
 export type Tested =
@@ -110,7 +112,8 @@ function isCredential(value: unknown): value is Credential {
     value.set === true &&
     isNamed(value.setBy) &&
     typeof value.setAt === 'string' &&
-    typeof value.targetChanged === 'boolean'
+    typeof value.targetChanged === 'boolean' &&
+    (value.setBeforeBinding === undefined || typeof value.setBeforeBinding === 'boolean')
   );
 }
 

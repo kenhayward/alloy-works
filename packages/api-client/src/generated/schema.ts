@@ -4828,6 +4828,8 @@ export interface operations {
                             setAt: string;
                             /** @description Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again */
                             targetChanged: boolean;
+                            /** @description Whether it was set before credentials were bound to where a connection signs in: if so it is never used, and must be set again, though nothing changed */
+                            setBeforeBinding: boolean;
                         };
                         lastTest: {
                             /** @enum {string} */
@@ -5004,6 +5006,8 @@ export interface operations {
                             setAt: string;
                             /** @description Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again */
                             targetChanged: boolean;
+                            /** @description Whether it was set before credentials were bound to where a connection signs in: if so it is never used, and must be set again, though nothing changed */
+                            setBeforeBinding: boolean;
                         };
                         test: {
                             /** @constant */
@@ -5298,7 +5302,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, so the password must be set again */
+            /** @description `connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, or it was set before credentials were bound to a target, so the password must be set again */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -5525,7 +5529,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, so the password must be set again */
+            /** @description `connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, or it was set before credentials were bound to a target, so the password must be set again */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -5797,6 +5801,8 @@ export interface operations {
                             setAt: string;
                             /** @description Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again */
                             targetChanged: boolean;
+                            /** @description Whether it was set before credentials were bound to where a connection signs in: if so it is never used, and must be set again, though nothing changed */
+                            setBeforeBinding: boolean;
                         };
                         lastTest: {
                             /** @enum {string} */
@@ -5921,6 +5927,8 @@ export interface operations {
                                 setAt: string;
                                 /** @description Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again */
                                 targetChanged: boolean;
+                                /** @description Whether it was set before credentials were bound to where a connection signs in: if so it is never used, and must be set again, though nothing changed */
+                                setBeforeBinding: boolean;
                             };
                             lastTest: {
                                 /** @enum {string} */
@@ -6106,6 +6114,8 @@ export interface operations {
                                 setAt: string;
                                 /** @description Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again */
                                 targetChanged: boolean;
+                                /** @description Whether it was set before credentials were bound to where a connection signs in: if so it is never used, and must be set again, though nothing changed */
+                                setBeforeBinding: boolean;
                             };
                             lastTest: {
                                 /** @enum {string} */
@@ -15151,6 +15161,8 @@ export interface operations {
                             setAt: string;
                             /** @description Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again */
                             targetChanged: boolean;
+                            /** @description Whether it was set before credentials were bound to where a connection signs in: if so it is never used, and must be set again, though nothing changed */
+                            setBeforeBinding: boolean;
                         };
                         lastTest: {
                             /** @enum {string} */
@@ -15275,6 +15287,8 @@ export interface operations {
                                 setAt: string;
                                 /** @description Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again */
                                 targetChanged: boolean;
+                                /** @description Whether it was set before credentials were bound to where a connection signs in: if so it is never used, and must be set again, though nothing changed */
+                                setBeforeBinding: boolean;
                             };
                             lastTest: {
                                 /** @enum {string} */

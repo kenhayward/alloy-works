@@ -95,6 +95,9 @@ function TestAnswer({ tested }: { readonly tested: Tested | string | null }) {
 function credentialText(credential: ConnectionView['credential']): string {
   if (!credential.set) return 'Not set.';
   const set = `Set by ${nameOf(credential.setBy)} on ${longDate(credential.setAt)}`;
+  if (credential.setBeforeBinding) {
+    return `${set}, before this version of the product. Set the password again to use this connection.`;
+  }
   return credential.targetChanged
     ? `${set}, before the host, port, database, account or TLS changed. Set the password again to use this connection.`
     : `${set}.`;

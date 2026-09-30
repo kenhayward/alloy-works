@@ -71,7 +71,12 @@ function selfSigned(): { key: string; cert: string } {
   };
 }
 
-export type AskedFor = 'cleartext' | 'md5';
+/**
+ * How the fake asks: for the password in the clear or as MD5, as a hostile source would, or by SASL
+ * offering SCRAM-SHA-256 with and without channel binding, or without it alone, as a real source or a
+ * relay in front of one would. A SASL exchange goes no further than the client's first message.
+ */
+export type AskedFor = 'cleartext' | 'md5' | 'scram-plus' | 'scram';
 
 export interface FakeSource {
   readonly port: number;
@@ -101,6 +106,19 @@ function reader(socket: Socket | TLSSocket) {
   };
 }
 
+/** AuthenticationSASL: code 10, then each mechanism's name ended by a zero byte, and a last one. */
+function sasl(mechanisms: readonly string[]): Buffer {
+  const names = Buffer.concat([
+    ...mechanisms.map((name) => Buffer.from(`${name}\0`)),
+    Buffer.from([0]),
+  ]);
+  const head = Buffer.alloc(9);
+  head.write('R', 0);
+  head.writeInt32BE(8 + names.length, 1);
+  head.writeInt32BE(10, 5);
+  return Buffer.concat([head, names]);
+}
+
 export async function fakeSource(asking: AskedFor): Promise<FakeSource> {
   const { key, cert } = selfSigned();
   const received: FakeSource['received'] = [];
@@ -120,11 +138,17 @@ export async function fakeSource(asking: AskedFor): Promise<FakeSource> {
       const length = await read(4);
       if (!length) return;
       await read(length.readInt32BE(0) - 4);
-      // Ask for the password as the attack does.
+      // Ask for the password as the attack does, or offer SASL's mechanisms.
       secure.write(
         asking === 'cleartext'
           ? Buffer.from([0x52, 0, 0, 0, 8, 0, 0, 0, 3])
-          : Buffer.from([0x52, 0, 0, 0, 12, 0, 0, 0, 5, 1, 2, 3, 4]),
+          : asking === 'md5'
+            ? Buffer.from([0x52, 0, 0, 0, 12, 0, 0, 0, 5, 1, 2, 3, 4])
+            : sasl(
+                asking === 'scram-plus'
+                  ? ['SCRAM-SHA-256-PLUS', 'SCRAM-SHA-256']
+                  : ['SCRAM-SHA-256'],
+              ),
       );
       for (;;) {
         const head = await read(5);
