@@ -126,10 +126,23 @@ CMD ["node", "dist/main.js"]
 # database library, no object store, no service. It holds only its two keys, and reaches a tenant's
 # source from a network with no route to the platform. `dist/child.js` beside `dist/main.js` is the
 # per-request child the supervisor spawns.
+#
+# Who runs as whom (the D1 fix, C1 and C2). The supervisor holds both keys, and they stay readable in
+# its `/proc/<pid>/environ` whatever it deletes from `process.env`; so each child runs as a user and
+# group of its own (20000 plus its slot, which no file here belongs to), and the kernel refuses it the
+# supervisor's `/proc` entries and every other child's. Switching to another user needs SETUID and
+# SETGID, and killing a child that is another user needs KILL, so the supervisor runs as root with
+# those three capabilities and no others (compose drops the rest): root rather than `node` because a
+# non-root user holds a capability only as an ambient one, which survives a switch between two
+# non-root users and every exec after it - it would hand the child SETUID, and so the supervisor's
+# user - where leaving root clears every capability the process holds. The code is root's and
+# nobody's to write, and compose runs the container read-only; `main.js` refuses to start unless a
+# child spawned as every child is runs as its own user and cannot read its environment.
 FROM base AS connector
 ENV NODE_ENV=production
 WORKDIR /app
-COPY --from=build --chown=node:node /prod/connector ./
-USER node
+COPY --from=build /prod/connector ./
+RUN chown -R root:root /app && chmod -R u=rwX,go=rX /app
+USER root
 EXPOSE 8090
 CMD ["node", "dist/main.js"]

@@ -6,7 +6,14 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadConnectorConfig } from './config.js';
 import { createConnectorServer } from './server.js';
 import { childSpawn, runChild, type ChildSpec, type SpawnChild } from './supervisor.js';
-import { requestFor, SEALING_KEY, settings, suiteChild, suiteDeny } from './testing/source.js';
+import {
+  requestFor,
+  SEALING_KEY,
+  settings,
+  suiteChild,
+  suiteDeny,
+  suiteIsolation,
+} from './testing/source.js';
 
 /** An invented secret, with characters each encoding spells differently. */
 const CANARY = 'Canary+Secret/9=%&ü-7f3a';
@@ -84,7 +91,7 @@ describe("the connector's secrets", () => {
       return { status: response.status, text };
     };
 
-    const real = await start(childSpawn(suiteChild));
+    const real = await start(childSpawn(suiteChild, suiteIsolation));
     const failed =
       '{"outcome":"failed","failure":{"code":"connection_failed","attribution":"connector"}}';
     // Case 2's matrix, for PostgreSQL.

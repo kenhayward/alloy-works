@@ -14,6 +14,7 @@ import {
   settings,
   suiteChild,
   suiteDeny,
+  suiteIsolation,
 } from './testing/source.js';
 
 const KEY = Buffer.alloc(32, 3).toString('base64');
@@ -45,7 +46,7 @@ describe("the connector's interface", () => {
     const server = createConnectorServer({
       config,
       deny: suiteDeny,
-      spec: childSpawn(suiteChild),
+      spec: childSpawn(suiteChild, suiteIsolation),
       log: (line) => lines.push(line),
       ...options,
     });

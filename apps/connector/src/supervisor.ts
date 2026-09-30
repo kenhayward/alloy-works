@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { readdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
 import {
@@ -26,11 +27,16 @@ export interface ChildEntry {
   readonly execArgv: readonly string[];
 }
 
-/** How a child is started: always this Node, with an empty environment. */
+/**
+ * How a child is started: always this Node, with an empty environment, and - in production - as a
+ * user and group of its own, `uid` and `gid`.
+ */
 export interface ChildSpec {
   readonly file: string;
   readonly args: readonly string[];
   readonly env: Readonly<Record<string, string>>;
+  readonly uid?: number;
+  readonly gid?: number;
 }
 
 /** The built child, beside this module. */
@@ -40,16 +46,43 @@ export const productionChild: ChildEntry = {
 };
 
 /**
+ * The first of the users a child runs as: slot `n` of the supervisor's cap runs as user and group
+ * `CHILD_USER_BASE + n`, which no file in the image belongs to and no other process runs as.
+ */
+export const CHILD_USER_BASE = 20000;
+
+/**
+ * Who a child runs as (the D1 fix, C1). Production's is `user`: each child a user and group of its own
+ * slot, so the kernel refuses it the supervisor's `/proc` entries - its environment, which still holds
+ * both keys whatever `process.env` says, its memory and its descriptors - and the other children's.
+ * `none` is the suite's alone, on Windows and a developer's machine: a parameter, never configuration,
+ * as the suite's deny list is (D1-K), and the production entry refuses to start without its switch.
+ */
+export type ChildIsolation =
+  { readonly kind: 'user'; readonly base: number } | { readonly kind: 'none' };
+
+export const productionIsolation: ChildIsolation = Object.freeze({
+  kind: 'user',
+  base: CHILD_USER_BASE,
+});
+
+/**
  * The command a child is started with. Nothing of a request is in it - the request and its credential
  * go on standard input - and its environment is empty, so no `PG*` variable, no home directory and no
- * key reaches it.
+ * key reaches it. In production it runs as its slot's own user and group.
  */
-export function childSpawn(entry: ChildEntry = productionChild): ChildSpec {
-  return {
+export function childSpawn(
+  entry: ChildEntry = productionChild,
+  isolation: ChildIsolation = productionIsolation,
+  slot = 0,
+): ChildSpec {
+  const spec = {
     file: process.execPath,
     args: [...entry.execArgv, '--max-old-space-size=256', entry.path],
     env: {},
   };
+  if (isolation.kind === 'none') return spec;
+  return { ...spec, uid: isolation.base + slot, gid: isolation.base + slot };
 }
 
 /** How a child ended: with one line of answer, killed at its deadline, or without an answer. */
@@ -75,11 +108,20 @@ const GRACE_MS = 1000;
  */
 export const runChild: SpawnChild = (spec, input, deadlineMs, stderr) =>
   new Promise((resolve) => {
-    const child = spawn(spec.file, [...spec.args], {
-      env: { ...spec.env },
-      stdio: ['pipe', 'pipe', 'pipe'],
-      windowsHide: true,
-    });
+    let child;
+    try {
+      child = spawn(spec.file, [...spec.args], {
+        env: { ...spec.env },
+        stdio: ['pipe', 'pipe', 'pipe'],
+        windowsHide: true,
+        ...(spec.uid === undefined ? {} : { uid: spec.uid }),
+        ...(spec.gid === undefined ? {} : { gid: spec.gid }),
+      });
+    } catch {
+      // Refused before it started - a user this process may not become - which is no answer.
+      resolve({ kind: 'ended', pid: -1 });
+      return;
+    }
     const pid = child.pid ?? -1;
     let killed = false;
     let bytes = 0;
@@ -144,20 +186,36 @@ export function createSupervisor(options: {
   /** The ranges the child's guard refuses: production's, or the suite's, never configuration's alone. */
   readonly deny: readonly string[];
   readonly maxChildren: number;
-  readonly spec?: ChildSpec;
+  /** How a child is started, fixed or by its slot: production's own users unless a test says. */
+  readonly spec?: ChildSpec | ((slot: number) => ChildSpec);
   readonly spawn?: SpawnChild;
+  /** Ends whatever a child's user left running, before its slot is used again. */
+  readonly sweep?: (uid: number) => Promise<void>;
   readonly connectTimeoutMs?: number;
   readonly failureFloorMs?: number;
   /** Told how many bytes each child wrote to its standard error, which is otherwise dropped. */
   readonly onStderrBytes?: (bytes: number) => void;
 }): Supervisor {
-  const spec = options.spec ?? childSpawn();
+  const given = options.spec;
+  const specFor =
+    given === undefined
+      ? (slot: number) => childSpawn(productionChild, productionIsolation, slot)
+      : typeof given === 'function'
+        ? given
+        : () => given;
   const spawnChild = options.spawn ?? runChild;
+  const sweep = options.sweep ?? sweepUser;
   const connectTimeoutMs = options.connectTimeoutMs ?? CONNECT_TIMEOUT_MS;
   const failureFloorMs = options.failureFloorMs ?? CONNECT_TIMEOUT_MS;
+  /** Which slots of the cap are free: a running child holds its slot, and so its user. */
+  const free = Array.from({ length: options.maxChildren }, (_, slot) => slot);
   let active = 0;
 
-  async function work<K extends RequestKind>(kind: K, request: TestRequest): Promise<AnswerOf<K>> {
+  async function work<K extends RequestKind>(
+    kind: K,
+    request: TestRequest,
+    slot: number,
+  ): Promise<AnswerOf<K>> {
     const started = Date.now();
     let secret: string;
     try {
@@ -175,10 +233,17 @@ export function createSupervisor(options: {
       connectTimeoutMs,
       failureFloorMs,
     };
+    const spec = specFor(slot);
     let stderrBytes = 0;
-    const outcome = await spawnChild(spec, JSON.stringify(input), request.deadlineMs, (chunk) => {
-      stderrBytes += chunk.length;
-    });
+    let outcome: ChildOutcome;
+    try {
+      outcome = await spawnChild(spec, JSON.stringify(input), request.deadlineMs, (chunk) => {
+        stderrBytes += chunk.length;
+      });
+    } finally {
+      // Nothing the child started outlives it into the next request its user serves.
+      if (spec.uid !== undefined) await sweep(spec.uid).catch(() => {});
+    }
     options.onStderrBytes?.(stderrBytes);
     if (outcome.kind !== 'answer') {
       return failed(kind, outcome.kind === 'timeout' ? 'timeout' : 'connector_error');
@@ -191,12 +256,80 @@ export function createSupervisor(options: {
 
   return {
     run<K extends RequestKind>(kind: K, request: TestRequest): Promise<AnswerOf<K> | 'busy'> {
-      if (active >= options.maxChildren) return Promise.resolve('busy');
+      const slot = free.shift();
+      if (slot === undefined) return Promise.resolve('busy');
       active += 1;
-      return work(kind, request).finally(() => {
+      return work(kind, request, slot).finally(() => {
         active -= 1;
+        free.push(slot);
+        free.sort((a, b) => a - b);
       });
     },
     active: () => active,
   };
+}
+
+/**
+ * Ends, with SIGKILL, every process still running as a child's user: a child is killed at its
+ * deadline, but anything it started - a compromised driver's, say - would otherwise live on as that
+ * user and wait for the next request it serves. Linux's `/proc` alone; elsewhere no user is switched.
+ */
+export async function sweepUser(uid: number): Promise<void> {
+  if (process.platform !== 'linux') return;
+  const pids = (await readdir('/proc')).filter((name) => /^\d+$/.test(name));
+  for (const pid of pids) {
+    try {
+      const status = await readFile(`/proc/${pid}/status`, 'utf8');
+      const ids = /^Uid:\s+(\d+)\s+(\d+)\s+(\d+)/m.exec(status);
+      if (ids && ids.slice(1).some((id) => Number(id) === uid)) {
+        process.kill(Number(pid), 'SIGKILL');
+      }
+    } catch {
+      // Gone already: nothing to end.
+    }
+  }
+}
+
+/** The production entry cannot run its children apart from itself, so it does not start. */
+export class IsolationRefused extends Error {}
+
+/**
+ * What the isolation probe runs, as a child would: which user and group it is, and whether the kernel
+ * lets it read its parent's environment, which holds both keys whatever `process.env` says.
+ */
+const ISOLATION_PROBE = [
+  "let environ = 'done';",
+  "try { require('node:fs').readFileSync('/proc/' + process.ppid + '/environ'); }",
+  "catch (error) { environ = error.code || 'error'; }",
+  'process.stdout.write(JSON.stringify({ uid: process.getuid(), gid: process.getgid(), environ }));',
+].join('\n');
+
+/**
+ * Refuses to start unless a child spawned exactly as the supervisor spawns them - this Node, an empty
+ * environment, slot 0's user and group - runs as that user and group and is refused its parent's
+ * environment by the kernel (the D1 fix, C1). The production entry runs it before it listens.
+ */
+export async function verifyChildIsolation(
+  options: { readonly spawn?: SpawnChild } = {},
+): Promise<void> {
+  const spec = childSpawn(
+    { path: 'isolation-probe', execArgv: ['-e', ISOLATION_PROBE] },
+    productionIsolation,
+  );
+  const outcome = await (options.spawn ?? runChild)(spec, '', 10_000);
+  const answer =
+    outcome.kind === 'answer' && typeof outcome.answer === 'object' && outcome.answer !== null
+      ? (outcome.answer as Record<string, unknown>)
+      : undefined;
+  if (
+    answer === undefined ||
+    answer.uid !== spec.uid ||
+    answer.gid !== spec.gid ||
+    answer.environ !== 'EACCES'
+  ) {
+    throw new IsolationRefused(
+      'The connector cannot run its children as users of their own. Start it as root with only the ' +
+        'SETUID, SETGID and KILL capabilities, as deploy/compose.yaml does.',
+    );
+  }
 }

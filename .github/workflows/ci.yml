@@ -190,6 +190,10 @@ jobs:
       # Through turbo, which builds what the suite imports before running it.
       - name: End to end
         run: pnpm test:e2e
+        env:
+          # The project the stack above runs as, compose.yaml's own name: said, never assumed, since
+          # the connector's tests reach into its containers by it.
+          ALLOY_E2E_COMPOSE_PROJECT: alloy-works
 
       # The renderer in a real browser, against the same containers (the W13 plan's B-A): run whenever
       # the stack came up, so a failing end-to-end check does not hide what the browser would say.

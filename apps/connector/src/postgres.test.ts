@@ -20,6 +20,7 @@ import {
   SOURCE_PORT,
   suiteChild,
   suiteDeny,
+  suiteIsolation,
 } from './testing/source.js';
 
 /** A port on loopback that nothing listens on: refused. */
@@ -42,7 +43,7 @@ describe('the connector against a PostgreSQL source', () => {
     sealingKey: SEALING_KEY,
     deny: suiteDeny,
     maxChildren: 8,
-    spec: childSpawn(suiteChild),
+    spec: childSpawn(suiteChild, suiteIsolation),
     spawn,
   });
 

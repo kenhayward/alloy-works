@@ -6,7 +6,7 @@ import { sealSecret } from '@alloy-works/sealing';
 import pg from 'pg';
 
 import { builtInDenied } from '../config.js';
-import type { ChildEntry } from '../supervisor.js';
+import type { ChildEntry, ChildIsolation } from '../supervisor.js';
 
 /**
  * The suite's own source (the D1 plan, D1-K): the container `pnpm --filter @alloy-works/connector
@@ -36,6 +36,13 @@ export const suiteChild: ChildEntry = {
   path: fileURLToPath(new URL('../child.ts', import.meta.url)),
   execArgv: ['--import', 'tsx'],
 };
+
+/**
+ * The suite's children run as the suite does, with no switch of user: Windows has none, and a
+ * developer's machine gives the suite no right to one. A parameter, never configuration, as the deny
+ * list is; the production entry refuses to start without its switch (C1 of the D1 fix).
+ */
+export const suiteIsolation: ChildIsolation = { kind: 'none' };
 
 export const TENANT = 'acme';
 export const SEALING_KEY = Buffer.alloc(32, 7);

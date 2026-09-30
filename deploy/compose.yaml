@@ -169,6 +169,12 @@ services:
       CONNECTOR_SEALING_KEY: ZGV2ZWxvcG1lbnQtb25seS1zZWFsaW5nLWtleS0wMDE=
       CONNECTOR_DENY: none
       LOG_LEVEL: info
+    # Root with three capabilities and no others: to run each child as a user of its own, and to kill
+    # it (deploy/Dockerfile says why root). Read-only, so neither it nor a child writes anything.
+    cap_drop: [ALL]
+    cap_add: [SETUID, SETGID, KILL]
+    security_opt: ['no-new-privileges:true']
+    read_only: true
     networks:
       - connector-private
       - connector-egress

@@ -6,7 +6,6 @@ import { sealSecret } from '@alloy-works/sealing';
 
 import { productionDeny, type ConnectorConfig } from './config.js';
 import {
-  childSpawn,
   createSupervisor,
   type ChildSpec,
   type SpawnChild,
@@ -54,7 +53,7 @@ export function createConnectorServer(options: {
    * a test hands it another: a parameter, never configuration (D1-K).
    */
   readonly deny?: readonly string[];
-  readonly spec?: ChildSpec;
+  readonly spec?: ChildSpec | ((slot: number) => ChildSpec);
   readonly spawn?: SpawnChild;
   readonly supervisor?: Supervisor;
   readonly log?: (line: string) => void;
@@ -70,7 +69,8 @@ export function createConnectorServer(options: {
       sealingKey: config.sealingKey,
       deny: options.deny ?? productionDeny(config),
       maxChildren: config.maxChildren,
-      spec: options.spec ?? childSpawn(),
+      // Production's children, each as its slot's own user, unless a test hands another.
+      ...(options.spec ? { spec: options.spec } : {}),
       ...(options.spawn ? { spawn: options.spawn } : {}),
       onStderrBytes: (bytes) => {
         stderrBytes += bytes;

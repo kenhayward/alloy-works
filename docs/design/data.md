@@ -365,7 +365,14 @@ fresh Node process handed that credential and the request on its standard input;
 runs, answers on its standard output and exits, and the supervisor kills it at the deadline. **The
 child never holds the key**, so code that parses what a hostile source returns can open no other
 tenant's credential; no memory is shared between tenants or requests; and no source connection is
-pooled or reused, so there is no reset question (DAT-114). Case 2 priced it at 41 ms p50 against 5 ms
+pooled or reused, so there is no reset question (DAT-114). **The child runs as a user of its own**,
+one per slot of the supervisor's cap, with no capability: the kernel keeps both keys in the
+supervisor's `/proc/<pid>/environ` whatever it deletes from `process.env`, so it is the kernel's
+access check on another user's `/proc` entries, not the supervisor's tidiness, that keeps them from a
+child, and from one child the credential another is holding. The supervisor holds only the three
+capabilities that switching and killing another user take, the connector's code and filesystem are
+not the child's to write, and the connector refuses to start unless a child spawned as every child is
+proves it cannot read the supervisor's environment. Case 2 priced it at 41 ms p50 against 5 ms
 for a warm process - negligible now that a source is queried only when a person acts. It is revisited
 if an act comes to run hundreds of queries, as a document made from a large template might.
 

@@ -2784,7 +2784,17 @@ child with an empty environment, writing it one line - the request, the opened s
 ranges - and reading one answer; the child resolves the host once through the guard, which refuses
 loopback, link-local and the deployment's `CONNECTOR_DENY` ranges in every spelling, dials the address
 it checked, answers, closes the source connection and exits. A child past its deadline is killed, and
-one that ends without an answer is `connector_error`. The request and answer schemas are
+one that ends without an answer is `connector_error`. **Each child runs as a user and group of its
+own**, 20000 plus its slot of the cap, with no capability, so the kernel refuses it the supervisor's
+`/proc` entries - its environment still holds both keys whatever `process.env` says - and every other
+child's; when a child ends, anything still running as its user is killed before the slot is used
+again. The supervisor runs as root with SETUID, SETGID and KILL alone and `no-new-privileges`, in a
+read-only container whose code is root's: root because a non-root user can hold a capability only as
+an ambient one, which would survive the switch to the child's user and pass to the child. `main.ts`
+refuses to start unless a child spawned as every child is runs as its own user and cannot read the
+supervisor's environment (`verifyChildIsolation`); the suite runs its children with no switch, a
+parameter as its deny list is. `tests/e2e`'s `connector-privilege.test.ts` spawns such a child in the
+running connector and asks it to find either key anywhere it can read, and to change the code. The request and answer schemas are
 `packages/domain/src/data/protocol.ts`, parsed on both sides.
 
 **The service** finds the connector at `CONNECTOR_URL` with `SECRET_CONNECTOR_KEY`, both or neither;

@@ -81,6 +81,13 @@ connector.
 The service reaches it at `CONNECTOR_URL` with the key in `SECRET_CONNECTOR_KEY`; without the two
 the service still starts, and every data act answers `connector_unavailable`.
 
+**It runs as root with three capabilities and nothing else**: `cap_drop: [ALL]`, `cap_add: [SETUID,
+SETGID, KILL]`, `no-new-privileges` and `read_only: true`. Each request's child runs as a user of its
+own (20000 plus its slot), so the kernel keeps it from the keys the supervisor still holds in its
+`/proc` environment; switching to that user, and killing it, is what the three capabilities are for.
+A deployment that runs the connector must give it the same: without them it refuses to start, saying
+so, rather than run children that could read its keys.
+
 ### A source to connect to: the `sources` profile
 
 `source-postgres` is a PostgreSQL of a tenant's own for development and CI, pinned by digest, TLS on
