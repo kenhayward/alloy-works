@@ -2,3 +2,5 @@ node_modules/
 *.log
 dcp1-*
 report*.json
+dcp2-*
+dcp2b-*
