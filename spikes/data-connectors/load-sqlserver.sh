@@ -8,8 +8,9 @@ C=aw-data-connectors-sqlserver-1
 SQLCMD="/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Spike-SqlServer-Fake-Pw1 -C -b"
 docker cp init/sqlserver.sql "$C:/tmp/init.sql"
 docker cp init/sqlserver-phase2.sql "$C:/tmp/init2.sql"
+docker cp init/sqlserver-phase3.sql "$C:/tmp/init3.sql"
 for i in $(seq 1 60); do
   if docker exec "$C" $SQLCMD -Q "select 1" >/dev/null 2>&1; then break; fi
   sleep 2
 done
-docker exec "$C" $SQLCMD -i /tmp/init.sql && docker exec "$C" $SQLCMD -i /tmp/init2.sql && echo "sqlserver schema loaded"
+docker exec "$C" $SQLCMD -i /tmp/init.sql && docker exec "$C" $SQLCMD -i /tmp/init2.sql && docker exec "$C" $SQLCMD -i /tmp/init3.sql && echo "sqlserver schema loaded"
