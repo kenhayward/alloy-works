@@ -201,7 +201,7 @@ describe('the OpenAPI document', () => {
     expect(signedOut).toMatchObject({
       description: 'Signed out, everywhere this session was in use',
     });
-    expect(signedOut.content).toBeUndefined();
+    expect(signedOut?.content).toBeUndefined();
   });
 
   it('marks a query parameter required when the schema requires it', () => {
