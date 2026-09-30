@@ -69,9 +69,12 @@ const sourceName = (what: string) =>
 // A permitted value's text is counted in characters, as a parameter's value is (D2-R), never left to
 // how the schema library happens to count a string's length.
 const canonicalValue = z.union([
-  storable('A value').refine((value) => characters(value) <= MAX_TEXT_VALUE, {
-    message: 'A value is at most 1,000 characters',
-  }),
+  storable('A value')
+    // Published as JSON Schema's maxLength, which counts characters too.
+    .max(MAX_TEXT_VALUE)
+    .refine((value) => characters(value) <= MAX_TEXT_VALUE, {
+      message: 'A value is at most 1,000 characters',
+    }),
   z.boolean(),
   z.null(),
 ]);
