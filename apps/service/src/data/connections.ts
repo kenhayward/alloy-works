@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import type {
   ConnectionListQuery,
   ConnectionParams,
@@ -6,12 +6,18 @@ import type {
   ConnectionView,
   CreateConnectionBody,
   CredentialBody,
+  DescribeBody,
+  SampleBody,
+  SampleView,
   SpaceParams,
   TestView,
 } from '@alloy-works/api-contract';
+import { SAMPLE_ROWS } from '@alloy-works/api-contract';
 import {
   createConnection,
   credentialOf,
+  dataPolicy,
+  definitionsNaming,
   latestConnectionTest,
   listReadableConnections,
   readConnection,
@@ -21,17 +27,28 @@ import {
   usableCredentialOf,
   type ConnectionAnswer,
   type ConnectionTestFailure,
+  type NamingDefinitions,
   type StoredConnection,
   type Tenant,
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
 import {
-  dataFailure,
+  DefinitionRefused,
+  canonicalResultBytes,
+  checkParameterValues,
+  dataFailures,
   decide,
+  effectiveLimits,
+  lexPostgres,
+  parseDraftDefinition,
   type AccessFacts,
   type ConnectionProblem,
   type DataFailureCode,
+  type DefinitionProblem,
+  type DraftDefinition,
+  type Parameter,
+  type ParameterValues,
   type TestAnswer,
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
@@ -43,6 +60,8 @@ import { cursorFor, pageAsked } from '../listing.js';
 import type { SessionPrincipal } from '../sessions.js';
 import { refused } from '../wire-codes.js';
 import { createConnectorClient, type Answered } from './connector.js';
+import { failureView, type FailureIn } from './failure-words.js';
+import { maySqlWith, requireSqlPermitted, sqlForbidden } from './sql-access.js';
 
 /** Where the connector answers, the key the service presents, and, in a test, a fetch of its own. */
 export interface ConnectorOptions {
@@ -70,31 +89,73 @@ const TEST_FAILURES: readonly ConnectionTestFailure[] = [
   'source_unsupported',
 ];
 
-/** What a person is told of each failure a connection act meets: one reason, naming no address. */
-const MESSAGES: Partial<Record<DataFailureCode, string>> = {
-  connection_failed:
-    'Could not connect to the source or sign in to it. Check its settings and its credential.',
-  timeout: 'The source did not answer in time.',
-  connector_error: 'The connector failed while it was working on this. Try again.',
-  source_unsupported:
-    'This source is older than PostgreSQL 14, which the connector cannot check. Use a newer one.',
-  connector_unavailable: 'No connector is available to reach the source. Try again later.',
-  connector_busy: 'The connector is busy. Try again in a moment.',
-};
-
-function failureView(code: DataFailureCode) {
-  return {
-    ...dataFailure(code),
-    message: MESSAGES[code] ?? 'This could not be done.',
-  };
+/**
+ * A data act refused by a data failure: its code, its words, whose failure it is (DAT-049), and the
+ * column, the row and what the source said where it names them.
+ */
+function dataRefused(status: number, failed: FailureIn | DataFailureCode): AppError {
+  const { code, message, ...members } = failureView(failed);
+  return new AppError(status, code, message, undefined, members);
 }
 
-/** A data act refused by a data failure: its code, its words, and whose failure it is (DAT-049). */
-function dataRefused(status: number, code: DataFailureCode): AppError {
-  const failure = failureView(code);
-  return new AppError(status, code, failure.message, undefined, {
-    attribution: failure.attribution,
+/**
+ * A describe's failure by where it arose (D1-Q, D2-G): the source's side and the connector's are 502,
+ * a deadline passed 504, and a statement the source refused or one with no columns is the author's to
+ * fix, 400.
+ */
+function describedStatus(failure: FailureIn): number {
+  if (failure.code === 'timeout') return 504;
+  return dataFailures[failure.code] === 'query' ? 400 : 502;
+}
+
+/** The definitions naming a connection, as the API answers them (D2-O). */
+function namingView(naming: NamingDefinitions) {
+  return { readable: naming.readable.map((each) => ({ ...each })), others: naming.others };
+}
+
+/** A definition refused by its rules, each problem named (the D2 plan's stored-shape check). */
+function definitionRefused(problems: readonly DefinitionProblem[]): AppError {
+  return refused(400, 'definition.invalid', 'The query definition is not valid.', { problems });
+}
+
+/**
+ * The problems of a statement a describe is sent (D2-G): it lexes whole, declares each parameter once,
+ * and each marker names a declared parameter of its kind. The connector refuses anything else at its
+ * door, which would read as a connector that failed rather than SQL that did.
+ */
+function statementProblems(sql: {
+  readonly text: string;
+  readonly parameters: readonly Parameter[];
+}): DefinitionProblem[] {
+  const problem = (path: string, message: string): DefinitionProblem => ({
+    rule: 'definition_invalid',
+    path,
+    message,
   });
+  const lexed = lexPostgres(sql.text);
+  if (!Array.isArray(lexed)) return [problem('sql.text', `${lexed.problem} (line ${lexed.line})`)];
+  const byName = new Map(sql.parameters.map((parameter) => [parameter.name, parameter]));
+  if (byName.size !== sql.parameters.length) {
+    return [problem('sql.parameters', 'A parameter is declared once')];
+  }
+  const problems: DefinitionProblem[] = [];
+  for (const piece of lexed) {
+    if (piece.kind === 'text') continue;
+    const parameter = byName.get(piece.name);
+    if (!parameter) {
+      problems.push(
+        problem('sql.text', `The marker for ${piece.name} names no declared parameter`),
+      );
+    } else if ((piece.kind === 'variation') !== (parameter.variation !== undefined)) {
+      problems.push(
+        problem(
+          'sql.text',
+          `The marker for ${piece.name} is not of the kind its parameter declares`,
+        ),
+      );
+    }
+  }
+  return problems;
 }
 
 /** Settings refused by rule, with every problem (DAT-001, DAT-078). */
@@ -278,7 +339,7 @@ export function connectionHandlers(
         });
       case 'connection.in_use':
         // A query definition in service still names it (DAT-065): those the caller may read, by
-        // title, and the rest counted. The contract's words for it are D2's service task's.
+        // title, and the rest counted.
         throw refused(
           409,
           'connection.in_use',
@@ -409,6 +470,9 @@ export function connectionHandlers(
         setBeforeBinding: set.credential.setBeforeBinding,
       };
       const tenant = tenantOf(request);
+      // Where the test fails, every definition naming the connection is named with it, once (DAT-066;
+      // D2-O): read here, with the caller's readable set, and answered only for a failure.
+      const dependents = namingView(await definitionsNaming(trx, principalId, id));
       // Tested straight after, as the rotation act (DA-T), once the credential is committed. A
       // connector that could seal and then not test answers the test's failure without recording it.
       return new AfterCommit(async () => {
@@ -428,7 +492,9 @@ export function connectionHandlers(
             at: new Date().toISOString(),
           };
         }
-        return { credential, test: tested };
+        return tested.outcome === 'failed'
+          ? { credential, test: tested, dependents }
+          : { credential, test: tested };
       });
     },
 
@@ -443,33 +509,130 @@ export function connectionHandlers(
       return new AfterCommit(() => test(tenant, connection, usable, principalId));
     },
 
-    describeConnection: async (request: FastifyRequest, { trx }: Authorised) => {
+    describeConnection: async (request: FastifyRequest, { trx, facts }: Authorised) => {
       const { id } = request.params as ConnectionParams;
+      const { sql } = request.body as DescribeBody;
+      // A statement is SQL against the connection: write_sql there as well as use_connection (D2-G).
+      if (sql !== undefined && !maySqlWith(facts)) throw sqlForbidden();
       const connection = await runnable(trx, id);
+      if (sql !== undefined) {
+        const problems = statementProblems(sql);
+        if (problems.length > 0) throw definitionRefused(problems);
+        await requireSqlPermitted(trx, connection);
+      }
       const { sealed } = await usableSealed(trx, id);
       const client = connected();
       const tenant = tenantOf(request);
+      const asked = {
+        requestId: randomUUID(),
+        tenant: tenant.id,
+        connection: { id: connection.id, version: connection.version.id },
+        settings: connection.settings,
+        sealed,
+        deadlineMs: DESCRIBE_DEADLINE_MS,
+      };
       // Decided and read here; the connector is asked once this transaction, and its lock on access,
       // is let go (the D1 fix, C4). A describe records nothing.
+      if (sql !== undefined) {
+        return new AfterCommit(async () => {
+          const described = answered(await client.describeSql({ ...asked, sql }));
+          if ('failure' in described)
+            throw dataRefused(describedStatus(described.failure), described.failure);
+          return described;
+        });
+      }
       return new AfterCommit(async () => {
-        const described = answered(
-          await client.describe({
+        const described = answered(await client.describe(asked));
+        if ('failure' in described) {
+          throw dataRefused(describedStatus(described.failure), described.failure);
+        }
+        return described;
+      });
+    },
+
+    sampleConnection: async (request: FastifyRequest, { trx, facts }: Authorised) => {
+      const { id } = request.params as ConnectionParams;
+      const body = request.body as SampleBody;
+      // use_connection is the route's; a sample runs SQL, so write_sql as well, at the connection
+      // (DAT-101).
+      if (!maySqlWith(facts)) throw sqlForbidden();
+      const connection = await runnable(trx, id);
+      let draft: DraftDefinition;
+      try {
+        draft = parseDraftDefinition(body.definition);
+      } catch (error) {
+        if (error instanceof DefinitionRefused) throw definitionRefused(error.problems);
+        throw error;
+      }
+      if (draft.connection !== connection.id) {
+        throw definitionRefused([
+          {
+            rule: 'definition_invalid',
+            path: 'connection',
+            message: 'A sample runs a definition of the connection it is sent to',
+          },
+        ]);
+      }
+      // Every value against its declaration, before the connector is asked (DAT-020).
+      const values = body.values as ParameterValues;
+      const problems = checkParameterValues(draft.parameters, values);
+      if (problems.length > 0) {
+        throw refused(400, 'parameter.invalid', 'A value does not fit its parameter.', {
+          attribution: 'product',
+          problems,
+        });
+      }
+      await requireSqlPermitted(trx, connection);
+      const { sealed } = await usableSealed(trx, id);
+      const client = connected();
+      const tenant = tenantOf(request);
+      // The least of the definition's limits and the tenant's (DAT-050), and a deadline of the time.
+      const limits = effectiveLimits(draft.limits, await dataPolicy(trx));
+      // Decided and read here; the connector is asked once this transaction commits (the D1 fix, C4).
+      // Nothing of a sample is stored (D2-I).
+      return new AfterCommit(async (): Promise<SampleView> => {
+        const ran = answered(
+          await client.run({
             requestId: randomUUID(),
             tenant: tenant.id,
             connection: { id: connection.id, version: connection.version.id },
             settings: connection.settings,
             sealed,
-            deadlineMs: DESCRIBE_DEADLINE_MS,
+            definition: draft,
+            values: body.values,
+            limits,
+            deadlineMs: limits.seconds * 1000,
           }),
         );
-        if ('failure' in described) {
-          throw dataRefused(
-            described.failure.code === 'timeout' ? 504 : 502,
-            described.failure.code,
-          );
+        if (ran.outcome === 'failed')
+          return { outcome: 'failed', failure: failureView(ran.failure) };
+        // The checksum is the service's to hold the connector to (D2-K): the rows it answered, in
+        // the canonical form, must hash to what it said.
+        const checksum = createHash('sha256')
+          .update(canonicalResultBytes(ran.result), 'utf8')
+          .digest('hex');
+        if (checksum !== ran.checksum) {
+          return { outcome: 'failed', failure: failureView('connector_error') };
         }
-        return described;
+        return {
+          outcome: 'ok',
+          columns: ran.result.columns.map(([name, base]) => [name, base] as [string, string]),
+          rows: ran.result.rows.slice(0, SAMPLE_ROWS).map((row) => [...row]),
+          rowCount: ran.rowCount,
+          checksum,
+          ran: { sql: ran.ran.sql },
+          durationMs: ran.durationMs,
+        };
       });
+    },
+
+    getConnectionUses: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
+      const { id } = request.params as ConnectionParams;
+      const connection = await readConnection(trx, id);
+      if (!connection) throw notFound();
+      // The definitions naming it by their latest versions, the caller's readable ones by title and
+      // the rest counted (D2-O). Documents join with D3's bindings.
+      return { definitions: namingView(await definitionsNaming(trx, principalId, id)) };
     },
   };
 }

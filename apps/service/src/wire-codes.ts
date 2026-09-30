@@ -54,6 +54,8 @@ const WIRE_CODES = {
   'connection.in_use': 'connection_in_use',
   'credential.missing': 'credential_missing',
   'credential.target_changed': 'credential_target_changed',
+  'sql.not_permitted': 'sql_not_permitted',
+  'parameter.invalid': 'parameter_invalid',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;
@@ -94,6 +96,10 @@ const RULES: Partial<Record<DottedCode, string>> = {
   // A connection a query definition in service still names is not retired (data.md, "Rotation, where
   // used and retiring").
   'connection.in_use': 'DAT-065',
+  // SQL on a connection whose latest test did not find its account read-only (data.md, "The fetch").
+  'sql.not_permitted': 'DAT-103',
+  // A value failing its declaration, before anything runs (data.md, "Parameters").
+  'parameter.invalid': 'DAT-020',
 };
 
 /** The wire's spelling of a store's dotted answer. */

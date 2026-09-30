@@ -3,8 +3,10 @@ import {
   createRole,
   createSpace,
   createTenant,
+  createQueryDefinition,
   createTenantDatabase,
   findRole,
+  recordQueryDefinitionVersion,
   grant,
   migrate,
   usableCredentialOf,
@@ -866,5 +868,127 @@ describe('connections through the service', () => {
     // Grace reads General alone.
     const hers = (await call('grace', 'GET', '/v1/connections')).json<{ items: Json[] }>();
     expect(hers.items.every((item) => (item['space'] as Json)['id'] === general)).toBe(true);
+  });
+
+  /** A query definition naming a connection, written straight to the database by its author. */
+  const defineOn = async (connection: string, space: string, title: string) =>
+    tenantDb.withTenant(tenant, async (trx) => {
+      const made = await createQueryDefinition(trx, {
+        author: ids.ada!,
+        spaceId: space,
+        definition: {
+          schemaVersion: 1,
+          title,
+          description: '',
+          connection,
+          parameters: [],
+          fetch: { kind: 'sql', text: 'select id from sample.site order by id' },
+          columns: [{ name: 'id', from: { column: 'id' }, type: { base: 'integer' } }],
+          key: ['id'],
+          order: [{ column: 'id', direction: 'ascending' }],
+          empty: 'valid',
+          limits: { rows: 100, bytes: 65_536, seconds: 10 },
+          retired: false,
+        },
+      });
+      if (made.answer !== 'created') throw new Error(made.answer);
+      return made.definition;
+    });
+  /** A space only Grace may read, holding what Ada is never told the name of. */
+  const hiddenSpace = async () => {
+    const hidden = await tenantDb.withTenant(tenant, (trx) =>
+      createSpace(trx, `Hidden ${Math.random()}`),
+    );
+    const author = await tenantDb.withTenant(tenant, (trx) => findRole(trx, 'Author'));
+    await allow(ids.grace!, author!.id, { kind: 'space', id: hidden.id });
+    return hidden.id;
+  };
+
+  it('DAT-065 refuses to retire a connection a definition still names, naming the definitions the caller may read and counting the rest', async () => {
+    const connection = await make({ name: 'Named' });
+    const readable = await defineOn(connection.id, general, 'Daily readings');
+    const hidden = await defineOn(connection.id, await hiddenSpace(), 'Unseen readings');
+
+    const refusedRetire = await call('ada', 'POST', `/v1/connections/${connection.id}/versions`, {
+      openedFrom: connection.version.id,
+      settings: settings({ name: 'Named', retired: true }),
+    });
+    expect(refusedRetire.statusCode).toBe(409);
+    expect(refusedRetire.json()).toMatchObject({
+      code: 'connection_in_use',
+      rule: 'DAT-065',
+      definitions: {
+        readable: [{ id: readable.id, title: 'Daily readings', retired: false }],
+        others: 1,
+      },
+    });
+    expect(refusedRetire.body).not.toContain('Unseen readings');
+    // Nothing was cut, and the connection is as it was.
+    expect(
+      (await call('ada', 'GET', `/v1/connections/${connection.id}`)).json<ConnectionBody>(),
+    ).toMatchObject({ version: { number: '0.1' }, settings: { retired: false } });
+
+    // Once both definitions are retired, it is retired too.
+    await tenantDb.withTenant(tenant, async (trx) => {
+      for (const each of [readable, hidden]) {
+        const retired = await recordQueryDefinitionVersion(trx, {
+          author: ids.ada!,
+          id: each.id,
+          openedFrom: each.version.id,
+          definition: { ...each.definition, retired: true },
+        });
+        if (retired.answer !== 'recorded') throw new Error(retired.answer);
+      }
+    });
+    const retired = await call('ada', 'POST', `/v1/connections/${connection.id}/versions`, {
+      openedFrom: connection.version.id,
+      settings: settings({ name: 'Named', retired: true }),
+    });
+    expect(retired.statusCode, retired.body).toBe(200);
+    expect(retired.json<ConnectionBody>().settings.retired).toBe(true);
+  });
+
+  it('answers where a connection is used, and names the definitions naming it when a rotation fails its test', async () => {
+    const connection = await make({ name: 'Rotated' });
+    const readable = await defineOn(connection.id, general, 'Weekly sums');
+    await defineOn(connection.id, await hiddenSpace(), 'Private sums');
+
+    const uses = await call('ada', 'GET', `/v1/connections/${connection.id}/uses`);
+    expect(uses.statusCode).toBe(200);
+    expect(uses.json()).toEqual({
+      definitions: {
+        readable: [{ id: readable.id, title: 'Weekly sums', retired: false }],
+        others: 1,
+      },
+    });
+    // Grace reads both; Alice reads neither the connection nor its uses.
+    expect(
+      (await call('grace', 'GET', `/v1/connections/${connection.id}/uses`)).json(),
+    ).toMatchObject({ definitions: { others: 0 } });
+    expect((await call('alice', 'GET', `/v1/connections/${connection.id}/uses`)).statusCode).toBe(
+      404,
+    );
+
+    // A rotation whose test passes names nothing; one whose test fails names every dependent once.
+    connector.mode = 'answer';
+    connector.test = { outcome: 'ok', findings: [] };
+    const passed = await call('ada', 'PUT', `/v1/connections/${connection.id}/credential`, {
+      secret: SECRET,
+    });
+    expect(passed.json()).not.toHaveProperty('dependents');
+    connector.test = {
+      outcome: 'failed',
+      failure: { code: 'connection_failed', attribution: 'connector' },
+    };
+    const failed = await call('ada', 'PUT', `/v1/connections/${connection.id}/credential`, {
+      secret: SECRET,
+    });
+    expect(failed.json()).toMatchObject({
+      test: { outcome: 'failed' },
+      dependents: {
+        readable: [{ id: readable.id, title: 'Weekly sums', retired: false }],
+        others: 1,
+      },
+    });
   });
 });

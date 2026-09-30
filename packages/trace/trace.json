@@ -17856,13 +17856,13 @@
     {
       "id": "API-053",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 473,
+      "line": 500,
       "kind": "title"
     },
     {
       "id": "IAM-030",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 423,
+      "line": 450,
       "kind": "title"
     },
     {
@@ -17946,25 +17946,37 @@
     {
       "id": "DAT-004",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 200,
+      "line": 202,
       "kind": "title"
     },
     {
       "id": "DAT-049",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 322,
+      "line": 324,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-065",
+      "file": "apps/service/src/connection-routes.test.ts",
+      "line": 919,
+      "kind": "rule"
+    },
+    {
+      "id": "DAT-065",
+      "file": "apps/service/src/connection-routes.test.ts",
+      "line": 907,
       "kind": "title"
     },
     {
       "id": "DAT-075",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 243,
+      "line": 245,
       "kind": "title"
     },
     {
       "id": "DAT-078",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 823,
+      "line": 825,
       "kind": "rule"
     },
     {
@@ -17976,13 +17988,13 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 679,
+      "line": 745,
       "kind": "title"
     },
     {
       "id": "DAT-005",
       "file": "apps/service/src/data-secrets.test.ts",
-      "line": 143,
+      "line": 147,
       "kind": "title"
     },
     {
@@ -18180,7 +18192,7 @@
     {
       "id": "API-007",
       "file": "apps/service/src/listing-routes.test.ts",
-      "line": 254,
+      "line": 275,
       "kind": "title"
     },
     {
@@ -18254,6 +18266,48 @@
       "file": "apps/service/src/publication-routes.test.ts",
       "line": 467,
       "kind": "rule"
+    },
+    {
+      "id": "DAT-020",
+      "file": "apps/service/src/query-definition-routes.test.ts",
+      "line": 405,
+      "kind": "rule"
+    },
+    {
+      "id": "DAT-020",
+      "file": "apps/service/src/query-definition-routes.test.ts",
+      "line": 382,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-049",
+      "file": "apps/service/src/query-definition-routes.test.ts",
+      "line": 463,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-050",
+      "file": "apps/service/src/query-definition-routes.test.ts",
+      "line": 418,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-101",
+      "file": "apps/service/src/query-definition-routes.test.ts",
+      "line": 253,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-103",
+      "file": "apps/service/src/query-definition-routes.test.ts",
+      "line": 335,
+      "kind": "rule"
+    },
+    {
+      "id": "DAT-103",
+      "file": "apps/service/src/query-definition-routes.test.ts",
+      "line": 317,
+      "kind": "title"
     },
     {
       "id": "API-006",

@@ -1,14 +1,14 @@
 import { randomBytes } from 'node:crypto';
 import { sealSecret } from '@alloy-works/db';
-import type { DescribeAnswer, TestAnswer } from '@alloy-works/domain';
+import type { DescribeAnswer, DescribeSqlAnswer, RunAnswer, TestAnswer } from '@alloy-works/domain';
 
 /** The key a harness's service presents to its fake connector: invented, and made afresh. */
 export const FAKE_CONNECTOR_KEY = randomBytes(32).toString('base64');
 
 /**
  * A hand-written connector for the service's suites, answered through `fetch`: it seals as the real
- * one does, with a key of its own the service never holds, and answers a test and a describe as a test
- * tells it to - or fails in one of the ways a real one can: unreachable, full, broken or talking
+ * one does, with a key of its own the service never holds, and answers a test, a describe, a SQL
+ * describe and a run as a test tells it to - or fails in one of the ways a real one can: unreachable, full, broken or talking
  * nonsense.
  */
 export interface FakeConnector {
@@ -19,6 +19,10 @@ export interface FakeConnector {
   mode: 'answer' | 'unreachable' | 'busy' | 'broken' | 'nonsense';
   test: TestAnswer;
   describe: DescribeAnswer;
+  /** A describe sent a statement (D2-G). */
+  describeSql: DescribeSqlAnswer;
+  /** A run (D2-I). */
+  run: RunAnswer;
   /** Where set, a test and a describe wait for it before answering: a source that is slow. */
   hold?: Promise<void> | undefined;
   /** Where set, a seal waits for it before answering: a connector that is slow to seal. */
@@ -32,6 +36,8 @@ export function fakeConnector(): FakeConnector {
     mode: 'answer',
     test: { outcome: 'ok', findings: [] },
     describe: { relations: [], truncated: false, leftOut: { relations: 0, columns: 0 } },
+    describeSql: { columns: [], parameters: [] },
+    run: { outcome: 'failed', failure: { code: 'connector_error', attribution: 'connector' } },
     fetch: (async (url: string | URL | Request, init?: RequestInit) => {
       const path = new URL(String(url)).pathname;
       const body = JSON.parse(String(init?.body ?? 'null')) as Record<string, unknown>;
@@ -62,7 +68,10 @@ export function fakeConnector(): FakeConnector {
       }
       if (path !== '/v1/seal' && fake.hold) await fake.hold;
       if (path === '/v1/test') return Response.json(fake.test);
-      if (path === '/v1/describe') return Response.json(fake.describe);
+      if (path === '/v1/describe') {
+        return Response.json('sql' in body ? fake.describeSql : fake.describe);
+      }
+      if (path === '/v1/run') return Response.json(fake.run);
       return new Response(null, { status: 404 });
     }) as typeof globalThis.fetch,
   };

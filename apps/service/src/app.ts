@@ -48,6 +48,7 @@ import {
 import { assetHandlers, type BinaryBody } from './assets.js';
 import { componentHandlers } from './components.js';
 import { connectionHandlers, type ConnectorOptions } from './data/connections.js';
+import { queryDefinitionHandlers } from './data/query-definitions.js';
 import type { GoogleSettings } from './config.js';
 import { documentHandlers } from './documents.js';
 import { registerDocs } from './docs.js';
@@ -415,6 +416,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...documentHandlers(db, tenantOf, principalOf),
     ...templateHandlers(db, tenantOf, principalOf),
     ...connectionHandlers(db, tenantOf, principalOf, options.connector),
+    ...queryDefinitionHandlers(db, tenantOf, principalOf),
     ...definitionHandlers(db, tenantOf, principalOf),
     ...searchHandlers(db, tenantOf, principalOf),
     ...presentationHandlers(db, tenantOf),

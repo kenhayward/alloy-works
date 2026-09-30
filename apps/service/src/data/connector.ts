@@ -2,12 +2,18 @@ import {
   CONNECTOR_ANSWER_MAX_BYTES,
   dataFailure,
   describeAnswerSchema,
+  describeSqlAnswerSchema,
+  runAnswerSchema,
   sealAnswerSchema,
   testAnswerSchema,
   type ConnectionSettings,
   type DataFailure,
   type DescribeAnswer,
   type DescribeRequest,
+  type DescribeSqlAnswer,
+  type DescribeSqlRequest,
+  type RunAnswer,
+  type RunRequest,
   type SealAnswer,
   type TestAnswer,
   type TestRequest,
@@ -41,6 +47,10 @@ export interface ConnectorClient {
   ): Promise<Answered<SealAnswer>>;
   test(request: TestRequest): Promise<Answered<TestAnswer>>;
   describe(request: DescribeRequest): Promise<Answered<DescribeAnswer>>;
+  /** A SQL statement's result columns, never run (D2-G). */
+  describeSql(request: DescribeSqlRequest): Promise<Answered<DescribeSqlAnswer>>;
+  /** A definition run against values the service has checked (D2-I). */
+  run(request: RunRequest): Promise<Answered<RunAnswer>>;
 }
 
 /**
@@ -117,6 +127,9 @@ export function createConnectorClient(options: {
     test: (request) => ask('/v1/test', request, testAnswerSchema, request.deadlineMs + SLACK_MS),
     describe: (request) =>
       ask('/v1/describe', request, describeAnswerSchema, request.deadlineMs + SLACK_MS),
+    describeSql: (request) =>
+      ask('/v1/describe', request, describeSqlAnswerSchema, request.deadlineMs + SLACK_MS),
+    run: (request) => ask('/v1/run', request, runAnswerSchema, request.deadlineMs + SLACK_MS),
   };
 }
 

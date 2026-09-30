@@ -1,4 +1,10 @@
-import { SECRET_MAX_BYTES, connectionSettingsSchema } from '@alloy-works/domain';
+import {
+  SECRET_MAX_BYTES,
+  connectionSettingsSchema,
+  draftDefinitionSchema,
+  parameterSchema,
+  valueTypeSchema,
+} from '@alloy-works/domain';
 import { z } from 'zod';
 import { FacetCountView, idsFilter, listingQuery, listingTotal, nextCursor } from './listing.js';
 import { SpaceParams, VersionSummary } from './components.js';
@@ -66,13 +72,27 @@ export const CredentialState = z.discriminatedUnion('set', [
 ]);
 export type CredentialState = z.infer<typeof CredentialState>;
 
-/** A data failure: its code, who it is laid at (DAT-049), and words for a person. */
+/** What the source said of a statement it refused (D2-H). */
+export const SourceRefusalView = z
+  .object({
+    sqlstate: z.string().describe("The source's five-character SQLSTATE"),
+    message: z.string().describe("The source's own message, cut to 1,000 characters"),
+  })
+  .describe('What the source said, where it refused the statement: `source_refused` alone');
+
+/**
+ * A data failure: its code, who it is laid at (DAT-049), words for a person, and, where the failure
+ * names them, what the source said, the column and the row.
+ */
 export const DataFailureView = z.object({
   code: z.string().describe('Stable and machine-readable'),
   attribution: z
     .enum(['connector', 'query', 'product'])
     .describe("Whose failure it is: the source's side, the query's author, or the product"),
   message: z.string(),
+  source: SourceRefusalView.optional(),
+  column: z.string().optional().describe('The column the failure names, where it names one'),
+  row: z.number().int().optional().describe('The row the failure names, counted from 1'),
 });
 export type DataFailureView = z.infer<typeof DataFailureView>;
 
@@ -115,10 +135,29 @@ export const ConnectionView = z.object({
 });
 export type ConnectionView = z.infer<typeof ConnectionView>;
 
-/** The answer to setting a credential: whether it is set, and the test run straight after (DA-T). */
+/**
+ * The query definitions naming a connection, from their latest versions (D2-O): those the caller may
+ * read by title, and how many more there are, never named.
+ */
+export const NamingDefinitionsView = z.object({
+  readable: z.array(z.object({ id: z.string(), title: z.string(), retired: z.boolean() })),
+  others: z.number().int().describe('How many more name it that the caller may not read'),
+});
+
+/** Where a connection is used (D2-O): the definitions naming it. Documents arrive with bindings. */
+export const ConnectionUsesView = z.object({ definitions: NamingDefinitionsView });
+export type ConnectionUsesView = z.infer<typeof ConnectionUsesView>;
+
+/**
+ * The answer to setting a credential: whether it is set, the test run straight after (DA-T), and,
+ * where that test failed, every definition naming the connection (DAT-066).
+ */
 export const CredentialSet = z.object({
   credential: CredentialState,
   test: TestView,
+  dependents: NamingDefinitionsView.optional().describe(
+    'Where the test failed, the query definitions naming the connection, which cannot run until it passes',
+  ),
 });
 export type CredentialSet = z.infer<typeof CredentialSet>;
 
@@ -153,6 +192,80 @@ export const DescribeView = z.object({
     ),
 });
 export type DescribeView = z.infer<typeof DescribeView>;
+
+/**
+ * A SQL statement as describe takes it: its text with `{{name}}` and `{{#name}}` markers, and the
+ * parameters it declares (D2-B, D2-G).
+ */
+export const SqlStatementBody = z.strictObject({
+  text: draftDefinitionSchema.shape.fetch.shape.text,
+  parameters: z.array(parameterSchema).max(50),
+});
+
+export const DescribeBody = z.strictObject({
+  sql: SqlStatementBody.optional().describe(
+    "A statement to describe instead of the source's tables and views: its result's columns, never run",
+  ),
+});
+export type DescribeBody = z.infer<typeof DescribeBody>;
+
+/** A statement described without being run (D2-G): its result's columns, each with a proposal. */
+export const DescribeSqlView = z.object({
+  columns: z.array(
+    z.object({
+      name: z.string(),
+      sourceType: z.string().describe("The source's own name for the column's type"),
+      proposed: valueTypeSchema
+        .nullable()
+        .describe('The column type proposed for it, or null where the author must declare one'),
+    }),
+  ),
+  parameters: z
+    .array(z.string())
+    .describe("Each parameter's type as the source reads it, in the order they are bound"),
+});
+export type DescribeSqlView = z.infer<typeof DescribeSqlView>;
+
+/** A value a sample binds: canonical text, a boolean, null, or a list of them (D2-R). */
+const SampleValue = z.union([z.string(), z.boolean(), z.null()]);
+
+/** A sample run (D2-I): a draft definition, its columns declared, and a value for each parameter. */
+export const SampleBody = z.strictObject({
+  definition: draftDefinitionSchema,
+  values: z
+    .record(z.string(), z.union([SampleValue, z.array(SampleValue)]))
+    .describe(
+      "Each parameter's value by name, in its type's canonical form, or a list of them for a list parameter",
+    ),
+});
+export type SampleBody = z.infer<typeof SampleBody>;
+
+/** The most rows a sample answers; its row count and checksum are of the whole result. */
+export const SAMPLE_ROWS = 100;
+
+/**
+ * A sample's answer (D2-I): the first 100 rows in canonical form, with how many there were, the whole
+ * result's checksum, the SQL that ran and how long it took - or one named failure. Both are answers.
+ */
+export const SampleView = z.discriminatedUnion('outcome', [
+  z.object({
+    outcome: z.literal('ok'),
+    columns: z
+      .array(z.tuple([z.string(), z.string()]))
+      .describe("Each column's name and its type's base"),
+    rows: z
+      .array(z.array(z.union([z.string(), z.boolean(), z.null()])))
+      .describe('The first 100 rows, each value in its canonical form'),
+    rowCount: z.number().int().describe('How many rows the whole result holds'),
+    checksum: z
+      .string()
+      .describe('The SHA-256 of the whole result in canonical form, in hexadecimal'),
+    ran: z.object({ sql: z.string().describe('The SQL that ran, each value a bound parameter') }),
+    durationMs: z.number().int(),
+  }),
+  z.object({ outcome: z.literal('failed'), failure: DataFailureView }),
+]);
+export type SampleView = z.infer<typeof SampleView>;
 
 export const ConnectionSummary = z.object({
   id: z.string(),
@@ -210,12 +323,59 @@ export const ConnectionRefusal = ErrorBody.extend({
     )
     .optional(),
   current: ConnectionView.optional(),
+  definitions: NamingDefinitionsView.optional().describe(
+    'Where retiring is refused, the query definitions still naming the connection that are not retired',
+  ),
 });
 export type ConnectionRefusal = z.infer<typeof ConnectionRefusal>;
 
 /** A data act refused by a data failure: the one error shape, and whose failure it is (DAT-049). */
 export const DataRefusal = ErrorBody.extend({
   attribution: z.enum(['connector', 'query', 'product']).optional(),
+  source: SourceRefusalView.optional(),
+  column: z.string().optional(),
+  row: z.number().int().optional(),
+});
+
+/**
+ * SQL refused on a connection (DAT-103): `untested` where its latest test is not a pass of its latest
+ * version and credential, `not_read_only` where that test found its account able to write.
+ */
+export const SqlRefusal = DataRefusal.extend({
+  reason: z.enum(['untested', 'not_read_only']).optional(),
+});
+
+/** A value refused by its declaration (DAT-020): the parameter, the rule and the value. */
+const ParameterProblem = z.object({
+  parameter: z.string(),
+  rule: z.enum([
+    'required',
+    'type',
+    'permitted',
+    'range',
+    'list',
+    'precision',
+    'scale',
+    'zone',
+    'variation',
+  ]),
+  value: z.string().describe('The value as sent, cut to 1,000 characters'),
+});
+
+/** A definition's rule broken (the D2 plan's stored-shape check). */
+const DefinitionProblem = z.object({
+  rule: z.literal('definition_invalid'),
+  path: z.string().describe('The member refused, dotted, as `columns.2.name`'),
+  message: z.string(),
+});
+
+/**
+ * A draft, a statement or a value refused: `definition_invalid` with each rule the definition breaks,
+ * or `parameter_invalid` with each value that fails its declaration, named with the parameter, the
+ * rule and the value (DAT-020).
+ */
+export const DataProblemsRefusal = DataRefusal.extend({
+  problems: z.array(z.union([DefinitionProblem, ParameterProblem])).optional(),
 });
 
 const unauthenticated = {
@@ -243,6 +403,11 @@ const retiredOrUnset = {
     'was set, or it was set before credentials were bound to a target, so the password must be set again',
   schema: DataRefusal,
 } as const;
+
+/** SQL refused on a connection that has not been found read-only (DAT-103). */
+const sqlNotPermitted =
+  '`sql_not_permitted`: for a statement, the connection has not been tested clean at its latest version and ' +
+  'credential (`untested`), or its account was found able to write (`not_read_only`)';
 
 /**
  * Connections (data.md, "Routes"): `administer` makes and changes one and sets its credential,
@@ -333,7 +498,9 @@ export const connectionRoutes = {
       404: notFound,
       409: {
         description:
-          '`version_precondition`: the connection has a newer version than the one named',
+          '`version_precondition`: the connection has a newer version than the one named; ' +
+          '`connection_in_use`: a version retiring it is refused while a query definition that is not ' +
+          'retired names it, those the caller may read named and the rest counted',
         schema: ConnectionRefusal,
       },
     },
@@ -403,23 +570,39 @@ export const connectionRoutes = {
     operationId: 'describeConnection',
     method: 'POST',
     path: '/v1/connections/{id}/describe',
-    summary: "List the tables and views a connection's account may read, with each column",
+    summary:
+      "List the tables and views a connection's account may read, or a SQL statement's result columns",
     tenantScoped: true,
     access: { check: 'permission', permission: 'use_connection', target: { artifact: 'id' } },
     params: ConnectionParams,
-    body: z.strictObject({}),
+    body: DescribeBody,
     // Answered after the deciding transaction commits, so nothing could be recorded against a key
     // (the D1 fix, C4); a test repeated is a test run again.
     idempotencyKey: false,
     responses: {
-      200: { description: "The source's tables and views", schema: DescribeView },
+      200: {
+        description:
+          "The source's tables and views, or, where a statement was sent, its result's columns",
+        schema: z.union([DescribeView, DescribeSqlView]),
+      },
+      400: {
+        description:
+          '`definition_invalid`: the statement does not lex whole or names a parameter it does not declare; ' +
+          '`source_refused`: the source refused the statement, with what it said; `result_mismatch`: it has no ' +
+          'columns to describe',
+        schema: DataProblemsRefusal,
+      },
       401: unauthenticated,
       403: {
-        description: 'The caller may read the connection but may not use it',
+        description:
+          'The caller may read the connection but may not use it, or, for a statement, may not write SQL against it',
         schema: ErrorBody,
       },
       404: notFound,
-      409: retiredOrUnset,
+      409: {
+        description: `${retiredOrUnset.description}; ${sqlNotPermitted}`,
+        schema: SqlRefusal,
+      },
       502: {
         description:
           '`connection_failed`: the source could not be reached or signed in to; `connector_error`: the connector failed; ' +
@@ -428,6 +611,65 @@ export const connectionRoutes = {
       },
       503: unavailable,
       504: { description: '`timeout`: the source did not answer in time', schema: DataRefusal },
+    },
+  },
+  sampleConnection: {
+    operationId: 'sampleConnection',
+    method: 'POST',
+    path: '/v1/connections/{id}/sample',
+    summary: 'Run a draft query definition against sample values, storing nothing',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'use_connection', target: { artifact: 'id' } },
+    params: ConnectionParams,
+    body: SampleBody,
+    // Answered after the deciding transaction commits, and nothing of a sample is kept (D2-I).
+    idempotencyKey: false,
+    responses: {
+      200: {
+        description:
+          'Run: the first 100 rows, how many there were, the checksum and the SQL that ran, or one named failure with its attribution',
+        schema: SampleView,
+      },
+      400: {
+        description:
+          '`definition_invalid`: the draft fails a rule, each problem named, or is for another connection; ' +
+          '`parameter_invalid`: a value fails its declaration, each named with the parameter, the rule and the value',
+        schema: DataProblemsRefusal,
+      },
+      401: unauthenticated,
+      403: {
+        description:
+          'The caller may read the connection but may not use it or write SQL against it',
+        schema: ErrorBody,
+      },
+      404: notFound,
+      409: {
+        description: `${retiredOrUnset.description}; ${sqlNotPermitted}`,
+        schema: SqlRefusal,
+      },
+      503: unavailable,
+    },
+  },
+  getConnectionUses: {
+    operationId: 'getConnectionUses',
+    method: 'GET',
+    path: '/v1/connections/{id}/uses',
+    summary: 'Where a connection is used: the query definitions naming it',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    params: ConnectionParams,
+    responses: {
+      200: {
+        description:
+          'The query definitions whose latest versions name it: those the caller may read, and how many more',
+        schema: ConnectionUsesView,
+      },
+      401: unauthenticated,
+      403: {
+        description: 'Never answered: a connection the caller may not read is not found',
+        schema: ErrorBody,
+      },
+      404: notFound,
     },
   },
 } as const satisfies Record<string, RouteContract>;

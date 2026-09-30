@@ -31,6 +31,11 @@ export const documentationGroups = [
         description:
           'Make connections to your own data sources, set their credentials, and test them.',
       },
+      {
+        name: 'Query definitions',
+        description:
+          'Write the queries a document will bind to, and run them against sample values first.',
+      },
     ],
   },
   {
@@ -122,6 +127,14 @@ const operationTags = {
     'setConnectionCredential',
     'testConnection',
     'describeConnection',
+    'sampleConnection',
+    'getConnectionUses',
+  ],
+  'Query definitions': [
+    'listQueryDefinitions',
+    'createQueryDefinition',
+    'getQueryDefinition',
+    'recordQueryDefinitionVersion',
   ],
   Assets: [
     'createAssetUpload',
@@ -153,7 +166,7 @@ const operationTags = {
     'removeGrant',
   ],
   Search: ['search'],
-  Settings: ['getEditingSettings', 'setEditingSettings'],
+  Settings: ['getEditingSettings', 'setEditingSettings', 'getDataSettings', 'setDataSettings'],
   'Event stream': ['openStream'],
 } as const;
 
@@ -239,7 +252,19 @@ const descriptions: Readonly<Record<string, string>> = {
   testConnection:
     'Tests whether the connection reaches its source and signs in. A failure gives one reason, the same whatever went wrong, and every test is recorded.',
   describeConnection:
-    'Lists the tables and views the connection account may read, with each column and the type proposed for it.',
+    'Lists the tables and views the connection account may read, with each column and the type proposed for it. Sent a SQL statement instead, it answers the columns the statement would return, each with the type proposed for it, without running it; that needs write SQL on the connection as well, and a connection whose latest test found its account read-only.',
+  sampleConnection:
+    'Runs a draft query definition against the sample values given, exactly as a document would run it, and stores nothing. Each value is checked against its declaration before the source is asked. It needs use connection and write SQL on the connection, and a connection whose latest test found its account read-only. A failure is an answer, named and laid at the connector, the query or the product.',
+  getConnectionUses:
+    'Lists the query definitions whose latest versions name the connection: those the caller may read by title, and a count of the rest.',
+  listQueryDefinitions:
+    'Lists the query definitions the caller may read, with the space and connection of each, filtered by space or connection.',
+  createQueryDefinition:
+    'Creates a query definition in the named space from a whole definition: SQL with named parameters, the columns it returns, a key, an order, whether no rows is valid, and its limits. It needs edit in the space and use connection and write SQL on the connection it names.',
+  getQueryDefinition:
+    'Returns the latest query definition version, the connection it names, and whether the caller may change it or run it.',
+  recordQueryDefinitionVersion:
+    'Records the next query definition version from the version the caller opened. Retiring and reinstating a definition are versions too; a retiring version is accepted whatever the connection last found.',
   createAssetUpload:
     'Starts an image upload in a space and records its description or decorative status. Upload bytes separately to finish it.',
   getAssetUpload:
@@ -292,6 +317,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Reads the environment’s editing settings, including how long saved changes are retained.',
   setEditingSettings:
     'Changes the environment’s editing settings. Existing saved changes follow the new policy.',
+  getDataSettings:
+    'Reads the limits the environment sets on a query run, each lowered or not, and the ceilings no definition may pass.',
+  setDataSettings:
+    'Lowers, or stops lowering, the environment limits on the rows, bytes and seconds of a query run. A run takes the least of its definition limits and these.',
   startOrganisationSignIn:
     'Browser sign-in route. Redirects to the organisation’s identity provider; an API token cannot complete this flow.',
   finishOrganisationSignIn:

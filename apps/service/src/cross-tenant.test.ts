@@ -9,6 +9,7 @@ import {
   createDefinition,
   createGroup,
   createConnection,
+  createQueryDefinition,
   createTemplate,
   createTenant,
   DEFAULT_LAYOUT_ID,
@@ -52,6 +53,22 @@ const SESSION = '11111111-1111-4111-8111-111111111111';
 
 /** A month from when the suite loads: an expiry any token route accepts. */
 const IN_A_MONTH = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+/** A query definition's shape, naming a connection by id: what a route's shape needs. */
+const aQueryDefinition = (connection: string) => ({
+  schemaVersion: 1,
+  title: 'Elsewhere',
+  description: '',
+  connection,
+  parameters: [],
+  fetch: { kind: 'sql', text: 'select 1 as one' },
+  columns: [{ name: 'one', from: { column: 'one' }, type: { base: 'integer' } }],
+  key: ['one'],
+  order: [{ column: 'one', direction: 'ascending' }],
+  empty: 'valid',
+  limits: { rows: 10, bytes: 1024, seconds: 5 },
+  retired: false,
+});
 
 /** A connection's settings any environment takes. */
 const aConnection = () => ({
@@ -165,6 +182,13 @@ const OTHER_TENANT_IDS: Readonly<
   setConnectionCredential: async (tenant, db) => ({ id: await connectionIdIn(tenant, db) }),
   testConnection: async (tenant, db) => ({ id: await connectionIdIn(tenant, db) }),
   describeConnection: async (tenant, db) => ({ id: await connectionIdIn(tenant, db) }),
+  sampleConnection: async (tenant, db) => ({ id: await connectionIdIn(tenant, db) }),
+  getConnectionUses: async (tenant, db) => ({ id: await connectionIdIn(tenant, db) }),
+  createQueryDefinition: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  getQueryDefinition: async (tenant, db) => ({ id: await queryDefinitionIdIn(tenant, db) }),
+  recordQueryDefinitionVersion: async (tenant, db) => ({
+    id: await queryDefinitionIdIn(tenant, db),
+  }),
   getDefinition: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
   recordDefinitionVersion: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
   revokeToken: async (tenant, db) => ({ id: (await tokenIn(tenant, db)).token }),
@@ -194,6 +218,19 @@ const VALID_INPUT: Readonly<
   setConnectionCredential: { payload: { secret: 'an-invented-password' } },
   testConnection: { payload: {} },
   describeConnection: { payload: {} },
+  sampleConnection: {
+    payload: {
+      definition: (({ title: _t, description: _d, retired: _r, ...draft }) => draft)(
+        aQueryDefinition(SESSION),
+      ),
+      values: {},
+    },
+  },
+  createQueryDefinition: { payload: { definition: aQueryDefinition(SESSION) } },
+  recordQueryDefinitionVersion: {
+    payload: { openedFrom: SESSION, definition: aQueryDefinition(SESSION) },
+  },
+  setDataSettings: { payload: { rows: 10 } },
   createDefinition: {
     payload: {
       kind: 'field',
@@ -408,6 +445,35 @@ const connectionIdIn = (tenant: Tenant, db: TenantDatabase) =>
     if (made.answer !== 'created') throw new Error(`refused: ${made.answer}`);
     return made.connection.id;
   });
+
+/** A query definition in environment B's General space, naming a connection made there. */
+const queryDefinitionIdIn = async (tenant: Tenant, db: TenantDatabase) => {
+  const connection = await connectionIdIn(tenant, db);
+  return db.withTenant(tenant, async (trx) => {
+    const general = await trx
+      .selectFrom('space')
+      .select('id')
+      .where('name', '=', 'General')
+      .executeTakeFirstOrThrow();
+    const author = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const made = await createQueryDefinition(trx, {
+      spaceId: general.id,
+      definition: aQueryDefinition(connection),
+      author: author.id,
+    });
+    if (made.answer !== 'created') throw new Error(`refused: ${made.answer}`);
+    return made.definition.id;
+  });
+};
 
 const documentIdIn = (tenant: Tenant, db: TenantDatabase) =>
   db.withTenant(tenant, async (trx) => {

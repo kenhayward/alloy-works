@@ -58,7 +58,7 @@ export {
   RoleList,
   RoleListQuery,
 } from './managing-access.js';
-export { EditingSettings } from './settings.js';
+export { DataSettings, DataSettingsBody, EditingSettings } from './settings.js';
 export {
   InvitationBody,
   InvitationList,
@@ -133,11 +133,34 @@ export {
   CreateConnectionBody,
   CredentialBody,
   CredentialSet,
+  ConnectionUsesView,
   CredentialState,
   DataFailureView,
+  DataRefusal,
+  DataProblemsRefusal,
+  DescribeBody,
+  DescribeSqlView,
   DescribeView,
+  NamingDefinitionsView,
+  SAMPLE_ROWS,
+  SampleBody,
+  SampleView,
+  SourceRefusalView,
+  SqlRefusal,
+  SqlStatementBody,
   TestView,
 } from './connections.js';
+export {
+  CreateQueryDefinitionBody,
+  QueryDefinitionBody,
+  QueryDefinitionList,
+  QueryDefinitionListQuery,
+  QueryDefinitionParams,
+  QueryDefinitionRefusal,
+  QueryDefinitionSummary,
+  QueryDefinitionVersionBody,
+  QueryDefinitionView,
+} from './query-definitions.js';
 export {
   CreateDefinitionBody,
   DefinitionKind,

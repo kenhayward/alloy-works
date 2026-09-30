@@ -32,7 +32,7 @@ export const SearchQuery = z.object({
   kind: z
     .string()
     .regex(
-      /^(?:component|document|section|publication|template|asset|field|metadataSchema|componentType)(?:,(?:component|document|section|publication|template|asset|field|metadataSchema|componentType)){0,8}$/,
+      /^(?:component|document|section|publication|template|asset|field|metadataSchema|componentType|queryDefinition)(?:,(?:component|document|section|publication|template|asset|field|metadataSchema|componentType|queryDefinition)){0,9}$/,
       'Expected kinds, separated by commas',
     )
     .optional()
