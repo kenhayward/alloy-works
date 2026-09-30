@@ -20,6 +20,8 @@ const svc = async (route, body = {}) => post(CALLER, `/svc/${route}`, body);
 const idp = async (path, form = {}) => (await svc('idp', { path, form })).json;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const report = {};
+// ONLY=4.2,4.3 runs just those sections (the report then holds only them).
+const want = (s) => !process.env.ONLY || process.env.ONLY.split(',').includes(s);
 const log = (...a) => console.log(...a);
 const docker = (args) => execFileSync('docker', args, { env: { ...process.env, MSYS_NO_PATHCONV: '1' }, encoding: 'utf8', timeout: 30000 }).trim();
 const psql = (sql) => docker(['exec', 'aw-data-connectors-source-pg-1', 'psql', '-U', 'postgres', '-d', 'sourcedb', '-tAc', sql]);
@@ -62,6 +64,7 @@ async function waitJob(jobId, limitMs = 240000) {
 const jobSummary = (j) => ({ status: j.status, done: j.done, total: j.total, refreshes: j.refreshes, failure: j.failure,
   runMs: j.finished_ms ? Math.round(j.finished_ms - new Date(j.created_at).getTime()) : null });
 
+if (want('4.1')) {
 // ================= 4.1 a publish, three options =================
 log('\n== 4.1 publish: 400 inline + 40 block pass-through bindings ==');
 report.publish = [];
@@ -105,12 +108,15 @@ for (const conn of ['pg-eu', 'ms-eu', 'http-eu']) {
   await svc('signout', { sessionId: g.sessionId });
   await svc('signout', { sessionId: noTok.sessionId });
 }
+} // 4.1
 
+if (want('4.2')) {
 // ================= 4.2 sign-out mid-publish =================
 log('\n== 4.2 sign-out partway through a publish ==');
 report.signout = [];
+const REPEAT = Number(process.env.REPEAT || 5);
 for (const conn of ['pg-eu', 'ms-eu', 'http-eu']) {
-  for (const placement of ['request', 'worker']) {
+  for (const placement of ['request', 'worker']) for (let rep = 0; rep < REPEAT; rep++) {
     const ada = await signin('ada');
     const q = qd[conn](200);
     const pub = svc('publish', { sessionId: ada.sessionId, connectionId: conn, placement, qd: q, delayMs: delayFor(conn, 200), concurrency: 4 });
@@ -133,6 +139,20 @@ for (const conn of ['pg-eu', 'ms-eu', 'http-eu']) {
     log(JSON.stringify(e));
   }
 }
+// Per connector and option: how many runs let a binding start after the sign-out, and how long the
+// last work went on after it.
+report.signoutSummary = {};
+for (const e of report.signout) {
+  const k = `${e.conn} ${e.placement}`;
+  const s = report.signoutSummary[k] ??= { runs: 0, stoppedByName: 0, bindingStartedAfter: 0, maxStoppedAfterMs: 0, failures: {} };
+  s.runs++;
+  if (e.job.status === 'failed') s.stoppedByName++;
+  if (e.bindingStartedAfterSignout) s.bindingStartedAfter++;
+  s.maxStoppedAfterMs = Math.max(s.maxStoppedAfterMs, e.stoppedAfterSignoutMs);
+  const f = (e.job.failure || '').split(':')[0];
+  s.failures[f] = (s.failures[f] || 0) + 1;
+}
+log('signout summary', JSON.stringify(report.signoutSummary));
 
 // A copy of the user's token outside our custody, after sign-out (IAM-067). Capture the token a worker
 // job carries while it runs, sign out, then present that copy straight to the connector.
@@ -165,31 +185,40 @@ for (const conn of ['pg-eu', 'ms-eu', 'http-eu']) {
   report.copyAfterSignout = x;
   log('copy after sign-out', JSON.stringify(x));
 }
+} // 4.2
 
+if (want('4.3')) {
 // ================= 4.3 a token that expires inside a long publish =================
 log('\n== 4.3 token expiry inside a publish ==');
 report.expiry = { ttl: await idp('/admin/ttl', { access: 6 }) };
 const statsBefore = await idp('/stats');
 const expiryRuns = [];
 {
+  // Each run's own count of refresh grants the provider served, refused, and reuses it detected.
+  let last = statsBefore;
+  const push = async (e) => {
+    const now = await idp('/stats');
+    expiryRuns.push({ ...e, provider: { refreshed: now.refreshed - last.refreshed, refused: now.refused - last.refused, reuseDetected: now.reuseDetected - last.reuseDetected } });
+    last = now;
+  };
   // no refresh: request and worker
   const s1 = await signin('ada');
   const a = await svc('publish', { sessionId: s1.sessionId, connectionId: 'http-eu', placement: 'request', qd: qd['http-eu'](), delayMs: 100, concurrency: 4 });
-  expiryRuns.push({ run: 'request, no refresh', status: a.status, done: a.json.done, failure: a.json.failure ?? null, heldRequestMs: a.json.heldRequestMs });
+  await push({ run: 'request, no refresh', status: a.status, done: a.json.done, failure: a.json.failure ?? null, heldRequestMs: a.json.heldRequestMs });
   const s2 = await signin('ada');
   const b = await svc('publish', { sessionId: s2.sessionId, connectionId: 'http-eu', placement: 'worker', qd: qd['http-eu'](), delayMs: 100, concurrency: 4, refresh: false });
-  expiryRuns.push({ run: 'worker, no refresh', ...jobSummary(await waitJob(b.json.jobId)) });
+  await push({ run: 'worker, no refresh', ...jobSummary(await waitJob(b.json.jobId)) });
   // refresh with the per-session lock
   const s3 = await signin('ada');
   const c = await svc('publish', { sessionId: s3.sessionId, connectionId: 'http-eu', placement: 'worker', qd: qd['http-eu'](), delayMs: 100, concurrency: 4, refresh: true, refreshLock: true });
-  expiryRuns.push({ run: 'worker, refresh, lock', ...jobSummary(await waitJob(c.json.jobId)) });
+  await push({ run: 'worker, refresh, lock', ...jobSummary(await waitJob(c.json.jobId)) });
   // two jobs of one session, refreshing at once: without the lock, then with it
   for (const lock of [false, true]) {
     const s = await signin('ada');
     const j1 = await svc('publish', { sessionId: s.sessionId, connectionId: 'http-eu', placement: 'worker', qd: qd['http-eu'](), delayMs: 100, concurrency: 4, refresh: true, refreshLock: lock });
     const j2 = await svc('publish', { sessionId: s.sessionId, connectionId: 'http-eu', placement: 'worker', qd: qd['http-eu'](), delayMs: 100, concurrency: 4, refresh: true, refreshLock: lock });
     const [r1, r2] = await Promise.all([waitJob(j1.json.jobId), waitJob(j2.json.jobId)]);
-    expiryRuns.push({ run: `two jobs one session, refresh, lock ${lock}`, job1: jobSummary(r1), job2: jobSummary(r2) });
+    await push({ run: `two jobs one session, refresh, lock ${lock}`, job1: jobSummary(r1), job2: jobSummary(r2) });
   }
   for (const s of [s1, s2, s3]) await svc('signout', { sessionId: s.sessionId });
 }
@@ -200,7 +229,9 @@ report.expiry.custody = { refreshTokenLifetimeSec: statsAfter.ttl.refresh, acces
 for (const r of expiryRuns) log(JSON.stringify(r));
 log('idp', JSON.stringify(report.expiry.idp));
 await idp('/admin/ttl', { access: 300 });
+} // 4.3
 
+if (want('4.4')) {
 // ================= 4.4 a pin made by Ada, read by Grace =================
 log('\n== 4.4 a pin by Ada read by Grace ==');
 report.pin = [];
@@ -220,7 +251,9 @@ report.pin = [];
   await svc('signout', { sessionId: ada.sessionId });
   await svc('signout', { sessionId: grace.sessionId });
 }
+} // 4.4
 
+if (want('4.5')) {
 // ================= 4.5 the cache =================
 log('\n== 4.5 the result cache ==');
 report.cache = {};
@@ -268,6 +301,7 @@ report.cache = {};
   log('cache and sign-out', JSON.stringify(report.cache.signout));
   await svc('signout', { sessionId: grace.sessionId });
 }
+} // 4.5
 
 writeFileSync('dcp2-case4.json', JSON.stringify(report, null, 2));
 log('\nwritten dcp2-case4.json');
