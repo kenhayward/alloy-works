@@ -234,9 +234,22 @@ parameter too, where the built connector runs `dist/child.js`. A port that is fi
 refused is stood in for by a listener that accepts and never answers, so the five-second connect
 timeout is what it costs on any machine.
 
+**The seed has five relations** since D2: `sample.site`, `sample.reading` and `sample.site_summary`,
+and `sample.typed` - case 6's three rows in PostgreSQL's own types, whose checksum `checksum.test.ts`
+holds to the domain's in three time zones - and `sample.unordered`, thirty rows with ties, which case
+6's twenty rewrites move without moving a checksum. After changing `deploy/sources/postgres.sql`, stop
+the suite's source and start it again, so it is seeded afresh. A run's tests are `run.test.ts` (the
+declaration held, DAT-106, DAT-107, DAT-068, DAT-080), `limits.test.ts` (a limit reached and the
+source cancelled, DAT-051, DAT-109, DAT-110 - the last reading the child's peak resident set through
+`testing/measured-child.ts`), `hostile.test.ts` (case 5's injection values through every parameter
+type, run in the suite's own process through the child's `answerRequest`, eight at a time), and
+`describe.test.ts` (a statement described and nothing run).
+
 The service's suite never reaches a connector: `apps/service/src/test/fake-connector.ts` is a
 hand-written one, answered through `fetch`, that seals with a key of its own and answers each request
-as a test tells it to, or fails as a real one can - unreachable, full, broken or talking nonsense.
+
+- a test, a describe of the tables or of a statement, and a run - as a test tells it to, or fails as a
+  real one can - unreachable, full, broken or talking nonsense.
 
 ## The regression corpus and veraPDF
 
@@ -663,7 +676,11 @@ leave data in each for the next, a different user, to find none of it once the f
 starts the connector's image once more, as compose does but with none of the IPC limits, and again
 with all but one, and requires it to refuse each time, naming every limit that is not zero and no other.
 `connections.test.ts` makes a connection to the
-development source through the whole system, sets its password, tests it and lists its tables.
+development source through the whole system, sets its password, tests it and lists its tables;
+`query-definitions.test.ts` writes a query definition on it as `reader`, describes it, samples it with
+a value and a fragment and saves it, and has SQL refused on a connection as `writer`, whose test found
+its account able to write (DAT-103). `connector-privilege.test.ts` also reads the connector's memory
+limit, 3 GiB (D2-J).
 
 What it does **not** cover, and where that lives instead: refusing another environment's session,
 which is `cross-tenant.test.ts` in the service, because Node's `fetch` will not let a test set the

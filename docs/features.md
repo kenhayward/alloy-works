@@ -606,8 +606,31 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   granted on purpose, from **Manage access** on the connection or its space. The password is sealed
   by the connector, a separate process on networks of its own with no route to anything else of
   Alloy Works but the service that asks it, and only the connector can open it; it signs in to a
-  database only in a way that never sends the password itself. Nothing queries a connection yet: there is no query,
-  dataset or bound value.
+  database only in a way that never sends the password itself. A connection's page lists, under
+  **Used by**, the query definitions that name it - those you may read by title, and how many more -
+  and a connection a query definition still uses cannot be retired: the page names what to retire
+  first.
+- **Query definitions.** **Query definitions**, beside Connections, lists the query definitions you may
+  read, by space, each with its connection. Somebody who may edit in a space and holds the new
+  permission **write SQL** on a connection writes one there with **New query definition**, in steps:
+  the connection, a title and a description; the SQL, with a value marked `{{name}}` and a fragment
+  of SQL chosen by a key marked `{{#name}}`, and each parameter's name, type, whether it is required
+  or a list, and the values or range it permits, or its fragments; **Describe**, which asks the
+  database what the statement returns without running it and proposes a type for each column, one
+  it cannot propose left for you to declare; the key, whether the rows must come in the SQL's order
+  or may come in any, whether no rows is a valid answer, and the most rows, bytes and seconds a run
+  may take; and **Run sample**, which runs it against values you type exactly as a document will,
+  and shows the first hundred rows, how many there were, the start of their checksum and the SQL
+  that ran - every value sent apart from it, never placed in it - or the one reason it failed, laid
+  at the database, the query or the product. **Save version** is offered once you have confirmed
+  every column; **Retire** and **Reinstate** are versions too. A value that does not fit its
+  parameter is refused by name before anything runs. Text sorts by code point, so a text column the
+  rows are ordered by is ordered `COLLATE "C"`, and the page says so when a sample is refused for
+  it. SQL runs only on a connection whose latest test found its account read-only, and **write SQL**
+  is held by no starting role, so it is granted on purpose. An administrator of the environment can
+  lower the most rows, bytes and seconds any run may take, through the API. Search finds a query
+  definition by its title, its description, its column names and its connection's name. Nothing is
+  kept from a run: there is no dataset or bound value yet.
 - **Search.** **Search**, beside Components, Documents and Publications, finds everything you may read
   by its words, and nothing you may not: components, documents and each of their sections,
   publications, templates, images, fields, metadata schemas and component types. Words are found
@@ -1084,9 +1107,10 @@ Named explicitly so nobody has to read the source to find out:
 - No page for component types: a Definitions manager makes and changes them through the API alone,
   and nothing yet changes which one is the environment's default.
 - No way to delete a component or a document, including one made by mistake.
-- Nothing reads data from a connection: no query, no dataset and no value bound into a document. A
-  connection reaches PostgreSQL alone, as its own service account, and nothing yet shows where one is
-  used or stops one being retired while it is.
+- Nothing keeps data from a connection: a query definition's sample run shows its rows and keeps
+  none, and there is no dataset and no value bound into a document. A connection reaches PostgreSQL
+  alone, as its own service account; a query is written as SQL by hand, with no builder; and no page
+  shows or changes the environment's lowered run limits, which the API alone sets.
 - No document view that sets a document as it will publish: its page shows the outline you build
   beside the text in reading order, each component opening in place to be edited. No reading view. No reuse or transclusion.
 - No publishing beyond a laid-out PDF of a document's outline, its formatted paragraphs, lists,
