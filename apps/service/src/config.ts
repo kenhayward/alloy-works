@@ -24,9 +24,28 @@ export interface Config {
   readonly objectStore?: StoreSettings;
   /** Where the built renderer is; without it the service answers the API and nothing else. */
   readonly rendererRoot?: string;
+  /**
+   * Where the connector answers (the D1 plan, D1-F), set with SECRET_CONNECTOR_KEY or neither; without
+   * it every data act is refused `connector_unavailable`.
+   */
+  readonly connectorUrl?: string;
 }
 
 export class ConfigError extends Error {}
+
+/** An http or https address naming no user or password: the connector's key travels in a header. */
+function isConnectorUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return (
+      (url.protocol === 'http:' || url.protocol === 'https:') &&
+      url.username === '' &&
+      url.password === ''
+    );
+  } catch {
+    return false;
+  }
+}
 
 const Environment = z
   .object({
@@ -63,6 +82,12 @@ const Environment = z
       .optional(),
     OBJECT_STORE_REGION: z.string().min(1).default('us-east-1'),
     RENDERER_ROOT: z.string().min(1).optional(),
+    CONNECTOR_URL: z
+      .string()
+      .refine(isConnectorUrl, {
+        error: 'must be an http or https address, with no credentials in it',
+      })
+      .optional(),
   })
   .refine((env) => (env.GOOGLE_CLIENT_ID === undefined) === (env.SIGN_IN_HOST === undefined), {
     error: 'must be set together, or neither: the Google route needs both',
@@ -99,6 +124,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     OBJECT_STORE_BUCKET,
     OBJECT_STORE_REGION,
     RENDERER_ROOT,
+    CONNECTOR_URL,
   } = result.data;
   return {
     databaseUrl: DATABASE_URL,
@@ -119,6 +145,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
         }
       : {}),
     ...(RENDERER_ROOT !== undefined ? { rendererRoot: RENDERER_ROOT } : {}),
+    ...(CONNECTOR_URL !== undefined ? { connectorUrl: CONNECTOR_URL } : {}),
   };
 }
 
@@ -135,5 +162,6 @@ export function describeConfig(config: Config): Record<string, string | number> 
     signInHost: config.google?.signInHost ?? 'none',
     objectStore: config.objectStore?.bucket ?? 'none',
     rendererRoot: config.rendererRoot ?? 'none',
+    connector: config.connectorUrl === undefined ? 'none' : new URL(config.connectorUrl).host,
   };
 }

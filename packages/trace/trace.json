@@ -16965,7 +16965,7 @@
         },
         {
           "id": "IAM-075",
-          "howItIsMet": "Every search index, cache, secret and publication store the service and the worker keep is the tenant's own, each shown by a test ([Tenant scope of every store](#tenant-scope-of-every-store)): the search projection, publications with their outputs and checks, and each environment's secrets - its object store credential and sign-in client secret sealed to it, its sessions' and tokens' hashes - in its schema, which no other tenant's role can read or delete; objects under a credential the store confines to the tenant's prefix; the shared job queue, which a tenant's role may add to only in its own name and never read; and every in-process cache keyed by the tenant, its hostname or its principal, or holding nothing of any tenant's. The platform directory and the logs are outside it"
+          "howItIsMet": "Every search index, cache, secret and publication store the service and the worker keep is the tenant's own, each shown by a test ([Tenant scope of every store](#tenant-scope-of-every-store)): the search projection, publications with their outputs and checks, and each environment's secrets - its object store credential and sign-in client secret sealed to it, its source credentials sealed by the connector, its sessions' and tokens' hashes - in its schema, which no other tenant's role can read or delete; objects under a credential the store confines to the tenant's prefix; the shared job queue, which a tenant's role may add to only in its own name and never read; and every in-process cache keyed by the tenant, its hostname or its principal, or holding nothing of any tenant's. The platform directory and the logs are outside it"
         },
         {
           "id": "IAM-078",
@@ -17758,6 +17758,42 @@
   ],
   "citations": [
     {
+      "id": "DAT-056",
+      "file": "apps/connector/src/package.test.ts",
+      "line": 52,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-056",
+      "file": "apps/connector/src/postgres.test.ts",
+      "line": 106,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-075",
+      "file": "apps/connector/src/postgres.test.ts",
+      "line": 69,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-114",
+      "file": "apps/connector/src/postgres.test.ts",
+      "line": 154,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-005",
+      "file": "apps/connector/src/secrets.test.ts",
+      "line": 64,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-056",
+      "file": "apps/connector/src/supervisor.test.ts",
+      "line": 37,
+      "kind": "title"
+    },
+    {
       "id": "CNT-178",
       "file": "apps/desktop/src/shell.test.ts",
       "line": 156,
@@ -17766,13 +17802,13 @@
     {
       "id": "API-053",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 445,
+      "line": 473,
       "kind": "title"
     },
     {
       "id": "IAM-030",
       "file": "apps/service/src/access-routes.test.ts",
-      "line": 395,
+      "line": 423,
       "kind": "title"
     },
     {
@@ -17854,9 +17890,45 @@
       "kind": "title"
     },
     {
+      "id": "DAT-004",
+      "file": "apps/service/src/connection-routes.test.ts",
+      "line": 200,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-049",
+      "file": "apps/service/src/connection-routes.test.ts",
+      "line": 322,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-075",
+      "file": "apps/service/src/connection-routes.test.ts",
+      "line": 243,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-078",
+      "file": "apps/service/src/connection-routes.test.ts",
+      "line": 823,
+      "kind": "rule"
+    },
+    {
+      "id": "DAT-089",
+      "file": "apps/service/src/connector-boundary.test.ts",
+      "line": 27,
+      "kind": "title"
+    },
+    {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 624,
+      "line": 679,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-005",
+      "file": "apps/service/src/data-secrets.test.ts",
+      "line": 143,
       "kind": "title"
     },
     {
@@ -18018,19 +18090,19 @@
     {
       "id": "API-003",
       "file": "apps/service/src/http.test.ts",
-      "line": 138,
+      "line": 144,
       "kind": "title"
     },
     {
       "id": "API-005",
       "file": "apps/service/src/http.test.ts",
-      "line": 226,
+      "line": 253,
       "kind": "title"
     },
     {
       "id": "API-047",
       "file": "apps/service/src/http.test.ts",
-      "line": 165,
+      "line": 171,
       "kind": "title"
     },
     {
@@ -18054,7 +18126,7 @@
     {
       "id": "API-007",
       "file": "apps/service/src/listing-routes.test.ts",
-      "line": 230,
+      "line": 254,
       "kind": "title"
     },
     {
@@ -18265,6 +18337,18 @@
       "id": "API-061",
       "file": "apps/web/src/api.test.ts",
       "line": 197,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-004",
+      "file": "apps/web/src/data/connections.test.tsx",
+      "line": 411,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-075",
+      "file": "apps/web/src/data/connections.test.tsx",
+      "line": 359,
       "kind": "title"
     },
     {
@@ -19104,13 +19188,19 @@
     {
       "id": "API-012",
       "file": "packages/api-contract/src/openapi.test.ts",
-      "line": 118,
+      "line": 189,
       "kind": "title"
     },
     {
       "id": "API-062",
       "file": "packages/api-contract/src/openapi.test.ts",
       "line": 9,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-003",
+      "file": "packages/api-contract/src/openapi.test.ts",
+      "line": 91,
       "kind": "title"
     },
     {
@@ -19140,7 +19230,7 @@
     {
       "id": "IAM-062",
       "file": "packages/db/src/access-schema.test.ts",
-      "line": 127,
+      "line": 155,
       "kind": "title"
     },
     {
@@ -19177,6 +19267,18 @@
       "id": "MET-038",
       "file": "packages/db/src/component-values.test.ts",
       "line": 246,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-001",
+      "file": "packages/db/src/connections.test.ts",
+      "line": 150,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-003",
+      "file": "packages/db/src/connections.test.ts",
+      "line": 376,
       "kind": "title"
     },
     {
@@ -19414,12 +19516,6 @@
       "kind": "title"
     },
     {
-      "id": "IAM-075",
-      "file": "packages/db/src/seal.test.ts",
-      "line": 22,
-      "kind": "title"
-    },
-    {
       "id": "SCH-034",
       "file": "packages/db/src/search-facets.test.ts",
       "line": 382,
@@ -19596,7 +19692,7 @@
     {
       "id": "IAM-019",
       "file": "packages/domain/src/access/permissions.test.ts",
-      "line": 6,
+      "line": 13,
       "kind": "title"
     },
     {
@@ -20002,9 +20098,27 @@
       "kind": "title"
     },
     {
+      "id": "DAT-001",
+      "file": "packages/domain/src/data/connection.test.ts",
+      "line": 53,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-078",
+      "file": "packages/domain/src/data/connection.test.ts",
+      "line": 166,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-049",
+      "file": "packages/domain/src/data/failures.test.ts",
+      "line": 6,
+      "kind": "title"
+    },
+    {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 348,
+      "line": 387,
       "kind": "title"
     },
     {
@@ -21046,6 +21160,12 @@
       "kind": "title"
     },
     {
+      "id": "IAM-075",
+      "file": "packages/sealing/src/seal.test.ts",
+      "line": 22,
+      "kind": "title"
+    },
+    {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
       "line": 244,
@@ -21091,6 +21211,30 @@
       "id": "STY-080",
       "file": "tests/browser/src/styles.test.ts",
       "line": 273,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-075",
+      "file": "tests/e2e/src/connections.test.ts",
+      "line": 59,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-056",
+      "file": "tests/e2e/src/connector-isolation.test.ts",
+      "line": 176,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-089",
+      "file": "tests/e2e/src/connector-isolation.test.ts",
+      "line": 275,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-056",
+      "file": "tests/e2e/src/connector-privilege.test.ts",
+      "line": 178,
       "kind": "title"
     },
     {

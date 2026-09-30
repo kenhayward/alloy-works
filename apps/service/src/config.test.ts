@@ -102,4 +102,22 @@ describe('configuration', () => {
       '/app/renderer',
     );
   });
+
+  it('finds the connector at an http or https address, and describes it by its host alone', () => {
+    expect(loadConfig({ DATABASE_URL: url }).connectorUrl).toBeUndefined();
+    const config = loadConfig({ DATABASE_URL: url, CONNECTOR_URL: 'http://connector:8090' });
+    expect(config.connectorUrl).toBe('http://connector:8090');
+    expect(describeConfig(config)).toMatchObject({ connector: 'connector:8090' });
+    expect(describeConfig(loadConfig({ DATABASE_URL: url }))).toMatchObject({ connector: 'none' });
+    for (const wrong of ['connector:8090', 'ftp://connector', 'http://ada:pw@connector:8090']) {
+      let message = '';
+      try {
+        loadConfig({ DATABASE_URL: url, CONNECTOR_URL: wrong });
+      } catch (error) {
+        message = (error as Error).message;
+      }
+      expect(message, wrong).toMatch(/CONNECTOR_URL must be an http or https address/);
+      expect(message, wrong).not.toContain(wrong);
+    }
+  });
 });

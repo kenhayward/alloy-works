@@ -1,0 +1,68 @@
+.page {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: var(--space-16);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-16);
+  color: var(--muted);
+}
+
+.retired {
+  font-weight: 600;
+}
+
+.part {
+  margin-block: var(--space-24);
+}
+
+.form {
+  display: grid;
+  gap: var(--space-12);
+  max-width: 32rem;
+}
+
+.form label {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.form button {
+  justify-self: start;
+}
+
+.settings {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-4) var(--space-16);
+}
+
+.settings dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: var(--size-label);
+}
+
+.tables {
+  border-collapse: collapse;
+  margin-block: var(--space-12);
+}
+
+.tables caption {
+  text-align: start;
+  font-weight: 600;
+}
+
+.tables th,
+.tables td {
+  text-align: start;
+  padding: var(--space-4) var(--space-12) var(--space-4) 0;
+  vertical-align: top;
+}

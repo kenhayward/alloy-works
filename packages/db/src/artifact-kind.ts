@@ -7,7 +7,8 @@ import { definitionKinds } from '@alloy-works/domain';
  * one, because `VersionSubstance` has no arm for it. A layout lives in no space, as a definition does, and so do a
  * theme and a catalogue, added by 0024: the tenant's, usable from every space (STY-002's purpose). A
  * template, added by 0028, lives in one space (TPL-001) and is no content kind: `create` and `edit`
- * do not reach it, `design` does (access.md).
+ * do not reach it, `design` does (access.md). A connection, added by 0044, lives in one space too and
+ * is no content kind either: `administer` makes and changes it (data.md).
  */
 export const artifactKinds = [
   'component',
@@ -19,6 +20,7 @@ export const artifactKinds = [
   'theme',
   'catalogue',
   'template',
+  'connection',
 ] as const;
 
 export type ArtifactKind = (typeof artifactKinds)[number];
@@ -34,4 +36,5 @@ export const spacedKinds = [
   'publication',
   'asset',
   'template',
+  'connection',
 ] as const satisfies readonly ArtifactKind[];

@@ -24,6 +24,16 @@ export const documentationGroups = [
     ],
   },
   {
+    name: 'Data',
+    tags: [
+      {
+        name: 'Connections',
+        description:
+          'Make connections to your own data sources, set their credentials, and test them.',
+      },
+    ],
+  },
+  {
     name: 'Publishing',
     tags: [
       { name: 'Previews', description: 'Request a short-lived PDF preview.' },
@@ -104,6 +114,15 @@ const operationTags = {
   ],
   Definitions: ['listDefinitions', 'createDefinition', 'getDefinition', 'recordDefinitionVersion'],
   Templates: ['listTemplates', 'createTemplate', 'getTemplate', 'recordTemplateVersion'],
+  Connections: [
+    'listConnections',
+    'createConnection',
+    'getConnection',
+    'recordConnectionVersion',
+    'setConnectionCredential',
+    'testConnection',
+    'describeConnection',
+  ],
   Assets: [
     'createAssetUpload',
     'getAssetUpload',
@@ -207,6 +226,20 @@ const descriptions: Readonly<Record<string, string>> = {
   createTemplate: 'Creates a template in the named space at its first version.',
   getTemplate: 'Opens the current template version and its starting document structure.',
   recordTemplateVersion: 'Records a new template version based on the version the caller opened.',
+  listConnections:
+    'Lists the connections the caller may read, with whether each has a credential and how its last test went.',
+  createConnection:
+    'Creates a connection to a PostgreSQL source in the named space. It holds no credential until one is set.',
+  getConnection:
+    'Returns the latest connection version, whether a credential is set and by whom and when, and its last test. The credential itself is never returned.',
+  recordConnectionVersion:
+    'Records the next connection version from the version the caller opened. Retiring and reinstating a connection are versions too.',
+  setConnectionCredential:
+    'Sets or replaces the connection credential, then tests the connection with it. The credential is sealed at once and never returned; this route takes no idempotency key.',
+  testConnection:
+    'Tests whether the connection reaches its source and signs in. A failure gives one reason, the same whatever went wrong, and every test is recorded.',
+  describeConnection:
+    'Lists the tables and views the connection account may read, with each column and the type proposed for it.',
   createAssetUpload:
     'Starts an image upload in a space and records its description or decorative status. Upload bytes separately to finish it.',
   getAssetUpload:

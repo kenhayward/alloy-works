@@ -125,7 +125,11 @@ const componentBody = (id: string, title: string, mayEdit = false) => ({
  */
 function accessService(
   titles: Record<string, string>,
-  others: { documents?: Record<string, string>; templates?: Record<string, string> } = {},
+  others: {
+    documents?: Record<string, string>;
+    templates?: Record<string, string>;
+    connections?: Record<string, string>;
+  } = {},
 ) {
   return vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
@@ -150,6 +154,11 @@ function accessService(
     for (const [id, name] of Object.entries(others.templates ?? {})) {
       if (url.pathname === `/v1/templates/${id}`) {
         return json(200, { id, space, version, definition: { name }, mayDesign: true });
+      }
+    }
+    for (const [id, name] of Object.entries(others.connections ?? {})) {
+      if (url.pathname === `/v1/connections/${id}`) {
+        return json(200, { id, space, version, settings: { name } });
       }
     }
     if (url.pathname === '/v1/principals' || url.pathname === '/v1/roles') {
@@ -350,6 +359,18 @@ describe('the workspace', () => {
       '#/templates',
     );
     expect(screen.getByRole('region', { name: 'This template' })).toBeInTheDocument();
+  });
+
+  it('opens the access page of the connection the address names, with a way back to it', async () => {
+    const CONNECTION = 'ffffffff-0000-4000-8000-000000000002';
+    window.location.hash = `#/connections/${CONNECTION}/access`;
+    render(<Workspace fetch={accessService({}, { connections: { [CONNECTION]: 'Readings' } })} />);
+    expect(await screen.findByRole('heading', { name: 'Access to Readings' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Back to the connection' })).toHaveAttribute(
+      'href',
+      `#/connections/${CONNECTION}`,
+    );
+    expect(screen.getByRole('region', { name: 'This connection' })).toBeInTheDocument();
   });
 
   it('mounts a fresh access page for each component, never showing what an earlier one left behind', async () => {

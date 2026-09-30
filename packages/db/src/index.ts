@@ -143,7 +143,7 @@ export {
   sealSecret,
   SealedSecretRefused,
   type SealPurpose,
-} from './seal.js';
+} from '@alloy-works/sealing';
 export {
   listenToTenants,
   notifyTenant,
@@ -295,7 +295,11 @@ export {
   type CutAnswer,
   type ReleaseAnswer,
 } from './promotion.js';
-export { seedDevelopmentContent, type SeededContent } from './dev-content.js';
+export {
+  seedDevelopmentConnectionUse,
+  seedDevelopmentContent,
+  type SeededContent,
+} from './dev-content.js';
 export {
   countReadableComponents,
   listReadableComponents,
@@ -333,6 +337,26 @@ export {
   type TemplateAnswer,
   type TemplateSummary,
 } from './templates.js';
+export {
+  createConnection,
+  credentialOf,
+  latestConnectionTest,
+  listReadableConnections,
+  readConnection,
+  recordConnectionTest,
+  recordConnectionVersion,
+  setConnectionCredential,
+  targetDigest,
+  usableCredentialOf,
+  type ConnectionAnswer,
+  type ConnectionFinding,
+  type ConnectionSummary,
+  type ConnectionTestFailure,
+  type ConnectionTestRecord,
+  type CredentialState,
+  type LatestConnectionTest,
+  type StoredConnection,
+} from './connections.js';
 export { numberingInputs, type NumberingInputs, type OccurrenceResolution } from './numbering.js';
 export {
   createComponent,

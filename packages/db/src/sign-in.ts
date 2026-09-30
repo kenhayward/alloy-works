@@ -1,7 +1,7 @@
 import { asAdministrator } from './admin.js';
 import { invitedAddress } from './invitations.js';
 import type { Tenant } from './provision.js';
-import { sealSecret } from './seal.js';
+import { sealSecret } from '@alloy-works/sealing';
 
 export type SignInRoute = 'organisation' | 'google';
 

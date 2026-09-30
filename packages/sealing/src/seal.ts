@@ -6,8 +6,10 @@ export class SealedSecretRefused extends Error {}
 /**
  * What a sealed secret is for. It is authenticated with the secret, so a secret sealed for one use
  * will not open as another: an object store credential copied into a sign-in row opens as nothing.
+ * `source-credential` is a connection's credential, sealed and opened only by the connector, with a
+ * key of its own that the service never holds.
  */
-export type SealPurpose = 'object-store' | 'sign-in';
+export type SealPurpose = 'object-store' | 'sign-in' | 'source-credential';
 
 const VERSION = 'v1';
 const IV_BYTES = 12;
@@ -30,23 +32,34 @@ export function sealingKey(base64: string): Buffer {
   return key;
 }
 
-const bound = (purpose: SealPurpose, tenantId: string) => Buffer.from(`${purpose}:${tenantId}`);
+/**
+ * What a secret is bound to beside the key. A context - a connection's target, for a source
+ * credential - joins it as JSON, so no tenant, purpose or context can be spelled to look like another.
+ */
+const bound = (purpose: SealPurpose, tenantId: string, context?: string) =>
+  Buffer.from(
+    context === undefined
+      ? `${purpose}:${tenantId}`
+      : `${purpose}:${tenantId}:${JSON.stringify(context)}`,
+  );
 
 /**
- * Sealed to the tenant and the purpose as well as the key: both are authenticated alongside the
- * secret, so one tenant's sealed secret written into another's row will not open, and a copied row
- * grants nothing.
+ * Sealed to the tenant and the purpose as well as the key, and to a context where one is given: each
+ * is authenticated alongside the secret, so one tenant's sealed secret written into another's row
+ * will not open, a copied row grants nothing, and a source credential opens only for the connection
+ * target it was sealed for.
  */
 export function sealSecret(
   key: Buffer,
   purpose: SealPurpose,
   tenantId: string,
   secret: string,
+  context?: string,
 ): string {
   assertKey(key);
   const iv = randomBytes(IV_BYTES);
   const cipher = createCipheriv('aes-256-gcm', key, iv, { authTagLength: TAG_BYTES });
-  cipher.setAAD(bound(purpose, tenantId));
+  cipher.setAAD(bound(purpose, tenantId, context));
   const body = Buffer.concat([cipher.update(secret, 'utf8'), cipher.final()]);
   return [
     VERSION,
@@ -61,6 +74,7 @@ export function openSecret(
   purpose: SealPurpose,
   tenantId: string,
   sealed: string,
+  context?: string,
 ): string {
   const [version, iv, tag, body, ...rest] = sealed.split('.');
   if (version !== VERSION || !iv || !tag || !body || rest.length > 0) {
@@ -75,7 +89,7 @@ export function openSecret(
   }
   try {
     const decipher = createDecipheriv('aes-256-gcm', key, ivBytes, { authTagLength: TAG_BYTES });
-    decipher.setAAD(bound(purpose, tenantId));
+    decipher.setAAD(bound(purpose, tenantId, context));
     decipher.setAuthTag(tagBytes);
     return Buffer.concat([
       decipher.update(Buffer.from(body, 'base64url')),

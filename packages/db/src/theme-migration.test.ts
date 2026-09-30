@@ -316,6 +316,8 @@ describe('migration 0024, which gives every environment its default theme', () =
       '0041_publication_check_given_up',
       '0042_sealed_sign_in_secret',
       '0043_default_theme_caption_placement',
+      '0044_connections',
+      '0045_connection_credential_target',
     ]);
 
     // The one trigger held off during the migration stands enabled again, as does every other.
@@ -994,6 +996,8 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0041_publication_check_given_up',
       '0042_sealed_sign_in_secret',
       '0043_default_theme_caption_placement',
+      '0044_connections',
+      '0045_connection_credential_target',
     ]);
 
     expect((await themeChain(tenant)).map((each) => each.id)).toEqual([
@@ -1044,6 +1048,8 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0041_publication_check_given_up',
       '0042_sealed_sign_in_secret',
       '0043_default_theme_caption_placement',
+      '0044_connections',
+      '0045_connection_credential_target',
     ]);
 
     const chain = await themeChain(tenant);
@@ -1452,6 +1458,8 @@ describe('migration 0043, which says where the default theme places each caption
 
     expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
       '0043_default_theme_caption_placement',
+      '0044_connections',
+      '0045_connection_credential_target',
     ]);
 
     // The theme is at 0.5, under its fixed identifier, unauthored, on top of 0.4; the table and image
@@ -1540,6 +1548,8 @@ describe('migration 0043, which says where the default theme places each caption
 
       expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
         '0043_default_theme_caption_placement',
+        '0044_connections',
+        '0045_connection_credential_target',
       ]);
 
       // The catalogue is left at the environment's own version, with nothing of the product's on top.
@@ -1580,6 +1590,8 @@ describe('migration 0043, which says where the default theme places each caption
 
     expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
       '0043_default_theme_caption_placement',
+      '0044_connections',
+      '0045_connection_credential_target',
     ]);
 
     // The theme is left at the environment's own 0.5, with nothing of the product's on top, and still

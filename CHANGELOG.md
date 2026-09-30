@@ -3,6 +3,36 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.129.0 - 2026-09-30 (PR #367)
+
+### Added
+
+- **Connections to a PostgreSQL database of your own.** **Connections**, beside Templates, lists the
+  connections you may read. An administrator of a space can make one there with **New connection** -
+  a name and a database's host, port, database, account and TLS - and set its password on the
+  connection's page. The password is locked away as it is sent and never shown again, to anybody:
+  the page says only whether one is set, by whom and when. A password is only ever used where it was
+  set for: change the host, port, database, account or TLS and it must be set again. Setting it
+  tests the connection straight away, and **Test** does the same whenever you ask, saying
+  "Connected." or "Could not connect." with one reason, and warning where the account could change
+  data at the source; a test of an earlier version, or made with an earlier password, says so.
+  **List tables** shows the tables and views the account can read, says how many it left out because
+  their names cannot be shown, and says when the list was cut short. A change to the settings is saved as a new version, and a connection
+  can be retired and reinstated without losing a change you have typed and not saved. Testing and listing tables need the new permission
+  **use connection**, which no starting role holds, so give it on purpose from **Manage access**.
+  Nothing reads data from a connection yet.
+- **A separate process that reaches your databases, and nothing else.** The connector holds the key
+  that unlocks connection passwords, runs each request in a fresh process as a user of its own that
+  cannot read that key, signs in to a database only in a way that never sends the password itself,
+  and sits on networks of its own with no route to the rest of Alloy Works but the service that asks
+  it. The development stack starts it; `--profile sources` adds a sample database to connect to (see
+  deploy/README.md). A deployment runs it as compose does, with three capabilities and a read-only
+  filesystem, and with compose's IPC limits of zero - so no request's process can leave shared
+  memory, a message queue or a semaphore for the next - or it refuses to start, saying which is
+  missing; and should give it compose's init and process limit as well. Its networks need Docker
+  Engine 28.0.0 or later, and it never connects to its own address or to the host through a gateway
+  of its networks, whatever the deployment lists.
+
 ## 0.128.4 - 2026-09-30 (PR #366)
 
 ### Fixed

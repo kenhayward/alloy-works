@@ -9,7 +9,7 @@ import {
   inviteToTenant,
   permitGoogleSignIn,
 } from './sign-in.js';
-import { openSecret, SealedSecretRefused } from './seal.js';
+import { openSecret, SealedSecretRefused } from '@alloy-works/sealing';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
 

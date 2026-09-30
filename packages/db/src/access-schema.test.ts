@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { permissions, principalKinds, starterRoles } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -102,6 +103,33 @@ describe('the access tables', () => {
         ),
       ),
     ).rejects.toThrow(/role_permissions_closed/);
+  });
+
+  it("admits use_connection to a role's permissions and a token's scopes, and refuses use_connections and write_sql", async () => {
+    const token = (scopes: string) =>
+      sql`insert into api_token (principal_id, name, token_hash, scopes, expires_at)
+          values (${ada}, ${`Token ${scopes}`}, ${randomBytes(32).toString('hex')}, ${`{${scopes}}`}::text[], now() + interval '1 day')`;
+    await service.withTenant(production, (trx) =>
+      sql`insert into role (name, permissions) values ('Connection user', array['read', 'use_connection'])`.execute(
+        trx,
+      ),
+    );
+    await service.withTenant(production, (trx) => token('use_connection').execute(trx));
+    // write_sql joins with the check that reads it, in D2 (the D1 plan, D1-P).
+    for (const permission of ['use_connections', 'write_sql']) {
+      await expect(
+        service.withTenant(production, (trx) =>
+          sql`insert into role (name, permissions) values (${`Only ${permission}`}, ${`{${permission}}`}::text[])`.execute(
+            trx,
+          ),
+        ),
+        permission,
+      ).rejects.toThrow(/role_permissions_closed/);
+      await expect(
+        service.withTenant(production, (trx) => token(permission).execute(trx)),
+        permission,
+      ).rejects.toThrow(/api_token_scopes_closed/);
+    }
   });
 
   it("holds a principal's kind to the domain's kinds, a user unless said otherwise", async () => {

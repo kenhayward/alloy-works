@@ -122,6 +122,8 @@ and its calls are one origin. Publishing, search and the rest of the proposed sy
 | Object storage                 | TypeScript + the S3 API - a credential per tenant, objects by content hash                                   | `packages/objects`      |
 | Fonts                          | The pinned faces and their licences, their list by hash, and each family's coverage as data                  | `packages/fonts`        |
 | Worker                         | TypeScript on Node + the pinned Typst binary - claims jobs and runs them, publishing among them              | `apps/worker`           |
+| Connector                      | TypeScript on Node + `pg` - reaches a tenant's own source, each request in a fresh child as its own user     | `apps/connector`        |
+| Sealing                        | TypeScript + `node:crypto` - the one sealing scheme, for the platform and the connector alike                | `packages/sealing`      |
 | API client                     | TypeScript - types generated from `openapi.json`, and the stream reader                                      | `packages/api-client`   |
 | Traceability                   | TypeScript - the requirement corpus parsed, compiled and queried                                             | `packages/trace`        |
 | End-to-end check               | Vitest over HTTP - the whole system in containers, no browser                                                | `tests/e2e`             |

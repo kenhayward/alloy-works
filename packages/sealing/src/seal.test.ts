@@ -24,11 +24,41 @@ describe('a sealed secret', () => {
     expect(() => openSecret(key, 'sign-in', 'acmedev', sealed)).toThrow(SealedSecretRefused);
   });
 
+  it('binds a secret sealed with a context to that context: it opens with it alone, and not without one', () => {
+    const sealed = sealSecret(key, 'source-credential', 'acme', SECRET, '["postgres","a",5432]');
+    expect(openSecret(key, 'source-credential', 'acme', sealed, '["postgres","a",5432]')).toBe(
+      SECRET,
+    );
+    for (const context of ['["postgres","b",5432]', '', undefined]) {
+      expect(() => openSecret(key, 'source-credential', 'acme', sealed, context)).toThrow(
+        SealedSecretRefused,
+      );
+    }
+    // And one sealed without a context opens with none.
+    const plain = sealSecret(key, 'source-credential', 'acme', SECRET);
+    expect(() => openSecret(key, 'source-credential', 'acme', plain, '[]')).toThrow(
+      SealedSecretRefused,
+    );
+  });
+
   it('does not open as another kind of secret: a store credential is no client secret, nor the reverse', () => {
     const store = sealSecret(key, 'object-store', 'acme', SECRET);
     const signIn = sealSecret(key, 'sign-in', 'acme', SECRET);
     expect(() => openSecret(key, 'sign-in', 'acme', store)).toThrow(SealedSecretRefused);
     expect(() => openSecret(key, 'object-store', 'acme', signIn)).toThrow(SealedSecretRefused);
+  });
+
+  it('IAM-075 seals a source credential to its tenant and to source-credential, so it opens for neither another tenant nor another purpose', () => {
+    const sealed = sealSecret(key, 'source-credential', 'acme', SECRET);
+    expect(openSecret(key, 'source-credential', 'acme', sealed)).toBe(SECRET);
+    expect(() => openSecret(key, 'sign-in', 'acme', sealed)).toThrow(SealedSecretRefused);
+    expect(() => openSecret(key, 'object-store', 'acme', sealed)).toThrow(SealedSecretRefused);
+    expect(() => openSecret(key, 'source-credential', 'acmedev', sealed)).toThrow(
+      SealedSecretRefused,
+    );
+    // And the reverse: a sign-in secret copied into a credential row opens as nothing.
+    const signIn = sealSecret(key, 'sign-in', 'acme', SECRET);
+    expect(() => openSecret(key, 'source-credential', 'acme', signIn)).toThrow(SealedSecretRefused);
   });
 
   it('opens an object store secret sealed by the scheme before it moved here, so no stored credential is lost', () => {

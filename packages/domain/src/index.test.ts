@@ -341,6 +341,45 @@ describe('the domain package', () => {
         'FOURTH_DEFAULT_CATALOGUE_VERSIONS',
         'FOURTH_DEFAULT_THEME',
         'FOURTH_DEFAULT_THEME_VERSION',
+        // Data, D1: a connection's settings and their check, the data failures and their
+        // attribution, the column types a describe proposes, the connector's protocol, and the
+        // limits (data.md; the D1 plan).
+        'CONNECTION_SCHEMA_VERSION',
+        'ConnectionRefused',
+        'checkConnection',
+        'connectionSettingsSchema',
+        'connectorIdentities',
+        'parseConnection',
+        'parseConnectionForWrite',
+        // What a credential is bound to, and the bounds of what the connector answers (the D1 fix).
+        'connectionTarget',
+        'credentialContext',
+        'CONNECTOR_ANSWER_MAX_BYTES',
+        'MAX_COLUMNS',
+        // A describe's budget, its type's bound, and the name and type a child checks each item by
+        // (the D1 fix, round two).
+        'DESCRIBE_BUDGET_BYTES',
+        'SOURCE_TYPE_MAX_BYTES',
+        'sourceNameSchema',
+        'sourceTypeSchema',
+        'MAX_DESCRIBED_RELATIONS',
+        'dataFailure',
+        'dataFailureCodes',
+        'dataFailures',
+        'columnTypeSchema',
+        'SEALED',
+        'SEALED_MAX_BYTES',
+        'SECRET_MAX_BYTES',
+        'childRequestSchema',
+        'describeAnswerSchema',
+        'describeRequestSchema',
+        'relationSchema',
+        'sealAnswerSchema',
+        'sealRequestSchema',
+        'testAnswerSchema',
+        'testRequestSchema',
+        'defaultLimits',
+        'limitCeilings',
       ].sort(),
     );
   });

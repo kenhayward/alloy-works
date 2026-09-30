@@ -1,6 +1,7 @@
 import { allRoutes } from '@alloy-works/api-contract';
 import {
   bootstrapCluster,
+  createConnection,
   createDocument,
   createTenant,
   createTenantDatabase,
@@ -89,6 +90,29 @@ describe('the listings through the service', () => {
         .select('id')
         .where('name', '=', 'General')
         .executeTakeFirstOrThrow();
+      // Two connections in General, so their listing has pages to turn too.
+      for (const name of ['Pumps', 'Valves']) {
+        const made = await createConnection(trx, {
+          spaceId: general.id,
+          author: grace,
+          settings: {
+            schemaVersion: 1,
+            name,
+            description: '',
+            type: 'postgres',
+            source: {
+              host: 'source-postgres',
+              port: 5432,
+              database: 'readings',
+              account: 'reader',
+              tls: 'require',
+            },
+            identity: { kind: 'service' },
+            retired: false,
+          },
+        });
+        if (made.answer !== 'created') throw new Error(made.answer);
+      }
       for (const title of ['Pump manual', 'Valve manual']) {
         const made = await createDocument(trx, {
           spaceId: general.id,
@@ -314,6 +338,7 @@ describe('the listings through the service', () => {
       listInvitations: '/v1/invitations',
       listGroups: '/v1/groups',
       listTemplates: '/v1/templates',
+      listConnections: '/v1/connections',
       listDefinitions: '/v1/definitions',
       listPeople: '/v1/people',
       listTokens: '/v1/tokens',

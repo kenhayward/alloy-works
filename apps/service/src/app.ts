@@ -1,5 +1,6 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { IDEMPOTENT_REPLAYED, keyedRequest, once } from './idempotency.js';
+import { AfterCommit } from './after-commit.js';
 import cookie from '@fastify/cookie';
 import {
   routes,
@@ -46,6 +47,7 @@ import {
 } from './access.js';
 import { assetHandlers, type BinaryBody } from './assets.js';
 import { componentHandlers } from './components.js';
+import { connectionHandlers, type ConnectorOptions } from './data/connections.js';
 import type { GoogleSettings } from './config.js';
 import { documentHandlers } from './documents.js';
 import { registerDocs } from './docs.js';
@@ -57,7 +59,7 @@ import { settingsHandlers } from './settings.js';
 import { editingHandlers } from './editing.js';
 import { AppError, storageUnavailable, toErrorBody } from './errors.js';
 import { admitGoogleAccount } from './google.js';
-import { createHttp, type HttpOptions } from './http.js';
+import { createHttp, logFailure, type HttpOptions } from './http.js';
 import { groupHandlers } from './groups.js';
 import { invitationHandlers } from './invitations.js';
 import { managingAccessHandlers } from './managing-access.js';
@@ -127,6 +129,11 @@ export interface AppOptions extends HttpOptions {
   /** Where the built renderer is; without it the service answers the API and nothing else. */
   readonly rendererRoot?: string;
   readonly tenantCacheMs?: number;
+  /**
+   * Where the connector answers and the key it is asked with (the D1 plan, D1-F); without it every
+   * data act is refused `connector_unavailable`.
+   */
+  readonly connector?: ConnectorOptions;
 }
 
 /** Holds a sign-in's state for the browser that started it, so no other browser can finish it. */
@@ -163,7 +170,10 @@ type Success<R extends RouteContract> = R['responses'] extends {
  */
 export type Handlers = {
   [K in keyof typeof routes]: (typeof routes)[K]['access'] extends { check: 'permission' }
-    ? (request: FastifyRequest, authorised: Authorised) => Promise<Success<(typeof routes)[K]>>
+    ? (
+        request: FastifyRequest,
+        authorised: Authorised,
+      ) => Promise<Success<(typeof routes)[K]> | AfterCommit<Success<(typeof routes)[K]>>>
     : (
         request: FastifyRequest,
         reply: FastifyReply,
@@ -404,6 +414,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...componentHandlers(db, tenantOf, principalOf),
     ...documentHandlers(db, tenantOf, principalOf),
     ...templateHandlers(db, tenantOf, principalOf),
+    ...connectionHandlers(db, tenantOf, principalOf, options.connector),
     ...definitionHandlers(db, tenantOf, principalOf),
     ...searchHandlers(db, tenantOf, principalOf),
     ...presentationHandlers(db, tenantOf),
@@ -762,9 +773,18 @@ export function buildApp(options: AppOptions): FastifyInstance {
         await beforeDeciding(trx, access);
         const principal = principalOf(request).principalId;
         const authorised = await authorise(trx, principal, access, request);
-        return once(trx, principal, keyed, () => run(request, authorised));
+        const done = await once(trx, principal, keyed, () => run(request, authorised));
+        // A keyed answer is recorded here, in the deciding transaction, so work that runs after it
+        // commits would go unrecorded: such a route declares `idempotencyKey: false`.
+        if (done.body instanceof AfterCommit && keyed !== undefined) {
+          throw new Error(`${operation} works after its commit and cannot take an idempotency key`);
+        }
+        return done;
       });
       if (replayed) void reply.header(IDEMPOTENT_REPLAYED, 'true');
+      // The deciding transaction has committed, and its lock on access with it: the rest of the work -
+      // a connector's, say - holds back no grant or revocation (the D1 fix, C4).
+      if (body instanceof AfterCommit) return (body as AfterCommit<unknown>).run();
       if (!binary) return body;
       // Bytes, sent only now that the transaction has committed, as a body is (figures 1, R2): never
       // sniffed into something a browser would run, and never run as a document of this origin.
@@ -875,14 +895,15 @@ export function buildApp(options: AppOptions): FastifyInstance {
                   : error,
                 request.id,
               );
-              if (status >= 500) request.log.error({ err: error }, 'request failed');
+              logFailure(request, error, status);
               return reply.status(status).send(body);
             },
           }
         : {}),
       handler: permissionChecked(
         name,
-        route.method !== 'GET',
+        // A route that takes no idempotency key keeps no record of its request (D1-S).
+        route.method !== 'GET' && route.idempotencyKey !== false,
         route.access,
         handlers[name],
         route.responses[200]?.binary !== undefined,

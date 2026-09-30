@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
 import { provisionTenant } from './provision.js';
-import { openSecret } from './seal.js';
+import { openSecret } from '@alloy-works/sealing';
 import { configureOrganisationSignIn } from './sign-in.js';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
 
@@ -53,6 +53,8 @@ describe('migration 0042, over a sign-in configured before it', () => {
     expect((await migrate(db.migratorUrl)).tenants[id]).toEqual([
       '0042_sealed_sign_in_secret',
       '0043_default_theme_caption_placement',
+      '0044_connections',
+      '0045_connection_credential_target',
     ]);
 
     const read = async () =>

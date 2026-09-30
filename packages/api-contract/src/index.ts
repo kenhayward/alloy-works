@@ -123,6 +123,22 @@ export {
   TemplateView,
 } from './templates.js';
 export {
+  ConnectionList,
+  ConnectionListQuery,
+  ConnectionParams,
+  ConnectionRefusal,
+  ConnectionSummary,
+  ConnectionVersionBody,
+  ConnectionView,
+  CreateConnectionBody,
+  CredentialBody,
+  CredentialSet,
+  CredentialState,
+  DataFailureView,
+  DescribeView,
+  TestView,
+} from './connections.js';
+export {
   CreateDefinitionBody,
   DefinitionKind,
   DefinitionList,

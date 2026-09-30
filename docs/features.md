@@ -583,6 +583,31 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   definitions that component's version was written against, not today's. The publication's page names
   the component, the field and what is wrong. A version can always be cut, filled in or not.
 
+- **Connections to your own data.** **Connections**, beside Templates, lists the connections you may
+  read, by space, with whether each has its password and how its last test went. Somebody who may
+  administer a space makes one there with **New connection**: a name, a description, and a PostgreSQL
+  database's host, port, database, account and TLS. A connection's page saves a change to its
+  settings as a new version, and says so if somebody else saved one first. Its password is typed
+  into a field that empties as it is sent and never shows it again, anywhere: the page says only
+  whether it is set, by whom and when, and setting or replacing it tests the connection straight
+  after. A password belongs to where it was set for: once a new version changes the host, port,
+  database, account or TLS, it is never sent anywhere, and the page says to set it again; one set
+  before this version of the product is never sent either, and the page says that instead. **Test**
+  says "Connected." or "Could not connect." and one reason, the same for every failure to reach the
+  source or sign in to it, naming no address; once it has signed in, it says if the account can
+  change data at the source. A test of an earlier version is shown as that, not as this one's:
+  "Not tested since this version"; and a test made with an earlier password, answering after the new
+  one was set, as "Not tested since the credential was set". **List tables** shows the tables and
+  views the account may read, with their columns; it leaves out, and counts, a table or column whose
+  name holds a control character such as a tab, and says when the list was cut short, past 2,000
+  tables or past what one answer can carry.
+  **Retire** stops a connection running anything, and **Reinstate** starts it again, each a version.
+  Testing and listing tables need **use connection**, which no starting role holds, so it is always
+  granted on purpose, from **Manage access** on the connection or its space. The password is sealed
+  by the connector, a separate process on networks of its own with no route to anything else of
+  Alloy Works but the service that asks it, and only the connector can open it; it signs in to a
+  database only in a way that never sends the password itself. Nothing queries a connection yet: there is no query,
+  dataset or bound value.
 - **Search.** **Search**, beside Components, Documents and Publications, finds everything you may read
   by its words, and nothing you may not: components, documents and each of their sections,
   publications, templates, images, fields, metadata schemas and component types. Words are found
@@ -1059,6 +1084,9 @@ Named explicitly so nobody has to read the source to find out:
 - No page for component types: a Definitions manager makes and changes them through the API alone,
   and nothing yet changes which one is the environment's default.
 - No way to delete a component or a document, including one made by mistake.
+- Nothing reads data from a connection: no query, no dataset and no value bound into a document. A
+  connection reaches PostgreSQL alone, as its own service account, and nothing yet shows where one is
+  used or stops one being retired while it is.
 - No document view that sets a document as it will publish: its page shows the outline you build
   beside the text in reading order, each component opening in place to be edited. No reading view. No reuse or transclusion.
 - No publishing beyond a laid-out PDF of a document's outline, its formatted paragraphs, lists,

@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
 
-# One file, four targets. `build` installs and builds what the containers need; `tools` keeps the
-# whole workspace for the compose stack's setup and stand-in provider; `service` and `worker` carry
-# only their own production tree.
+# One file, five targets. `build` installs and builds what the containers need; `tools` keeps the
+# whole workspace for the compose stack's setup and stand-in provider; `service`, `worker` and
+# `connector` carry only their own production tree.
 #
 # Debian rather than Alpine: glibc is the surface native modules are built against, and image size is
 # not what matters for a system that ships as a compose file.
@@ -26,6 +26,7 @@ WORKDIR /repo
 FROM base AS build
 # The manifests first, so a change to source does not reinstall the world.
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY apps/connector/package.json apps/connector/
 COPY apps/desktop/package.json apps/desktop/
 COPY apps/service/package.json apps/service/
 COPY apps/web/package.json apps/web/
@@ -39,25 +40,30 @@ COPY packages/fonts/package.json packages/fonts/
 COPY packages/domain/package.json packages/domain/
 COPY packages/objects/package.json packages/objects/
 COPY packages/readers/package.json packages/readers/
+COPY packages/sealing/package.json packages/sealing/
 COPY packages/stand-in-idp/package.json packages/stand-in-idp/
 # Only what the containers need: this is what keeps Electron and the renderer out of the image.
 RUN pnpm install --frozen-lockfile \
       --filter "@alloy-works/service..." \
       --filter "@alloy-works/worker..." \
       --filter "@alloy-works/stand-in-idp..." \
-      --filter "@alloy-works/web..."
+      --filter "@alloy-works/web..." \
+      --filter "@alloy-works/connector..."
 # version.json too: the renderer's build reads the canonical version from it for Administration's About.
 COPY tsconfig.base.json version.json ./
 COPY packages/ packages/
+COPY apps/connector/ apps/connector/
 COPY apps/service/ apps/service/
 COPY apps/web/ apps/web/
 COPY apps/worker/ apps/worker/
 RUN pnpm --filter "@alloy-works/service..." build \
  && pnpm --filter "@alloy-works/worker..." build \
- && pnpm --filter "@alloy-works/web..." build
+ && pnpm --filter "@alloy-works/web..." build \
+ && pnpm --filter "@alloy-works/connector..." build
 # Each app, with its own production dependencies and nothing else.
 RUN pnpm deploy --filter @alloy-works/service --prod /prod/service \
- && pnpm deploy --filter @alloy-works/worker --prod /prod/worker
+ && pnpm deploy --filter @alloy-works/worker --prod /prod/worker \
+ && pnpm deploy --filter @alloy-works/connector --prod /prod/connector
 
 # Development only: the whole workspace, so the compose stack can prepare a database and run the
 # stand-in provider. No deployed installation runs this.
@@ -114,4 +120,29 @@ RUN /opt/verapdf/verapdf --version
 WORKDIR /app
 COPY --from=build --chown=node:node /prod/worker ./
 USER node
+CMD ["node", "dist/main.js"]
+
+# The connector (data.md, "The connector"): its own production tree and nothing of the platform's - no
+# database library, no object store, no service. It holds only its two keys, and reaches a tenant's
+# source from a network with no route to the platform. `dist/child.js` beside `dist/main.js` is the
+# per-request child the supervisor spawns.
+#
+# Who runs as whom (the D1 fix, C1 and C2). The supervisor holds both keys, and they stay readable in
+# its `/proc/<pid>/environ` whatever it deletes from `process.env`; so each child runs as a user and
+# group of its own (20000 plus its slot, which no file here belongs to), and the kernel refuses it the
+# supervisor's `/proc` entries and every other child's. Switching to another user needs SETUID and
+# SETGID, and killing a child that is another user needs KILL, so the supervisor runs as root with
+# those three capabilities and no others (compose drops the rest): root rather than `node` because a
+# non-root user holds a capability only as an ambient one, which survives a switch between two
+# non-root users and every exec after it - it would hand the child SETUID, and so the supervisor's
+# user - where leaving root clears every capability the process holds. The code is root's and
+# nobody's to write, and compose runs the container read-only; `main.js` refuses to start unless a
+# child spawned as every child is runs as its own user and cannot read its environment.
+FROM base AS connector
+ENV NODE_ENV=production
+WORKDIR /app
+COPY --from=build /prod/connector ./
+RUN chown -R root:root /app && chmod -R u=rwX,go=rX /app
+USER root
+EXPOSE 8090
 CMD ["node", "dist/main.js"]

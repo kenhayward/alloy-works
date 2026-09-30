@@ -23,6 +23,7 @@ describe('the rule behind a refusal', () => {
       ['assignment.conflict', 'assignment_conflict', 'MET-008'],
       ['schema.conflict', 'schema_conflict', 'MET-040'],
       ['field.breaks_default', 'field_breaks_default', 'MET-037'],
+      ['identity.not_supported', 'identity_not_supported', 'DAT-078'],
     ];
     for (const [dotted, code, rule] of ruled) {
       const { body } = toErrorBody(refused(409, dotted, 'Refused.'), 'trace-1');
@@ -64,6 +65,15 @@ describe('the rule behind a refusal', () => {
       // definition's own shape, which no requirement names (definitions.md, DE-E).
       'definition.unresolved',
       'definition.invalid',
+      // A connection's settings past their shape, which the contract checks at the door: made retired,
+      // which the design refuses (data.md, "The connection") and no requirement names.
+      'connection.invalid',
+      // A connection that cannot run: retired, or with nothing to sign in with. The design's own
+      // guards (data.md, "Rotation, where used and retiring"), which no requirement names as such.
+      'connection.retired',
+      'credential.missing',
+      // A credential set for where the connection no longer signs in (data.md, DA-AF).
+      'credential.target_changed',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

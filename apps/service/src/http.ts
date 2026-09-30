@@ -9,7 +9,7 @@ import Fastify, {
 } from 'fastify';
 import type { z } from 'zod';
 import type { LogLevel } from './config.js';
-import { toErrorBody } from './errors.js';
+import { AppError, toErrorBody } from './errors.js';
 
 export interface HttpOptions {
   readonly logLevel: LogLevel;
@@ -49,6 +49,21 @@ export function apiNotFound(request: FastifyRequest, reply: FastifyReply): Fasti
  * The HTTP layer every route shares: structured logs labelled with a trace id per request, zod for
  * validating requests and serialising responses, and one error shape for every failure.
  */
+/**
+ * Logs a request that failed. The service's own failure is an error, with its stack; a data failure
+ * laid at the source or a query's author (DAT-049) - a describe's `connection_failed`, a 502 - is
+ * theirs, not the product's, and is a warning naming its code and whose it is, with no stack: an
+ * operator reads it as a tenant's source misbehaving, not as the service breaking.
+ */
+export function logFailure(request: FastifyRequest, error: unknown, status: number): void {
+  const attribution = error instanceof AppError ? error.members.attribution : undefined;
+  if (attribution === 'connector' || attribution === 'query') {
+    request.log.warn({ code: (error as AppError).code, attribution, status }, 'the source failed');
+    return;
+  }
+  if (status >= 500) request.log.error({ err: error }, 'request failed');
+}
+
 export function createHttp(
   options: HttpOptions,
   /** Answers an address no route claims; the API's own refusal unless the renderer is served too. */
@@ -116,7 +131,7 @@ export function createHttp(
 
   app.setErrorHandler((error, request, reply) => {
     const { status, body } = toErrorBody(error, request.id);
-    if (status >= 500) request.log.error({ err: error }, 'request failed');
+    logFailure(request, error, status);
     return reply.status(status).send(body);
   });
 

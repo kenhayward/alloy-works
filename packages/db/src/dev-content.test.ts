@@ -6,7 +6,7 @@ import { loadFacts } from './access-facts.js';
 import { bootstrapCluster } from './bootstrap.js';
 import { componentFieldsNow } from './component-values.js';
 import { STARTER_COMPONENT_TYPE_ID } from './creation.js';
-import { seedDevelopmentContent } from './dev-content.js';
+import { seedDevelopmentConnectionUse, seedDevelopmentContent } from './dev-content.js';
 import { inviteFirstAdministrator } from './first-administrator.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
@@ -229,6 +229,48 @@ describe('the development content', () => {
         ['Due', 'date', false],
         ['Reviewer', 'text', false],
       ],
+    });
+  });
+
+  it('lets Ada use connections in General through a development role of its own, and nobody else, however often it runs', async () => {
+    await service.withTenant(tenant, (trx) => seedDevelopmentContent(trx, { issuer: ISSUER }));
+    await service.withTenant(tenant, (trx) =>
+      seedDevelopmentConnectionUse(trx, { issuer: ISSUER }),
+    );
+    await service.withTenant(tenant, (trx) =>
+      seedDevelopmentConnectionUse(trx, { issuer: ISSUER }),
+    );
+    await service.withTenant(tenant, async (trx) => {
+      const role = await findRole(trx, 'Connection user');
+      expect(role?.permissions).toEqual(['read', 'use_connection']);
+      const general = await trx
+        .selectFrom('space')
+        .select('id')
+        .where('name', '=', 'General')
+        .executeTakeFirstOrThrow();
+      const grants = await trx
+        .selectFrom('access_grant')
+        .select(['principal_id', 'space_id'])
+        .where('role_id', '=', role!.id)
+        .execute();
+      const ada = await trx
+        .selectFrom('principal')
+        .select('id')
+        .where('subject', '=', 'ada')
+        .executeTakeFirstOrThrow();
+      expect(grants).toEqual([{ principal_id: ada.id, space_id: general.id }]);
+      for (const [subject, allowed] of [
+        ['ada', true],
+        ['grace', false],
+      ] as const) {
+        const principal = await trx
+          .selectFrom('principal')
+          .select('id')
+          .where('subject', '=', subject)
+          .executeTakeFirstOrThrow();
+        const facts = await loadFacts(trx, principal.id, { kind: 'space', id: general.id });
+        expect(decide('use_connection', facts!).allowed, subject).toBe(allowed);
+      }
     });
   });
 });

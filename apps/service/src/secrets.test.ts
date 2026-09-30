@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { randomBytes } from 'node:crypto';
-import { environmentSecrets, serviceSealingKey } from './secrets.js';
+import { connectorSettings, environmentSecrets, serviceSealingKey } from './secrets.js';
 
 describe('the environment secret store', () => {
   it('reads a named secret from SECRET_ and the name in capitals', () => {
@@ -26,6 +26,35 @@ describe('the environment secret store', () => {
         message = (error as Error).message;
       }
       expect(message).toMatch(/SECRET_OBJECT_STORE_KEY must be 32 bytes of base64/);
+      expect(message).not.toContain(short);
+    }
+  });
+
+  it("reads the connector's address and key together or neither, naming the variable and never the key", () => {
+    const key = randomBytes(32).toString('base64');
+    expect(connectorSettings(undefined, environmentSecrets({}))).toBeUndefined();
+    expect(
+      connectorSettings('http://connector:8090', environmentSecrets({ SECRET_CONNECTOR_KEY: key })),
+    ).toEqual({ url: 'http://connector:8090', key });
+    const short = randomBytes(16).toString('base64');
+    const refusals: [string | undefined, Record<string, string>, RegExp][] = [
+      ['http://connector:8090', {}, /CONNECTOR_URL and SECRET_CONNECTOR_KEY must be set together/],
+      [undefined, { SECRET_CONNECTOR_KEY: key }, /must be set together/],
+      [
+        'http://connector:8090',
+        { SECRET_CONNECTOR_KEY: short },
+        /SECRET_CONNECTOR_KEY must be 32 bytes of base64/,
+      ],
+    ];
+    for (const [url, env, expected] of refusals) {
+      let message = '';
+      try {
+        connectorSettings(url, environmentSecrets(env));
+      } catch (error) {
+        message = (error as Error).message;
+      }
+      expect(message).toMatch(expected);
+      expect(message).not.toContain(key);
       expect(message).not.toContain(short);
     }
   });

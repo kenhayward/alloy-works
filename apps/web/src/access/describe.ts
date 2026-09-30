@@ -87,7 +87,7 @@ export interface ExplainedPermission {
  * whole environment. A space is named by whoever opens it, since it is chosen from a list of them.
  */
 export type AccessAt =
-  | { readonly kind: 'component' | 'document' | 'template'; readonly id: string }
+  | { readonly kind: 'component' | 'document' | 'template' | 'connection'; readonly id: string }
   | { readonly kind: 'space'; readonly id: string; readonly name: string }
   | { readonly kind: 'tenant' };
 

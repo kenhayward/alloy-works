@@ -2,6 +2,9 @@ import { createApiClient } from '@alloy-works/api-client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { AccessPanel } from '../access/AccessPanel.js';
+import { ConnectionPage } from '../data/ConnectionPage.js';
+import { Connections } from '../data/Connections.js';
+import { connectionAddress, connectionLink } from '../data/links.js';
 import { ManageAccessLink } from '../access/ManageAccessLink.js';
 import { Home } from '../home/Home.js';
 import { PublicationList } from '../publishing/PublicationList.js';
@@ -34,7 +37,7 @@ function Places() {
     <nav aria-label="Workspace">
       <a href="#/components">Components</a> <a href="#/documents">Documents</a>{' '}
       <a href="#/publications">Publications</a> <a href="#/templates">Templates</a>{' '}
-      <a href="#/search">Search</a>
+      <a href="#/connections">Connections</a> <a href="#/search">Search</a>
     </nav>
   );
 }
@@ -200,6 +203,34 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
           at={{ kind: 'template', id: templateAccess }}
           client={client}
         />
+      </>
+    );
+  }
+  const connection = connectionAddress(hash);
+  if (connection?.access) {
+    return (
+      <>
+        <p>
+          <a href={connectionLink(connection.connection)}>Back to the connection</a>
+        </p>
+        <AccessPanel
+          key={connection.connection}
+          at={{ kind: 'connection', id: connection.connection }}
+          client={client}
+        />
+      </>
+    );
+  }
+  if (connection) {
+    return (
+      <ConnectionPage key={connection.connection} client={client} id={connection.connection} />
+    );
+  }
+  if (hash === '#/connections') {
+    return (
+      <>
+        <Places />
+        <Connections client={client} />
       </>
     );
   }

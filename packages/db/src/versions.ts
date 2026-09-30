@@ -9,6 +9,9 @@ import {
   parseLayout,
   templateDefinitionSchema,
   parseOutlineDocument,
+  ConnectionRefused,
+  parseConnection,
+  parseConnectionForWrite,
   type CatalogueSubstance,
   type DefinitionRef,
   type DefinitionSubstance,
@@ -75,14 +78,14 @@ export type NewArtifact = Authorship &
     | {
         readonly substance: Extract<
           VersionSubstance,
-          { kind: 'component' | 'document' | 'asset' | 'template' }
+          { kind: 'component' | 'document' | 'asset' | 'template' | 'connection' }
         >;
         readonly spaceId: string;
       }
     | {
         readonly substance: Exclude<
           VersionSubstance,
-          { kind: 'component' | 'document' | 'asset' | 'template' }
+          { kind: 'component' | 'document' | 'asset' | 'template' | 'connection' }
         >;
       }
   );
@@ -154,6 +157,12 @@ function prepare(substance: VersionSubstance): VersionSubstance {
   if (substance.kind === 'asset') {
     // Nor does an asset version: an asset is in a space, as content is (docs/design/assets.md).
     return { kind: 'asset', content: parseAssetVersion(substance.content) };
+  }
+  if (substance.kind === 'connection') {
+    // Nor does a connection: it is in a space. Its settings are parsed by their shape and then by
+    // the declaration check (DAT-078) on every write, whatever the writer (the D1 plan's stored-shape
+    // check).
+    return { kind: 'connection', content: parseConnectionForWrite(substance.content) };
   }
   if (!isDefinition(substance)) {
     // A theme or a catalogue, already read whole by its own writer, which is the only way here.
@@ -244,13 +253,25 @@ export async function createArtifact(
   if (substance.kind === 'layout' || substance.kind === 'theme' || substance.kind === 'catalogue') {
     throw new Error(`A ${substance.kind} is created by its migration, not by createArtifact`);
   }
+  // A connection is made in service, whatever makes it: retiring is a later version of one that was
+  // in use (the D1 plan's stored-shape check, row 10). A first version is only ever written here.
+  if (substance.kind === 'connection' && substance.content.retired) {
+    throw new ConnectionRefused([
+      {
+        rule: 'connection_invalid',
+        path: 'retired',
+        message: 'A connection is made in service; retiring it is a later version',
+      },
+    ]);
+  }
   const artifact = await trx
     .insertInto('artifact')
     .values(
       substance.kind === 'component' ||
         substance.kind === 'document' ||
         substance.kind === 'asset' ||
-        substance.kind === 'template'
+        substance.kind === 'template' ||
+        substance.kind === 'connection'
         ? { kind: substance.kind, space_id: 'spaceId' in input ? input.spaceId : null }
         : { id: substance.content.id, kind: substance.kind, space_id: null },
     )
@@ -470,6 +491,11 @@ export function substanceOf(stored: StoredVersion): VersionSubstance {
       content: stored.content as Extract<VersionSubstance, { kind: 'document' }>['content'],
       values: stored.values,
     };
+  }
+  if (stored.kind === 'connection') {
+    // Read by its shape alone, never the declaration check, so a declaration widened later (D7) never
+    // makes a stored version unreadable.
+    return { kind: 'connection', content: parseConnection(stored.content) };
   }
   return { kind: stored.kind, content: stored.content } as VersionSubstance;
 }

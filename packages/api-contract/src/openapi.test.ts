@@ -88,6 +88,77 @@ describe('the OpenAPI document', () => {
     expect(post.responses['200']?.headers).toHaveProperty('Idempotent-Replayed');
   });
 
+  it('DAT-003 takes a credential through a route that answers none of it, and no route in the API document answers a secret', () => {
+    // The credential goes in, to one route.
+    const put = document.paths['/v1/connections/{id}/credential']?.put as {
+      requestBody: { content: { 'application/json': { schema: unknown } } };
+      responses: Record<string, unknown>;
+    };
+    expect(JSON.stringify(put.requestBody)).toContain('"secret"');
+    // And nothing comes out: no response schema anywhere, of any route, holds a member named for a
+    // secret, and a member named `credential` is only ever whether one is set, by whom and when.
+    const names = new Set(['secret', 'sealed', 'password', 'credential']);
+    const found: string[] = [];
+    const walk = (node: unknown, at: string): void => {
+      if (Array.isArray(node)) return node.forEach((each, index) => walk(each, `${at}[${index}]`));
+      if (typeof node !== 'object' || node === null) return;
+      const properties = (node as { properties?: Record<string, unknown> }).properties;
+      for (const [name, value] of Object.entries(properties ?? {})) {
+        if (!names.has(name.toLowerCase())) continue;
+        // Whether one is set, by whom and when, and nothing else.
+        const shape = JSON.stringify(value);
+        if (
+          name === 'credential' &&
+          shape.includes('"setBy"') &&
+          !/secret|sealed|password/i.test(shape)
+        ) {
+          continue;
+        }
+        found.push(`${at}.${name}`);
+      }
+      for (const [key, value] of Object.entries(node)) walk(value, `${at}.${key}`);
+    };
+    for (const [path, byMethod] of Object.entries(document.paths)) {
+      for (const [method, operation] of Object.entries(byMethod as Record<string, unknown>)) {
+        // The one secret the API answers: a personal token's own, once, to the person who made it
+        // (service-foundations.md, TK-A), which is no connection's.
+        if ((operation as { operationId?: string }).operationId === 'createToken') continue;
+        walk((operation as { responses?: unknown }).responses, `${method} ${path}`);
+      }
+    }
+    // Every schema a response refers to by name, as well.
+    const components = (document as { components?: { schemas?: Record<string, unknown> } })
+      .components?.schemas;
+    for (const [name, schema] of Object.entries(components ?? {})) {
+      if (/Body$/.test(name)) continue;
+      walk(schema, name);
+    }
+    expect(found).toEqual([]);
+  });
+
+  it('offers no idempotency key on a route that takes none: the credential, a test and a describe', () => {
+    for (const [path, method] of [
+      ['/v1/connections/{id}/credential', 'put'],
+      ['/v1/connections/{id}/test', 'post'],
+      ['/v1/connections/{id}/describe', 'post'],
+    ] as const) {
+      const operation = document.paths[path]?.[method] as {
+        parameters: { name: string }[];
+        responses: Record<string, { headers?: Record<string, unknown> }>;
+      };
+      expect(
+        operation.parameters.map((parameter) => parameter.name),
+        path,
+      ).not.toContain('Idempotency-Key');
+      expect(operation.responses['200']?.headers, path).not.toHaveProperty('Idempotent-Replayed');
+    }
+    // A connection's other writes take one, as every mutating route does.
+    const versions = document.paths['/v1/connections/{id}/versions']?.post as {
+      parameters: { name: string }[];
+    };
+    expect(versions.parameters.map((parameter) => parameter.name)).toContain('Idempotency-Key');
+  });
+
   it('is OpenAPI 3.1, at the API version rather than the product release', () => {
     expect(document.openapi).toBe('3.1.0');
     expect(document.info.version).toBe(API_VERSION);
