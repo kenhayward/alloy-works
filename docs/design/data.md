@@ -156,7 +156,8 @@ In `packages/domain/src/data/connection.ts`, a zod schema and a check:
   description: string,
   type: 'postgres' | 'sqlServer' | 'http' | 's3',
   source:                              // by type
-    | { host: string, port: number, database: string, tls: 'require' | 'verifyFull' }   // postgres, sqlServer
+    | { host: string, port: number, database: string, account: string,                  // postgres, sqlServer
+        tls: 'require' | 'verifyFull' }
     | { baseUrl: string, secretHeader: string }                                           // http: https only
     | { endpoint: string, region: string, bucket: string, pathStyle: boolean },           // s3
   identity:
@@ -168,15 +169,17 @@ In `packages/domain/src/data/connection.ts`, a zod schema and a check:
 }
 ```
 
-**What a version holds is what anybody who may read it sees**: never a secret. The check refuses a
-`source` of another type's shape, an `http` base URL that is not `https`, a host that names a local
-path or a socket, and an `identity` the type's connector does not declare (DAT-078): `postgres` and
-`sqlServer` declare `asserted`, `http` declares `delegated`, and `s3` declares none, so its identity is
-`service` (DAT-077). **Asserted identity's rules** (DAT-112 to DAT-114, ADR-0035) are the connector's
-to apply: in PostgreSQL the role membership is `WITH INHERIT FALSE, SET TRUE` and the assertion is
-`SET LOCAL ROLE` in a transaction the connector opens and ends; in SQL Server a `read_only`
-`SESSION_CONTEXT` key or `EXECUTE AS USER ... WITH COOKIE`, whichever `assertion` names; where the
-source cannot fail loud, the connector refuses an end-user query it has not asserted for.
+**What a version holds is what anybody who may read it sees**: never a secret. A database source
+names its `account`, the login it runs as, beside its host, so the connection's readers see what it
+runs as and a changed account is a version (DAT-007); only the password is the credential. The check
+refuses a `source` of another type's shape, an `http` base URL that is not `https`, a host that
+names a local path or a socket, and an `identity` the type's connector does not declare (DAT-078):
+`postgres` and `sqlServer` declare `asserted`, `http` declares `delegated`, and `s3` declares none,
+so its identity is `service` (DAT-077). **Asserted identity's rules** (DAT-112 to DAT-114, ADR-0035)
+are the connector's to apply: in PostgreSQL the role membership is `WITH INHERIT FALSE, SET TRUE`
+and the assertion is `SET LOCAL ROLE` in a transaction the connector opens and ends; in SQL Server a
+`read_only` `SESSION_CONTEXT` key or `EXECUTE AS USER ... WITH COOKIE`, whichever `assertion` names;
+where the source cannot fail loud, the connector refuses an end-user query it has not asserted for.
 
 **Retiring is a version** with `retired: true` and the settings unchanged. A retired connection runs
 nothing and cannot be named by a new definition; everything stored from it still reads, and every
@@ -575,10 +578,11 @@ space or the tenant, walked as every permission is:
 | `use_connection` | Run anything against the connection: a sample run, describe, test, resolve and check |
 | `write_sql`      | Save a query definition whose fetch is SQL against the connection                    |
 
-Adding them is the code change and the migration access.md names: `permissions` in
-`packages/domain/src/access/permissions.ts`, and the check constraints `role_permissions_closed` and
-`api_token_scopes_closed`. **No starting role gains either**, so using a connection is always granted
-on purpose; the external cap gains both.
+Adding them is the code change and the migration access.md names - `use_connection` in D1, and
+`write_sql` in D2 with the check that reads it (DAT-101), since a permission no check reads is a
+promise with nothing behind it: `permissions` in `packages/domain/src/access/permissions.ts`, and
+the check constraints `role_permissions_closed` and `api_token_scopes_closed`. **No starting role
+gains either**, so using a connection is always granted on purpose; the external cap gains both.
 
 | Act                                                     | Needs                                                                                         |
 | ------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
@@ -867,16 +871,16 @@ approved them the same day.
 
 Each slice has a plan of its own, written when its turn comes.
 
-| Slice  | What                                                                                                                                                                                                                         |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **D1** | The connection kind and its sealed credential; `use_connection` and `write_sql`; `apps/connector` with a process per request, the guard, PostgreSQL, `test`, `describe` and `seal`; the compose networks; a Connections page |
-| **D2** | The query definition kind: parameters, the SQL fallback, columns second, the sample run, canonicalising and checksumming in the connector; search                                                                            |
-| **D3** | Datasets and resolutions: the dataset kind, objects keyed by checksum, provenance, resolve, check and accept; the binding inline widened after the evidence query. **`bindings.md` is designed after D3**                    |
-| **D4** | The builder: the saved query tree, PostgreSQL's SQL generated from it, its screens                                                                                                                                           |
-| **D5** | SQL Server: `tedious`, its dialect, `NVARCHAR` and `CAST`                                                                                                                                                                    |
-| **D6** | HTTP and S3 connections and the file formats: the product's own XLSX reader, CSV and JSON                                                                                                                                    |
-| **D7** | End-user identity: the delegated token, with the session holding the provider's token, and asserted identity on PostgreSQL and SQL Server                                                                                    |
-| **D8** | Image columns through `ingest`                                                                                                                                                                                               |
+| Slice  | What                                                                                                                                                                                                         |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **D1** | The connection kind and its sealed credential; `use_connection`; `apps/connector` with a process per request, the guard, PostgreSQL, `test`, `describe` and `seal`; the compose networks; a Connections page |
+| **D2** | The query definition kind: parameters, the SQL fallback and `write_sql` with the check that reads it, columns second, the sample run, canonicalising and checksumming in the connector; search               |
+| **D3** | Datasets and resolutions: the dataset kind, objects keyed by checksum, provenance, resolve, check and accept; the binding inline widened after the evidence query. **`bindings.md` is designed after D3**    |
+| **D4** | The builder: the saved query tree, PostgreSQL's SQL generated from it, its screens                                                                                                                           |
+| **D5** | SQL Server: `tedious`, its dialect, `NVARCHAR` and `CAST`                                                                                                                                                    |
+| **D6** | HTTP and S3 connections and the file formats: the product's own XLSX reader, CSV and JSON                                                                                                                    |
+| **D7** | End-user identity: the delegated token, with the session holding the provider's token, and asserted identity on PostgreSQL and SQL Server                                                                    |
+| **D8** | Image columns through `ingest`                                                                                                                                                                               |
 
 Then `tables.md`, and the `templates.md` additions: a template's parameters, and a document's
 bindings established when it is made.

@@ -5,8 +5,8 @@
 > [data.md](../design/data.md)'s build order, under
 > [ADR-0035](../decisions/0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md).
 > data.md's decisions DA-A to DA-V were approved by Ken on 2026-09-30, and DA-W to DA-AE the same
-> day. This plan's own decisions, D1-A to D1-S below, are taken as recommended and are Ken's to review
-> before the build starts.
+> day. This plan's own decisions, D1-A to D1-S below, were approved by Ken on 2026-09-30, every one as
+> recommended.
 
 **Goal:** an administrator makes a connection to a PostgreSQL source in a space, sets its credential
 without ever seeing it again, tests it and lists its tables; the credential is sealed with a key only
@@ -66,6 +66,10 @@ CI's runner behaves the same is answered by the whole-system job's isolation tes
 fails on an engine older than 28.
 
 ## Decisions
+
+Approved by Ken on 2026-09-30, every one as recommended: among them `write_sql` moves to D2 (D1-P),
+the PostgreSQL source's `account` member (D1-D), and the Connections page built from the existing
+layouts without an interface design (question 3). data.md is amended to match.
 
 | #    | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Instead of                                                                                                                                                                                                                             |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -480,6 +484,8 @@ changelog: the next Minor.
   "Could not connect." after five seconds.
 
 ## Questions for Ken before the build
+
+Answered on 2026-09-30: 1, 2 and 3 as recommended. 4 and 5 are left to the build.
 
 1. **D1-P**: `write_sql` in D2, against data.md's D1 row. Recommended.
 2. **D1-D**: the `account` member data.md's shape lacks.
