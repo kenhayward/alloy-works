@@ -3,6 +3,24 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.127.6 - 2026-09-30 (PR #TBD)
+
+### Changed
+
+- **What the first data release must do is now written down in its requirements, as decided.** The
+  requirements for connecting to your data now say that every value placed in a document is kept
+  with it, that a preview or a publish never goes back to the source, and that the source is asked
+  only when a person acts: placing a value, creating a document from a template, checking for
+  something newer, accepting it, or trying a query out. A value can be checked each time its
+  document is opened or never checked, and a newer one waits beside it until somebody accepts it.
+  Who can read a kept value is decided by who can read the document, and accepting data fetched as
+  yourself warns you first. The requirements also cover building a query without writing SQL, SQL as
+  a separately granted fallback, files in S3-compatible storage as CSV, spreadsheets or JSON, image
+  columns with their descriptions, one fixed list of column types, limits that stop the work at the
+  source, and stricter rules for connections that act as the person asking. Uploading a file as a
+  data source is not among them, and caching results is left for a later release. Nothing is built
+  yet.
+
 ## 0.127.5 - 2026-09-30 (PR #358)
 
 ### Changed
