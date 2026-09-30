@@ -72,8 +72,12 @@ neither gives the host an address on its bridge: from the connector, nothing of 
 answers - not the database, the store, the provider or the worker, by name or by address - and no
 port the host publishes answers either, on any address. The one exception is the service's own port
 on `connector-private`, which a bridge cannot make one-way: known, and left so in D1, since the
-connector holds no session or token and the API answers nothing without one. **That option needs Docker Engine 28 or
-later**; the worker is on neither network, so it has no
+connector holds no session or token and the API answers nothing without one. **That option needs
+Docker Engine 28.0.0 or later** - it arrived in 28.0.0 (moby/moby#49262), and 27.x refuses it, so
+compose cannot make the networks there; 28.0.4, 28.5.2 and 29.8.1 were each measured to give the
+bridge no address and to answer nothing of the host, and the isolation test asserts the engine it
+runs on. Such a network's first address is not the host's, then: Docker gives it to the first
+container to join, often the source. The worker is on neither network, so it has no
 address for the connector at all. `tests/e2e`'s `connector-isolation.test.ts` asks the running
 stack all of this on every CI run, and on Docker Desktop for Windows (engine 29.8.1) it holds as it
 does on Linux: a port published on every address, and a process on the Windows host listening on
@@ -292,7 +296,7 @@ files above set the same ones for a run from source; these are the ones worth kn
 | `SECRET_CONNECTOR_KEY`             | service                | The key the service presents to the connector: the connector's `CONNECTOR_KEY`                                                                                                                                               |
 | `CONNECTOR_KEY`                    | connector              | 32 bytes of base64 the service must present; read once at start and deleted from the environment                                                                                                                             |
 | `CONNECTOR_SEALING_KEY`            | connector              | 32 bytes of base64, another key, that seals and opens every source credential; the service never holds it                                                                                                                    |
-| `CONNECTOR_DENY`                   | connector              | Required: the platform's own address ranges, as CIDRs separated by commas, or `none` where the networks already hold it apart                                                                                                |
+| `CONNECTOR_DENY`                   | connector              | Required: the platform's own address ranges, as CIDRs separated by commas, or `none` where the networks already hold it apart; the connector refuses its networks' gateways and its own addresses whatever this says         |
 | `CONNECTOR_PORT`, `CONNECTOR_HOST` | connector              | Where it listens, `8090` on every address unset                                                                                                                                                                              |
 | `CONNECTOR_MAX_CHILDREN`           | connector              | How many requests run at once, each in a fresh process, 8 unset; the next is answered `connector_busy`. Keep it below the service's database pool, 10: every answer arriving at once is recorded in a transaction of its own |
 | `COMPOSE_PROFILES`                 | Compose                | `sources` starts the development source with every `up`                                                                                                                                                                      |

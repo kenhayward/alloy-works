@@ -427,7 +427,18 @@ trailing dot included - before checking it. An IPv6 address that carries an IPv4
 else to reach - IPv4-compatible, the well-known NAT64 prefix `64:ff9b::/96`, or RFC 8215's local-use
 `64:ff9b:1::/48`, read in every layout RFC 6052 allows it - is checked with the IPv4 address it
 carries as well, and dialled as given, since on an IPv6-only network a NAT64 address is the only way
-to an IPv4 source. It resolves once and connects to the address it checked;
+to an IPv4 source. **It also refuses what the connector's own networks say is the host, and
+itself**: each gateway its route tables name - on a bridge network, the host's address there - and
+each address the connector holds, read once at start, so a deployment that forgot to list its host
+is not reached through it. It cannot see further than that. An internal network names no gateway
+whether or not its bridge holds an address for the host, and an isolated bridge's first address is
+not the host's - Docker gives it to the first container to join, often the source - so for compose's
+networks the host is kept out by the engine (Docker Engine 28.0.0 or later, whose
+`gateway_mode_ipv4: isolated` gives the bridge no address), which the whole-system isolation test
+asserts, and not by the guard. Nor can the connector find out at start whether that isolation holds:
+from inside, an isolated bridge and one holding an address the host answers at look the same until
+something on the host answers, and nothing of the connector's listens there to be found. It resolves
+once and connects to the address it checked;
 follows no redirect across hosts; and refuses a connection option that names a local path. An S3
 endpoint is a host like any other.
 

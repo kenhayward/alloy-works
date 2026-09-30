@@ -135,7 +135,7 @@ function embedded(
 }
 
 /** An IPv6 address's text as Node spells it, lower case and shortest. */
-function canonical(address: string): string {
+export function canonicalIpv6(address: string): string {
   const all = groups(address)!;
   const hex = all.map((each) => each.toString(16));
   // The longest run of two or more zero groups, the first where two tie, becomes `::`.
@@ -170,7 +170,7 @@ export function normaliseHost(raw: string): NormalisedHost {
     if (four && 'mapped' in four) return { kind: 'address', address: four.mapped, family: 4 };
     return {
       kind: 'address',
-      address: four ? canonical(host) : host.toLowerCase(),
+      address: four ? canonicalIpv6(host) : host.toLowerCase(),
       family: 6,
       ...(four ? { carries: four.carries } : {}),
     };

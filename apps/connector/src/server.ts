@@ -10,6 +10,7 @@ import {
 import { sealSecret } from '@alloy-works/sealing';
 
 import { productionDeny, type ConnectorConfig } from './config.js';
+import { readNetworkDeny } from './network.js';
 import {
   createSupervisor,
   type ChildSpec,
@@ -54,8 +55,9 @@ function authenticated(request: IncomingMessage, keyDigest: Buffer): boolean {
 export function createConnectorServer(options: {
   readonly config: ConnectorConfig;
   /**
-   * The ranges the child's guard refuses. Production's - the built-in ones and CONNECTOR_DENY's - unless
-   * a test hands it another: a parameter, never configuration (D1-K).
+   * The ranges the child's guard refuses. Production's - the built-in ones, CONNECTOR_DENY's, and each
+   * gateway and address of the connector's own networks, read as the server is made - unless a test
+   * hands it another: a parameter, never configuration (D1-K).
    */
   readonly deny?: readonly string[];
   readonly spec?: ChildSpec | ((slot: number) => ChildSpec);
@@ -72,7 +74,7 @@ export function createConnectorServer(options: {
     options.supervisor ??
     createSupervisor({
       sealingKey: config.sealingKey,
-      deny: options.deny ?? productionDeny(config),
+      deny: options.deny ?? productionDeny(config, readNetworkDeny()),
       maxChildren: config.maxChildren,
       // Production's children, each as its slot's own user, unless a test hands another.
       ...(options.spec ? { spec: options.spec } : {}),

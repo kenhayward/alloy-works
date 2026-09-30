@@ -3,6 +3,7 @@ import { createServer, type Server, type Socket } from 'node:net';
 import type { DescribeAnswer } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { networkDeny } from './network.js';
 import { describeRelations, proposedType } from './postgres.js';
 import {
   childSpawn,
@@ -99,6 +100,34 @@ describe('the connector against a PostgreSQL source', () => {
       await supervisor.run('describe', requestFor(settings(), 'not-the-reader-password')),
     ).toEqual({
       failure: { code: 'connection_failed', attribution: 'connector' },
+    });
+  });
+
+  it("DAT-056 answers connection_failed for its own network's gateway, where the host answers, as for any guarded address", async () => {
+    // A route table naming the suite's own source, on loopback, as a network's gateway: the one
+    // address here that a listener answers, so a refusal is the guard's and not an empty port's.
+    const routes = [
+      ['Iface', 'Destination', 'Gateway', 'Flags', 'RefCnt', 'Use', 'Metric', 'Mask'],
+      ['eth0', '00000000', '0100007F', '0003', '0', '0', '0', '00000000'],
+    ]
+      .map((fields) => fields.join(String.fromCharCode(9)))
+      .join(String.fromCharCode(10));
+    const guarded = createSupervisor({
+      sealingKey: SEALING_KEY,
+      deny: [
+        ...suiteDeny,
+        ...networkDeny({ routes: { ipv4: routes }, interfaces: {}, endianness: 'LE' }),
+      ],
+      maxChildren: 1,
+      spec: childSpawn(suiteChild, suiteIsolation),
+    });
+    expect(await guarded.run('test', requestFor(settings(), PASSWORDS.reader))).toEqual({
+      outcome: 'failed',
+      failure: { code: 'connection_failed', attribution: 'connector' },
+    });
+    // And the same request, the gateway not refused, reaches the source.
+    expect(await supervisor.run('test', requestFor(settings(), PASSWORDS.reader))).toMatchObject({
+      outcome: 'ok',
     });
   });
 

@@ -2798,7 +2798,10 @@ Every `POST` carries `Bearer <CONNECTOR_KEY>`, compared by SHA-256 digest in con
 and never meets a source**: it opens the one credential a request carries and spawns a fresh Node
 child with an empty environment, writing it one line - the request, the opened secret and the guard's
 ranges - and reading one answer; the child resolves the host once through the guard, which refuses
-loopback, link-local and the deployment's `CONNECTOR_DENY` ranges in every spelling - an IPv6 address
+loopback, link-local, the deployment's `CONNECTOR_DENY` ranges and what the connector's own networks
+add - each gateway its route tables name, where a bridge network's host answers, and each address the
+connector itself holds, read from `/proc/net/route`, `/proc/net/ipv6_route` and its interfaces once at
+start (`network.ts`) - in every spelling - an IPv6 address
 carrying an IPv4 one, IPv4-compatible or NAT64 (`64:ff9b::/96`, and RFC 8215's `64:ff9b:1::/48` in
 each of RFC 6052's layouts), checked with the address it carries and dialled as given - dials the
 address it checked, answers, closes the source connection and exits. A child past its deadline is killed, and
@@ -2926,8 +2929,8 @@ among them; nothing is pushed anywhere, because where they would be pushed comes
 `deploy/compose.yaml` runs the whole system: PostgreSQL, the object store, the stand-in provider, a
 one-shot `setup` that migrates and creates the development environments, then the service, the
 worker and the connector. The connector is on `connector-private` and `connector-egress` alone, both
-`internal: true` with `com.docker.network.bridge.gateway_mode_ipv4: isolated` (Docker Engine 28 or
-later), and the service on `connector-private` beside the default network; `tests/e2e`'s
+`internal: true` with `com.docker.network.bridge.gateway_mode_ipv4: isolated` (Docker Engine 28.0.0 or
+later: 27.x refuses the option, so compose cannot make the networks), and the service on `connector-private` beside the default network; `tests/e2e`'s
 `connector-isolation.test.ts` asks Docker, on every CI run, that the connector reaches its source and
 none of the platform by name, by address or through the host - a port published on every address and
 a process on the host included - and that the worker has no route to it. The `sources` profile adds

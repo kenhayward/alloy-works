@@ -182,6 +182,11 @@ jobs:
       - name: Chromium
         run: pnpm --filter @alloy-works/browser fetch-chromium
 
+      # The runner's own engine, in the log: the connector's networks need Docker Engine 28.0.0 or later
+      # (deploy/README.md), which the isolation test asserts, and an earlier one cannot make them.
+      - name: The engine
+        run: docker version
+
       # With the development source, which the connector's isolation and end-to-end tests reach.
       - name: The stack
         id: stack

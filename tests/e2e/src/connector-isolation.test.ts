@@ -42,21 +42,49 @@ function container(service: string): Inspected {
   return (JSON.parse(docker('inspect', ids[0]!)) as Inspected[])[0]!;
 }
 
+/** A network's IPAM configuration: its subnets, and the gateway each names, if any. */
+const ipam = (network: string) =>
+  (JSON.parse(docker('network', 'inspect', '--format', '{{json .IPAM.Config}}', network)) as
+    { Gateway?: string; Subnet?: string }[] | null) ?? [];
+
+/** The IPv4 addresses containers hold on a network, which the host's bridge therefore does not. */
+function held(network: string): Set<string> {
+  const containers = JSON.parse(
+    docker('network', 'inspect', '--format', '{{json .Containers}}', network),
+  ) as Record<string, { IPv4Address: string }> | null;
+  return new Set(Object.values(containers ?? {}).map((each) => each.IPv4Address.split('/')[0]!));
+}
+
 /**
  * Where a network's bridge would answer for the host: the gateway its configuration names, and the
  * first address of each IPv4 subnet, which is where Docker puts one. An isolated bridge names none and
- * holds neither, which is the point; both are tried whatever it says.
+ * holds neither, which is the point; both are tried whatever it says - but for an address a container
+ * holds, which is that container and not the host. Docker gives an isolated network's first address to
+ * the first container to join it (Engine 28.0.4 to 29.8.1 alike), the source's when it starts first.
  */
 function gateways(network: string): string[] {
-  const config = JSON.parse(
-    docker('network', 'inspect', '--format', '{{json .IPAM.Config}}', network),
-  ) as { Gateway?: string; Subnet?: string }[] | null;
-  return (config ?? []).flatMap((each) => {
-    const first = /^(\d+)\.(\d+)\.(\d+)\.(\d+)\/\d+$/.exec(each.Subnet ?? '');
-    const firstHost = first ? [`${first[1]}.${first[2]}.${first[3]}.${Number(first[4]) + 1}`] : [];
-    return [...(each.Gateway ? [each.Gateway] : []), ...firstHost];
-  });
+  const containers = held(network);
+  return ipam(network)
+    .flatMap((each) => {
+      const first = /^(\d+)\.(\d+)\.(\d+)\.(\d+)\/\d+$/.exec(each.Subnet ?? '');
+      const firstHost = first
+        ? [`${first[1]}.${first[2]}.${first[3]}.${Number(first[4]) + 1}`]
+        : [];
+      return [...(each.Gateway ? [each.Gateway] : []), ...firstHost];
+    })
+    .filter((address) => !containers.has(address));
 }
+
+/** The engine this runs on, as numbers: `28.0.4` is [28, 0, 4]. */
+const engine = () =>
+  docker('version', '--format', '{{.Server.Version}}').split(/[.+-]/).slice(0, 3).map(Number);
+
+/**
+ * The first Docker Engine that gives an internal bridge no address for the host when asked,
+ * `com.docker.network.bridge.gateway_mode_ipv4: isolated` (moby/moby#49262, in 28.0.0). An engine
+ * before it refuses the option, so compose cannot make the networks at all.
+ */
+const MINIMUM_ENGINE = [28, 0, 0] as const;
 
 type Target = { readonly host: string; readonly port: number };
 type Outcome = Target & { readonly result: string };
@@ -146,11 +174,24 @@ describe("the connector's networks", () => {
   });
 
   it('DAT-056 gives the connector a route to its source and none to the platform: by name, by address or through the host', () => {
-    const [major] = docker('version', '--format', '{{.Server.Version}}').split('.');
+    const version = engine();
+    const atLeast = (want: readonly number[]) => {
+      for (const [at, part] of want.entries()) {
+        if ((version[at] ?? 0) !== part) return (version[at] ?? 0) > part;
+      }
+      return true;
+    };
     expect(
-      Number(major),
-      'Docker Engine 28 or later isolates a bridge gateway',
-    ).toBeGreaterThanOrEqual(28);
+      atLeast(MINIMUM_ENGINE),
+      `Docker Engine ${version.join('.')} runs this; ${MINIMUM_ENGINE.join('.')} or later gives the connector's networks no address for the host`,
+    ).toBe(true);
+    // And they name none: the bridge of each holds no address the host answers at.
+    for (const network of Object.keys(connector.NetworkSettings.Networks)) {
+      expect(
+        ipam(network).filter((each) => each.Gateway),
+        `${network} names no gateway`,
+      ).toEqual([]);
+    }
 
     // Every port the stack publishes to the host, and every address the host might answer at from
     // the connector: each of its networks' gateways, the platform network's, and Docker Desktop's name
@@ -184,9 +225,16 @@ describe("the connector's networks", () => {
       'the listener answers an ordinary container through the host',
     ).not.toEqual([]);
 
+    // The source's own address on the network it shares with the connector, which may be that
+    // network's first address: expected to answer, since it is the source and not the host.
+    const sourceAddress =
+      container('source-postgres').NetworkSettings.Networks[`${PROJECT}_connector-egress`]
+        ?.IPAddress;
+    expect(sourceAddress, 'the source is on connector-egress').toBeTruthy();
     const targets: Target[] = [
-      // The source, by name and so by address.
+      // The source, by name and by address.
       { host: 'source-postgres', port: 5432 },
+      { host: sourceAddress!, port: 5432 },
       // The platform by its names.
       ...['postgres', 'seaweedfs', 'stand-in-idp', 'service'].map((name) => ({
         host: name,
@@ -200,9 +248,11 @@ describe("the connector's networks", () => {
             Object.values(listening).map((port) => ({ host: network.IPAddress, port })),
           ),
       ),
-      // And through the host, on every port the stack publishes and the one published everywhere.
+      // And through the host, on every port the stack publishes, the one published everywhere, and
+      // PostgreSQL's own, where a host might run one: CI's stack publishes its database on 5432, the
+      // source's port, so a host address a container holds answers there as that container.
       ...hostAddresses.flatMap((host) =>
-        [...published, everywhere].map((port) => ({ host, port })),
+        [...new Set([...published, everywhere, 5432])].map((port) => ({ host, port })),
       ),
     ];
     const outcomes = probe(connector, targets);
@@ -215,6 +265,7 @@ describe("the connector's networks", () => {
     expect(connected(outcomes).sort()).toEqual(
       [
         'source-postgres:5432',
+        `${sourceAddress}:5432`,
         `service:${listening.service}`,
         `${privateAddress}:${listening.service}`,
       ].sort(),

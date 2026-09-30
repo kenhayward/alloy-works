@@ -258,8 +258,8 @@ verified on production's own platform before connectors ship. **D1 found it is a
 how compose closes it** ([the D1 plan](../plans/2026-09-30-d1-connections-and-the-connector.md), Q2):
 on a plain network every port the host publishes on all addresses answers the connector; an
 `internal` network still gives the host an address on its bridge, where any host process listening on
-all addresses answers; an internal network whose bridge gateway is `isolated` (Docker Engine 28 or
-later) answers nothing of the host or the platform, on Linux and on Docker Desktop for Windows alike.
+all addresses answers; an internal network whose bridge gateway is `isolated` (Docker Engine 28.0.0
+or later, which moby/moby#49262 added it to; 27.x refuses it) answers nothing of the host or the platform, on Linux and on Docker Desktop for Windows alike.
 Production's egress reaches the internet, so it cannot be internal: that isolation is hosting's to
 give, and the whole-system suite's isolation test is the check to run on it.
 

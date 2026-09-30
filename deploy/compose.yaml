@@ -246,7 +246,7 @@ services:
 
 # The connector's two networks (the D1 plan, D1-I): internal, so nothing on them is routed anywhere
 # else, and with no address for the host on their bridge, so no process the host runs - and no port
-# it publishes - answers there. Docker Engine 28 or later.
+# it publishes - answers there. Docker Engine 28.0.0 or later; 27.x refuses the option.
 networks:
   connector-private:
     internal: true

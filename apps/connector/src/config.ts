@@ -131,7 +131,13 @@ export function takeConnectorConfig(env: Record<string, string | undefined>): Co
   }
 }
 
-/** The ranges a production connector refuses: the built-in ones, and the deployment's. */
-export function productionDeny(config: Pick<ConnectorConfig, 'deny'>): readonly string[] {
-  return [...builtInDenied, ...config.deny];
+/**
+ * The ranges a production connector refuses: the built-in ones, the deployment's, and what its own
+ * networks add - each gateway and each address it holds (`network.ts`), read at start.
+ */
+export function productionDeny(
+  config: Pick<ConnectorConfig, 'deny'>,
+  network: readonly string[] = [],
+): readonly string[] {
+  return [...builtInDenied, ...config.deny, ...network];
 }

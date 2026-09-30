@@ -29,7 +29,9 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   deploy/README.md). A deployment runs it as compose does, with three capabilities and a read-only
   filesystem, and with compose's IPC limits of zero - so no request's process can leave shared
   memory, a message queue or a semaphore for the next - or it refuses to start, saying which is
-  missing; and should give it compose's init and process limit as well.
+  missing; and should give it compose's init and process limit as well. Its networks need Docker
+  Engine 28.0.0 or later, and it never connects to its own address or to the host through a gateway
+  of its networks, whatever the deployment lists.
 
 ## 0.128.4 - 2026-09-30 (PR #366)
 
