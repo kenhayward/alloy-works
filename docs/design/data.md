@@ -272,11 +272,13 @@ A literal is written in the canonical form of its parameter's type: text, `true`
 A document's parameter set is the `templates.md` additions' (TPL-020); until a document has one, a
 binding taking a document parameter fails to resolve there, `parameter_invalid`, as a required value
 missing does.
+
 **The schema admits the two `take` forms and no third**, so a binding naming neither a single-row
 column nor a key and a column is refused when it is written (DAT-067). Whether the column exists, and
 whether the definition declares that key, are checked where the binding is resolved, as a
 cross-reference's target is ([the footnotes plan](../plans/2026-09-18-content-model-03-footnotes-and-cross-references.md),
-decision G): a check at write would refuse retiring a definition a component names.
+decision G): a floating binding's definition can change after the component is saved, so a check at
+write would prove nothing about the version it resolves against.
 
 **In place at schema 1, or schema 2.** Content at schema 1 admits the old node, so changing it in
 place is licensed only by evidence that nothing stored holds one - the precedent of the footnotes
@@ -327,8 +329,8 @@ publish's binding stage.
 - **`connector-egress`**, the connector's own network out to tenants' sources, with no route to
   PostgreSQL, the object store, the identity provider or anything else of the platform's.
 
-It holds no platform credential - no database login, no object store key, no signing key but its own
-sealing key. That is case 1's answer: from the caller, only code stood between a hostile connection
+It holds no platform credential - no database login, no object store key - only its own sealing key
+and the key the service authenticates with. That is case 1's answer: from the caller, only code stood between a hostile connection
 and the platform, and code failed three ways; from the connector's network, every platform target
 timed out while the tenant's source answered. **The service and the worker never reach a source
 themselves.** The worker is not on `connector-private` at all.
@@ -392,7 +394,9 @@ wrong credential read the same, naming no address and echoing no credential (DAT
 oracle). **Once authenticated**, it checks the account where the source can say, and reports each
 finding by name, since none reveals anything about the network: `account_not_read_only`, which
 refuses the SQL fallback on that connection (DAT-103), and `account_holds_privilege`, which refuses
-asserted identity (DAT-112). The latest test's findings are kept with the connection.
+asserted identity (DAT-112). Each test is a row in `connection_test` - the connection version tested,
+who asked and when, the answer and its findings - insert-only, and the latest is what the two refusals
+read.
 
 ### What the session holds
 
@@ -469,10 +473,10 @@ value is a typed filter the connector applies to its canonical rows.
     sources: ({ alias: string, table: { schema?: string, name: string } }
             | { alias: string, query: Query })[],
     joins: { kind: 'inner' | 'left', source: string, on: Condition }[],
-    select: { name: string, of: Column | { aggregate: 'count' | 'sum' | 'average' | 'minimum' | 'maximum', of?: Column } }[],
+    select: { name: string, of: ColumnRef | { aggregate: 'count' | 'sum' | 'average' | 'minimum' | 'maximum', of?: ColumnRef } }[],
     where?: Condition,             // and, or, not over comparisons of a column with a parameter or a literal
-    groupBy: Column[],
-    orderBy: { of: Column, direction: 'ascending' | 'descending' }[],
+    groupBy: ColumnRef[],             // ColumnRef: a source's alias and a column in it
+    orderBy: { of: ColumnRef, direction: 'ascending' | 'descending' }[],
     limit?: number,
   }
   ```
