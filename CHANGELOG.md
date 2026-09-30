@@ -11,17 +11,22 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   connections you may read. An administrator of a space can make one there with **New connection** -
   a name and a database's host, port, database, account and TLS - and set its password on the
   connection's page. The password is locked away as it is sent and never shown again, to anybody:
-  the page says only whether one is set, by whom and when. Setting it tests the connection straight
-  away, and **Test** does the same whenever you ask, saying "Connected." or "Could not connect." with
-  one reason, and warning where the account could change data at the source. **List tables** shows
-  the tables and views the account can read. A change to the settings is saved as a new version, and
-  a connection can be retired and reinstated. Testing and listing tables need the new permission
+  the page says only whether one is set, by whom and when. A password is only ever used where it was
+  set for: change the host, port, database, account or TLS and it must be set again. Setting it
+  tests the connection straight away, and **Test** does the same whenever you ask, saying
+  "Connected." or "Could not connect." with one reason, and warning where the account could change
+  data at the source; a test of an earlier version says so. **List tables** shows the tables and
+  views the account can read. A change to the settings is saved as a new version, and a connection
+  can be retired and reinstated without losing a change you have typed and not saved. Testing and listing tables need the new permission
   **use connection**, which no starting role holds, so give it on purpose from **Manage access**.
   Nothing reads data from a connection yet.
 - **A separate process that reaches your databases, and nothing else.** The connector holds the key
-  that unlocks connection passwords, runs each request in a fresh process, and sits on networks of its
-  own with no route to the rest of Alloy Works. The development stack starts it; `--profile sources`
-  adds a sample database to connect to (see deploy/README.md).
+  that unlocks connection passwords, runs each request in a fresh process as a user of its own that
+  cannot read that key, signs in to a database only in a way that never sends the password itself,
+  and sits on networks of its own with no route to the rest of Alloy Works but the service that asks
+  it. The development stack starts it; `--profile sources` adds a sample database to connect to (see
+  deploy/README.md). A deployment runs it as compose does, with three capabilities and a read-only
+  filesystem, or it refuses to start.
 
 ## 0.128.3 - 2026-09-30 (PR #364)
 

@@ -2811,8 +2811,11 @@ without them it starts, and every act that needs a connector answers 503 `connec
 `apps/service/src/data/connector.ts` is the client, imported by the connection routes alone (DAT-089):
 every answer parsed by the protocol's schemas, and anything else - unreachable, a status that is not an
 answer, a body that does not parse, no answer two seconds past the request's deadline - is
-`connector_unavailable`, never the error's own words. Every failure a route answers carries its
-`attribution`, `connector`, `query` or `product` (DAT-049). **A test or a describe asks the connector
+`connector_unavailable`, never the error's own words. Every data failure a route answers carries its
+`attribution`, `connector`, `query` or `product` (DAT-049); the design's own refusals -
+`connection_retired`, `credential_missing`, `credential_target_changed` - carry none. One laid at the
+source or a query's author is logged as a warning naming its code, with no stack, and the product's
+own as an error. **A test or a describe asks the connector
 after its deciding transaction commits**: the handler decides, reads the connection and its sealed
 credential, and returns an `AfterCommit` (`src/after-commit.ts`), which the permission-checked wrapper
 runs once the transaction - and its shared lock on the access epoch - is let go, so no grant or
@@ -2836,7 +2839,10 @@ A retired connection, or one with no credential, is refused `connection_retired`
 
 **In the stack** the connector is on two networks and no others, `connector-private`, shared with the
 service alone, and `connector-egress`, to the sources, both internal with an isolated gateway, so it
-reaches nothing of the platform or the host ([Containers and images](#containers-and-images)). The
+reaches nothing of the platform or the host but the service's own port on `connector-private`
+([Containers and images](#containers-and-images)). **That one is known and not closed in D1**: the
+service listens on every address, and a bridge network has no direction, so the connector can open
+a connection to it there; it holds no session or token, and the API answers nothing without one. The
 renderer's **Connections** (`apps/web/src/data/`) lists them by space and offers **New connection**
 where the person may administer a space; a connection's page saves its settings as a version, sets or
 replaces its password through a field emptied as it is sent, tests it, lists its tables, retires and

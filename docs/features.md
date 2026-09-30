@@ -590,14 +590,18 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   settings as a new version, and says so if somebody else saved one first. Its password is typed
   into a field that empties as it is sent and never shows it again, anywhere: the page says only
   whether it is set, by whom and when, and setting or replacing it tests the connection straight
-  after. **Test** says "Connected." or "Could not connect." and one reason, the same whatever went
-  wrong, naming no address; once it has signed in, it says if the account can change data at the
-  source. **List tables** shows the tables and views the account may read, with their columns.
+  after. A password belongs to where it was set for: once a new version changes the host, port,
+  database, account or TLS, it is never sent anywhere, and the page says to set it again. **Test**
+  says "Connected." or "Could not connect." and one reason, the same for every failure to reach the
+  source or sign in to it, naming no address; once it has signed in, it says if the account can
+  change data at the source. A test of an earlier version is shown as that, not as this one's:
+  "Not tested since this version". **List tables** shows the tables and views the account may read, with their columns.
   **Retire** stops a connection running anything, and **Reinstate** starts it again, each a version.
   Testing and listing tables need **use connection**, which no starting role holds, so it is always
   granted on purpose, from **Manage access** on the connection or its space. The password is sealed
   by the connector, a separate process on networks of its own with no route to anything else of
-  Alloy Works, and only the connector can open it. Nothing queries a connection yet: there is no query,
+  Alloy Works but the service that asks it, and only the connector can open it; it signs in to a
+  database only in a way that never sends the password itself. Nothing queries a connection yet: there is no query,
   dataset or bound value.
 - **Search.** **Search**, beside Components, Documents and Publications, finds everything you may read
   by its words, and nothing you may not: components, documents and each of their sections,

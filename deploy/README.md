@@ -70,8 +70,10 @@ to it on port 8090, and `connector-egress`, out to the sources. Both are `intern
 `com.docker.network.bridge.gateway_mode_ipv4: isolated`, so neither is routed anywhere else and
 neither gives the host an address on its bridge: from the connector, nothing of the platform
 answers - not the database, the store, the provider or the worker, by name or by address - and no
-port the host publishes answers either, on any address. **That option needs Docker Engine 28 or
-later**; The worker is on neither network, so it has no
+port the host publishes answers either, on any address. The one exception is the service's own port
+on `connector-private`, which a bridge cannot make one-way: known, and left so in D1, since the
+connector holds no session or token and the API answers nothing without one. **That option needs Docker Engine 28 or
+later**; the worker is on neither network, so it has no
 address for the connector at all. `tests/e2e`'s `connector-isolation.test.ts` asks the running
 stack all of this on every CI run, and on Docker Desktop for Windows (engine 29.8.1) it holds as it
 does on Linux: a port published on every address, and a process on the Windows host listening on
@@ -259,27 +261,27 @@ Each image refuses to start without its configuration and says which variable is
 than failing somewhere further in. The compose file sets all of them, and the two `*.env.example`
 files above set the same ones for a run from source; these are the ones worth knowing:
 
-| Variable                           | Read by                | What it does                                                                                                                          |
-| ---------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                     | service, worker        | Which database, as which login role                                                                                                   |
-| `RENDERER_ROOT`                    | service                | Where the built renderer is; without it, the API and nothing else                                                                     |
-| `OBJECT_STORE_ENDPOINT`, `_BUCKET` | service, worker        | The object store, which must be an address a browser can follow too                                                                   |
-| `SECRET_OBJECT_STORE_KEY`          | service, worker, setup | Seals each environment's store credential and its sign-in client secret before they are stored; the service will not start without it |
-| `VERAPDF_COMMAND`                  | worker                 | veraPDF's launcher; the image's own, `/opt/verapdf/verapdf`, unset                                                                    |
-| `JAVA_OPTS`                        | worker                 | veraPDF's JVM options; `-XX:MaxRAMPercentage=50` added where they name no heap limit                                                  |
-| `LEASE_MS`                         | worker                 | How long a claimed job is held, two minutes unset; veraPDF gets a third to start and a third to check                                 |
-| `SWEEP_INTERVAL_MS`                | worker                 | How often the sweeps run, a check that gave up queued again among them                                                                |
-| `SIGN_IN_HOST`, `GOOGLE_CLIENT_ID` | service                | The Google route; set together or not at all                                                                                          |
-| `DEV_EXTRA_HOSTNAME`               | setup                  | An extra address for the development environment                                                                                      |
-| `ALLOY_SERVICE_URL`                | the desktop app        | Which environment its window opens                                                                                                    |
-| `CONNECTOR_URL`                    | service                | Where the connector answers, `http://connector:8090` in the stack; set with `SECRET_CONNECTOR_KEY`, or neither                        |
-| `SECRET_CONNECTOR_KEY`             | service                | The key the service presents to the connector: the connector's `CONNECTOR_KEY`                                                        |
-| `CONNECTOR_KEY`                    | connector              | 32 bytes of base64 the service must present; read once at start and deleted from the environment                                      |
-| `CONNECTOR_SEALING_KEY`            | connector              | 32 bytes of base64, another key, that seals and opens every source credential; the service never holds it                             |
-| `CONNECTOR_DENY`                   | connector              | Required: the platform's own address ranges, as CIDRs separated by commas, or `none` where the networks already hold it apart         |
-| `CONNECTOR_PORT`, `CONNECTOR_HOST` | connector              | Where it listens, `8090` on every address unset                                                                                       |
-| `CONNECTOR_MAX_CHILDREN`           | connector              | How many requests run at once, each in a fresh process, 8 unset; the next is answered `connector_busy`                                |
-| `COMPOSE_PROFILES`                 | Compose                | `sources` starts the development source with every `up`                                                                               |
+| Variable                           | Read by                | What it does                                                                                                                                                                                                                 |
+| ---------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                     | service, worker        | Which database, as which login role                                                                                                                                                                                          |
+| `RENDERER_ROOT`                    | service                | Where the built renderer is; without it, the API and nothing else                                                                                                                                                            |
+| `OBJECT_STORE_ENDPOINT`, `_BUCKET` | service, worker        | The object store, which must be an address a browser can follow too                                                                                                                                                          |
+| `SECRET_OBJECT_STORE_KEY`          | service, worker, setup | Seals each environment's store credential and its sign-in client secret before they are stored; the service will not start without it                                                                                        |
+| `VERAPDF_COMMAND`                  | worker                 | veraPDF's launcher; the image's own, `/opt/verapdf/verapdf`, unset                                                                                                                                                           |
+| `JAVA_OPTS`                        | worker                 | veraPDF's JVM options; `-XX:MaxRAMPercentage=50` added where they name no heap limit                                                                                                                                         |
+| `LEASE_MS`                         | worker                 | How long a claimed job is held, two minutes unset; veraPDF gets a third to start and a third to check                                                                                                                        |
+| `SWEEP_INTERVAL_MS`                | worker                 | How often the sweeps run, a check that gave up queued again among them                                                                                                                                                       |
+| `SIGN_IN_HOST`, `GOOGLE_CLIENT_ID` | service                | The Google route; set together or not at all                                                                                                                                                                                 |
+| `DEV_EXTRA_HOSTNAME`               | setup                  | An extra address for the development environment                                                                                                                                                                             |
+| `ALLOY_SERVICE_URL`                | the desktop app        | Which environment its window opens                                                                                                                                                                                           |
+| `CONNECTOR_URL`                    | service                | Where the connector answers, `http://connector:8090` in the stack; set with `SECRET_CONNECTOR_KEY`, or neither                                                                                                               |
+| `SECRET_CONNECTOR_KEY`             | service                | The key the service presents to the connector: the connector's `CONNECTOR_KEY`                                                                                                                                               |
+| `CONNECTOR_KEY`                    | connector              | 32 bytes of base64 the service must present; read once at start and deleted from the environment                                                                                                                             |
+| `CONNECTOR_SEALING_KEY`            | connector              | 32 bytes of base64, another key, that seals and opens every source credential; the service never holds it                                                                                                                    |
+| `CONNECTOR_DENY`                   | connector              | Required: the platform's own address ranges, as CIDRs separated by commas, or `none` where the networks already hold it apart                                                                                                |
+| `CONNECTOR_PORT`, `CONNECTOR_HOST` | connector              | Where it listens, `8090` on every address unset                                                                                                                                                                              |
+| `CONNECTOR_MAX_CHILDREN`           | connector              | How many requests run at once, each in a fresh process, 8 unset; the next is answered `connector_busy`. Keep it below the service's database pool, 10: every answer arriving at once is recorded in a transaction of its own |
+| `COMPOSE_PROFILES`                 | Compose                | `sources` starts the development source with every `up`                                                                                                                                                                      |
 
 Secrets arrive as `SECRET_*` variables and never reach a log: the configuration the service logs at
 start-up names them, never their values. veraPDF, a child of the worker, is started with `PATH`, the
