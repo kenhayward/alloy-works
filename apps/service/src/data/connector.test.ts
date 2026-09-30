@@ -51,14 +51,18 @@ describe("the service's connector client", () => {
   it('seals a secret with the key in a header, and answers the sealed value it parsed', async () => {
     const { asked, fetch } = answering(200, { sealed: SEALED });
     const client = createConnectorClient({ url: 'http://connector:8090', key: KEY, fetch });
-    expect(await client.seal('acme1', SECRET)).toEqual({ answer: { sealed: SEALED } });
+    expect(await client.seal('acme1', SECRET, settings)).toEqual({ answer: { sealed: SEALED } });
     expect(asked).toHaveLength(1);
     expect(asked[0]!.url).toBe('http://connector:8090/v1/seal');
     expect(asked[0]!.init.method).toBe('POST');
     expect(new Headers(asked[0]!.init.headers).get('authorization')).toBe(`Bearer ${KEY}`);
     // The secret travels in the body, never in the address.
     expect(asked[0]!.url).not.toContain(SECRET);
-    expect(JSON.parse(String(asked[0]!.init.body))).toEqual({ tenant: 'acme1', secret: SECRET });
+    expect(JSON.parse(String(asked[0]!.init.body))).toEqual({
+      tenant: 'acme1',
+      secret: SECRET,
+      settings,
+    });
   });
 
   it('answers a test and a describe as the connector answered them, parsed', async () => {
@@ -101,7 +105,7 @@ describe("the service's connector client", () => {
     ]) {
       const client = createConnectorClient({ url: 'http://c', key: KEY, fetch });
       const answers = [
-        await client.seal('acme1', SECRET),
+        await client.seal('acme1', SECRET, settings),
         await client.test(request()),
         await client.describe(request()),
       ];

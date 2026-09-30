@@ -36,7 +36,15 @@ const sealed = z
   .max(SEALED_MAX_BYTES)
   .regex(SEALED, { message: 'Not a sealed value this scheme wrote' });
 
-export const sealRequestSchema = z.strictObject({ tenant, secret });
+/**
+ * A secret to seal, and the connection settings whose target it is sealed to (the D1 fix, C3): it
+ * opens only for a request whose settings name the same type, host, port, database, account and TLS.
+ */
+export const sealRequestSchema = z.strictObject({
+  tenant,
+  secret,
+  settings: connectionSettingsSchema,
+});
 export type SealRequest = z.infer<typeof sealRequestSchema>;
 
 export const sealAnswerSchema = z.strictObject({ sealed });

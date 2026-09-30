@@ -173,6 +173,31 @@ describe('the supervisor', () => {
     expect(Date.now() - started).toBeGreaterThanOrEqual(1450);
   });
 
+  it('opens a credential only for the target it was sealed for, answering connection_failed without a child for any other', async () => {
+    let spawned = 0;
+    const supervisor = createSupervisor({
+      sealingKey: SEALING_KEY,
+      deny: suiteDeny,
+      maxChildren: 8,
+      spec: childSpawn(suiteChild, suiteIsolation),
+      spawn: async () => {
+        spawned += 1;
+        return { kind: 'answer', answer: { outcome: 'ok', findings: [] }, pid: 2 };
+      },
+      failureFloorMs: 0,
+    });
+    const sealedFor = requestFor(settings(), PASSWORDS.reader);
+    expect(await supervisor.run('test', sealedFor)).toEqual({ outcome: 'ok', findings: [] });
+    expect(spawned).toBe(1);
+    // The same sealed value, with the connection pointed at a server of somebody else's.
+    const moved = { ...sealedFor, settings: settings({ host: 'elsewhere.example' }) };
+    expect(await supervisor.run('test', moved)).toEqual({
+      outcome: 'failed',
+      failure: { code: 'connection_failed', attribution: 'connector' },
+    });
+    expect(spawned).toBe(1);
+  });
+
   it("runs each child at once as a user of its own slot, and sweeps a slot's user before it is used again", async () => {
     const started: ChildSpec[] = [];
     const release: (() => void)[] = [];

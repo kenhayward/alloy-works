@@ -28,8 +28,18 @@ export interface Failure {
   readonly message: string;
 }
 
+/**
+ * Whether a credential is set, by whom and when; `targetChanged` where the connection's host, port,
+ * database, account or TLS changed after it was set, so it is never used again (the D1 fix, C3).
+ */
 export type Credential =
-  { readonly set: false } | { readonly set: true; readonly setBy: Named; readonly setAt: string };
+  | { readonly set: false }
+  | {
+      readonly set: true;
+      readonly setBy: Named;
+      readonly setAt: string;
+      readonly targetChanged: boolean;
+    };
 
 export type Tested =
   | { readonly outcome: 'ok'; readonly findings: readonly string[]; readonly at: string }
@@ -92,7 +102,12 @@ function isSettings(value: unknown): value is Settings {
 function isCredential(value: unknown): value is Credential {
   if (!isRecord(value)) return false;
   if (value.set === false) return true;
-  return value.set === true && isNamed(value.setBy) && typeof value.setAt === 'string';
+  return (
+    value.set === true &&
+    isNamed(value.setBy) &&
+    typeof value.setAt === 'string' &&
+    typeof value.targetChanged === 'boolean'
+  );
 }
 
 /** A test's answer, as the test route and the credential route give it. */

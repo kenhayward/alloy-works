@@ -8459,7 +8459,8 @@
                             ]
                           },
                           "credentialSet": {
-                            "type": "boolean"
+                            "type": "boolean",
+                            "description": "Whether a credential is set for where the connection now signs in"
                           },
                           "lastTest": {
                             "anyOf": [
@@ -8995,12 +8996,17 @@
                             },
                             "setAt": {
                               "type": "string"
+                            },
+                            "targetChanged": {
+                              "type": "boolean",
+                              "description": "Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again"
                             }
                           },
                           "required": [
                             "set",
                             "setBy",
-                            "setAt"
+                            "setAt",
+                            "targetChanged"
                           ]
                         }
                       ]
@@ -9455,12 +9461,17 @@
                             },
                             "setAt": {
                               "type": "string"
+                            },
+                            "targetChanged": {
+                              "type": "boolean",
+                              "description": "Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again"
                             }
                           },
                           "required": [
                             "set",
                             "setBy",
-                            "setAt"
+                            "setAt",
+                            "targetChanged"
                           ]
                         }
                       ]
@@ -10174,7 +10185,7 @@
             }
           },
           "409": {
-            "description": "`connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set",
+            "description": "`connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, so the password must be set again",
             "content": {
               "application/json": {
                 "schema": {
@@ -10223,7 +10234,7 @@
             }
           },
           "502": {
-            "description": "`connection_failed`: the source could not be reached or signed in to; `connector_error`: the connector failed",
+            "description": "`connection_failed`: the source could not be reached or signed in to; `connector_error`: the connector failed; `source_unsupported`: the source is older than PostgreSQL 14",
             "content": {
               "application/json": {
                 "schema": {
@@ -10709,7 +10720,7 @@
             }
           },
           "409": {
-            "description": "`connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set",
+            "description": "`connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, so the password must be set again",
             "content": {
               "application/json": {
                 "schema": {
@@ -11343,12 +11354,17 @@
                             },
                             "setAt": {
                               "type": "string"
+                            },
+                            "targetChanged": {
+                              "type": "boolean",
+                              "description": "Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again"
                             }
                           },
                           "required": [
                             "set",
                             "setBy",
-                            "setAt"
+                            "setAt",
+                            "targetChanged"
                           ]
                         }
                       ]
@@ -11818,12 +11834,17 @@
                                 },
                                 "setAt": {
                                   "type": "string"
+                                },
+                                "targetChanged": {
+                                  "type": "boolean",
+                                  "description": "Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again"
                                 }
                               },
                               "required": [
                                 "set",
                                 "setBy",
-                                "setAt"
+                                "setAt",
+                                "targetChanged"
                               ]
                             }
                           ]
@@ -12368,12 +12389,17 @@
                                 },
                                 "setAt": {
                                   "type": "string"
+                                },
+                                "targetChanged": {
+                                  "type": "boolean",
+                                  "description": "Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again"
                                 }
                               },
                               "required": [
                                 "set",
                                 "setBy",
-                                "setAt"
+                                "setAt",
+                                "targetChanged"
                               ]
                             }
                           ]
@@ -36197,12 +36223,17 @@
                             },
                             "setAt": {
                               "type": "string"
+                            },
+                            "targetChanged": {
+                              "type": "boolean",
+                              "description": "Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again"
                             }
                           },
                           "required": [
                             "set",
                             "setBy",
-                            "setAt"
+                            "setAt",
+                            "targetChanged"
                           ]
                         }
                       ]
@@ -36672,12 +36703,17 @@
                                 },
                                 "setAt": {
                                   "type": "string"
+                                },
+                                "targetChanged": {
+                                  "type": "boolean",
+                                  "description": "Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again"
                                 }
                               },
                               "required": [
                                 "set",
                                 "setBy",
-                                "setAt"
+                                "setAt",
+                                "targetChanged"
                               ]
                             }
                           ]

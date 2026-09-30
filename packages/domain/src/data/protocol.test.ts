@@ -48,7 +48,7 @@ const testRequest = {
 describe("the connector's protocol", () => {
   it('round-trips each request and answer', () => {
     const cases: readonly [{ parse: (value: unknown) => unknown }, unknown][] = [
-      [sealRequestSchema, { tenant: 'acme', secret: 'invented-password' }],
+      [sealRequestSchema, { tenant: 'acme', secret: 'invented-password', settings }],
       [sealAnswerSchema, { sealed }],
       [testRequestSchema, testRequest],
       [describeRequestSchema, testRequest],
@@ -131,14 +131,14 @@ describe("the connector's protocol", () => {
       'é'.repeat(2049),
     ];
     for (const secret of refused) {
-      expect(sealRequestSchema.safeParse({ tenant: 'acme', secret }).success).toBe(false);
+      expect(sealRequestSchema.safeParse({ tenant: 'acme', secret, settings }).success).toBe(false);
     }
-    expect(sealRequestSchema.safeParse({ tenant: 'acme', secret: 'p'.repeat(4096) }).success).toBe(
-      true,
-    );
-    expect(sealRequestSchema.safeParse({ tenant: 'acme', secret: 'é'.repeat(2048) }).success).toBe(
-      true,
-    );
+    expect(
+      sealRequestSchema.safeParse({ tenant: 'acme', secret: 'p'.repeat(4096), settings }).success,
+    ).toBe(true);
+    expect(
+      sealRequestSchema.safeParse({ tenant: 'acme', secret: 'é'.repeat(2048), settings }).success,
+    ).toBe(true);
   });
 
   it('refuses a sealed value that is not the pattern or over 5,600 bytes, and a deadline out of range', () => {

@@ -1,7 +1,12 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 
-import { sealRequestSchema, testRequestSchema, type SealAnswer } from '@alloy-works/domain';
+import {
+  connectionTarget,
+  sealRequestSchema,
+  testRequestSchema,
+  type SealAnswer,
+} from '@alloy-works/domain';
 import { sealSecret } from '@alloy-works/sealing';
 
 import { productionDeny, type ConnectorConfig } from './config.js';
@@ -123,6 +128,7 @@ export function createConnectorServer(options: {
           'source-credential',
           parsed.data.tenant,
           parsed.data.secret,
+          connectionTarget(parsed.data.settings),
         ),
       };
       return send(200, answer);

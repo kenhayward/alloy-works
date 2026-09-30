@@ -17,8 +17,8 @@ import {
   readConnection,
   recordConnectionTest,
   recordConnectionVersion,
-  sealedCredentialOf,
   setConnectionCredential,
+  usableCredentialOf,
   type ConnectionAnswer,
   type ConnectionTestFailure,
   type StoredConnection,
@@ -119,7 +119,12 @@ async function connectionView(
     version: versionView(connection.version),
     settings: connection.settings,
     credential: credential.set
-      ? { set: true, setBy: credential.setBy, setAt: credential.setAt.toISOString() }
+      ? {
+          set: true,
+          setBy: credential.setBy,
+          setAt: credential.setAt.toISOString(),
+          targetChanged: credential.targetChanged,
+        }
       : { set: false },
     lastTest: last
       ? {
@@ -157,6 +162,24 @@ export function connectionHandlers(
       throw refused(409, 'connection.retired', 'This connection is retired, so it runs nothing.');
     }
     return connection;
+  }
+
+  /**
+   * The sealed credential a request is made with: refused where none is set, or where the one set was
+   * set for a host, port, database, account or TLS the connection no longer has (the D1 fix, C3).
+   */
+  async function usableSealed(trx: TenantTransaction, id: string): Promise<string> {
+    const credential = await usableCredentialOf(trx, id);
+    if (credential.answer === 'usable') return credential.sealed;
+    if (credential.answer === 'missing') {
+      throw refused(409, 'credential.missing', 'This connection has no credential set yet.');
+    }
+    throw refused(
+      409,
+      'credential.target_changed',
+      "This connection's host, port, database, account or TLS changed after its password was " +
+        'set. Set the password again to use it.',
+    );
   }
 
   function connected() {
@@ -327,7 +350,11 @@ export function connectionHandlers(
       const { secret } = request.body as CredentialBody;
       // Sealed by the connector with a key the service never holds; the service keeps only what
       // comes back, and no record of the request is kept (D1-S).
-      const { sealed } = answered(await connected().seal(tenantOf(request).id, secret));
+      // Sealed for where this version signs in, and stored beside that target's digest: a later
+      // version pointing anywhere else leaves it unusable (the D1 fix, C3).
+      const { sealed } = answered(
+        await connected().seal(tenantOf(request).id, secret, connection.settings),
+      );
       const set = await setConnectionCredential(trx, { id, sealed, by: principalId });
       if (set.answer !== 'set') {
         if (set.answer === 'connection.missing') throw notFound();
@@ -351,6 +378,7 @@ export function connectionHandlers(
           set: true as const,
           setBy: { id: set.credential.setBy.id, name: set.credential.setBy.name },
           setAt: set.credential.setAt.toISOString(),
+          targetChanged: set.credential.targetChanged,
         },
         test: tested,
       };
@@ -359,20 +387,14 @@ export function connectionHandlers(
     testConnection: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
       const { id } = request.params as ConnectionParams;
       const connection = await runnable(trx, id);
-      const sealed = await sealedCredentialOf(trx, id);
-      if (sealed === undefined) {
-        throw refused(409, 'credential.missing', 'This connection has no credential set yet.');
-      }
+      const sealed = await usableSealed(trx, id);
       return test(trx, request, connection, sealed, principalId);
     },
 
     describeConnection: async (request: FastifyRequest, { trx }: Authorised) => {
       const { id } = request.params as ConnectionParams;
       const connection = await runnable(trx, id);
-      const sealed = await sealedCredentialOf(trx, id);
-      if (sealed === undefined) {
-        throw refused(409, 'credential.missing', 'This connection has no credential set yet.');
-      }
+      const sealed = await usableSealed(trx, id);
       const described = answered(
         await connected().describe({
           requestId: randomUUID(),

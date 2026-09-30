@@ -52,6 +52,7 @@ const WIRE_CODES = {
   'identity.not_supported': 'identity_not_supported',
   'connection.retired': 'connection_retired',
   'credential.missing': 'credential_missing',
+  'credential.target_changed': 'credential_target_changed',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;

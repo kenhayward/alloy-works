@@ -7,7 +7,7 @@ import {
   findRole,
   grant,
   migrate,
-  sealedCredentialOf,
+  usableCredentialOf,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
@@ -32,7 +32,9 @@ interface ConnectionBody {
   space: { id: string; name: string };
   version: { id: string; number: string };
   settings: ConnectionSettings;
-  credential: { set: false } | { set: true; setBy: { id: string; name: string }; setAt: string };
+  credential:
+    | { set: false }
+    | { set: true; setBy: { id: string; name: string }; setAt: string; targetChanged: boolean };
   lastTest: null | {
     outcome: 'ok' | 'failed';
     findings: string[];
@@ -210,6 +212,7 @@ describe('connections through the service', () => {
       set: true,
       setBy: { id: ids.ada, name: 'Ada' },
       setAt: expect.stringMatching(/^\d{4}-\d\d-\d\dT/),
+      targetChanged: false,
     });
     const listed = await call('grace', 'GET', '/v1/connections');
     answers.push(listed.body);
@@ -218,9 +221,10 @@ describe('connections through the service', () => {
     );
 
     // Nothing answered holds the credential, or the sealed value the service keeps for it.
-    const sealed = await tenantDb.withTenant(tenant, (trx) =>
-      sealedCredentialOf(trx, connection.id),
+    const usable = await tenantDb.withTenant(tenant, (trx) =>
+      usableCredentialOf(trx, connection.id),
     );
+    const sealed = usable.answer === 'usable' ? usable.sealed : undefined;
     expect(sealed).toMatch(/^v1\./);
     for (const answer of answers) {
       expect(answer).not.toContain(SECRET);
@@ -254,6 +258,11 @@ describe('connections through the service', () => {
       outcome: 'failed',
       failure: { code: 'connection_failed', attribution: 'connector' },
     };
+    // A new port is somewhere else to sign in, so the password is set again for it first.
+    expect(
+      (await call('ada', 'PUT', `/v1/connections/${connection.id}/credential`, { secret: SECRET }))
+        .statusCode,
+    ).toBe(200);
     const failed = await call('ada', 'POST', `/v1/connections/${connection.id}/test`, {});
     expect(failed.statusCode, failed.body).toBe(200);
     expect(failed.json()).toEqual({
@@ -269,15 +278,17 @@ describe('connections through the service', () => {
     expect(failed.body).not.toContain('5433');
 
     // The connector was asked with each version's settings and the sealed credential, and each
-    // test is a row against the version it tested: the credential's own test, then the two here.
-    const asked = connector.asked.filter((each) => each.path === '/v1/test').slice(-2);
+    // test is a row against the version it tested: each credential's own test, and the two here.
+    const asked = connector.asked.filter((each) => each.path === '/v1/test').slice(-3);
     expect(asked.map((each) => (each.body as { connection: Json }).connection)).toEqual([
       { id: connection.id, version: connection.version.id },
+      { id: connection.id, version: second.version.id },
       { id: connection.id, version: second.version.id },
     ]);
     expect(await recordedTests(connection.id)).toEqual([
       expect.objectContaining({ connection_version_id: connection.version.id, outcome: 'ok' }),
       expect.objectContaining({ connection_version_id: connection.version.id, outcome: 'ok' }),
+      expect.objectContaining({ connection_version_id: second.version.id, outcome: 'failed' }),
       expect.objectContaining({
         connection_version_id: second.version.id,
         outcome: 'failed',
@@ -418,6 +429,74 @@ describe('connections through the service', () => {
     expect((await call('ada', 'GET', `/v1/connections/${id}`)).statusCode).toBe(404);
   });
 
+  it('binds a credential to where its connection signs in: a version changing the host, port, database, account or TLS leaves it unusable, says so, and asks the connector nothing until it is set again', async () => {
+    const connection = await make({ name: 'Bound' });
+    await allow(ids.ada!, connectionUser, { kind: 'artifact', id: connection.id });
+    connector.mode = 'answer';
+    connector.test = { outcome: 'ok', findings: [] };
+    const put = () =>
+      call('ada', 'PUT', `/v1/connections/${connection.id}/credential`, { secret: SECRET });
+    expect((await put()).statusCode).toBe(200);
+    // Sealed for the settings it will be used with.
+    const sealing = connector.asked.filter((each) => each.path === '/v1/seal').at(-1)!;
+    expect((sealing.body as { settings: unknown }).settings).toEqual(connection.settings);
+
+    // A new name keeps it.
+    const renamed = await call('ada', 'POST', `/v1/connections/${connection.id}/versions`, {
+      openedFrom: connection.version.id,
+      settings: settings({ name: 'Bound, renamed' }),
+    });
+    expect(renamed.json<ConnectionBody>().credential).toMatchObject({
+      set: true,
+      targetChanged: false,
+    });
+    expect(
+      (await call('ada', 'POST', `/v1/connections/${connection.id}/test`, {})).statusCode,
+    ).toBe(200);
+
+    // Pointed at a server of somebody else's: the credential is still set, and says it must be set
+    // again, and neither a test nor a describe reaches the connector with it.
+    const moved = await call('ada', 'POST', `/v1/connections/${connection.id}/versions`, {
+      openedFrom: renamed.json<ConnectionBody>().version.id,
+      settings: settings({
+        name: 'Bound, renamed',
+        source: { ...settings().source, host: 'elsewhere.example' },
+      }),
+    });
+    expect(moved.statusCode, moved.body).toBe(200);
+    expect(moved.json<ConnectionBody>().credential).toMatchObject({
+      set: true,
+      targetChanged: true,
+    });
+    const before = connector.asked.length;
+    const tests = (await recordedTests(connection.id)).length;
+    for (const path of ['test', 'describe']) {
+      const answer = await call('ada', 'POST', `/v1/connections/${connection.id}/${path}`, {});
+      expect(answer.statusCode, path).toBe(409);
+      expect(answer.json(), path).toMatchObject({
+        code: 'credential_target_changed',
+        message: expect.stringMatching(/set .*password again/i),
+      });
+    }
+    expect(connector.asked.length).toBe(before);
+    expect(await recordedTests(connection.id)).toHaveLength(tests);
+    const listed = await call('ada', 'GET', '/v1/connections');
+    expect(listed.json<{ items: Json[] }>().items).toContainEqual(
+      expect.objectContaining({ id: connection.id, credentialSet: false }),
+    );
+
+    // Set again, for where it now points, it is used again.
+    expect((await put()).statusCode).toBe(200);
+    const read = await call('ada', 'GET', `/v1/connections/${connection.id}`);
+    expect(read.json<ConnectionBody>().credential).toMatchObject({
+      set: true,
+      targetChanged: false,
+    });
+    expect(
+      (await call('ada', 'POST', `/v1/connections/${connection.id}/test`, {})).statusCode,
+    ).toBe(200);
+  });
+
   it('answers connection_retired, credential_missing and connector_unavailable before the connector is asked, and records nothing', async () => {
     const connection = await make({ name: 'Unready' });
     await allow(ids.ada!, connectionUser, { kind: 'artifact', id: connection.id });
@@ -460,8 +539,8 @@ describe('connections through the service', () => {
     expect(connector.asked.length).toBe(before);
     expect(await recordedTests(connection.id)).toEqual([]);
     expect(
-      await tenantDb.withTenant(tenant, (trx) => sealedCredentialOf(trx, connection.id)),
-    ).toBeUndefined();
+      await tenantDb.withTenant(tenant, (trx) => usableCredentialOf(trx, connection.id)),
+    ).toEqual({ answer: 'missing' });
 
     // Reinstated, it takes one again.
     const current = retired.json<ConnectionBody>();

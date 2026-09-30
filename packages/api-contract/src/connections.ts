@@ -46,7 +46,17 @@ const Named = z.object({
 /** Whether a credential is set, and by whom and when: never the credential (DAT-004). */
 export const CredentialState = z.discriminatedUnion('set', [
   z.object({ set: z.literal(false) }),
-  z.object({ set: z.literal(true), setBy: Named, setAt: z.string() }),
+  z.object({
+    set: z.literal(true),
+    setBy: Named,
+    setAt: z.string(),
+    targetChanged: z
+      .boolean()
+      .describe(
+        'Whether the host, port, database, account or TLS has changed since it was set: if so it is ' +
+          'never used again, and must be set again',
+      ),
+  }),
 ]);
 export type CredentialState = z.infer<typeof CredentialState>;
 
@@ -131,7 +141,9 @@ export const ConnectionSummary = z.object({
   type: z.enum(['postgres']),
   retired: z.boolean(),
   version: z.object({ id: z.string(), number: z.string() }),
-  credentialSet: z.boolean(),
+  credentialSet: z
+    .boolean()
+    .describe('Whether a credential is set for where the connection now signs in'),
   lastTest: z.object({ outcome: z.enum(['ok', 'failed']), at: z.string() }).nullable(),
   changedAt: z.string().describe('When its latest version was made'),
 });
@@ -199,7 +211,9 @@ const unavailable = {
 } as const;
 const retiredOrUnset = {
   description:
-    '`connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set',
+    '`connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; ' +
+    '`credential_target_changed`: the host, port, database, account or TLS changed after the credential ' +
+    'was set, so the password must be set again',
   schema: DataRefusal,
 } as const;
 
@@ -375,7 +389,8 @@ export const connectionRoutes = {
       409: retiredOrUnset,
       502: {
         description:
-          '`connection_failed`: the source could not be reached or signed in to; `connector_error`: the connector failed',
+          '`connection_failed`: the source could not be reached or signed in to; `connector_error`: the connector failed; ' +
+          '`source_unsupported`: the source is older than PostgreSQL 14',
         schema: DataRefusal,
       },
       503: unavailable,

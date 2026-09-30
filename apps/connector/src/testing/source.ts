@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
-import type { ConnectionSettings, TestRequest } from '@alloy-works/domain';
+import { connectionTarget, type ConnectionSettings, type TestRequest } from '@alloy-works/domain';
 import { sealSecret } from '@alloy-works/sealing';
 import pg from 'pg';
 
@@ -81,7 +81,7 @@ export function requestFor(
     tenant: TENANT,
     connection: { id: randomUUID(), version: randomUUID() },
     settings: source,
-    sealed: sealSecret(SEALING_KEY, 'source-credential', TENANT, secret),
+    sealed: sealSecret(SEALING_KEY, 'source-credential', TENANT, secret, connectionTarget(source)),
     deadlineMs,
   };
 }

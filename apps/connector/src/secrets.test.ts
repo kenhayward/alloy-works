@@ -128,11 +128,20 @@ describe("the connector's secrets", () => {
       status: 400,
       text: '{"code":"request_invalid"}',
     });
-    expect(await call(real.url, '/v1/seal', { tenant: 'Not A Tenant', secret: CANARY })).toEqual({
+    expect(
+      await call(real.url, '/v1/seal', {
+        tenant: 'Not A Tenant',
+        secret: CANARY,
+        settings: settings(),
+      }),
+    ).toEqual({
       status: 400,
       text: '{"code":"request_invalid"}',
     });
-    expect((await call(real.url, '/v1/seal', { tenant: 'acme', secret: CANARY })).status).toBe(200);
+    expect(
+      (await call(real.url, '/v1/seal', { tenant: 'acme', secret: CANARY, settings: settings() }))
+        .status,
+    ).toBe(200);
     await new Promise<void>((resolve) => real.server.close(() => resolve()));
 
     // A child made to throw the driver's own error, uncaught.

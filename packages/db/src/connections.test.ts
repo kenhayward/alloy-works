@@ -12,7 +12,7 @@ import {
   readConnection,
   recordConnectionTest,
   recordConnectionVersion,
-  sealedCredentialOf,
+  usableCredentialOf,
   setConnectionCredential,
 } from './connections.js';
 import { grant } from './grants.js';
@@ -320,6 +320,7 @@ describe('a connection', () => {
       set: true,
       setBy: { id: grace, name: 'Grace' },
       setAt: expect.any(Date),
+      targetChanged: false,
     });
     expect(JSON.stringify(credential)).not.toContain(value);
     expect(JSON.stringify(credential)).not.toContain(SECRET);
@@ -331,9 +332,9 @@ describe('a connection', () => {
     await service.withTenant(production, (trx) =>
       setConnectionCredential(trx, { id: first.id, sealed: replacement, by: ada }),
     );
-    expect(await service.withTenant(production, (trx) => sealedCredentialOf(trx, first.id))).toBe(
-      replacement,
-    );
+    expect(
+      await service.withTenant(production, (trx) => usableCredentialOf(trx, first.id)),
+    ).toEqual({ answer: 'usable', sealed: replacement });
     expect(
       await service.withTenant(production, (trx) => credentialOf(trx, first.id)),
     ).toMatchObject({
@@ -348,7 +349,15 @@ describe('a connection', () => {
     expect(rows.rows.map((row) => row.set_by)).toEqual([grace, ada]);
     // Nothing in a row is the secret: its columns are the connection, the sealed value, who and when.
     expect(Object.keys(rows.rows[0]).sort()).toEqual(
-      ['connection_id', 'connection_kind', 'id', 'sealed', 'set_at', 'set_by'].sort(),
+      [
+        'connection_id',
+        'connection_kind',
+        'id',
+        'sealed',
+        'set_at',
+        'set_by',
+        'target_digest',
+      ].sort(),
     );
     expect(JSON.stringify(rows.rows)).not.toContain(SECRET);
   });
@@ -393,6 +402,79 @@ describe('a connection', () => {
         ),
       ),
     ).rejects.toThrow(/foreign key/);
+  });
+
+  it('binds a credential to the target it was set for: a version changing the host, port, database, account or TLS leaves none usable until one is set again', async () => {
+    const connection = await made();
+    let opened = connection.version.id;
+    const cut = async (source: Partial<ConnectionSettings['source']>, over = {}) => {
+      const current = (await service.withTenant(production, (trx) =>
+        readConnection(trx, connection.id),
+      ))!;
+      const answer = await service.withTenant(production, (trx) =>
+        recordConnectionVersion(trx, {
+          author: ada,
+          id: connection.id,
+          openedFrom: opened,
+          settings: {
+            ...current.settings,
+            ...over,
+            source: { ...current.settings.source, ...source },
+          },
+        }),
+      );
+      if (answer.answer !== 'recorded') throw new Error(answer.answer);
+      opened = answer.connection.version.id;
+    };
+    const usable = () =>
+      service.withTenant(production, (trx) => usableCredentialOf(trx, connection.id));
+    const state = () => service.withTenant(production, (trx) => credentialOf(trx, connection.id));
+    const set = () =>
+      service.withTenant(production, (trx) =>
+        setConnectionCredential(trx, { id: connection.id, sealed: sealed(), by: ada }),
+      );
+
+    expect(await usable()).toEqual({ answer: 'missing' });
+    await set();
+    expect(await usable()).toEqual({ answer: 'usable', sealed: expect.any(String) });
+    expect(await state()).toMatchObject({ set: true, targetChanged: false });
+
+    // A change to anything but the target keeps the credential.
+    await cut({}, { name: 'Readings, renamed', description: 'Moved.' });
+    expect(await usable()).toMatchObject({ answer: 'usable' });
+
+    for (const change of [
+      { host: 'elsewhere.example' },
+      { port: 5433 },
+      { database: 'other' },
+      { account: 'writer' },
+      { tls: 'verifyFull' as const },
+    ]) {
+      await cut(change);
+      expect(await usable(), JSON.stringify(change)).toEqual({ answer: 'target_changed' });
+      expect(await state(), JSON.stringify(change)).toMatchObject({
+        set: true,
+        targetChanged: true,
+      });
+      await set();
+      expect(await usable(), JSON.stringify(change)).toMatchObject({ answer: 'usable' });
+    }
+
+    // A row that names no target - one set before credentials were bound - is never usable.
+    await service.withTenant(production, (trx) =>
+      sql`insert into connection_credential (connection_id, sealed, set_by) values (${connection.id}, ${sealed()}, ${ada})`.execute(
+        trx,
+      ),
+    );
+    expect(await usable()).toEqual({ answer: 'target_changed' });
+    // And the runtime role cannot write a target of its own shape.
+    await expect(
+      service.withTenant(production, (trx) =>
+        sql`insert into connection_credential (connection_id, sealed, set_by, target_digest) values (${connection.id}, ${sealed()}, ${ada}, ${'not a digest'})`.execute(
+          trx,
+        ),
+      ),
+    ).rejects.toThrow(/connection_credential_target_digest/);
   });
 
   it('answers a stale version precondition with the current one, and an unchanged version unchanged', async () => {

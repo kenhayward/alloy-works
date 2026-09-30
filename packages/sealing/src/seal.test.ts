@@ -24,6 +24,23 @@ describe('a sealed secret', () => {
     expect(() => openSecret(key, 'sign-in', 'acmedev', sealed)).toThrow(SealedSecretRefused);
   });
 
+  it('binds a secret sealed with a context to that context: it opens with it alone, and not without one', () => {
+    const sealed = sealSecret(key, 'source-credential', 'acme', SECRET, '["postgres","a",5432]');
+    expect(openSecret(key, 'source-credential', 'acme', sealed, '["postgres","a",5432]')).toBe(
+      SECRET,
+    );
+    for (const context of ['["postgres","b",5432]', '', undefined]) {
+      expect(() => openSecret(key, 'source-credential', 'acme', sealed, context)).toThrow(
+        SealedSecretRefused,
+      );
+    }
+    // And one sealed without a context opens with none.
+    const plain = sealSecret(key, 'source-credential', 'acme', SECRET);
+    expect(() => openSecret(key, 'source-credential', 'acme', plain, '[]')).toThrow(
+      SealedSecretRefused,
+    );
+  });
+
   it('does not open as another kind of secret: a store credential is no client secret, nor the reverse', () => {
     const store = sealSecret(key, 'object-store', 'acme', SECRET);
     const signIn = sealSecret(key, 'sign-in', 'acme', SECRET);

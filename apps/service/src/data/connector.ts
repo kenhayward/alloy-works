@@ -3,6 +3,7 @@ import {
   describeAnswerSchema,
   sealAnswerSchema,
   testAnswerSchema,
+  type ConnectionSettings,
   type DataFailure,
   type DescribeAnswer,
   type DescribeRequest,
@@ -27,7 +28,8 @@ export type Answered<T> =
     };
 
 export interface ConnectorClient {
-  seal(tenant: string, secret: string): Promise<Answered<SealAnswer>>;
+  /** Seals a secret for a tenant, bound to where these settings sign in (the D1 fix, C3). */
+  seal(tenant: string, secret: string, settings: ConnectionSettings): Promise<Answered<SealAnswer>>;
   test(request: TestRequest): Promise<Answered<TestAnswer>>;
   describe(request: DescribeRequest): Promise<Answered<DescribeAnswer>>;
 }
@@ -94,7 +96,8 @@ export function createConnectorClient(options: {
   }
 
   return {
-    seal: (tenant, secret) => ask('/v1/seal', { tenant, secret }, sealAnswerSchema, SEAL_MS),
+    seal: (tenant, secret, settings) =>
+      ask('/v1/seal', { tenant, secret, settings }, sealAnswerSchema, SEAL_MS),
     test: (request) => ask('/v1/test', request, testAnswerSchema, request.deadlineMs + SLACK_MS),
     describe: (request) =>
       ask('/v1/describe', request, describeAnswerSchema, request.deadlineMs + SLACK_MS),

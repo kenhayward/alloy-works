@@ -2,6 +2,7 @@ export {
   CONNECTION_SCHEMA_VERSION,
   ConnectionRefused,
   checkConnection,
+  connectionTarget,
   connectionSettingsSchema,
   connectorIdentities,
   parseConnection,

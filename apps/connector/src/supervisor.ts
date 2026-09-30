@@ -3,6 +3,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
 import {
+  connectionTarget,
   dataFailure,
   describeAnswerSchema,
   testAnswerSchema,
@@ -219,7 +220,15 @@ export function createSupervisor(options: {
     const started = Date.now();
     let secret: string;
     try {
-      secret = openSecret(options.sealingKey, 'source-credential', request.tenant, request.sealed);
+      // Opened only for the target it was sealed for: a version pointing the connection anywhere
+      // else opens nothing (the D1 fix, C3).
+      secret = openSecret(
+        options.sealingKey,
+        'source-credential',
+        request.tenant,
+        request.sealed,
+        connectionTarget(request.settings),
+      );
     } catch {
       // A credential that does not open fails to authenticate, as a wrong one does, and takes as long.
       await pause(started + failureFloorMs - Date.now());

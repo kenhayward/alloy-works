@@ -167,6 +167,7 @@ function service(
         set: true,
         setBy: { id: 'ada', name: 'Ada' },
         setAt: '2026-09-30T10:00:00.000Z',
+        targetChanged: false,
       };
       held = { ...held, credential };
       return json(200, {
@@ -307,7 +308,12 @@ describe('a connection on its own page', () => {
     let answer = () => json(200, { outcome: 'ok', findings: [], at: '2026-09-30T10:00:00.000Z' });
     const { client, asked } = service({
       connection: view({
-        credential: { set: true, setBy: { id: 'ada', name: 'Ada' }, setAt: '2026-09-30T09:00:00Z' },
+        credential: {
+          set: true,
+          setBy: { id: 'ada', name: 'Ada' },
+          setAt: '2026-09-30T09:00:00Z',
+          targetChanged: false,
+        },
       }),
       test: () => answer(),
     });
@@ -374,6 +380,39 @@ describe('a connection on its own page', () => {
     ).not.toContain(CANARY);
   });
 
+  it('says the password must be set again once a version changes where the connection signs in', async () => {
+    const user = userEvent.setup();
+    const setBy = { id: 'ada', name: 'Ada' };
+    const { client } = service({
+      connection: view({
+        credential: { set: true, setBy, setAt: '2026-09-30T09:00:00Z', targetChanged: false },
+      }),
+      version: (sent) =>
+        json(
+          200,
+          view({
+            settings: sent.settings,
+            version: { id: SECOND, number: '0.2' } as never,
+            credential: { set: true, setBy, setAt: '2026-09-30T09:00:00Z', targetChanged: true },
+          }),
+        ),
+    });
+    render(<ConnectionPage client={client} id={READINGS} />);
+    const credential = await screen.findByRole('region', { name: 'Credential' });
+    expect(within(credential).getByText('Set by Ada on 30 September 2026.')).toBeInTheDocument();
+    const saving = screen.getByRole('region', { name: 'Settings' });
+    const host = within(saving).getByLabelText('Host');
+    await user.clear(host);
+    await user.type(host, 'db2.example.test');
+    await user.click(within(saving).getByRole('button', { name: 'Save version' }));
+    expect(
+      await within(credential).findByText(
+        'Set by Ada on 30 September 2026, before the host, port, database, account or TLS changed. Set the password again to use this connection.',
+      ),
+    ).toBeInTheDocument();
+    expect(within(credential).getByRole('button', { name: 'Set again' })).toBeInTheDocument();
+  });
+
   it('saves a version, and says so when somebody else saved one first', async () => {
     const user = userEvent.setup();
     let stale = false;
@@ -425,7 +464,12 @@ describe('a connection on its own page', () => {
     const user = userEvent.setup();
     const { client } = service({
       connection: view({
-        credential: { set: true, setBy: { id: 'ada', name: 'Ada' }, setAt: '2026-09-30T09:00:00Z' },
+        credential: {
+          set: true,
+          setBy: { id: 'ada', name: 'Ada' },
+          setAt: '2026-09-30T09:00:00Z',
+          targetChanged: false,
+        },
       }),
     });
     render(<ConnectionPage client={client} id={READINGS} />);
@@ -467,7 +511,12 @@ describe('a connection on its own page', () => {
     let none = false;
     const { client } = service({
       connection: view({
-        credential: { set: true, setBy: { id: 'ada', name: 'Ada' }, setAt: '2026-09-30T09:00:00Z' },
+        credential: {
+          set: true,
+          setBy: { id: 'ada', name: 'Ada' },
+          setAt: '2026-09-30T09:00:00Z',
+          targetChanged: false,
+        },
       }),
       describe: () => (none ? unavailable() : undefined!),
       test: () => (none ? unavailable() : undefined!),

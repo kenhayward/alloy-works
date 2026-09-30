@@ -1,6 +1,6 @@
 import type { AddressInfo } from 'node:net';
 
-import { SEALED } from '@alloy-works/domain';
+import { connectionTarget, SEALED } from '@alloy-works/domain';
 import { openSecret } from '@alloy-works/sealing';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -65,21 +65,38 @@ describe("the connector's interface", () => {
       body: typeof body === 'string' ? body : JSON.stringify(body),
     });
 
-  it("seals a secret to a value SEALED matches, which opens only with the connector's key and the tenant's id", async () => {
+  it("seals a secret to a value SEALED matches, which opens only with the connector's key, the tenant's id and the connection's target", async () => {
     const { url } = await started();
     const response = await post(url, '/v1/seal', {
       tenant: 'acme',
       secret: 'an-invented-password',
+      settings: settings(),
     });
     expect(response.status).toBe(200);
     const { sealed } = (await response.json()) as { sealed: string };
     expect(sealed).toMatch(SEALED);
-    expect(openSecret(SEALING_KEY, 'source-credential', 'acme', sealed)).toBe(
+    const target = connectionTarget(settings());
+    expect(openSecret(SEALING_KEY, 'source-credential', 'acme', sealed, target)).toBe(
       'an-invented-password',
     );
-    expect(() => openSecret(SEALING_KEY, 'source-credential', 'acmedev', sealed)).toThrow();
-    expect(() => openSecret(Buffer.alloc(32, 4), 'source-credential', 'acme', sealed)).toThrow();
-    expect(() => openSecret(SEALING_KEY, 'sign-in', 'acme', sealed)).toThrow();
+    expect(() => openSecret(SEALING_KEY, 'source-credential', 'acmedev', sealed, target)).toThrow();
+    expect(() =>
+      openSecret(Buffer.alloc(32, 4), 'source-credential', 'acme', sealed, target),
+    ).toThrow();
+    expect(() => openSecret(SEALING_KEY, 'sign-in', 'acme', sealed, target)).toThrow();
+    // Not for the connection pointed anywhere else, and not for no target at all.
+    expect(() => openSecret(SEALING_KEY, 'source-credential', 'acme', sealed)).toThrow();
+    for (const moved of [
+      settings({ host: 'elsewhere.example' }),
+      settings({ port: 6543 }),
+      settings({ database: 'other' }),
+      settings({ account: 'writer' }),
+      settings({ tls: 'verifyFull' }),
+    ]) {
+      expect(() =>
+        openSecret(SEALING_KEY, 'source-credential', 'acme', sealed, connectionTarget(moved)),
+      ).toThrow();
+    }
   });
 
   it('answers a request without the key, or with another, 401 and no body', async () => {

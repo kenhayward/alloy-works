@@ -1,5 +1,7 @@
+import { createHash } from 'node:crypto';
 import {
   ConnectionRefused,
+  connectionTarget,
   parseConnection,
   parseConnectionForWrite,
   type ConnectionProblem,
@@ -172,13 +174,33 @@ export async function recordConnectionVersion(
   }
 }
 
-/** Whether a connection's credential is set, and by whom and when: never the value (DAT-004). */
-export type CredentialState =
-  { readonly set: false } | { readonly set: true; readonly setBy: Named; readonly setAt: Date };
+/**
+ * The digest a credential row is bound to (the D1 fix, C3): SHA-256, in hex, of the connection's
+ * target - type, host, port, database, account and TLS - at the version it was set against.
+ */
+export function targetDigest(settings: Pick<ConnectionSettings, 'type' | 'source'>): string {
+  return createHash('sha256').update(connectionTarget(settings), 'utf8').digest('hex');
+}
 
 /**
- * Adds a credential row: the sealed value the connector answered, who set it and, by the database's
- * clock, when (DAT-003, DAT-007). It cuts no version (DAT-066). A retired connection takes none.
+ * Whether a connection's credential is set, and by whom and when: never the value (DAT-004). Where
+ * the connection's target has changed since, `targetChanged`: it will not be used again, and its
+ * password must be set again.
+ */
+export type CredentialState =
+  | { readonly set: false }
+  | {
+      readonly set: true;
+      readonly setBy: Named;
+      readonly setAt: Date;
+      readonly targetChanged: boolean;
+    };
+
+/**
+ * Adds a credential row: the sealed value the connector answered, who set it, by the database's clock
+ * when (DAT-003, DAT-007), and the digest of the target it was sealed for - the latest version's, read
+ * here - so a later version pointing elsewhere leaves it unusable. It cuts no version (DAT-066). A
+ * retired connection takes none.
  */
 export async function setConnectionCredential(
   trx: TenantTransaction,
@@ -192,49 +214,63 @@ export async function setConnectionCredential(
   if (current.settings.retired) return { answer: 'connection.retired' };
   await trx
     .insertInto('connection_credential')
-    .values({ connection_id: input.id, sealed: input.sealed, set_by: input.by })
+    .values({
+      connection_id: input.id,
+      sealed: input.sealed,
+      set_by: input.by,
+      target_digest: targetDigest(current.settings),
+    })
     .execute();
   const credential = await credentialOf(trx, input.id);
   if (!credential.set) throw new Error(`The credential of ${input.id} was set and cannot be read`);
   return { answer: 'set', credential };
 }
 
-/** The latest credential row's who and when, and nothing of its value. */
-export async function credentialOf(trx: TenantTransaction, id: string): Promise<CredentialState> {
-  if (!UUID.test(id)) return { set: false };
-  const row = await trx
+async function latestCredential(trx: TenantTransaction, id: string) {
+  return trx
     .selectFrom('connection_credential as c')
     .innerJoin('principal as p', 'p.id', 'c.set_by')
-    .select(['c.set_by', 'c.set_at', 'p.display_name', 'p.email'])
+    .select(['c.sealed', 'c.set_by', 'c.set_at', 'c.target_digest', 'p.display_name', 'p.email'])
     .where('c.connection_id', '=', id)
     .orderBy('c.id', 'desc')
     .limit(1)
     .executeTakeFirst();
+}
+
+/** The latest credential row's who and when, and whether its target still holds; never its value. */
+export async function credentialOf(trx: TenantTransaction, id: string): Promise<CredentialState> {
+  if (!UUID.test(id)) return { set: false };
+  const row = await latestCredential(trx, id);
   if (!row) return { set: false };
+  const current = await readConnection(trx, id);
   return {
     set: true,
     setBy: { id: row.set_by, name: row.display_name ?? row.email ?? null },
     setAt: row.set_at,
+    targetChanged: !current || row.target_digest !== targetDigest(current.settings),
   };
 }
 
 /**
- * The latest sealed value, for the service to hand the connector with a request, and for nothing
- * else: no route answers it, and the service cannot open it.
+ * The latest sealed value, for the service to hand the connector with a request and for nothing
+ * else - no route answers it, and the service cannot open it - and only while the connection's
+ * latest version has the target it was set for (the D1 fix, C3).
  */
-export async function sealedCredentialOf(
+export async function usableCredentialOf(
   trx: TenantTransaction,
   id: string,
-): Promise<string | undefined> {
-  if (!UUID.test(id)) return undefined;
-  const row = await trx
-    .selectFrom('connection_credential')
-    .select('sealed')
-    .where('connection_id', '=', id)
-    .orderBy('id', 'desc')
-    .limit(1)
-    .executeTakeFirst();
-  return row?.sealed;
+): Promise<
+  | { readonly answer: 'usable'; readonly sealed: string }
+  | { readonly answer: 'missing' | 'target_changed' }
+> {
+  if (!UUID.test(id)) return { answer: 'missing' };
+  const row = await latestCredential(trx, id);
+  if (!row) return { answer: 'missing' };
+  const current = await readConnection(trx, id);
+  if (!current || row.target_digest !== targetDigest(current.settings)) {
+    return { answer: 'target_changed' };
+  }
+  return { answer: 'usable', sealed: row.sealed };
 }
 
 /** A finding a test may record (D1-M). */
@@ -385,6 +421,7 @@ export async function listReadableConnections(
               sql<string>`v.content ->> 'name'`.as('name'),
               sql<string>`v.content ->> 'type'`.as('type'),
               sql<boolean>`(v.content ->> 'retired')::boolean`.as('retired'),
+              sql<ConnectionSettings['source']>`v.content -> 'source'`.as('source'),
             ])
             .whereRef('v.artifact_id', '=', 'a.id')
             .where(visibleIn('v.written_by', snapshot))
@@ -395,7 +432,7 @@ export async function listReadableConnections(
         (join) => join.onTrue(),
       )
       .select(['a.id', 's.id as space_id', 's.name as space_name', 'latest.name'])
-      .select(['latest.type', 'latest.retired'])
+      .select(['latest.type', 'latest.retired', 'latest.source'])
       .select(['latest.version_id', 'latest.revision_no', 'latest.version_no', 'latest.created_at'])
       .select(sortColumns([sort === 'name' ? sql`latest.name` : sql`latest.created_at`]))
       .where('a.kind', '=', 'connection')
@@ -410,6 +447,7 @@ export async function listReadableConnections(
     name: string;
     type: ConnectionSettings['type'];
     retired: boolean;
+    source: ConnectionSettings['source'];
     space_id: string;
     space_name: string;
     version_id: string;
@@ -424,9 +462,11 @@ export async function listReadableConnections(
       ? []
       : await trx
           .selectFrom('connection_credential')
-          .select('connection_id')
-          .distinct()
+          .select(['connection_id', 'target_digest'])
+          .distinctOn('connection_id')
           .where('connection_id', 'in', ids)
+          .orderBy('connection_id')
+          .orderBy('id', 'desc')
           .execute();
   const tests =
     ids.length === 0
@@ -439,7 +479,8 @@ export async function listReadableConnections(
           .orderBy('connection_id')
           .orderBy('id', 'desc')
           .execute();
-  const set = new Set(credentials.map((row) => row.connection_id));
+  // Set, and for the target the latest version names: a credential for another is no credential.
+  const latestDigest = new Map(credentials.map((row) => [row.connection_id, row.target_digest]));
   const lastTests = new Map(
     tests.map((row) => [row.connection_id, { outcome: row.outcome, at: row.tested_at }]),
   );
@@ -452,7 +493,8 @@ export async function listReadableConnections(
       space: { id: row.space_id, name: row.space_name },
       version: { id: row.version_id, revision: row.revision_no, version: row.version_no },
       changedAt: new Date(row.created_at),
-      credentialSet: set.has(row.id),
+      credentialSet:
+        latestDigest.get(row.id) === targetDigest({ type: row.type, source: row.source }),
       lastTest: lastTests.get(row.id) ?? null,
     })),
     next,

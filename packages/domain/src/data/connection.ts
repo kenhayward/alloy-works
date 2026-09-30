@@ -224,3 +224,15 @@ export function parseConnectionForWrite(value: unknown): ConnectionSettings {
   if (problems.length > 0) throw new ConnectionRefused(problems);
   return settings;
 }
+
+/**
+ * What a connection's credential is bound to (the D1 fix, C3): its type and where it signs in - host,
+ * port, database, account and TLS - and nothing else of its settings. A credential is sealed with this
+ * as associated data and stored beside its digest, so a version that changes any of it leaves no
+ * credential that opens, or that the service will hand over, until one is set again: an administrator
+ * cannot point a stored password at a server of their own. A name or a description changes nothing.
+ */
+export function connectionTarget(settings: Pick<ConnectionSettings, 'type' | 'source'>): string {
+  const { host, port, database, account, tls } = settings.source;
+  return JSON.stringify([settings.type, host, port, database, account, tls]);
+}

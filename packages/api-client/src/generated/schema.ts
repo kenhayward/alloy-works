@@ -4599,6 +4599,7 @@ export interface operations {
                                 id: string;
                                 number: string;
                             };
+                            /** @description Whether a credential is set for where the connection now signs in */
                             credentialSet: boolean;
                             lastTest: {
                                 /** @enum {string} */
@@ -4820,6 +4821,8 @@ export interface operations {
                                 name: string | null;
                             };
                             setAt: string;
+                            /** @description Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again */
+                            targetChanged: boolean;
                         };
                         lastTest: {
                             /** @enum {string} */
@@ -4992,6 +4995,8 @@ export interface operations {
                                 name: string | null;
                             };
                             setAt: string;
+                            /** @description Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again */
+                            targetChanged: boolean;
                         };
                         test: {
                             /** @constant */
@@ -5281,7 +5286,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set */
+            /** @description `connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, so the password must be set again */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -5303,7 +5308,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `connection_failed`: the source could not be reached or signed in to; `connector_error`: the connector failed */
+            /** @description `connection_failed`: the source could not be reached or signed in to; `connector_error`: the connector failed; `source_unsupported`: the source is older than PostgreSQL 14 */
             502: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -5512,7 +5517,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set */
+            /** @description `connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, so the password must be set again */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -5781,6 +5786,8 @@ export interface operations {
                                 name: string | null;
                             };
                             setAt: string;
+                            /** @description Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again */
+                            targetChanged: boolean;
                         };
                         lastTest: {
                             /** @enum {string} */
@@ -5901,6 +5908,8 @@ export interface operations {
                                     name: string | null;
                                 };
                                 setAt: string;
+                                /** @description Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again */
+                                targetChanged: boolean;
                             };
                             lastTest: {
                                 /** @enum {string} */
@@ -6082,6 +6091,8 @@ export interface operations {
                                     name: string | null;
                                 };
                                 setAt: string;
+                                /** @description Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again */
+                                targetChanged: boolean;
                             };
                             lastTest: {
                                 /** @enum {string} */
@@ -15122,6 +15133,8 @@ export interface operations {
                                 name: string | null;
                             };
                             setAt: string;
+                            /** @description Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again */
+                            targetChanged: boolean;
                         };
                         lastTest: {
                             /** @enum {string} */
@@ -15242,6 +15255,8 @@ export interface operations {
                                     name: string | null;
                                 };
                                 setAt: string;
+                                /** @description Whether the host, port, database, account or TLS has changed since it was set: if so it is never used again, and must be set again */
+                                targetChanged: boolean;
                             };
                             lastTest: {
                                 /** @enum {string} */

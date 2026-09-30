@@ -133,7 +133,10 @@ describe('migration 0044, over an environment made before it', () => {
   });
 
   it('migrates every environment made before it, keeping every row, to what a fresh environment is', async () => {
-    expect((await migrate(db.migratorUrl)).tenants[upgraded.id]).toEqual(['0044_connections']);
+    expect((await migrate(db.migratorUrl)).tenants[upgraded.id]).toEqual([
+      '0044_connections',
+      '0045_connection_credential_target',
+    ]);
     // Every row still there: each rewritten constraint was checked against them as it was added.
     expect(await countRows(upgraded.schema)).toEqual(counts);
 
@@ -171,6 +174,7 @@ describe('migration 0044, over an environment made before it', () => {
       'connection_credential.connection_kind',
       'connection_credential.sealed',
       'connection_credential.set_by',
+      'connection_credential.target_digest',
       'connection_test.connection_id',
       'connection_test.connection_kind',
       'connection_test.connection_version_id',

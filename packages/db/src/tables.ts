@@ -416,6 +416,8 @@ export interface ConnectionCredentialTable {
   sealed: ColumnType<string, string, never>;
   set_by: ColumnType<string, string, never>;
   set_at: ColumnType<Date, never, never>;
+  /** The digest of the target it was set for (0045); null on a row set before, bound to nothing. */
+  target_digest: ColumnType<string | null, string, never>;
 }
 
 /** A test the connector answered, against the version it tested (0044; D1-N). Insert-only. */

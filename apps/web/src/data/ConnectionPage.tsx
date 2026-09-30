@@ -74,6 +74,18 @@ function TestAnswer({ tested }: { readonly tested: Tested | string | null }) {
   );
 }
 
+/**
+ * Whether the credential is set, by whom and when - and, where the connection has since been pointed
+ * somewhere else to sign in, that it will not be used until it is set again (the D1 fix, C3).
+ */
+function credentialText(credential: ConnectionView['credential']): string {
+  if (!credential.set) return 'Not set.';
+  const set = `Set by ${nameOf(credential.setBy)} on ${longDate(credential.setAt)}`;
+  return credential.targetChanged
+    ? `${set}, before the host, port, database, account or TLS changed. Set the password again to use this connection.`
+    : `${set}.`;
+}
+
 /** One of the page's parts, a region named by its heading. */
 function Part({ title, children }: { readonly title: string; readonly children: React.ReactNode }) {
   const id = useId();
@@ -338,11 +350,7 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
       </Part>
 
       <Part title="Credential">
-        <p>
-          {view.credential.set
-            ? `Set by ${nameOf(view.credential.setBy)} on ${longDate(view.credential.setAt)}.`
-            : 'Not set.'}
-        </p>
+        <p>{credentialText(view.credential)}</p>
         {view.mayAdminister && !retired && (
           <div className={styles['form']}>
             <label>
@@ -355,7 +363,11 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
               />
             </label>
             <button type="button" disabled={busy !== null} onClick={setCredential}>
-              {view.credential.set ? 'Replace' : 'Set'}
+              {!view.credential.set
+                ? 'Set'
+                : view.credential.targetChanged
+                  ? 'Set again'
+                  : 'Replace'}
             </button>
             <p className={styles['hint']}>
               It is sealed as soon as it is sent and never shown again, here or anywhere. The
