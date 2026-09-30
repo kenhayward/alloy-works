@@ -4,7 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { ManageAccessLink } from '../access/ManageAccessLink.js';
 import { Notice } from '../states/Notice.js';
 import styles from './ConnectionPage.module.css';
-import { connectionAccessLink } from './links.js';
+import { connectionAccessLink, queryDefinitionLink } from './links.js';
 import {
   SettingsFields,
   TLS_LABELS,
@@ -121,6 +121,46 @@ function lastTestText(view: ConnectionView): string {
   return `Last tested ${when}: ${last.outcome === 'ok' ? 'connected' : 'could not connect'}.`;
 }
 
+/** The query definitions naming a connection: those the caller may read, and how many more (D2-O). */
+interface Naming {
+  readonly readable: readonly {
+    readonly id: string;
+    readonly title: string;
+    readonly retired: boolean;
+  }[];
+  readonly others: number;
+}
+
+function isNaming(value: unknown): value is Naming {
+  return (
+    isRecord(value) &&
+    typeof value.others === 'number' &&
+    Array.isArray(value.readable) &&
+    value.readable.every(
+      (each: unknown) =>
+        isRecord(each) &&
+        typeof each.id === 'string' &&
+        typeof each.title === 'string' &&
+        typeof each.retired === 'boolean',
+    )
+  );
+}
+
+/** Those the caller may not read, counted, never named. */
+const unread = (others: number) =>
+  `${others} ${others === 1 ? 'query definition' : 'query definitions'} you may not read`;
+
+/**
+ * Why retiring was refused (DAT-065), in words: the definitions still naming the connection, each the
+ * caller may read by title and the rest counted.
+ */
+function inUseText(naming: Naming): string {
+  const titles = naming.readable.map((each) => each.title);
+  if (titles.length === 0) return `Retire these first: ${unread(naming.others)}.`;
+  const more = naming.others === 0 ? '' : `, and ${naming.others} more you may not read`;
+  return `Retire these first: ${titles.join(', ')}${more}.`;
+}
+
 /** One of the page's parts, a region named by its heading. */
 function Part({ title, children }: { readonly title: string; readonly children: React.ReactNode }) {
   const id = useId();
@@ -166,6 +206,8 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
   const [tested, setTested] = useState<Tested | string | null>(null);
   const [tables, setTables] = useState<Described | string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [uses, setUses] = useState<Naming | 'failed' | null>(null);
+  const [retiring, setRetiring] = useState<readonly string[] | null>(null);
   const working = useRef(false);
 
   const shownVersion = useRef<string | null>(null);
@@ -222,6 +264,27 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
     void load();
   }, [load]);
 
+  // Where it is used, read with it: the definitions naming it (D2-O).
+  useEffect(() => {
+    let current = true;
+    void (async () => {
+      try {
+        const { data } = await client.GET('/v1/connections/{id}/uses', {
+          params: { path: { id } },
+        });
+        const answer: unknown = data;
+        if (current) {
+          setUses(isRecord(answer) && isNaming(answer.definitions) ? answer.definitions : 'failed');
+        }
+      } catch {
+        if (current) setUses('failed');
+      }
+    })();
+    return () => {
+      current = false;
+    };
+  }, [client, id]);
+
   /** Runs one act at a time: a second click while one is in flight sends nothing. */
   const act = useCallback(async (name: string, work: () => Promise<void>) => {
     if (working.current) return;
@@ -261,7 +324,12 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
    * reinstating save the version shown with `retired` changed and nothing else, so what is typed into
    * the settings and not yet saved stays typed (`keepDraft`); a save replaces it with what was saved.
    */
-  const version = async (settings: Settings, done: string, keepDraft = false) => {
+  const version = async (
+    settings: Settings,
+    done: string,
+    keepDraft = false,
+    report: (lines: string | null) => void = setSaved,
+  ) => {
     try {
       const { data, error, response } = await client.POST('/v1/connections/{id}/versions', {
         params: { path: { id } },
@@ -270,10 +338,18 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
       if (isConnectionView(data)) {
         if (keepDraft) hold(data);
         else show(data);
-        setSaved(data.version.id === view.version.id ? 'Nothing had changed.' : done);
+        report(data.version.id === view.version.id ? 'Nothing had changed.' : done);
         return;
       }
       const refusal: unknown = error;
+      // Still named by a definition in service (DAT-065): what names it, so it can be retired first.
+      if (response.status === 409 && isRecord(refusal) && isNaming(refusal.definitions)) {
+        setRetiring([
+          refusalText(refusal, 'This connection is still used.'),
+          inUseText(refusal.definitions),
+        ]);
+        return;
+      }
       if (response.status === 409 && isRecord(refusal) && isConnectionView(refusal.current)) {
         show(refusal.current);
         setSaved(
@@ -281,13 +357,13 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
         );
         return;
       }
-      setSaved(
+      report(
         response.status === 401
           ? 'You are signed out. Sign in again to change this connection.'
           : refusalText(error, 'The connection could not be changed. Try again.'),
       );
     } catch {
-      setSaved('The connection could not be changed. Try again.');
+      report('The connection could not be changed. Try again.');
     }
   };
 
@@ -303,13 +379,15 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
     });
 
   const retire = (to: boolean) =>
-    act('retire', () =>
-      version(
+    act('retire', () => {
+      setRetiring(null);
+      return version(
         { ...view.settings, retired: to },
         to ? 'Retired. It runs nothing now.' : 'Reinstated.',
         true,
-      ),
-    );
+        (line) => setRetiring(line === null ? null : [line]),
+      );
+    });
 
   const setCredential = () =>
     act('credential', async () => {
@@ -490,6 +568,34 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
         </Part>
       )}
 
+      <Part title="Used by">
+        {uses === null ? null : uses === 'failed' ? (
+          <p>What uses this connection could not be read.</p>
+        ) : uses.readable.length === 0 && uses.others === 0 ? (
+          <p>No query definition uses this connection.</p>
+        ) : (
+          <>
+            {uses.readable.length > 0 && (
+              <ul>
+                {uses.readable.map((each) => (
+                  <li key={each.id}>
+                    <a href={queryDefinitionLink(each.id)}>{each.title}</a>
+                    {each.retired && ' (retired)'}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {uses.others > 0 && (
+              <p>
+                {uses.readable.length > 0
+                  ? `And ${uses.others} more you may not read.`
+                  : `Used by ${unread(uses.others)}.`}
+              </p>
+            )}
+          </>
+        )}
+      </Part>
+
       {view.mayAdminister && (
         <Part title={retired ? 'Reinstating' : 'Retiring'}>
           <p>
@@ -500,6 +606,11 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
           <button type="button" disabled={busy !== null} onClick={() => retire(!retired)}>
             {retired ? 'Reinstate' : 'Retire'}
           </button>
+          <div role="status">
+            {retiring?.map((line, at) => (
+              <p key={at}>{line}</p>
+            ))}
+          </div>
         </Part>
       )}
     </article>

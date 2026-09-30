@@ -39381,7 +39381,7 @@
                                 "type": "string"
                               },
                               "place": {
-                                "description": "Where it matched best: `title`, `block:<id>`, `field:<id>`, `section:<key>`, `description`, `fields` or `schemas`",
+                                "description": "Where it matched best: `title`, `block:<id>`, `field:<id>`, `section:<key>`, `description`, `fields`, `schemas`, `columns` or `connection`",
                                 "type": [
                                   "string",
                                   "null"

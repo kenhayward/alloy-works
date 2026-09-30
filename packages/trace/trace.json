@@ -18450,13 +18450,25 @@
     {
       "id": "DAT-004",
       "file": "apps/web/src/data/connections.test.tsx",
-      "line": 411,
+      "line": 418,
       "kind": "title"
     },
     {
       "id": "DAT-075",
       "file": "apps/web/src/data/connections.test.tsx",
-      "line": 359,
+      "line": 366,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-014",
+      "file": "apps/web/src/data/query-definitions.test.tsx",
+      "line": 308,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-105",
+      "file": "apps/web/src/data/query-definitions.test.tsx",
+      "line": 238,
       "kind": "title"
     },
     {

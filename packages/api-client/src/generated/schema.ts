@@ -15717,7 +15717,7 @@ export interface operations {
                                 name: string;
                             } | null;
                             changedAt: string;
-                            /** @description Where it matched best: `title`, `block:<id>`, `field:<id>`, `section:<key>`, `description`, `fields` or `schemas` */
+                            /** @description Where it matched best: `title`, `block:<id>`, `field:<id>`, `section:<key>`, `description`, `fields`, `schemas`, `columns` or `connection` */
                             place: string | null;
                             /** @description Words from that place, about thirty, each matched word a piece of its own */
                             passage: {

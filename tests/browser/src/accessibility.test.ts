@@ -717,4 +717,148 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       });
     });
   });
+  it("passes axe on Query definitions and a definition's steps, each worked by keyboard alone", async ({
+    task,
+  }) => {
+    // A connection on the development source as `reader`, its password set and tested read-only, so
+    // SQL may be written against it; made through the API, as a person's would be on its page.
+    const client = api();
+    const spaces = await client.GET('/v1/spaces', { params: { query: { limit: '100' } } });
+    const general = spaces.data?.items.find((each) => each.name === 'General');
+    if (!general) throw new Error('No General space to make a connection in');
+    const connectionName = `Sampled ${Date.now()}`;
+    const made = await client.POST('/v1/spaces/{space}/connections', {
+      params: { path: { space: general.id } },
+      body: {
+        settings: {
+          schemaVersion: 1,
+          name: connectionName,
+          description: '',
+          type: 'postgres',
+          source: {
+            host: 'source-postgres',
+            port: 5432,
+            database: 'readings',
+            account: 'reader',
+            tls: 'require',
+          },
+          identity: { kind: 'service' },
+          retired: false,
+        },
+      },
+    });
+    if (!made.data) throw new Error(`The connection was not made: ${made.response.status}`);
+    const set = await client.PUT('/v1/connections/{id}/credential', {
+      params: { path: { id: made.data.id } },
+      body: { secret: 'source-reader-dev-password' },
+    });
+    if (set.data?.test.outcome !== 'ok') {
+      throw new Error(`The connection did not test clean: ${JSON.stringify(set.data)}`);
+    }
+
+    await withPage(async (page) => {
+      const check = async (state: string, arrival: Arrival) => {
+        await arrive(arrival);
+        await checkAxe(page, state, task.meta, arrival);
+      };
+      /** Tab until `target` holds the focus, as a person with no pointer reaches it. */
+      const tabTo = async (target: Locator) => {
+        for (let presses = 0; presses < 120; presses += 1) {
+          if (await target.evaluate((element) => element === document.activeElement)) return;
+          await page.keyboard.press('Tab');
+        }
+        throw new Error(`${String(target)} was never reached by Tab`);
+      };
+
+      await page.goto(`${SERVICE}/#/components`);
+      await arrive({ shows: page.getByRole('heading', { name: 'Components', level: 1 }) });
+      await tabTo(
+        page
+          .getByRole('navigation', { name: 'Workspace' })
+          .getByRole('link', { name: 'Query definitions' }),
+      );
+      await page.keyboard.press('Enter');
+      const list = page.getByRole('region', { name: 'Query definitions', exact: true });
+      await check('the query definitions list', {
+        shows: [
+          page.getByRole('heading', { name: 'Query definitions', level: 1 }),
+          list
+            .getByRole('table')
+            .or(list.getByText('There are no query definitions you may read.', { exact: true })),
+        ],
+      });
+
+      // A new one, by keyboard, on the connection just made.
+      await tabTo(page.getByRole('button', { name: 'New query definition' }));
+      await page.keyboard.press('Enter');
+      const connection = page.getByLabel('Connection', { exact: true });
+      await check('a new query definition', {
+        shows: [page.getByRole('heading', { name: 'New query definition', level: 1 }), connection],
+      });
+      await tabTo(connection);
+      await page.keyboard.type(connectionName);
+      await vi.waitFor(
+        async () => {
+          const chosen = await connection.evaluate(
+            (element) => (element as HTMLSelectElement).selectedOptions[0]?.textContent,
+          );
+          if (chosen !== connectionName) throw new Error(`${chosen} is chosen`);
+        },
+        { timeout: 10_000 },
+      );
+      const title = `Site by id ${Date.now()}`;
+      await tabTo(page.getByLabel('Title', { exact: true }));
+      await page.keyboard.type(title);
+      await tabTo(page.getByLabel('SQL', { exact: true }));
+      await page.keyboard.type('select id, name from sample.site where id = {{site}} order by id');
+      await tabTo(page.getByRole('button', { name: 'Add parameter' }));
+      await page.keyboard.press('Enter');
+      const parameter = page.getByRole('group', { name: 'Parameter 1' });
+      await tabTo(parameter.getByLabel('Name', { exact: true }));
+      await page.keyboard.type('site');
+      await tabTo(parameter.getByLabel('Type', { exact: true }));
+      await page.keyboard.type('Integer');
+      await check('a statement and its parameter', {
+        shows: [parameter, page.getByRole('button', { name: 'Describe' })],
+      });
+
+      // Described by the source, each column proposed and confirmed.
+      await tabTo(page.getByRole('button', { name: 'Describe' }));
+      await page.keyboard.press('Enter');
+      const columns = page.getByRole('table', { name: 'Columns' });
+      await check('its columns proposed', {
+        shows: [columns.getByRole('button', { name: 'Confirm id' })],
+      });
+      for (const name of ['id', 'name']) {
+        await tabTo(columns.getByRole('button', { name: `Confirm ${name}` }));
+        await page.keyboard.press('Enter');
+      }
+      await check('its columns confirmed', {
+        shows: page.getByRole('button', { name: 'Save version' }),
+      });
+
+      // Run against a sample value.
+      const sample = page.getByRole('region', { name: 'Sample' });
+      await tabTo(sample.getByLabel('site', { exact: true }));
+      await page.keyboard.type('1');
+      await tabTo(sample.getByRole('button', { name: 'Run sample' }));
+      await page.keyboard.press('Enter');
+      await check('a sample run', {
+        shows: [
+          sample.getByRole('table', { name: 'The first rows' }),
+          sample.getByText(/^Checksum [0-9a-f]{12}\.$/),
+        ],
+      });
+
+      // Saved, and its own page.
+      await tabTo(page.getByRole('button', { name: 'Save version' }));
+      await page.keyboard.press('Enter');
+      await check('a query definition', {
+        shows: [
+          page.getByRole('heading', { name: title, level: 1 }),
+          page.getByText('Version 0.1'),
+        ],
+      });
+    });
+  });
 });

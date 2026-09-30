@@ -582,6 +582,8 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 609, from 607 (2026-09-30): D2 task 5 - DAT-105 and DAT-014 in apps/web's
+  // data/query-definitions.test.tsx.
   // 607, from 598 (2026-09-30): D2 task 4 - in apps/service, DAT-101, DAT-103, DAT-020, DAT-050 and
   // DAT-049 in query-definition-routes.test.ts and DAT-065 in connection-routes.test.ts, and the
   // `rule:` each of DAT-103, DAT-020 and DAT-065 is answered with there.
@@ -764,7 +766,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(607);
+    expect(model.citations).toHaveLength(609);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -831,6 +833,7 @@ describe('scanning the repository for test files', () => {
     // 32, from 31 (2026-09-28): editor/Reload.test.tsx, which cites CNT-069, CNT-067 and CNT-169.
     // 33, from 32 (2026-09-28): account/ApiTokens.test.tsx, which cites nothing.
     // 34, from 33 (2026-09-30): data/connections.test.tsx, which cites DAT-075 and DAT-004.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(34);
+    // 35, from 34 (2026-09-30): data/query-definitions.test.tsx, which cites DAT-105 and DAT-014.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(35);
   });
 });
