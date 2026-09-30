@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.128.2 - 2026-09-30 (PR #362)
+
+### Fixed
+
+- **The type check no longer fails at random on the browser suite.** The suite checks the API
+  reference against the service's own code, and the build now prepares that code's dependencies
+  before checking it, so the result no longer depends on the order the checks happen to run in
+  (issue #361).
+
 ## 0.128.1 - 2026-09-30 (PR #360)
 
 ### Added
