@@ -211,18 +211,28 @@ value in each later request; the connector never reaches the database. What the 
 the type: a password for a database, the header value for HTTP, an access key pair for S3, a client
 secret for a delegated connection's token exchange.
 
-**A credential is bound to its connection's target** - its type, host, port, database, account and
-TLS - as the version it was set against had them (DA-AF). The connector seals it with that target in
-the associated data beside the tenant and the purpose, and opens it only with the target of the
-request's own settings; the service stores the target's digest beside the sealed row and hands the
+**A credential is bound to its connection and its connection's target** - the connection's id, and
+its type, host, port, database, account and TLS as the version it was sealed for had them (DA-AF).
+The connector seals it with the id and that target in the associated data beside the tenant and the
+purpose, and opens it only with the id and the target of the request's own; the service stores the
+digest of the target it asked the connector to seal for - never the latest version's as read after
+the seal, which a version saved meanwhile would have moved - beside the sealed row, and hands the
 connector the credential only while the latest version has the same digest. So a version that points
-the connection anywhere else - an administrator's own server among them - leaves no credential the
-service will send or the connector will open, and the connection's page and read say the password
-must be set again (`targetChanged`; a test or describe is refused `credential_target_changed`). A name
-or a description changes nothing. **The child signs in by SCRAM-SHA-256 alone**: a source that asks
-for the password in the clear or as MD5 is sent nothing and read as any failure to sign in,
+the connection anywhere else - an administrator's own server among them, and a version saved while
+the credential was being sealed - leaves no credential the service will send or the connector will
+open, a sealed row copied to another of the tenant's connections opens there for nothing, and the
+connection's page and read say the password must be set again (`targetChanged`; a test or describe
+is refused `credential_target_changed`). A row set before credentials were bound names no target, is
+never used, and says so as its own case (`setBeforeBinding`: set before this version of the product),
+since nothing about the connection changed. A name or a description changes nothing. **The child
+signs in by SCRAM-SHA-256 alone, bound to the TLS channel where the source offers it**: a source that
+asks for the password in the clear or as MD5 is sent nothing and read as any failure to sign in,
 `connection_failed` (DAT-075), since `tls: 'require'` checks no certificate and a server that asks
-that way would be handed the password or its equivalent.
+that way would be handed the password or its equivalent; and where the source offers
+SCRAM-SHA-256-PLUS the exchange names the certificate the child saw, so a relay between them cannot
+pass it on. A source offering plain SCRAM alone is still signed in to, the child saying it could have
+bound, which a real source that offers binding refuses from a relay that strips the offer; refusing
+plain SCRAM would refuse the poolers and proxies that cannot bind.
 
 **Write-only** (DAT-003, DAT-004): `PUT /v1/connections/{id}/credential` takes it; nothing answers it.
 A connection's read says whether a credential is set, by whom and when. **Replacing it cuts no
@@ -386,7 +396,9 @@ access check on another user's `/proc` entries, not the supervisor's tidiness, t
 child, and from one child the credential another is holding. The supervisor holds only the three
 capabilities that switching and killing another user take, the connector's code and filesystem are
 not the child's to write, and the connector refuses to start unless a child spawned as every child is
-proves it cannot read the supervisor's environment. Case 2 priced it at 41 ms p50 against 5 ms
+proves it cannot read the supervisor's environment. Its container shares no memory or message queue
+between children, bounds how many processes they may start, and runs under an init that reaps what
+the supervisor kills of a child's leftovers. Case 2 priced it at 41 ms p50 against 5 ms
 for a warm process - negligible now that a source is queried only when a person acts. It is revisited
 if an act comes to run hundreds of queries, as a document made from a large template might.
 
@@ -410,7 +422,11 @@ The guard lives in the connector, as defence in depth behind the network. **It a
 declared host, which may be a private address**, and refuses loopback, link-local and the platform's
 own address ranges, which are the deployment's configuration; a tenant declares nothing else. It
 normalises a host to what the operating system will dial - decimal, octal, IPv4-mapped IPv6 and a
-trailing dot included - before checking it; resolves once and connects to the address it checked;
+trailing dot included - before checking it. An IPv6 address that carries an IPv4 one for something
+else to reach - IPv4-compatible, the well-known NAT64 prefix `64:ff9b::/96`, or RFC 8215's local-use
+`64:ff9b:1::/48`, read in every layout RFC 6052 allows it - is checked with the IPv4 address it
+carries as well, and dialled as given, since on an IPv6-only network a NAT64 address is the only way
+to an IPv4 source. It resolves once and connects to the address it checked;
 follows no redirect across hosts; and refuses a connection option that names a local path. An S3
 endpoint is a host like any other.
 
@@ -423,8 +439,20 @@ oracle). **Once authenticated**, it checks the account where the source can say,
 finding by name, since none reveals anything about the network: `account_not_read_only`, which
 refuses the SQL fallback on that connection (DAT-103), and `account_holds_privilege`, which refuses
 asserted identity (DAT-112). Each test is a row in `connection_test` - the connection version tested,
-who asked and when, the answer and its findings - insert-only, and the latest is what the two refusals
-read.
+the credential row it was made with, who asked and when, the answer and its findings - insert-only,
+and the latest is what the two refusals read. A latest test of an earlier version, or made with an
+earlier credential - one in flight when the password was replaced, answering after the new one's own
+test - is read as no test of the connection as it now is, and the page says so.
+
+**A describe lists what a page can show, and no more than fits.** PostgreSQL allows a name a page
+cannot: a table named with a tab, say. The child holds each relation and each column to the
+protocol's bounds on its own, and leaves out - rather than escapes, since an escaped name is not the
+name and nothing could be read by it - a relation whose schema or name holds a control character, and
+a column whose name does or whose type's text is longer than 1,024 bytes (the longest a type is named
+without a modifier is 259: two quoted names of 63 double quotes, the dot and an array's brackets). The
+answer counts what it left out, `leftOut`, and the page says how many. It lists at most 2,000
+relations, and stops adding them before its answer passes half the 32 MiB an answer may be, saying
+`truncated` either way; the page says the list was cut short.
 
 ### What the session holds
 
@@ -868,18 +896,18 @@ Taken as recommended, approved by Ken on 2026-09-30.
 Not in the design as Ken first approved it; each is what that design needed to be built, and Ken
 approved them the same day.
 
-| #     | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| DA-W  | **A fourth request, `seal`.** The service never holds the connector's key, so it cannot seal a credential itself; it hands the secret to the connector, which answers the sealed value and keeps nothing                                                                                                                                                                                                                                       |
-| DA-X  | **The supervisor holds the key; the child holds one credential.** Code that parses a hostile source's answer never holds the key that opens every tenant's credentials                                                                                                                                                                                                                                                                         |
-| DA-Y  | **`administer` makes and changes a connection and sets its credential**, on the space and on the connection. A connection is configuration, its credential reaches a tenant's systems, and `create` and `edit` would put it in every author's hands                                                                                                                                                                                            |
-| DA-Z  | **Naming a connection in a definition needs `use_connection`**, when it is made and at each version, since choosing a connection is using it                                                                                                                                                                                                                                                                                                   |
-| DA-AA | **A resolution records its binding's digest**, and holds only while the binding is unchanged, so a changed question is never answered by an old result                                                                                                                                                                                                                                                                                         |
-| DA-AB | **Retiring a connection is refused while a definition that is not retired names it** (DAT-065), and retiring is a version with `retired: true`                                                                                                                                                                                                                                                                                                 |
-| DA-AC | **The connection test reports the account's checks by name after it authenticates**, while every failure to reach or authenticate reads the same. DAT-103 asks the test to check read-only, which one reason for every failure could not report                                                                                                                                                                                                |
-| DA-AD | **The connector checks a stated length, digest or row count** (DAT-108): an S3 object's size and stored checksum where the store gives one, and an HTTP response's row count where the definition declares a pointer to it. A body stating none is taken as it arrives, bounded by the limits                                                                                                                                                  |
-| DA-AE | **The accept route asks for `sharesOwnView: true`** where the result is the person's own view, so the API cannot accept past DAT-091's warning                                                                                                                                                                                                                                                                                                 |
-| DA-AF | **A credential is bound to its connection's target, and signs in by SCRAM alone** (D1's final review, a clarity addition approved in the build). Anyone who may set a credential could otherwise cut a version pointing at their own server and press Test, and node-postgres answers a cleartext or MD5 request with the password. A version changing host, port, database, account or TLS leaves no usable credential until one is set again |
+| #     | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DA-W  | **A fourth request, `seal`.** The service never holds the connector's key, so it cannot seal a credential itself; it hands the secret to the connector, which answers the sealed value and keeps nothing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| DA-X  | **The supervisor holds the key; the child holds one credential.** Code that parses a hostile source's answer never holds the key that opens every tenant's credentials                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| DA-Y  | **`administer` makes and changes a connection and sets its credential**, on the space and on the connection. A connection is configuration, its credential reaches a tenant's systems, and `create` and `edit` would put it in every author's hands                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| DA-Z  | **Naming a connection in a definition needs `use_connection`**, when it is made and at each version, since choosing a connection is using it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| DA-AA | **A resolution records its binding's digest**, and holds only while the binding is unchanged, so a changed question is never answered by an old result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| DA-AB | **Retiring a connection is refused while a definition that is not retired names it** (DAT-065), and retiring is a version with `retired: true`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| DA-AC | **The connection test reports the account's checks by name after it authenticates**, while every failure to reach or authenticate reads the same. DAT-103 asks the test to check read-only, which one reason for every failure could not report                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| DA-AD | **The connector checks a stated length, digest or row count** (DAT-108): an S3 object's size and stored checksum where the store gives one, and an HTTP response's row count where the definition declares a pointer to it. A body stating none is taken as it arrives, bounded by the limits                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| DA-AE | **The accept route asks for `sharesOwnView: true`** where the result is the person's own view, so the API cannot accept past DAT-091's warning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| DA-AF | **A credential is bound to its connection and its connection's target, and signs in by SCRAM alone, bound to TLS where the source offers it** (D1's final review, a clarity addition approved in the build; the connection's id and channel binding from its re-review). Anyone who may set a credential could otherwise cut a version pointing at their own server and press Test, and node-postgres answers a cleartext or MD5 request with the password. A version changing host, port, database, account or TLS leaves no usable credential until one is set again; the seal's associated data names the connection's id as well as its target, so a sealed row copied to another connection opens nothing, and the digest stored is of the target the connector sealed for |
 
 ## What was ruled out
 

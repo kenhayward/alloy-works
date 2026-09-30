@@ -90,6 +90,13 @@ own (20000 plus its slot), so the kernel keeps it from the keys the supervisor s
 A deployment that runs the connector must give it the same: without them it refuses to start, saying
 so, rather than run children that could read its keys.
 
+It also runs under Docker's init (`init: true`), which reaps what the supervisor kills of a child's
+leftovers - without it they linger as zombies, and every later sweep reads them all; with at most 256
+processes and threads (`pids_limit: 256`), where the supervisor and eight children run about a dozen
+threads each, so a child that forks exhausts its container's allowance and not the host's; and with no
+IPC namespace to share (`ipc: none`, so no `/dev/shm`) and a read-only `/dev/mqueue`, so a child can
+leave nothing there for the next. A deployment should give it the same.
+
 ### A source to connect to: the `sources` profile
 
 `source-postgres` is a PostgreSQL of a tenant's own for development and CI, pinned by digest, TLS on

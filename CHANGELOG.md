@@ -15,8 +15,9 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   set for: change the host, port, database, account or TLS and it must be set again. Setting it
   tests the connection straight away, and **Test** does the same whenever you ask, saying
   "Connected." or "Could not connect." with one reason, and warning where the account could change
-  data at the source; a test of an earlier version says so. **List tables** shows the tables and
-  views the account can read. A change to the settings is saved as a new version, and a connection
+  data at the source; a test of an earlier version, or made with an earlier password, says so.
+  **List tables** shows the tables and views the account can read, says how many it left out because
+  their names cannot be shown, and says when the list was cut short. A change to the settings is saved as a new version, and a connection
   can be retired and reinstated without losing a change you have typed and not saved. Testing and listing tables need the new permission
   **use connection**, which no starting role holds, so give it on purpose from **Manage access**.
   Nothing reads data from a connection yet.
@@ -26,7 +27,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   and sits on networks of its own with no route to the rest of Alloy Works but the service that asks
   it. The development stack starts it; `--profile sources` adds a sample database to connect to (see
   deploy/README.md). A deployment runs it as compose does, with three capabilities and a read-only
-  filesystem, or it refuses to start.
+  filesystem, or it refuses to start, and should give it compose's init, process limit and no shared
+  memory as well.
 
 ## 0.128.3 - 2026-09-30 (PR #364)
 

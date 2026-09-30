@@ -430,7 +430,7 @@ version and each structural act records the next (see
 | `migrations/tenant/0042_sealed_sign_in_secret`           | `identity_provider.sealed_secret`, the environment's sign-in client secret sealed by `packages/sealing`'s `seal.ts` (`packages/db`'s until D1) with the service's sealing key, bound to the tenant and to sign-in, so it opens for no other environment and as no other kind of secret; `secret_name` kept, nullable, for a row configured before, which signs nobody in until it is configured again; exactly one of the two, and a sealed secret shaped like one (issue #312)                                                                                                                                                           |
 | `migrations/tenant/0043_default_theme_caption_placement` | The default theme's 0.5 (W14.5): the table and image catalogues' fourth versions at `catalogue/3`, each 0.4's with its captions where they always stood, and the theme naming them, on 0034's guard                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `migrations/tenant/0044_connections`                     | `connection` as a kind, in exactly one space and authored; `use_connection` in the roles' and tokens' closed sets; `connection_credential`, the sealed credential, and `connection_test`, each test the connector answered, both insert-only, the latest of each read by an identity column (see [data connections](#data-connections))                                                                                                                                                                                                                                                                                                   |
-| `migrations/tenant/0045_connection_credential_target`    | `connection_credential.target_digest`, the SHA-256 of the target a credential was set for, insertable by the runtime role and nothing else; a row without one, set before it, is never used (the D1 fix, C3)                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `migrations/tenant/0045_connection_credential_target`    | `connection_credential.target_digest`, the SHA-256 of the target a credential was set for, insertable by the runtime role and nothing else; a row without one, set before it, is never used (the D1 fix, C3). `connection_test.credential_id`, the credential row a test was made with, bound to one of the same connection (the D1 fix, round two); a test recorded before it names none                                                                                                                                                                                                                                                 |
 | `src/version-digest.ts`                                  | `versionDigests`: SHA-256 over `canonicaliseVersionContent` and `canonicaliseVersion` from the domain package                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `src/spaces.ts`                                          | `createSpace`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `src/versions.ts`                                        | `createArtifact` at `0.1`, `readVersion`, `latestVersion`, `versionContents` - each version's content and number, for the texts route - `listVersions` - an artifact's versions newest first, by keyset over `(revision_no, version_no)` with no snapshot, since the chain is append-only (W9.4) - `substanceOf`, and `recordVersion`, each taking a component, a document, a definition or a layout; `createArtifact` refuses a layout, a theme and a catalogue, which only their migrations make, and `recordVersion` a theme and a catalogue, whose versions `themes.ts` reads whole before it writes them through `recordReadVersion` |
@@ -2760,30 +2760,37 @@ and changes one and sets its credential; `use_connection`, a permission no start
 and describes it; `read` shows it.
 
 **The credential is sealed by the connector, with a key only the connector holds.** The service hands
-the secret to the connector's `seal` with the connection's settings, which answers it sealed under
-`source-credential:<tenant>` and the connection's target - `connectionTarget`, its type, host, port,
-database, account and TLS; the service stores that in `connection_credential`, insert-only, the latest
-row the credential, beside the SHA-256 of that target (migration 0045), and passes it back with each
-request only while the latest version's target has the same digest (`usableCredentialOf`); the
-connector opens it only with the target of the request's own settings. So a version pointing the
-connection anywhere else leaves no usable credential: the read says `targetChanged`, a test or describe
-is refused `credential_target_changed`, and the listing counts it as not set, until the password is set
-again. It never holds the key, so it cannot open what it stores. No route answers the credential or its
-sealed value: a connection's read says whether one is set, by whom and when. The child signs in by
-SCRAM-SHA-256 alone: `postgres.ts`'s client refuses a source asking for the password in the clear or
-as MD5, sending nothing, which reads as `connection_failed`. The
-credential route takes no idempotency key, because a record keeps a digest of the request's body,
-which here would be a digest of the secret: `idempotencyKey: false` on the route's contract keeps
-`once` from recording it, and the OpenAPI document from offering the header.
+the secret to the connector's `seal` with the connection's id and settings, which answers it sealed
+under `source-credential:<tenant>` and `credentialContext` - the connection's id and its target,
+`connectionTarget`: its type, host, port, database, account and TLS; the service stores that in
+`connection_credential`, insert-only, the latest row the credential, beside the SHA-256 of the target
+it sealed for (migration 0045) - the settings the route read and sent, never the latest version's as
+read after the seal - and passes it back with each request only while the latest version's target has
+the same digest (`usableCredentialOf`); the connector opens it only with the id and the target of the
+request's own. So a version pointing the connection anywhere else, one saved while the seal was being
+made among them, leaves no usable credential: the read says `targetChanged`, a test or describe is
+refused `credential_target_changed`, and the listing counts it as not set, until the password is set
+again. A row set before 0045 names no target: the read says `setBeforeBinding` as well, and the page
+says it was set before this version of the product. A sealed row copied to another connection opens
+nothing there. It never holds the key, so it cannot open what it stores. No route answers the
+credential or its sealed value: a connection's read says whether one is set, by whom and when. The
+child signs in by SCRAM-SHA-256 alone: `postgres.ts`'s client refuses a source asking for the password
+in the clear or as MD5, sending nothing, which reads as `connection_failed`, and enables channel
+binding, so where a source offers SCRAM-SHA-256-PLUS - PostgreSQL 18 over TLS does - the exchange
+names the certificate the child saw and cannot be relayed; a source offering plain SCRAM alone is still
+signed in to, the child's first message saying it could have bound. The credential route takes no
+idempotency key, because a record keeps a digest of the request's body, which here would be a digest
+of the secret: `idempotencyKey: false` on the route's contract keeps `once` from recording it, and the
+OpenAPI document from offering the header; a key sent is ignored.
 
 **The connector** (`apps/connector`) answers HTTP/1.1 and JSON on port 8090:
 
-| Path                | Answers                                                                                                                                                                             |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POST /v1/seal`     | The tenant's secret sealed; nothing is kept                                                                                                                                         |
-| `POST /v1/test`     | `ok` with what it found of the account - `account_not_read_only` - or one failure: every failure to reach or sign in is `connection_failed`, no sooner than the 5 s connect timeout |
-| `POST /v1/describe` | The tables and views the account may read, with each column and the type proposed for it, at most 2,000                                                                             |
-| `GET /v1/health`    | `{ ok: true }`, to anybody                                                                                                                                                          |
+| Path                | Answers                                                                                                                                                                                                                                                                                             |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /v1/seal`     | The tenant's secret sealed; nothing is kept                                                                                                                                                                                                                                                         |
+| `POST /v1/test`     | `ok` with what it found of the account - `account_not_read_only` - or one failure: every failure to reach or sign in is `connection_failed`, no sooner than the 5 s connect timeout                                                                                                                 |
+| `POST /v1/describe` | The tables and views the account may read, with each column and the type proposed for it: at most 2,000, and no more than fit half an answer's 32 MiB (`truncated`); a relation or column whose name holds a control character, or a type longer than 1,024 bytes, left out and counted (`leftOut`) |
+| `GET /v1/health`    | `{ ok: true }`, to anybody                                                                                                                                                                                                                                                                          |
 
 Every `POST` carries `Bearer <CONNECTOR_KEY>`, compared by SHA-256 digest in constant time; a body over
 64 KiB is 413, a malformed one 400 `request_invalid`, and a supervisor already running
@@ -2791,19 +2798,28 @@ Every `POST` carries `Bearer <CONNECTOR_KEY>`, compared by SHA-256 digest in con
 and never meets a source**: it opens the one credential a request carries and spawns a fresh Node
 child with an empty environment, writing it one line - the request, the opened secret and the guard's
 ranges - and reading one answer; the child resolves the host once through the guard, which refuses
-loopback, link-local and the deployment's `CONNECTOR_DENY` ranges in every spelling, dials the address
-it checked, answers, closes the source connection and exits. A child past its deadline is killed, and
+loopback, link-local and the deployment's `CONNECTOR_DENY` ranges in every spelling - an IPv6 address
+carrying an IPv4 one, IPv4-compatible or NAT64 (`64:ff9b::/96`, and RFC 8215's `64:ff9b:1::/48` in
+each of RFC 6052's layouts), checked with the address it carries and dialled as given - dials the
+address it checked, answers, closes the source connection and exits. A child past its deadline is killed, and
 one that ends without an answer is `connector_error`. **Each child runs as a user and group of its
 own**, 20000 plus its slot of the cap, with no capability, so the kernel refuses it the supervisor's
 `/proc` entries - its environment still holds both keys whatever `process.env` says - and every other
 child's; when a child ends, anything still running as its user is killed before the slot is used
-again. The supervisor runs as root with SETUID, SETGID and KILL alone and `no-new-privileges`, in a
+again - beside the answer, which does not wait for it, the slot held until it ends. Compose runs the
+connector under Docker's init, which reaps what the sweep kills - the supervisor, as process 1, reaped
+none, and each lingered as a zombie that every later sweep read - with at most 256 processes and
+threads (`pids_limit`), and with no IPC namespace to share (`ipc: none`, so no `/dev/shm`) and a
+read-only `/dev/mqueue`, so nothing a child writes is there for another. The supervisor runs as root with SETUID, SETGID and KILL alone and `no-new-privileges`, in a
 read-only container whose code is root's: root because a non-root user can hold a capability only as
 an ambient one, which would survive the switch to the child's user and pass to the child. `main.ts`
 refuses to start unless a child spawned as every child is runs as its own user and cannot read the
 supervisor's environment (`verifyChildIsolation`); the suite runs its children with no switch, a
 parameter as its deny list is. `tests/e2e`'s `connector-privilege.test.ts` spawns such a child in the
-running connector and asks it to find either key anywhere it can read, and to change the code. The request and answer schemas are
+running connector and asks it to find either key anywhere it can read - the supervisor's `/proc`
+entries found by its command line, and the init's - to change the code, and to write shared memory, a
+message queue or a file; it leaves a process running, which the sweep must end and the init reap, and
+reads the container's process limit. The request and answer schemas are
 `packages/domain/src/data/protocol.ts`, parsed on both sides.
 
 **The service** finds the connector at `CONNECTOR_URL` with `SECRET_CONNECTOR_KEY`, both or neither;
@@ -2820,8 +2836,11 @@ after its deciding transaction commits**: the handler decides, reads the connect
 credential, and returns an `AfterCommit` (`src/after-commit.ts`), which the permission-checked wrapper
 runs once the transaction - and its shared lock on the access epoch - is let go, so no grant or
 revocation waits on a source. A test is recorded in a transaction of its own, against the version it
-tested even where a newer one was cut meanwhile. Such a route takes no idempotency key, since a keyed
-answer is recorded in the deciding transaction; the wrapper refuses the pairing. A seal reaches no
+tested even where a newer one was cut meanwhile, and against the credential row it was made with, so a
+test of an earlier credential answering after a newer one's reads as no test of it (`credentialCurrent`
+on the read and the listing). Such a route takes no idempotency key - one sent is ignored, and nothing
+of the request is recorded - since a keyed answer is recorded in the deciding transaction; the
+wrapper throws should a route that forgot `idempotencyKey: false` ever meet one. A seal reaches no
 source and stays in the deciding transaction, with the write it answers, bounded at three seconds.
 
 | Route                                 | Needs              | Does                                                                                                  |
