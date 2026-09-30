@@ -177,9 +177,9 @@ cp deploy/.env.example deploy/.env
 | `POSTGRES_PORT` | `5432`  | Postgres on `127.0.0.1` only; the containers still reach it at `postgres:5432`          |
 
 Each variable sets the port inside the container and the one published, and every setting that
-names it, so nothing has to be moved by hand. The end-to-end suite reads its own addresses:
-`ALLOY_E2E_SERVICE`, `ALLOY_E2E_IDP` and `ALLOY_E2E_IDP_ISSUER` tell it where a moved stack is. The
-browser suite reads `ALLOY_BROWSER_SERVICE`, `ALLOY_BROWSER_API` and `ALLOY_BROWSER_IDP`.
+names it, so nothing has to be moved by hand. The end-to-end and browser suites are told where a
+stack is by variables of their own, and have no defaults: see
+[Running the suites against a stack](#running-the-suites-against-a-stack).
 
 **A second stack beside the first** needs a project name of its own as well as ports of its own, since
 the file names the project: `-p` overrides it, and every container, network and volume takes the new
@@ -191,13 +191,49 @@ SERVICE_PORT=8188 IDP_PORT=9190 STORE_PORT=8433 POSTGRES_PORT=5532 \
 docker compose -p aw-browser -f deploy/compose.yaml down -v
 ```
 
+## Running the suites against a stack
+
+`pnpm test:e2e` and `pnpm test:browser` sign in as Ada and make content wherever they are pointed -
+samples, documents and their publications, previews, uploaded images, and in the browser suite's case
+themes written straight into the database - and none of it can be taken back from the suite. **So
+neither suite has a default address.** Each refuses to start, before its first request, until every
+one of its targets is set, and names the ones that are not:
+
+| Suite               | Variables it needs                                                                                                    |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `pnpm test:e2e`     | `ALLOY_E2E_SERVICE`, `ALLOY_E2E_IDP`, `ALLOY_E2E_IDP_ISSUER`, `ALLOY_E2E_STORE_AT`, `ALLOY_E2E_COMPOSE_PROJECT`       |
+| `pnpm test:browser` | `ALLOY_BROWSER_SERVICE`, `ALLOY_BROWSER_API`, `ALLOY_BROWSER_IDP`, `ALLOY_BROWSER_DATABASE`, `ALLOY_BROWSER_STORE_AT` |
+
+**Point them at a stack of your own, never at the one you work in.** A stack you are using keeps
+everything the suites make in it. Bring up a second stack, as above, and name it in full:
+
+```bash
+SERVICE_PORT=8188 IDP_PORT=9190 STORE_PORT=8433 POSTGRES_PORT=5532 \
+  docker compose -p aw-suites -f deploy/compose.yaml --profile sources up -d --build --wait
+
+ALLOY_E2E_SERVICE=http://127.0.0.1:8188 ALLOY_E2E_IDP=http://127.0.0.1:9190 \
+  ALLOY_E2E_IDP_ISSUER=http://idp.localhost:9190 ALLOY_E2E_STORE_AT=127.0.0.1 \
+  ALLOY_E2E_COMPOSE_PROJECT=aw-suites pnpm test:e2e
+
+ALLOY_BROWSER_SERVICE=http://dev.acme.localhost:8188 ALLOY_BROWSER_API=http://127.0.0.1:8188 \
+  ALLOY_BROWSER_IDP=http://idp.localhost:9190 ALLOY_BROWSER_STORE_AT=127.0.0.1 \
+  ALLOY_BROWSER_DATABASE=postgres://aw_service:aw_service_dev@127.0.0.1:5532/alloy_dev \
+  pnpm test:browser
+
+docker compose -p aw-suites -f deploy/compose.yaml --profile sources down -v
+```
+
+In PowerShell, set each with `$env:ALLOY_E2E_SERVICE = 'http://127.0.0.1:8188'` and so on first.
+CI sets every variable in the whole-system job, to the stack that job starts and removes.
+`pnpm test` runs neither suite: each workspace's `test` script is only the tests that need no stack.
+
 ## Driving the stack in a browser
 
-`pnpm test:browser` drives the renderer this stack serves in a pinned Chromium, fetched once with
-`pnpm --filter @alloy-works/browser fetch-chromium`. It opens `http://dev.acme.localhost:8088`, signs
-in through the stand-in's own page as Ada, and makes what it needs through the API; a change to the
-renderer reaches it only once the `service` image is rebuilt. CI runs it in the whole-system job,
-after the end-to-end suite and against the same containers.
+`pnpm test:browser` drives the renderer a stack serves in a pinned Chromium, fetched once with
+`pnpm --filter @alloy-works/browser fetch-chromium`. It opens the address `ALLOY_BROWSER_SERVICE`
+names, signs in through the stand-in's own page as Ada, and makes what it needs through the API; a
+change to the renderer reaches it only once the `service` image is rebuilt. CI runs it in the
+whole-system job, after the end-to-end suite and against the same containers.
 [`docs/testing.md`](../docs/testing.md#the-browser-suite) has the rest.
 
 ## Settings for running from source

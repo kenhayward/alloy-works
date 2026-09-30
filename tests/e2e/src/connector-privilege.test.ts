@@ -1,6 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import { beforeAll, describe, expect, it } from 'vitest';
 
+import { e2eTargets } from './targets.js';
+
 /**
  * What a connector's child can do inside the connector's own container (the D1 fix, C1 and C2), asked
  * of the running stack. A probe is spawned inside the connector's container exactly as the supervisor
@@ -9,7 +11,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
  * is told the keys on its standard input, never on a command line or in an environment, and reports
  * only where it found them.
  */
-const PROJECT = process.env.ALLOY_E2E_COMPOSE_PROJECT;
+const PROJECT = e2eTargets(process.env).composeProject;
 
 const docker = (args: readonly string[], input?: string): string =>
   execFileSync('docker', [...args], {
@@ -132,7 +134,6 @@ describe("the connector's children", () => {
   let probed: Probed;
 
   beforeAll(() => {
-    if (!PROJECT) throw new Error('ALLOY_E2E_COMPOSE_PROJECT names the stack this suite probes');
     const id = connectorId();
     const env = (
       JSON.parse(docker(['inspect', '--format', '{{json .Config.Env}}', id])) as string[]

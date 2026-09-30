@@ -1,9 +1,15 @@
 import { completeAtStandIn } from '@alloy-works/stand-in-idp/testing';
 
-/** The service, the provider as it names itself, and where the provider actually answers. */
-export const SERVICE = process.env.ALLOY_E2E_SERVICE ?? 'http://127.0.0.1:8088';
-const IDP_ISSUER = process.env.ALLOY_E2E_IDP_ISSUER ?? 'http://idp.localhost:9090';
-const IDP = process.env.ALLOY_E2E_IDP ?? 'http://127.0.0.1:9090';
+import { e2eTargets } from './targets.js';
+
+/**
+ * The service, the provider as it names itself, and where the provider actually answers: every one an
+ * address the run was given, since the suite has no default (`targets.ts`).
+ */
+const TARGETS = e2eTargets(process.env);
+export const SERVICE = TARGETS.service;
+const IDP_ISSUER = TARGETS.idpIssuer;
+const IDP = TARGETS.idp;
 
 /** Waits for the service to answer its health check. */
 export async function untilReady(within = 120_000): Promise<void> {

@@ -23,8 +23,9 @@ Exceptions - throwaway spikes, generated code, pure configuration - need a human
 | `tests/browser`   | Vitest | node        | The renderer in a pinned Chromium, against the whole system         |
 | `apps/connector`  | Vitest | node        | The connector, against a PostgreSQL of its own on `127.0.0.1:5434`  |
 
-`pnpm test` runs every suite but the last two, which need a running stack - apart from the browser
-workspace's pin tests, which need none; `pnpm test:e2e` and `pnpm test:browser` run those. The reporter is **pinned explicitly** in every `vitest.config`: left
+`pnpm test` runs every suite but the last two, which need a running stack - apart from each of those
+workspaces' pin tests, which need none; `pnpm test:e2e` and `pnpm test:browser` run those, and only
+once every address they drive has been set ([below](#the-end-to-end-suite)). The reporter is **pinned explicitly** in every `vitest.config`: left
 implicit, some runners print nothing a test logged on Windows while the identical run on Linux
 prints all of it, which makes a local run look pristine while CI drowns.
 
@@ -581,13 +582,39 @@ on** (`ALLOY_WORD_CHECK=1 pnpm --filter @alloy-works/worker test`) and then
 service, a worker, the database, the object store and the sign-in provider, all in containers.
 
 ```bash
-docker compose -f deploy/compose.yaml up -d --build --wait
-pnpm test:e2e
+SERVICE_PORT=8188 IDP_PORT=9190 STORE_PORT=8433 POSTGRES_PORT=5532 \
+  docker compose -p aw-suites -f deploy/compose.yaml --profile sources up -d --build --wait
+ALLOY_E2E_SERVICE=http://127.0.0.1:8188 ALLOY_E2E_IDP=http://127.0.0.1:9190 \
+  ALLOY_E2E_IDP_ISSUER=http://idp.localhost:9190 ALLOY_E2E_STORE_AT=127.0.0.1 \
+  ALLOY_E2E_COMPOSE_PROJECT=aw-suites pnpm test:e2e
+docker compose -p aw-suites -f deploy/compose.yaml --profile sources down -v
 ```
 
+**It has no default address, and refuses to run until it is given every one** (issue #363): an
+unset environment once ran it against a developer's own stack, where it signed in and made content
+that could not be taken back. `src/targets.ts` reads the five variables, and the suite's global setup,
+`src/refuse-unset-targets.ts`, calls it before any test file is collected, so a run missing any of
+them stops before its first request and names each one missing:
+
+| Variable                    | CI sets it to               | What it is                                                                               |
+| --------------------------- | --------------------------- | ---------------------------------------------------------------------------------------- |
+| `ALLOY_E2E_SERVICE`         | `http://127.0.0.1:8088`     | The service, as Node reaches it                                                          |
+| `ALLOY_E2E_IDP`             | `http://127.0.0.1:9090`     | Where the stand-in provider answers, from Node                                           |
+| `ALLOY_E2E_IDP_ISSUER`      | `http://idp.localhost:9090` | What the provider calls itself, which the service sends a browser to                     |
+| `ALLOY_E2E_STORE_AT`        | `127.0.0.1`                 | Where Node follows a link the object store signed, its name kept in `Host`               |
+| `ALLOY_E2E_COMPOSE_PROJECT` | `alloy-works`               | The compose project the stack runs as, whose containers the connector's tests reach into |
+
+**Point it at a stack of your own, never at the one you work in** - a second one, as above, under a
+project name and ports of its own ([deploy/README.md](../deploy/README.md#running-the-suites-against-a-stack)).
+Whatever it makes stays in the stack it was pointed at.
+
 It is **left out of `pnpm test` on purpose**, because a suite that needs the whole stack up first
-would otherwise fail on every machine that has not run it. CI runs it as its own job, which is also
-where the stack's logs are kept when it fails.
+would otherwise fail on every machine that has not run it. The workspace has two configurations, as
+the browser suite's has: `vitest.config.ts`, the suite, run by its `test:e2e` script, and
+`vitest.pin.config.ts`, the test of the refusal itself, which needs no stack and is its `test` script,
+so `pnpm test` runs it on every machine, into `.trace-results/e2e-pin.json`. CI runs the suite as its
+own job, setting every variable to the stack that job starts, which is also where the stack's logs
+are kept when it fails.
 
 Besides a sample, **it publishes a document and downloads it.** The development environment's seed
 lets Ada publish, so the check makes a document holding the seeded component, asks for a PDF, follows
@@ -602,7 +629,7 @@ notice on every page, and a contents naming the front section. It is a second, s
 than `apps/worker/src/testing/pdf.ts` reused, because `tests/e2e` cannot import an app's internal
 source; it reads only the four things this suite asserts, and leaves the bookmarks, the structure
 roles and the margins to the worker's own. What it makes stays in the database the stack serves, as a
-sample does - locally, the development database; in CI, a fresh volume removed afterwards.
+sample does - in CI, a fresh volume removed afterwards; locally, whichever stack it was pointed at.
 
 Two things it deliberately does not ask of the machine running it:
 
@@ -611,8 +638,8 @@ Two things it deliberately does not ask of the machine running it:
   environment that extra address.
 - **It follows a signed link without resolving the store's name.** The store signs the name it calls
   itself by, so that name stays in the `Host` header and only the socket is pointed somewhere
-  reachable. `completeAtStandIn` does the same for the sign-in provider. Every address it uses can
-  be overridden: `ALLOY_E2E_SERVICE`, `ALLOY_E2E_IDP`, `ALLOY_E2E_IDP_ISSUER`, `ALLOY_E2E_STORE_AT`.
+  reachable. `completeAtStandIn` does the same for the sign-in provider. Every address it uses is
+  one it was given, in the variables above.
 
 **It asks Docker what the connector can reach.** The stack runs with `--profile sources`, and
 `connector-isolation.test.ts` starts a throwaway `node:24-bookworm-slim` container in each of the
@@ -622,8 +649,11 @@ and the service on `connector-private` answer; from the worker, the connector ne
 service, the connector does and the source never. It publishes a listener of its own on every host
 address, which the stack never does, and requires an ordinary container to reach it through the host
 before requiring the connector not to, so the leak the spike found is tried on whatever engine runs
-it. `ALLOY_E2E_COMPOSE_PROJECT` names the compose project it inspects, `alloy-works` unless said
-otherwise; set it for a stack under another name. `connections.test.ts` makes a connection to the
+it. `ALLOY_E2E_COMPOSE_PROJECT` names the compose project it inspects, and has no default, as no
+target does. `connector-privilege.test.ts` spawns a probe inside the running connector exactly as its
+supervisor spawns a child, and requires it to be a user of its own that finds neither key anywhere it
+can read - the supervisor's `/proc` entries, any other process's, any file - and can change nothing
+of the connector's code. `connections.test.ts` makes a connection to the
 development source through the whole system, sets its password, tests it and lists its tables.
 
 What it does **not** cover, and where that lives instead: refusing another environment's session,
@@ -640,9 +670,8 @@ the focus really goes, what a live region says in the accessibility tree, a key 
 the browser, and axe-core's checks of WCAG 2.2 AA.
 
 ```bash
-docker compose -f deploy/compose.yaml up -d --build --wait
 pnpm --filter @alloy-works/browser fetch-chromium   # once per machine, and after the pin moves
-pnpm test:browser
+pnpm test:browser                                   # with every target set: below
 ```
 
 It is **left out of `pnpm test`** for the reason the end-to-end suite is, and `packages/trace` exempts
@@ -696,10 +725,13 @@ person, is written into the test's `meta` for the audit, never failed on, and `p
 @alloy-works/browser undecided` prints it from the last run's report, state by state
 ([the audit guide](guides/auditing-a-release.md)).
 
-**Where it finds the stack.** Three variables, each defaulting to the compose stack's own address, and
-passed through by turbo:
+**Where it finds the stack.** Five variables, every one required and none defaulted, passed through
+by turbo. `src/testing/targets.ts` reads them, from `src/testing/addresses.ts`, which the global setup
+imports first, so a run missing any of them stops before its first request and names each one missing,
+as the end-to-end suite does and for the same reason (issue #363) - and this suite writes into the
+stack's database besides:
 
-| Variable                 | Default                                                         | What it is                                                                 |
+| Variable                 | CI sets it to                                                   | What it is                                                                 |
 | ------------------------ | --------------------------------------------------------------- | -------------------------------------------------------------------------- |
 | `ALLOY_BROWSER_SERVICE`  | `http://dev.acme.localhost:8088`                                | The environment as the browser meets it                                    |
 | `ALLOY_BROWSER_API`      | `http://127.0.0.1:8088`                                         | The same environment as Node reaches it for fixtures                       |
@@ -708,21 +740,22 @@ passed through by turbo:
 | `ALLOY_BROWSER_STORE_AT` | `127.0.0.1`                                                     | Where Node follows a link the object store signed, its name kept in `Host` |
 
 Chromium resolves any `*.localhost` name to this machine itself, so the browser needs nothing from
-the machine's resolver; Node reaches the provider at `127.0.0.1` on the port its name carries. To
-drive a second stack beside one already running - on ports of its own, under a project name of its
-own, so the first is never touched:
+the machine's resolver; Node reaches the provider at `127.0.0.1` on the port its name carries. **Point
+it at a stack of your own, never at the one you work in**: whatever it makes and every theme it
+writes stays there. A second stack beside one already running - on ports of its own, under a project
+name of its own, so the first is never touched:
 
 ```bash
 SERVICE_PORT=8188 IDP_PORT=9190 STORE_PORT=8433 POSTGRES_PORT=5532 \
   docker compose -p aw-browser -f deploy/compose.yaml up -d --build --wait
 ALLOY_BROWSER_SERVICE=http://dev.acme.localhost:8188 ALLOY_BROWSER_API=http://127.0.0.1:8188 \
-  ALLOY_BROWSER_IDP=http://idp.localhost:9190 \
+  ALLOY_BROWSER_IDP=http://idp.localhost:9190 ALLOY_BROWSER_STORE_AT=127.0.0.1 \
   ALLOY_BROWSER_DATABASE=postgres://aw_service:aw_service_dev@127.0.0.1:5532/alloy_dev pnpm test:browser
 docker compose -p aw-browser -f deploy/compose.yaml down -v
 ```
 
 **CI runs it in the whole-system job**, after the end-to-end suite and against the same containers,
-whenever the stack came up; neither step is `continue-on-error`. Its report goes to the traceability
+with every variable set to them, whenever the stack came up; neither step is `continue-on-error`. Its report goes to the traceability
 gate's own job with the rest ([CI, branches and releases](ci-and-releases.md)).
 
 **What it covers so far.** `accessibility.test.ts` (W13.2, CNT-176) runs axe over every state of the

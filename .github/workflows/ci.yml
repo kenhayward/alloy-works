@@ -187,19 +187,31 @@ jobs:
         id: stack
         run: docker compose -f deploy/compose.yaml --profile sources up -d --build --wait
 
-      # Through turbo, which builds what the suite imports before running it.
+      # Through turbo, which builds what the suite imports before running it. Every target is set here,
+      # to the stack this job just started: neither suite has a default, and each refuses to run with
+      # any of its targets unset, so it can never reach a stack it was not pointed at (#363).
       - name: End to end
-        run: pnpm test:e2e
         env:
-          # The project the stack above runs as, compose.yaml's own name: said, never assumed, since
-          # the connector's tests reach into its containers by it.
+          ALLOY_E2E_SERVICE: http://127.0.0.1:8088
+          ALLOY_E2E_IDP: http://127.0.0.1:9090
+          ALLOY_E2E_IDP_ISSUER: http://idp.localhost:9090
+          ALLOY_E2E_STORE_AT: 127.0.0.1
+          # The project the stack above runs as, compose.yaml's own name: the connector's tests reach
+          # into its containers by it.
           ALLOY_E2E_COMPOSE_PROJECT: alloy-works
+        run: pnpm test:e2e
 
       # The renderer in a real browser, against the same containers (the W13 plan's B-A): run whenever
       # the stack came up, so a failing end-to-end check does not hide what the browser would say.
       # NOT continue-on-error, and its report feeds the gate below, so a failing browser test fails it.
       - name: Browser
         if: ${{ !cancelled() && steps.stack.outcome == 'success' }}
+        env:
+          ALLOY_BROWSER_SERVICE: http://dev.acme.localhost:8088
+          ALLOY_BROWSER_API: http://127.0.0.1:8088
+          ALLOY_BROWSER_IDP: http://idp.localhost:9090
+          ALLOY_BROWSER_DATABASE: postgres://aw_service:aw_service_dev@127.0.0.1:5432/alloy_dev
+          ALLOY_BROWSER_STORE_AT: 127.0.0.1
         run: pnpm test:browser
 
       - name: Stop the stack

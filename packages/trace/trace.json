@@ -21240,13 +21240,13 @@
     {
       "id": "AST-005",
       "file": "tests/e2e/src/stack.test.ts",
-      "line": 483,
+      "line": 486,
       "kind": "title"
     },
     {
       "id": "PUB-005",
       "file": "tests/e2e/src/stack.test.ts",
-      "line": 413,
+      "line": 416,
       "kind": "title"
     }
   ]

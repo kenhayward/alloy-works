@@ -1,14 +1,16 @@
 import { execFileSync } from 'node:child_process';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { e2eTargets } from './targets.js';
+
 /**
  * Where the connector can reach, and who can reach it (the D1 plan, D1-I and task 6), asked of the
  * running stack by Docker itself. Each probe is a throwaway `node:24-bookworm-slim` container sharing
  * one compose container's network namespace - so it sees exactly the routes, names and addresses that
  * container sees - since the connector's own image carries no probe. The stack is the compose project
- * ALLOY_E2E_COMPOSE_PROJECT names, `alloy-works` unless said otherwise, run with `--profile sources`.
+ * ALLOY_E2E_COMPOSE_PROJECT names, which has no default (`targets.ts`), run with `--profile sources`.
  */
-const PROJECT = process.env.ALLOY_E2E_COMPOSE_PROJECT ?? 'alloy-works';
+const PROJECT = e2eTargets(process.env).composeProject;
 const PROBE_IMAGE = 'node:24-bookworm-slim';
 
 const docker = (...args: string[]): string =>

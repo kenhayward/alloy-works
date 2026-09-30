@@ -6,7 +6,8 @@ import { loadConfig } from './config.js';
 /**
  * The service's port is written in several places that have to agree: the service's own default,
  * the settings for running it from source, the renderer's dev proxy, the stand-in provider's
- * redirect addresses, the compose stack's default and the end-to-end suite's default. A sign-in
+ * redirect addresses, the compose stack's default and the addresses CI gives the end-to-end and
+ * browser suites. A sign-in
  * redirect carries the address that made it, so one of them drifting is a sign-in that goes nowhere.
  */
 const read = (path: string): string =>
@@ -32,7 +33,14 @@ describe('the service port', () => {
     expect(standIn.length).toBeGreaterThan(0);
     for (const each of standIn) expect(each).toBe(String(port));
 
-    expect(read('tests/e2e/src/stack.test.ts')).toContain(`'http://127.0.0.1:${port}'`);
+    // The whole-system and browser suites have no default address (issue #363); CI names the
+    // stack it starts, so that is where the port must agree.
+    const ci = read('.github/workflows/ci.yml');
+    expect(ci).toMatch(new RegExp(`^\\s+ALLOY_E2E_SERVICE: http://127\\.0\\.0\\.1:${port}$`, 'm'));
+    expect(ci).toMatch(new RegExp(`^\\s+ALLOY_BROWSER_API: http://127\\.0\\.0\\.1:${port}$`, 'm'));
+    expect(ci).toMatch(
+      new RegExp(`^\\s+ALLOY_BROWSER_SERVICE: http://dev\\.acme\\.localhost:${port}$`, 'm'),
+    );
   });
 
   it('comes from deploy/.env in the compose stack, defaulting to the same port', () => {

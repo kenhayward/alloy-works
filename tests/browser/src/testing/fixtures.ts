@@ -3,7 +3,7 @@ import { request as httpRequest } from 'node:http';
 import { crc32, deflateSync } from 'node:zlib';
 import { DEFAULT_LAYOUT_ID } from '@alloy-works/db';
 import { vi } from 'vitest';
-import { API } from './addresses.js';
+import { API, STORE_AT } from './addresses.js';
 import { edit, nodesOf, words, type Client, type DocumentView } from './api.js';
 
 /**
@@ -11,9 +11,6 @@ import { edit, nodesOf, words, type Client, type DocumentView } from './api.js';
  * holding a token at the head of every block and run the theme styles, a template binding a theme, a
  * document made from it, and the PDF the worker publishes of it.
  */
-
-/** The object store's address from Node: where the socket goes; the name it signs by stays in `Host`. */
-const STORE_AT = process.env.ALLOY_BROWSER_STORE_AT ?? '127.0.0.1';
 
 async function general(client: Client): Promise<string> {
   const { data: spaces } = await client.GET('/v1/spaces');
