@@ -16,10 +16,17 @@ export const SEALED = /^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]+
 
 /**
  * The most an answer of the connector's may be, in bytes: a child's answer is cut off past it by the
- * supervisor, and the service stops reading one past it. A describe of 2,000 relations fits many
- * times over.
+ * supervisor, and the service stops reading one past it. A describe can reach it - 2,000 relations of
+ * wide tables with long names come to tens of megabytes - so the child stops listing relations before
+ * its answer passes `DESCRIBE_BUDGET_BYTES`, half of this, and says `truncated`.
  */
 export const CONNECTOR_ANSWER_MAX_BYTES = 32 * 1024 * 1024;
+
+/**
+ * The most a describe's answer may be, in UTF-8 bytes of its JSON, before the child stops adding
+ * relations and says `truncated`: half the cap, so an answer never meets it (the D1 fix, round two).
+ */
+export const DESCRIBE_BUDGET_BYTES = CONNECTOR_ANSWER_MAX_BYTES / 2;
 
 /** A secret's longest, in UTF-8 bytes. */
 export const SECRET_MAX_BYTES = 4096;
@@ -108,10 +115,25 @@ const sourceText = (bytes: number) =>
     });
 
 /** A PostgreSQL name: NAMEDATALEN less one, 63 bytes, the most the catalogue holds. */
-const sourceName = sourceText(63);
+export const sourceNameSchema = sourceText(63);
+const sourceName = sourceNameSchema;
 
-/** The most columns a PostgreSQL table holds. */
-export const MAX_COLUMNS = 1600;
+/**
+ * The longest `format_type` text a describe lists. A type outside the search path is named with its
+ * schema, and each of the two names is quoted: 63 bytes that are all double quotes quote to 128, so
+ * the two and the dot between them come to 257, and an array's `[]` to 259, before any modifier. A
+ * built-in type's modifier is at most a dozen bytes (`(1000,-1000)`); an extension's `typmodout` may
+ * write more. 1,024 holds the longest name with room for such a modifier; a column whose type says
+ * more is left out, and counted.
+ */
+export const SOURCE_TYPE_MAX_BYTES = 1024;
+export const sourceTypeSchema = sourceText(SOURCE_TYPE_MAX_BYTES);
+
+/**
+ * The most columns a relation a describe lists may have: a table holds at most 1,600, and a view's
+ * select list at most 1,664 (PostgreSQL's `MaxTupleAttributeNumber`).
+ */
+export const MAX_COLUMNS = 1664;
 /** The most relations a describe lists, past which it says `truncated` (the connector's own cap). */
 export const MAX_DESCRIBED_RELATIONS = 2000;
 
@@ -124,7 +146,7 @@ export const relationSchema = z.strictObject({
       z.strictObject({
         name: sourceName,
         // `format_type`'s text: a qualified, quoted name with its modifier and array bounds.
-        sourceType: sourceText(256),
+        sourceType: sourceTypeSchema,
         nullable: z.boolean(),
         proposed: columnTypeSchema.nullable(),
       }),
@@ -133,10 +155,21 @@ export const relationSchema = z.strictObject({
 });
 export type Relation = z.infer<typeof relationSchema>;
 
+/** A count of what a describe left out. */
+const leftOutCount = z.number().int().min(0).max(1_000_000_000);
+
 export const describeAnswerSchema = z.union([
   z.strictObject({
     relations: z.array(relationSchema).max(MAX_DESCRIBED_RELATIONS),
+    /** Whether the source has more than are listed: past 2,000 relations, or past the budget. */
     truncated: z.boolean(),
+    /**
+     * What was left out because a page cannot show it: a relation whose schema or name holds a
+     * control character, or that has more columns than a relation can, and, of the relations listed,
+     * a column whose name holds one or whose type is longer than `SOURCE_TYPE_MAX_BYTES`. Left out
+     * rather than escaped: an escaped name is not the name, and nothing may be read by it.
+     */
+    leftOut: z.strictObject({ relations: leftOutCount, columns: leftOutCount }),
   }),
   z.strictObject({ failure: dataFailureSchema }),
 ]);

@@ -87,13 +87,25 @@ export function requestFor(
 }
 
 /** A client of the source as its superuser, from outside the connector: to watch what it leaves. */
-export async function asSuperuser<T>(work: (client: pg.Client) => Promise<T>): Promise<T> {
+export function asSuperuser<T>(
+  work: (client: pg.Client) => Promise<T>,
+  database = 'readings',
+): Promise<T> {
+  return asAccount('postgres', work, database);
+}
+
+/** A client of the source as one of the seed's accounts, from outside the connector. */
+export async function asAccount<T>(
+  account: keyof typeof PASSWORDS,
+  work: (client: pg.Client) => Promise<T>,
+  database = 'readings',
+): Promise<T> {
   const client = new pg.Client({
     host: SOURCE_HOST,
     port: SOURCE_PORT,
-    database: 'readings',
-    user: 'postgres',
-    password: PASSWORDS.postgres,
+    database,
+    user: account,
+    password: PASSWORDS[account],
     ssl: { rejectUnauthorized: false },
   });
   await client.connect();

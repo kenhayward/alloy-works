@@ -403,7 +403,7 @@ describe('connections through the service', () => {
     connector.mode = 'answer';
     await call('ada', 'PUT', `/v1/connections/${connection.id}/credential`, { secret: SECRET });
     connector.test = { outcome: 'ok', findings: [] };
-    connector.describe = { relations: [], truncated: false };
+    connector.describe = { relations: [], truncated: false, leftOut: { relations: 0, columns: 0 } };
     expect(
       (await call('alice', 'GET', `/v1/connections/${connection.id}`)).json<ConnectionBody>(),
     ).toMatchObject({ mayAdminister: false, mayUse: true });
@@ -412,7 +412,7 @@ describe('connections through the service', () => {
     ).toBe(200);
     expect(
       (await call('alice', 'POST', `/v1/connections/${connection.id}/describe`, {})).json(),
-    ).toEqual({ relations: [], truncated: false });
+    ).toEqual({ relations: [], truncated: false, leftOut: { relations: 0, columns: 0 } });
     // Another connection in the same space stays out of her reach.
     const other = await make({ name: 'Other' });
     expect((await call('alice', 'POST', `/v1/connections/${other.id}/test`, {})).statusCode).toBe(

@@ -147,13 +147,20 @@ export function isConnectionView(value: unknown): value is ConnectionView {
   );
 }
 
-export function isRelations(value: unknown): value is {
+/** A describe's answer: the relations listed, whether the list was cut short, and what was left out. */
+export interface Described {
   readonly relations: readonly Relation[];
   readonly truncated: boolean;
-} {
+  readonly leftOut: { readonly relations: number; readonly columns: number };
+}
+
+export function isRelations(value: unknown): value is Described {
   return (
     isRecord(value) &&
     typeof value.truncated === 'boolean' &&
+    isRecord(value.leftOut) &&
+    typeof value.leftOut.relations === 'number' &&
+    typeof value.leftOut.columns === 'number' &&
     Array.isArray(value.relations) &&
     value.relations.every(
       (each: unknown) =>

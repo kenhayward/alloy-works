@@ -5200,7 +5200,11 @@ export interface operations {
                     /**
                      * @example {
                      *       "relations": [],
-                     *       "truncated": false
+                     *       "truncated": false,
+                     *       "leftOut": {
+                     *         "relations": -9007199254740991,
+                     *         "columns": -9007199254740991
+                     *       }
                      *     }
                      */
                     "application/json": {
@@ -5219,8 +5223,13 @@ export interface operations {
                                 } | null;
                             }[];
                         }[];
-                        /** @description Whether there were more than the connector lists */
+                        /** @description Whether the list was cut short: past 2,000 relations, or before the answer would pass its size budget */
                         truncated: boolean;
+                        /** @description How many relations, and columns of the relations listed, were left out because their names hold a control character or their types are longer than any PostgreSQL names */
+                        leftOut: {
+                            relations: number;
+                            columns: number;
+                        };
                     };
                 };
             };

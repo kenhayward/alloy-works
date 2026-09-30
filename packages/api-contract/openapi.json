@@ -10025,17 +10025,42 @@
                     },
                     "truncated": {
                       "type": "boolean",
-                      "description": "Whether there were more than the connector lists"
+                      "description": "Whether the list was cut short: past 2,000 relations, or before the answer would pass its size budget"
+                    },
+                    "leftOut": {
+                      "type": "object",
+                      "properties": {
+                        "relations": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "columns": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "relations",
+                        "columns"
+                      ],
+                      "description": "How many relations, and columns of the relations listed, were left out because their names hold a control character or their types are longer than any PostgreSQL names"
                     }
                   },
                   "required": [
                     "relations",
-                    "truncated"
+                    "truncated",
+                    "leftOut"
                   ]
                 },
                 "example": {
                   "relations": [],
-                  "truncated": false
+                  "truncated": false,
+                  "leftOut": {
+                    "relations": -9007199254740991,
+                    "columns": -9007199254740991
+                  }
                 }
               }
             },

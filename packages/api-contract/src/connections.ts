@@ -130,7 +130,16 @@ export const RelationView = z.object({
 
 export const DescribeView = z.object({
   relations: z.array(RelationView),
-  truncated: z.boolean().describe('Whether there were more than the connector lists'),
+  truncated: z
+    .boolean()
+    .describe(
+      'Whether the list was cut short: past 2,000 relations, or before the answer would pass its size budget',
+    ),
+  leftOut: z
+    .object({ relations: z.number().int(), columns: z.number().int() })
+    .describe(
+      'How many relations, and columns of the relations listed, were left out because their names hold a control character or their types are longer than any PostgreSQL names',
+    ),
 });
 export type DescribeView = z.infer<typeof DescribeView>;
 

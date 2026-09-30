@@ -3,7 +3,7 @@ import { createServer, type Server, type Socket } from 'node:net';
 import type { DescribeAnswer } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { proposedType } from './postgres.js';
+import { describeRelations, proposedType } from './postgres.js';
 import {
   childSpawn,
   createSupervisor,
@@ -12,6 +12,7 @@ import {
   type SpawnChild,
 } from './supervisor.js';
 import {
+  asAccount,
   asSuperuser,
   PASSWORDS,
   requestFor,
@@ -196,6 +197,78 @@ describe('the connector against a PostgreSQL source', () => {
       // An aggregate's result carries no modifier: the fraction a timestamp may hold, six.
       ['latest', { base: 'instant', fraction: 6 }],
     ]);
+  });
+
+  it('leaves out a relation or a column whose name a page cannot show, counts what it left out, and lists a type as long as PostgreSQL can name one', async () => {
+    const tab = String.fromCharCode(9);
+    // Sixty-three double quotes: the longest identifier, which quoting doubles.
+    const quotes = '"'.repeat(63);
+    const quoted = `"${'""'.repeat(63)}"`;
+    await asSuperuser(async (client) => {
+      const exists = await client.query(`select 1 from pg_database where datname = 'oddities'`);
+      if (exists.rowCount === 0) await client.query('create database oddities');
+    });
+    await asSuperuser(async (client) => {
+      await client.query(`
+        create schema if not exists odd;
+        grant usage on schema odd to reader;
+        create schema if not exists ${quoted};
+        do $$ begin
+          if not exists (select 1 from pg_type where typname = '${quotes.replaceAll("'", "''")}') then
+            create domain ${quoted}.${quoted} as integer;
+          end if;
+        end $$;
+        create table if not exists odd.plain (id integer, "bad${tab}column" integer, fine text,
+          wide ${quoted}.${quoted}, wider ${quoted}.${quoted}[]);
+        create table if not exists odd."tab${tab}name" (id integer);
+        grant select on all tables in schema odd to reader;
+      `);
+    }, 'oddities');
+    const answer = await supervisor.run(
+      'describe',
+      requestFor(settings({ database: 'oddities' }), PASSWORDS.reader, 20_000),
+    );
+    const long = `${quoted}.${quoted}`;
+    expect(Buffer.byteLength(`${long}[]`)).toBe(259);
+    expect(answer).toEqual({
+      relations: [
+        {
+          schema: 'odd',
+          name: 'plain',
+          kind: 'table',
+          columns: [
+            { name: 'id', sourceType: 'integer', nullable: true, proposed: { base: 'integer' } },
+            { name: 'fine', sourceType: 'text', nullable: true, proposed: { base: 'text' } },
+            { name: 'wide', sourceType: long, nullable: true, proposed: { base: 'integer' } },
+            { name: 'wider', sourceType: `${long}[]`, nullable: true, proposed: null },
+          ],
+        },
+      ],
+      truncated: false,
+      leftOut: { relations: 1, columns: 1 },
+    });
+  });
+
+  it('cuts a describe short, truncated, before its answer would pass the budget it is given', async () => {
+    const whole = await asAccount('reader', (client) => describeRelations(client));
+    expect(whole.relations).toHaveLength(3);
+    expect(whole.truncated).toBe(false);
+    const [first, second] = whole.relations;
+    const budgetBytes =
+      Buffer.byteLength(
+        JSON.stringify({ ...whole, relations: [first, second], truncated: true }),
+        'utf8',
+      ) + 8;
+    const cut = await asAccount('reader', (client) => describeRelations(client, { budgetBytes }));
+    expect(cut.relations).toEqual([first, second]);
+    expect(cut.truncated).toBe(true);
+    expect(Buffer.byteLength(JSON.stringify(cut), 'utf8')).toBeLessThanOrEqual(budgetBytes);
+    // A budget the first relation does not fit lists nothing, and says so.
+    const none = await asAccount('reader', (client) =>
+      describeRelations(client, { budgetBytes: 64 }),
+    );
+    expect(none.relations).toEqual([]);
+    expect(none.truncated).toBe(true);
   });
 
   it('proposes a type from its name, its kind and its modifier, a numeric without one and anything else proposing none', () => {

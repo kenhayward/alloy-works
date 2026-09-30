@@ -23,7 +23,7 @@ import {
   nameOf,
   refusalText,
   type ConnectionView,
-  type Relation,
+  type Described,
   type Settings,
   type Tested,
 } from './shapes.js';
@@ -42,6 +42,20 @@ const KINDS: Readonly<Record<string, string>> = {
   foreignTable: 'Foreign table',
   partitionedTable: 'Partitioned table',
 };
+
+/**
+ * What a describe left out, in words, or null where it left out nothing: a table or column whose name
+ * holds a control character, or whose type is longer than any PostgreSQL names, is never listed.
+ */
+function leftOutText(leftOut: Described['leftOut']): string | null {
+  const parts = [
+    leftOut.relations > 0 &&
+      `${leftOut.relations} ${leftOut.relations === 1 ? 'table or view' : 'tables or views'}`,
+    leftOut.columns > 0 && `${leftOut.columns} ${leftOut.columns === 1 ? 'column' : 'columns'}`,
+  ].filter((part): part is string => typeof part === 'string');
+  if (parts.length === 0) return null;
+  return `Left out because their names or types cannot be shown here: ${parts.join(', and ')}.`;
+}
 
 /**
  * A test's answer in words (DAT-075): "Connected." and what it found of the account, or "Could not
@@ -143,9 +157,7 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
   const [secret, setSecret] = useState('');
   const [rotation, setRotation] = useState<Tested | string | null>(null);
   const [tested, setTested] = useState<Tested | string | null>(null);
-  const [tables, setTables] = useState<
-    { readonly relations: readonly Relation[]; readonly truncated: boolean } | string | null
-  >(null);
+  const [tables, setTables] = useState<Described | string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const working = useRef(false);
 
@@ -459,7 +471,13 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
                   ))}
                 </tbody>
               </table>
-              {tables.truncated && <p>There are more than the connector lists.</p>}
+              {tables.truncated && (
+                <p>
+                  The list was cut short: the source has more tables and views than the connector
+                  lists at once.
+                </p>
+              )}
+              {leftOutText(tables.leftOut) && <p>{leftOutText(tables.leftOut)}</p>}
             </>
           )}
         </Part>

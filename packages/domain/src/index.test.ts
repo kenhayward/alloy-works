@@ -355,6 +355,12 @@ describe('the domain package', () => {
         'connectionTarget',
         'CONNECTOR_ANSWER_MAX_BYTES',
         'MAX_COLUMNS',
+        // A describe's budget, its type's bound, and the name and type a child checks each item by
+        // (the D1 fix, round two).
+        'DESCRIBE_BUDGET_BYTES',
+        'SOURCE_TYPE_MAX_BYTES',
+        'sourceNameSchema',
+        'sourceTypeSchema',
         'MAX_DESCRIBED_RELATIONS',
         'dataFailure',
         'dataFailureCodes',

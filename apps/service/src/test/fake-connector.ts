@@ -29,7 +29,7 @@ export function fakeConnector(): FakeConnector {
     asked: [],
     mode: 'answer',
     test: { outcome: 'ok', findings: [] },
-    describe: { relations: [], truncated: false },
+    describe: { relations: [], truncated: false, leftOut: { relations: 0, columns: 0 } },
     fetch: (async (url: string | URL | Request, init?: RequestInit) => {
       const path = new URL(String(url)).pathname;
       const body = JSON.parse(String(init?.body ?? 'null')) as Record<string, unknown>;

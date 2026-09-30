@@ -1,6 +1,15 @@
 import { isIP } from 'node:net';
 
-import type { ColumnType, ConnectionSettings, Relation, TestFinding } from '@alloy-works/domain';
+import {
+  DESCRIBE_BUDGET_BYTES,
+  MAX_COLUMNS,
+  sourceNameSchema,
+  sourceTypeSchema,
+  type ColumnType,
+  type ConnectionSettings,
+  type Relation,
+  type TestFinding,
+} from '@alloy-works/domain';
 import pg from 'pg';
 
 /**
@@ -170,13 +179,29 @@ export function proposedType(type: {
   return null;
 }
 
+/** A describe's answer, as the child gives it. */
+export interface Described {
+  readonly relations: Relation[];
+  readonly truncated: boolean;
+  readonly leftOut: { readonly relations: number; readonly columns: number };
+}
+
+const bytes = (value: unknown) => Buffer.byteLength(JSON.stringify(value), 'utf8');
+
 /**
  * The relations the account may `SELECT` in a schema it may use, outside the catalogues, ordered by
- * schema, name and column number, with each column's source type and proposal; at most 2,000.
+ * schema, name and column number, with each column's source type and proposal; at most 2,000, and no
+ * more than fit an answer of `budgetBytes` (the D1 fix, round two). Each relation and column is held
+ * to the protocol's own bounds here, one at a time: one PostgreSQL allows and a page cannot show - a
+ * name with a control character, a type longer than any it names - is left out and counted, rather
+ * than failing the whole answer. Past the budget the list stops at the last relation that fits, and
+ * says `truncated`, as it does past 2,000.
  */
 export async function describeRelations(
   client: pg.Client,
-): Promise<{ relations: Relation[]; truncated: boolean }> {
+  options: { readonly budgetBytes?: number } = {},
+): Promise<Described> {
+  const budgetBytes = options.budgetBytes ?? DESCRIBE_BUDGET_BYTES;
   const relations = await client.query<{ oid: number; schema: string; name: string; kind: string }>(
     `select c.oid::int as oid, n.nspname as schema, c.relname as name, c.relkind::text as kind
        from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -188,8 +213,14 @@ export async function describeRelations(
     [MAX_RELATIONS + 1],
   );
   const truncated = relations.rows.length > MAX_RELATIONS;
-  const listed = relations.rows.slice(0, MAX_RELATIONS);
-  if (listed.length === 0) return { relations: [], truncated };
+  const leftOut = { relations: 0, columns: 0 };
+  const shown = (schema: typeof sourceNameSchema, value: string) => schema.safeParse(value).success;
+  const listed = relations.rows.slice(0, MAX_RELATIONS).filter((relation) => {
+    const fits = shown(sourceNameSchema, relation.schema) && shown(sourceNameSchema, relation.name);
+    if (!fits) leftOut.relations += 1;
+    return fits;
+  });
+  if (listed.length === 0) return fitted([], truncated, leftOut, budgetBytes);
   const columns = await client.query<{
     relation: number;
     name: string;
@@ -230,7 +261,12 @@ export async function describeRelations(
     return type ? { name: type.typname, kind: type.typtype, typmod: modifier } : undefined;
   };
   const byRelation = new Map<number, Relation['columns'][number][]>();
+  const leftOutColumns = new Map<number, number>();
   for (const column of columns.rows) {
+    if (!shown(sourceNameSchema, column.name) || !shown(sourceTypeSchema, column.source_type)) {
+      leftOutColumns.set(column.relation, (leftOutColumns.get(column.relation) ?? 0) + 1);
+      continue;
+    }
     const base = resolve(column.type, column.typmod);
     const list = byRelation.get(column.relation) ?? [];
     list.push({
@@ -241,13 +277,42 @@ export async function describeRelations(
     });
     byRelation.set(column.relation, list);
   }
-  return {
-    relations: listed.map((relation) => ({
+  const described: Relation[] = [];
+  for (const relation of listed) {
+    const columns = byRelation.get(relation.oid) ?? [];
+    // More than a relation can have: nothing a real source answers, and nothing to list.
+    if (columns.length > MAX_COLUMNS) {
+      leftOut.relations += 1;
+      continue;
+    }
+    leftOut.columns += leftOutColumns.get(relation.oid) ?? 0;
+    described.push({
       schema: relation.schema,
       name: relation.name,
       kind: RELATION_KINDS[relation.kind as keyof typeof RELATION_KINDS],
-      columns: byRelation.get(relation.oid) ?? [],
-    })),
-    truncated,
-  };
+      columns,
+    });
+  }
+  return fitted(described, truncated, leftOut, budgetBytes);
+}
+
+/**
+ * The longest run of relations, from the first, whose answer is no more than `budgetBytes` of JSON:
+ * `truncated` where any was cut, and whatever it already was otherwise.
+ */
+function fitted(
+  relations: Relation[],
+  truncated: boolean,
+  leftOut: Described['leftOut'],
+  budgetBytes: number,
+): Described {
+  // The answer with no relations, as the budget counts it: said truncated, the longer of the two.
+  let size = bytes({ relations: [], truncated: true, leftOut });
+  const kept: Relation[] = [];
+  for (const relation of relations) {
+    size += bytes(relation) + (kept.length === 0 ? 0 : 1);
+    if (size > budgetBytes) return { relations: kept, truncated: true, leftOut };
+    kept.push(relation);
+  }
+  return { relations: kept, truncated, leftOut };
 }

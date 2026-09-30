@@ -99,7 +99,7 @@ export type SpawnChild = (
   stderr?: (chunk: Buffer) => void,
 ) => Promise<ChildOutcome>;
 
-/** The most a child may answer: a describe of 2,000 relations fits many times over. */
+/** The most a child may answer; a describe stops listing at half of it (`DESCRIBE_BUDGET_BYTES`). */
 const MAX_ANSWER_BYTES = CONNECTOR_ANSWER_MAX_BYTES;
 /** How long past its deadline a child is let run before it is killed. */
 const GRACE_MS = 1000;

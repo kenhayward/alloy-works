@@ -15,17 +15,21 @@ export { columnTypeSchema } from './columns.js';
 export type { ColumnType } from './columns.js';
 export {
   CONNECTOR_ANSWER_MAX_BYTES,
+  DESCRIBE_BUDGET_BYTES,
   MAX_COLUMNS,
   MAX_DESCRIBED_RELATIONS,
   SEALED,
   SEALED_MAX_BYTES,
   SECRET_MAX_BYTES,
+  SOURCE_TYPE_MAX_BYTES,
   childRequestSchema,
   describeAnswerSchema,
   describeRequestSchema,
   relationSchema,
   sealAnswerSchema,
   sealRequestSchema,
+  sourceNameSchema,
+  sourceTypeSchema,
   testAnswerSchema,
   testRequestSchema,
 } from './protocol.js';

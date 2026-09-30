@@ -220,6 +220,7 @@ function service(
             },
           ],
           truncated: false,
+          leftOut: { relations: 0, columns: 0 },
         })
       );
     }
@@ -625,6 +626,46 @@ describe('a connection on its own page', () => {
     expect(
       await screen.findAllByText('No connector is available to reach the source. Try again later.'),
     ).not.toHaveLength(0);
+  });
+
+  it('says when the list of tables was cut short, and how many tables and columns were left out', async () => {
+    const user = userEvent.setup();
+    const { client } = service({
+      connection: view({
+        credential: {
+          set: true,
+          setBy: { id: 'ada', name: 'Ada' },
+          setAt: '2026-09-30T09:00:00Z',
+          targetChanged: false,
+        },
+      }),
+      describe: () =>
+        json(200, {
+          relations: [
+            {
+              schema: 'sample',
+              name: 'site',
+              kind: 'table',
+              columns: [{ name: 'id', sourceType: 'int4', nullable: false, proposed: null }],
+            },
+          ],
+          truncated: true,
+          leftOut: { relations: 2, columns: 1 },
+        }),
+    });
+    render(<ConnectionPage client={client} id={READINGS} />);
+    await user.click(await screen.findByRole('button', { name: 'List tables' }));
+    await screen.findByRole('table', { name: 'Tables and views' });
+    expect(
+      screen.getByText(
+        'The list was cut short: the source has more tables and views than the connector lists at once.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Left out because their names or types cannot be shown here: 2 tables or views, and 1 column.',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('offers a reader none of what changes or uses a connection', async () => {
