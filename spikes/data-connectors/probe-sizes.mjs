@@ -9,10 +9,17 @@ out.xlsxRows1000MB = (await xlsxOfRows(1000 * MB)).length;
 out.xlsxSst600MB = (await xlsxSharedStringBomb(600 * MB)).length;
 // The gzip body the fake source sends for 1 GB: compress the same filler, counting output only.
 const unit = Buffer.from('{"id":12345,"v":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"},');
-const gz = zlib.createGzip({ level: 9 }); let size = 0; gz.on('data', (c) => { size += c.length; });
+const gz = zlib.createGzip({ level: 9 });
+let size = 0;
+gz.on('data', (c) => {
+  size += c.length;
+});
 const done = new Promise((r) => gz.on('end', r));
 const block = Buffer.concat(Array(16384).fill(unit));
-for (let sent = 0; sent < 1000 * MB; sent += block.length) { if (!gz.write(block)) await new Promise((r) => gz.once('drain', r)); }
-gz.end(); await done;
+for (let sent = 0; sent < 1000 * MB; sent += block.length) {
+  if (!gz.write(block)) await new Promise((r) => gz.once('drain', r));
+}
+gz.end();
+await done;
 out.gzip1000MB = size;
 console.log(JSON.stringify(out));

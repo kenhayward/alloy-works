@@ -22,37 +22,68 @@ const rows = [
 const stats = { served: 0, refused: {} };
 
 const server = http.createServer(async (req, res) => {
-  const send = (code, obj) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(obj)); };
+  const send = (code, obj) => {
+    res.writeHead(code, { 'content-type': 'application/json' });
+    res.end(JSON.stringify(obj));
+  };
   const url = new URL(req.url, 'http://x');
-  if (url.pathname === '/redirect') { res.writeHead(302, { location: REDIRECT_TO }); res.end('redirecting'); return; }
+  if (url.pathname === '/redirect') {
+    res.writeHead(302, { location: REDIRECT_TO });
+    res.end('redirecting');
+    return;
+  }
   if (url.pathname === '/health') return send(200, { ok: true });
   if (url.pathname === '/stats') return send(200, stats);
   // Owner reassignment, standing for a change to the source's own access rule (case 4.5).
   if (url.pathname === '/admin/reassign' && req.method === 'POST') {
-    const id = Number(url.searchParams.get('id')); const owner = url.searchParams.get('owner');
-    const r = rows.find((x) => x.id === id); if (r) r.owner = owner;
+    const id = Number(url.searchParams.get('id'));
+    const owner = url.searchParams.get('owner');
+    const r = rows.find((x) => x.id === id);
+    if (r) r.owner = owner;
     return send(200, { rows });
   }
   const delay = Math.min(Number(url.searchParams.get('delayMs') || 0), 10000);
   if (delay) await new Promise((r) => setTimeout(r, delay));
 
   const auth = req.headers['authorization'] || '';
-  const refuse = (why) => { stats.refused[why] = (stats.refused[why] || 0) + 1; return send(401, { error: 'invalid_token', error_description: why }); };
+  const refuse = (why) => {
+    stats.refused[why] = (stats.refused[why] || 0) + 1;
+    return send(401, { error: 'invalid_token', error_description: why });
+  };
   if (auth === `Bearer ${STATIC_TOKEN}`) {
     stats.served++;
     return send(200, { as: 'service-account', rows });
   }
   if (!auth.startsWith('Bearer ')) return refuse('no bearer');
   try {
-    const { payload } = await jwtVerify(auth.slice(7), jwks, { issuer: 'http://token-exchange', audience: 'fake-api', algorithms: ['ES256'] });
-    if (!String(payload.scope || '').split(' ').includes('records:read')) return refuse('scope missing');
+    const { payload } = await jwtVerify(auth.slice(7), jwks, {
+      issuer: 'http://token-exchange',
+      audience: 'fake-api',
+      algorithms: ['ES256'],
+    });
+    if (
+      !String(payload.scope || '')
+        .split(' ')
+        .includes('records:read')
+    )
+      return refuse('scope missing');
     stats.served++;
-    return send(200, { as: payload.sub, actor: payload.act?.sub ?? null, exp: payload.exp, rows: rows.filter((r) => r.owner === payload.sub) });
+    return send(200, {
+      as: payload.sub,
+      actor: payload.act?.sub ?? null,
+      exp: payload.exp,
+      rows: rows.filter((r) => r.owner === payload.sub),
+    });
   } catch (err) {
-    const why = err.code === 'ERR_JWT_EXPIRED' ? 'token expired'
-      : err.code === 'ERR_JWT_CLAIM_VALIDATION_FAILED' ? `claim ${err.claim} wrong`
-      : err.code === 'ERR_JWKS_NO_MATCHING_KEY' || err.code === 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED' ? 'signature not trusted'
-      : `token invalid (${err.code || 'unknown'})`;
+    const why =
+      err.code === 'ERR_JWT_EXPIRED'
+        ? 'token expired'
+        : err.code === 'ERR_JWT_CLAIM_VALIDATION_FAILED'
+          ? `claim ${err.claim} wrong`
+          : err.code === 'ERR_JWKS_NO_MATCHING_KEY' ||
+              err.code === 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED'
+            ? 'signature not trusted'
+            : `token invalid (${err.code || 'unknown'})`;
     return refuse(why);
   }
 });

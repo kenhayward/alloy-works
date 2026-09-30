@@ -12,7 +12,9 @@ import net from 'node:net';
 
 // Platform addresses this deployment declares off-limits (resolved at start from env, comma list).
 const PLATFORM_DENY = (process.env.PLATFORM_DENY || '')
-  .split(',').map((s) => s.trim()).filter(Boolean);
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
 // The metadata address, wherever the harness put it.
 const METADATA_ADDR = (process.env.METADATA_ADDR || '169.254.169.254').trim();
 
@@ -34,13 +36,16 @@ export function normalizeHost(raw) {
   return { kind: 'name', canonical: h };
 }
 
-function canonV6(h) { return h.toLowerCase(); }
+function canonV6(h) {
+  return h.toLowerCase();
+}
 function mappedV4(h) {
   const m = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(h);
   if (m) return m[1];
   const hx = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i.exec(h);
   if (hx) {
-    const a = parseInt(hx[1], 16), b = parseInt(hx[2], 16);
+    const a = parseInt(hx[1], 16),
+      b = parseInt(hx[2], 16);
     return `${(a >> 8) & 255}.${a & 255}.${(b >> 8) & 255}.${b & 255}`;
   }
   return null;
@@ -64,7 +69,8 @@ export function parseNumericV4(h) {
   // inet_aton: last part absorbs the remaining bytes.
   let bytes;
   if (nums.length === 1) {
-    const n = nums[0]; if (n > 0xffffffff) return null;
+    const n = nums[0];
+    if (n > 0xffffffff) return null;
     bytes = [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255];
   } else if (nums.length === 2) {
     if (nums[0] > 255 || nums[1] > 0xffffff) return null;
@@ -80,7 +86,7 @@ export function parseNumericV4(h) {
 }
 
 export function classify(ip) {
-  const canon = net.isIPv6(ip) ? (mappedV4(ip) || ip) : ip;
+  const canon = net.isIPv6(ip) ? mappedV4(ip) || ip : ip;
   if (net.isIPv4(canon)) {
     const [a, b] = canon.split('.').map(Number);
     if (a === 127) return 'loopback';
@@ -111,19 +117,42 @@ export async function guardHost(rawHost, { allowDeclaredPrivate = true } = {}) {
       const res = await dns.lookup(norm.canonical, { all: true });
       dialed = res.map((r) => r.address);
     } catch (err) {
-      return { allowed: false, reason: 'A connection reason was withheld.', class: 'dns', internalDetail: err.code };
+      return {
+        allowed: false,
+        reason: 'A connection reason was withheld.',
+        class: 'dns',
+        internalDetail: err.code,
+      };
     }
   }
   for (const ip of dialed) {
     const cls = classify(ip);
     if (cls === 'loopback' || cls === 'link-local' || cls === 'this-host') {
-      return { allowed: false, reason: 'A connection reason was withheld.', class: cls, dialed, internalDetail: ip };
+      return {
+        allowed: false,
+        reason: 'A connection reason was withheld.',
+        class: cls,
+        dialed,
+        internalDetail: ip,
+      };
     }
     if (PLATFORM_DENY.includes(ip) || ip === METADATA_ADDR) {
-      return { allowed: false, reason: 'A connection reason was withheld.', class: 'platform', dialed, internalDetail: ip };
+      return {
+        allowed: false,
+        reason: 'A connection reason was withheld.',
+        class: 'platform',
+        dialed,
+        internalDetail: ip,
+      };
     }
     if (cls === 'private' && !allowDeclaredPrivate) {
-      return { allowed: false, reason: 'A connection reason was withheld.', class: 'private', dialed, internalDetail: ip };
+      return {
+        allowed: false,
+        reason: 'A connection reason was withheld.',
+        class: 'private',
+        dialed,
+        internalDetail: ip,
+      };
     }
   }
   return { allowed: true, dialed, pinnedIp: dialed[0] };

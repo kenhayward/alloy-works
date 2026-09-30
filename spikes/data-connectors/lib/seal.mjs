@@ -12,7 +12,8 @@ const KEY_BYTES = 32;
 
 export function sealingKey(base64) {
   const key = Buffer.from(base64, 'base64');
-  if (key.length !== KEY_BYTES) throw new Error(`The sealing key must be ${KEY_BYTES} bytes of base64`);
+  if (key.length !== KEY_BYTES)
+    throw new Error(`The sealing key must be ${KEY_BYTES} bytes of base64`);
   return key;
 }
 
@@ -23,7 +24,12 @@ export function sealSecret(key, purpose, tenantId, secret) {
   const cipher = createCipheriv('aes-256-gcm', key, iv, { authTagLength: TAG_BYTES });
   cipher.setAAD(bound(purpose, tenantId));
   const body = Buffer.concat([cipher.update(secret, 'utf8'), cipher.final()]);
-  return [VERSION, iv.toString('base64url'), cipher.getAuthTag().toString('base64url'), body.toString('base64url')].join('.');
+  return [
+    VERSION,
+    iv.toString('base64url'),
+    cipher.getAuthTag().toString('base64url'),
+    body.toString('base64url'),
+  ].join('.');
 }
 
 export function openSecret(key, purpose, tenantId, sealed) {
@@ -40,7 +46,10 @@ export function openSecret(key, purpose, tenantId, sealed) {
     const decipher = createDecipheriv('aes-256-gcm', key, ivBytes, { authTagLength: TAG_BYTES });
     decipher.setAAD(bound(purpose, tenantId));
     decipher.setAuthTag(tagBytes);
-    return Buffer.concat([decipher.update(Buffer.from(body, 'base64url')), decipher.final()]).toString('utf8');
+    return Buffer.concat([
+      decipher.update(Buffer.from(body, 'base64url')),
+      decipher.final(),
+    ]).toString('utf8');
   } catch (error) {
     throw new SealedSecretRefused('The sealed secret did not open.', { cause: error });
   }

@@ -22,7 +22,10 @@ const targets = [
 // A - raw network reachability, guard OFF, from each placement's own vantage.
 async function reachability() {
   const out = {};
-  for (const [base, role] of [[CALLER, 'A/caller'], [CONNECTOR, 'C/connector']]) {
+  for (const [base, role] of [
+    [CALLER, 'A/caller'],
+    [CONNECTOR, 'C/connector'],
+  ]) {
     out[role] = {};
     for (const [name, host, port] of targets) {
       const r = await post(base, '/probe', { host, port });
@@ -30,7 +33,10 @@ async function reachability() {
     }
     // The tenant's own private source must still answer.
     const priv = await post(base, '/probe', { host: ADDR.sourcePg, port: 5432 });
-    out[role]['tenant private source (must answer)'] = { outcome: priv.json.outcome, ms: priv.json.ms };
+    out[role]['tenant private source (must answer)'] = {
+      outcome: priv.json.outcome,
+      ms: priv.json.ms,
+    };
   }
   return out;
 }
@@ -55,7 +61,12 @@ async function guardVerdicts() {
   const out = {};
   for (const [name, host] of hosts) {
     const r = await post(CALLER, '/guard', { host });
-    out[name] = { host, allowed: r.json.allowed, class: r.json.class ?? null, dialed: r.json.dialed ?? null };
+    out[name] = {
+      host,
+      allowed: r.json.allowed,
+      class: r.json.class ?? null,
+      dialed: r.json.dialed ?? null,
+    };
   }
   return out;
 }
@@ -98,16 +109,28 @@ async function oracle() {
 // placements: on A the redirect reaches the platform; on C the network blocks it regardless.
 async function redirect() {
   const out = {};
-  for (const [base, role] of [[CALLER, 'A/caller'], [CONNECTOR, 'C/connector']]) {
+  for (const [base, role] of [
+    [CALLER, 'A/caller'],
+    [CONNECTOR, 'C/connector'],
+  ]) {
     out[role] = {};
     for (const follow of [false, true]) {
-      const spec = { ...httpSpec(), url: 'http://fake-api/redirect', followRedirects: follow, timeoutMs: 3000 };
+      const spec = {
+        ...httpSpec(),
+        url: 'http://fake-api/redirect',
+        followRedirects: follow,
+        timeoutMs: 3000,
+      };
       const r = await post(base, '/query', { spec, exposeSink: true });
       // Show whether the redirect target's body (the fake metadata credential) came back.
-      out[role][follow ? 'followRedirects=true' : 'followRedirects=false'] =
-        { status: r.status, ok: r.json.result?.ok ?? null, httpStatus: r.json.result?.status ?? null,
-          finalUrl: r.json.result?.finalUrl ?? null, bodyReached: r.json.result?.body ?? null,
-          error: r.json.error ?? null };
+      out[role][follow ? 'followRedirects=true' : 'followRedirects=false'] = {
+        status: r.status,
+        ok: r.json.result?.ok ?? null,
+        httpStatus: r.json.result?.status ?? null,
+        finalUrl: r.json.result?.finalUrl ?? null,
+        bodyReached: r.json.result?.body ?? null,
+        error: r.json.error ?? null,
+      };
     }
   }
   return out;
@@ -116,7 +139,10 @@ async function redirect() {
 // E - DNS rebinding, from each placement.
 async function rebinding() {
   const out = {};
-  for (const [base, role] of [[CALLER, 'A/caller'], [CONNECTOR, 'C/connector']]) {
+  for (const [base, role] of [
+    [CALLER, 'A/caller'],
+    [CONNECTOR, 'C/connector'],
+  ]) {
     const r = await post(base, '/rebind-test', { name: 'rebind.evil.test', port: 5432 });
     out[role] = r.json;
   }
@@ -136,4 +162,7 @@ const run = async () => {
   log(JSON.stringify(report.sections, null, 2));
   log('\nWrote dcp1-case1.json');
 };
-run().catch((e) => { console.error(e); process.exit(1); });
+run().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

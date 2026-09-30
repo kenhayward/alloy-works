@@ -20,7 +20,10 @@ const PRODUCT_AUDIENCE = process.env.PRODUCT_AUDIENCE || 'api://alloy-works';
 const TRUST_DIR = process.env.TRUST_DIR || '/trust';
 
 // Lifetimes are settable at run time so case 4 can make a token expire inside a publish.
-const ttl = { access: Number(process.env.ACCESS_TTL || 300), refresh: Number(process.env.REFRESH_TTL || 86400) };
+const ttl = {
+  access: Number(process.env.ACCESS_TTL || 300),
+  refresh: Number(process.env.REFRESH_TTL || 86400),
+};
 
 const keys = {};
 async function makeKey(name) {
@@ -55,14 +58,38 @@ async function mint(issuerName, sub, audience, extra, lifetime) {
 
 function newRefresh(sub, family, scope) {
   const token = `rt.${randomBytes(24).toString('base64url')}`;
-  refresh.set(h(token), { sub, family, state: 'live', exp: Date.now() + ttl.refresh * 1000, scope });
+  refresh.set(h(token), {
+    sub,
+    family,
+    state: 'live',
+    exp: Date.now() + ttl.refresh * 1000,
+    scope,
+  });
   return token;
 }
 
 async function tokenSet(issuerName, sub, scope, family) {
-  const accessToken = await mint(issuerName, sub, PRODUCT_AUDIENCE, { scp: 'user_impersonation', azp: CLIENT_ID }, ttl.access);
-  const idToken = await mint(issuerName, sub, CLIENT_ID, { name: sub === 'ada' ? 'Ada' : sub === 'grace' ? 'Grace' : sub }, ttl.access);
-  const out = { token_type: 'Bearer', id_token: idToken, access_token: accessToken, expires_in: ttl.access, scope };
+  const accessToken = await mint(
+    issuerName,
+    sub,
+    PRODUCT_AUDIENCE,
+    { scp: 'user_impersonation', azp: CLIENT_ID },
+    ttl.access,
+  );
+  const idToken = await mint(
+    issuerName,
+    sub,
+    CLIENT_ID,
+    { name: sub === 'ada' ? 'Ada' : sub === 'grace' ? 'Grace' : sub },
+    ttl.access,
+  );
+  const out = {
+    token_type: 'Bearer',
+    id_token: idToken,
+    access_token: accessToken,
+    expires_in: ttl.access,
+    scope,
+  };
   if (issuerName === 'tenant' && scope.split(' ').includes('offline_access')) {
     const fam = family ?? randomBytes(6).toString('hex');
     if (!families.has(fam)) families.set(fam, { sub, revoked: false });
@@ -78,13 +105,20 @@ async function form(req) {
   for await (const c of req) chunks.push(c);
   const text = Buffer.concat(chunks).toString('utf8');
   if ((req.headers['content-type'] || '').includes('json')) {
-    try { return new Map(Object.entries(JSON.parse(text || '{}'))); } catch { return new Map(); }
+    try {
+      return new Map(Object.entries(JSON.parse(text || '{}')));
+    } catch {
+      return new Map();
+    }
   }
   return new URLSearchParams(text);
 }
 
 const server = http.createServer(async (req, res) => {
-  const send = (code, obj) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(obj)); };
+  const send = (code, obj) => {
+    res.writeHead(code, { 'content-type': 'application/json' });
+    res.end(JSON.stringify(obj));
+  };
   try {
     const url = new URL(req.url, 'http://x');
     if (url.pathname === '/health') return send(200, { ok: true });
@@ -103,23 +137,36 @@ const server = http.createServer(async (req, res) => {
       // no browser, so it asks for the user's token set directly. Everything downstream is real.
       if (grant === 'urn:spike:signin') {
         const sub = f.get('sub');
-        if (!['ada', 'grace'].includes(sub)) return send(400, { error: 'invalid_request', error_description: 'unknown user' });
+        if (!['ada', 'grace'].includes(sub))
+          return send(400, { error: 'invalid_request', error_description: 'unknown user' });
         const issuerName = f.get('issuer') === 'google' ? 'google' : 'tenant';
         return send(200, await tokenSet(issuerName, sub, f.get('scope') || 'openid', undefined));
       }
       if (grant === 'refresh_token') {
         const rec = refresh.get(h(f.get('refresh_token') || ''));
-        if (!rec) { stats.refused++; return send(400, { error: 'invalid_grant', error_description: 'unknown refresh token' }); }
+        if (!rec) {
+          stats.refused++;
+          return send(400, { error: 'invalid_grant', error_description: 'unknown refresh token' });
+        }
         const fam = families.get(rec.family);
         if (rec.state === 'rotated') {
           // Reuse of a rotated token: treat as theft, revoke the whole family.
           stats.reuseDetected++;
           fam.revoked = true;
           for (const r of refresh.values()) if (r.family === rec.family) r.state = 'revoked';
-          return send(400, { error: 'invalid_grant', error_description: 'refresh token reused; family revoked' });
+          return send(400, {
+            error: 'invalid_grant',
+            error_description: 'refresh token reused; family revoked',
+          });
         }
-        if (rec.state === 'revoked' || fam?.revoked) { stats.refused++; return send(400, { error: 'invalid_grant', error_description: 'refresh token revoked' }); }
-        if (rec.exp < Date.now()) { stats.refused++; return send(400, { error: 'invalid_grant', error_description: 'refresh token expired' }); }
+        if (rec.state === 'revoked' || fam?.revoked) {
+          stats.refused++;
+          return send(400, { error: 'invalid_grant', error_description: 'refresh token revoked' });
+        }
+        if (rec.exp < Date.now()) {
+          stats.refused++;
+          return send(400, { error: 'invalid_grant', error_description: 'refresh token expired' });
+        }
         rec.state = 'rotated';
         stats.refreshed++;
         return send(200, await tokenSet('tenant', rec.sub, rec.scope, rec.family));
@@ -153,9 +200,17 @@ await makeKey('tenant');
 await makeKey('google');
 try {
   fs.mkdirSync(TRUST_DIR, { recursive: true });
-  fs.writeFileSync(`${TRUST_DIR}/idp-jwks.json`, JSON.stringify({ issuer: ISSUER, audience: PRODUCT_AUDIENCE, keys: [keys.tenant.jwk] }));
-  fs.writeFileSync(`${TRUST_DIR}/google-jwks.json`, JSON.stringify({ issuer: GOOGLE_ISSUER, keys: [keys.google.jwk] }));
+  fs.writeFileSync(
+    `${TRUST_DIR}/idp-jwks.json`,
+    JSON.stringify({ issuer: ISSUER, audience: PRODUCT_AUDIENCE, keys: [keys.tenant.jwk] }),
+  );
+  fs.writeFileSync(
+    `${TRUST_DIR}/google-jwks.json`,
+    JSON.stringify({ issuer: GOOGLE_ISSUER, keys: [keys.google.jwk] }),
+  );
 } catch (err) {
   console.log('[idp] could not write trust files:', err.message);
 }
-server.listen(PORT, '0.0.0.0', () => console.log(`[idp] listening on ${PORT}; kid ${keys.tenant.jwk.kid}`));
+server.listen(PORT, '0.0.0.0', () =>
+  console.log(`[idp] listening on ${PORT}; kid ${keys.tenant.jwk.kid}`),
+);

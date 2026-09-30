@@ -10,7 +10,9 @@ export function tcpProbe(host, port, timeoutMs = 2500) {
     const started = process.hrtime.bigint();
     const done = (outcome, detail) => {
       const ms = Number(process.hrtime.bigint() - started) / 1e6;
-      try { sock.destroy(); } catch {}
+      try {
+        sock.destroy();
+      } catch {}
       resolve({ outcome, detail: detail ?? null, ms: Math.round(ms) });
     };
     const sock = new net.Socket();

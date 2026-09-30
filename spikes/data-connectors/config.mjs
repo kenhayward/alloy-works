@@ -31,30 +31,53 @@ export function seal(tenantId, secret) {
 // because the harness runs outside the agent (a phase-1 simplification, noted in the findings).
 export function pgSpec(tenantId = 'tenant-ada') {
   return {
-    kind: 'postgres', host: 'source-pg', port: 5432, database: 'sourcedb', user: 'connector_login',
-    tenantId, sealingKey: SEALING_KEY_B64, sealedSecret: seal(tenantId, 'source-pg-connector-fake-pw'),
+    kind: 'postgres',
+    host: 'source-pg',
+    port: 5432,
+    database: 'sourcedb',
+    user: 'connector_login',
+    tenantId,
+    sealingKey: SEALING_KEY_B64,
+    sealedSecret: seal(tenantId, 'source-pg-connector-fake-pw'),
     testSql: 'select 1 as one',
   };
 }
 export function mssqlSpec(tenantId = 'tenant-ada') {
   return {
-    kind: 'sqlserver', host: 'sqlserver', port: 1433, database: 'sourcedb', user: 'sa',
-    encrypt: true, trustServerCertificate: true,
-    tenantId, sealingKey: SEALING_KEY_B64, sealedSecret: seal(tenantId, 'Spike-SqlServer-Fake-Pw1'),
+    kind: 'sqlserver',
+    host: 'sqlserver',
+    port: 1433,
+    database: 'sourcedb',
+    user: 'sa',
+    encrypt: true,
+    trustServerCertificate: true,
+    tenantId,
+    sealingKey: SEALING_KEY_B64,
+    sealedSecret: seal(tenantId, 'Spike-SqlServer-Fake-Pw1'),
     testSql: 'select 1 as one',
   };
 }
 export function httpSpec(tenantId = 'tenant-ada') {
   return {
-    kind: 'http', host: 'fake-api', url: 'http://fake-api/',
-    tenantId, sealingKey: SEALING_KEY_B64, sealedSecret: seal(tenantId, 'fake-api-bearer-token-for-the-spike'),
+    kind: 'http',
+    host: 'fake-api',
+    url: 'http://fake-api/',
+    tenantId,
+    sealingKey: SEALING_KEY_B64,
+    sealedSecret: seal(tenantId, 'fake-api-bearer-token-for-the-spike'),
   };
 }
 
 export async function post(base, path, body) {
   const res = await fetch(base + path, {
-    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
   });
   const text = await res.text();
-  try { return { status: res.status, json: JSON.parse(text) }; } catch { return { status: res.status, text }; }
+  try {
+    return { status: res.status, json: JSON.parse(text) };
+  } catch {
+    return { status: res.status, text };
+  }
 }

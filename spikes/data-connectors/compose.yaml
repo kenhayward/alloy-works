@@ -50,27 +50,27 @@ services:
     # sibling networks (see the case 1 finding on the published-port leak), which would let the
     # connector reach the platform's Postgres and defeat the boundary case 1 tests. Inspect this
     # container with `docker exec` instead.
-    volumes: ["platform-pg-data:/var/lib/postgresql"]
+    volumes: ['platform-pg-data:/var/lib/postgresql']
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 5s
       timeout: 3s
       retries: 20
 
   seaweedfs:
     image: chrislusf/seaweedfs@sha256:08d516132314207d10c8e37cbffc1f32b147d870169688734cc61c6231625b62
-    command: "server -s3 -dir=/data"
+    command: 'server -s3 -dir=/data'
     networks:
       aw-dc-platform:
         ipv4_address: 172.31.10.12
     # No published host port, same reason as platform-pg above (the published-port leak).
-    volumes: ["seaweed-data:/data"]
+    volumes: ['seaweed-data:/data']
 
   metadata:
     image: aw-dc-agent:latest
-    command: ["node", "metadata.mjs"]
+    command: ['node', 'metadata.mjs']
     environment:
-      PORT: "80"
+      PORT: '80'
     networks:
       aw-dc-platform:
         ipv4_address: 172.31.10.13
@@ -78,11 +78,11 @@ services:
 
   idp:
     image: aw-dc-agent:latest
-    command: ["node", "idp.mjs"]
+    command: ['node', 'idp.mjs']
     environment:
-      PORT: "80"
-      ACCESS_TTL: "300"
-    volumes: ["trust:/trust"]
+      PORT: '80'
+      ACCESS_TTL: '300'
+    volumes: ['trust:/trust']
     networks:
       aw-dc-platform:
         ipv4_address: 172.31.10.14
@@ -92,18 +92,18 @@ services:
   caller:
     build: .
     image: aw-dc-agent:latest
-    command: ["node", "agent.mjs"]
+    command: ['node', 'agent.mjs']
     environment:
       ROLE: caller
-      PORT: "8080"
+      PORT: '8080'
       # Phase 2 (case 4): the caller stands for the service and the worker, holding the tenant's schema
       # in platform-pg and reaching the connector over aw-dc-connector-rpc. Invented values.
-      PLATFORM_PG_URL: "postgres://postgres:platform-pg-fake-pw@172.31.10.11:5432/platform"
-      IDP_URL: "http://172.31.10.14"
-      CONNECTOR_URL: "http://172.31.30.31:8080"
-      TENANT_SEALING_KEY: "dlBCBJkzSuecCoSn76qngagHLR5Qjg5YHBMawT+ReJ0="
-      PLATFORM_DENY: "172.31.10.10,172.31.10.11,172.31.10.12,172.31.10.13,172.31.10.14"
-      METADATA_ADDR: "172.31.10.13"
+      PLATFORM_PG_URL: 'postgres://postgres:platform-pg-fake-pw@172.31.10.11:5432/platform'
+      IDP_URL: 'http://172.31.10.14'
+      CONNECTOR_URL: 'http://172.31.30.31:8080'
+      TENANT_SEALING_KEY: 'dlBCBJkzSuecCoSn76qngagHLR5Qjg5YHBMawT+ReJ0='
+      PLATFORM_DENY: '172.31.10.10,172.31.10.11,172.31.10.12,172.31.10.13,172.31.10.14'
+      METADATA_ADDR: '172.31.10.13'
     networks:
       aw-dc-platform:
         ipv4_address: 172.31.10.10
@@ -111,24 +111,24 @@ services:
         ipv4_address: 172.31.20.20
       aw-dc-connector-rpc:
         ipv4_address: 172.31.30.30
-    ports: ["127.0.0.1:15706:8080"]
+    ports: ['127.0.0.1:15706:8080']
 
   # --- connector = placement C: on aw-dc-sources and aw-dc-connector-rpc ONLY. The boundary is the
   #     network, not a branch in code: the guard config is identical to the caller's. ---
   connector:
     image: aw-dc-agent:latest
-    command: ["node", "agent.mjs"]
+    command: ['node', 'agent.mjs']
     environment:
       ROLE: connector
-      PORT: "8080"
-      PLATFORM_DENY: "172.31.10.10,172.31.10.11,172.31.10.12,172.31.10.13,172.31.10.14"
-      METADATA_ADDR: "172.31.10.13"
+      PORT: '8080'
+      PLATFORM_DENY: '172.31.10.10,172.31.10.11,172.31.10.12,172.31.10.13,172.31.10.14'
+      METADATA_ADDR: '172.31.10.13'
     networks:
       aw-dc-sources:
         ipv4_address: 172.31.20.29
       aw-dc-connector-rpc:
         ipv4_address: 172.31.30.31
-    ports: ["127.0.0.1:15707:8080"]
+    ports: ['127.0.0.1:15707:8080']
 
   # --- aw-dc-sources: the tenant's sources ---
   source-pg:
@@ -139,14 +139,14 @@ services:
     networks:
       aw-dc-sources:
         ipv4_address: 172.31.20.21
-    ports: ["127.0.0.1:15702:5432"]
+    ports: ['127.0.0.1:15702:5432']
     volumes:
-      - "source-pg-data:/var/lib/postgresql"
-      - "./init/source-pg.sql:/docker-entrypoint-initdb.d/01-source-pg.sql:ro"
-      - "./init/source-pg-phase2.sql:/docker-entrypoint-initdb.d/02-source-pg-phase2.sql:ro"
-      - "./init/source-pg-phase3.sql:/docker-entrypoint-initdb.d/03-source-pg-phase3.sql:ro"
+      - 'source-pg-data:/var/lib/postgresql'
+      - './init/source-pg.sql:/docker-entrypoint-initdb.d/01-source-pg.sql:ro'
+      - './init/source-pg-phase2.sql:/docker-entrypoint-initdb.d/02-source-pg-phase2.sql:ro'
+      - './init/source-pg-phase3.sql:/docker-entrypoint-initdb.d/03-source-pg-phase3.sql:ro'
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 5s
       timeout: 3s
       retries: 20
@@ -155,23 +155,23 @@ services:
     # Developer edition; licence accepted by the repository owner on 2026-09-29 (see file header).
     image: mcr.microsoft.com/mssql/server@sha256:4402d880dd4c34bfa7d8705e56a86cd6c88da80a1f6bbbe741f999e76264a090
     environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "Spike-SqlServer-Fake-Pw1"
-      MSSQL_PID: "Developer"
+      ACCEPT_EULA: 'Y'
+      MSSQL_SA_PASSWORD: 'Spike-SqlServer-Fake-Pw1'
+      MSSQL_PID: 'Developer'
     networks:
       aw-dc-sources:
         ipv4_address: 172.31.20.22
-    ports: ["127.0.0.1:15703:1433"]
-    volumes: ["sqlserver-data:/var/opt/mssql"]
+    ports: ['127.0.0.1:15703:1433']
+    volumes: ['sqlserver-data:/var/opt/mssql']
 
   fake-api:
     image: aw-dc-agent:latest
-    command: ["node", "fake-api.mjs"]
+    command: ['node', 'fake-api.mjs']
     environment:
-      PORT: "80"
-      API_TOKEN: "fake-api-bearer-token-for-the-spike"
-      REDIRECT_TO: "http://172.31.10.13/latest/meta-data/iam/security-credentials/"
-      EXCHANGE_URL: "http://token-exchange"
+      PORT: '80'
+      API_TOKEN: 'fake-api-bearer-token-for-the-spike'
+      REDIRECT_TO: 'http://172.31.10.13/latest/meta-data/iam/security-credentials/'
+      EXCHANGE_URL: 'http://token-exchange'
     networks:
       aw-dc-sources:
         ipv4_address: 172.31.20.23
@@ -179,13 +179,13 @@ services:
 
   token-exchange:
     image: aw-dc-agent:latest
-    command: ["node", "token-exchange.mjs"]
+    command: ['node', 'token-exchange.mjs']
     environment:
-      PORT: "80"
-      EXCHANGE_TTL: "300"
-      CLIENT_ID: "aw-connector-acme"
-      CLIENT_SECRET: "fake-exchange-client-secret-for-the-spike"
-    volumes: ["trust:/trust:ro"]
+      PORT: '80'
+      EXCHANGE_TTL: '300'
+      CLIENT_ID: 'aw-connector-acme'
+      CLIENT_SECRET: 'fake-exchange-client-secret-for-the-spike'
+    volumes: ['trust:/trust:ro']
     depends_on: [caller, idp]
     networks:
       aw-dc-sources:
@@ -193,11 +193,11 @@ services:
 
   resolver:
     image: aw-dc-agent:latest
-    command: ["node", "resolver.mjs"]
+    command: ['node', 'resolver.mjs']
     environment:
-      REBIND_NAME: "rebind.evil.test"
-      ALLOWED_IP: "172.31.20.21"
-      DENIED_IP: "172.31.10.11"
+      REBIND_NAME: 'rebind.evil.test'
+      ALLOWED_IP: '172.31.20.21'
+      DENIED_IP: '172.31.10.11'
     networks:
       aw-dc-sources:
         ipv4_address: 172.31.20.25

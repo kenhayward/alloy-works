@@ -16,9 +16,17 @@ const PORT = Number(process.env.PORT || 80);
 const ISSUER = 'http://token-exchange';
 const GRANT = 'urn:ietf:params:oauth:grant-type:token-exchange';
 const TRUST_FILE = process.env.TRUST_FILE || '/trust/idp-jwks.json';
-const ttl = { exchange: Number(process.env.EXCHANGE_TTL || 300), capToSubject: process.env.CAP_TO_SUBJECT !== 'false' };
+const ttl = {
+  exchange: Number(process.env.EXCHANGE_TTL || 300),
+  capToSubject: process.env.CAP_TO_SUBJECT !== 'false',
+};
 // The one registered client: the connector, for the tenant's HTTP connection. Invented value.
-const CLIENTS = new Map([[process.env.CLIENT_ID || 'aw-connector-acme', process.env.CLIENT_SECRET || 'fake-exchange-client-secret-for-the-spike']]);
+const CLIENTS = new Map([
+  [
+    process.env.CLIENT_ID || 'aw-connector-acme',
+    process.env.CLIENT_SECRET || 'fake-exchange-client-secret-for-the-spike',
+  ],
+]);
 const AUDIENCES = new Set(['fake-api']);
 const disabled = new Set();
 const stats = { exchanged: 0, refused: {} };
@@ -51,7 +59,10 @@ const refuse = (send, code, error, why) => {
 };
 
 const server = http.createServer(async (req, res) => {
-  const send = (code, obj) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(obj)); };
+  const send = (code, obj) => {
+    res.writeHead(code, { 'content-type': 'application/json' });
+    res.end(JSON.stringify(obj));
+  };
   try {
     const url = new URL(req.url, 'http://x');
     if (url.pathname === '/health') return send(200, { ok: true });
@@ -65,14 +76,17 @@ const server = http.createServer(async (req, res) => {
       if (f.get('enable')) disabled.delete(f.get('enable'));
       return send(200, { ttl, disabled: [...disabled] });
     }
-    if (url.pathname !== '/token' || req.method !== 'POST') return send(404, { error: 'not found' });
+    if (url.pathname !== '/token' || req.method !== 'POST')
+      return send(404, { error: 'not found' });
 
     const f = await form(req);
     // Client authentication: HTTP Basic, as RFC 6749 prefers.
     const basic = (req.headers.authorization || '').replace(/^Basic /, '');
     const [cid, csecret] = Buffer.from(basic, 'base64').toString('utf8').split(':');
-    if (!cid || CLIENTS.get(cid) !== csecret) return refuse(send, 401, 'invalid_client', 'client authentication failed');
-    if (f.get('grant_type') !== GRANT) return refuse(send, 400, 'unsupported_grant_type', 'not a token exchange');
+    if (!cid || CLIENTS.get(cid) !== csecret)
+      return refuse(send, 401, 'invalid_client', 'client authentication failed');
+    if (f.get('grant_type') !== GRANT)
+      return refuse(send, 400, 'unsupported_grant_type', 'not a token exchange');
     if (f.get('subject_token_type') !== 'urn:ietf:params:oauth:token-type:access_token') {
       return refuse(send, 400, 'invalid_request', 'subject token must be an access token');
     }
@@ -80,27 +94,51 @@ const server = http.createServer(async (req, res) => {
     if (!AUDIENCES.has(audience)) return refuse(send, 400, 'invalid_target', 'audience not served');
 
     let t;
-    try { t = trust(); } catch { return refuse(send, 503, 'temporarily_unavailable', 'provider keys unavailable'); }
+    try {
+      t = trust();
+    } catch {
+      return refuse(send, 503, 'temporarily_unavailable', 'provider keys unavailable');
+    }
     let claims;
     try {
-      ({ payload: claims } = await jwtVerify(f.get('subject_token') || '', t.jwks, { issuer: t.issuer, audience: t.audience, algorithms: ['ES256'] }));
+      ({ payload: claims } = await jwtVerify(f.get('subject_token') || '', t.jwks, {
+        issuer: t.issuer,
+        audience: t.audience,
+        algorithms: ['ES256'],
+      }));
     } catch (err) {
-      const why = err.code === 'ERR_JWT_EXPIRED' ? 'subject token expired'
-        : err.code === 'ERR_JWT_CLAIM_VALIDATION_FAILED' && err.claim === 'iss' ? 'subject token issuer not trusted'
-        : err.code === 'ERR_JWT_CLAIM_VALIDATION_FAILED' && err.claim === 'aud' ? 'subject token audience wrong'
-        : err.code === 'ERR_JWKS_NO_MATCHING_KEY' ? 'subject token issuer not trusted'
-        : `subject token invalid (${err.code || 'unknown'})`;
+      const why =
+        err.code === 'ERR_JWT_EXPIRED'
+          ? 'subject token expired'
+          : err.code === 'ERR_JWT_CLAIM_VALIDATION_FAILED' && err.claim === 'iss'
+            ? 'subject token issuer not trusted'
+            : err.code === 'ERR_JWT_CLAIM_VALIDATION_FAILED' && err.claim === 'aud'
+              ? 'subject token audience wrong'
+              : err.code === 'ERR_JWKS_NO_MATCHING_KEY'
+                ? 'subject token issuer not trusted'
+                : `subject token invalid (${err.code || 'unknown'})`;
       return refuse(send, 400, 'invalid_grant', why);
     }
-    if (!String(claims.scp || '').split(' ').includes('user_impersonation')) return refuse(send, 400, 'invalid_scope', 'subject token lacks delegation scope');
+    if (
+      !String(claims.scp || '')
+        .split(' ')
+        .includes('user_impersonation')
+    )
+      return refuse(send, 400, 'invalid_scope', 'subject token lacks delegation scope');
     if (disabled.has(claims.sub)) return refuse(send, 400, 'invalid_grant', 'user disabled');
 
     const now = Math.floor(Date.now() / 1000);
-    const lifetime = ttl.capToSubject ? Math.max(1, Math.min(ttl.exchange, claims.exp - now)) : ttl.exchange;
+    const lifetime = ttl.capToSubject
+      ? Math.max(1, Math.min(ttl.exchange, claims.exp - now))
+      : ttl.exchange;
     const accessToken = await new SignJWT({ scope: 'records:read', act: { sub: cid } })
       .setProtectedHeader({ alg: 'ES256', kid: signer.jwk.kid, typ: 'at+jwt' })
-      .setIssuer(ISSUER).setSubject(claims.sub).setAudience(audience)
-      .setIssuedAt(now).setExpirationTime(now + lifetime).setJti(randomBytes(8).toString('hex'))
+      .setIssuer(ISSUER)
+      .setSubject(claims.sub)
+      .setAudience(audience)
+      .setIssuedAt(now)
+      .setExpirationTime(now + lifetime)
+      .setJti(randomBytes(8).toString('hex'))
       .sign(signer.privateKey);
     stats.exchanged++;
     return send(200, {
@@ -115,4 +153,6 @@ const server = http.createServer(async (req, res) => {
 });
 
 await init();
-server.listen(PORT, '0.0.0.0', () => console.log(`[token-exchange] listening on ${PORT}; kid ${signer.jwk.kid}`));
+server.listen(PORT, '0.0.0.0', () =>
+  console.log(`[token-exchange] listening on ${PORT}; kid ${signer.jwk.kid}`),
+);

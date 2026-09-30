@@ -28,7 +28,8 @@ function parseName(buf, offset) {
 
 function buildAnswer(query, qname, qend, ip) {
   const header = Buffer.from(query.subarray(0, 12));
-  header[2] = 0x81; header[3] = 0x80; // response, recursion available
+  header[2] = 0x81;
+  header[3] = 0x80; // response, recursion available
   header.writeUInt16BE(1, 6); // ANCOUNT = 1
   const question = query.subarray(12, qend + 4); // name + qtype + qclass
   const ans = Buffer.alloc(16);
@@ -38,27 +39,47 @@ function buildAnswer(query, qname, qend, ip) {
   ans.writeUInt32BE(TTL, 6);
   ans.writeUInt16BE(4, 10); // rdlength
   const [a, b, c, d] = ip.split('.').map(Number);
-  ans[12] = a; ans[13] = b; ans[14] = c; ans[15] = d;
+  ans[12] = a;
+  ans[13] = b;
+  ans[14] = c;
+  ans[15] = d;
   return Buffer.concat([header, question, ans]);
 }
 
 server.on('message', (msg, rinfo) => {
   let q;
-  try { q = parseName(msg, 12); } catch { return; }
+  try {
+    q = parseName(msg, 12);
+  } catch {
+    return;
+  }
   const name = q.name.toLowerCase();
   const qtype = msg.readUInt16BE(q.end);
   if (name === REBIND_NAME && qtype === 1) {
-    const ip = (flip++ % 2 === 0) ? ALLOWED_IP : DENIED_IP;
+    const ip = flip++ % 2 === 0 ? ALLOWED_IP : DENIED_IP;
     console.log(`[resolver] ${name} -> ${ip} (query #${flip})`);
     server.send(buildAnswer(msg, q.name, q.end, ip), rinfo.port, rinfo.address);
     return;
   }
   // Forward everything else to the embedded Docker DNS.
   const fwd = dgram.createSocket('udp4');
-  fwd.on('message', (reply) => { server.send(reply, rinfo.port, rinfo.address); fwd.close(); });
-  fwd.on('error', () => { try { fwd.close(); } catch {} });
+  fwd.on('message', (reply) => {
+    server.send(reply, rinfo.port, rinfo.address);
+    fwd.close();
+  });
+  fwd.on('error', () => {
+    try {
+      fwd.close();
+    } catch {}
+  });
   fwd.send(msg, PORT, UPSTREAM);
-  setTimeout(() => { try { fwd.close(); } catch {} }, 3000);
+  setTimeout(() => {
+    try {
+      fwd.close();
+    } catch {}
+  }, 3000);
 });
 
-server.bind(PORT, () => console.log(`[resolver] udp/53, rebinding ${REBIND_NAME}: ${ALLOWED_IP} then ${DENIED_IP}`));
+server.bind(PORT, () =>
+  console.log(`[resolver] udp/53, rebinding ${REBIND_NAME}: ${ALLOWED_IP} then ${DENIED_IP}`),
+);

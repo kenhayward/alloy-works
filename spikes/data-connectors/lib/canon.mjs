@@ -28,22 +28,34 @@ export function jcs(v) {
 
 // raw rows are arrays of values already converted by a source adapter into what `canon` accepts.
 export function canonicalRows(columns, rawRows, source) {
-  return rawRows.map((r, i) => columns.map((c, j) => {
-    const x = r[j];
-    if (x === null || x === undefined) return null;
-    try { return canon(c, x, `${c.name} in row ${i + 1}`); }
-    catch (e) { e.source = source; throw e; }
-  }));
+  return rawRows.map((r, i) =>
+    columns.map((c, j) => {
+      const x = r[j];
+      if (x === null || x === undefined) return null;
+      try {
+        return canon(c, x, `${c.name} in row ${i + 1}`);
+      } catch (e) {
+        e.source = source;
+        throw e;
+      }
+    }),
+  );
 }
 
 export function document(columns, rows, { order = 'stated' } = {}) {
   let rs = rows;
-  if (order === 'multiset') rs = [...rows].map((r) => [jcs(r), r]).sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)).map((x) => x[1]);
+  if (order === 'multiset')
+    rs = [...rows]
+      .map((r) => [jcs(r), r])
+      .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
+      .map((x) => x[1]);
   return { columns: columns.map((c) => [c.name, c.type]), rows: rs };
 }
 
 export function checksum(columns, rows, opts) {
-  return createHash('sha256').update(jcs(document(columns, rows, opts)), 'utf8').digest('hex');
+  return createHash('sha256')
+    .update(jcs(document(columns, rows, opts)), 'utf8')
+    .digest('hex');
 }
 
 export const sha = (s) => createHash('sha256').update(s, 'utf8').digest('hex');
