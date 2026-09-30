@@ -16069,7 +16069,7 @@
         },
         {
           "id": "SCH-055",
-          "howItIsMet": "`queryDefinition` is a search kind, its entry written with each version from its title, description, column names and its connection's name"
+          "howItIsMet": "`queryDefinition` is a search kind, its entry written with each version from its title, description and column names"
         },
         {
           "id": "DAT-010",
@@ -17760,31 +17760,31 @@
     {
       "id": "DAT-018",
       "file": "apps/connector/src/hostile.test.ts",
-      "line": 442,
+      "line": 472,
       "kind": "title"
     },
     {
       "id": "DAT-021",
       "file": "apps/connector/src/hostile.test.ts",
-      "line": 392,
+      "line": 411,
       "kind": "title"
     },
     {
       "id": "DAT-051",
       "file": "apps/connector/src/limits.test.ts",
-      "line": 64,
+      "line": 65,
       "kind": "title"
     },
     {
       "id": "DAT-109",
       "file": "apps/connector/src/limits.test.ts",
-      "line": 98,
+      "line": 102,
       "kind": "title"
     },
     {
       "id": "DAT-110",
       "file": "apps/connector/src/limits.test.ts",
-      "line": 123,
+      "line": 185,
       "kind": "title"
     },
     {
@@ -17814,37 +17814,37 @@
     {
       "id": "DAT-068",
       "file": "apps/connector/src/run.test.ts",
-      "line": 190,
+      "line": 234,
       "kind": "title"
     },
     {
       "id": "DAT-080",
       "file": "apps/connector/src/run.test.ts",
-      "line": 203,
+      "line": 247,
       "kind": "title"
     },
     {
       "id": "DAT-106",
       "file": "apps/connector/src/run.test.ts",
-      "line": 83,
+      "line": 127,
       "kind": "title"
     },
     {
       "id": "DAT-107",
       "file": "apps/connector/src/run.test.ts",
-      "line": 147,
+      "line": 191,
       "kind": "title"
     },
     {
       "id": "DAT-005",
       "file": "apps/connector/src/secrets.test.ts",
-      "line": 68,
+      "line": 70,
       "kind": "title"
     },
     {
       "id": "DAT-056",
       "file": "apps/connector/src/supervisor.test.ts",
-      "line": 37,
+      "line": 41,
       "kind": "title"
     },
     {
@@ -18270,43 +18270,43 @@
     {
       "id": "DAT-020",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 405,
+      "line": 406,
       "kind": "rule"
     },
     {
       "id": "DAT-020",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 382,
+      "line": 383,
       "kind": "title"
     },
     {
       "id": "DAT-049",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 463,
+      "line": 464,
       "kind": "title"
     },
     {
       "id": "DAT-050",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 418,
+      "line": 419,
       "kind": "title"
     },
     {
       "id": "DAT-101",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 253,
+      "line": 254,
       "kind": "title"
     },
     {
       "id": "DAT-103",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 335,
+      "line": 336,
       "kind": "rule"
     },
     {
       "id": "DAT-103",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 317,
+      "line": 318,
       "kind": "title"
     },
     {
@@ -19608,7 +19608,7 @@
     {
       "id": "VER-057",
       "file": "packages/db/src/query-definitions.test.ts",
-      "line": 243,
+      "line": 267,
       "kind": "title"
     },
     {
@@ -19722,7 +19722,7 @@
     {
       "id": "SCH-066",
       "file": "packages/db/src/search.test.ts",
-      "line": 394,
+      "line": 377,
       "kind": "title"
     },
     {
@@ -20256,7 +20256,7 @@
     {
       "id": "DAT-010",
       "file": "packages/domain/src/data/definition.test.ts",
-      "line": 81,
+      "line": 84,
       "kind": "title"
     },
     {
@@ -20268,19 +20268,19 @@
     {
       "id": "DAT-019",
       "file": "packages/domain/src/data/sql.test.ts",
-      "line": 146,
+      "line": 230,
       "kind": "title"
     },
     {
       "id": "DAT-081",
       "file": "packages/domain/src/data/sql.test.ts",
-      "line": 79,
+      "line": 126,
       "kind": "title"
     },
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 423,
+      "line": 425,
       "kind": "title"
     },
     {
@@ -20682,7 +20682,7 @@
     {
       "id": "SCH-002",
       "file": "packages/domain/src/search/entries.test.ts",
-      "line": 59,
+      "line": 58,
       "kind": "title"
     },
     {

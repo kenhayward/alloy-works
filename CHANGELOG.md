@@ -30,7 +30,7 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   whose test fails names the query definitions that depend on it.
 - **Search finds query definitions** by their title, description and column names. A query
   definition names its connection only to somebody who may read that connection; anybody else who
-  reads the definition is told it runs against a connection they may not read, and as whom.
+  reads the definition is told only that it runs against a connection they may not read.
 - **Limits on a query run for the whole environment.** An administrator can lower the most rows,
   bytes and seconds any run may take, through the API; a run takes the lower of its own and these.
 
