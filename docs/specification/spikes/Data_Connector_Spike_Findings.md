@@ -1,6 +1,9 @@
 # Data connector spike - findings
 
-> **Status: Draft: cases 1 to 7 run; decision to come.** These findings sit beside the brief
+> **Status: Complete; decided in
+> [ADR-0034](../../decisions/0034-data-connectors-run-apart-as-a-declared-identity.md).** Cases 1 to 7
+> have run. The decision record is Proposed: Ken takes the requirement rewordings below, and DAT-Q03,
+> separately. These findings sit beside the brief
 > [`Data_Connector_Spike.md`](Data_Connector_Spike.md) and follow the shape of
 > [`Publishing_Engine_Spike_Findings.md`](Publishing_Engine_Spike_Findings.md): what was run, what
 > came back in numbers, the verdict against each case's Pass line, and what stayed a claim. The
@@ -13,7 +16,36 @@
 > finding - the published-port leak - is a property of that environment, and is called out as such;
 > it is a finding _for_ the design, not against it.
 
-## Verdicts
+## Summary
+
+The brief asked:
+
+> **Can a query reach a tenant's source without the connector becoming a route into our own network,
+> run as the identity its connection declares - the end user's included - wherever and whenever it
+> runs, and return a result that pins, checksums and fails the same way from a relational database,
+> an HTTP endpoint and a file?**
+
+**Yes, with three qualifications, each a finding rather than a defect.**
+
+- **Not a route in: yes, when the query runs in a connector container on a network with no route to
+  the platform** (placement C). The network stopped every hostile connection the code guard let
+  through - a redirect to the metadata endpoint, a DNS rebind - while the tenant's private source
+  answered. Run by the caller itself (placement A), only code stood between a connection and the
+  platform, and case 1 found three ways that code is one mistake from a route in. The guarantee that
+  the connector's network has no route to the platform is production's to give; Docker Desktop did
+  not give it for a published port.
+- **As the declared identity, the end user's included: yes for HTTP by a delegated token, and for
+  both databases only as asserted identity**, which the source takes on trust from the connection's
+  account. In PostgreSQL the query text can re-assert whom it likes, so asserted identity there holds
+  only against text the product controls. For an uploaded file "as the end user" means nothing.
+  Later and elsewhere - in a worker's publish, after an expiry, across a sign-out, through a cache -
+  each has an answer, at the cost of the product holding a user's delegated token for a job's length
+  and a refresh token for a session's, under a per-session lock.
+- **Pins, checksums and fails the same way: yes**, under one canonical form in which no cell is a
+  JSON number: ten source-and-reader paths gave one checksum in four time zones. Each loss a driver or
+  format imposes is refused by name, and a query that feeds a pin needs a total order or is hashed as
+  a multiset. Every limit failed by name, and cancellation reached both databases - but only when the
+  connector sent it; neither driver's own timeout stops the statement.
 
 | Case                                                 | Role        | Verdict                                                                                                                                                                                                    |
 | ---------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -531,14 +563,14 @@ request). Three things are not right yet:
   duration**, unless the session check and the registration of the execution are made one step (the
   sign-out waits for, or re-scans, executions registered after it).
 - **A copy of the token outside our custody outlives the sign-out.** A copy of the job's token, taken
-  while the job ran, was presented to the connector after the sign-out: **served as Ada, rows 1 and 3**
-  - through the connector's cache of exchanged tokens, and through a fresh exchange too, because the
-    exchange checks only signature, issuer, audience and expiry. Disabling Ada at the exchange stopped a
-    fresh exchange (`user disabled`) but **not the connector's cached exchanged token**, which still
-    served her rows. The copy had 300 s of life left. So: the connector's exchange cache must be keyed to
-    and purged with the session (or not kept), and a delegated token that has left our custody cannot be
-    recalled - only its lifetime bounds it. That bound is the provider's access-token lifetime, which the
-    tenant sets, not us.
+  while the job ran, was presented to the connector after the sign-out: **served as Ada, rows 1 and
+  3**, through the connector's cache of exchanged tokens, and through a fresh exchange too, because the
+  exchange checks only signature, issuer, audience and expiry. Disabling Ada at the exchange stopped a
+  fresh exchange (`user disabled`) but **not the connector's cached exchanged token**, which still
+  served her rows. The copy had 300 s of life left. So: the connector's exchange cache must be keyed to
+  and purged with the session (or not kept), and a delegated token that has left our custody cannot be
+  recalled - only its lifetime bounds it. That bound is the provider's access-token lifetime, which the
+  tenant sets, not us.
 
 ### 3. A token that expires inside a long publish
 
@@ -844,9 +876,10 @@ escapes early was not tested.
 **Pass with cost.** Of 3,792 attempts, 2,814 were refused by name and 951 bound inert; 5 were refused
 by the source (Postgres and a NUL), which the declaration should refuse first; and 22 were a value
 reaching an interpreter after binding (`LIKE`, a collation, `STRING_SPLIT`, HTTP's whitespace
-handling), which the rules above take away by construction. None changed a statement's shape. One declaration shape serves SQL, HTTP and files; each connector type needs its own binder rules
-per type (text-and-`CAST` for decimals and fine instants on SQL Server) and its own placement rules (a
-path segment and a header accept less than a query string or a body). The cost is DAT-017's limit: **a
+handling), which the rules above take away by construction. None changed a statement's shape. One
+declaration shape serves SQL, HTTP and files; each connector type needs its own binder rules per type
+(text-and-`CAST` for decimals and fine instants on SQL Server) and its own placement rules (a path
+segment and a header accept less than a query string or a body). The cost is DAT-017's limit: **a
 bound parameter is inert, but in Postgres the text around it is not**, and no rule over the text can
 make it so.
 
@@ -968,7 +1001,7 @@ because it reads dates as UTC by default.
   a decimal or an integer to 15 significant digits as a number, anything longer only as text; no zone
   at all (an instant is text, or refused, `zone_missing`); a local date-time to about **0.63 µs at 2026
   dates** - enough for microseconds, which our reader recovered exactly - and **1.26 µs from serial 65536
-  (2079-06-06)**, where a declared precision of 6 is refused (`precision_not_carried`) because the double
+  (2079-06-05)**, where a declared precision of 6 is refused (`precision_not_carried`) because the double
   can no longer tell adjacent microseconds apart; milliseconds to year 9999. Serial 60 is 1900-02-29,
   which never existed (Lotus's bug, kept by Excel): our reader refuses it, SheetJS formatted it
   `2/29/00`, and ExcelJS returned **1900-02-28**. Serial 1 to 59 are shifted by a day against serial 61
@@ -1226,7 +1259,7 @@ HTTP truncation - an under-declared length - is invisible to the connector.
 
 ---
 
-## What is a proxy, and what is verified
+## What is a proxy, what is verified, and what stayed a claim
 
 - **Verified on this stack:** the reachability contrast between A and C; the guard's handling of every
   spelling; the redirect exfiltration and its block on C; the rebinding flip and its block on C; the
@@ -1245,10 +1278,14 @@ HTTP truncation - an under-declared length - is invisible to the connector.
   is a row the harness writes after a direct grant rather than a browser's code flow; the timings, as
   for cases 1 and 2; the provider is a stand-in whose refresh policy is the Security BCP's, not any
   real provider's.
-- **Environment-specific:** the published-port leak is a Docker Desktop property, called out as a
-  requirement on production rather than a defect. The other spikes' numbers are taken on Linux CI;
-  these were taken on Docker Desktop for Windows, and case 1's network results should be reconfirmed
-  on the Linux runner before the decision record rests on them.
+- **Environment-specific:** every network result - case 1's reachability, the redirect and the
+  rebind blocked on C - was measured on Docker Desktop for Windows (Linux containers in its virtual
+  machine), not on Linux, where the other spikes' numbers are taken. The published-port leak is a
+  property of that host: a platform service's port published to it was reachable from the connector's
+  network, through the host. It is a requirement on production rather than a defect, and it means the result does not carry to
+  another host by argument. **Production's network isolation must be verified on production's own
+  platform** - that the connector's network has no route to any platform service, published or not -
+  and neither this machine nor the Linux CI runner stands in for that.
 - **Verified on this stack (cases 5 to 7):** every binding attempt's outcome and the value each source
   received; what each driver and reader hands back per type, and the canonical checksum from every
   source, in four zones, fresh processes and 100 runs; the spurious "moved" flags; every limit's named
@@ -1260,86 +1297,127 @@ HTTP truncation - an under-declared length - is invisible to the connector.
   process's own 90 to 100 MB; one machine, no real network, no load on the sources. Cases 5 to 7 ran in
   Linux containers, as section 6 of the brief asks, but in Docker Desktop's virtual machine rather than
   on the CI runner.
+- **Stayed a claim, untested:** Entra ID tokens against Azure SQL, and Entra ID's on-behalf-of flow,
+  which is not RFC 8693; Kerberos constrained delegation to an on-premises SQL Server; PostgreSQL 18's
+  OAuth authentication, because `pg` has no `OAUTHBEARER` (its SASL client offers only the SCRAM
+  mechanisms); a real cloud's metadata endpoint and egress controls, stood in for by an address on a
+  compose network; SharePoint, Microsoft Graph and cloud object stores as remote file locations; a real
+  provider's refresh-token policy; identity minted per execution at login; workbooks written by a
+  spreadsheet application; and a source reached over a real network.
+- **Stayed a claim, by decision:** that resetting a pooled connection clears the identity it carried.
+  The owner excluded, on 2026-09-30, any attempt to carry one user's identity over to another
+  execution on a shared connection, so every execution ran on a fresh connection. What case 3 records
+  about `DISCARD ALL`, `RESET ROLE`, the TDS `RESETCONNECTION` flag, `pg.Pool` and `mssql`'s pool is
+  from their documentation and source, not from an attack; whether a reset clears a `NO REVERT`
+  context or a `read_only` key is not stated there, and was not tested.
 
-## Requirements the spike may send back
+## Requirements this spike sends back
 
-The rows section 8 of the brief lists that cases 1 to 7 touch, and some it does not. None is decided;
-each is a finding for Ken, to land through the requirements process.
+Every rewording the cases point at, from every phase, gathered in one place with the finding each
+rests on. The spike edits no requirement row. Each goes to Ken and, if taken, lands through the
+requirements process, with a new identifier where the change is material.
+[ADR-0034](../../decisions/0034-data-connectors-run-apart-as-a-declared-identity.md) is written to
+hold whichever way each is decided, and says where an answer would change it.
 
-- **DAT-056 (and the placement decision).** Case 1 makes the network the boundary (placement C), and
-  case 2 measures the cost of the per-process isolation DAT-056 may demand (~40 ms/query). The pair
-  points at stating, in DAT-056, whether one connector process may serve many tenants (opening every
-  secret it is handed) or must be one-secret-per-process. _(Written with cases 1 and 2; case 3 has
-  since answered what it waited on - next item.)_
-- **DAT-056, from case 3.** Asserted identity is the only database mechanism the spike could run, and
-  under it the connection's account holds every user's authority, which the query text inherits. The
-  evidence points at DAT-056 saying what authority means under asserted identity, for example: _"Under
-  asserted end-user identity, a connection's account must hold no privilege on the data of its own; its
-  assertion must be one the query text cannot change, or the query text must be under the product's
-  control; and a connection that has carried a user's identity must be reset or discarded before it is
-  reused."_
-- **DAT-008 and DAT-023.** Case 3 found no delegated mechanism for either database that the spike
-  could run, and none has meaning for an uploaded file. The evidence points at: _"A connection must
-  declare how queries against it authenticate: as a tenant service account, or as the end user by a
-  mechanism its connector declares - a delegated token, or an asserted identity."_ DAT-023 then holds
-  only where the connector declares one, which pulls DAT-055's pass-through capability (T5) into T2, as
-  the brief foresaw.
-- **DAT-008, the Google route.** Confirmed for a delegated token (refused at the exchange), and found
-  not to hold for asserted identity (served). The wording the evidence points at: _"End-user
-  authentication by a delegated token is available only to a user signed in through the tenant's own
-  provider; a user signed in otherwise, or acting through a personal API token, cannot use it."_
-- **DAT-038 and DAT-024.** Case 4 found no identity to publish under but the publisher's: a baseline
-  pins every pass-through binding under the publisher's view. DAT-024 is met as written. The evidence
-  points at DAT-038 adding _"...and a pass-through binding pins the view of the person who made the
-  baseline, which the baseline records"_, and at DAT-Q03 being answered before T2's design.
-- **DAT-052 and DAT-026.** Case 4 found no way for the product to learn that a user's source-side
-  permission changed. The evidence points at: _"A result obtained under end-user identity may be
-  cached for no longer than the identity's own credential is valid, and never for longer than a stated
-  maximum; the cache key must include the identity as the source sees it."_
-- **IAM-067, not in the brief's list.** Its "within a stated bound" is, on this evidence, one binding's
-  duration unless checking the session and registering an execution are one step; and "surface an
-  authentication failure" is not what the harness's job recorded. The requirement stands; the design
-  owes the bound and the reason.
-- **DAT-006.** The connection test is a usable oracle only because its reasons are uniform. The
-  residual signal (guard-refused vs connect-failed use different phrases) is a small change worth
-  writing into DAT-006's statement, so the requirement asks for one phrase, not two.
-- **DAT-017, from cases 2 and 5.** "Passed to the source as a bound value" held for both databases, and
-  has no meaning for HTTP (a builder) or a file (a filter); case 2 adds that a secret never rides a URL.
-  The evidence points at: _"A parameter's value is never spliced into query text, a URL or a header as
-  text: it is passed as the driver's bound value, placed by a builder that encodes it for its position
-  and refuses what that position cannot carry, or applied by the connector as a typed filter over a
-  file's rows."_ DAT-018 and DAT-019 hold as written: 3,792 attempts, none changed a statement's shape.
-- **DAT-056 again, from case 5.** A bound value is inert, but in Postgres the text around it can hand
-  it to `set_config`, and a view in the source can do it with no function in the text at all, so no
-  rule over the text is complete. The evidence strengthens case 3's wording to: _"Under asserted
-  end-user identity, where the source lets query text change the asserted identity, the query text must
-  come from a person trusted with every user's rows or be generated by the product; otherwise the
-  identity is established when the connection authenticates."_
-- **DAT-040 and DAT-036, with DAT-011 and DAT-012.** Case 6 shows it: with no stated order, 19 of 19
-  refreshes in Postgres and 16 of 19 in SQL Server were flagged moved when nothing moved, and a stated
-  order with ties did the same in Postgres. The evidence points at: _"A query definition that feeds a
-  pin or a refreshable binding states a total order - one that includes its declared key - or its
-  result is checksummed as a multiset of rows"_, and at DAT-040 naming the form: _"...a SHA-256 checksum
-  over the result's canonical form, whose version the provenance record names."_
-- **DAT-011, not in the brief's list.** The canonical form needs a closed set of declared types with
-  their precision: _"Each result column declares a type - text, integer, decimal with precision and
-  scale, date, time, local date-time or instant with a fractional-second precision, or boolean - and a
-  value a source cannot deliver exactly in that type is refused by name, never rounded."_ Case 6 names
-  what each source cannot deliver as-is: SQL Server decimals beyond about 15 digits and `money` through
-  `tedious`, JSON numbers through `JSON.parse`, spreadsheet numbers beyond 15 digits and spreadsheet
-  instants.
-- **DAT-050 and DAT-051, not in the brief's list.** Both drivers' own timeouts let a statement run on at
-  the source (`pg`'s `query_timeout`; `tedious`'s `requestTimeout` once the first packet arrives), and
-  one value larger than the byte limit costs its whole size in the driver. The evidence points at
-  DAT-050 adding: _"A timeout is a deadline over the whole execution, and reaching any limit cancels
-  the source's work; a single value larger than the byte limit fails it."_
-- **DAT-045, a gap it cannot close.** An HTTP source that under-declares its `Content-Length` yields a
-  valid, shorter body with no error; for CSV that is a truncated result the connector cannot detect.
-  The requirement stands; the design should prefer a source-stated row count or digest where one exists.
-- **DAT-001 and DAT-002.** The transport and format split held in the harness: the CSV and XLSX readers
-  take a byte stream and the same limits bound an HTTP body, so a file at a remote location is an HTTP
-  connection read by a format. It was not run end to end (an XLSX fetched over HTTP), so the evidence
-  supports the brief's wording without having tested it.
+- **DAT-001 and DAT-002 - a file is a format, not a transport.** _Rests on:_ cases 6 and 7, where the
+  CSV and XLSX readers take a byte stream and the same limits bound an HTTP body, and the brief's
+  argument (section 2) that an uploaded file, held by hash, needs no credential and no egress. An XLSX
+  fetched over HTTP was not run end to end, so the evidence supports the wording without having tested
+  it. _Proposed:_ DAT-001 adds _"An uploaded file is a source of its own, held by the tenant, and needs
+  no connection"_; DAT-002 becomes _"Connection types must include at minimum a relational database
+  and an HTTP endpoint, and a query must be able to read a delimited file or a spreadsheet, uploaded
+  to the tenant or fetched through an HTTP connection."_ **Proposed; for Ken's decision.**
+- **DAT-006 - one reason for every failure.** _Rests on:_ case 1, section C. Each family of failure
+  gave one reason, so no address was named and refused, filtered and unknown could not be told apart;
+  but the guard's refusals and a failed attempt used two phrases, which tells an administrator which
+  addresses the guard covers. _Proposed:_ _"A connection must be testable from the interface, and the
+  test must report success, or one reason that is the same for every failure, naming no address and
+  echoing no credential."_ **Proposed; for Ken's decision.**
+- **DAT-008 and DAT-023, with DAT-055 - which mechanism, and who may use it.** _Rests on:_ case 3,
+  where HTTP passed by a delegated token, both databases only by asserted identity, PostgreSQL 18's
+  OAuth route could not be reached from `pg`, and an uploaded file has no source to present an
+  identity to; and cases 3 (section D) and 4 (section 1), where the exchange refused a Google-route
+  token while asserted identity served the same user, and a personal API token has no provider token
+  behind it. _Proposed:_ DAT-008 becomes _"A connection must declare how queries against it
+  authenticate: as a tenant service account, or as the end user by a mechanism its connector
+  declares, which is a delegated token or an asserted identity. End-user authentication by a
+  delegated token is available only to a user signed in through the tenant's own provider; a user
+  signed in otherwise, or acting through a personal API token, cannot use it."_ DAT-023 holds only where the connector
+  declares an end-user mechanism, and adds _"A file source declares none."_ That pulls DAT-055's
+  pass-through capability - only that part - from T5 into T2, as the brief foresaw. **Proposed; for
+  Ken's decision.**
+- **DAT-011 - a closed set of types, refused rather than rounded.** _Rests on:_ case 6: one canonical
+  form needs a closed set of declared types with their precision, and each source loses something
+  as delivered - SQL Server decimals beyond about 15 digits and `money` through `tedious`, JSON
+  numbers through `JSON.parse`, spreadsheet numbers beyond 15 digits, spreadsheet instants.
+  _Proposed:_ _"Each result column declares a type - text, integer, decimal with precision and scale,
+  date, time, local date-time or instant with a fractional-second precision, or boolean - and a value
+  a source cannot deliver exactly in that type is refused by name, never rounded."_ **Proposed; for
+  Ken's decision.**
+- **DAT-017 - bound, built or filtered, never spliced.** _Rests on:_ case 5, where "passed to the
+  source as a bound value" held for both databases and has no meaning for HTTP (a builder) or a file
+  (a filter), and 3,792 attempts changed no statement's shape; and case 2, where the one leak was a
+  secret in a URL. _Proposed:_ _"A parameter's value is never spliced into query text, a URL or a
+  header as text: it is passed as the driver's bound value, placed by a builder that encodes it for its
+  position and refuses what that position cannot carry, or applied by the connector as a typed filter
+  over a file's rows."_ DAT-018 and DAT-019 hold as written. **Proposed; for Ken's decision.**
+- **DAT-024 and DAT-038, with DAT-Q03 - whose view a baseline pins.** _Rests on:_ case 4, sections 1
+  and 4: there is no identity to publish under but the publisher's, a pin records whose view produced
+  it and the document can show that, and Grace, reading Ada's pin, saw rows her own rules hide. DAT-024
+  is met as written. _Proposed:_ DAT-038 adds _"...and a pass-through binding pins the view of the
+  person who made the baseline, which the baseline records"_; and DAT-Q03 - who may read a value pinned
+  under somebody else's view - is answered, with **IAM**, before T2's design rather than during it.
+  **Proposed; for Ken's decision.**
+- **DAT-036 and DAT-040, with DAT-012 - a checksum that moves only when the data does.** _Rests on:_
+  case 6. With no stated order, 19 of 19 refreshes in Postgres and 16 of 19 in SQL Server were flagged
+  moved when nothing moved, and an order with ties did the same in Postgres; one canonical form gave
+  one checksum from ten source-and-reader paths. _Proposed:_ DAT-012 adds _"A query definition that
+  feeds a pin or a refreshable binding states a total order - one that includes its declared key - or
+  its result is checksummed as a multiset of rows"_; and DAT-040's checksum becomes _"...a SHA-256
+  checksum over the result's canonical form, whose version the provenance record names."_ DAT-036
+  holds as written once the checksum is stable. **Proposed; for Ken's decision.**
+- **DAT-045 - a truncation the connector cannot see.** _Rests on:_ case 7: an HTTP source that
+  declares a `Content-Length` shorter than it sends yields a valid, shorter body with no error, and a
+  CSV cut at a line break is a valid, shorter file. The statement stands; it cannot be met for such a
+  body unless something outside its framing says how long it is. _Proposed:_ DAT-045 adds _"Where a
+  source states a length, a digest or a row count apart from the message's own framing, the connector
+  checks the result against it"_, and the gap for a source that states none is named in the design
+  rather than claimed closed. **Proposed; for Ken's decision.**
+- **DAT-050 and DAT-051 - a deadline, and a cancel that reaches the source.** _Rests on:_ case 7:
+  `pg`'s `query_timeout` and a closed socket both left a Postgres statement running, `tedious`'s
+  `requestTimeout` stops counting at the first packet, `fetch`'s body timeout is idle-based, and one
+  value larger than the byte limit costs its whole size in the driver before any limit acts.
+  _Proposed:_ DAT-050 adds _"A timeout is a deadline over the whole execution, and reaching any limit
+  cancels the source's work; a single value larger than the byte limit fails it."_ DAT-051 holds as
+  written: every limit was a named failure. **Proposed; for Ken's decision.**
+- **DAT-052 and DAT-026 - how long a pass-through result may be cached.** _Rests on:_ case 4, section
+  5: a key without the execution identity served Grace Ada's rows on all three connections, and a
+  cached result went on returning a row the source had since reassigned, because nothing tells the
+  product a permission changed. DAT-026 stands as written. _Proposed:_ DAT-052 adds _"A result
+  obtained under end-user identity may be cached for no longer than the identity's own credential is
+  valid, and never for longer than a stated maximum; the cache key must include the identity as the
+  source sees it."_ **Proposed; for Ken's decision.**
+- **DAT-056 - what authority means under asserted identity, and per process.** _Rests on:_ case 3,
+  where asserted identity was the only database mechanism, the connection's account held every user's
+  authority, a forgotten assertion was an empty result in three of five forms, and Postgres let the
+  query text re-assert the identity; case 5's phase-2 finding 1, where a bound value handed on by the
+  text moved the identity and a view in the source did it with no function in the text, so no rule
+  over the text is complete; and case 2, where a process per execution cost 41 ms p50 against 5 ms for
+  a warm one. _Proposed:_ _"A connector must run with no more authority than the connection it
+  serves. Under asserted end-user identity, the connection's account holds no privilege on the data
+  of its own; the assertion is one the query text cannot change, or, where the source lets the text
+  change it, the text comes from a person trusted with every user's rows or is generated by the
+  product, or the identity is established when the connection authenticates; and a connection that
+  has carried a user's identity is reset, by a means shown to clear it, or discarded before it is
+  reused."_ The same rewording should say whether one connector process may open more than one
+  tenant's secrets, which the evidence prices and does not decide. **Proposed; for Ken's decision.**
+- **IAM-067 - the bound, and the reason.** _Rests on:_ case 4, section 2: every publish stopped within
+  50 ms of a sign-out with its statements cancelled at the source, but 30 of 30 jobs recorded the
+  cancellation and none the sign-out, and once in 36 runs a binding that passed its session check at
+  the instant of sign-out ran to completion. The statement stands. _Proposed:_ it adds _"The work it
+  stops records the sign-out or the revocation as its reason."_ The stated bound is the design's: one
+  execution's duration, unless checking the session and registering an execution are made one step.
+  **Proposed; for Ken's decision.**
 
 ## Where the code is
 

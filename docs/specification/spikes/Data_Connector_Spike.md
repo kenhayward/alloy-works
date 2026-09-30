@@ -1,7 +1,9 @@
 # Data connector spike
 
-> **Status: Brief; not yet run.** Findings go beside it, in `Data_Connector_Spike_Findings.md`, and
-> are not edited afterwards. It runs before any of T2 is designed
+> **Status: Complete; decided in
+> [ADR-0034](../../decisions/0034-data-connectors-run-apart-as-a-declared-identity.md), which is
+> Proposed.** Findings are in [`Data_Connector_Spike_Findings.md`](Data_Connector_Spike_Findings.md),
+> and are not edited afterwards. It runs before any of T2 is designed
 > ([ADR-0033](../../decisions/0033-t2-is-the-data-spine.md)). It follows the shape of
 > [`Publishing_Engine_Spike.md`](Publishing_Engine_Spike.md): hard cases, named gates, a written
 > finding per case, and a decision record either way.
