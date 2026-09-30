@@ -3,7 +3,7 @@
 # development stack's (5432/8333/8088/9090). Bring up:  docker compose -p aw-data-connectors up -d
 # Take down (and wipe volumes):  docker compose -p aw-data-connectors down -v
 #
-# SQL Server: the Developer edition licence was accepted by the repository owner (Ken Hayward) on
+# SQL Server: the Developer edition licence was accepted by the repository owner on
 # 2026-09-29 for development use, choosing SQL Server over MySQL for this spike. That is why
 # ACCEPT_EULA=Y is set below. No other licence is accepted by this file.
 #

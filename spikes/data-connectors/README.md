@@ -64,7 +64,7 @@ running the changed file).
 
 ## The SQL Server licence
 
-The Developer edition licence was accepted by the repository owner (Ken Hayward) on 2026-09-29 for
+The Developer edition licence was accepted by the repository owner on 2026-09-29 for
 development use, choosing SQL Server over MySQL for this spike. That is why `ACCEPT_EULA=Y` is set for
 the `mcr.microsoft.com/mssql/server` image (2022, pinned by digest) in `compose.yaml`. No other
 licence is accepted by this harness.
