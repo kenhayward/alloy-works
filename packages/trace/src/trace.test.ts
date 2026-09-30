@@ -582,6 +582,7 @@ describe('the citations in the committed model', () => {
   // word.test.ts, whose test shows the structure of one document and not what PUB-078 makes
   // first-class, and PUB-035's, whose test shows what Word carries and not the PDF's terms; both tests
   // stay, retitled, as the record of what Word carries.
+  // 610, from 609 (2026-09-30): D2 task 6 - DAT-103 in tests/e2e's query-definitions.test.ts.
   // 609, from 607 (2026-09-30): D2 task 5 - DAT-105 and DAT-014 in apps/web's
   // data/query-definitions.test.tsx.
   // 607, from 598 (2026-09-30): D2 task 4 - in apps/service, DAT-101, DAT-103, DAT-020, DAT-050 and
@@ -766,7 +767,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(609);
+    expect(model.citations).toHaveLength(610);
   });
 
   it('cites no identifier the corpus does not hold', () => {

@@ -110,3 +110,20 @@
   padding: var(--space-4) var(--space-12) var(--space-4) 0;
   vertical-align: top;
 }
+
+.choice {
+  display: grid;
+  gap: var(--space-4);
+}
+
+/* Each checkbox and radio button's row at least 24px tall, so its 13px target has the spacing WCAG
+   2.5.8 asks of a small one: stacked with no gap they stood closer, and axe failed them. */
+.check {
+  min-height: 24px;
+}
+
+.form fieldset,
+.parameter fieldset {
+  display: grid;
+  gap: var(--space-4);
+}

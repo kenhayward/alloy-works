@@ -198,6 +198,10 @@ services:
       fs.mqueue.queues_max: '0'
     init: true
     pids_limit: 256
+    # A backstop for what a run's byte count does not see (the D2 plan, D2-J): a value's bytes are
+    # counted at the child's socket and stopped past the run's limit, but a Buffer lives outside the
+    # heap `--max-old-space-size` bounds, and eight children at the ceiling hold about 200 MiB each.
+    mem_limit: 3g
     networks:
       - connector-private
       - connector-egress

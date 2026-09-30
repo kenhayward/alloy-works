@@ -21400,6 +21400,12 @@
       "kind": "title"
     },
     {
+      "id": "DAT-103",
+      "file": "tests/e2e/src/query-definitions.test.ts",
+      "line": 186,
+      "kind": "title"
+    },
+    {
       "id": "AST-005",
       "file": "tests/e2e/src/stack.test.ts",
       "line": 486,

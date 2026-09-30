@@ -261,6 +261,14 @@ describe("the connector's container", () => {
     expect(max).toMatch(/^\d+$/);
     expect(Number(max)).toBeLessThanOrEqual(256);
   });
+
+  it("holds the container to 3 GiB of memory, a backstop for what a run's byte count does not see", () => {
+    // A value's bytes are counted at the child's socket and stopped past the limit (the D2 plan, Q2
+    // and D2-J), but a Buffer lives outside the heap `--max-old-space-size` bounds: eight children at
+    // the ceiling hold about 200 MiB each, and the container's limit is what stops anything past that.
+    const max = docker(['exec', connectorId(), 'cat', '/sys/fs/cgroup/memory.max']);
+    expect(max).toBe(String(3 * 1024 ** 3));
+  });
 });
 
 /**

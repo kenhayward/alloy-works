@@ -146,6 +146,26 @@ function Step({ title, children }: { readonly title: string; readonly children: 
   );
 }
 
+/**
+ * A choice and its label, joined by `for`: a label wrapping a select would name it with every
+ * option's text as well as its own words, as a browser and an assistive technology read it.
+ */
+function Choice({
+  label,
+  children,
+}: {
+  readonly label: string;
+  readonly children: (id: string) => React.ReactNode;
+}) {
+  const id = useId();
+  return (
+    <span className={styles['choice']}>
+      <label htmlFor={id}>{label}</label>
+      {children(id)}
+    </span>
+  );
+}
+
 /** Lines of words, each a paragraph, in a status region, or an empty one. */
 function Status({ lines }: { readonly lines: readonly string[] | null }) {
   return (
@@ -173,21 +193,25 @@ function TypeFields({
   const of = (label: string) => (name === undefined ? label : `${label} of ${name}`);
   return (
     <span className={styles['type']}>
-      <label>
-        {of('Type')}
-        <select
-          value={type.base}
-          disabled={disabled}
-          onChange={(event) => onChange({ ...type, base: event.target.value as TypeDraft['base'] })}
-        >
-          {type.base === '' && <option value="">Choose a type</option>}
-          {BASES.map((each) => (
-            <option key={each.base} value={each.base}>
-              {each.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      <Choice label={of('Type')}>
+        {(id) => (
+          <select
+            id={id}
+            value={type.base}
+            disabled={disabled}
+            onChange={(event) =>
+              onChange({ ...type, base: event.target.value as TypeDraft['base'] })
+            }
+          >
+            {type.base === '' && <option value="">Choose a type</option>}
+            {BASES.map((each) => (
+              <option key={each.base} value={each.base}>
+                {each.label}
+              </option>
+            ))}
+          </select>
+        )}
+      </Choice>
       {type.base === 'decimal' && (
         <>
           <label>
@@ -281,22 +305,24 @@ function ParameterFields({
         Chooses a fragment of SQL, placed at a marker with a hash
       </label>
       {!variation && (
-        <label>
-          Permits
-          <select
-            value={parameter.permitted}
-            onChange={(event) =>
-              onChange({
-                ...parameter,
-                permitted: event.target.value as ParameterDraft['permitted'],
-              })
-            }
-          >
-            <option value="none">Any value of its type</option>
-            <option value="values">Only the values listed</option>
-            <option value="range">Only values in a range</option>
-          </select>
-        </label>
+        <Choice label="Permits">
+          {(id) => (
+            <select
+              id={id}
+              value={parameter.permitted}
+              onChange={(event) =>
+                onChange({
+                  ...parameter,
+                  permitted: event.target.value as ParameterDraft['permitted'],
+                })
+              }
+            >
+              <option value="none">Any value of its type</option>
+              <option value="values">Only the values listed</option>
+              <option value="range">Only values in a range</option>
+            </select>
+          )}
+        </Choice>
       )}
       {!variation && parameter.permitted === 'values' && (
         <label>
@@ -397,17 +423,18 @@ function ValueField({
         : null;
   if (choices !== null) {
     return (
-      <label>
-        {parameter.name}
-        <select value={value} onChange={(event) => onChange(event.target.value)}>
-          <option value="">No value</option>
-          {choices.map((choice) => (
-            <option key={choice} value={choice}>
-              {choice}
-            </option>
-          ))}
-        </select>
-      </label>
+      <Choice label={parameter.name}>
+        {(id) => (
+          <select id={id} value={value} onChange={(event) => onChange(event.target.value)}>
+            <option value="">No value</option>
+            {choices.map((choice) => (
+              <option key={choice} value={choice}>
+                {choice}
+              </option>
+            ))}
+          </select>
+        )}
+      </Choice>
     );
   }
   return parameter.list ? (
@@ -743,31 +770,38 @@ export function QueryDefinitionPage({
           <Step title="Connection and title">
             <div className={styles['form']}>
               {isNew && (
-                <label>
-                  Space
-                  <select value={space} onChange={(event) => setSpace(event.target.value)}>
-                    {(places?.spaces ?? []).map((each) => (
+                <Choice label="Space">
+                  {(id) => (
+                    <select
+                      id={id}
+                      value={space}
+                      onChange={(event) => setSpace(event.target.value)}
+                    >
+                      {(places?.spaces ?? []).map((each) => (
+                        <option key={each.id} value={each.id}>
+                          {each.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </Choice>
+              )}
+              <Choice label="Connection">
+                {(id) => (
+                  <select
+                    id={id}
+                    value={draft.connection}
+                    onChange={(event) => change({ connection: event.target.value })}
+                  >
+                    {draft.connection === '' && <option value="">Choose a connection</option>}
+                    {connections.map((each) => (
                       <option key={each.id} value={each.id}>
                         {each.name}
                       </option>
                     ))}
                   </select>
-                </label>
-              )}
-              <label>
-                Connection
-                <select
-                  value={draft.connection}
-                  onChange={(event) => change({ connection: event.target.value })}
-                >
-                  {draft.connection === '' && <option value="">Choose a connection</option>}
-                  {connections.map((each) => (
-                    <option key={each.id} value={each.id}>
-                      {each.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                )}
+              </Choice>
               <p className={styles['hint']}>
                 Only connections you may write SQL against are offered, and SQL runs only on one
                 whose latest test found its account read-only.
@@ -934,46 +968,50 @@ export function QueryDefinitionPage({
                   <>
                     {draft.order.map((each, at) => (
                       <div key={at} className={styles['fragment']}>
-                        <label>
-                          {`Order column ${at + 1}`}
-                          <select
-                            value={each.column}
-                            onChange={(event) =>
-                              change({
-                                order: (draft.order as (typeof each)[]).map((held, place) =>
-                                  place === at ? { ...held, column: event.target.value } : held,
-                                ),
-                              })
-                            }
-                          >
-                            {columnNames.map((name) => (
-                              <option key={name} value={name}>
-                                {name}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <label>
-                          {`Direction ${at + 1}`}
-                          <select
-                            value={each.direction}
-                            onChange={(event) =>
-                              change({
-                                order: (draft.order as (typeof each)[]).map((held, place) =>
-                                  place === at
-                                    ? {
-                                        ...held,
-                                        direction: event.target.value as typeof each.direction,
-                                      }
-                                    : held,
-                                ),
-                              })
-                            }
-                          >
-                            <option value="ascending">Ascending</option>
-                            <option value="descending">Descending</option>
-                          </select>
-                        </label>
+                        <Choice label={`Order column ${at + 1}`}>
+                          {(id) => (
+                            <select
+                              id={id}
+                              value={each.column}
+                              onChange={(event) =>
+                                change({
+                                  order: (draft.order as (typeof each)[]).map((held, place) =>
+                                    place === at ? { ...held, column: event.target.value } : held,
+                                  ),
+                                })
+                              }
+                            >
+                              {columnNames.map((name) => (
+                                <option key={name} value={name}>
+                                  {name}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </Choice>
+                        <Choice label={`Direction ${at + 1}`}>
+                          {(id) => (
+                            <select
+                              id={id}
+                              value={each.direction}
+                              onChange={(event) =>
+                                change({
+                                  order: (draft.order as (typeof each)[]).map((held, place) =>
+                                    place === at
+                                      ? {
+                                          ...held,
+                                          direction: event.target.value as typeof each.direction,
+                                        }
+                                      : held,
+                                  ),
+                                })
+                              }
+                            >
+                              <option value="ascending">Ascending</option>
+                              <option value="descending">Descending</option>
+                            </select>
+                          )}
+                        </Choice>
                       </div>
                     ))}
                     {columnNames.length > 0 && (
