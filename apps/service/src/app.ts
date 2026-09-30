@@ -1,5 +1,6 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { IDEMPOTENT_REPLAYED, keyedRequest, once } from './idempotency.js';
+import { AfterCommit } from './after-commit.js';
 import cookie from '@fastify/cookie';
 import {
   routes,
@@ -169,7 +170,10 @@ type Success<R extends RouteContract> = R['responses'] extends {
  */
 export type Handlers = {
   [K in keyof typeof routes]: (typeof routes)[K]['access'] extends { check: 'permission' }
-    ? (request: FastifyRequest, authorised: Authorised) => Promise<Success<(typeof routes)[K]>>
+    ? (
+        request: FastifyRequest,
+        authorised: Authorised,
+      ) => Promise<Success<(typeof routes)[K]> | AfterCommit<Success<(typeof routes)[K]>>>
     : (
         request: FastifyRequest,
         reply: FastifyReply,
@@ -769,9 +773,18 @@ export function buildApp(options: AppOptions): FastifyInstance {
         await beforeDeciding(trx, access);
         const principal = principalOf(request).principalId;
         const authorised = await authorise(trx, principal, access, request);
-        return once(trx, principal, keyed, () => run(request, authorised));
+        const done = await once(trx, principal, keyed, () => run(request, authorised));
+        // A keyed answer is recorded here, in the deciding transaction, so work that runs after it
+        // commits would go unrecorded: such a route declares `idempotencyKey: false`.
+        if (done.body instanceof AfterCommit && keyed !== undefined) {
+          throw new Error(`${operation} works after its commit and cannot take an idempotency key`);
+        }
+        return done;
       });
       if (replayed) void reply.header(IDEMPOTENT_REPLAYED, 'true');
+      // The deciding transaction has committed, and its lock on access with it: the rest of the work -
+      // a connector's, say - holds back no grant or revocation (the D1 fix, C4).
+      if (body instanceof AfterCommit) return (body as AfterCommit<unknown>).run();
       if (!binary) return body;
       // Bytes, sent only now that the transaction has committed, as a body is (figures 1, R2): never
       // sniffed into something a browser would run, and never run as a document of this origin.

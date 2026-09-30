@@ -5174,8 +5174,6 @@ export interface operations {
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
                 "X-Request-Id"?: string;
-                /** @description Use the same key to retry this mutation without applying it twice. */
-                "Idempotency-Key"?: string;
             };
             path: {
                 id: string & (unknown & unknown);
@@ -5194,8 +5192,6 @@ export interface operations {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
-                    /** @description True when this answer is a replay of an earlier keyed request. */
-                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {
@@ -5402,8 +5398,6 @@ export interface operations {
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
                 "X-Request-Id"?: string;
-                /** @description Use the same key to retry this mutation without applying it twice. */
-                "Idempotency-Key"?: string;
             };
             path: {
                 id: string & (unknown & unknown);
@@ -5422,8 +5416,6 @@ export interface operations {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
-                    /** @description True when this answer is a replay of an earlier keyed request. */
-                    "Idempotent-Replayed"?: "true";
                     [name: string]: unknown;
                 };
                 content: {

@@ -37,6 +37,7 @@ import {
 import type { FastifyRequest } from 'fastify';
 import { administerOrAbove, notFound, type Authorised } from '../access.js';
 import { versionView } from '../components.js';
+import { AfterCommit } from '../after-commit.js';
 import { AppError } from '../errors.js';
 import { cursorFor, pageAsked } from '../listing.js';
 import type { SessionPrincipal } from '../sessions.js';
@@ -193,20 +194,22 @@ export function connectionHandlers(
   }
 
   /**
-   * Asks the connector to test a connection with a sealed credential, and records what it answered
-   * against the version tested (D1-N). A connector that is full or unavailable answered nothing, so
-   * nothing is recorded.
+   * Asks the connector to test a connection with a sealed credential, outside any transaction, and
+   * records what it answered in a short transaction of its own, against the version it tested (D1-N;
+   * the D1 fix, C4) - even where a newer version was cut while the source was answering, since the
+   * row says which version it tested and that test is still true of it; the connection's read then
+   * says the latest version is untested. A connector that is full or unavailable answered nothing,
+   * so nothing is recorded.
    */
   async function test(
-    trx: TenantTransaction,
-    request: FastifyRequest,
+    tenant: Tenant,
     connection: StoredConnection,
     sealed: string,
     by: string,
   ): Promise<TestView> {
     const answer = await connected().test({
       requestId: randomUUID(),
-      tenant: tenantOf(request).id,
+      tenant: tenant.id,
       connection: { id: connection.id, version: connection.version.id },
       settings: connection.settings,
       sealed,
@@ -217,19 +220,21 @@ export function connectionHandlers(
       // A failure a test cannot give is not an answer this service can record.
       throw dataRefused(503, 'connector_unavailable');
     }
-    await recordConnectionTest(trx, {
-      connectionId: connection.id,
-      versionId: connection.version.id,
-      by,
-      ...(tested.outcome === 'ok'
-        ? { outcome: 'ok', findings: tested.findings, failure: null }
-        : {
-            outcome: 'failed',
-            findings: [],
-            failure: tested.failure.code as ConnectionTestFailure,
-          }),
-    });
-    const at = (await latestConnectionTest(trx, connection.id))!.at.toISOString();
+    const recordedAt = await db.withTenant(tenant, (trx) =>
+      recordConnectionTest(trx, {
+        connectionId: connection.id,
+        versionId: connection.version.id,
+        by,
+        ...(tested.outcome === 'ok'
+          ? { outcome: 'ok', findings: tested.findings, failure: null }
+          : {
+              outcome: 'failed',
+              findings: [],
+              failure: tested.failure.code as ConnectionTestFailure,
+            }),
+      }),
+    );
+    const at = recordedAt.toISOString();
     return tested.outcome === 'ok'
       ? { outcome: 'ok', findings: tested.findings, at }
       : { outcome: 'failed', failure: failureView(tested.failure.code), at };
@@ -349,9 +354,10 @@ export function connectionHandlers(
       const connection = await runnable(trx, id);
       const { secret } = request.body as CredentialBody;
       // Sealed by the connector with a key the service never holds; the service keeps only what
-      // comes back, and no record of the request is kept (D1-S).
-      // Sealed for where this version signs in, and stored beside that target's digest: a later
-      // version pointing anywhere else leaves it unusable (the D1 fix, C3).
+      // comes back, and no record of the request is kept (D1-S). Sealed for where this version signs
+      // in, and stored beside that target's digest: a later version pointing anywhere else leaves it
+      // unusable (the D1 fix, C3). Sealing reaches no source, so it is done in the deciding
+      // transaction, with the write it answers; only the test waits for a source, after the commit.
       const { sealed } = answered(
         await connected().seal(tenantOf(request).id, secret, connection.settings),
       );
@@ -360,55 +366,69 @@ export function connectionHandlers(
         if (set.answer === 'connection.missing') throw notFound();
         throw refused(409, 'connection.retired', 'This connection is retired, so it runs nothing.');
       }
-      // Tested straight after, as the rotation act (DA-T). A connector that could seal and then not
-      // test answers the test's failure without recording it.
-      let tested: TestView;
-      try {
-        tested = await test(trx, request, connection, sealed, principalId);
-      } catch (error) {
-        if (!(error instanceof AppError) || error.status !== 503) throw error;
-        tested = {
-          outcome: 'failed',
-          failure: failureView(error.code as DataFailureCode),
-          at: new Date().toISOString(),
-        };
-      }
-      return {
-        credential: {
-          set: true as const,
-          setBy: { id: set.credential.setBy.id, name: set.credential.setBy.name },
-          setAt: set.credential.setAt.toISOString(),
-          targetChanged: set.credential.targetChanged,
-        },
-        test: tested,
+      const credential = {
+        set: true as const,
+        setBy: { id: set.credential.setBy.id, name: set.credential.setBy.name },
+        setAt: set.credential.setAt.toISOString(),
+        targetChanged: set.credential.targetChanged,
       };
+      const tenant = tenantOf(request);
+      // Tested straight after, as the rotation act (DA-T), once the credential is committed. A
+      // connector that could seal and then not test answers the test's failure without recording it.
+      return new AfterCommit(async () => {
+        let tested: TestView;
+        try {
+          tested = await test(tenant, connection, sealed, principalId);
+        } catch (error) {
+          if (!(error instanceof AppError) || error.status !== 503) throw error;
+          tested = {
+            outcome: 'failed',
+            failure: failureView(error.code as DataFailureCode),
+            at: new Date().toISOString(),
+          };
+        }
+        return { credential, test: tested };
+      });
     },
 
     testConnection: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
       const { id } = request.params as ConnectionParams;
       const connection = await runnable(trx, id);
       const sealed = await usableSealed(trx, id);
-      return test(trx, request, connection, sealed, principalId);
+      connected();
+      const tenant = tenantOf(request);
+      // Decided and read here; the connector is asked once this transaction, and its lock on access,
+      // is let go (the D1 fix, C4).
+      return new AfterCommit(() => test(tenant, connection, sealed, principalId));
     },
 
     describeConnection: async (request: FastifyRequest, { trx }: Authorised) => {
       const { id } = request.params as ConnectionParams;
       const connection = await runnable(trx, id);
       const sealed = await usableSealed(trx, id);
-      const described = answered(
-        await connected().describe({
-          requestId: randomUUID(),
-          tenant: tenantOf(request).id,
-          connection: { id: connection.id, version: connection.version.id },
-          settings: connection.settings,
-          sealed,
-          deadlineMs: DESCRIBE_DEADLINE_MS,
-        }),
-      );
-      if ('failure' in described) {
-        throw dataRefused(described.failure.code === 'timeout' ? 504 : 502, described.failure.code);
-      }
-      return described;
+      const client = connected();
+      const tenant = tenantOf(request);
+      // Decided and read here; the connector is asked once this transaction, and its lock on access,
+      // is let go (the D1 fix, C4). A describe records nothing.
+      return new AfterCommit(async () => {
+        const described = answered(
+          await client.describe({
+            requestId: randomUUID(),
+            tenant: tenant.id,
+            connection: { id: connection.id, version: connection.version.id },
+            settings: connection.settings,
+            sealed,
+            deadlineMs: DESCRIBE_DEADLINE_MS,
+          }),
+        );
+        if ('failure' in described) {
+          throw dataRefused(
+            described.failure.code === 'timeout' ? 504 : 502,
+            described.failure.code,
+          );
+        }
+        return described;
+      });
     },
   };
 }

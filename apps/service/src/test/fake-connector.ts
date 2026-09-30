@@ -19,6 +19,8 @@ export interface FakeConnector {
   mode: 'answer' | 'unreachable' | 'busy' | 'broken' | 'nonsense';
   test: TestAnswer;
   describe: DescribeAnswer;
+  /** Where set, a test and a describe wait for it before answering: a source that is slow. */
+  hold?: Promise<void> | undefined;
 }
 
 export function fakeConnector(): FakeConnector {
@@ -55,6 +57,7 @@ export function fakeConnector(): FakeConnector {
           ),
         });
       }
+      if (path !== '/v1/seal' && fake.hold) await fake.hold;
       if (path === '/v1/test') return Response.json(fake.test);
       if (path === '/v1/describe') return Response.json(fake.describe);
       return new Response(null, { status: 404 });

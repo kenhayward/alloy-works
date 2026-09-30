@@ -353,6 +353,9 @@ export const connectionRoutes = {
     access: { check: 'permission', permission: 'use_connection', target: { artifact: 'id' } },
     params: ConnectionParams,
     body: z.strictObject({}),
+    // Answered after the deciding transaction commits, so nothing could be recorded against a key
+    // (the D1 fix, C4); a test repeated is a test run again.
+    idempotencyKey: false,
     responses: {
       200: {
         description:
@@ -378,6 +381,9 @@ export const connectionRoutes = {
     access: { check: 'permission', permission: 'use_connection', target: { artifact: 'id' } },
     params: ConnectionParams,
     body: z.strictObject({}),
+    // Answered after the deciding transaction commits, so nothing could be recorded against a key
+    // (the D1 fix, C4); a test repeated is a test run again.
+    idempotencyKey: false,
     responses: {
       200: { description: "The source's tables and views", schema: DescribeView },
       401: unauthenticated,

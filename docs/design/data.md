@@ -712,6 +712,14 @@ A **sample run** is a query author's, with `use_connection`, on a draft definiti
 (DAT-014). **Describe** and **test** store nothing but the test's findings. A dataset exists only once
 a binding is resolved.
 
+**No act holds access while a source answers.** The permission is decided, and the connection's
+settings and sealed credential read, in one short transaction, which commits before the connector is
+asked; a test is then recorded in a second, against the version it tested even where a newer one was
+cut meanwhile, since the row names that version and the test is still true of it, and the connection's
+read then says the latest version is untested. A deciding transaction holds the access epoch's shared
+lock, and a source can take twenty seconds to answer: held across the call, a revocation would wait
+that long while the person it revokes kept running.
+
 ### Rotation, where used and retiring
 
 - **Rotation** (DAT-066): changes no stored result; the service tests the connection straight after,

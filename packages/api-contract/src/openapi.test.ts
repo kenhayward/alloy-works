@@ -136,17 +136,27 @@ describe('the OpenAPI document', () => {
     expect(found).toEqual([]);
   });
 
-  it('offers no idempotency key on a route that takes none, the credential', () => {
-    const put = document.paths['/v1/connections/{id}/credential']?.put as {
+  it('offers no idempotency key on a route that takes none: the credential, a test and a describe', () => {
+    for (const [path, method] of [
+      ['/v1/connections/{id}/credential', 'put'],
+      ['/v1/connections/{id}/test', 'post'],
+      ['/v1/connections/{id}/describe', 'post'],
+    ] as const) {
+      const operation = document.paths[path]?.[method] as {
+        parameters: { name: string }[];
+        responses: Record<string, { headers?: Record<string, unknown> }>;
+      };
+      expect(
+        operation.parameters.map((parameter) => parameter.name),
+        path,
+      ).not.toContain('Idempotency-Key');
+      expect(operation.responses['200']?.headers, path).not.toHaveProperty('Idempotent-Replayed');
+    }
+    // A connection's other writes take one, as every mutating route does.
+    const versions = document.paths['/v1/connections/{id}/versions']?.post as {
       parameters: { name: string }[];
-      responses: Record<string, { headers?: Record<string, unknown> }>;
     };
-    expect(put.parameters.map((parameter) => parameter.name)).not.toContain('Idempotency-Key');
-    expect(put.responses['200']?.headers).not.toHaveProperty('Idempotent-Replayed');
-    const test = document.paths['/v1/connections/{id}/test']?.post as {
-      parameters: { name: string }[];
-    };
-    expect(test.parameters.map((parameter) => parameter.name)).toContain('Idempotency-Key');
+    expect(versions.parameters.map((parameter) => parameter.name)).toContain('Idempotency-Key');
   });
 
   it('is OpenAPI 3.1, at the API version rather than the product release', () => {

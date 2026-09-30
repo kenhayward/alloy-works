@@ -2812,9 +2812,14 @@ without them it starts, and every act that needs a connector answers 503 `connec
 every answer parsed by the protocol's schemas, and anything else - unreachable, a status that is not an
 answer, a body that does not parse, no answer two seconds past the request's deadline - is
 `connector_unavailable`, never the error's own words. Every failure a route answers carries its
-`attribution`, `connector`, `query` or `product` (DAT-049). The routes run inside the transaction their
-permission was decided in, so a test or a describe holds it, and the access epoch's shared lock, for as
-long as the connector takes.
+`attribution`, `connector`, `query` or `product` (DAT-049). **A test or a describe asks the connector
+after its deciding transaction commits**: the handler decides, reads the connection and its sealed
+credential, and returns an `AfterCommit` (`src/after-commit.ts`), which the permission-checked wrapper
+runs once the transaction - and its shared lock on the access epoch - is let go, so no grant or
+revocation waits on a source. A test is recorded in a transaction of its own, against the version it
+tested even where a newer one was cut meanwhile. Such a route takes no idempotency key, since a keyed
+answer is recorded in the deciding transaction; the wrapper refuses the pairing. A seal reaches no
+source and stays in the deciding transaction, with the write it answers, bounded at three seconds.
 
 | Route                                 | Needs              | Does                                                                                                  |
 | ------------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------- |

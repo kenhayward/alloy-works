@@ -34,8 +34,11 @@ export interface ConnectorClient {
   describe(request: DescribeRequest): Promise<Answered<DescribeAnswer>>;
 }
 
-/** How long a seal may take: it opens no source. */
-const SEAL_MS = 10_000;
+/**
+ * How long a seal may take: it opens no source, and is answered in milliseconds, so it is asked in the
+ * transaction its permission was decided in, and three seconds bounds a connector that hangs there.
+ */
+const SEAL_MS = 3_000;
 /** How long past a request's own deadline the service waits before giving up on the connector. */
 const SLACK_MS = 2_000;
 

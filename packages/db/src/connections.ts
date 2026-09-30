@@ -292,7 +292,10 @@ export type ConnectionTestRecord =
       readonly failure: ConnectionTestFailure;
     };
 
-/** Records a test the connector answered, against the connection version it tested (D1-N). */
+/**
+ * Records a test the connector answered, against the connection version it tested (D1-N), and answers
+ * when, by the database's clock.
+ */
 export async function recordConnectionTest(
   trx: TenantTransaction,
   input: {
@@ -300,8 +303,8 @@ export async function recordConnectionTest(
     readonly versionId: string;
     readonly by: string;
   } & ConnectionTestRecord,
-): Promise<void> {
-  await trx
+): Promise<Date> {
+  const row = await trx
     .insertInto('connection_test')
     .values({
       connection_id: input.connectionId,
@@ -311,7 +314,9 @@ export async function recordConnectionTest(
       failure: input.failure,
       tested_by: input.by,
     })
-    .execute();
+    .returning('tested_at')
+    .executeTakeFirstOrThrow();
+  return row.tested_at;
 }
 
 export type LatestConnectionTest = ConnectionTestRecord & {

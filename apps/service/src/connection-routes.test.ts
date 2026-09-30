@@ -497,6 +497,76 @@ describe('connections through the service', () => {
     ).toBe(200);
   });
 
+  it('holds nothing of access while the connector works: a grant is made at once while a test and a describe wait on a slow source, and the test is recorded against the version it tested', async () => {
+    const connection = await make({ name: 'Slow' });
+    await allow(ids.ada!, connectionUser, { kind: 'artifact', id: connection.id });
+    connector.mode = 'answer';
+    connector.test = { outcome: 'ok', findings: [] };
+    expect(
+      (await call('ada', 'PUT', `/v1/connections/${connection.id}/credential`, { secret: SECRET }))
+        .statusCode,
+    ).toBe(200);
+    const before = connector.asked.length;
+    let release!: () => void;
+    connector.hold = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    try {
+      const testing = call('ada', 'POST', `/v1/connections/${connection.id}/test`, {});
+      const describing = call('ada', 'POST', `/v1/connections/${connection.id}/describe`, {});
+      // Both have reached the connector, and wait there.
+      const until = Date.now() + 5000;
+      while (connector.asked.length < before + 2 && Date.now() < until) {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      expect(
+        connector.asked
+          .slice(before)
+          .map((each) => each.path)
+          .sort(),
+      ).toEqual(['/v1/describe', '/v1/test']);
+
+      // A change to access lands now, not when the source answers.
+      const granting = call('ada', 'POST', '/v1/grants', {
+        role: connectionUser,
+        subject: { principal: ids.grace },
+        level: `artifact:${connection.id}`,
+        effect: 'allow',
+      });
+      const first = await Promise.race([
+        granting,
+        new Promise<'waited'>((resolve) => setTimeout(() => resolve('waited'), 3000)),
+      ]);
+      expect(first, 'the grant waited behind the connector').not.toBe('waited');
+      expect((await granting).statusCode).toBe(200);
+
+      // And a version cut while the test is in flight.
+      const renamed = await call('ada', 'POST', `/v1/connections/${connection.id}/versions`, {
+        openedFrom: connection.version.id,
+        settings: settings({ name: 'Slow, renamed' }),
+      });
+      expect(renamed.statusCode, renamed.body).toBe(200);
+
+      release();
+      const [tested, described] = await Promise.all([testing, describing]);
+      expect(tested.statusCode, tested.body).toBe(200);
+      expect(described.statusCode, described.body).toBe(200);
+      // The test is of the version it was asked of, and says so; the newer one is untested.
+      expect((await recordedTests(connection.id)).at(-1)).toMatchObject({
+        connection_version_id: connection.version.id,
+        outcome: 'ok',
+      });
+      const read = (
+        await call('ada', 'GET', `/v1/connections/${connection.id}`)
+      ).json<ConnectionBody>();
+      expect(read.version.id).toBe(renamed.json<ConnectionBody>().version.id);
+      expect(read.lastTest?.version).toBe(connection.version.id);
+    } finally {
+      release();
+      connector.hold = undefined;
+    }
+  });
+
   it('answers connection_retired, credential_missing and connector_unavailable before the connector is asked, and records nothing', async () => {
     const connection = await make({ name: 'Unready' });
     await allow(ids.ada!, connectionUser, { kind: 'artifact', id: connection.id });

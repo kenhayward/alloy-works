@@ -9927,15 +9927,6 @@
               "type": "string",
               "maxLength": 128
             }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": false,
-            "description": "Use the same key to retry this mutation without applying it twice.",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "requestBody": {
@@ -10048,15 +10039,6 @@
                 "description": "Trace identifier assigned to this request.",
                 "schema": {
                   "type": "string"
-                }
-              },
-              "Idempotent-Replayed": {
-                "description": "True when this answer is a replay of an earlier keyed request.",
-                "schema": {
-                  "type": "string",
-                  "enum": [
-                    "true"
-                  ]
                 }
               }
             }
@@ -10468,15 +10450,6 @@
               "type": "string",
               "maxLength": 128
             }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": false,
-            "description": "Use the same key to retry this mutation without applying it twice.",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "requestBody": {
@@ -10583,15 +10556,6 @@
                 "description": "Trace identifier assigned to this request.",
                 "schema": {
                   "type": "string"
-                }
-              },
-              "Idempotent-Replayed": {
-                "description": "True when this answer is a replay of an earlier keyed request.",
-                "schema": {
-                  "type": "string",
-                  "enum": [
-                    "true"
-                  ]
                 }
               }
             }
