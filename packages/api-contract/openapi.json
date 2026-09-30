@@ -1758,7 +1758,8 @@
                               "publish",
                               "design",
                               "manage_definitions",
-                              "administer"
+                              "administer",
+                              "use_connection"
                             ]
                           },
                           "allowed": {
@@ -2040,7 +2041,8 @@
                               "publish",
                               "design",
                               "manage_definitions",
-                              "administer"
+                              "administer",
+                              "use_connection"
                             ]
                           },
                           "allowed": {
@@ -24503,7 +24505,8 @@
                                 "publish",
                                 "design",
                                 "manage_definitions",
-                                "administer"
+                                "administer",
+                                "use_connection"
                               ]
                             },
                             "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -27061,7 +27064,8 @@
                                 "publish",
                                 "design",
                                 "manage_definitions",
-                                "administer"
+                                "administer",
+                                "use_connection"
                               ]
                             }
                           }
@@ -34870,7 +34874,8 @@
                                 "publish",
                                 "design",
                                 "manage_definitions",
-                                "administer"
+                                "administer",
+                                "use_connection"
                               ]
                             },
                             "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
@@ -35133,7 +35138,7 @@
                     "description": "1 to 80 characters, trimmed"
                   },
                   "scopes": {
-                    "maxItems": 9,
+                    "maxItems": 10,
                     "type": "array",
                     "items": {
                       "type": "string",
@@ -35146,7 +35151,8 @@
                         "publish",
                         "design",
                         "manage_definitions",
-                        "administer"
+                        "administer",
+                        "use_connection"
                       ]
                     },
                     "description": "The permissions it may use: a mask over its creator's grants, never a grant"
@@ -35201,7 +35207,8 @@
                           "publish",
                           "design",
                           "manage_definitions",
-                          "administer"
+                          "administer",
+                          "use_connection"
                         ]
                       },
                       "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"

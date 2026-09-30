@@ -405,6 +405,32 @@ export interface IdempotencyRecordTable {
   made_at: ColumnType<Date, Date | undefined, Date>;
 }
 
+/**
+ * A connection's credential, sealed by the connector (0044; data.md, "The credential"): the latest row
+ * by `id` is it. Insert-only, and never the time, which is the database's.
+ */
+export interface ConnectionCredentialTable {
+  id: ColumnType<string, never, never>;
+  connection_id: ColumnType<string, string, never>;
+  connection_kind: ColumnType<'connection', 'connection' | undefined, never>;
+  sealed: ColumnType<string, string, never>;
+  set_by: ColumnType<string, string, never>;
+  set_at: ColumnType<Date, never, never>;
+}
+
+/** A test the connector answered, against the version it tested (0044; D1-N). Insert-only. */
+export interface ConnectionTestTable {
+  id: ColumnType<string, never, never>;
+  connection_id: ColumnType<string, string, never>;
+  connection_version_id: ColumnType<string, string, never>;
+  connection_kind: ColumnType<'connection', 'connection' | undefined, never>;
+  outcome: ColumnType<'ok' | 'failed', 'ok' | 'failed', never>;
+  findings: ColumnType<string[], string[] | undefined, never>;
+  failure: ColumnType<string | null, string | null, never>;
+  tested_by: ColumnType<string, string, never>;
+  tested_at: ColumnType<Date, never, never>;
+}
+
 export interface TenantTables {
   component_lock: ComponentLockTable;
   iteration: IterationTable;
@@ -449,6 +475,8 @@ export interface TenantTables {
   search_entry: SearchEntryTable;
   search_text: SearchTextTable;
   idempotency_record: IdempotencyRecordTable;
+  connection_credential: ConnectionCredentialTable;
+  connection_test: ConnectionTestTable;
 }
 
 /** A transaction inside withTenant: what every read and write of tenant data is given. */

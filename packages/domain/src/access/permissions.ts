@@ -14,6 +14,9 @@ export const permissions = [
   'design',
   'manage_definitions',
   'administer',
+  // Running anything against a connection, decided at the connection (data.md, "Permissions"). No
+  // starting role holds it, so using a connection is always granted on purpose.
+  'use_connection',
 ] as const;
 
 export type Permission = (typeof permissions)[number];
@@ -34,7 +37,8 @@ export function isPermission(value: string): value is Permission {
 
 /**
  * What an external principal is refused whatever the grants say. `edit`, `approve` and `publish` are
- * IAM-047's; `create`, `design`, `manage_definitions` and `administer` are access.md's own choice.
+ * IAM-047's; `create`, `design`, `manage_definitions` and `administer` are access.md's own choice, and
+ * `use_connection` data.md's.
  */
 export const externalCap: readonly Permission[] = [
   'create',
@@ -44,6 +48,7 @@ export const externalCap: readonly Permission[] = [
   'design',
   'manage_definitions',
   'administer',
+  'use_connection',
 ];
 
 /** A principal's kind. Only `external` changes a decision. */

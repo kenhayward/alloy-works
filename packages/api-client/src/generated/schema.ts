@@ -1785,7 +1785,7 @@ export interface operations {
                         target: string;
                         permissions: {
                             /** @enum {string} */
-                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer";
+                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection";
                             allowed: boolean;
                         }[];
                     };
@@ -1908,7 +1908,7 @@ export interface operations {
                         target: string;
                         permissions: {
                             /** @enum {string} */
-                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer";
+                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection";
                             allowed: boolean;
                             /**
                              * @description capped: an external principal, refused whatever the grants say. scoped: allowed by the grants, and refused to the API token a request was made with, which is not scoped to it
@@ -10393,7 +10393,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -11309,7 +11309,7 @@ export interface operations {
                         items: {
                             id: string;
                             name: string;
-                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer")[];
+                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection")[];
                         }[];
                         /** @description The cursor for the next page, or null at the end */
                         next: string | null;
@@ -14555,7 +14555,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -14672,7 +14672,7 @@ export interface operations {
                     /** @description 1 to 80 characters, trimmed */
                     name: string;
                     /** @description The permissions it may use: a mask over its creator's grants, never a grant */
-                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer")[];
+                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection")[];
                     /**
                      * Format: date-time
                      * @description When it stops working: required, in the future and at most 365 days away
@@ -14706,7 +14706,7 @@ export interface operations {
                         /** @description What the person called it, to tell their tokens apart */
                         name: string;
                         /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer")[];
+                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection")[];
                         createdAt: string;
                         /** @description When it stops working; nothing extends a token */
                         expiresAt: string;

@@ -212,6 +212,38 @@ describe('the tenant database', () => {
     }
   });
 
+  it("IAM-075 keeps each environment's source credentials, sealed, in its own schema and in no shared one", async () => {
+    // The credentials, and the tests that name each connection's version, which say what an account
+    // at a source may do.
+    const tables = ['connection_credential', 'connection_test'];
+    for (const table of tables) {
+      expect(await schemasHolding(table), table).toEqual(tenantSchemas());
+    }
+    for (const table of tables) {
+      await expect(
+        service.withTenant(production, (trx) =>
+          sql`select * from ${sql.id(development.schema, table)}`.execute(trx),
+        ),
+        table,
+      ).rejects.toThrow(/permission denied/);
+      await expect(
+        service.withTenant(production, (trx) =>
+          sql`insert into ${sql.id(development.schema, table)} default values`.execute(trx),
+        ),
+        table,
+      ).rejects.toThrow(/permission denied/);
+    }
+    // Held sealed: the column refuses anything the sealing scheme did not write.
+    const check = await queryAs(
+      db.adminUrl,
+      `select pg_get_constraintdef(c.oid) as def from pg_constraint c
+         join pg_class t on t.oid = c.conrelid join pg_namespace n on n.oid = t.relnamespace
+        where n.nspname = $1 and t.relname = 'connection_credential' and c.conname = 'connection_credential_sealed'`,
+      [production.schema],
+    );
+    expect(check.rows[0]?.def).toMatch(/\^v1/);
+  });
+
   it('cannot rewrite its own migration history', async () => {
     await expect(
       service.withTenant(production, (trx) => sql`delete from schema_migration`.execute(trx)),

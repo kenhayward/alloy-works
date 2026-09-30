@@ -333,6 +333,25 @@ export {
   type TemplateAnswer,
   type TemplateSummary,
 } from './templates.js';
+export {
+  createConnection,
+  credentialOf,
+  latestConnectionTest,
+  listReadableConnections,
+  readConnection,
+  recordConnectionTest,
+  recordConnectionVersion,
+  sealedCredentialOf,
+  setConnectionCredential,
+  type ConnectionAnswer,
+  type ConnectionFinding,
+  type ConnectionSummary,
+  type ConnectionTestFailure,
+  type ConnectionTestRecord,
+  type CredentialState,
+  type LatestConnectionTest,
+  type StoredConnection,
+} from './connections.js';
 export { numberingInputs, type NumberingInputs, type OccurrenceResolution } from './numbering.js';
 export {
   createComponent,

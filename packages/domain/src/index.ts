@@ -20,6 +20,7 @@ export type {
   AssetSubstance,
   ThemeSubstance,
   CatalogueSubstance,
+  ConnectionSubstance,
   VersionSubstance,
 } from './version/substance.js';
 

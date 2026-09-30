@@ -110,6 +110,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0041_publication_check_given_up',
       '0042_sealed_sign_in_secret',
       '0043_default_theme_caption_placement',
+      '0044_connections',
     ]);
 
     // The component and its version are as they were.
@@ -217,6 +218,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0041_publication_check_given_up',
       '0042_sealed_sign_in_secret',
       '0043_default_theme_caption_placement',
+      '0044_connections',
     ]);
 
     const { rows } = await queryAs(

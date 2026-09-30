@@ -188,6 +188,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0041_publication_check_given_up',
       '0042_sealed_sign_in_secret',
       '0043_default_theme_caption_placement',
+      '0044_connections',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

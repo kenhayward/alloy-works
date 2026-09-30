@@ -19140,7 +19140,7 @@
     {
       "id": "IAM-062",
       "file": "packages/db/src/access-schema.test.ts",
-      "line": 127,
+      "line": 155,
       "kind": "title"
     },
     {
@@ -19177,6 +19177,24 @@
       "id": "MET-038",
       "file": "packages/db/src/component-values.test.ts",
       "line": 246,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-001",
+      "file": "packages/db/src/connections.test.ts",
+      "line": 144,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-003",
+      "file": "packages/db/src/connections.test.ts",
+      "line": 308,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-007",
+      "file": "packages/db/src/connections.test.ts",
+      "line": 214,
       "kind": "title"
     },
     {
@@ -19590,7 +19608,7 @@
     {
       "id": "IAM-019",
       "file": "packages/domain/src/access/permissions.test.ts",
-      "line": 6,
+      "line": 13,
       "kind": "title"
     },
     {

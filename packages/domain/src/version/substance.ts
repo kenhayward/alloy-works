@@ -14,6 +14,7 @@ import { canonicalJson } from '../stored/canonical.js';
 import { canonicaliseOutline, type OutlineDocument } from '../structure/outline.js';
 import type { TemplateDefinition } from '../template/definition.js';
 import type { Catalogue, Catalogue1, Theme } from '../theme/schema.js';
+import type { ConnectionSettings } from '../data/connection.js';
 
 /**
  * What a component version says (ADR-0024): its content, its metadata values, the values it did not
@@ -82,8 +83,18 @@ export type CatalogueSubstance = {
  */
 export type TemplateSubstance = { readonly kind: 'template'; readonly content: TemplateDefinition };
 
+/**
+ * A connection version says its settings, and nothing else (data.md, "The connection"): what anybody
+ * who may read it sees, never a secret. The shared rule: it holds no array and no `marks`.
+ */
+export type ConnectionSubstance = {
+  readonly kind: 'connection';
+  readonly content: ConnectionSettings;
+};
+
 export type VersionSubstance =
   | ComponentSubstance
+  | ConnectionSubstance
   | TemplateSubstance
   | DefinitionSubstance
   | DocumentSubstance
