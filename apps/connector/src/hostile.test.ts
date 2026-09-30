@@ -139,6 +139,17 @@ const HOSTILE: readonly (string | null)[] = [
   'x'.repeat(100_000),
   '',
   null,
+  // PostgreSQL's own quoting: dollar quotes, an escape string, a backslash before a quote or at the
+  // end, and a Unicode escape - each harmless as a value, and each a way out of a literal were a value
+  // ever spliced into the text.
+  '$$',
+  '$v$',
+  '$tag$ or true $tag$',
+  'x$v$ = $v$y$v$ or true or $v$',
+  "\\' or true --",
+  "E'\\\\'",
+  'alpha\\',
+  "U&'\\0061'",
 ];
 
 /** Case 5's values wrong in type, range or presence, each for its own parameter. */
@@ -427,11 +438,22 @@ describe('injection through every parameter type', { timeout: LOADED_TIMEOUT_MS 
       return {
         position,
         outcome: inert ? ('inert' as const) : ('NOT INERT' as const),
+        ran: answer.outcome === 'ok' ? answer.ran.sql : undefined,
         ...(inert ? {} : { value: String(value).slice(0, 60), got, want }),
       };
     });
     // Every attempt either refused by name or bound inert: none changed what the query did.
     expect(outcomes.filter((each) => each.outcome === 'NOT INERT')).toEqual([]);
+    // And no value reached the text: every value a position bound ran as exactly the same SQL, the
+    // value only ever a parameter beside it.
+    for (const [position] of POSITIONS) {
+      const ran = new Set(
+        outcomes.flatMap((each) =>
+          each.position === position && 'ran' in each && each.ran !== undefined ? [each.ran] : [],
+        ),
+      );
+      expect([...ran].length, position).toBe(1);
+    }
     // Not vacuous: every position took some values and refused others.
     for (const [position] of POSITIONS) {
       const at = outcomes.filter((each) => each.position === position);
