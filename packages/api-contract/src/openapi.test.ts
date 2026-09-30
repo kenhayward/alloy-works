@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { documentedOperations } from './documentation.js';
 import { buildOpenApi } from './openapi.js';
 import { allRoutes, API_VERSION } from './routes.js';
 
@@ -32,6 +33,15 @@ describe('the OpenAPI document', () => {
         expect(operation['x-alloy-permission'], route.operationId).toBe(route.access.permission);
       }
     }
+  });
+
+  it('API-062 documents no operation the contract does not declare, and each in one place', () => {
+    // A route renamed or removed takes its description and tag with it; neither outlives it.
+    const declared = new Set(allRoutes.map((route) => route.operationId));
+    const { tagged, described } = documentedOperations();
+    expect(tagged.filter((operation) => !declared.has(operation))).toEqual([]);
+    expect(described.filter((operation) => !declared.has(operation))).toEqual([]);
+    expect(new Set(tagged).size).toBe(tagged.length);
   });
 
   it('API-062 keeps JSON examples valid against the schemas they describe', () => {

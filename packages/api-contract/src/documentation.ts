@@ -281,6 +281,14 @@ const descriptions: Readonly<Record<string, string>> = {
   getSample: 'Development scaffolding: polls a sample PDF request until a download is ready.',
 };
 
+/** Every operation given a tag and every one given a description, for the test that no entry is stale. */
+export function documentedOperations(): { tagged: string[]; described: string[] } {
+  return {
+    tagged: Object.values(operationTags).flat(),
+    described: Object.keys(descriptions),
+  };
+}
+
 export function documentationFor(route: RouteContract): { tag: string; description: string } {
   const tag = byOperation.get(route.operationId);
   const description = descriptions[route.operationId];
