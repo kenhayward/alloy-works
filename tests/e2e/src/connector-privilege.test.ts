@@ -396,7 +396,10 @@ describe("the connector's children and the container's IPC", () => {
         `step ${index}: ${JSON.stringify(result.answer)}`,
       ).toBeUndefined();
     }
-    [created, left, read] = results.map((each) => each.answer!);
+    expect(results).toHaveLength(steps.length);
+    created = results[0]!.answer!;
+    left = results[1]!.answer!;
+    read = results[2]!.answer!;
   }, 300_000);
 
   it('refuses a child a System V shared-memory segment, message queue and semaphore set, and a POSIX message queue', () => {
