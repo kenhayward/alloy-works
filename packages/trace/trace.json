@@ -17904,7 +17904,7 @@
     {
       "id": "DAT-078",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 645,
+      "line": 667,
       "kind": "rule"
     },
     {
@@ -18084,19 +18084,19 @@
     {
       "id": "API-003",
       "file": "apps/service/src/http.test.ts",
-      "line": 138,
+      "line": 144,
       "kind": "title"
     },
     {
       "id": "API-005",
       "file": "apps/service/src/http.test.ts",
-      "line": 226,
+      "line": 253,
       "kind": "title"
     },
     {
       "id": "API-047",
       "file": "apps/service/src/http.test.ts",
-      "line": 165,
+      "line": 171,
       "kind": "title"
     },
     {
@@ -18336,13 +18336,13 @@
     {
       "id": "DAT-004",
       "file": "apps/web/src/data/connections.test.tsx",
-      "line": 358,
+      "line": 379,
       "kind": "title"
     },
     {
       "id": "DAT-075",
       "file": "apps/web/src/data/connections.test.tsx",
-      "line": 306,
+      "line": 327,
       "kind": "title"
     },
     {
@@ -20100,7 +20100,7 @@
     {
       "id": "DAT-078",
       "file": "packages/domain/src/data/connection.test.ts",
-      "line": 127,
+      "line": 166,
       "kind": "title"
     },
     {
