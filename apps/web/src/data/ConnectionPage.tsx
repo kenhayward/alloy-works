@@ -101,8 +101,9 @@ function credentialText(credential: ConnectionView['credential']): string {
 }
 
 /**
- * The last test in words - and, where it was of an earlier version, only that: a pass of settings
- * since changed says nothing of these (the D1 fix, C7).
+ * The last test in words - and, where it was of an earlier version, or made with an earlier
+ * credential, only that: a pass of settings since changed says nothing of these (the D1 fix, C7), and
+ * a pass with a password since replaced says nothing of the new one.
  */
 function lastTestText(view: ConnectionView): string {
   const last = view.lastTest;
@@ -110,6 +111,9 @@ function lastTestText(view: ConnectionView): string {
   const when = `on ${longDate(last.at)} by ${nameOf(last.by)}`;
   if (last.version !== view.version.id) {
     return `Not tested since this version. The last test, of an earlier version, was ${when}.`;
+  }
+  if (!last.credentialCurrent) {
+    return `Not tested since the credential was set. The last test, with an earlier credential, was ${when}.`;
   }
   return `Last tested ${when}: ${last.outcome === 'ok' ? 'connected' : 'could not connect'}.`;
 }

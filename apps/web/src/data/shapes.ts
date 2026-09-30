@@ -59,6 +59,8 @@ export interface ConnectionView {
     readonly by: Named;
     /** The version it tested, which need not be the one shown. */
     readonly version: string;
+    /** Whether it was made with the credential set now. */
+    readonly credentialCurrent: boolean;
   } | null;
   readonly mayAdminister: boolean;
   readonly mayUse: boolean;
@@ -141,6 +143,7 @@ export function isConnectionView(value: unknown): value is ConnectionView {
         (lastTest.outcome === 'ok' || lastTest.outcome === 'failed') &&
         typeof lastTest.at === 'string' &&
         typeof lastTest.version === 'string' &&
+        typeof lastTest.credentialCurrent === 'boolean' &&
         isNamed(lastTest.by))) &&
     typeof value.mayAdminister === 'boolean' &&
     typeof value.mayUse === 'boolean'

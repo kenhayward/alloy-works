@@ -95,7 +95,12 @@ function service(
             retired: false,
             version: { id: FIRST, number: '0.1' },
             credentialSet: true,
-            lastTest: { outcome: 'ok', at: '2026-09-30T09:00:00.000Z', version: FIRST },
+            lastTest: {
+              outcome: 'ok',
+              at: '2026-09-30T09:00:00.000Z',
+              version: FIRST,
+              credentialCurrent: true,
+            },
             changedAt: '2026-09-30T09:00:00.000Z',
           },
           {
@@ -106,7 +111,12 @@ function service(
             retired: false,
             version: { id: SECOND, number: '0.2' },
             credentialSet: true,
-            lastTest: { outcome: 'ok', at: '2026-09-30T09:00:00.000Z', version: FIRST },
+            lastTest: {
+              outcome: 'ok',
+              at: '2026-09-30T09:00:00.000Z',
+              version: FIRST,
+              credentialCurrent: true,
+            },
             changedAt: '2026-09-30T10:00:00.000Z',
           },
           {
@@ -119,6 +129,22 @@ function service(
             credentialSet: false,
             lastTest: null,
             changedAt: '2026-09-29T09:00:00.000Z',
+          },
+          {
+            id: '55555555-5555-4555-8555-555555555555',
+            name: 'Rotated',
+            space: { id: GENERAL, name: 'General' },
+            type: 'postgres',
+            retired: false,
+            version: { id: FIRST, number: '0.1' },
+            credentialSet: true,
+            lastTest: {
+              outcome: 'ok',
+              at: '2026-09-30T09:00:00.000Z',
+              version: FIRST,
+              credentialCurrent: false,
+            },
+            changedAt: '2026-09-28T09:00:00.000Z',
           },
         ],
         next: null,
@@ -269,6 +295,11 @@ describe('the Connections list', () => {
     expect(within(rows[3]!).getByText(/Old ledger/)).toBeInTheDocument();
     expect(within(rows[3]!).getByText('Retired')).toBeInTheDocument();
     expect(within(rows[3]!).getByText('Not set')).toBeInTheDocument();
+    // Nor is a pass with an earlier credential the credential's set now.
+    expect(
+      within(rows[4]!).getByText('Not tested since the credential was set'),
+    ).toBeInTheDocument();
+    expect(within(rows[4]!).queryByText('Connected')).toBeNull();
     expect(screen.getByRole('group', { name: 'Space' })).toBeInTheDocument();
   });
 
@@ -449,6 +480,7 @@ describe('a connection on its own page', () => {
       at: '2026-09-30T09:30:00.000Z',
       by: { id: 'ada', name: 'Ada' },
       version: '88888888-8888-4888-8888-888888888888',
+      credentialCurrent: true,
     };
     const { client } = service({ connection: view({ credential, lastTest }) });
     render(<ConnectionPage client={client} id={READINGS} />);
@@ -626,6 +658,35 @@ describe('a connection on its own page', () => {
     expect(
       await screen.findAllByText('No connector is available to reach the source. Try again later.'),
     ).not.toHaveLength(0);
+  });
+
+  it('says a pass made with an earlier credential is no test of the one set now', async () => {
+    const { client } = service({
+      connection: view({
+        credential: {
+          set: true,
+          setBy: { id: 'ada', name: 'Ada' },
+          setAt: '2026-09-30T10:00:00Z',
+          targetChanged: false,
+        },
+        lastTest: {
+          outcome: 'ok',
+          findings: [],
+          at: '2026-09-30T10:30:00.000Z',
+          by: { id: 'ada', name: 'Ada' },
+          version: FIRST,
+          credentialCurrent: false,
+        },
+      }),
+    });
+    render(<ConnectionPage client={client} id={READINGS} />);
+    const testing = await screen.findByRole('region', { name: 'Test' });
+    expect(
+      within(testing).getByText(
+        'Not tested since the credential was set. The last test, with an earlier credential, was on 30 September 2026 by Ada.',
+      ),
+    ).toBeInTheDocument();
+    expect(within(testing).queryByText(/connected/i)).toBeNull();
   });
 
   it('says when the list of tables was cut short, and how many tables and columns were left out', async () => {

@@ -213,13 +213,18 @@ export async function setConnectionCredential(
     readonly sealedFor: Pick<ConnectionSettings, 'type' | 'source'>;
   },
 ): Promise<
-  | { readonly answer: 'set'; readonly credential: CredentialState & { readonly set: true } }
+  | {
+      readonly answer: 'set';
+      readonly credential: CredentialState & { readonly set: true };
+      /** The row's own number, which a test made with it records. */
+      readonly credentialId: string;
+    }
   | { readonly answer: 'connection.missing' | 'connection.retired' }
 > {
   const current = await readConnection(trx, input.id);
   if (!current) return { answer: 'connection.missing' };
   if (current.settings.retired) return { answer: 'connection.retired' };
-  await trx
+  const row = await trx
     .insertInto('connection_credential')
     .values({
       connection_id: input.id,
@@ -227,17 +232,26 @@ export async function setConnectionCredential(
       set_by: input.by,
       target_digest: targetDigest(input.sealedFor),
     })
-    .execute();
+    .returning('id')
+    .executeTakeFirstOrThrow();
   const credential = await credentialOf(trx, input.id);
   if (!credential.set) throw new Error(`The credential of ${input.id} was set and cannot be read`);
-  return { answer: 'set', credential };
+  return { answer: 'set', credential, credentialId: String(row.id) };
 }
 
 async function latestCredential(trx: TenantTransaction, id: string) {
   return trx
     .selectFrom('connection_credential as c')
     .innerJoin('principal as p', 'p.id', 'c.set_by')
-    .select(['c.sealed', 'c.set_by', 'c.set_at', 'c.target_digest', 'p.display_name', 'p.email'])
+    .select([
+      'c.id',
+      'c.sealed',
+      'c.set_by',
+      'c.set_at',
+      'c.target_digest',
+      'p.display_name',
+      'p.email',
+    ])
     .where('c.connection_id', '=', id)
     .orderBy('c.id', 'desc')
     .limit(1)
@@ -261,13 +275,14 @@ export async function credentialOf(trx: TenantTransaction, id: string): Promise<
 /**
  * The latest sealed value, for the service to hand the connector with a request and for nothing
  * else - no route answers it, and the service cannot open it - and only while the connection's
- * latest version has the target it was set for (the D1 fix, C3).
+ * latest version has the target it was set for (the D1 fix, C3); with its row's number, which the
+ * test made with it records.
  */
 export async function usableCredentialOf(
   trx: TenantTransaction,
   id: string,
 ): Promise<
-  | { readonly answer: 'usable'; readonly sealed: string }
+  | { readonly answer: 'usable'; readonly sealed: string; readonly credentialId: string }
   | { readonly answer: 'missing' | 'target_changed' }
 > {
   if (!UUID.test(id)) return { answer: 'missing' };
@@ -277,7 +292,7 @@ export async function usableCredentialOf(
   if (!current || row.target_digest !== targetDigest(current.settings)) {
     return { answer: 'target_changed' };
   }
-  return { answer: 'usable', sealed: row.sealed };
+  return { answer: 'usable', sealed: row.sealed, credentialId: String(row.id) };
 }
 
 /** A finding a test may record (D1-M). */
@@ -300,14 +315,15 @@ export type ConnectionTestRecord =
     };
 
 /**
- * Records a test the connector answered, against the connection version it tested (D1-N), and answers
- * when, by the database's clock.
+ * Records a test the connector answered, against the connection version it tested (D1-N) and the
+ * credential row it was made with (the D1 fix, round two), and answers when, by the database's clock.
  */
 export async function recordConnectionTest(
   trx: TenantTransaction,
   input: {
     readonly connectionId: string;
     readonly versionId: string;
+    readonly credentialId: string;
     readonly by: string;
   } & ConnectionTestRecord,
 ): Promise<Date> {
@@ -316,6 +332,7 @@ export async function recordConnectionTest(
     .values({
       connection_id: input.connectionId,
       connection_version_id: input.versionId,
+      credential_id: input.credentialId,
       outcome: input.outcome,
       findings: [...input.findings],
       failure: input.failure,
@@ -331,7 +348,17 @@ export type LatestConnectionTest = ConnectionTestRecord & {
   readonly by: Named;
   /** The connection version it tested. */
   readonly version: string;
+  /**
+   * Whether it was made with the credential set now: a test of an earlier credential, answered after
+   * a newer one was set, is no test of the one in use, as a test of an earlier version is none of the
+   * latest (the D1 fix, round two).
+   */
+  readonly credentialCurrent: boolean;
 };
+
+/** Whether a test row was made with its connection's latest credential row, as SQL reads it. */
+const CREDENTIAL_CURRENT = sql<boolean>`coalesce(t.credential_id = (
+    select max(c.id) from connection_credential c where c.connection_id = t.connection_id), false)`;
 
 /** The latest test of a connection, or undefined where none has been recorded. */
 export async function latestConnectionTest(
@@ -352,6 +379,7 @@ export async function latestConnectionTest(
       'p.display_name',
       'p.email',
     ])
+    .select(CREDENTIAL_CURRENT.as('credential_current'))
     .where('t.connection_id', '=', id)
     .orderBy('t.id', 'desc')
     .limit(1)
@@ -361,6 +389,7 @@ export async function latestConnectionTest(
     at: row.tested_at,
     by: { id: row.tested_by, name: row.display_name ?? row.email ?? null },
     version: row.connection_version_id,
+    credentialCurrent: row.credential_current,
   };
   return row.outcome === 'ok'
     ? {
@@ -388,11 +417,15 @@ export interface ConnectionSummary {
   /** When its latest version was made. */
   readonly changedAt: Date;
   readonly credentialSet: boolean;
-  /** The last test, and the version it tested, which need not be the latest (the D1 fix, C7). */
+  /**
+   * The last test, the version it tested, which need not be the latest (the D1 fix, C7), and whether
+   * it was made with the credential set now.
+   */
   readonly lastTest: {
     readonly outcome: 'ok' | 'failed';
     readonly at: Date;
     readonly version: string;
+    readonly credentialCurrent: boolean;
   } | null;
 }
 
@@ -489,19 +522,25 @@ export async function listReadableConnections(
     ids.length === 0
       ? []
       : await trx
-          .selectFrom('connection_test')
-          .select(['connection_id', 'outcome', 'tested_at', 'connection_version_id'])
-          .distinctOn('connection_id')
-          .where('connection_id', 'in', ids)
-          .orderBy('connection_id')
-          .orderBy('id', 'desc')
+          .selectFrom('connection_test as t')
+          .select(['t.connection_id', 't.outcome', 't.tested_at', 't.connection_version_id'])
+          .select(CREDENTIAL_CURRENT.as('credential_current'))
+          .distinctOn('t.connection_id')
+          .where('t.connection_id', 'in', ids)
+          .orderBy('t.connection_id')
+          .orderBy('t.id', 'desc')
           .execute();
   // Set, and for the target the latest version names: a credential for another is no credential.
   const latestDigest = new Map(credentials.map((row) => [row.connection_id, row.target_digest]));
   const lastTests = new Map(
     tests.map((row) => [
       row.connection_id,
-      { outcome: row.outcome, at: row.tested_at, version: row.connection_version_id },
+      {
+        outcome: row.outcome,
+        at: row.tested_at,
+        version: row.connection_version_id,
+        credentialCurrent: row.credential_current,
+      },
     ]),
   );
   return {

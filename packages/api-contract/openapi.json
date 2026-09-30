@@ -8480,12 +8480,17 @@
                                   "version": {
                                     "type": "string",
                                     "description": "The version it tested, which need not be the latest"
+                                  },
+                                  "credentialCurrent": {
+                                    "type": "boolean",
+                                    "description": "Whether it was made with the credential set now"
                                   }
                                 },
                                 "required": [
                                   "outcome",
                                   "at",
-                                  "version"
+                                  "version",
+                                  "credentialCurrent"
                                 ]
                               },
                               {
@@ -9088,6 +9093,10 @@
                             "version": {
                               "type": "string",
                               "description": "The connection version it tested"
+                            },
+                            "credentialCurrent": {
+                              "type": "boolean",
+                              "description": "Whether it was made with the credential set now; a test of an earlier credential says nothing of this one"
                             }
                           },
                           "required": [
@@ -9095,7 +9104,8 @@
                             "findings",
                             "at",
                             "by",
-                            "version"
+                            "version",
+                            "credentialCurrent"
                           ]
                         },
                         {
@@ -9164,7 +9174,8 @@
                       "id": "example",
                       "name": "example"
                     },
-                    "version": "example"
+                    "version": "example",
+                    "credentialCurrent": false
                   },
                   "mayAdminister": false,
                   "mayUse": false
@@ -11435,6 +11446,10 @@
                             "version": {
                               "type": "string",
                               "description": "The connection version it tested"
+                            },
+                            "credentialCurrent": {
+                              "type": "boolean",
+                              "description": "Whether it was made with the credential set now; a test of an earlier credential says nothing of this one"
                             }
                           },
                           "required": [
@@ -11442,7 +11457,8 @@
                             "findings",
                             "at",
                             "by",
-                            "version"
+                            "version",
+                            "credentialCurrent"
                           ]
                         },
                         {
@@ -11511,7 +11527,8 @@
                       "id": "example",
                       "name": "example"
                     },
-                    "version": "example"
+                    "version": "example",
+                    "credentialCurrent": false
                   },
                   "mayAdminister": false,
                   "mayUse": false
@@ -11915,6 +11932,10 @@
                                 "version": {
                                   "type": "string",
                                   "description": "The connection version it tested"
+                                },
+                                "credentialCurrent": {
+                                  "type": "boolean",
+                                  "description": "Whether it was made with the credential set now; a test of an earlier credential says nothing of this one"
                                 }
                               },
                               "required": [
@@ -11922,7 +11943,8 @@
                                 "findings",
                                 "at",
                                 "by",
-                                "version"
+                                "version",
+                                "credentialCurrent"
                               ]
                             },
                             {
@@ -12470,6 +12492,10 @@
                                 "version": {
                                   "type": "string",
                                   "description": "The connection version it tested"
+                                },
+                                "credentialCurrent": {
+                                  "type": "boolean",
+                                  "description": "Whether it was made with the credential set now; a test of an earlier credential says nothing of this one"
                                 }
                               },
                               "required": [
@@ -12477,7 +12503,8 @@
                                 "findings",
                                 "at",
                                 "by",
-                                "version"
+                                "version",
+                                "credentialCurrent"
                               ]
                             },
                             {
@@ -36304,6 +36331,10 @@
                             "version": {
                               "type": "string",
                               "description": "The connection version it tested"
+                            },
+                            "credentialCurrent": {
+                              "type": "boolean",
+                              "description": "Whether it was made with the credential set now; a test of an earlier credential says nothing of this one"
                             }
                           },
                           "required": [
@@ -36311,7 +36342,8 @@
                             "findings",
                             "at",
                             "by",
-                            "version"
+                            "version",
+                            "credentialCurrent"
                           ]
                         },
                         {
@@ -36380,7 +36412,8 @@
                       "id": "example",
                       "name": "example"
                     },
-                    "version": "example"
+                    "version": "example",
+                    "credentialCurrent": false
                   },
                   "mayAdminister": false,
                   "mayUse": false
@@ -36784,6 +36817,10 @@
                                 "version": {
                                   "type": "string",
                                   "description": "The connection version it tested"
+                                },
+                                "credentialCurrent": {
+                                  "type": "boolean",
+                                  "description": "Whether it was made with the credential set now; a test of an earlier credential says nothing of this one"
                                 }
                               },
                               "required": [
@@ -36791,7 +36828,8 @@
                                 "findings",
                                 "at",
                                 "by",
-                                "version"
+                                "version",
+                                "credentialCurrent"
                               ]
                             },
                             {

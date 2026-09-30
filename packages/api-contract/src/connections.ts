@@ -90,6 +90,11 @@ export const LastTestView = z.object({
   at: z.string(),
   by: Named,
   version: z.string().describe('The connection version it tested'),
+  credentialCurrent: z
+    .boolean()
+    .describe(
+      'Whether it was made with the credential set now; a test of an earlier credential says nothing of this one',
+    ),
 });
 
 export const ConnectionView = z.object({
@@ -158,6 +163,7 @@ export const ConnectionSummary = z.object({
       outcome: z.enum(['ok', 'failed']),
       at: z.string(),
       version: z.string().describe('The version it tested, which need not be the latest'),
+      credentialCurrent: z.boolean().describe('Whether it was made with the credential set now'),
     })
     .nullable(),
   changedAt: z.string().describe('When its latest version was made'),

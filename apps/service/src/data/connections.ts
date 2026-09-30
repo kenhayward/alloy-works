@@ -51,6 +51,12 @@ export interface ConnectorOptions {
   readonly fetch?: typeof globalThis.fetch;
 }
 
+/** A sealed credential a request is made with, and its row's number, which a test records. */
+interface Usable {
+  readonly sealed: string;
+  readonly credentialId: string;
+}
+
 /** A test's deadline, its connect timeout within it (the D1 plan, D1-R). */
 const TEST_DEADLINE_MS = 10_000;
 /** A describe's deadline. */
@@ -135,6 +141,7 @@ async function connectionView(
           at: last.at.toISOString(),
           by: last.by,
           version: last.version,
+          credentialCurrent: last.credentialCurrent,
         }
       : null,
     mayAdminister: administerOrAbove(facts).allowed,
@@ -169,9 +176,11 @@ export function connectionHandlers(
    * The sealed credential a request is made with: refused where none is set, or where the one set was
    * set for a host, port, database, account or TLS the connection no longer has (the D1 fix, C3).
    */
-  async function usableSealed(trx: TenantTransaction, id: string): Promise<string> {
+  async function usableSealed(trx: TenantTransaction, id: string): Promise<Usable> {
     const credential = await usableCredentialOf(trx, id);
-    if (credential.answer === 'usable') return credential.sealed;
+    if (credential.answer === 'usable') {
+      return { sealed: credential.sealed, credentialId: credential.credentialId };
+    }
     if (credential.answer === 'missing') {
       throw refused(409, 'credential.missing', 'This connection has no credential set yet.');
     }
@@ -204,7 +213,7 @@ export function connectionHandlers(
   async function test(
     tenant: Tenant,
     connection: StoredConnection,
-    sealed: string,
+    { sealed, credentialId }: Usable,
     by: string,
   ): Promise<TestView> {
     const answer = await connected().test({
@@ -224,6 +233,7 @@ export function connectionHandlers(
       recordConnectionTest(trx, {
         connectionId: connection.id,
         versionId: connection.version.id,
+        credentialId,
         by,
         ...(tested.outcome === 'ok'
           ? { outcome: 'ok', findings: tested.findings, failure: null }
@@ -292,6 +302,7 @@ export function connectionHandlers(
             outcome: item.lastTest.outcome,
             at: item.lastTest.at.toISOString(),
             version: item.lastTest.version,
+            credentialCurrent: item.lastTest.credentialCurrent,
           },
           changedAt: item.changedAt.toISOString(),
         })),
@@ -384,7 +395,12 @@ export function connectionHandlers(
       return new AfterCommit(async () => {
         let tested: TestView;
         try {
-          tested = await test(tenant, connection, sealed, principalId);
+          tested = await test(
+            tenant,
+            connection,
+            { sealed, credentialId: set.credentialId },
+            principalId,
+          );
         } catch (error) {
           if (!(error instanceof AppError) || error.status !== 503) throw error;
           tested = {
@@ -400,18 +416,18 @@ export function connectionHandlers(
     testConnection: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
       const { id } = request.params as ConnectionParams;
       const connection = await runnable(trx, id);
-      const sealed = await usableSealed(trx, id);
+      const usable = await usableSealed(trx, id);
       connected();
       const tenant = tenantOf(request);
       // Decided and read here; the connector is asked once this transaction, and its lock on access,
       // is let go (the D1 fix, C4).
-      return new AfterCommit(() => test(tenant, connection, sealed, principalId));
+      return new AfterCommit(() => test(tenant, connection, usable, principalId));
     },
 
     describeConnection: async (request: FastifyRequest, { trx }: Authorised) => {
       const { id } = request.params as ConnectionParams;
       const connection = await runnable(trx, id);
-      const sealed = await usableSealed(trx, id);
+      const { sealed } = await usableSealed(trx, id);
       const client = connected();
       const tenant = tenantOf(request);
       // Decided and read here; the connector is asked once this transaction, and its lock on access,

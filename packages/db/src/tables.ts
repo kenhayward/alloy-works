@@ -431,6 +431,8 @@ export interface ConnectionTestTable {
   failure: ColumnType<string | null, string | null, never>;
   tested_by: ColumnType<string, string, never>;
   tested_at: ColumnType<Date, never, never>;
+  /** The credential row it was made with; null for a test recorded before migration 0045 named one. */
+  credential_id: ColumnType<string | null, string, never>;
 }
 
 export interface TenantTables {

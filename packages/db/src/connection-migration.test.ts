@@ -178,6 +178,7 @@ describe('migration 0044, over an environment made before it', () => {
       'connection_test.connection_id',
       'connection_test.connection_kind',
       'connection_test.connection_version_id',
+      'connection_test.credential_id',
       'connection_test.failure',
       'connection_test.findings',
       'connection_test.outcome',

@@ -549,6 +549,68 @@ describe('connections through the service', () => {
     }
   });
 
+  it('says a test made with an earlier credential is not a test of the one set now, where it answers after the newer one was set and tested', async () => {
+    const connection = await make({ name: 'Rotated' });
+    await allow(ids.ada!, connectionUser, { kind: 'artifact', id: connection.id });
+    connector.mode = 'answer';
+    connector.test = { outcome: 'ok', findings: [] };
+    const put = () =>
+      call('ada', 'PUT', `/v1/connections/${connection.id}/credential`, { secret: SECRET });
+    expect((await put()).statusCode).toBe(200);
+    let release!: () => void;
+    connector.hold = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    try {
+      const before = connector.asked.length;
+      // A test with the first credential, slow to answer.
+      const testing = call('ada', 'POST', `/v1/connections/${connection.id}/test`, {});
+      const until = Date.now() + 5000;
+      while (connector.asked.length === before && Date.now() < until) {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      // Meanwhile the password is rotated, and the new one's test fails at once.
+      connector.hold = undefined;
+      connector.test = {
+        outcome: 'failed',
+        failure: { code: 'connection_failed', attribution: 'connector' },
+      };
+      const rotated = await put();
+      expect(rotated.json<{ test: Json }>().test).toMatchObject({ outcome: 'failed' });
+      // The slow test of the first credential answers last, ok.
+      connector.test = { outcome: 'ok', findings: [] };
+      release();
+      expect((await testing).statusCode).toBe(200);
+
+      const read = (
+        await call('ada', 'GET', `/v1/connections/${connection.id}`)
+      ).json<ConnectionBody>();
+      expect(read.lastTest).toMatchObject({
+        outcome: 'ok',
+        version: connection.version.id,
+        credentialCurrent: false,
+      });
+      const listed = await call('ada', 'GET', '/v1/connections');
+      expect(listed.json<{ items: Json[] }>().items).toContainEqual(
+        expect.objectContaining({
+          id: connection.id,
+          lastTest: expect.objectContaining({ outcome: 'ok', credentialCurrent: false }),
+        }),
+      );
+      // Tested again with the credential set now: current.
+      expect(
+        (await call('ada', 'POST', `/v1/connections/${connection.id}/test`, {})).statusCode,
+      ).toBe(200);
+      const again = (
+        await call('ada', 'GET', `/v1/connections/${connection.id}`)
+      ).json<ConnectionBody>();
+      expect(again.lastTest).toMatchObject({ credentialCurrent: true });
+    } finally {
+      release();
+      connector.hold = undefined;
+    }
+  });
+
   it('holds nothing of access while the connector works: a grant is made at once while a test and a describe wait on a slow source, and the test is recorded against the version it tested', async () => {
     const connection = await make({ name: 'Slow' });
     await allow(ids.ada!, connectionUser, { kind: 'artifact', id: connection.id });

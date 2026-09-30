@@ -344,7 +344,7 @@ describe('a connection', () => {
     );
     expect(
       await service.withTenant(production, (trx) => usableCredentialOf(trx, first.id)),
-    ).toEqual({ answer: 'usable', sealed: replacement });
+    ).toEqual({ answer: 'usable', sealed: replacement, credentialId: expect.any(String) });
     expect(
       await service.withTenant(production, (trx) => credentialOf(trx, first.id)),
     ).toMatchObject({
@@ -451,7 +451,11 @@ describe('a connection', () => {
 
     expect(await usable()).toEqual({ answer: 'missing' });
     await set();
-    expect(await usable()).toEqual({ answer: 'usable', sealed: expect.any(String) });
+    expect(await usable()).toEqual({
+      answer: 'usable',
+      sealed: expect.any(String),
+      credentialId: expect.any(String),
+    });
     expect(await state()).toMatchObject({ set: true, targetChanged: false });
 
     // A change to anything but the target keeps the credential.
@@ -560,9 +564,23 @@ describe('a connection', () => {
     });
   });
 
-  it("records a test against the version it tested, refusing another connection's version, a finding on a failure, an unknown finding, a failure without its code and any change", async () => {
+  it("records a test against the version and the credential it tested, refusing another connection's version or credential, a finding on a failure, an unknown finding, a failure without its code and any change", async () => {
     const connection = await made();
     const other = await made({ name: 'Other' });
+    const credentialOn = async (on: typeof connection) => {
+      const set = await service.withTenant(production, (trx) =>
+        setConnectionCredential(trx, {
+          id: on.id,
+          sealed: sealed(),
+          by: ada,
+          sealedFor: on.settings,
+        }),
+      );
+      if (set.answer !== 'set') throw new Error(set.answer);
+      return set.credentialId;
+    };
+    const credentialId = await credentialOn(connection);
+    const othersCredential = await credentialOn(other);
     expect(
       await service.withTenant(production, (trx) => latestConnectionTest(trx, connection.id)),
     ).toBeUndefined();
@@ -570,6 +588,7 @@ describe('a connection', () => {
       recordConnectionTest(trx, {
         connectionId: connection.id,
         versionId: connection.version.id,
+        credentialId,
         outcome: 'failed',
         findings: [],
         failure: 'connection_failed',
@@ -580,6 +599,7 @@ describe('a connection', () => {
       recordConnectionTest(trx, {
         connectionId: connection.id,
         versionId: connection.version.id,
+        credentialId,
         outcome: 'ok',
         findings: ['account_not_read_only'],
         failure: null,
@@ -595,7 +615,27 @@ describe('a connection', () => {
       at: expect.any(Date),
       by: { id: grace, name: 'Grace' },
       version: connection.version.id,
+      credentialCurrent: true,
     });
+    // A newer credential set: the test was of the earlier one, and says nothing of this.
+    await credentialOn(connection);
+    expect(
+      await service.withTenant(production, (trx) => latestConnectionTest(trx, connection.id)),
+    ).toMatchObject({ outcome: 'ok', credentialCurrent: false });
+    // A test names its own connection's credential, never another's.
+    await expect(
+      service.withTenant(production, (trx) =>
+        recordConnectionTest(trx, {
+          connectionId: connection.id,
+          versionId: connection.version.id,
+          credentialId: othersCredential,
+          outcome: 'ok',
+          findings: [],
+          failure: null,
+          by: ada,
+        }),
+      ),
+    ).rejects.toThrow(/connection_test_credential/);
 
     const insert = (values: {
       version: string;
@@ -645,7 +685,7 @@ describe('a connection', () => {
 
   it('is found on its space by who may read it, with whether a credential is set and its last test, and never in search', async () => {
     const inQuality = await made({ name: 'Quality source' }, quality);
-    await service.withTenant(production, (trx) =>
+    const set = await service.withTenant(production, (trx) =>
       setConnectionCredential(trx, {
         id: inQuality.id,
         sealed: sealed(),
@@ -653,10 +693,12 @@ describe('a connection', () => {
         sealedFor: inQuality.settings,
       }),
     );
+    if (set.answer !== 'set') throw new Error(set.answer);
     await service.withTenant(production, (trx) =>
       recordConnectionTest(trx, {
         connectionId: inQuality.id,
         versionId: inQuality.version.id,
+        credentialId: set.credentialId,
         outcome: 'ok',
         findings: [],
         failure: null,
@@ -676,7 +718,12 @@ describe('a connection', () => {
         version: { id: inQuality.version.id, revision: 0, version: 1 },
         changedAt: expect.any(Date),
         credentialSet: true,
-        lastTest: { outcome: 'ok', at: expect.any(Date), version: inQuality.version.id },
+        lastTest: {
+          outcome: 'ok',
+          at: expect.any(Date),
+          version: inQuality.version.id,
+          credentialCurrent: true,
+        },
       },
     ]);
     expect(listed!.facets.spaces).toEqual([{ value: quality, label: 'Quality', count: 1 }]);

@@ -4607,6 +4607,8 @@ export interface operations {
                                 at: string;
                                 /** @description The version it tested, which need not be the latest */
                                 version: string;
+                                /** @description Whether it was made with the credential set now */
+                                credentialCurrent: boolean;
                             } | null;
                             /** @description When its latest version was made */
                             changedAt: string;
@@ -4753,7 +4755,8 @@ export interface operations {
                      *           "id": "example",
                      *           "name": "example"
                      *         },
-                     *         "version": "example"
+                     *         "version": "example",
+                     *         "credentialCurrent": false
                      *       },
                      *       "mayAdminister": false,
                      *       "mayUse": false
@@ -4848,6 +4851,8 @@ export interface operations {
                             };
                             /** @description The connection version it tested */
                             version: string;
+                            /** @description Whether it was made with the credential set now; a test of an earlier credential says nothing of this one */
+                            credentialCurrent: boolean;
                         } | null;
                         /** @description Whether the caller may change it and set its credential */
                         mayAdminister: boolean;
@@ -5719,7 +5724,8 @@ export interface operations {
                      *           "id": "example",
                      *           "name": "example"
                      *         },
-                     *         "version": "example"
+                     *         "version": "example",
+                     *         "credentialCurrent": false
                      *       },
                      *       "mayAdminister": false,
                      *       "mayUse": false
@@ -5814,6 +5820,8 @@ export interface operations {
                             };
                             /** @description The connection version it tested */
                             version: string;
+                            /** @description Whether it was made with the credential set now; a test of an earlier credential says nothing of this one */
+                            credentialCurrent: boolean;
                         } | null;
                         /** @description Whether the caller may change it and set its credential */
                         mayAdminister: boolean;
@@ -5936,6 +5944,8 @@ export interface operations {
                                 };
                                 /** @description The connection version it tested */
                                 version: string;
+                                /** @description Whether it was made with the credential set now; a test of an earlier credential says nothing of this one */
+                                credentialCurrent: boolean;
                             } | null;
                             /** @description Whether the caller may change it and set its credential */
                             mayAdminister: boolean;
@@ -6119,6 +6129,8 @@ export interface operations {
                                 };
                                 /** @description The connection version it tested */
                                 version: string;
+                                /** @description Whether it was made with the credential set now; a test of an earlier credential says nothing of this one */
+                                credentialCurrent: boolean;
                             } | null;
                             /** @description Whether the caller may change it and set its credential */
                             mayAdminister: boolean;
@@ -15066,7 +15078,8 @@ export interface operations {
                      *           "id": "example",
                      *           "name": "example"
                      *         },
-                     *         "version": "example"
+                     *         "version": "example",
+                     *         "credentialCurrent": false
                      *       },
                      *       "mayAdminister": false,
                      *       "mayUse": false
@@ -15161,6 +15174,8 @@ export interface operations {
                             };
                             /** @description The connection version it tested */
                             version: string;
+                            /** @description Whether it was made with the credential set now; a test of an earlier credential says nothing of this one */
+                            credentialCurrent: boolean;
                         } | null;
                         /** @description Whether the caller may change it and set its credential */
                         mayAdminister: boolean;
@@ -15283,6 +15298,8 @@ export interface operations {
                                 };
                                 /** @description The connection version it tested */
                                 version: string;
+                                /** @description Whether it was made with the credential set now; a test of an earlier credential says nothing of this one */
+                                credentialCurrent: boolean;
                             } | null;
                             /** @description Whether the caller may change it and set its credential */
                             mayAdminister: boolean;
