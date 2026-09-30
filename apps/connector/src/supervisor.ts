@@ -192,6 +192,14 @@ const answerSchemas = {
   describeSql: describeSqlAnswerSchema,
 } as const satisfies Record<RequestKind, unknown>;
 
+/**
+ * The most runs of a definition at once, whatever the cap of children (the D2 plan, D2-J, final review
+ * 5): a run at a result's ceiling peaked at about 370 MiB in its child, and the supervisor holds about
+ * 90 MiB more parsing its answer, so four of them fit the container's 3 GiB beside the supervisor,
+ * where eight would not. A test and a describe hold far less, and keep the other slots.
+ */
+export const MAX_RUNS = 4;
+
 /** The connect timeout, and the least time a failure to reach or authenticate takes (D1-L). */
 export const CONNECT_TIMEOUT_MS = 5000;
 
@@ -216,6 +224,8 @@ export function createSupervisor(options: {
   /** The ranges the child's guard refuses: production's, or the suite's, never configuration's alone. */
   readonly deny: readonly string[];
   readonly maxChildren: number;
+  /** The most of those children that may be runs at once: `MAX_RUNS` unless a test says. */
+  readonly maxRuns?: number;
   /** How a child is started, fixed or by its slot: production's own users unless a test says. */
   readonly spec?: ChildSpec | ((slot: number) => ChildSpec);
   readonly spawn?: SpawnChild;
@@ -239,7 +249,9 @@ export function createSupervisor(options: {
   const failureFloorMs = options.failureFloorMs ?? CONNECT_TIMEOUT_MS;
   /** Which slots of the cap are free: a running child holds its slot, and so its user. */
   const free = Array.from({ length: options.maxChildren }, (_, slot) => slot);
+  const maxRuns = options.maxRuns ?? MAX_RUNS;
   let active = 0;
+  let runs = 0;
 
   async function work<K extends RequestKind>(
     kind: K,
@@ -295,14 +307,17 @@ export function createSupervisor(options: {
 
   return {
     run<K extends RequestKind>(kind: K, request: RequestOf<K>): Promise<AnswerOf<K> | 'busy'> {
+      if (kind === 'run' && runs >= maxRuns) return Promise.resolve('busy');
       const slot = free.shift();
       if (slot === undefined) return Promise.resolve('busy');
       active += 1;
+      if (kind === 'run') runs += 1;
       let swept: Promise<void> = Promise.resolve();
       const answer = work(kind, request, slot, (done) => {
         swept = done;
       }).finally(() => {
         active -= 1;
+        if (kind === 'run') runs -= 1;
       });
       void answer
         .catch(() => {})

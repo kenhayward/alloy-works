@@ -673,7 +673,12 @@ definition names, or it is declared decorative (DAT-097's declaration; its failu
   counts both what arrives and what is kept** (D2-J): the bytes read from the source at the child's
   socket after the statement is sent, and the canonical result's bytes; either past the limit is
   `byte_limit`, and a single value larger than the limit is stopped before the driver holds it
-  (DAT-110).
+  (DAT-110). **The connector runs at most four definitions at once**, of its eight children: a result
+  at the ceilings - 99,999 rows of 39 columns, about 19.9 MB canonical - peaked at 368 to 371 MiB in
+  its child, against 88 MiB for a child at rest, and the supervisor held about 87 MiB of heap parsing
+  each such answer (measured under `tsx` on Windows). Four fit the container's 3 GiB (`mem_limit:
+3g`) beside the supervisor; eight would not. A fifth run at once is `connector_busy`, and a test or
+  a describe, which holds far less, takes one of the other slots.
 
 ### Searchable
 

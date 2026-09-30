@@ -2800,7 +2800,8 @@ Every `POST` carries `Bearer <CONNECTOR_KEY>`, compared by SHA-256 digest in con
 64 KiB is 413 - 1 MiB and 64 KiB for a run and a describe, the service's own body limit and room for
 the connection and its sealed credential, since a run carries a definition of up to 512 KiB and the
 values it is sampled with - a malformed one 400 `request_invalid`, and a supervisor already running
-`CONNECTOR_MAX_CHILDREN` children answers 503 `connector_busy`. **The supervisor holds the sealing key
+`CONNECTOR_MAX_CHILDREN` children, or four runs (`MAX_RUNS`, whatever the cap), answers 503
+`connector_busy`. **The supervisor holds the sealing key
 and never meets a source**: it opens the one credential a request carries and spawns a fresh Node
 child with an empty environment, writing it one line - the request, the opened secret and the guard's
 ranges - and reading one answer; the child resolves the host once through the guard, which refuses
@@ -2976,7 +2977,10 @@ and write SQL on some connection; a definition's page (`QueryDefinitionPage.tsx`
 **Describe** with each column confirmed, the key, order, empty and limits, **Run sample** - and saved
 once every column is confirmed. A connection's page shows **Used by**. Compose gives the connector
 `mem_limit: 3g` (D2-J), a backstop for what the byte count does not see: a `Buffer` lives outside the
-heap `--max-old-space-size` bounds.
+heap `--max-old-space-size` bounds. A run at a result's ceiling peaked at about 370 MiB in its child
+and about 90 MiB more in the supervisor parsing its answer (measured under `tsx` on Windows), so the
+supervisor runs at most four definitions at once, `MAX_RUNS`, and a test or a describe takes one of
+the other four slots.
 
 | Where                                    | What                                                                                                      |
 | ---------------------------------------- | --------------------------------------------------------------------------------------------------------- |
