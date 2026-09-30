@@ -72,6 +72,9 @@ describe("a run's limits", { timeout: LOADED_TIMEOUT_MS }, () => {
       await asReader('select g as id from generate_series(1, 1000) g', [id], { rows: 100 }),
     ).toEqual(failed('row_limit'));
     expect(
+      await asReader('select g as id from generate_series(1, 101) g', [id], { rows: 100 }),
+    ).toEqual(failed('row_limit'));
+    expect(
       await asReader('select g as id from generate_series(1, 100) g', [id], { rows: 100 }),
     ).toMatchObject({ outcome: 'ok', rowCount: 100 });
     // Bytes, as they arrive from the source.
