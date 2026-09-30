@@ -566,6 +566,31 @@ describe('a connection on its own page', () => {
     ).toEqual([true, false]);
   });
 
+  it('keeps a change typed into the settings, unsaved, across Retire and Reinstate', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service();
+    render(<ConnectionPage client={client} id={READINGS} />);
+    const saving = await screen.findByRole('region', { name: 'Settings' });
+    await user.type(within(saving).getByLabelText('Description'), ' Unsaved.');
+    await user.click(screen.getByRole('button', { name: 'Retire' }));
+    await screen.findByRole('button', { name: 'Reinstate' });
+    expect(within(saving).getByLabelText('Description')).toHaveValue(
+      'The sites and their readings. Unsaved.',
+    );
+    await user.click(screen.getByRole('button', { name: 'Reinstate' }));
+    await screen.findByRole('button', { name: 'Retire' });
+    expect(within(saving).getByLabelText('Description')).toHaveValue(
+      'The sites and their readings. Unsaved.',
+    );
+    // Retiring saved the version as it was, never the unsaved change.
+    const versions = asked.filter((each) => each.path.endsWith('/versions'));
+    for (const each of versions) {
+      expect((each.body as { settings: { description: string } }).settings.description).toBe(
+        'The sites and their readings.',
+      );
+    }
+  });
+
   it("lists the source's tables and views, and says so when no connector is configured", async () => {
     const user = userEvent.setup();
     const unavailable = () =>

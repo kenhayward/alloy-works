@@ -237,15 +237,20 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
   const view = connection;
   const retired = view.settings.retired;
 
-  /** Cuts the next version from the one shown, and shows what the service answered. */
-  const version = async (settings: Settings, done: string) => {
+  /**
+   * Cuts the next version from the one shown, and shows what the service answered. Retiring and
+   * reinstating save the version shown with `retired` changed and nothing else, so what is typed into
+   * the settings and not yet saved stays typed (`keepDraft`); a save replaces it with what was saved.
+   */
+  const version = async (settings: Settings, done: string, keepDraft = false) => {
     try {
       const { data, error, response } = await client.POST('/v1/connections/{id}/versions', {
         params: { path: { id } },
         body: { openedFrom: view.version.id, settings: asBody(settings) },
       });
       if (isConnectionView(data)) {
-        show(data);
+        if (keepDraft) hold(data);
+        else show(data);
         setSaved(data.version.id === view.version.id ? 'Nothing had changed.' : done);
         return;
       }
@@ -283,6 +288,7 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
       version(
         { ...view.settings, retired: to },
         to ? 'Retired. It runs nothing now.' : 'Reinstated.',
+        true,
       ),
     );
 
