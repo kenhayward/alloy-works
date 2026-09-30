@@ -376,13 +376,25 @@ describe("the connector's protocol for a run and a SQL describe (the D2 plan)", 
     expect(takes({ ...ok, durationMs: -1 })).toBe(false);
   });
 
-  it("refuses a run whose definition, values or limits are not a run's, and a deadline past the time ceiling", () => {
+  it("refuses a run whose definition, values or limits are not a run's, a deadline past the time ceiling, and a SQL describe of what does not lex or names nothing", () => {
     const takes = (value: unknown) => runRequestSchema.safeParse(value).success;
     expect(takes({ ...runRequest, deadlineMs: 120_000 })).toBe(true);
     expect(takes({ ...runRequest, deadlineMs: 120_001 })).toBe(false);
     expect(takes({ ...runRequest, definition: { ...draft, title: 'x' } })).toBe(false);
     expect(takes({ ...runRequest, limits: { rows: 0, bytes: 1, seconds: 1 } })).toBe(false);
     expect(takes({ ...runRequest, values: { site: 1 } })).toBe(false);
+    // A definition that fails its checks, or values that fail their declarations, are no run: the
+    // service checks both first, and the connector holds a request to them again at its door.
+    expect(takes({ ...runRequest, definition: { ...draft, key: ['nothing'] } })).toBe(false);
+    expect(takes({ ...runRequest, values: { site: '01' } })).toBe(false);
+    expect(takes({ ...runRequest, values: {} })).toBe(false);
+    const describing = (text: string, parameters = draft.parameters) =>
+      describeSqlRequestSchema.safeParse({ ...testRequest, sql: { text, parameters } }).success;
+    expect(describing(draft.fetch.text)).toBe(true);
+    expect(describing("select 'open")).toBe(false);
+    expect(describing('select {{nothing}}')).toBe(false);
+    expect(describing('select {{#site}}')).toBe(false);
+    expect(describing('select 1', [...draft.parameters, ...draft.parameters])).toBe(false);
     expect(RUN_REQUEST_MAX_BYTES).toBe(256 * 1024);
   });
 });

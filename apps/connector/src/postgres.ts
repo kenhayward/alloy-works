@@ -5,10 +5,10 @@ import {
   MAX_COLUMNS,
   sourceNameSchema,
   sourceTypeSchema,
-  type ColumnType,
   type ConnectionSettings,
   type Relation,
   type TestFinding,
+  type ValueType,
 } from '@alloy-works/domain';
 import pg from 'pg';
 
@@ -80,8 +80,14 @@ export async function connectPostgres(
     enableChannelBinding: true,
     application_name: 'alloy-connector',
     // The source notices a client gone within a quarter of a second, and stops a statement at the
-    // request's deadline whatever the driver does (case 7).
-    options: `-c client_connection_check_interval=250 -c statement_timeout=${Math.max(1, Math.floor(timing.statementTimeoutMs))}`,
+    // request's deadline whatever the driver does (case 7). A run reads every value as the server's
+    // text, which these two fix: an instant in UTC, and dates and times in ISO order (D2-Q).
+    options: [
+      '-c client_connection_check_interval=250',
+      `-c statement_timeout=${Math.max(1, Math.floor(timing.statementTimeoutMs))}`,
+      '-c TimeZone=UTC',
+      '-c DateStyle=ISO,YMD',
+    ].join(' '),
   });
   // A driver error after connecting is the request's to answer, never an uncaught event.
   client.on('error', () => {});
@@ -167,7 +173,7 @@ export function proposedType(type: {
   readonly name: string;
   readonly kind: string;
   readonly typmod: number;
-}): ColumnType | null {
+}): ValueType | null {
   const { name, kind, typmod } = type;
   if (name === 'int2' || name === 'int4' || name === 'int8') return { base: 'integer' };
   if (name === 'numeric') {
@@ -322,4 +328,68 @@ function fitted(
     kept.push(relation);
   }
   return { relations: kept, truncated, leftOut };
+}
+
+/**
+ * A type parser for every type that answers the server's own text (D2-Q; ADR-0035): a run reads each
+ * value as the source printed it, never through `pg`'s parsers, which case 6 found lose microseconds
+ * and move a time in a daylight-saving gap.
+ */
+export const SERVER_TEXT = {
+  getTypeParser: () => (value: string) => value,
+} as unknown as pg.CustomTypesConfig;
+
+/** A source type, followed through any domain to the type it is: its name, kind and modifier. */
+export interface SourceType {
+  /** `pg_type.typname` of the base type. */
+  readonly name: string;
+  /** `pg_type.typtype`: `b` base, `e` enum, and so on. */
+  readonly kind: string;
+  readonly typmod: number;
+  /** `format_type`'s text for the type as the statement named it. */
+  readonly formatted: string;
+}
+
+/**
+ * The types of a statement's columns or parameters, each by its OID and modifier: named as
+ * `format_type` names them, and followed through any domain to its base, as `describeRelations` does.
+ */
+export async function sourceTypes(
+  client: pg.Client,
+  types: readonly { readonly oid: number; readonly typmod: number }[],
+): Promise<SourceType[]> {
+  if (types.length === 0) return [];
+  const formatted = await client.query<{ at: number; text: string }>(
+    `select u.at::int as at, format_type(u.oid, nullif(u.typmod, -1)) as text
+       from unnest($1::oid[], $2::int[]) with ordinality as u (oid, typmod, at)
+      order by u.at`,
+    [types.map((each) => each.oid), types.map((each) => each.typmod)],
+  );
+  const rows = new Map<number, TypeRow>();
+  let wanted = [...new Set(types.map((each) => each.oid))];
+  while (wanted.length > 0) {
+    const found = await client.query<TypeRow>(
+      `select oid::int as oid, typname, typtype::text as typtype, typbasetype::int as typbasetype,
+              typtypmod from pg_type where oid = any($1::oid[])`,
+      [wanted],
+    );
+    for (const row of found.rows) rows.set(row.oid, row);
+    wanted = found.rows
+      .filter((row) => row.typtype === 'd' && !rows.has(row.typbasetype))
+      .map((row) => row.typbasetype);
+  }
+  return types.map((each, at) => {
+    let type = rows.get(each.oid);
+    let typmod = each.typmod;
+    for (let depth = 0; type?.typtype === 'd' && depth < 32; depth += 1) {
+      typmod = type.typtypmod;
+      type = rows.get(type.typbasetype);
+    }
+    return {
+      name: type?.typname ?? '',
+      kind: type?.typtype ?? '',
+      typmod,
+      formatted: formatted.rows[at]?.text ?? '',
+    };
+  });
 }

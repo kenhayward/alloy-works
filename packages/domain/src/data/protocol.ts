@@ -3,9 +3,16 @@ import { z } from 'zod';
 import { storableText } from '../stored/storable.js';
 import { columnTypeSchema, MAX_COLUMNS, valueTypeSchema } from './columns.js';
 import { connectionSettingsSchema } from './connection.js';
-import { draftDefinitionSchema, parameterSchema } from './definition.js';
+import {
+  checkQueryDefinition,
+  draftDefinitionSchema,
+  parameterSchema,
+  type Parameter,
+} from './definition.js';
 import { dataFailureSchema } from './failures.js';
 import { limitCeilings } from './limits.js';
+import { checkParameterValues, type ParameterValues } from './parameters.js';
+import { lexPostgres } from './sql.js';
 
 /**
  * The connector's requests and answers (data.md, "One request, one answer"; the D1 plan, D1-E), parsed
@@ -211,7 +218,18 @@ export const runRequestSchema = testRequestSchema
   })
   .refine((request) => request.definition.connection === request.connection.id, {
     message: 'A run runs a definition of the connection it is sent for',
-  });
+  })
+  // The service checks both before it asks (DAT-020); the connector holds a request to them again at
+  // its door, so nothing it binds was not checked.
+  .refine((request) => checkQueryDefinition(request.definition).length === 0, {
+    message: 'A run runs a definition that passes its checks',
+  })
+  .refine(
+    (request) =>
+      checkParameterValues(request.definition.parameters, request.values as ParameterValues)
+        .length === 0,
+    { message: 'A run binds values that pass their declarations' },
+  );
 export type RunRequest = z.infer<typeof runRequestSchema>;
 
 /** A base as a canonical result names a column's type: the eight and image (ADR-0035, form 1). */
@@ -270,11 +288,31 @@ export type RunAnswer = z.infer<typeof runAnswerSchema>;
  * parameters it declares, so the connector can bind it as a run would.
  */
 export const describeSqlRequestSchema = testRequestSchema.extend({
-  sql: z.strictObject({
-    text: draftDefinitionSchema.shape.fetch.shape.text,
-    parameters: z.array(parameterSchema).max(50),
-  }),
+  sql: z
+    .strictObject({
+      text: draftDefinitionSchema.shape.fetch.shape.text,
+      parameters: z.array(parameterSchema).max(50),
+    })
+    .refine(describable, {
+      message: 'A statement lexes whole, each marker naming a declared parameter of its kind',
+    }),
 });
+
+/** Whether SQL lexes whole, each parameter declared once and each marker naming one of its kind. */
+function describable(sql: { readonly text: string; readonly parameters: readonly Parameter[] }) {
+  const pieces = lexPostgres(sql.text);
+  if (!Array.isArray(pieces)) return false;
+  const byName = new Map(sql.parameters.map((parameter) => [parameter.name, parameter]));
+  if (byName.size !== sql.parameters.length) return false;
+  return pieces.every((piece) => {
+    if (piece.kind === 'text') return true;
+    const parameter = byName.get(piece.name);
+    return (
+      parameter !== undefined &&
+      (piece.kind === 'variation') === (parameter.variation !== undefined)
+    );
+  });
+}
 export type DescribeSqlRequest = z.infer<typeof describeSqlRequestSchema>;
 
 /**

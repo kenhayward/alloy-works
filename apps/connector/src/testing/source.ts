@@ -1,7 +1,20 @@
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
-import { credentialContext, type ConnectionSettings, type TestRequest } from '@alloy-works/domain';
+import {
+  credentialContext,
+  defaultLimits,
+  type Column,
+  type ConnectionSettings,
+  type DescribeSqlRequest,
+  type DraftDefinition,
+  type Limits,
+  type Parameter,
+  type ParameterValues,
+  type RunRequest,
+  type TestRequest,
+  type ValueType,
+} from '@alloy-works/domain';
 import { sealSecret } from '@alloy-works/sealing';
 import pg from 'pg';
 
@@ -121,4 +134,59 @@ export async function asAccount<T>(
   } finally {
     await client.end();
   }
+}
+
+/** A declared column, read from the source's column of the same name unless said. */
+export const column = (name: string, type: ValueType, from = name): Column => ({
+  name,
+  from: { column: from },
+  type,
+});
+
+/** A draft definition of this SQL and these columns: keyed and ordered by the first, unless said. */
+export function draft(
+  text: string,
+  columns: Column[],
+  over: Partial<Omit<DraftDefinition, 'connection'>> = {},
+): Omit<DraftDefinition, 'connection'> {
+  return {
+    schemaVersion: 1,
+    parameters: [],
+    fetch: { kind: 'sql', text },
+    columns,
+    key: [columns[0]!.name],
+    order: [{ column: columns[0]!.name, direction: 'ascending' }],
+    empty: 'valid',
+    limits: { ...defaultLimits },
+    ...over,
+  };
+}
+
+/** A run of a draft against these values, its limits the draft's unless said, sealed as `requestFor`. */
+export function runRequest(
+  source: ConnectionSettings,
+  secret: string,
+  definition: Omit<DraftDefinition, 'connection'>,
+  values: ParameterValues = {},
+  options: { readonly limits?: Partial<Limits>; readonly deadlineMs?: number } = {},
+): RunRequest {
+  const limits = { ...definition.limits, ...options.limits };
+  const base = requestFor(source, secret);
+  return {
+    ...base,
+    definition: { ...definition, connection: base.connection.id },
+    values: values as RunRequest['values'],
+    limits,
+    deadlineMs: options.deadlineMs ?? limits.seconds * 1000,
+  };
+}
+
+/** A SQL describe of this text and its parameters, sealed as `requestFor`. */
+export function describeSqlRequest(
+  source: ConnectionSettings,
+  secret: string,
+  text: string,
+  parameters: Parameter[] = [],
+): DescribeSqlRequest {
+  return { ...requestFor(source, secret), sql: { text, parameters } };
 }

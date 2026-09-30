@@ -2,7 +2,10 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 
 import {
+  RUN_REQUEST_MAX_BYTES,
   credentialContext,
+  describeSqlRequestSchema,
+  runRequestSchema,
   sealRequestSchema,
   testRequestSchema,
   type SealAnswer,
@@ -18,19 +21,30 @@ import {
   type Supervisor,
 } from './supervisor.js';
 
-/** The most a request body may be (D1-E). */
+/** The most a seal's or a test's body may be (D1-E). */
 export const MAX_BODY_BYTES = 64 * 1024;
+
+/**
+ * The most a body may be on each path: a run's and a describe's hold a definition's SQL, of up to
+ * 100,000 characters, and its values (the D2 plan, task 3); a seal's and a test's no more than D1's.
+ */
+const bodyLimits: Readonly<Record<string, number>> = {
+  '/v1/seal': MAX_BODY_BYTES,
+  '/v1/test': MAX_BODY_BYTES,
+  '/v1/describe': RUN_REQUEST_MAX_BYTES,
+  '/v1/run': RUN_REQUEST_MAX_BYTES,
+};
 
 class TooLarge extends Error {}
 
-async function readBody(request: IncomingMessage): Promise<string> {
+async function readBody(request: IncomingMessage, limit: number): Promise<string> {
   const declared = Number(request.headers['content-length']);
-  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) throw new TooLarge();
+  if (Number.isFinite(declared) && declared > limit) throw new TooLarge();
   const chunks: Buffer[] = [];
   let bytes = 0;
   for await (const chunk of request) {
     bytes += (chunk as Buffer).length;
-    if (bytes > MAX_BODY_BYTES) throw new TooLarge();
+    if (bytes > limit) throw new TooLarge();
     chunks.push(chunk as Buffer);
   }
   return Buffer.concat(chunks).toString('utf8');
@@ -46,10 +60,12 @@ function authenticated(request: IncomingMessage, keyDigest: Buffer): boolean {
 }
 
 /**
- * The connector's interface (the D1 plan, D1-E): HTTP/1.1 and JSON on `connector-private`. `seal`,
- * `test` and `describe` need the service's key; `health` answers anybody. A named failure is an
- * answer (200); a malformed request is 400 `request_invalid`; an unauthenticated one 401 with no body;
- * a body over 64 KiB 413; a full supervisor 503 `connector_busy`. One log line a request but a health
+ * The connector's interface (the D1 plan, D1-E; the D2 plan, task 3): HTTP/1.1 and JSON on
+ * `connector-private`. `seal`, `test`, `describe` - of the relations, or of a statement - and `run`
+ * need the service's key; `health` answers anybody. A named failure is an answer (200); a malformed
+ * request is 400 `request_invalid`; an unauthenticated one 401 with no body; a body over its path's
+ * limit - 256 KiB for a run or a describe, 64 KiB otherwise - 413; a full supervisor 503
+ * `connector_busy`. One log line a request but a health
  * probe, holding neither the body nor the answer.
  */
 export function createConnectorServer(options: {
@@ -104,8 +120,11 @@ export function createConnectorServer(options: {
     };
     const path = (request.url ?? '').split('?')[0];
     if (request.method === 'GET' && path === '/v1/health') return send(200, { ok: true });
-    const paths = ['/v1/seal', '/v1/test', '/v1/describe'];
-    if (request.method !== 'POST' || !paths.includes(path ?? '')) return send(404);
+    const limit =
+      request.method === 'POST' && Object.hasOwn(bodyLimits, path ?? '')
+        ? bodyLimits[path ?? '']
+        : undefined;
+    if (limit === undefined) return send(404);
     if (!authenticated(request, config.keyDigest)) {
       // Drain and drop the body unread, so the answer is not written under an unread upload.
       request.resume();
@@ -113,7 +132,7 @@ export function createConnectorServer(options: {
     }
     let body: unknown;
     try {
-      body = JSON.parse(await readBody(request)) as unknown;
+      body = JSON.parse(await readBody(request, limit)) as unknown;
     } catch (error) {
       if (error instanceof TooLarge) {
         response.setHeader('connection', 'close');
@@ -135,10 +154,27 @@ export function createConnectorServer(options: {
       };
       return send(200, answer);
     }
-    const parsed = testRequestSchema.safeParse(body);
-    if (!parsed.success) return send(400, { code: 'request_invalid' });
     const before = stderrBytes;
-    const answer = await supervisor.run(path === '/v1/test' ? 'test' : 'describe', parsed.data);
+    let answer;
+    if (path === '/v1/run') {
+      const parsed = runRequestSchema.safeParse(body);
+      if (!parsed.success) return send(400, { code: 'request_invalid' });
+      answer = await supervisor.run('run', parsed.data);
+    } else if (
+      path === '/v1/describe' &&
+      typeof body === 'object' &&
+      body !== null &&
+      'sql' in body
+    ) {
+      // A describe taking a statement: its columns, never run (D2-G).
+      const parsed = describeSqlRequestSchema.safeParse(body);
+      if (!parsed.success) return send(400, { code: 'request_invalid' });
+      answer = await supervisor.run('describeSql', parsed.data);
+    } else {
+      const parsed = testRequestSchema.safeParse(body);
+      if (!parsed.success) return send(400, { code: 'request_invalid' });
+      answer = await supervisor.run(path === '/v1/test' ? 'test' : 'describe', parsed.data);
+    }
     if (answer === 'busy') return send(503, { code: 'connector_busy' });
     const sent = send(200, answer);
     return { ...sent, stderrBytes: stderrBytes - before };
