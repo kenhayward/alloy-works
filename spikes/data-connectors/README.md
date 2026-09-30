@@ -111,18 +111,18 @@ bash run.sh case6.mjs -e MODE=tz -e TZ=Pacific/Kiritimati > dcp3-case6-tz.json  
 bash run.sh case7.mjs --memory 3g > dcp3-case7.json                # ~5 min: limits; readers in child processes
 ```
 
-| File                          | What it is                                                                                                  |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `init/*-phase3.sql`           | `param_probe`, `typed_result`, `unordered`, `many`; a view that calls `set_config`; `ada_login`; `IntList`  |
-| `lib/types.mjs`               | The declared types and each one's canonical text; a `NamedFailure` for every refusal                        |
-| `lib/params.mjs`              | The parameter declaration, DAT-020's validation, and the three binders (SQL, HTTP builder, file filters)    |
-| `lib/canon.mjs`               | The canonical result document, RFC 8785 serialisation and the SHA-256 checksum                              |
-| `lib/xlsx-own.mjs`            | The XLSX reader over `fflate` and `saxes`, byte- and row-bounded, and serial-date conversion                |
-| `lib/fixtures.mjs`            | Case 6's logical result, and the CSV and two workbooks (1900 and 1904) written by hand                      |
-| `lib/limits.mjs`              | Row, byte and time limits for HTTP, CSV, Postgres (a cursor) and SQL Server (a cancelled stream)            |
-| `lib/bombs.mjs`               | Inputs that expand far past their size, generated in memory and never written out expanded                  |
-| `fake-data-api.mjs`           | The fake HTTP source: an echo, typed JSON, oversized, gzip, drip, slow and lying-length responses          |
-| `case5.mjs` ... `case7.mjs`   | The drivers; `probe-node.mjs` checks the Node features the canonical form leans on                          |
+| File                        | What it is                                                                                                                     |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `init/*-phase3.sql`         | `param_probe`, `typed_result`, `unordered`, `many`; a view that calls `set_config`; `ada_login`; `IntList`                     |
+| `lib/types.mjs`             | The declared types and each one's canonical text; a `NamedFailure` for every refusal                                           |
+| `lib/params.mjs`            | The parameter declaration, DAT-020's validation, and the three binders (SQL, HTTP builder, file filters)                       |
+| `lib/canon.mjs`             | The canonical result document, RFC 8785 serialisation and the SHA-256 checksum                                                 |
+| `lib/xlsx-own.mjs`          | The XLSX reader over `fflate` and `saxes`, byte- and row-bounded, and serial-date conversion                                   |
+| `lib/fixtures.mjs`          | Case 6's logical result, and the CSV and two workbooks (1900 and 1904) written by hand                                         |
+| `lib/limits.mjs`            | Row, byte and time limits for HTTP, CSV, Postgres (a cursor) and SQL Server (a cancelled stream)                               |
+| `lib/bombs.mjs`             | Inputs that expand far past their size, generated in memory and never written out expanded                                     |
+| `fake-data-api.mjs`         | The fake HTTP source: an echo, typed JSON, oversized, gzip, drip, slow and lying-length responses                              |
+| `case5.mjs` ... `case7.mjs` | The drivers; `probe-node.mjs` checks the Node features the canonical form leans on, `probe-sizes.mjs` measures case 7's inputs |
 
 ## Credentials
 
