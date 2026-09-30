@@ -516,6 +516,9 @@ importers:
       '@alloy-works/domain':
         specifier: workspace:^
         version: link:../../packages/domain
+      '@alloy-works/service':
+        specifier: workspace:^
+        version: link:../../apps/service
       '@alloy-works/stand-in-idp':
         specifier: workspace:^
         version: link:../../packages/stand-in-idp
