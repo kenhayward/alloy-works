@@ -48,6 +48,7 @@ import { assetHandlers, type BinaryBody } from './assets.js';
 import { componentHandlers } from './components.js';
 import type { GoogleSettings } from './config.js';
 import { documentHandlers } from './documents.js';
+import { registerDocs } from './docs.js';
 import { templateHandlers } from './templates.js';
 import { definitionHandlers } from './definitions.js';
 import { presentationHandlers } from './presentation.js';
@@ -235,6 +236,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
   const tenants = cachedResolver((hostname) => db.resolveHostname(hostname), {
     ttlMs: options.tenantCacheMs ?? 30_000,
   });
+  registerDocs(app, (hostname) => tenants.resolve(hostname));
   app.decorateRequest('tenant', null);
   app.decorateRequest('principal', null);
   app.decorateRequest('credential', null);

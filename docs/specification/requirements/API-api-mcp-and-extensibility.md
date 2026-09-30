@@ -36,6 +36,7 @@ hundreds of thinly-described tools and degrade every model that touched it.
 | **API-001** | The product's own clients must use the same API as any other caller, with no privileged path                                                                                                                                                                                                                                                                                                                      | Constraint | Specified             |
 | **API-002** | OpenAPI must be the source of truth for the synchronous surface, and client types must be generated from it                                                                                                                                                                                                                                                                                                       | Constraint | Specified             |
 | **API-003** | Contract tests must fail when the implementation and the specification disagree                                                                                                                                                                                                                                                                                                                                   | T1         | Specified             |
+| **API-062** | The product must provide a versioned developer documentation endpoint generated from the authoritative OpenAPI document, with every operation fully described and organised in hierarchical navigation, and must let a caller provide an explicit personal API token to execute token-enabled operations against the current environment.                                                                         | T1         | Specified             |
 | **API-004** | Every capability the interface offers must be reachable through the API                                                                                                                                                                                                                                                                                                                                           | T1         | Superseded by API-061 |
 | **API-061** | Every change the interface makes to stored state, and every read it makes of it, must go through the API. Conversions made in the browser - LaTeX to MathML, the spoken alternative, reading a paste - need no route, since what they produce is stored through the API                                                                                                                                           | T1         | Specified             |
 | **API-005** | Errors must be structured, with a stable machine-readable code alongside a human-readable message                                                                                                                                                                                                                                                                                                                 | T1         | Specified             |
@@ -234,6 +235,7 @@ value it saw is exactly the silent staleness this specification rules out everyw
 | API-050            | ADM-016, ADM-020; scope §11                                                     |
 | API-053            | IAM - the authentication and authorisation contract                             |
 | API-037 to API-053 | [The v1 review](<../../reviews/API - api and mcp specification.md>); section 13 |
+| API-062            | [Requirement issue #352](https://github.com/kenhayward/alloy-works/issues/352)  |
 
 ## 13. Change history
 
@@ -323,3 +325,20 @@ IAM-082, which adds that the stopped work records the sign-out or the revocation
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
 | Requirements | 61, of which 3 superseded | 61, of which 3 superseded |
+
+### From requirement issue #352, 2026-09-29
+
+An integration developer can issue a personal token, but the supported synchronous surface is not
+served as developer documentation. The committed OpenAPI document is machine-readable and is not a
+usable place to learn the API, navigate it by domain or make an authenticated request. The issue adds
+one requirement because the reference, its hierarchy and its explicit-token execution are one user
+outcome: discovering and trying the authoritative contract without a parallel description that can
+drift.
+
+| What was requested                                                                                                   | Change                                                                                                                                 |
+| -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| A versioned, fully described API reference with hierarchical navigation and execution by an explicitly entered token | **API-062** adds the developer documentation endpoint, generated from OpenAPI, and its token-authenticated interactive request surface |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 61, of which 3 superseded | 62, of which 3 superseded |

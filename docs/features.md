@@ -617,6 +617,20 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 /v1/principals/{id}/tokens/{token}`, which need administering the environment and a signed-in
   session.
 
+- **A reference for the API.** `/docs` on an environment's address opens a reference to every
+  operation the API offers, generated from the same OpenAPI document the product's own clients are
+  built from, so it cannot describe an API that is not there. Operations are grouped - Start here,
+  Content, Publishing, Identity and access, Discovery and administration, Realtime and service - and
+  each says what it does, which permission it needs, whether a token may call it, and gives an
+  example of what to send and what comes back, each example checked against the schema it
+  illustrates. At the top, paste an API token, choose an operation and fill in its parameters, and
+  **Execute with token** sends it to that environment with the token alone: never the browser's
+  signed-in session, never to another address. The token is not kept, and is gone on a reload. An
+  operation that changes something asks first, and the operations only a signed-in session may
+  use - signing in and out, managing tokens, the event stream - are described but cannot be run
+  from here. The document itself is at `/openapi/v1.json`. The reference is served by the product
+  and fetches nothing from anywhere else; an address that is no environment gets neither.
+
 - **Retrying safely through the API.** A request that makes or changes something can carry an
   `Idempotency-Key`; sent again with the same key - after an answer that was lost - it is answered as it
   was the first time, and nothing is made twice. The same key for a different request is refused.

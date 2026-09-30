@@ -460,13 +460,22 @@
       "line": 38
     },
     {
+      "id": "API-062",
+      "area": "API",
+      "statement": "The product must provide a versioned developer documentation endpoint generated from the authoritative OpenAPI document, with every operation fully described and organised in hierarchical navigation, and must let a caller provide an explicit personal API token to execute token-enabled operations against the current environment.",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "API-api-mcp-and-extensibility.md",
+      "line": 39
+    },
+    {
       "id": "API-004",
       "area": "API",
       "statement": "Every capability the interface offers must be reachable through the API",
       "tranche": "T1",
       "status": "Superseded by API-061",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 39
+      "line": 40
     },
     {
       "id": "API-061",
@@ -475,7 +484,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 40
+      "line": 41
     },
     {
       "id": "API-005",
@@ -484,7 +493,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 41
+      "line": 42
     },
     {
       "id": "API-006",
@@ -493,7 +502,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 42
+      "line": 43
     },
     {
       "id": "API-007",
@@ -502,7 +511,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 43
+      "line": 44
     },
     {
       "id": "API-008",
@@ -511,7 +520,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 44
+      "line": 45
     },
     {
       "id": "API-009",
@@ -520,7 +529,7 @@
       "tranche": "T7",
       "status": "Superseded by API-051",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 45
+      "line": 46
     },
     {
       "id": "API-037",
@@ -529,7 +538,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 46
+      "line": 47
     },
     {
       "id": "API-038",
@@ -538,7 +547,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 47
+      "line": 48
     },
     {
       "id": "API-039",
@@ -547,7 +556,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 48
+      "line": 49
     },
     {
       "id": "API-047",
@@ -556,7 +565,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 49
+      "line": 50
     },
     {
       "id": "API-050",
@@ -565,7 +574,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 50
+      "line": 51
     },
     {
       "id": "API-051",
@@ -574,7 +583,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 51
+      "line": 52
     },
     {
       "id": "API-053",
@@ -583,7 +592,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 52
+      "line": 53
     },
     {
       "id": "API-054",
@@ -592,7 +601,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 53
+      "line": 54
     },
     {
       "id": "API-055",
@@ -601,7 +610,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 54
+      "line": 55
     },
     {
       "id": "API-056",
@@ -610,7 +619,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 55
+      "line": 56
     },
     {
       "id": "API-057",
@@ -619,7 +628,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 56
+      "line": 57
     },
     {
       "id": "API-058",
@@ -628,7 +637,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 57
+      "line": 58
     },
     {
       "id": "API-059",
@@ -637,7 +646,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 58
+      "line": 59
     },
     {
       "id": "API-010",
@@ -646,7 +655,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 86
+      "line": 87
     },
     {
       "id": "API-011",
@@ -655,7 +664,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 87
+      "line": 88
     },
     {
       "id": "API-012",
@@ -664,7 +673,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 88
+      "line": 89
     },
     {
       "id": "API-013",
@@ -673,7 +682,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 89
+      "line": 90
     },
     {
       "id": "API-052",
@@ -682,7 +691,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 90
+      "line": 91
     },
     {
       "id": "API-014",
@@ -691,7 +700,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 104
+      "line": 105
     },
     {
       "id": "API-015",
@@ -700,7 +709,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 105
+      "line": 106
     },
     {
       "id": "API-016",
@@ -709,7 +718,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 106
+      "line": 107
     },
     {
       "id": "API-017",
@@ -718,7 +727,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 107
+      "line": 108
     },
     {
       "id": "API-035",
@@ -727,7 +736,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 108
+      "line": 109
     },
     {
       "id": "API-036",
@@ -736,7 +745,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 109
+      "line": 110
     },
     {
       "id": "API-040",
@@ -745,7 +754,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 129
+      "line": 130
     },
     {
       "id": "API-041",
@@ -754,7 +763,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 130
+      "line": 131
     },
     {
       "id": "API-042",
@@ -763,7 +772,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 131
+      "line": 132
     },
     {
       "id": "API-043",
@@ -772,7 +781,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 132
+      "line": 133
     },
     {
       "id": "API-044",
@@ -781,7 +790,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 133
+      "line": 134
     },
     {
       "id": "API-018",
@@ -790,7 +799,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 151
+      "line": 152
     },
     {
       "id": "API-019",
@@ -799,7 +808,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 152
+      "line": 153
     },
     {
       "id": "API-020",
@@ -808,7 +817,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 153
+      "line": 154
     },
     {
       "id": "API-021",
@@ -817,7 +826,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 154
+      "line": 155
     },
     {
       "id": "API-022",
@@ -826,7 +835,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 155
+      "line": 156
     },
     {
       "id": "API-023",
@@ -835,7 +844,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 156
+      "line": 157
     },
     {
       "id": "API-024",
@@ -844,7 +853,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 157
+      "line": 158
     },
     {
       "id": "API-025",
@@ -853,7 +862,7 @@
       "tranche": "T5",
       "status": "Superseded by API-060",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 167
+      "line": 168
     },
     {
       "id": "API-026",
@@ -862,7 +871,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 168
+      "line": 169
     },
     {
       "id": "API-027",
@@ -871,7 +880,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 169
+      "line": 170
     },
     {
       "id": "API-028",
@@ -880,7 +889,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 170
+      "line": 171
     },
     {
       "id": "API-029",
@@ -889,7 +898,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 171
+      "line": 172
     },
     {
       "id": "API-060",
@@ -898,7 +907,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 172
+      "line": 173
     },
     {
       "id": "API-045",
@@ -907,7 +916,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 173
+      "line": 174
     },
     {
       "id": "API-046",
@@ -916,7 +925,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 174
+      "line": 175
     },
     {
       "id": "API-030",
@@ -925,7 +934,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 187
+      "line": 188
     },
     {
       "id": "API-031",
@@ -934,7 +943,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 188
+      "line": 189
     },
     {
       "id": "API-032",
@@ -943,7 +952,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 189
+      "line": 190
     },
     {
       "id": "API-033",
@@ -952,7 +961,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 190
+      "line": 191
     },
     {
       "id": "API-034",
@@ -961,7 +970,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 191
+      "line": 192
     },
     {
       "id": "API-048",
@@ -970,7 +979,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 192
+      "line": 193
     },
     {
       "id": "API-049",
@@ -979,7 +988,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 193
+      "line": 194
     },
     {
       "id": "AST-001",
@@ -13752,31 +13761,31 @@
       "id": "API-N01",
       "statement": "**No MCP surface generated from the API** (API-018)",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 204
+      "line": 205
     },
     {
       "id": "API-N02",
       "statement": "**No privileged internal API** that the product's own clients use and others cannot (API-001)",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 205
+      "line": 206
     },
     {
       "id": "API-N03",
       "statement": "**No arbitrary code execution as an extension point.** Extensions are declared and sandboxed, or they are not extensions",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 206
+      "line": 207
     },
     {
       "id": "API-N04",
       "statement": "**No GraphQL surface alongside the REST one**, unless something forces it. Two APIs are two contracts and two sets of bugs",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 207
+      "line": 208
     },
     {
       "id": "API-N05",
       "statement": "**No unattended bulk import through the API.** Bringing foreign content in is **IMP**'s attended flow (IMP-001 to IMP-003): a proposal a person accepts, and a report of what was dropped. An endpoint that skipped it would skip the person",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 208
+      "line": 209
     },
     {
       "id": "AST-N01",
@@ -14482,49 +14491,49 @@
       "question": "**Which realtime transport, and is it one channel or several?** Open decision 7 in scope §10",
       "settledBy": "**Settled** by a spike. One Server-Sent Events stream per open document for presence, locks and notification nudges, fanned out through Postgres `LISTEN`/`NOTIFY`; model output streams on the request that asked for it. See [ADR-0018](../../decisions/0018-realtime-one-push-channel-postgres-fan-out.md)",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 214
+      "line": 215
     },
     {
       "id": "API-Q02",
       "question": "**How many MCP tools is the right number (API-024)?** Too few and an agent cannot do the job; too many and it does none of them well",
       "settledBy": "Evaluation against real tasks, which is the only way to find out",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 215
+      "line": 216
     },
     {
       "id": "API-Q03",
       "question": "**Where do extensions run?** In-process is fast and dangerous; out-of-process is safe and slow, and both are a support burden",
       "settledBy": "The architecture, and how much a connector is expected to do",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 216
+      "line": 217
     },
     {
       "id": "API-Q04",
       "question": "**Is the API public, or for integrators under contract?** It changes what deprecation costs and how much the specification must promise",
       "settledBy": "A commercial decision as much as a technical one",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 217
+      "line": 218
     },
     {
       "id": "API-Q05",
       "question": "**Do batch create and update endpoints exist for native content?** API-N05 rules out unattended import of foreign documents; content this product already holds, moving between tenants or systems that speak its format, is a different case",
       "settledBy": "The first integration that needs it. The risk of adding it early is that it becomes the bulk-import door API-N05 closed",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 218
+      "line": 219
     },
     {
       "id": "API-Q06",
       "question": "**Are extensions versioned and pinned per tenant (API-048)?** An extension updated under a tenant that depended on its old behaviour is the same failure as an unversioned API, one layer out",
       "settledBy": "The architecture decision in API-Q03. Where extensions run largely decides whether pinning is cheap",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 219
+      "line": 220
     },
     {
       "id": "API-Q07",
       "question": "**What are the synchronous surface's availability and latency numbers (API-050)?** Scope §11 budgets opening, publishing, keystrokes and search, and names an availability target, but no number covers an ordinary API request",
       "settledBy": "The first load testing against real content, and the commercial answer to API-Q04 - what is promised depends on who it is promised to",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 220
+      "line": 221
     },
     {
       "id": "AST-Q01",
@@ -16730,6 +16739,10 @@
           "howItIsMet": "CI regenerates the document and fails on any difference; Fastify validates every response against its schema, and a status a route does not list against the one error shape the document declares as its `default`, so nothing undeclared is sent; a test holds the routes served to the contract's, both ways"
         },
         {
+          "id": "API-062",
+          "howItIsMet": "The service publishes the committed OpenAPI document by API major version and a self-hosted reference generated from it; every operation has a description, one navigation tag, its required permission and examples, and the tags belong to a documented group. The reference executes only token-enabled operations, with an explicitly entered personal token kept in memory, never with the browser's session or through another origin"
+        },
+        {
           "id": "API-005",
           "howItIsMet": "Every error is one JSON shape with a stable `code`, a message, and the request's trace id"
         },
@@ -17516,9 +17529,15 @@
       "kind": "title"
     },
     {
+      "id": "API-062",
+      "file": "apps/service/src/app.test.ts",
+      "line": 103,
+      "kind": "title"
+    },
+    {
       "id": "IAM-053",
       "file": "apps/service/src/app.test.ts",
-      "line": 126,
+      "line": 172,
       "kind": "title"
     },
     {
@@ -18832,7 +18851,13 @@
     {
       "id": "API-012",
       "file": "packages/api-contract/src/openapi.test.ts",
-      "line": 35,
+      "line": 118,
+      "kind": "title"
+    },
+    {
+      "id": "API-062",
+      "file": "packages/api-contract/src/openapi.test.ts",
+      "line": 9,
       "kind": "title"
     },
     {
@@ -20771,6 +20796,12 @@
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
       "line": 244,
+      "kind": "title"
+    },
+    {
+      "id": "API-062",
+      "file": "tests/browser/src/api-documentation.test.ts",
+      "line": 48,
       "kind": "title"
     },
     {

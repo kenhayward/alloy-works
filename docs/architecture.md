@@ -687,6 +687,47 @@ Administration's People gives each person who has signed in a Tokens button show
 focus moving to their heading and back to the button, so it never falls out of the dialog. A
 refusal is said in the service's own `message` where it gave one.
 
+### The API reference
+
+The committed `openapi.json` is published and rendered as it is (API-062, service-foundations.md's
+[Developer API reference](design/service-foundations.md#developer-api-reference-in-t1)); nothing
+describes the API a second time.
+
+**The document.** `buildOpenApi` gives every operation a `description` and exactly one tag from
+`packages/api-contract/src/documentation.ts`, which holds the tag catalogue, its groups
+(`x-tagGroups`) and a description per `operationId`; a route with neither makes `buildOpenApi` throw,
+so `generate` and the contract suite fail before a route ships undocumented, and an entry naming an
+operation the contract no longer declares fails the suite too. From each route's `access` it derives
+`x-alloy-permission` and `x-alloy-token-enabled` - true unless the route checks nothing or takes a
+session alone - and the `security` beside them. Every JSON request body and every successful JSON
+response carries an `example` generated from its zod schema by `exampleFor` and parsed back through
+that schema before it is written. `X-Request-Id` is declared on every operation and every answer, and
+`Idempotency-Key` with `Idempotent-Replayed` on exactly the routes the service honours a key on: a
+mutating route that decides a permission, and `requestSample`. `servers` is `/`, so the document
+names whichever environment serves it.
+
+**The routes.** `apps/service/src/docs.ts`, registered before the renderer's fallback, answers four
+addresses outside the contract, each only on a hostname that resolves to an environment and otherwise
+`404 tenant_not_found`, and none needing a session:
+
+| Address                    | Answers                                                                                            |
+| -------------------------- | -------------------------------------------------------------------------------------------------- |
+| `GET /openapi/v1.json`     | The committed document's bytes, `application/vnd.oai.openapi+json`, with an `ETag` of their hash   |
+| `GET /docs`                | `302` to `/docs/v1/`                                                                               |
+| `GET /docs/v1/`            | The reference page, with a CSP whose script nonce is fresh per answer and `connect-src 'self'`     |
+| `GET /docs/v1/scalar-*.js` | Scalar's standalone bundle from the pinned `@scalar/api-reference`, named by its hash, `immutable` |
+
+The route-parity test keeps the contract's routes an exact set and these four an exact set of their
+own.
+
+**The browser boundary.** Scalar renders the document with its own request button, client, telemetry,
+agent and persistence turned off. Executing is the page's own small explorer: it lists only operations
+marked `x-alloy-token-enabled`, sends `Authorization: Bearer` with the token typed into it, always with
+`credentials: 'omit'` so the session cookie never goes, refuses a URL outside the page's origin or
+`/v1/`, asks before any method but `GET`, and keeps the token in the input alone, so a reload loses it.
+The browser suite's `api-documentation.test.ts` drives it in the pinned Chromium against the page
+served by `registerDocs` and a stand-in `/v1/me` and upload route.
+
 ## The editor and its session
 
 Opening a component, editing its paragraphs and saving them, designed in

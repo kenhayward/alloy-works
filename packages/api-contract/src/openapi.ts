@@ -1,13 +1,106 @@
 import { z } from 'zod';
 import type { RouteContract, RouteResponse } from './contract.js';
+import { documentationFor, documentationGroups } from './documentation.js';
 import { API_VERSION, SESSION_COOKIE } from './routes.js';
 import { ErrorBody } from './schemas.js';
 
 type Json = Record<string, unknown>;
 
+/** A schema-valid, deliberately small specimen; examples do not invent tenant identifiers. */
+function exampleFor(schema: z.ZodType, io: 'input' | 'output', name = ''): unknown {
+  const root = z.toJSONSchema(schema, { io }) as Json;
+  const definitions = (root.$defs ?? {}) as Record<string, Json>;
+  const value = (node: Json, seen: ReadonlySet<string>): unknown => {
+    if (typeof node.$ref === 'string' && node.$ref.startsWith('#/$defs/')) {
+      const name = node.$ref.slice(8);
+      if (seen.has(name)) return {};
+      return value(definitions[name] ?? {}, new Set([...seen, name]));
+    }
+    if ('const' in node) return node.const;
+    if (Array.isArray(node.enum)) return node.enum[0];
+    for (const alternative of ['anyOf', 'oneOf'] as const) {
+      const choices = node[alternative] as Json[] | undefined;
+      if (choices?.length) return value(choices[0]!, seen);
+    }
+    if (Array.isArray(node.allOf) && node.type === undefined) {
+      return Object.assign({}, ...node.allOf.map((part) => value(part as Json, seen)));
+    }
+    const type = Array.isArray(node.type)
+      ? node.type.find((candidate) => candidate !== 'null')
+      : node.type;
+    if (type === 'object' || node.properties) {
+      const properties = (node.properties ?? {}) as Record<string, Json>;
+      return Object.fromEntries(
+        ((node.required ?? []) as string[]).map((name) => [
+          name,
+          name === 'level'
+            ? 'tenant'
+            : name === 'language'
+              ? 'en'
+              : value(properties[name] ?? {}, seen),
+        ]),
+      );
+    }
+    if (type === 'array') {
+      const item = (node.items ?? {}) as Json;
+      return Number(node.minItems ?? 0) > 0 ? [value(item, seen)] : [];
+    }
+    if (type === 'string') {
+      if (JSON.stringify(node.allOf ?? node.pattern ?? '').includes('0-9a-fA-F')) {
+        return '00000000-0000-4000-8000-000000000001';
+      }
+      switch (node.format) {
+        case 'uuid':
+          return '00000000-0000-4000-8000-000000000001';
+        case 'date-time':
+          return '2026-01-01T00:00:00.000Z';
+        case 'date':
+          return '2026-01-01';
+        case 'email':
+          return 'developer@example.com';
+        case 'uri':
+        case 'url':
+          return 'https://example.com/';
+      }
+      return 'example';
+    }
+    if (type === 'integer' || type === 'number') return Number(node.minimum ?? 0);
+    if (type === 'boolean') return false;
+    return null;
+  };
+  const candidate =
+    name === 'createDefinitionBody'
+      ? {
+          kind: 'field',
+          definition: {
+            schemaVersion: 1,
+            name: 'Study number',
+            dataType: 'text',
+            multiplicity: 'one',
+            validation: {},
+          },
+        }
+      : name === 'editOutlineBody'
+        ? {
+            openedFrom: '00000000-0000-4000-8000-000000000001',
+            operation: { operation: 'remove', node: 'a'.repeat(26) },
+          }
+        : value(root, new Set());
+  const checked = schema.safeParse(candidate);
+  if (!checked.success) {
+    throw new Error(
+      `Cannot make a valid OpenAPI example: ${JSON.stringify(candidate)} ${JSON.stringify(checked.error.issues)}`,
+    );
+  }
+  return candidate;
+}
+
 export interface OpenApiDocument {
   readonly openapi: '3.1.0';
   readonly info: { readonly title: string; readonly version: string; readonly description: string };
+  readonly servers: readonly { readonly url: string }[];
+  readonly tags: readonly { readonly name: string; readonly description: string }[];
+  readonly 'x-tagGroups': readonly { readonly name: string; readonly tags: readonly string[] }[];
   readonly components: {
     readonly securitySchemes: Record<string, unknown>;
     readonly schemas?: Record<string, unknown>;
@@ -76,8 +169,13 @@ function responseSchema(schema: z.ZodType, name: string, definitions: Definition
   return open(hoist(json, name, definitions)) as Json;
 }
 
-function content(schema: z.ZodType, name: string, definitions: Definitions) {
-  return { 'application/json': { schema: responseSchema(schema, name, definitions) } };
+function content(schema: z.ZodType, name: string, definitions: Definitions, example = false) {
+  return {
+    'application/json': {
+      schema: responseSchema(schema, name, definitions),
+      ...(example ? { example: exampleFor(schema, 'output') } : {}),
+    },
+  };
 }
 
 function response(
@@ -106,7 +204,7 @@ function response(
   if (declared.schema) {
     return {
       description: declared.description,
-      content: content(declared.schema, name, definitions),
+      content: content(declared.schema, name, definitions, status < 300),
     };
   }
   if (status >= 300 && status < 400) {
@@ -153,7 +251,12 @@ function requestBody(body: z.ZodObject, name: string, definitions: Definitions):
   delete json.$schema;
   return {
     required: true,
-    content: { 'application/json': { schema: hoist(json, name, definitions) } },
+    content: {
+      'application/json': {
+        schema: hoist(json, name, definitions),
+        example: exampleFor(body, 'input', name),
+      },
+    },
   };
 }
 
@@ -164,7 +267,14 @@ function requestBody(body: z.ZodObject, name: string, definitions: Definitions):
  */
 const COMPATIBILITY =
   'Adding a field to a response is never a breaking change, so a caller must ignore any field it ' +
-  'does not know. Within an API version no field is removed and none changes its meaning.';
+  'does not know. Within an API version no field is removed and none changes its meaning. ' +
+  'Use a personal token in Authorization: Bearer for token-enabled operations; sign-in and token ' +
+  'management require a browser session. Errors use one JSON shape with a code and traceId. ' +
+  'X-Request-Id may be supplied by a caller and is returned on every response. Listings use opaque ' +
+  'cursors; send the next cursor without editing it. For supported mutations, Idempotency-Key ' +
+  'makes a retry safe and Idempotent-Replayed marks a replay. Versioned edits require the version ' +
+  'the caller read; a conflict means read again before editing. The current v1 document describes ' +
+  'the synchronous HTTP API; the event stream has a separately specified protocol.';
 
 export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument {
   const paths: Record<string, Record<string, unknown>> = {};
@@ -173,18 +283,46 @@ export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument 
     (a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method),
   );
   for (const route of ordered) {
+    const documentation = documentationFor(route);
+    const keyed =
+      (route.method !== 'GET' && route.access.check === 'permission') ||
+      route.operationId === 'requestSample';
     const responses: Json = {};
     for (const [status, declared] of Object.entries(route.responses)) {
-      responses[status] = response(
+      const described = response(
         Number(status),
         declared,
         `${route.operationId}${status}`,
         definitions,
       );
+      responses[status] = {
+        ...described,
+        headers: {
+          ...(described.headers as Json | undefined),
+          'X-Request-Id': {
+            description: 'Trace identifier assigned to this request.',
+            schema: { type: 'string' },
+          },
+          ...(keyed && Number(status) < 300
+            ? {
+                'Idempotent-Replayed': {
+                  description: 'True when this answer is a replay of an earlier keyed request.',
+                  schema: { type: 'string', enum: ['true'] },
+                },
+              }
+            : {}),
+        },
+      };
     }
     responses.default = {
       description: 'An error, in the one shape every error takes',
       content: content(ErrorBody, `${route.operationId}Default`, definitions),
+      headers: {
+        'X-Request-Id': {
+          description: 'Trace identifier assigned to this request.',
+          schema: { type: 'string' },
+        },
+      },
     };
     const parameters = [
       ...(route.params ? pathParameters(route.params) : []),
@@ -193,13 +331,40 @@ export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument 
     (paths[route.path] ??= {})[route.method.toLowerCase()] = {
       operationId: route.operationId,
       summary: route.summary,
+      description: documentation.description,
+      tags: [documentation.tag],
+      'x-alloy-token-enabled':
+        route.access.check !== 'none' && route.access.credential !== 'session',
+      ...(route.access.check === 'permission'
+        ? { 'x-alloy-permission': route.access.permission }
+        : {}),
       security:
         route.access.check === 'none'
           ? []
           : route.access.credential === 'session'
             ? [{ session: [] }]
             : [{ session: [] }, { token: [] }],
-      ...(parameters.length > 0 ? { parameters } : {}),
+      parameters: [
+        ...parameters,
+        {
+          name: 'X-Request-Id',
+          in: 'header',
+          required: false,
+          description: 'Optional caller-supplied trace identifier (up to 128 safe characters).',
+          schema: { type: 'string', maxLength: 128 },
+        },
+        ...(keyed
+          ? [
+              {
+                name: 'Idempotency-Key',
+                in: 'header',
+                required: false,
+                description: 'Use the same key to retry this mutation without applying it twice.',
+                schema: { type: 'string' },
+              },
+            ]
+          : []),
+      ],
       ...(route.body
         ? { requestBody: requestBody(route.body, `${route.operationId}Body`, definitions) }
         : {}),
@@ -225,6 +390,12 @@ export function buildOpenApi(routes: readonly RouteContract[]): OpenApiDocument 
   return {
     openapi: '3.1.0',
     info: { title: 'Alloy Works', version: API_VERSION, description: COMPATIBILITY },
+    servers: [{ url: '/' }],
+    tags: documentationGroups.flatMap((group) => [...group.tags]),
+    'x-tagGroups': documentationGroups.map((group) => ({
+      name: group.name,
+      tags: group.tags.map((tag) => tag.name),
+    })),
     components: {
       securitySchemes: {
         session: { type: 'apiKey', in: 'cookie', name: SESSION_COOKIE },

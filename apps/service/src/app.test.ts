@@ -90,9 +90,55 @@ describe('the service', () => {
     );
     // HEAD is Fastify's own, answered beside every GET; it is no route of the service's.
     const served = registered
-      .filter((route) => route.method !== 'HEAD')
+      .filter(
+        (route) =>
+          route.method !== 'HEAD' &&
+          !route.url.startsWith('/docs') &&
+          route.url !== '/openapi/v1.json',
+      )
       .map((route) => key(route.method, route.url));
     expect(served.sort()).toEqual(declared.sort());
+  });
+
+  it('API-062 serves the authoritative v1 document and reference only on an environment hostname', async () => {
+    const at = (url: string, host = 'acme.alloy.test') => app.inject({ url, headers: { host } });
+    const json = await at('/openapi/v1.json');
+    expect(json.statusCode).toBe(200);
+    expect(json.headers['content-type']).toContain('application/vnd.oai.openapi+json');
+    expect(json.json()).toHaveProperty('openapi', '3.1.0');
+    expect(json.headers.etag).toBeDefined();
+    expect(json.headers['x-content-type-options']).toBe('nosniff');
+    const redirect = await at('/docs');
+    expect(redirect.statusCode).toBe(302);
+    expect(redirect.headers.location).toBe('/docs/v1/');
+    const html = await at('/docs/v1/');
+    expect(html.statusCode).toBe(200);
+    // What the page says to a person carries plain hyphens and dots, as every product string does.
+    expect(html.body).not.toMatch(/[\u2013\u2014\u2026]/);
+    const scalarPath = html.body.match(/\/docs\/v1\/scalar-[0-9a-f]{16}\.js/)?.[0];
+    expect(scalarPath).toBeDefined();
+    expect(html.headers['content-security-policy']).toContain("connect-src 'self'");
+    expect(html.headers['referrer-policy']).toBe('no-referrer');
+    const asset = await at(scalarPath!);
+    expect(asset.statusCode).toBe(200);
+    expect(asset.headers['cache-control']).toContain('immutable');
+    expect((await at('/openapi/v1.json', 'nobody.alloy.test')).json()).toMatchObject({
+      code: 'tenant_not_found',
+    });
+    const infrastructure = registered
+      .filter(
+        (route) =>
+          route.method !== 'HEAD' &&
+          (route.url.startsWith('/docs') || route.url === '/openapi/v1.json'),
+      )
+      .map((route) => `${route.method} ${route.url}`)
+      .sort();
+    expect(infrastructure).toEqual([
+      'GET /docs',
+      'GET /docs/v1/',
+      `GET ${scalarPath}`,
+      'GET /openapi/v1.json',
+    ]);
   });
 
   it('serves every route the contract declares', async () => {

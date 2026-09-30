@@ -409,6 +409,16 @@ domain package first, or go through the root script.
   `nodeIntegration: false`, `sandbox: true`, and a preload exposing a **narrow, enumerated** IPC
   surface - never a general "run this `fs` call" bridge. Every IPC handler validates its arguments
   **in the main process**; the renderer having already checked is not a check.
+- **Every API route ships documented: a `summary`, a description and exactly one tag.** A new route
+  in `packages/api-contract` gets its description and its tag in
+  `packages/api-contract/src/documentation.ts` in the same PR - written for an integration developer
+  who has not read the repository: what it does, what it needs, what it changes - and a new tag goes
+  into `documentationGroups` with a description of its own, in the group it belongs to. A renamed or
+  removed route takes its entries with it. `buildOpenApi` throws for a route missing either, so
+  `generate` and the contract suite fail rather than publishing an undocumented operation at
+  `/docs`. Its JSON examples are generated from the zod schemas and checked against them; where the
+  generator cannot make a valid one, add a case to `exampleFor` rather than loosening the test.
+  These strings are user-facing: plain hyphens, no em or en dashes.
 - **Keep `packages/domain` platform-free.** No React, no Electron, no `fs`, no `window`. It is the
   one place rules can be tested without booting anything, and pnpm's non-flat `node_modules` will
   enforce the boundary if you let it.

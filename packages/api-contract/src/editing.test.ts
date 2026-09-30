@@ -12,7 +12,7 @@ describe('the editing routes in the published document', () => {
 
   it('describes a request body as required JSON, by its input schema', () => {
     const claim = operation('/v1/components/{id}/lock', 'post');
-    expect(claim.requestBody).toEqual({
+    expect(claim.requestBody).toMatchObject({
       required: true,
       content: {
         'application/json': {

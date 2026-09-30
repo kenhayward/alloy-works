@@ -3,6 +3,19 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.128.0 - 2026-09-30 (PR #353)
+
+### Added
+
+- **A reference for the API, on every environment.** `/docs` on your environment's address opens a
+  reference to every operation the API offers, grouped by what it is for - content, publishing,
+  identity and access, and so on - each with what it does, the permission it needs, and an example
+  of what to send and what comes back. Paste one of your API tokens into it to try an operation
+  against that environment: it sends the token and never your signed-in session, forgets the token
+  when you reload, asks before anything that would change something, and does not offer the
+  operations only a signed-in session may use. The document it is drawn from is at
+  `/openapi/v1.json`, for any tool that reads OpenAPI. Nothing is fetched from outside the product.
+
 ## 0.127.6 - 2026-09-30 (PR #359)
 
 ### Changed
