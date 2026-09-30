@@ -201,9 +201,11 @@ be shared across templates without cloning anything.
   an artifact in its own right rather than buried inside a document.
 - **Binding** - the link between a place in the content and a query result. An **inline binding**
   substitutes a scalar into running text; a **block binding** produces a table or a figure.
-- **Binding mode** - `live` (resolved on every view), `pinned` (frozen at a recorded moment), or
-  `refreshable` (pinned, flagged when the source moves, refreshed on approval). A baseline pins
-  everything regardless of mode.
+- **Binding mode** - every binding holds a stored result, and a preview or a publish reads it and
+  never queries a source. The mode says only how a newer result is looked for: `checked` (when the
+  document is opened) or `pinned` (never). A newer result is shown beside the stored one, and
+  nothing changes until a person accepts it
+  ([ADR-0035](../decisions/0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md)).
 - **Provenance record** - attached to every resolved binding: which query definition at which
   version, which parameters, which connection, when it ran, how many rows, and a checksum of the
   result. This is the evidence behind a number.
@@ -294,8 +296,8 @@ The capability that makes this a component CMS rather than a good editor.
   is visible to the author.
 - Secrets live in a tenant secret store, are write-only from the client's perspective, and never
   appear in a response, a log, an export or a crash report.
-- Bindings resolve in live, pinned or refreshable mode, and refreshable bindings are flagged when
-  the source moves.
+- Every binding holds a stored result, in checked or pinned mode; a checked binding is flagged when
+  its source returns something newer, and accepting it is an explicit act.
 - **Every resolved binding writes a provenance record**, inspectable from the value in the document
   and from the published output's audit companion.
 - Result caching with declared freshness, per-query row and size limits, and timeouts.

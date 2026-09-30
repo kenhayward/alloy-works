@@ -128,7 +128,8 @@ an API where wrong values arrive without a form to check them.
 | **TPL-063** | Creating a document from a template must establish its bindings                                                                                                                                                                                                                                  | T2         | Specified             |
 | **TPL-064** | Creating a document from a template must resolve its variables                                                                                                                                                                                                                                   | T4         | Specified             |
 | **TPL-051** | A template must be able to declare default values for a document's profile axes, and which axes a document from it must set. Instantiation must establish the profile from those defaults, from parameters or from a declared incomplete state, and must never leave it undeclared (**REU-022**) | T4         | Specified             |
-| **TPL-023** | Whether a binding's query runs at creation and is pinned, or stays live, must follow the binding mode (**DAT-034**) rather than being a template setting                                                                                                                                         | T2         | Specified             |
+| **TPL-023** | Whether a binding's query runs at creation and is pinned, or stays live, must follow the binding mode (**DAT-034**) rather than being a template setting                                                                                                                                         | T2         | Superseded by TPL-065 |
+| **TPL-065** | A binding's query must run when a document is created from its template, and its result must be stored (**DAT-083**); the binding's mode, checked or pinned (**DAT-082**), must govern only how source revisions are looked for, and must not be a template setting                              | T2         | Specified             |
 | **TPL-024** | A failure during instantiation must leave no partial document behind                                                                                                                                                                                                                             | Constraint | Specified             |
 | **TPL-025** | Instantiation must record which template, and which template version, produced the document                                                                                                                                                                                                      | T1         | Specified             |
 | **TPL-026** | Instantiation must be available through the API as well as the interface, since creating documents is the commonest thing another system will want to do                                                                                                                                         | T2         | Specified             |
@@ -238,7 +239,7 @@ the same guarantees.
 | Section 1          | Scope §7.19, and the ownership pass that found the gap                                                 |
 | TPL-003            | The two definitions no other area owned                                                                |
 | TPL-016, TPL-027   | STR - a starting outline becomes a document's own                                                      |
-| TPL-023            | DAT-034, binding modes decide when a query runs                                                        |
+| TPL-065            | DAT-082 and DAT-083, every binding stored at creation, its mode deciding only how revisions are sought |
 | Section 9          | Scope §7.19, existing documents not changing underneath their authors                                  |
 | Section 11         | Scope §7.3, parameterised bulk generation                                                              |
 | TPL-041, TPL-042   | REU-016, REU-018, REU-036 - what a variable is and what it resolves against                            |
@@ -376,3 +377,16 @@ identifier, and only its tranche changes.
 | Counts       | Before                                     | After                                      |
 | ------------ | ------------------------------------------ | ------------------------------------------ |
 | Requirements | 64, of which 13 superseded and 1 withdrawn | 64, of which 13 superseded and 1 withdrawn |
+
+### Ken's decisions on data connectivity (ADR-0035), 2026-09-30
+
+Not a review. Ken decided that every binding holds a stored result and a publish never queries a
+source, recorded by [ADR-0035](../../decisions/0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md) from the [data connector spike](../spikes/Data_Connector_Spike_Findings.md).
+
+| What was found                                                                                                                                  | Change                                                                                                                                                                                                    |
+| ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TPL-023 lets a binding's query run at creation and be pinned or stay live by its mode, and nothing is live now: every binding stores its result | **TPL-023 superseded by TPL-065**: the query runs at creation and its result is stored; the mode, checked or pinned, governs only how source revisions are looked for. The traceability row names TPL-065 |
+
+| Counts       | Before                                     | After                                      |
+| ------------ | ------------------------------------------ | ------------------------------------------ |
+| Requirements | 64, of which 13 superseded and 1 withdrawn | 65, of which 14 superseded and 1 withdrawn |

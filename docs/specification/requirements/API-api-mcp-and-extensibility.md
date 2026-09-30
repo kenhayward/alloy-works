@@ -50,7 +50,7 @@ hundreds of thinly-described tools and degrade every model that touched it.
 | **API-050** | The synchronous surface must declare availability and latency objectives of its own, and must be measured in production against them (**ADM-016**, **ADM-020**). Realtime already has one in API-036 (**API-Q07**)                                                                                                                                                                                                | T3         | Specified             |
 | **API-051** | Rate limits must be declared in the API specification itself, so that a contract test can verify them (API-003), and a limited response must say when to retry                                                                                                                                                                                                                                                    | T7         | Specified             |
 | **API-053** | Authentication and authorisation failures must follow the **IAM** contract and its distinction between unauthenticated and forbidden, rather than inventing a second vocabulary here                                                                                                                                                                                                                              | Constraint | Specified             |
-| **API-054** | A realtime connection must re-check authorisation on a stated interval as well as at connect and reconnect (API-016), so that a permission withdrawn mid-connection takes effect without waiting for a reconnection that may never come (**IAM-067**)                                                                                                                                                             | Constraint | Specified             |
+| **API-054** | A realtime connection must re-check authorisation on a stated interval as well as at connect and reconnect (API-016), so that a permission withdrawn mid-connection takes effect without waiting for a reconnection that may never come (**IAM-082**)                                                                                                                                                             | Constraint | Specified             |
 | **API-055** | Webhook subscriptions must be administrable: created, changed and removed by an entitled administrator, declaring the endpoint, the event types selected, and the signing key with a rotation path. Every such change must be audited (**LIF-064**), and subscriptions must be carried in the configuration export (**ADM-005**)                                                                                  | T5         | Specified             |
 | **API-056** | Every failure surfaced to a user, an administrator or an integrator must use the structured error contract in API-005 and API-006, with a stable machine-readable identifier. Every request, job, event, webhook delivery, realtime message, notification and publishing-pipeline stage must carry a correlation identifier that appears in logs, in diagnostics (**ADM-036**) and in any error reported about it | Constraint | Specified             |
 | **API-057** | Submitting a job (API-040) or a bulk operation must be safely retryable: an idempotency key or equivalent must make a retry return the original work rather than starting a second export, publication, cohort or report. Where an operation cannot be idempotent, the specification must say what a retry does                                                                                                   | T3         | Specified             |
@@ -306,6 +306,19 @@ identifier, and only its tranche changes.
 | What was found                                                                            | Change                                                     |
 | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
 | API-051 declares rate limits in the API specification; nothing in the data spine sets one | **API-051 moved to T7**, with API-009, which it supersedes |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 61, of which 3 superseded | 61, of which 3 superseded |
+
+### Ken's decisions on data connectivity (ADR-0035), 2026-09-30
+
+Not a review. Ken's decisions on data connectivity, recorded by [ADR-0035](../../decisions/0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md), superseded IAM-067 by
+IAM-082, which adds that the stopped work records the sign-out or the revocation as its reason.
+
+| What was found                        | Change                                   |
+| ------------------------------------- | ---------------------------------------- |
+| API-054 cites IAM-067, now superseded | Edited for clarity: it cites **IAM-082** |
 
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
