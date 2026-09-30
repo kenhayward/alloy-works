@@ -107,9 +107,15 @@ let input = '';
 process.stdin.on('data', (chunk) => { input += chunk; });
 process.stdin.on('end', async () => {
   const { childSpawn, runChild } = await import('file:///app/dist/supervisor.js');
-  const spec = childSpawn({ path: 'probe', execArgv: ['-e', process.argv[1]] });
-  const outcome = await runChild(spec, input.trim(), 60000);
-  process.stdout.write(JSON.stringify(outcome));
+  // Production's own users, at slot 63, which the running supervisor - eight children at most - never
+  // hands out: it kills whatever runs as a slot's user when that slot's child ends, and would take a
+  // probe at slot 0 for a child's leftover whenever a connection's test ran beside this one.
+  const spec = childSpawn({ path: 'probe', execArgv: ['-e', process.argv[1]] }, undefined, 63);
+  // The probe's standard error, which says why when it ends without an answer. It never holds a key:
+  // the probe writes where it found one, never what.
+  let stderr = '';
+  const outcome = await runChild(spec, input.trim(), 60000, (chunk) => { stderr += chunk; });
+  process.stdout.write(JSON.stringify({ ...outcome, stderr: stderr.slice(0, 2000) }));
 });
 `;
 
@@ -146,8 +152,8 @@ describe("the connector's children", () => {
     });
     const outcome = JSON.parse(
       docker(['exec', '-i', id, 'node', '-e', LAUNCHER, PROBE], JSON.stringify(needles)),
-    ) as { kind: string; answer?: Probed };
-    expect(outcome.kind, 'the probe answered').toBe('answer');
+    ) as { kind: string; answer?: Probed; stderr: string };
+    expect(outcome.kind, `the probe answered: ${outcome.stderr}`).toBe('answer');
     probed = outcome.answer!;
   }, 300_000);
 
