@@ -274,8 +274,10 @@ export const RAN_MAX_CHARACTERS = 300_000;
 /** The placeholder a value marker is written as: the driver's n-th parameter, cast to its type. */
 function placeholder(number: number, parameter: Parameter): string {
   // A space either side, so it never fuses with what the author wrote beside it: a name before it
-  // (`a$1`), a `$` that would open a dollar quote, or a placeholder after it (`text$2`).
-  return ` $${number}::${POSTGRES_TYPES[parameter.type.base]}${parameter.list ? '[]' : ''} `;
+  // (`a$1`), a `$` that would open a dollar quote, or a placeholder after it (`text$2`). And in
+  // parentheses, so the cast is the placeholder's alone: a subscript written after the marker,
+  // `{{ids}}[2]`, is the value's, where `$1::int8[][2]` would be a type.
+  return ` ($${number}::${POSTGRES_TYPES[parameter.type.base]}${parameter.list ? '[]' : ''}) `;
 }
 
 /**
@@ -335,8 +337,8 @@ export interface BoundStatement {
 const asText = (value: string | boolean) => (typeof value === 'boolean' ? String(value) : value);
 
 /**
- * PostgreSQL's binder (D2-C; DAT-081, DAT-019): each value marker is written ` $n::type `, a space
- * either side, by its parameter's declaration, and its value handed to the driver as the n-th
+ * PostgreSQL's binder (D2-C; DAT-081, DAT-019): each value marker is written ` ($n::type) `,
+ * parenthesised with a space either side, by its parameter's declaration, and its value handed to the driver as the n-th
  * parameter - a list as one array - so no value is ever in the text; a marker used twice binds once. Each variation marker is
  * replaced by the fragment its value keys, found by an own lookup in the declared list, so the key
  * never reaches the source and nothing it names but a declared fragment can. The values have already

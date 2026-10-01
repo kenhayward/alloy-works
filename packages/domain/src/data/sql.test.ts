@@ -166,10 +166,10 @@ describe("PostgreSQL's binder", () => {
     );
     expect(bound.text).toBe(
       [
-        'select id from t where label =  $1::text  and id >=  $2::int8  and amount >=  $3::numeric ',
-        'and day >=  $4::date  and at >=  $5::time  and local >=  $6::timestamp  and since >=  $7::timestamptz ',
-        'and active =  $8::boolean  and id = any( $9::int8[] ) and label = any( $10::text[] )',
-        'and  $1::text  is not null and  $11::int8  is null',
+        'select id from t where label =  ($1::text)  and id >=  ($2::int8)  and amount >=  ($3::numeric) ',
+        'and day >=  ($4::date)  and at >=  ($5::time)  and local >=  ($6::timestamp)  and since >=  ($7::timestamptz) ',
+        'and active =  ($8::boolean)  and id = any( ($9::int8[]) ) and label = any( ($10::text[]) )',
+        'and  ($1::text)  is not null and  ($11::int8)  is null',
       ].join('\n'),
     );
     expect(bound.values).toEqual([
@@ -190,22 +190,33 @@ describe("PostgreSQL's binder", () => {
     expect(bound.text).not.toContain('9223372036854775807');
   });
 
-  it('writes each placeholder with a space either side, so it never fuses with what the author wrote beside it', () => {
+  it('writes each placeholder parenthesised with a space either side, so it never fuses with what the author wrote beside it', () => {
     const text = (sql: string) =>
       bindPostgres(
         {
           parameters: [
             { name: 'x', type: { base: 'text' }, required: true, list: false },
             { name: 'y', type: { base: 'text' }, required: true, list: false },
+            integer('ids', { list: true, required: false }),
           ],
           fetch: fetch(sql),
         },
         { x: 'a', y: 'b' },
       ).text;
     // A name before it, a dollar sign, and a placeholder beside another.
-    expect(text('select a{{x}}, {{y}} as b')).toBe('select a $1::text ,  $2::text  as b');
-    expect(text('select ${{x}}, {{y}}')).toBe('select $ $1::text ,  $2::text ');
-    expect(text('select {{x}}{{y}}')).toBe('select  $1::text  $2::text ');
+    expect(text('select a{{x}}, {{y}} as b, {{ids}}')).toBe(
+      'select a ($1::text) ,  ($2::text)  as b,  ($3::int8[]) ',
+    );
+    expect(text('select ${{x}}, {{y}}, {{ids}}')).toBe(
+      'select $ ($1::text) ,  ($2::text) ,  ($3::int8[]) ',
+    );
+    expect(text('select {{x}}{{y}}, {{ids}}')).toBe(
+      'select  ($1::text)  ($2::text) ,  ($3::int8[]) ',
+    );
+    // A subscript after it is the value's, never the cast's: `$3::int8[][2]` is a type.
+    expect(text('select {{x}}, {{y}}, {{ids}}[2]')).toBe(
+      'select  ($1::text) ,  ($2::text) ,  ($3::int8[]) [2]',
+    );
   });
 
   it('refuses a binding whose text, read again, does not hold exactly the placeholders it wrote', () => {
@@ -246,11 +257,11 @@ describe("PostgreSQL's binder", () => {
       fetch: fetch('select id from t where site = {{site}} order by {{#sort}}'),
     };
     expect(bindPostgres(definition, { sort: 'label', site: '1' })).toEqual({
-      text: 'select id from t where site =  $1::int8  order by label collate "C", id',
+      text: 'select id from t where site =  ($1::int8)  order by label collate "C", id',
       values: ['1'],
     });
     expect(bindPostgres(definition, { sort: 'amount', site: '1' }).text).toBe(
-      'select id from t where site =  $1::int8  order by amount desc, id',
+      'select id from t where site =  ($1::int8)  order by amount desc, id',
     );
     // A key that is not declared - an inherited member's name among them - places nothing, and the
     // binder refuses rather than run the query without it.

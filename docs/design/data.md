@@ -589,7 +589,8 @@ value is a typed filter the connector applies to its canonical rows.
   kind it began as, an escape string's escapes and all; a dollar quote's tag has no length limit; a
   `$` and a digit after a number are a positional parameter, refused, since only a name holds one;
   and a standard string's backslash is itself, which every connection the connector opens pins with
-  `standard_conforming_strings=on`. PostgreSQL's binder writes each value marker `$n::type`, a space
+  `standard_conforming_strings=on`. PostgreSQL's binder writes each value marker `($n::type)`,
+  parenthesised so a subscript after the marker is the value's and not the cast's, with a space
   either side so it never fuses with its neighbours, by its declaration - `int8`, `numeric`, `text`,
   `date`, `time`, `timestamp`, `timestamptz`, `boolean`, or that type's array for a list - and hands
   the value's canonical text to the driver; a marker used twice binds once; the SQL that ran is that

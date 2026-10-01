@@ -84,7 +84,7 @@ describe('a run', { timeout: LOADED_TIMEOUT_MS }, () => {
       createHash('sha256').update(canonicalResultBytes(answer.result), 'utf8').digest('hex'),
     );
     expect(answer.ran).toEqual({
-      sql: 'select id, name, depth, opened from sample.site where id >=  $1::int8  order by id',
+      sql: 'select id, name, depth, opened from sample.site where id >=  ($1::int8)  order by id',
     });
     expect(answer.durationMs).toBeGreaterThanOrEqual(0);
   });
@@ -420,6 +420,20 @@ describe('a run', { timeout: LOADED_TIMEOUT_MS }, () => {
     expect(
       refused(`select 1::int8 as id, E'a'${lineFeed}'${backslash}' || {{x}} || ' as c -- '`),
     ).toBe(true);
+
+    // A subscript written straight after a marker is the value's, the second of a list here,
+    // never the cast's array type.
+    const ids: Parameter = { name: 'ids', type: { base: 'integer' }, required: true, list: true };
+    expect(
+      rows(
+        await asReader(
+          draft('select 1::int8 as id, {{ids}}[2] as c', [id, column('c', { base: 'integer' })], {
+            parameters: [ids],
+          }),
+          { ids: ['5', '7'] },
+        ),
+      ),
+    ).toEqual([['1', '7']]);
 
     // A dollar quote whose tag is two hundred characters long.
     const tag = `$${'t'.repeat(200)}$`;

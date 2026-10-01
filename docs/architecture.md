@@ -2939,7 +2939,7 @@ declaration (`checkParameterValues`, DAT-020: `parameter_invalid` naming the par
 the value, before the connector is asked), takes the least of the definition's limits and the
 tenant's `data_policy` (DAT-050), and asks the connector's `/v1/run` after its deciding transaction
 commits. The connector binds by its own type's binder, `bindPostgres`, each marker written
-`$n::type`, a space either side, and each value the driver's parameter (DAT-081), the rewritten
+`($n::type)`, parenthesised with a space either side, and each value the driver's parameter (DAT-081), the rewritten
 text read again and refused unless its placeholders are exactly those written - which a
 definition's checks also do, with each fragment in place, and a run answers `definition_unbindable`
 (query) should one reach it, a fragment placed by its key and the key
