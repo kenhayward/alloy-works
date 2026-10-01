@@ -587,7 +587,9 @@ value is a typed filter the connector applies to its canonical rows.
   since PostgreSQL's `::` cast and an array slice `a[1:n]` spell it too. The lexer reads what is inside
   a literal as PostgreSQL's scanner does: a string continued on the next line is one literal of the
   kind it began as, an escape string's escapes and all; a dollar quote's tag has no length limit; a
-  `$` and a digit after a number are a positional parameter, refused, since only a name holds one;
+  number followed directly by a letter, a quote or a `$` is refused, which PostgreSQL 14 reads as two
+  tokens - `1e5E'...'` a number and an escape string, `1a$b$` a number and a name - and later versions
+  refuse as trailing junk;
   and a standard string's backslash is itself, which every connection the connector opens pins with
   `standard_conforming_strings=on`. PostgreSQL's binder writes each value marker `($n::type)`,
   parenthesised so a subscript after the marker is the value's and not the cast's, with a space

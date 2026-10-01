@@ -100,17 +100,32 @@ describe("the lexer, where PostgreSQL's own scanner reads otherwise", () => {
     expect(lexPostgres(quoted)).toEqual([{ kind: 'text', text: quoted }]);
   });
 
-  it('refuses a positional parameter after a number, and reads a dollar quote there, as PostgreSQL does', () => {
-    for (const text of ['select 1$1', 'select 1.5$2 from t', 'select x.1$1']) {
-      expect(lexPostgres(text), text).toMatchObject({ problem: expect.stringMatching(/\$1/) });
+  it('refuses a number followed directly by a letter, a quote or a $, which PostgreSQL versions read apart', () => {
+    // PostgreSQL 14 reads `1e5E'...'` as a number and an escape string, and `1a$b$` as 1 and the name
+    // a$b$; 15 and later refuse both as trailing junk. Refused when written, naming the line.
+    const backslash = String.fromCharCode(92);
+    for (const [text, line] of [
+      ['select 1$1', 1],
+      ['select 1.5$2 from t', 1],
+      ['select x.1$1', 1],
+      [`select 1\n, 1e5E'${backslash}' {{x}} '`, 2],
+      ['select 1a$b$ {{x}} $b$', 1],
+      ["select 1'a'", 1],
+      ['select 12abc', 1],
+      ['select 0x1F', 1],
+    ] as const) {
+      expect(lexPostgres(text), text).toMatchObject({
+        line,
+        problem: expect.stringMatching(/number/),
+      });
     }
-    // A name holds a $ and digits after it; a number does not, so a dollar quote opens after one.
-    expect(lexPostgres('select x$1, _y$2$z from t')).toEqual([
-      { kind: 'text', text: 'select x$1, _y$2$z from t' },
-    ]);
-    expect(lexPostgres('select 1$a$ {{x}} $a$')).toMatchObject({
-      problem: expect.stringMatching(/marker/),
-    });
+    // A number written whole, its exponent among it, is a number; a name holds a $ and digits.
+    for (const text of [
+      'select 1, 1.5, .5, 1e5, 1.5E+3, 2e-1 from t',
+      'select x$1, _y$2$z from t',
+    ]) {
+      expect(lexPostgres(text), text).toEqual([{ kind: 'text', text }]);
+    }
   });
 });
 

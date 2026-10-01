@@ -505,7 +505,7 @@ describe('a query definition', () => {
             required: true,
             list: false,
             variation: [
-              { key: 'plain', sql: '0' },
+              { key: 'plain', sql: 'x' },
               { key: 'joined', sql: fragment },
             ],
           },

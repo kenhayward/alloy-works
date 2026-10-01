@@ -2915,8 +2915,8 @@ hold its title and description, the one connection it names by artifact id, its 
   its limits and whether it is retired (`packages/domain/src/data/definition.ts`). A value is marked
   `{{name}}` and a fragment `{{#name}}` (D2-B), found by `lexPostgres`, a PostgreSQL lexer that
   refuses a marker inside a string, a quoted identifier, a dollar-quoted body or a comment, and a `$1`
-  of the author's own, reading a string continued on the next line, a dollar tag of any length and a
-  `$` after a number as PostgreSQL's scanner does. A definition is at most 512 KiB of canonical JSON and binds to at most
+  of the author's own, reading a string continued on the next line, a dollar tag of any length as PostgreSQL's
+  scanner does, and refusing a number followed directly by a letter, a quote or a `$`. A definition is at most 512 KiB of canonical JSON and binds to at most
   300,000 characters of SQL with its longest fragments, so every one that passes can be run. Every
   string is NFC already or the write is refused (D2-F), since a version's
   digest composes and the source does not. `parseQueryDefinitionForWrite` holds every write path to

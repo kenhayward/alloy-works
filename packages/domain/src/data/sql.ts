@@ -27,6 +27,8 @@ const DOLLAR_TAG = /^\$(?:[A-Za-z_\u0080-￿][A-Za-z0-9_\u0080-￿]*)?\$/;
 const DOLLAR_TAG_HERE = new RegExp(DOLLAR_TAG.source.slice(1), 'y');
 /** A positional parameter's digits, read where the scan stands. */
 const DIGITS_HERE = /[0-9]+/y;
+/** A decimal number as PostgreSQL writes one, its exponent among it, read where the scan stands. */
+const NUMBER_HERE = /(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?/y;
 
 /** A character that may stand inside a PostgreSQL name: a `$` after one is part of the name. */
 const inName = (character: string | undefined) =>
@@ -45,6 +47,8 @@ const HORIZONTAL_SPACE = new Set([32, 9, 12, 11]);
 const INSIDE =
   'A marker is written outside strings, quoted names and comments, where it would be read as text';
 const POSITIONAL = 'A value is written as a named marker, {{name}}, never as $1';
+const TRAILING =
+  'A number is followed directly by a letter, a quote or a $, which PostgreSQL versions read differently: set it apart with a space';
 
 /**
  * Where a string closed just before `at` goes on: PostgreSQL reads a quote after white space that
@@ -140,9 +144,9 @@ function scan(
       }
     }
     if (character === "'") {
-      // An escape string is `E'...'`, its E a token of its own - or, on PostgreSQL 14, after a number,
-      // which that version reads apart from it. After a name's letters it is a standard string.
-      const escapes = /^[0-9]*[Ee]$/.test(run);
+      // An escape string is `E'...'`, its E a token of its own. After a name's letters it is a standard
+      // string; after a number, refused before this as trailing junk.
+      const escapes = /^[Ee]$/.test(run);
       let end = at + 1;
       for (;;) {
         if (end >= text.length) return refuse('A string is not closed', at);
@@ -223,6 +227,18 @@ function scan(
         at = close + tag[0].length;
         continue;
       }
+    }
+    // A number, outside a name: read whole, and refused where a letter, a quote or a $ follows it
+    // directly - PostgreSQL 14 reads `1e5E'...'` as a number and an escape string and `1a$b$` as 1 and
+    // a name, and 15 and later refuse both as trailing junk.
+    if (run === '' && /[0-9]/.test(character)) {
+      NUMBER_HERE.lastIndex = at;
+      const number = NUMBER_HERE.exec(text)![0];
+      const next = text[at + number.length];
+      if (next !== undefined && (inName(next) || next === "'")) return refuse(TRAILING, at);
+      pending += number;
+      at += number.length;
+      continue;
     }
     run = inName(character) ? run + character : '';
     pending += character;
