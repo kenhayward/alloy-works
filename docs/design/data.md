@@ -59,7 +59,7 @@ checksummed result or one named failure.
 | **DAT-114** | No source connection is reused: the child process that opened it closes it and exits with its one request, so a connection that carried a user's identity is always discarded                                                                                                                             |
 | **DAT-009** | `queryDefinition` is an artifact kind in one space whose version carries a `title` and exactly one `connection`, a connection artifact's identifier                                                                                                                                                       |
 | **VER-057** | A query definition versions through `artifact_version` by `recordVersion`, with an author, `schemaVersion`, the digest and the insert-only grant every artifact has; a change is a new version from `openedFrom`                                                                                          |
-| **SCH-055** | `queryDefinition` is a search kind, its entry written with each version from its title, description, column names and its connection's name                                                                                                                                                               |
+| **SCH-055** | `queryDefinition` is a search kind, its entry written with each version from its title, description and column names                                                                                                                                                                                      |
 | **DAT-010** | Each parameter declares `name`, `type` from the column vocabulary but `image`, `required`, `list`, and `permitted` values as a list or a range                                                                                                                                                            |
 | **DAT-019** | A variation is a parameter whose permitted values are the keys of fragments the definition declares; its value selects one as an own property and is never placed in the query                                                                                                                            |
 | **DAT-020** | Every value is checked against its declaration before the connector is asked, and a value that fails refuses the act, `parameter_invalid`, naming the parameter, the rule and the value                                                                                                                   |
@@ -493,14 +493,32 @@ verified on production's own platform before connectors ship.
   description: string,
   connection: string,                                  // a connection's artifact identifier (DAT-009)
   parameters: Parameter[],
-  fetch: BuilderFetch | SqlFetch | HttpFetch | FileFetch,
+  fetch: BuilderFetch | SqlFetch | HttpFetch | FileFetch,   // SqlFetch alone in D2 (D2-D)
   columns: Column[],
   key: string[],                                       // column names; may be empty
   order: { column: string, direction: 'ascending' | 'descending' }[] | 'multiset',
   empty: 'valid' | 'invalid',                          // DAT-068
   limits: { rows: number, bytes: number, seconds: number },   // DAT-050
+  retired: boolean,                                    // D2-E: DAT-065's "not itself retired"
 }
 ```
+
+**Every string a version holds is already NFC, or the write is refused** `definition_invalid`,
+naming the member (D2-F): a version's digest composes its strings (ADR-0024), where the source
+compares two spellings of a SQL text as different, so the edit between them would be answered
+unchanged. A decomposed literal is written with PostgreSQL's `U&'...'` escapes. **A D2 definition's
+fetch is SQL alone** (D2-D); the builder's tree arrives with D4 as an arm, refusing nothing stored, so
+every D2 definition needs `write_sql`.
+
+**Every definition that passes its checks can be run.** Its canonical JSON is at most 512 KiB of
+UTF-8, and the longest SQL it can bind to - its text with each variation marker replaced by its
+longest fragment and each value marker by its placeholder - at most 300,000 characters, the most a
+run reports it ran; either past its bound is refused `definition_invalid`, naming the size, on every
+write and on a sample's draft. A run's request to the connector may be 1 MiB and 64 KiB, the
+service's own body limit and room for the connection and its sealed credential, so a definition at
+its bound always fits with room. The values are not bounded by the definition: a sample's are held by
+the service's body limit, which answers a larger body 413 before anything reaches the connector, and
+D3's resolve, whose values come from a document, must bound them before it asks.
 
 ### Parameters
 
@@ -511,7 +529,7 @@ Parameter = {
   required: boolean,
   list: boolean,
   permitted?: { values: CanonicalValue[] } | { minimum?: CanonicalValue, maximum?: CanonicalValue },
-  variation?: Record<string, Fragment>,                // a key choosing a fragment the fetch declares
+  variation?: { key: string, sql: string }[],          // a key choosing a fragment (D2-E)
 }
 ```
 
@@ -522,7 +540,12 @@ rule and the value (DAT-020). Text refuses U+0000, and a "contains" or "starts w
 to a pattern-free function, never into `LIKE`. **A variation** is a parameter whose permitted values
 are its fragments' keys (DAT-019): the value selects a fragment as an own property, and the fragment,
 not the value, reaches the query - a sort column, a unit - so a parameter never changes a query's
-shape (DAT-018).
+shape (DAT-018). A variation is an array looked up by its `key`, never a record keyed by the
+author's words, so no key - `__proto__`, `constructor` - reaches a prototype, and the canonical
+form's one name-keyed rule never meets one (D2-E). **A value is checked in its canonical form
+exactly** - an instant with `Z`, a decimal without trailing zeros - so what is validated is what is
+bound; text is at most 1,000 characters with no U+0000 or lone surrogate, an integer within 64 bits,
+and a list at most 50 items, none null or a list (D2-R).
 
 **Each connector type binds by its own rules** (DAT-081, ADR-0035): a database value is the driver's
 bound parameter, a list as one value (a PostgreSQL array; on SQL Server a JSON array read by
@@ -557,8 +580,30 @@ value is a typed filter the connector applies to its canonical rows.
   keeps the SQL that ran (DAT-099). Product-generated text is what keeps PostgreSQL's asserted identity
   safe (cases 3 and 5).
 
-- **`sql`**, the fallback: text with named parameters, `:site`, always bound by the driver, and a
-  variation placed at a marker the text declares. Saving one needs `write_sql` on the connection
+- **`sql`**, the fallback: text with named parameters, `{{site}}` for a value and `{{#name}}` for a
+  variation's fragment (D2-B), always bound by the driver. A marker is found by a PostgreSQL lexer in
+  `packages/domain`, and one inside a string, a quoted identifier, a dollar-quoted body or a comment,
+  or a `$1` of the author's own, is refused when the definition is written - `:site` was ruled out,
+  since PostgreSQL's `::` cast and an array slice `a[1:n]` spell it too. The lexer reads what is inside
+  a literal as PostgreSQL's scanner does: a string continued on the next line is one literal of the
+  kind it began as, an escape string's escapes and all; a dollar quote's tag has no length limit; a
+  number followed directly by a letter, a quote or a `$` is refused, which PostgreSQL 14 reads as two
+  tokens - `1e5E'...'` a number and an escape string, `1a$b$` a number and a name - and later versions
+  refuse as trailing junk;
+  and a standard string's backslash is itself, which every connection the connector opens pins with
+  `standard_conforming_strings=on`. PostgreSQL's binder writes each value marker `($n::type)`,
+  parenthesised so a subscript after the marker is the value's and not the cast's, with a space
+  either side so it never fuses with its neighbours, by its declaration - `int8`, `numeric`, `text`,
+  `date`, `time`, `timestamp`, `timestamptz`, `boolean`, or that type's array for a list - and hands
+  the value's canonical text to the driver; a marker used twice binds once; the SQL that ran is that
+  rewritten text (D2-C). The rewritten text is read again by the same lexer, and nothing is sent
+  unless its placeholders outside every literal and comment are exactly those written. **A
+  variation's fragment is placed set apart**, `/**/ <fragment> /**/`, so nothing either side runs
+  into it - a minus before a minus, an E before a quote, a dot before an exponent - and the SQL that
+  ran shows the empty comments; and a fragment must be sound on its own when it is written: lexing
+  whole, holding no marker, and leaving no line comment open at its end. So every combination of
+  fragments binds, which the definition's checks confirm by binding once, in time linear in its size;
+  one that reaches a run unchecked is `definition_unbindable`. Saving one needs `write_sql` on the connection
   (DAT-101). It is refused, `sql_not_permitted`, on a PostgreSQL connection whose identity is asserted,
   when saved and when run (DAT-102), and on any connection whose last test found its account not
   read-only (DAT-103).
@@ -609,7 +654,23 @@ prove a decimal's precision. Nothing is saved until the author has confirmed eve
 declared columns and the order are the contract** (DAT-106): the connector refuses, `result_mismatch`,
 a run whose columns or rows do not fit, and never adjusts one; a value a source cannot deliver exactly
 in its declared type is refused by name - `precision_lost`, `precision_not_carried`, `zone_missing`,
-`nonexistent_date`, `cell_error` - never rounded. An image column's description is a column the
+`nonexistent_date`, `cell_error` - never rounded.
+
+**For SQL, describe takes the statement** (D2-G): the connector asks the source to describe it with
+Parse, Describe and Sync and never runs it (the D2 plan's Q1), each fragment bound by its first key,
+and proposes each column by D1's map; a statement with no columns is `result_mismatch`. A run
+describes the bound statement the same way before running it, and refuses a column its declaration
+does not hold, as well as one it holds that the result lacks: the declared columns are the whole
+result. **What a declared type admits from PostgreSQL** (D2-L): text from `text`, `varchar`,
+`bpchar`, `name`, `citext`, `uuid`, `json`, `jsonb`, `xml` and any enum; integer from `int2`,
+`int4`, `int8` and `numeric`; decimal from those four; date from `date`; time from `time`; local
+date-time from `timestamp`; instant from `timestamptz`; boolean from `bool`; a domain by its base.
+Each built-in is admitted only from `pg_catalog`, and `citext` only where it is the extension's, its
+input function `citextin`: an account can make a type named `int8` or `bool` in a schema of its own.
+Any other type is `result_mismatch`, naming the column, and the author casts it in the SQL. A value
+with more digits or places than its declaration is `precision_lost`; one no canonical form holds - a
+numeric `NaN` or infinity, an infinite date or timestamp, a year before 1 or after 9999, a time of
+24:00:00 - is `value_unrepresentable`; a null key is `result_mismatch`. An image column's description is a column the
 definition names, or it is declared decorative (DAT-097's declaration; its failure at publish is
 `bindings.md`'s).
 
@@ -618,18 +679,42 @@ definition names, or it is declared decorative (DAT-097's declaration; its failu
 - **Key and order** (DAT-107): the key columns, and an order that is total and includes every key
   column, or `multiset`. The rows are hashed in that order, or sorted by their canonical text as a
   multiset, so rewriting unchanged rows moves no checksum - case 6 flagged unchanged data as moved in
-  19 of 19 refreshes without it.
+  19 of 19 refreshes without it. **A declared order is checked, never imposed** (D2-M): the connector
+  compares each row with the one before by the product's comparison - numbers and times by value,
+  `false` before `true`, **text by code point**, nulls last ascending and first descending as
+  PostgreSQL's default - and refuses `result_mismatch`, naming the row, where a pair is out of order
+  or two rows share a key. So a text sort key is ordered `COLLATE "C"` in the SQL, and the page says
+  so. A multiset sorts the rows by their canonical text, code point by code point.
 - **Empty** (DAT-068): whether no rows is a valid answer; a run of no rows against `invalid` fails,
   `empty_result`, exactly as any failure does.
-- **Limits** (DAT-050): rows, bytes and seconds. A tenant setting lowers each, and a run takes the
-  lesser of the definition's and the tenant's. The product's own ceilings and defaults are an
-  [open question](#open-questions) the first slice settles.
+- **Limits** (DAT-050): rows, bytes and seconds. A tenant setting, `data_policy`, lowers each, and a
+  run takes the lesser of the definition's and the tenant's. The defaults are 10,000 rows, 5 MiB and
+  30 seconds, the ceilings 100,000 rows, 25 MiB and 120 seconds (the D1 plan, D1-R). **The byte limit
+  counts both what arrives and what is kept** (D2-J): the bytes read from the source at the child's
+  socket after the statement is sent, and the canonical result's bytes; either past the limit is
+  `byte_limit`, and a single value larger than the limit is stopped before the driver holds it
+  (DAT-110). **The connector runs at most four definitions at once**, of its eight children: a result
+  at the ceilings - 99,999 rows of 39 columns, about 19.9 MB canonical - peaked at 368 to 371 MiB in
+  its child, against 88 MiB for a child at rest, and the supervisor held about 87 MiB of heap parsing
+  each such answer (measured under `tsx` on Windows). Four fit the container's 3 GiB (`mem_limit:
+3g`) beside the supervisor; eight would not. A fifth run at once is `connector_busy`, and a test or
+  a describe, which holds far less, takes one of the other slots. **The seconds limit is the run's
+  wall time from its child's start**, as the supervisor kills it a second after: the child counts its
+  deadline from its process's start, so the process starting - a few hundred milliseconds - is inside
+  the limit, and a statement close to it can answer `timeout` one time and not the next.
+  **A limit reached cancels at the source by the protocol's cancel request alone** (DAT-109): the
+  connector never falls back to `pg_cancel_backend`, since through a pooler the key the backend sent is
+  the pooler's, and the process it names could be another session's. So through a relay or a pooler
+  that drops cancel requests, a statement whose SQL turned off the server's own checks -
+  `client_connection_check_interval` and `statement_timeout` - runs on at the source until the source
+  stops it; the connector has answered `timeout` or the limit and holds nothing of it.
 
 ### Searchable
 
 `queryDefinition` joins `searchKinds` (SCH-055). Its entry is written with each version, as every
-kind's is, from its title, its description, its column names and its connection's name; renaming a
-connection rewrites the entries of the definitions naming it, in the same transaction. A connection
+kind's is, from its title, its description and its column names. Not from its connection's name: a
+reader of a definition need not be able to read the connection it names, and the name is the
+connection's to show. A connection
 and a dataset are not search entries in T2: a connection is found on its space's Connections page,
 and a dataset is read only through a document.
 
@@ -786,32 +871,44 @@ versions, which is DAT-013's audit half. When LIF's log is designed, each act is
 Every failure is one code, `attribution` fixed per code (DAT-049), naming the definition and, where
 the act has them, the binding and the document (DAT-086). A failed act records nothing.
 
-| Code                      | Attribution | When                                                                                           |
-| ------------------------- | ----------- | ---------------------------------------------------------------------------------------------- |
-| `connection_failed`       | connector   | Any failure to reach or authenticate, one reason for all (DAT-075)                             |
-| `address_refused`         | connector   | The guard refused the address, in a run; a test says `connection_failed`                       |
-| `timeout`                 | connector   | The deadline passed; the source was cancelled (DAT-109)                                        |
-| `row_limit`, `byte_limit` | query       | A limit was reached; nothing stored (DAT-051, DAT-110)                                         |
-| `result_incomplete`       | connector   | A stated length, digest or row count did not match what arrived (DAT-108)                      |
-| `result_mismatch`         | query       | Columns or order did not fit the declaration (DAT-106)                                         |
-| `precision_lost` and kin  | query       | A value was not exact in its declared type (DAT-080)                                           |
-| `nested_value`            | query       | A nested JSON value in a column not declared text (DAT-095)                                    |
-| `image_refused`           | query       | An image was not a PNG or a JPEG, or `ingest` refused it (DAT-096)                             |
-| `empty_result`            | query       | No rows, where the definition says empty is invalid (DAT-068)                                  |
-| `identity_unavailable`    | product     | A delegated act by a person with no provider token (DAT-076)                                   |
-| `identity_expired`        | connector   | The provider token has expired; sign in again                                                  |
-| `identity_unmatched`      | connector   | The source does not know the asserted person                                                   |
-| `sql_not_permitted`       | product     | A SQL fetch on a connection that refuses one (DAT-102, DAT-103)                                |
-| `parameter_invalid`       | product     | A value failed its declaration before anything ran (DAT-020)                                   |
-| `binding_unresolved`      | product     | A publish met a binding with no stored result - raised by the publish (DAT-087, `bindings.md`) |
-| `source_unsupported`      | connector   | The source signed the account in and is older than PostgreSQL 14, which a test cannot check    |
-| `connector_error`         | connector   | The connector's child ended without an answer                                                  |
-| `connector_unavailable`   | product     | No connector is configured, or it did not answer; nothing was asked of the source              |
-| `connector_busy`          | product     | The connector was running as many requests as it may                                           |
+| Code                      | Attribution | When                                                                                                                                                                                                                                                |
+| ------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `connection_failed`       | connector   | Any failure to reach or authenticate, one reason for all (DAT-075)                                                                                                                                                                                  |
+| `address_refused`         | connector   | The guard refused the address, in a run; a test says `connection_failed`                                                                                                                                                                            |
+| `timeout`                 | connector   | The deadline passed; the source was cancelled (DAT-109)                                                                                                                                                                                             |
+| `row_limit`, `byte_limit` | query       | A limit was reached; nothing stored (DAT-051, DAT-110)                                                                                                                                                                                              |
+| `result_incomplete`       | connector   | A stated length, digest or row count did not match what arrived (DAT-108)                                                                                                                                                                           |
+| `result_mismatch`         | query       | Columns or order did not fit the declaration (DAT-106)                                                                                                                                                                                              |
+| `precision_lost` and kin  | query       | A value was not exact in its declared type (DAT-080)                                                                                                                                                                                                |
+| `nested_value`            | query       | A nested JSON value in a column not declared text (DAT-095)                                                                                                                                                                                         |
+| `image_refused`           | query       | An image was not a PNG or a JPEG, or `ingest` refused it (DAT-096)                                                                                                                                                                                  |
+| `empty_result`            | query       | No rows, where the definition says empty is invalid (DAT-068)                                                                                                                                                                                       |
+| `identity_unavailable`    | product     | A delegated act by a person with no provider token (DAT-076)                                                                                                                                                                                        |
+| `identity_expired`        | connector   | The provider token has expired; sign in again                                                                                                                                                                                                       |
+| `identity_unmatched`      | connector   | The source does not know the asserted person                                                                                                                                                                                                        |
+| `sql_not_permitted`       | product     | A SQL fetch on a connection that refuses one (DAT-102, DAT-103)                                                                                                                                                                                     |
+| `parameter_invalid`       | product     | A value failed its declaration before anything ran (DAT-020)                                                                                                                                                                                        |
+| `binding_unresolved`      | product     | A publish met a binding with no stored result - raised by the publish (DAT-087, `bindings.md`)                                                                                                                                                      |
+| `source_unsupported`      | connector   | The source signed the account in and is older than PostgreSQL 14, which a test cannot check                                                                                                                                                         |
+| `connector_error`         | connector   | The connector's child ended without an answer                                                                                                                                                                                                       |
+| `connector_unavailable`   | product     | No connector is configured, or it did not answer; nothing was asked of the source                                                                                                                                                                   |
+| `connector_busy`          | product     | The connector was running as many requests as it may                                                                                                                                                                                                |
+| `source_refused`          | query       | The source refused the statement - a syntax error, a permission, a division by zero - with its SQLSTATE and its message, cut to 1,000 characters                                                                                                    |
+| `value_unrepresentable`   | query       | A value no canonical form of its declared type can hold: `NaN`, an infinity, a date out of range                                                                                                                                                    |
+| `definition_unbindable`   | query       | The binder refused the definition's binding: a fragment, unsound on its own, runs into the SQL around it where it is placed. The definition's checks refuse it when it is written; one reaching a run unchecked is answered so, and nothing is sent |
 
-The last four were added by the D1 plan (D1-M, D1-Q). A failure is answered with its HTTP status by
+The four before those two were added by the D1 plan (D1-M, D1-Q), and the last two by the D2 plan
+(D2-H), whose `source_refused` is answered with the source's message only to somebody holding
+`write_sql`; who else sees one is D3's. A failure is answered with its HTTP status by
 where it arose: a failed test is an answer, 200; describe's `connection_failed`, `connector_error` and
-`source_unsupported` are 502 and `timeout` 504; `connector_unavailable` and `connector_busy` 503.
+`source_unsupported` are 502 and `timeout` 504; `connector_unavailable` and `connector_busy` 503. A
+sample's failure is an answer, 200, as a failed test is; a describe of a statement answers the
+query's failures - `source_refused`, `result_mismatch` - 400, the author's to fix (the D2 plan).
+**SQL is refused `sql_not_permitted`, 409**, before anything runs, unless the connection's latest test
+is a pass of its latest version and credential that did not find its account able to write
+(DAT-103); a version retiring a definition is let through, since it runs nothing, so a definition
+
+- and after it its connection - can be retired once the account is found able to write.
 
 ## Routes
 
@@ -823,12 +920,12 @@ where it arose: a failed test is an answer, 200; describe's `connection_failed`,
 | `POST /v1/connections/{id}/versions`        | `administer` on the connection                                  | Cuts a version from `openedFrom` and whole settings; retiring is `retired: true`, refused while in use                       |
 | `PUT /v1/connections/{id}/credential`       | `administer` on the connection                                  | Seals the secret through the connector, adds a credential row, tests the connection and answers the test with its dependents |
 | `POST /v1/connections/{id}/test`            | `use_connection`                                                | The connection test                                                                                                          |
-| `POST /v1/connections/{id}/describe`        | `use_connection`                                                | Tables and views, or a draft SQL fetch's result shape                                                                        |
+| `POST /v1/connections/{id}/describe`        | `use_connection`, and `write_sql` for a statement               | Tables and views, or a draft SQL fetch's result shape                                                                        |
 | `POST /v1/connections/{id}/sample`          | `use_connection`, and `write_sql` for a SQL fetch               | Runs a draft definition with sample parameters; answers rows and proposed columns; stores nothing                            |
 | `GET /v1/connections/{id}/uses`             | `read` on the connection                                        | Where it is used                                                                                                             |
-| `POST /v1/spaces/{space}/query-definitions` | `edit` on the space, `use_connection`                           | Makes a definition at 0.1                                                                                                    |
+| `POST /v1/spaces/{space}/query-definitions` | `edit` on the space, `use_connection`, `write_sql` for SQL      | Makes a definition at 0.1                                                                                                    |
 | `GET /v1/query-definitions`                 | Signed in                                                       | The definitions the caller may read                                                                                          |
-| `GET /v1/query-definitions/{id}`            | `read` on the definition                                        | Its latest version, and its connection's name and identity                                                                   |
+| `GET /v1/query-definitions/{id}`            | `read` on the definition                                        | Its latest version, its connection's identity, and its connection's name where the caller may read the connection            |
 | `POST /v1/query-definitions/{id}/versions`  | `edit` on the definition, `use_connection`, `write_sql` for SQL | Cuts a version from `openedFrom`; retiring is a version too                                                                  |
 | `GET /v1/query-definitions/{id}/uses`       | `read` on the definition                                        | Where it is used                                                                                                             |
 | `GET /v1/documents/{id}/bindings`           | `read` on the document                                          | Each binding's resolution, its dataset version's provenance, and any waiting revision                                        |
@@ -941,31 +1038,30 @@ approved them the same day.
 
 ## Open questions
 
-| Question                                                                                                                                                        | Where it goes                               |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| The default limits - rows, bytes, time - and the product's ceilings                                                                                             | D1's plan, from the spike's case 7          |
-| Mutual TLS between the service and the connector in production                                                                                                  | Hosting, which is open (system.md)          |
-| The cadence and latency of the check on opening a document with many bindings, and the concurrency of a creation's resolves (case 4: 1.4 to 1.8 s for 440 at 8) | D3's plan, and the `templates.md` additions |
-| IAM-082's stated bound for a check or a creation stopped by a sign-out                                                                                          | D3's plan, measured                         |
-| Checking the account's own privilege at each asserted run, which would let DAT-112 be claimed                                                                   | D7's plan                                   |
-| Comparison and order under each source's collation, where two keys compare equal                                                                                | D4 and D5's plans                           |
-| A nested JSON value kept as text: its source text or a canonical form, which decides whether reformatting at the source moves a checksum                        | D6's plan                                   |
-| How a new definition version a floating binding would take, or a changed parameter value, is offered                                                            | `bindings.md` (DAT-070)                     |
+| Question                                                                                                                                                               | Where it goes                                     |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Mutual TLS between the service and the connector in production                                                                                                         | Hosting, which is open (system.md)                |
+| The cadence and latency of the check on opening a document with many bindings, and the concurrency of a creation's resolves (case 4: 1.4 to 1.8 s for 440 at 8)        | D3's plan, and the `templates.md` additions       |
+| IAM-082's stated bound for a check or a creation stopped by a sign-out                                                                                                 | D3's plan, measured                               |
+| Checking the account's own privilege at each asserted run, which would let DAT-112 be claimed                                                                          | D7's plan                                         |
+| Comparison and order under each source's collation, where two keys compare equal: answered for PostgreSQL's SQL by D2-M - checked by code point, ordered `COLLATE "C"` | D4 and D5's plans, for the builder and SQL Server |
+| A nested JSON value kept as text: its source text or a canonical form, which decides whether reformatting at the source moves a checksum                               | D6's plan                                         |
+| How a new definition version a floating binding would take, or a changed parameter value, is offered                                                                   | `bindings.md` (DAT-070)                           |
 
 ## Build order
 
 Each slice has a plan of its own, written when its turn comes.
 
-| Slice  | What                                                                                                                                                                                                         |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **D1** | The connection kind and its sealed credential; `use_connection`; `apps/connector` with a process per request, the guard, PostgreSQL, `test`, `describe` and `seal`; the compose networks; a Connections page |
-| **D2** | The query definition kind: parameters, the SQL fallback and `write_sql` with the check that reads it, columns second, the sample run, canonicalising and checksumming in the connector; search               |
-| **D3** | Datasets and resolutions: the dataset kind, objects keyed by checksum, provenance, resolve, check and accept; the binding inline widened after the evidence query. **`bindings.md` is designed after D3**    |
-| **D4** | The builder: the saved query tree, PostgreSQL's SQL generated from it, its screens                                                                                                                           |
-| **D5** | SQL Server: `tedious`, its dialect, `NVARCHAR` and `CAST`                                                                                                                                                    |
-| **D6** | HTTP and S3 connections and the file formats: the product's own XLSX reader, CSV and JSON                                                                                                                    |
-| **D7** | End-user identity: the delegated token, with the session holding the provider's token, and asserted identity on PostgreSQL and SQL Server                                                                    |
-| **D8** | Image columns through `ingest`                                                                                                                                                                               |
+| Slice  | What                                                                                                                                                                                                                                                                |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **D1** | The connection kind and its sealed credential; `use_connection`; `apps/connector` with a process per request, the guard, PostgreSQL, `test`, `describe` and `seal`; the compose networks; a Connections page                                                        |
+| **D2** | The query definition kind: parameters, the SQL fallback and `write_sql` with the check that reads it, columns second, the sample run, canonicalising and checksumming in the connector; search. Built by [the D2 plan](../plans/2026-09-30-d2-query-definitions.md) |
+| **D3** | Datasets and resolutions: the dataset kind, objects keyed by checksum, provenance, resolve, check and accept; the binding inline widened after the evidence query. **`bindings.md` is designed after D3**                                                           |
+| **D4** | The builder: the saved query tree, PostgreSQL's SQL generated from it, its screens                                                                                                                                                                                  |
+| **D5** | SQL Server: `tedious`, its dialect, `NVARCHAR` and `CAST`                                                                                                                                                                                                           |
+| **D6** | HTTP and S3 connections and the file formats: the product's own XLSX reader, CSV and JSON                                                                                                                                                                           |
+| **D7** | End-user identity: the delegated token, with the session holding the provider's token, and asserted identity on PostgreSQL and SQL Server                                                                                                                           |
+| **D8** | Image columns through `ingest`                                                                                                                                                                                                                                      |
 
 Then `tables.md`, and the `templates.md` additions: a template's parameters, and a document's
 bindings established when it is made.

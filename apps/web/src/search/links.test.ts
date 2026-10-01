@@ -14,6 +14,7 @@ describe("a search result's link and place", () => {
     expect(result('section', 'title', NODE)).toBe(`#/documents/${ID}/nodes/${NODE}`);
     expect(result('document', 'title')).toBe(`#/documents/${ID}`);
     expect(result('publication', 'title')).toBe(`#/publications/${ID}`);
+    expect(result('queryDefinition', 'columns')).toBe(`#/query-definitions/${ID}`);
     // Nothing to open yet: no page shows a template, an image or a definition on its own.
     for (const kind of ['template', 'asset', 'field', 'metadataSchema', 'componentType']) {
       expect(result(kind, 'title')).toBeNull();
@@ -49,6 +50,8 @@ describe("a search result's link and place", () => {
     expect(whereFound('section:intro', fields)).toBe('In a starting section');
     expect(whereFound('fields', fields)).toBe('In the fields it groups');
     expect(whereFound('schemas', fields)).toBe('In the schemas it assigns');
+    expect(whereFound('columns', fields)).toBe('In its column names');
+    expect(whereFound('connection', fields)).toBeNull();
     expect(whereFound(null, fields)).toBeNull();
   });
 });

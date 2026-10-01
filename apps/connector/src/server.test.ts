@@ -1,6 +1,12 @@
 import type { AddressInfo } from 'node:net';
 
-import { connectionTarget, credentialContext, SEALED } from '@alloy-works/domain';
+import {
+  connectionTarget,
+  credentialContext,
+  DEFINITION_MAX_BYTES,
+  RUN_REQUEST_MAX_BYTES,
+  SEALED,
+} from '@alloy-works/domain';
 import { openSecret } from '@alloy-works/sealing';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -8,8 +14,12 @@ import { loadConnectorConfig } from './config.js';
 import { createConnectorServer } from './server.js';
 import { childSpawn, type ChildSpec } from './supervisor.js';
 import {
+  column,
+  describeSqlRequest,
+  draft,
   PASSWORDS,
   requestFor,
+  runRequest,
   SEALING_KEY,
   settings,
   suiteChild,
@@ -152,6 +162,73 @@ describe("the connector's interface", () => {
     expect((await fetch(`${url}/v1/seal`)).status).toBe(404);
   });
 
+  it('takes a run and a SQL describe of up to 1 MiB and 64 KiB, a seal or a test of up to 64 KiB, and refuses a statement that does not lex 400', async () => {
+    const { url } = await started();
+    const id = column('id', { base: 'integer' });
+    // Nearly 100,000 characters of SQL, over 64 KiB and under 256 KiB, are a run's and a describe's.
+    const long = `select id from sample.site /* ${'x'.repeat(99_000)} */ order by id`;
+    const ran = await post(
+      url,
+      '/v1/run',
+      runRequest(settings(), PASSWORDS.reader, draft(long, [id])),
+    );
+    expect(ran.status).toBe(200);
+    expect(await ran.json()).toMatchObject({ outcome: 'ok', rowCount: 3 });
+    const described = await post(
+      url,
+      '/v1/describe',
+      describeSqlRequest(settings(), PASSWORDS.reader, long),
+    );
+    expect(described.status).toBe(200);
+    expect(await described.json()).toEqual({
+      columns: [{ name: 'id', sourceType: 'integer', proposed: { base: 'integer' } }],
+      parameters: [],
+    });
+    // A definition at its size bound, with a value, is a run's too.
+    const values: string[] = [];
+    const bounded = () =>
+      draft('select id from sample.site where {{label}} is not null order by id', [id], {
+        parameters: [
+          {
+            name: 'label',
+            type: { base: 'text' },
+            required: true,
+            list: false,
+            permitted: { values },
+          },
+        ],
+      });
+    const request = () =>
+      runRequest(settings(), PASSWORDS.reader, bounded(), { label: values[0] ?? '' });
+    const bytes = () => Buffer.byteLength(JSON.stringify(request().definition));
+    for (;;) {
+      values.push(`${values.length}${'一'.repeat(980)}`);
+      if (bytes() > DEFINITION_MAX_BYTES - 16) break;
+    }
+    values.pop();
+    values.push(`${values.length}`);
+    const left = DEFINITION_MAX_BYTES - bytes();
+    values[values.length - 1] += '一'.repeat(Math.floor(left / 3)) + 'a'.repeat(left % 3);
+    expect(bytes()).toBe(DEFINITION_MAX_BYTES);
+    const atBound = await post(url, '/v1/run', request());
+    expect(atBound.status).toBe(200);
+    expect(await atBound.json()).toMatchObject({ outcome: 'ok', rowCount: 3 });
+    const huge = `select 1 /* ${'x'.repeat(RUN_REQUEST_MAX_BYTES)} */`;
+    expect(
+      (await post(url, '/v1/run', runRequest(settings(), 'x', draft(huge, [id])))).status,
+    ).toBe(413);
+    const sealed = await post(url, '/v1/test', {
+      ...requestFor(settings(), 'x'),
+      pad: 'x'.repeat(65 * 1024),
+    });
+    expect(sealed.status).toBe(413);
+    for (const text of ["select 'open", 'select {{nothing}}']) {
+      const refused = await post(url, '/v1/describe', describeSqlRequest(settings(), 'x', text));
+      expect(refused.status, text).toBe(400);
+      expect(await refused.json()).toEqual({ code: 'request_invalid' });
+    }
+  });
+
   it('answers health to anybody, and logs none of it: a probe every two seconds is no request', async () => {
     const { url, lines } = await started();
     for (let probe = 0; probe < 3; probe += 1) {
@@ -174,7 +251,7 @@ describe("the connector's interface", () => {
     expect(await tested.json()).toEqual({ outcome: 'ok', findings: [] });
     const described = await post(url, '/v1/describe', requestFor(settings(), PASSWORDS.reader));
     expect(described.status).toBe(200);
-    expect(((await described.json()) as { relations: unknown[] }).relations).toHaveLength(3);
+    expect(((await described.json()) as { relations: unknown[] }).relations).toHaveLength(5);
     expect(lines).toHaveLength(2);
     for (const line of lines) {
       const parsed = JSON.parse(line) as Record<string, unknown>;

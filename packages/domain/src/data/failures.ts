@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { storableText } from '../stored/storable.js';
+
 /** Who a failure is laid at (DAT-049): the source's side, the query's author, or the product. */
 export type Attribution = 'connector' | 'query' | 'product';
 
@@ -7,7 +9,12 @@ export type Attribution = 'connector' | 'query' | 'product';
  * Every data failure, its attribution fixed by its code (data.md, "Failures"), with the D1 plan's
  * additions: `connector_error` (the child ended without an answer), `connector_unavailable` and
  * `connector_busy` (D1-Q), and `source_unsupported`, a source too old to be checked once authenticated
- * (D1-M).
+ * (D1-M); and the D2 plan's two (D2-H): `source_refused`, the source refused the author's statement -
+ * a syntax error, a permission, a division by zero - and `value_unrepresentable`, a value no canonical
+ * form of its declared type can hold, a numeric `NaN` or an infinite date among them; and the re-review's
+ * `definition_unbindable`, a definition whose binding the binder refused - a fragment running into the
+ * SQL around it - which the definition's checks refuse when it is written, answered as the query's
+ * should one reach a run unchecked, and never sent.
  */
 export const dataFailures = Object.freeze({
   connection_failed: 'connector',
@@ -35,25 +42,83 @@ export const dataFailures = Object.freeze({
   connector_unavailable: 'product',
   connector_busy: 'product',
   source_unsupported: 'connector',
+  source_refused: 'query',
+  value_unrepresentable: 'query',
+  definition_unbindable: 'query',
 } as const satisfies Record<string, Attribution>);
 
 export type DataFailureCode = keyof typeof dataFailures;
 
 export const dataFailureCodes = Object.freeze(Object.keys(dataFailures) as DataFailureCode[]);
 
-export type DataFailure = { readonly code: DataFailureCode; readonly attribution: Attribution };
-
-/** A failure made from its code alone, so nothing can attribute it otherwise. */
-export function dataFailure(code: DataFailureCode): DataFailure {
-  return { code, attribution: dataFailures[code] };
+/** What the source said of a statement it refused: its SQLSTATE and its message, cut (D2-H). */
+export interface SourceRefusal {
+  readonly sqlstate: string;
+  readonly message: string;
 }
 
-/** A failure as it crosses a boundary: its code known, and its attribution the code's own. */
+/**
+ * A failure: its code and the attribution the code fixes; for `source_refused`, what the source said;
+ * and the column or the row, counted from 1, where a failure names one.
+ */
+export type DataFailure = {
+  readonly code: DataFailureCode;
+  readonly attribution: Attribution;
+  readonly source?: SourceRefusal;
+  readonly column?: string;
+  readonly row?: number;
+};
+
+/** The most of a source's message a failure carries, in characters (D2-H). */
+export const SOURCE_MESSAGE_MAX = 1000;
+
+/** A source's message cut to 1,000 characters, a whole character at a time. */
+export function sourceMessage(message: string): string {
+  const characters = [...message];
+  return characters.length > SOURCE_MESSAGE_MAX
+    ? characters.slice(0, SOURCE_MESSAGE_MAX).join('')
+    : message;
+}
+
+/** A failure made from its code alone, so nothing can attribute it otherwise. */
+export function dataFailure(
+  code: DataFailureCode,
+  detail: { readonly source?: SourceRefusal; readonly column?: string; readonly row?: number } = {},
+): DataFailure {
+  return { code, attribution: dataFailures[code], ...detail };
+}
+
+const utf8Bytes = (value: string) => new TextEncoder().encode(value).length;
+
+/**
+ * A failure as it crosses a boundary: its code known, its attribution the code's own, what the source
+ * said only where the source refused, and a column's name as PostgreSQL holds one.
+ */
 export const dataFailureSchema = z
   .strictObject({
     code: z.enum(dataFailureCodes as [DataFailureCode, ...DataFailureCode[]]),
     attribution: z.enum(['connector', 'query', 'product']),
+    source: z
+      .strictObject({
+        sqlstate: z.string().regex(/^[0-9A-Z]{5}$/),
+        message: z
+          .string()
+          .refine((value) => [...value].length <= SOURCE_MESSAGE_MAX && storableText(value), {
+            message: `A source's message is at most ${SOURCE_MESSAGE_MAX} characters`,
+          }),
+      })
+      .optional(),
+    column: z
+      .string()
+      .refine((value) => utf8Bytes(value) >= 1 && utf8Bytes(value) <= 63 && storableText(value), {
+        message: 'A column is named as PostgreSQL holds a name',
+      })
+      .optional(),
+    row: z.number().int().min(1).optional(),
   })
   .refine((failure) => dataFailures[failure.code] === failure.attribution, {
     message: 'A failure carries the attribution its code fixes',
+  })
+  .refine((failure) => (failure.source !== undefined) === (failure.code === 'source_refused'), {
+    message: 'A failure carries what the source said exactly when the source refused',
   });

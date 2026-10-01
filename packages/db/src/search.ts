@@ -3,6 +3,7 @@ import {
   entriesOf,
   isUserValue,
   parseAssetVersion,
+  parseQueryDefinition,
   readContent,
   readDefinition,
   readOutline,
@@ -35,6 +36,7 @@ const versioned = new Set<string>([
   'field',
   'metadataSchema',
   'componentType',
+  'queryDefinition',
 ]);
 
 /**
@@ -158,6 +160,12 @@ function sourceOf(version: StoredVersion): SearchSource | undefined {
     case 'asset':
       try {
         return { kind: 'asset', content: parseAssetVersion(version.content) };
+      } catch {
+        return undefined;
+      }
+    case 'queryDefinition':
+      try {
+        return { kind: 'queryDefinition', content: parseQueryDefinition(version.content) };
       } catch {
         return undefined;
       }

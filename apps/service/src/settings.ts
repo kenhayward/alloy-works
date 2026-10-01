@@ -1,5 +1,13 @@
-import type { EditingSettings } from '@alloy-works/api-contract';
-import { editingPolicy, setEditingPolicy, type Tenant, type TenantDatabase } from '@alloy-works/db';
+import type { DataSettings, DataSettingsBody, EditingSettings } from '@alloy-works/api-contract';
+import {
+  dataPolicy,
+  editingPolicy,
+  setDataPolicy,
+  setEditingPolicy,
+  type Tenant,
+  type TenantDatabase,
+} from '@alloy-works/db';
+import { limitCeilings } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import type { Authorised } from './access.js';
 import { AppError } from './errors.js';
@@ -31,6 +39,28 @@ export function settingsHandlers(
         );
       }
       return answer.policy;
+    },
+
+    // The tenant's lowered limits on a run (D2-N; DAT-050): read by anybody signed in, as a limit a
+    // query author meets should be stated, and lowered only by an administrator of the environment.
+    getDataSettings: async (request: FastifyRequest): Promise<DataSettings> =>
+      db.withTenant(tenantOf(request), async (trx) => ({
+        ...(await dataPolicy(trx)),
+        ceilings: { ...limitCeilings },
+      })),
+
+    setDataSettings: async (
+      request: FastifyRequest,
+      { trx }: Authorised,
+    ): Promise<DataSettings> => {
+      // The contract refuses a limit past its ceiling before this runs, and the table's check again.
+      const body = request.body as DataSettingsBody;
+      await setDataPolicy(trx, {
+        rows: body.rows ?? null,
+        bytes: body.bytes ?? null,
+        seconds: body.seconds ?? null,
+      });
+      return { ...(await dataPolicy(trx)), ceilings: { ...limitCeilings } };
     },
   };
 }

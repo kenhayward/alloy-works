@@ -4,7 +4,9 @@ import {
   OUTLINE_SCHEMA_VERSION,
   SEARCH_CONFIGURATIONS,
   TEMPLATE_SCHEMA_VERSION,
+  type ConnectionSettings,
   type ContentDocument,
+  type QueryDefinition,
 } from '@alloy-works/domain';
 import { cp, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -13,12 +15,14 @@ import { pathToFileURL } from 'node:url';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
+import { createConnection } from './connections.js';
 import { createComponent } from './creation.js';
 import { grant } from './grants.js';
 import { DEFAULT_LAYOUT_ID } from './layouts.js';
 import { migrate } from './migrate.js';
 import { createTenant, provisionTenant, type Tenant } from './provision.js';
 import { recordPublication, requestPublication } from './publishing.js';
+import { createQueryDefinition } from './queryDefinitions.js';
 import { findRole } from './roles.js';
 import { reindexSearch } from './search.js';
 import type { TenantTransaction } from './tables.js';
@@ -34,6 +38,37 @@ const IBIS = '5ea00000-0000-4000-8000-000000000003';
 const SECTION = 'c'.repeat(26);
 
 const text = (value: string) => [{ type: 'text', value, marks: [] }];
+
+const warehouse = (name: string): ConnectionSettings => ({
+  schemaVersion: 1,
+  name,
+  description: '',
+  type: 'postgres',
+  source: {
+    host: 'source-postgres',
+    port: 5432,
+    database: 'readings',
+    account: 'reader',
+    tls: 'require',
+  },
+  identity: { kind: 'service' },
+  retired: false,
+});
+
+const queryDefinition = (connection: string, title: string): QueryDefinition => ({
+  schemaVersion: 1,
+  title,
+  description: '',
+  connection,
+  parameters: [],
+  fetch: { kind: 'sql', text: 'select id, name from sample.site order by id' },
+  columns: [{ name: 'id', from: { column: 'id' }, type: { base: 'integer' } }],
+  key: ['id'],
+  order: [{ column: 'id', direction: 'ascending' }],
+  empty: 'valid',
+  limits: { rows: 100, bytes: 100_000, seconds: 10 },
+  retired: false,
+});
 
 interface Found {
   readonly kind: string;
@@ -218,6 +253,20 @@ describe("search's projection, written with every version", () => {
           content: { ...identity(IBIS, 'Ibis note'), assignments: [] },
         },
       });
+      const source = await createConnection(trx, {
+        author: ada,
+        spaceId: general,
+        settings: warehouse('Readings'),
+      });
+      if (source.answer !== 'created') throw new Error(source.answer);
+      await createArtifact(trx, {
+        author: ada,
+        spaceId: general,
+        substance: {
+          kind: 'queryDefinition',
+          content: queryDefinition(source.connection.id, 'Jaguar sightings'),
+        },
+      });
       return made;
     });
     await service.withTenant(production, async (trx) => {
@@ -260,6 +309,7 @@ describe("search's projection, written with every version", () => {
             ['field', 'gecko'],
             ['metadataSchema', 'heron'],
             ['componentType', 'ibis'],
+            ['queryDefinition', 'jaguar'],
           ].map(async ([kind, word]) => [
             kind,
             (await found(trx, word!)).some((each) => each.kind === kind),
@@ -277,7 +327,51 @@ describe("search's projection, written with every version", () => {
       field: true,
       metadataSchema: true,
       componentType: true,
+      queryDefinition: true,
     });
+  });
+
+  it("SCH-055 finds a query definition by its title, description or a column's name, and never by its SQL or its connection's name", async () => {
+    const { definition } = await service.withTenant(production, async (trx) => {
+      const made = await createConnection(trx, {
+        author: ada,
+        spaceId: general,
+        settings: warehouse('Kestrel warehouse'),
+      });
+      if (made.answer !== 'created') throw new Error(made.answer);
+      const answer = await createQueryDefinition(trx, {
+        author: ada,
+        spaceId: general,
+        definition: {
+          ...queryDefinition(made.connection.id, 'Lynx counts'),
+          description: 'Mongoose tallies by site.',
+          columns: [
+            { name: 'id', from: { column: 'id' }, type: { base: 'integer' } },
+            { name: 'marmot', from: { column: 'name' }, type: { base: 'text' } },
+          ],
+        },
+      });
+      if (answer.answer !== 'created') throw new Error(answer.answer);
+      return { definition: answer.definition };
+    });
+    const places = (trx: TenantTransaction, words: string) =>
+      found(trx, words).then((rows) =>
+        rows.filter((row) => row.artifact_id === definition.id).map((row) => row.place),
+      );
+    const [title, description, column, named, sql_] = await service.withTenant(production, (trx) =>
+      Promise.all([
+        places(trx, 'lynx'),
+        places(trx, 'mongoose'),
+        places(trx, 'marmot'),
+        places(trx, 'kestrel'),
+        places(trx, 'sample'),
+      ]),
+    );
+    expect([title, description, column]).toEqual([['title'], ['description'], ['columns']]);
+    // Never by its SQL, nor by its connection's name, which a reader of the definition may not be
+    // allowed to read.
+    expect(sql_).toEqual([]);
+    expect(named).toEqual([]);
   });
 
   it('SCH-066 makes a new version findable by its words in the next transaction', async () => {

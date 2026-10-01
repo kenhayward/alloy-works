@@ -1,14 +1,14 @@
-import { isIP } from 'node:net';
+import { connect, isIP } from 'node:net';
 
 import {
   DESCRIBE_BUDGET_BYTES,
   MAX_COLUMNS,
   sourceNameSchema,
   sourceTypeSchema,
-  type ColumnType,
   type ConnectionSettings,
   type Relation,
   type TestFinding,
+  type ValueType,
 } from '@alloy-works/domain';
 import pg from 'pg';
 
@@ -80,13 +80,68 @@ export async function connectPostgres(
     enableChannelBinding: true,
     application_name: 'alloy-connector',
     // The source notices a client gone within a quarter of a second, and stops a statement at the
-    // request's deadline whatever the driver does (case 7).
-    options: `-c client_connection_check_interval=250 -c statement_timeout=${Math.max(1, Math.floor(timing.statementTimeoutMs))}`,
+    // request's deadline - a second line behind the child's own cancel, since a statement can set
+    // either of these to nothing (DAT-109; the D2 plan, final review 3). A run reads every value as the server's
+    // text, which these two fix: an instant in UTC, and dates and times in ISO order (D2-Q). And a
+    // standard string's backslash is itself, as the lexer that found a definition's markers read it,
+    // whatever the source's or the account's default (the D2 plan, final review 8).
+    options: [
+      '-c client_connection_check_interval=250',
+      `-c statement_timeout=${Math.max(1, Math.floor(timing.statementTimeoutMs))}`,
+      '-c TimeZone=UTC',
+      '-c DateStyle=ISO,YMD',
+      '-c standard_conforming_strings=on',
+    ].join(' '),
   });
   // A driver error after connecting is the request's to answer, never an uncaught event.
   client.on('error', () => {});
   await client.connect();
   return client;
+}
+
+/** How long a cancel is waited for, at the most, before the child answers and exits. */
+export const CANCEL_WAIT_MS = 300;
+
+/** PostgreSQL's CancelRequest code: 1234 in the high 16 bits, 5678 in the low (protocol 3.0). */
+const CANCEL_REQUEST_CODE = 80877102;
+
+/**
+ * Asks the source to cancel whatever a client's backend is running (DAT-109): the protocol's
+ * CancelRequest, carrying the backend's process id and secret key, on a fresh connection to the same
+ * checked address the client dialled - never a name resolved again, which could now answer another
+ * address. The source reads it before any authentication and closes the connection; this waits for
+ * that, or `waitMs`, whichever is sooner, and never fails: a cancel is a best effort beside the socket
+ * the caller has already destroyed. The source's own settings cannot refuse it, where the author's SQL
+ * can turn off both `client_connection_check_interval` and `statement_timeout`.
+ */
+export function cancelBackend(
+  address: string,
+  port: number,
+  client: pg.Client,
+  waitMs = CANCEL_WAIT_MS,
+): Promise<void> {
+  const { processID, secretKey } = client as unknown as {
+    processID: number | null;
+    secretKey: number | null;
+  };
+  if (typeof processID !== 'number' || typeof secretKey !== 'number') return Promise.resolve();
+  return new Promise((resolve) => {
+    const packet = Buffer.alloc(16);
+    packet.writeInt32BE(16, 0);
+    packet.writeInt32BE(CANCEL_REQUEST_CODE, 4);
+    packet.writeInt32BE(processID, 8);
+    packet.writeInt32BE(secretKey, 12);
+    const socket = connect({ host: address, port });
+    const done = () => {
+      clearTimeout(timer);
+      socket.destroy();
+      resolve();
+    };
+    const timer = setTimeout(done, waitMs);
+    socket.on('error', done);
+    socket.on('close', done);
+    socket.once('connect', () => socket.end(packet));
+  });
 }
 
 /** The source's version, as `server_version_num`. */
@@ -137,6 +192,23 @@ interface TypeRow {
   readonly typtypmod: number;
 }
 
+/**
+ * Types by OID, each named as the product reads it: a built-in's name only where it is PostgreSQL's
+ * own, in `pg_catalog`, and `citext` only where it is the extension's, its input function `citextin`
+ * beside it. Any other type is nameless here, whatever it is called: an account can make a type named
+ * `int8` or `bool` in a schema of its own, and a name alone would admit it as the built-in (D2-L). An
+ * enum is text wherever it is, by its kind; a domain is followed to its base.
+ */
+const TYPES_BY_OID = `
+select t.oid::int as oid,
+       case when t.typnamespace = 'pg_catalog'::regnamespace then t.typname
+            when t.typname = 'citext' and p.proname = 'citextin'
+                 and p.pronamespace = t.typnamespace then 'citext'
+            else '' end as typname,
+       t.typtype::text as typtype, t.typbasetype::int as typbasetype, t.typtypmod
+  from pg_type t left join pg_proc p on p.oid = t.typinput
+ where t.oid = any($1::oid[])`;
+
 /** A numeric's precision and scale from its type modifier, as PostgreSQL packs them. */
 function numericModifier(typmod: number): { precision: number; scale: number } {
   const packed = typmod - 4;
@@ -167,7 +239,7 @@ export function proposedType(type: {
   readonly name: string;
   readonly kind: string;
   readonly typmod: number;
-}): ColumnType | null {
+}): ValueType | null {
   const { name, kind, typmod } = type;
   if (name === 'int2' || name === 'int4' || name === 'int8') return { base: 'integer' };
   if (name === 'numeric') {
@@ -248,11 +320,7 @@ export async function describeRelations(
   const types = new Map<number, TypeRow>();
   let wanted = [...new Set(columns.rows.map((each) => each.type))];
   while (wanted.length > 0) {
-    const rows = await client.query<TypeRow>(
-      `select oid::int as oid, typname, typtype::text as typtype, typbasetype::int as typbasetype,
-              typtypmod from pg_type where oid = any($1::oid[])`,
-      [wanted],
-    );
+    const rows = await client.query<TypeRow>(TYPES_BY_OID, [wanted]);
     for (const row of rows.rows) types.set(row.oid, row);
     wanted = rows.rows
       .filter((row) => row.typtype === 'd' && !types.has(row.typbasetype))
@@ -322,4 +390,64 @@ function fitted(
     kept.push(relation);
   }
   return { relations: kept, truncated, leftOut };
+}
+
+/**
+ * A type parser for every type that answers the server's own text (D2-Q; ADR-0035): a run reads each
+ * value as the source printed it, never through `pg`'s parsers, which case 6 found lose microseconds
+ * and move a time in a daylight-saving gap.
+ */
+export const SERVER_TEXT = {
+  getTypeParser: () => (value: string) => value,
+} as unknown as pg.CustomTypesConfig;
+
+/** A source type, followed through any domain to the type it is: its name, kind and modifier. */
+export interface SourceType {
+  /** `pg_type.typname` of the base type. */
+  readonly name: string;
+  /** `pg_type.typtype`: `b` base, `e` enum, and so on. */
+  readonly kind: string;
+  readonly typmod: number;
+  /** `format_type`'s text for the type as the statement named it. */
+  readonly formatted: string;
+}
+
+/**
+ * The types of a statement's columns or parameters, each by its OID and modifier: named as
+ * `format_type` names them, and followed through any domain to its base, as `describeRelations` does.
+ */
+export async function sourceTypes(
+  client: pg.Client,
+  types: readonly { readonly oid: number; readonly typmod: number }[],
+): Promise<SourceType[]> {
+  if (types.length === 0) return [];
+  const formatted = await client.query<{ at: number; text: string }>(
+    `select u.at::int as at, format_type(u.oid, nullif(u.typmod, -1)) as text
+       from unnest($1::oid[], $2::int[]) with ordinality as u (oid, typmod, at)
+      order by u.at`,
+    [types.map((each) => each.oid), types.map((each) => each.typmod)],
+  );
+  const rows = new Map<number, TypeRow>();
+  let wanted = [...new Set(types.map((each) => each.oid))];
+  while (wanted.length > 0) {
+    const found = await client.query<TypeRow>(TYPES_BY_OID, [wanted]);
+    for (const row of found.rows) rows.set(row.oid, row);
+    wanted = found.rows
+      .filter((row) => row.typtype === 'd' && !rows.has(row.typbasetype))
+      .map((row) => row.typbasetype);
+  }
+  return types.map((each, at) => {
+    let type = rows.get(each.oid);
+    let typmod = each.typmod;
+    for (let depth = 0; type?.typtype === 'd' && depth < 32; depth += 1) {
+      typmod = type.typtypmod;
+      type = rows.get(type.typbasetype);
+    }
+    return {
+      name: type?.typname ?? '',
+      kind: type?.typtype ?? '',
+      typmod,
+      formatted: formatted.rows[at]?.text ?? '',
+    };
+  });
 }

@@ -10,8 +10,11 @@ import {
   templateDefinitionSchema,
   parseOutlineDocument,
   ConnectionRefused,
+  DefinitionRefused,
   parseConnection,
   parseConnectionForWrite,
+  parseQueryDefinition,
+  parseQueryDefinitionForWrite,
   type CatalogueSubstance,
   type DefinitionRef,
   type DefinitionSubstance,
@@ -23,6 +26,7 @@ import {
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import type { ArtifactKind } from './artifact-kind.js';
+import { checkNamedConnection, checkNotInUse } from './definition-references.js';
 import { checkedLimit } from './listing.js';
 import { indexVersion } from './search.js';
 import type { TenantTransaction } from './tables.js';
@@ -76,19 +80,26 @@ export interface Authorship {
 export type NewArtifact = Authorship &
   (
     | {
-        readonly substance: Extract<
-          VersionSubstance,
-          { kind: 'component' | 'document' | 'asset' | 'template' | 'connection' }
-        >;
+        readonly substance: Extract<VersionSubstance, { kind: SpacedSubstanceKind }>;
         readonly spaceId: string;
       }
     | {
-        readonly substance: Exclude<
-          VersionSubstance,
-          { kind: 'component' | 'document' | 'asset' | 'template' | 'connection' }
-        >;
+        readonly substance: Exclude<VersionSubstance, { kind: SpacedSubstanceKind }>;
       }
   );
+
+/** The kinds a version is written for in a space: every spaced kind but a publication, which has none. */
+type SpacedSubstanceKind =
+  'component' | 'document' | 'asset' | 'template' | 'connection' | 'queryDefinition';
+
+const spacedSubstanceKinds: readonly string[] = [
+  'component',
+  'document',
+  'asset',
+  'template',
+  'connection',
+  'queryDefinition',
+] satisfies readonly SpacedSubstanceKind[];
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -163,6 +174,13 @@ function prepare(substance: VersionSubstance): VersionSubstance {
     // the declaration check (DAT-078) on every write, whatever the writer (the D1 plan's stored-shape
     // check).
     return { kind: 'connection', content: parseConnectionForWrite(substance.content) };
+  }
+  if (substance.kind === 'queryDefinition') {
+    // Nor does a query definition: it is in a space. Its shape, then every check - the lexer, the
+    // markers against the parameters, the key within the columns, the order, the limits, NFC - on
+    // every write, whatever the writer (the D2 plan's stored-shape check). The connection it names is
+    // the writer's to check, with a transaction in hand.
+    return { kind: 'queryDefinition', content: parseQueryDefinitionForWrite(substance.content) };
   }
   if (!isDefinition(substance)) {
     // A theme or a catalogue, already read whole by its own writer, which is the only way here.
@@ -264,16 +282,30 @@ export async function createArtifact(
       },
     ]);
   }
+  // So is a query definition, and it names a connection of the tenant in service, on every path that
+  // makes one (D2-P).
+  if (substance.kind === 'queryDefinition') {
+    if (substance.content.retired) {
+      throw new DefinitionRefused([
+        {
+          rule: 'definition_invalid',
+          path: 'retired',
+          message: 'A query definition is made in service; retiring it is a later version',
+        },
+      ]);
+    }
+    await checkNamedConnection(trx, substance.content.connection);
+  }
   const artifact = await trx
     .insertInto('artifact')
     .values(
-      substance.kind === 'component' ||
-        substance.kind === 'document' ||
-        substance.kind === 'asset' ||
-        substance.kind === 'template' ||
-        substance.kind === 'connection'
+      spacedSubstanceKinds.includes(substance.kind)
         ? { kind: substance.kind, space_id: 'spaceId' in input ? input.spaceId : null }
-        : { id: substance.content.id, kind: substance.kind, space_id: null },
+        : {
+            id: (substance.content as { readonly id: string }).id,
+            kind: substance.kind,
+            space_id: null,
+          },
     )
     .returning('id')
     .executeTakeFirstOrThrow();
@@ -497,6 +529,10 @@ export function substanceOf(stored: StoredVersion): VersionSubstance {
     // makes a stored version unreadable.
     return { kind: 'connection', content: parseConnection(stored.content) };
   }
+  if (stored.kind === 'queryDefinition') {
+    // The shape alone, likewise: a check widened later never makes a stored version unreadable.
+    return { kind: 'queryDefinition', content: parseQueryDefinition(stored.content) };
+  }
   return { kind: stored.kind, content: stored.content } as VersionSubstance;
 }
 
@@ -596,6 +632,18 @@ async function record(
   }
 
   const substance = prepare(input.substance);
+  // A query definition names a connection in service at every version (D2-P); a connection is not
+  // retired while a definition in service names it (DAT-065). Each under the connection's lock.
+  if (substance.kind === 'queryDefinition') {
+    await checkNamedConnection(trx, substance.content.connection);
+  }
+  if (
+    substance.kind === 'connection' &&
+    substance.content.retired &&
+    !parseConnection(current.content).retired
+  ) {
+    await checkNotInUse(trx, input.artifactId);
+  }
   // A definition's rule, not content's: a definition's payload repeats its identity, and a
   // component's content, a document's outline, a layout, an asset version, a theme and a catalogue
   // carry none.

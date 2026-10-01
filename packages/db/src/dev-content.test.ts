@@ -10,7 +10,7 @@ import { seedDevelopmentConnectionUse, seedDevelopmentContent } from './dev-cont
 import { inviteFirstAdministrator } from './first-administrator.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
-import { findRole } from './roles.js';
+import { createRole, findRole } from './roles.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
 import { listReadableTemplates } from './templates.js';
@@ -232,8 +232,12 @@ describe('the development content', () => {
     });
   });
 
-  it('lets Ada use connections in General through a development role of its own, and nobody else, however often it runs', async () => {
+  it('lets Ada use connections and write SQL against them in General through a development role of its own, and nobody else, however often it runs', async () => {
     await service.withTenant(tenant, (trx) => seedDevelopmentContent(trx, { issuer: ISSUER }));
+    // The role as D1 made it, before it held write_sql: seeding again gives it write_sql (D2-T).
+    await service.withTenant(tenant, (trx) =>
+      createRole(trx, 'Connection user', ['read', 'use_connection']),
+    );
     await service.withTenant(tenant, (trx) =>
       seedDevelopmentConnectionUse(trx, { issuer: ISSUER }),
     );
@@ -242,7 +246,7 @@ describe('the development content', () => {
     );
     await service.withTenant(tenant, async (trx) => {
       const role = await findRole(trx, 'Connection user');
-      expect(role?.permissions).toEqual(['read', 'use_connection']);
+      expect(role?.permissions).toEqual(['read', 'use_connection', 'write_sql']);
       const general = await trx
         .selectFrom('space')
         .select('id')
@@ -270,6 +274,7 @@ describe('the development content', () => {
           .executeTakeFirstOrThrow();
         const facts = await loadFacts(trx, principal.id, { kind: 'space', id: general.id });
         expect(decide('use_connection', facts!).allowed, subject).toBe(allowed);
+        expect(decide('write_sql', facts!).allowed, subject).toBe(allowed);
       }
     });
   });

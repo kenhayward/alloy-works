@@ -4,7 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AccessPanel } from '../access/AccessPanel.js';
 import { ConnectionPage } from '../data/ConnectionPage.js';
 import { Connections } from '../data/Connections.js';
-import { connectionAddress, connectionLink } from '../data/links.js';
+import { connectionAddress, connectionLink, queryDefinitionAddress } from '../data/links.js';
+import { QueryDefinitionPage } from '../data/QueryDefinitionPage.js';
+import { QueryDefinitions } from '../data/QueryDefinitions.js';
 import { ManageAccessLink } from '../access/ManageAccessLink.js';
 import { Home } from '../home/Home.js';
 import { PublicationList } from '../publishing/PublicationList.js';
@@ -37,7 +39,8 @@ function Places() {
     <nav aria-label="Workspace">
       <a href="#/components">Components</a> <a href="#/documents">Documents</a>{' '}
       <a href="#/publications">Publications</a> <a href="#/templates">Templates</a>{' '}
-      <a href="#/connections">Connections</a> <a href="#/search">Search</a>
+      <a href="#/connections">Connections</a> <a href="#/query-definitions">Query definitions</a>{' '}
+      <a href="#/search">Search</a>
     </nav>
   );
 }
@@ -224,6 +227,18 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   if (connection) {
     return (
       <ConnectionPage key={connection.connection} client={client} id={connection.connection} />
+    );
+  }
+  const definition = queryDefinitionAddress(hash);
+  if (definition !== null) {
+    return <QueryDefinitionPage key={definition} client={client} id={definition} />;
+  }
+  if (hash === '#/query-definitions') {
+    return (
+      <>
+        <Places />
+        <QueryDefinitions client={client} />
+      </>
     );
   }
   if (hash === '#/connections') {

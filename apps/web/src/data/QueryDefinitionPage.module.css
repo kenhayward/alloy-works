@@ -1,0 +1,129 @@
+.page {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: var(--space-16);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-16);
+  color: var(--muted);
+}
+
+.retired {
+  font-weight: 600;
+}
+
+.step {
+  margin-block: var(--space-24);
+}
+
+.form {
+  display: grid;
+  gap: var(--space-12);
+  max-width: 40rem;
+}
+
+.form label {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.form > button {
+  justify-self: start;
+}
+
+.form .check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.parameter {
+  display: grid;
+  gap: var(--space-8);
+}
+
+.parameter label {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.parameter .check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.parameter button {
+  justify-self: start;
+}
+
+.type {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.type label {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.fragment {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.code,
+.sql {
+  font-family: var(--mono);
+}
+
+.sql {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: var(--size-label);
+}
+
+.table {
+  border-collapse: collapse;
+  margin-block: var(--space-12);
+  display: block;
+  overflow-x: auto;
+}
+
+.table caption {
+  text-align: start;
+  font-weight: 600;
+}
+
+.table th,
+.table td {
+  text-align: start;
+  padding: var(--space-4) var(--space-12) var(--space-4) 0;
+  vertical-align: top;
+}
+
+.choice {
+  display: grid;
+  gap: var(--space-4);
+}
+
+/* Each checkbox and radio button's row at least 24px tall, so its 13px target has the spacing WCAG
+   2.5.8 asks of a small one: stacked with no gap they stood closer, and axe failed them. */
+.check {
+  min-height: 24px;
+}
+
+.form fieldset,
+.parameter fieldset {
+  display: grid;
+  gap: var(--space-4);
+}

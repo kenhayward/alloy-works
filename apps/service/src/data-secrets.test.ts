@@ -108,7 +108,11 @@ describe("the service's handling of a credential", () => {
         .select('id')
         .where('name', '=', 'General')
         .executeTakeFirstOrThrow();
-      const made = await createRole(trx, 'Connection user', ['read', 'use_connection']);
+      const made = await createRole(trx, 'Connection user', [
+        'read',
+        'use_connection',
+        'write_sql',
+      ]);
       if (!('role' in made)) throw new Error(made.refused);
       const administrator = await findRole(trx, 'Administrator');
       for (const role of [administrator!.id, made.role.id]) {
@@ -158,6 +162,58 @@ describe("the service's handling of a credential", () => {
     connector.mode = 'answer';
     connector.test = { outcome: 'ok', findings: [] };
     expect(await put(secret(CANARY), { 'idempotency-key': 'the-canary-key' })).toBe(200);
+    // A SQL describe and a sample with that credential, each answered, failing, and meeting a
+    // connector that cannot answer (D2): the sealed credential goes to the connector, and nothing of
+    // the secret comes back.
+    const ask = async (path: 'describe' | 'sample', payload: unknown): Promise<number> => {
+      const answer = await app.inject({
+        method: 'POST',
+        url: `/v1/connections/${connection}/${path}`,
+        headers: { host: HOST, cookie, 'idempotency-key': 'the-canary-key' },
+        payload: payload as Record<string, unknown>,
+      });
+      responses.push(JSON.stringify(answer.headers), answer.body);
+      return answer.statusCode;
+    };
+    const site = { name: 'site', type: { base: 'integer' }, required: true, list: false };
+    const statement = {
+      sql: { text: 'select id from sample.site where id = {{site}}', parameters: [site] },
+    };
+    const draft = {
+      schemaVersion: 1,
+      connection,
+      parameters: [site],
+      fetch: { kind: 'sql', text: 'select id from sample.site where id = {{site}} order by id' },
+      columns: [{ name: 'id', from: { column: 'id' }, type: { base: 'integer' } }],
+      key: ['id'],
+      order: [{ column: 'id', direction: 'ascending' }],
+      empty: 'valid',
+      limits: { rows: 100, bytes: 65_536, seconds: 10 },
+    };
+    connector.describeSql = {
+      columns: [{ name: 'id', sourceType: 'integer', proposed: { base: 'integer' } }],
+      parameters: ['bigint'],
+    };
+    connector.run = {
+      outcome: 'failed',
+      failure: {
+        code: 'source_refused',
+        attribution: 'query',
+        source: { sqlstate: '42501', message: 'permission denied for table site' },
+      },
+    };
+    expect(await ask('describe', statement)).toBe(200);
+    expect(await ask('sample', { definition: draft, values: { site: '1' } })).toBe(200);
+    connector.describeSql = { failure: { code: 'connection_failed', attribution: 'connector' } };
+    expect(await ask('describe', statement)).toBe(502);
+    for (const mode of ['unreachable', 'busy', 'broken', 'nonsense'] as const) {
+      connector.mode = mode;
+      expect(await ask('describe', statement), mode).toBe(503);
+      expect(await ask('sample', { definition: draft, values: { site: '1' } }), mode).toBe(503);
+    }
+    connector.mode = 'answer';
+    // And a value its declaration refuses, named as it was sent.
+    expect(await ask('sample', { definition: draft, values: { site: 'x' } })).toBe(400);
     // Set again, and the test after it fails.
     connector.test = {
       outcome: 'failed',

@@ -25,7 +25,7 @@ describe('the permission set', () => {
     }
   });
 
-  it('is closed: designing templates, managing definitions and using a connection beside those, and nothing else', () => {
+  it('is closed: designing templates, managing definitions, using a connection and writing SQL against one beside those, and nothing else', () => {
     expect([...permissions].sort()).toEqual(
       [
         'administer',
@@ -39,23 +39,31 @@ describe('the permission set', () => {
         'read',
         'suggest',
         'use_connection',
+        'write_sql',
       ].sort(),
     );
-    // write_sql joins with the check that reads it, in D2 (the D1 plan, D1-P).
-    expect(isPermission('write_sql')).toBe(false);
+    // write_sql joined with the check that reads it, in D2 (the D1 plan, D1-P).
+    expect(isPermission('write_sql')).toBe(true);
+    expect(isPermission('write_sqls')).toBe(false);
     expect(isPermission('edit')).toBe(true);
     expect(isPermission('delete')).toBe(false);
     expect(isPermission('toString')).toBe(false);
   });
 
-  it('no starting role holds use_connection, and an external principal is refused it whatever the grants say', () => {
-    for (const role of starterRoles)
+  it('no starting role holds use_connection or write_sql, and an external principal is refused either whatever the grants say', () => {
+    for (const role of starterRoles) {
       expect(role.permissions, role.name).not.toContain('use_connection');
+      expect(role.permissions, role.name).not.toContain('write_sql');
+    }
     const user: Level = { kind: 'artifact', id: CONNECTION };
     const grants: AccessGrant[] = [
       {
         id: 'grant-use',
-        role: { id: 'role-use', name: 'Connection user', permissions: ['read', 'use_connection'] },
+        role: {
+          id: 'role-use',
+          name: 'Connection user',
+          permissions: ['read', 'use_connection', 'write_sql'],
+        },
         subject: { principal: ADA },
         level: user,
         effect: 'allow',
@@ -72,6 +80,12 @@ describe('the permission set', () => {
     });
     expect(decide('use_connection', facts('user')).allowed).toBe(true);
     expect(decide('use_connection', facts('external'))).toMatchObject({
+      allowed: false,
+      reason: 'capped',
+    });
+    // Writing SQL is decided at the connection as using one is, and capped the same way.
+    expect(decide('write_sql', facts('user')).allowed).toBe(true);
+    expect(decide('write_sql', facts('external'))).toMatchObject({
       allowed: false,
       reason: 'capped',
     });

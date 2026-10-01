@@ -16,8 +16,12 @@ import {
   type SpawnChild,
 } from './supervisor.js';
 import {
+  column,
+  describeSqlRequest,
+  draft,
   PASSWORDS,
   requestFor,
+  runRequest,
   SEALING_KEY,
   settings,
   suiteChild,
@@ -155,6 +159,53 @@ describe('the supervisor', () => {
     expect(started).toBe(2);
     await Promise.all(running);
     expect(supervisor.active()).toBe(0);
+  });
+
+  it('runs at most four definitions at once, of its eight children, leaving room for tests and describes', async () => {
+    const started: string[] = [];
+    let release: () => void = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const supervisor = createSupervisor({
+      sealingKey: SEALING_KEY,
+      deny: suiteDeny,
+      maxChildren: 8,
+      spec: { file: process.execPath, args: [], env: {} },
+      // A child that answers once released: each holds its slot until then.
+      spawn: async (_spec, input) => {
+        started.push((JSON.parse(input) as { kind: string }).kind);
+        await held;
+        return { kind: 'ended', pid: 2 };
+      },
+    });
+    const run = () =>
+      supervisor.run(
+        'run',
+        runRequest(settings(), 'x', draft('select 1 as id', [column('id', { base: 'integer' })])),
+      );
+    const running = [run(), run(), run(), run()];
+    // A fifth run is busy: four children at a result's ceiling are what the container's memory holds.
+    const fifth = run();
+    running.push(fifth);
+    expect(
+      await Promise.race([fifth, new Promise((resolve) => setTimeout(resolve, 200, 'started'))]),
+    ).toBe('busy');
+    // A test, a describe and a SQL describe are not runs, and still have their slots.
+    const others = [
+      supervisor.run('test', requestFor(settings(), 'x')),
+      supervisor.run('describe', requestFor(settings(), 'x')),
+      supervisor.run('describeSql', describeSqlRequest(settings(), 'x', 'select 1 as id')),
+    ];
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    const kinds = [...started].sort();
+    const active = supervisor.active();
+    release();
+    expect(kinds).toEqual(['describe', 'describeSql', 'run', 'run', 'run', 'run', 'test']);
+    expect(active).toBe(7);
+    await Promise.all([...running, ...others]);
+    // And once a run has ended, another may start.
+    expect(await run()).toMatchObject({ outcome: 'failed' });
   });
 
   it('answers connection_failed, no sooner than the failure floor, for a credential that does not open', async () => {

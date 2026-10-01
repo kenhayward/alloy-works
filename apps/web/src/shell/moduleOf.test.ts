@@ -28,6 +28,12 @@ describe('the module an address belongs to', () => {
     expect(moduleOf('#/templates')).toBe('Templates');
   });
 
+  it('names Query definitions for the list, a definition and a new one', () => {
+    expect(moduleOf('#/query-definitions')).toBe('Query definitions');
+    expect(moduleOf(`#/query-definitions/${COMPONENT}`)).toBe('Query definitions');
+    expect(moduleOf('#/query-definitions/new')).toBe('Query definitions');
+  });
+
   it('names Connections for the list, a connection and its access', () => {
     expect(moduleOf('#/connections')).toBe('Connections');
     expect(moduleOf(`#/connections/${COMPONENT}`)).toBe('Connections');

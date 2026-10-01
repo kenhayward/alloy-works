@@ -2,6 +2,7 @@ import { allRoutes } from '@alloy-works/api-contract';
 import {
   bootstrapCluster,
   createConnection,
+  createQueryDefinition,
   createDocument,
   createTenant,
   createTenantDatabase,
@@ -112,6 +113,26 @@ describe('the listings through the service', () => {
           },
         });
         if (made.answer !== 'created') throw new Error(made.answer);
+        // And a query definition naming each, so theirs has pages to turn as well.
+        const defined = await createQueryDefinition(trx, {
+          spaceId: general.id,
+          author: grace,
+          definition: {
+            schemaVersion: 1,
+            title: `${name} by id`,
+            description: '',
+            connection: made.connection.id,
+            parameters: [],
+            fetch: { kind: 'sql', text: 'select 1 as one' },
+            columns: [{ name: 'one', from: { column: 'one' }, type: { base: 'integer' } }],
+            key: ['one'],
+            order: [{ column: 'one', direction: 'ascending' }],
+            empty: 'valid',
+            limits: { rows: 10, bytes: 1024, seconds: 5 },
+            retired: false,
+          },
+        });
+        if (defined.answer !== 'created') throw new Error(defined.answer);
       }
       for (const title of ['Pump manual', 'Valve manual']) {
         const made = await createDocument(trx, {
@@ -339,6 +360,7 @@ describe('the listings through the service', () => {
       listGroups: '/v1/groups',
       listTemplates: '/v1/templates',
       listConnections: '/v1/connections',
+      listQueryDefinitions: '/v1/query-definitions',
       listDefinitions: '/v1/definitions',
       listPeople: '/v1/people',
       listTokens: '/v1/tokens',

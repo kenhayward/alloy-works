@@ -357,10 +357,30 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * List the tables and views a connection's account may read, with each column
-         * @description Lists the tables and views the connection account may read, with each column and the type proposed for it.
+         * List the tables and views a connection's account may read, or a SQL statement's result columns
+         * @description Lists the tables and views the connection account may read, with each column and the type proposed for it. Sent a SQL statement instead, it answers the columns the statement would return, each with the type proposed for it, without running it; that needs write SQL on the connection as well, and a connection whose latest test found its account read-only.
          */
         post: operations["describeConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/connections/{id}/sample": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run a draft query definition against sample values, storing nothing
+         * @description Runs a draft query definition against the sample values given, exactly as a document would run it, and stores nothing. Each value is checked against its declaration before the source is asked. It needs use connection and write SQL on the connection, and a connection whose latest test found its account read-only. A failure is an answer, named and laid at the connector, the query or the product.
+         */
+        post: operations["sampleConnection"];
         delete?: never;
         options?: never;
         head?: never;
@@ -381,6 +401,26 @@ export interface paths {
          * @description Tests whether the connection reaches its source and signs in. A failure gives one reason, the same whatever went wrong, and every test is recorded.
          */
         post: operations["testConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/connections/{id}/uses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Where a connection is used: the query definitions naming it
+         * @description Lists the query definitions whose latest versions name the connection: those the caller may read by title, and a count of the rest.
+         */
+        get: operations["getConnectionUses"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1007,6 +1047,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/query-definitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The query definitions the caller may read, each with its space and connection
+         * @description Lists the query definitions the caller may read, with the space and connection of each, filtered by space or connection.
+         */
+        get: operations["listQueryDefinitions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/query-definitions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A query definition at its latest version, with the connection it names
+         * @description Returns the latest query definition version, the connection it names, and whether the caller may change it or run it.
+         */
+        get: operations["getQueryDefinition"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/query-definitions/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cut a query definition's next version from the one the caller opened; retiring among them
+         * @description Records the next query definition version from the version the caller opened. Retiring and reinstating a definition are versions too; a retiring version is accepted whatever the connection last found.
+         */
+        post: operations["recordQueryDefinitionVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/roles": {
         parameters: {
             query?: never;
@@ -1080,6 +1180,30 @@ export interface paths {
          */
         get: operations["search"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/settings/data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The environment's lowered limits on a query's rows, bytes and seconds
+         * @description Reads the limits the environment sets on a query run, each lowered or not, and the ceilings no definition may pass.
+         */
+        get: operations["getDataSettings"];
+        /**
+         * Lower, or stop lowering, the environment's limits on a query
+         * @description Lowers, or stops lowering, the environment limits on the rows, bytes and seconds of a query run. A run takes the least of its definition limits and these.
+         */
+        put: operations["setDataSettings"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1345,6 +1469,26 @@ export interface paths {
          * @description Creates a document at version 0.1 in the named space, either empty or from a template’s starting outline.
          */
         post: operations["createDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/spaces/{space}/query-definitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make a query definition in this space, at version 0.1
+         * @description Creates a query definition in the named space from a whole definition: SQL with named parameters, the columns it returns, a key, an order, whether no rows is valid, and its limits. It needs edit in the space and use connection and write SQL on the connection it names.
+         */
+        post: operations["createQueryDefinition"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1925,7 +2069,7 @@ export interface operations {
                         target: string;
                         permissions: {
                             /** @enum {string} */
-                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection";
+                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql";
                             allowed: boolean;
                         }[];
                     };
@@ -2048,7 +2192,7 @@ export interface operations {
                         target: string;
                         permissions: {
                             /** @enum {string} */
-                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection";
+                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql";
                             allowed: boolean;
                             /**
                              * @description capped: an external principal, refused whatever the grants say. scoped: allowed by the grants, and refused to the API token a request was made with, which is not scoped to it
@@ -4844,6 +4988,17 @@ export interface operations {
                                  */
                                 attribution: "connector" | "query" | "product";
                                 message: string;
+                                /** @description What the source said, where it refused the statement: `source_refused` alone */
+                                source?: {
+                                    /** @description The source's five-character SQLSTATE */
+                                    sqlstate: string;
+                                    /** @description The source's own message, cut to 1,000 characters */
+                                    message: string;
+                                };
+                                /** @description The column the failure names, where it names one */
+                                column?: string;
+                                /** @description The row the failure names, counted from 1 */
+                                row?: number;
                             };
                             at: string;
                             by: {
@@ -5027,8 +5182,29 @@ export interface operations {
                                  */
                                 attribution: "connector" | "query" | "product";
                                 message: string;
+                                /** @description What the source said, where it refused the statement: `source_refused` alone */
+                                source?: {
+                                    /** @description The source's five-character SQLSTATE */
+                                    sqlstate: string;
+                                    /** @description The source's own message, cut to 1,000 characters */
+                                    message: string;
+                                };
+                                /** @description The column the failure names, where it names one */
+                                column?: string;
+                                /** @description The row the failure names, counted from 1 */
+                                row?: number;
                             };
                             at: string;
+                        };
+                        /** @description Where the test failed, the query definitions naming the connection, which cannot run until it passes */
+                        dependents?: {
+                            readable: {
+                                id: string;
+                                title: string;
+                                retired: boolean;
+                            }[];
+                            /** @description How many more name it that the caller may not read */
+                            others: number;
                         };
                     };
                 };
@@ -5132,6 +5308,15 @@ export interface operations {
                         traceId: string;
                         /** @enum {string} */
                         attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
                     };
                 };
             };
@@ -5154,6 +5339,15 @@ export interface operations {
                         traceId: string;
                         /** @enum {string} */
                         attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
                     };
                 };
             };
@@ -5194,11 +5388,61 @@ export interface operations {
         requestBody: {
             content: {
                 /** @example {} */
-                "application/json": Record<string, never>;
+                "application/json": {
+                    /** @description A statement to describe instead of the source's tables and views: its result's columns, never run */
+                    sql?: {
+                        text: string;
+                        parameters: {
+                            name: string;
+                            type: {
+                                /** @constant */
+                                base: "text";
+                            } | {
+                                /** @constant */
+                                base: "integer";
+                            } | {
+                                /** @constant */
+                                base: "decimal";
+                                precision: number;
+                                scale: number;
+                            } | {
+                                /** @constant */
+                                base: "date";
+                            } | {
+                                /** @constant */
+                                base: "time";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "localDateTime";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "instant";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "boolean";
+                            };
+                            required: boolean;
+                            list: boolean;
+                            permitted?: {
+                                values: (string | boolean | null)[];
+                            } | {
+                                minimum?: string | boolean | null;
+                                maximum?: string | boolean | null;
+                            };
+                            variation?: {
+                                key: string;
+                                sql: string;
+                            }[];
+                        }[];
+                    };
+                };
             };
         };
         responses: {
-            /** @description The source's tables and views */
+            /** @description The source's tables and views, or, where a statement was sent, its result's columns */
             200: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -5239,6 +5483,89 @@ export interface operations {
                             relations: number;
                             columns: number;
                         };
+                    } | {
+                        columns: {
+                            name: string;
+                            /** @description The source's own name for the column's type */
+                            sourceType: string;
+                            /** @description The column type proposed for it, or null where the author must declare one */
+                            proposed: ({
+                                /** @constant */
+                                base: "text";
+                            } | {
+                                /** @constant */
+                                base: "integer";
+                            } | {
+                                /** @constant */
+                                base: "decimal";
+                                precision: number;
+                                scale: number;
+                            } | {
+                                /** @constant */
+                                base: "date";
+                            } | {
+                                /** @constant */
+                                base: "time";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "localDateTime";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "instant";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "boolean";
+                            }) | null;
+                        }[];
+                        /** @description Each parameter's type as the source reads it, in the order they are bound */
+                        parameters: string[];
+                    };
+                };
+            };
+            /** @description `definition_invalid`: the statement does not lex whole or names a parameter it does not declare; `source_refused`: the source refused the statement, with what it said; `result_mismatch`: it has no columns to describe */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
+                        problems?: ({
+                            /** @constant */
+                            rule: "definition_invalid";
+                            /** @description The member refused, dotted, as `columns.2.name` */
+                            path: string;
+                            message: string;
+                        } | {
+                            parameter: string;
+                            /** @enum {string} */
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            /** @description The value as sent, cut to 1,000 characters */
+                            value: string;
+                        })[];
                     };
                 };
             };
@@ -5262,7 +5589,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may read the connection but may not use it */
+            /** @description The caller may read the connection but may not use it, or, for a statement, may not write SQL against it */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -5302,7 +5629,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, or it was set before credentials were bound to a target, so the password must be set again */
+            /** @description `connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, or it was set before credentials were bound to a target, so the password must be set again; `sql_not_permitted`: for a statement, the connection has not been tested clean at its latest version and credential (`untested`), or its account was found able to write (`not_read_only`) */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -5321,6 +5648,17 @@ export interface operations {
                         traceId: string;
                         /** @enum {string} */
                         attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
+                        /** @enum {string} */
+                        reason?: "untested" | "not_read_only";
                     };
                 };
             };
@@ -5343,6 +5681,15 @@ export interface operations {
                         traceId: string;
                         /** @enum {string} */
                         attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
                     };
                 };
             };
@@ -5365,6 +5712,15 @@ export interface operations {
                         traceId: string;
                         /** @enum {string} */
                         attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
                     };
                 };
             };
@@ -5387,6 +5743,433 @@ export interface operations {
                         traceId: string;
                         /** @enum {string} */
                         attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    sampleConnection: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "definition": {
+                 *         "schemaVersion": 1,
+                 *         "connection": "00000000-0000-4000-8000-000000000001",
+                 *         "parameters": [],
+                 *         "fetch": {
+                 *           "kind": "sql",
+                 *           "text": "example"
+                 *         },
+                 *         "columns": [
+                 *           {
+                 *             "name": "example",
+                 *             "from": {
+                 *               "column": "example"
+                 *             },
+                 *             "type": {
+                 *               "base": "text"
+                 *             }
+                 *           }
+                 *         ],
+                 *         "key": [],
+                 *         "order": "multiset",
+                 *         "empty": "valid",
+                 *         "limits": {
+                 *           "rows": 1,
+                 *           "bytes": 1,
+                 *           "seconds": 1
+                 *         }
+                 *       },
+                 *       "values": {}
+                 *     }
+                 */
+                "application/json": {
+                    definition: {
+                        /** @constant */
+                        schemaVersion: 1;
+                        /** Format: uuid */
+                        connection: string;
+                        parameters: {
+                            name: string;
+                            type: {
+                                /** @constant */
+                                base: "text";
+                            } | {
+                                /** @constant */
+                                base: "integer";
+                            } | {
+                                /** @constant */
+                                base: "decimal";
+                                precision: number;
+                                scale: number;
+                            } | {
+                                /** @constant */
+                                base: "date";
+                            } | {
+                                /** @constant */
+                                base: "time";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "localDateTime";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "instant";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "boolean";
+                            };
+                            required: boolean;
+                            list: boolean;
+                            permitted?: {
+                                values: (string | boolean | null)[];
+                            } | {
+                                minimum?: string | boolean | null;
+                                maximum?: string | boolean | null;
+                            };
+                            variation?: {
+                                key: string;
+                                sql: string;
+                            }[];
+                        }[];
+                        fetch: {
+                            /** @constant */
+                            kind: "sql";
+                            text: string;
+                        };
+                        columns: {
+                            name: string;
+                            from: {
+                                column: string;
+                            };
+                            type: {
+                                /** @constant */
+                                base: "text";
+                            } | {
+                                /** @constant */
+                                base: "integer";
+                            } | {
+                                /** @constant */
+                                base: "decimal";
+                                precision: number;
+                                scale: number;
+                            } | {
+                                /** @constant */
+                                base: "date";
+                            } | {
+                                /** @constant */
+                                base: "time";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "localDateTime";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "instant";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "boolean";
+                            };
+                        }[];
+                        key: string[];
+                        order: "multiset" | {
+                            column: string;
+                            /** @enum {string} */
+                            direction: "ascending" | "descending";
+                        }[];
+                        /** @enum {string} */
+                        empty: "valid" | "invalid";
+                        limits: {
+                            rows: number;
+                            bytes: number;
+                            seconds: number;
+                        };
+                    };
+                    /** @description Each parameter's value by name, in its type's canonical form, or a list of them for a list parameter */
+                    values: {
+                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Run: the first 100 rows, how many there were, the checksum and the SQL that ran, or one named failure with its attribution */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "outcome": "ok",
+                     *       "columns": [],
+                     *       "rows": [],
+                     *       "rowCount": -9007199254740991,
+                     *       "checksum": "example",
+                     *       "ran": {
+                     *         "sql": "example"
+                     *       },
+                     *       "durationMs": -9007199254740991
+                     *     }
+                     */
+                    "application/json": {
+                        /** @constant */
+                        outcome: "ok";
+                        /** @description Each column's name and its type's base */
+                        columns: [
+                            string,
+                            string
+                        ][];
+                        /** @description The first 100 rows, each value in its canonical form */
+                        rows: (string | boolean | null)[][];
+                        /** @description How many rows the whole result holds */
+                        rowCount: number;
+                        /** @description The SHA-256 of the whole result in canonical form, in hexadecimal */
+                        checksum: string;
+                        ran: {
+                            /** @description The SQL that ran, each value a bound parameter */
+                            sql: string;
+                        };
+                        durationMs: number;
+                    } | {
+                        /** @constant */
+                        outcome: "failed";
+                        failure: {
+                            /** @description Stable and machine-readable */
+                            code: string;
+                            /**
+                             * @description Whose failure it is: the source's side, the query's author, or the product
+                             * @enum {string}
+                             */
+                            attribution: "connector" | "query" | "product";
+                            message: string;
+                            /** @description What the source said, where it refused the statement: `source_refused` alone */
+                            source?: {
+                                /** @description The source's five-character SQLSTATE */
+                                sqlstate: string;
+                                /** @description The source's own message, cut to 1,000 characters */
+                                message: string;
+                            };
+                            /** @description The column the failure names, where it names one */
+                            column?: string;
+                            /** @description The row the failure names, counted from 1 */
+                            row?: number;
+                        };
+                    };
+                };
+            };
+            /** @description `definition_invalid`: the draft fails a rule, each problem named, or is for another connection; `parameter_invalid`: a value fails its declaration, each named with the parameter, the rule and the value */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
+                        problems?: ({
+                            /** @constant */
+                            rule: "definition_invalid";
+                            /** @description The member refused, dotted, as `columns.2.name` */
+                            path: string;
+                            message: string;
+                        } | {
+                            parameter: string;
+                            /** @enum {string} */
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            /** @description The value as sent, cut to 1,000 characters */
+                            value: string;
+                        })[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the connection but may not use it or write SQL against it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such connection in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, or it was set before credentials were bound to a target, so the password must be set again; `sql_not_permitted`: for a statement, the connection has not been tested clean at its latest version and credential (`untested`), or its account was found able to write (`not_read_only`) */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
+                        /** @enum {string} */
+                        reason?: "untested" | "not_read_only";
+                    };
+                };
+            };
+            /** @description `connector_unavailable`: no connector is configured or it did not answer; `connector_busy`: it is full */
+            503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
                     };
                 };
             };
@@ -5464,6 +6247,17 @@ export interface operations {
                              */
                             attribution: "connector" | "query" | "product";
                             message: string;
+                            /** @description What the source said, where it refused the statement: `source_refused` alone */
+                            source?: {
+                                /** @description The source's five-character SQLSTATE */
+                                sqlstate: string;
+                                /** @description The source's own message, cut to 1,000 characters */
+                                message: string;
+                            };
+                            /** @description The column the failure names, where it names one */
+                            column?: string;
+                            /** @description The row the failure names, counted from 1 */
+                            row?: number;
                         };
                         at: string;
                     };
@@ -5548,6 +6342,15 @@ export interface operations {
                         traceId: string;
                         /** @enum {string} */
                         attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
                     };
                 };
             };
@@ -5570,6 +6373,140 @@ export interface operations {
                         traceId: string;
                         /** @enum {string} */
                         attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getConnectionUses: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The query definitions whose latest versions name it: those the caller may read, and how many more */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "definitions": {
+                     *         "readable": [],
+                     *         "others": -9007199254740991
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        definitions: {
+                            readable: {
+                                id: string;
+                                title: string;
+                                retired: boolean;
+                            }[];
+                            /** @description How many more name it that the caller may not read */
+                            others: number;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a connection the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such connection in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };
@@ -5817,6 +6754,17 @@ export interface operations {
                                  */
                                 attribution: "connector" | "query" | "product";
                                 message: string;
+                                /** @description What the source said, where it refused the statement: `source_refused` alone */
+                                source?: {
+                                    /** @description The source's five-character SQLSTATE */
+                                    sqlstate: string;
+                                    /** @description The source's own message, cut to 1,000 characters */
+                                    message: string;
+                                };
+                                /** @description The column the failure names, where it names one */
+                                column?: string;
+                                /** @description The row the failure names, counted from 1 */
+                                row?: number;
                             };
                             at: string;
                             by: {
@@ -5943,6 +6891,17 @@ export interface operations {
                                      */
                                     attribution: "connector" | "query" | "product";
                                     message: string;
+                                    /** @description What the source said, where it refused the statement: `source_refused` alone */
+                                    source?: {
+                                        /** @description The source's five-character SQLSTATE */
+                                        sqlstate: string;
+                                        /** @description The source's own message, cut to 1,000 characters */
+                                        message: string;
+                                    };
+                                    /** @description The column the failure names, where it names one */
+                                    column?: string;
+                                    /** @description The row the failure names, counted from 1 */
+                                    row?: number;
                                 };
                                 at: string;
                                 by: {
@@ -5959,6 +6918,16 @@ export interface operations {
                             mayAdminister: boolean;
                             /** @description Whether the caller may test it and list its tables */
                             mayUse: boolean;
+                        };
+                        /** @description Where retiring is refused, the query definitions still naming the connection that are not retired */
+                        definitions?: {
+                            readable: {
+                                id: string;
+                                title: string;
+                                retired: boolean;
+                            }[];
+                            /** @description How many more name it that the caller may not read */
+                            others: number;
                         };
                     };
                 };
@@ -6023,7 +6992,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `version_precondition`: the connection has a newer version than the one named */
+            /** @description `version_precondition`: the connection has a newer version than the one named; `connection_in_use`: a version retiring it is refused while a query definition that is not retired names it, those the caller may read named and the rest counted */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -6130,6 +7099,17 @@ export interface operations {
                                      */
                                     attribution: "connector" | "query" | "product";
                                     message: string;
+                                    /** @description What the source said, where it refused the statement: `source_refused` alone */
+                                    source?: {
+                                        /** @description The source's five-character SQLSTATE */
+                                        sqlstate: string;
+                                        /** @description The source's own message, cut to 1,000 characters */
+                                        message: string;
+                                    };
+                                    /** @description The column the failure names, where it names one */
+                                    column?: string;
+                                    /** @description The row the failure names, counted from 1 */
+                                    row?: number;
                                 };
                                 at: string;
                                 by: {
@@ -6146,6 +7126,16 @@ export interface operations {
                             mayAdminister: boolean;
                             /** @description Whether the caller may test it and list its tables */
                             mayUse: boolean;
+                        };
+                        /** @description Where retiring is refused, the query definitions still naming the connection that are not retired */
+                        definitions?: {
+                            readable: {
+                                id: string;
+                                title: string;
+                                retired: boolean;
+                            }[];
+                            /** @description How many more name it that the caller may not read */
+                            others: number;
                         };
                     };
                 };
@@ -12157,7 +13147,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -13035,6 +14025,1259 @@ export interface operations {
             };
         };
     };
+    listQueryDefinitions: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: string;
+                sort?: "title" | "changed";
+                order?: "asc" | "desc";
+                spaces?: string;
+                connection?: string & (unknown & unknown);
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of query definitions */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example",
+                     *       "total": -9007199254740991,
+                     *       "facets": {
+                     *         "spaces": []
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            id: string;
+                            title: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            /** @description The connection it names */
+                            connection: {
+                                id: string;
+                                /** @description Its latest name, or null where the caller may not read the connection */
+                                name: string | null;
+                            } | null;
+                            retired: boolean;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description When its latest version was made */
+                            changedAt: string;
+                        }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                        /** @description How many there are with the filters in force, as of the walk this page belongs to */
+                        total: number;
+                        /** @description Each filter the listing takes, counted with the others in force and its own left out */
+                        facets: {
+                            spaces: {
+                                /** @description What to filter by to leave these */
+                                value: string;
+                                label: string;
+                                count: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description A cursor this listing did not give out, or a limit outside 1 to 100 */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getQueryDefinition: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The query definition */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "definition": {
+                     *         "schemaVersion": 1,
+                     *         "connection": "00000000-0000-4000-8000-000000000001",
+                     *         "parameters": [],
+                     *         "fetch": {
+                     *           "kind": "sql",
+                     *           "text": "example"
+                     *         },
+                     *         "columns": [
+                     *           {
+                     *             "name": "example",
+                     *             "from": {
+                     *               "column": "example"
+                     *             },
+                     *             "type": {
+                     *               "base": "text"
+                     *             }
+                     *           }
+                     *         ],
+                     *         "key": [],
+                     *         "order": "multiset",
+                     *         "empty": "valid",
+                     *         "limits": {
+                     *           "rows": 1,
+                     *           "bytes": 1,
+                     *           "seconds": 1
+                     *         },
+                     *         "title": "example",
+                     *         "description": "example",
+                     *         "retired": false
+                     *       },
+                     *       "connection": {
+                     *         "id": "example",
+                     *         "name": "example",
+                     *         "identity": "service",
+                     *         "retired": false
+                     *       },
+                     *       "mayEdit": false,
+                     *       "mayRun": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        definition: {
+                            /** @constant */
+                            schemaVersion: 1;
+                            /** Format: uuid */
+                            connection: string;
+                            parameters: {
+                                name: string;
+                                type: {
+                                    /** @constant */
+                                    base: "text";
+                                } | {
+                                    /** @constant */
+                                    base: "integer";
+                                } | {
+                                    /** @constant */
+                                    base: "decimal";
+                                    precision: number;
+                                    scale: number;
+                                } | {
+                                    /** @constant */
+                                    base: "date";
+                                } | {
+                                    /** @constant */
+                                    base: "time";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "localDateTime";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "instant";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "boolean";
+                                };
+                                required: boolean;
+                                list: boolean;
+                                permitted?: {
+                                    values: (string | boolean | null)[];
+                                } | {
+                                    minimum?: string | boolean | null;
+                                    maximum?: string | boolean | null;
+                                };
+                                variation?: {
+                                    key: string;
+                                    sql: string;
+                                }[];
+                            }[];
+                            fetch: {
+                                /** @constant */
+                                kind: "sql";
+                                text: string;
+                            };
+                            columns: {
+                                name: string;
+                                from: {
+                                    column: string;
+                                };
+                                type: {
+                                    /** @constant */
+                                    base: "text";
+                                } | {
+                                    /** @constant */
+                                    base: "integer";
+                                } | {
+                                    /** @constant */
+                                    base: "decimal";
+                                    precision: number;
+                                    scale: number;
+                                } | {
+                                    /** @constant */
+                                    base: "date";
+                                } | {
+                                    /** @constant */
+                                    base: "time";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "localDateTime";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "instant";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "boolean";
+                                };
+                            }[];
+                            key: string[];
+                            order: "multiset" | {
+                                column: string;
+                                /** @enum {string} */
+                                direction: "ascending" | "descending";
+                            }[];
+                            /** @enum {string} */
+                            empty: "valid" | "invalid";
+                            limits: {
+                                rows: number;
+                                bytes: number;
+                                seconds: number;
+                            };
+                            title: string;
+                            description: string;
+                            retired: boolean;
+                        };
+                        /** @description The connection it names, at its latest version */
+                        connection: {
+                            id: string;
+                            /** @description Its name, or null where the caller may not read the connection */
+                            name: string | null;
+                            /**
+                             * @description Whose identity the connection runs a query as
+                             * @enum {string}
+                             */
+                            identity: "service" | "endUser";
+                            retired: boolean;
+                        } | null;
+                        /** @description Whether the caller may cut its next version: edit on it, and use connection and write SQL on its connection */
+                        mayEdit: boolean;
+                        /** @description Whether the caller may describe and sample SQL against its connection */
+                        mayRun: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a definition the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such query definition in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    recordQueryDefinitionVersion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "openedFrom": "00000000-0000-4000-8000-000000000001",
+                 *       "definition": {
+                 *         "schemaVersion": 1,
+                 *         "connection": "00000000-0000-4000-8000-000000000001",
+                 *         "parameters": [],
+                 *         "fetch": {
+                 *           "kind": "sql",
+                 *           "text": "example"
+                 *         },
+                 *         "columns": [
+                 *           {
+                 *             "name": "example",
+                 *             "from": {
+                 *               "column": "example"
+                 *             },
+                 *             "type": {
+                 *               "base": "text"
+                 *             }
+                 *           }
+                 *         ],
+                 *         "key": [],
+                 *         "order": "multiset",
+                 *         "empty": "valid",
+                 *         "limits": {
+                 *           "rows": 1,
+                 *           "bytes": 1,
+                 *           "seconds": 1
+                 *         },
+                 *         "title": "example",
+                 *         "description": "example",
+                 *         "retired": false
+                 *       }
+                 *     }
+                 */
+                "application/json": {
+                    openedFrom: string & (unknown & unknown);
+                    definition: {
+                        /** @constant */
+                        schemaVersion: 1;
+                        /** Format: uuid */
+                        connection: string;
+                        parameters: {
+                            name: string;
+                            type: {
+                                /** @constant */
+                                base: "text";
+                            } | {
+                                /** @constant */
+                                base: "integer";
+                            } | {
+                                /** @constant */
+                                base: "decimal";
+                                precision: number;
+                                scale: number;
+                            } | {
+                                /** @constant */
+                                base: "date";
+                            } | {
+                                /** @constant */
+                                base: "time";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "localDateTime";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "instant";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "boolean";
+                            };
+                            required: boolean;
+                            list: boolean;
+                            permitted?: {
+                                values: (string | boolean | null)[];
+                            } | {
+                                minimum?: string | boolean | null;
+                                maximum?: string | boolean | null;
+                            };
+                            variation?: {
+                                key: string;
+                                sql: string;
+                            }[];
+                        }[];
+                        fetch: {
+                            /** @constant */
+                            kind: "sql";
+                            text: string;
+                        };
+                        columns: {
+                            name: string;
+                            from: {
+                                column: string;
+                            };
+                            type: {
+                                /** @constant */
+                                base: "text";
+                            } | {
+                                /** @constant */
+                                base: "integer";
+                            } | {
+                                /** @constant */
+                                base: "decimal";
+                                precision: number;
+                                scale: number;
+                            } | {
+                                /** @constant */
+                                base: "date";
+                            } | {
+                                /** @constant */
+                                base: "time";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "localDateTime";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "instant";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "boolean";
+                            };
+                        }[];
+                        key: string[];
+                        order: "multiset" | {
+                            column: string;
+                            /** @enum {string} */
+                            direction: "ascending" | "descending";
+                        }[];
+                        /** @enum {string} */
+                        empty: "valid" | "invalid";
+                        limits: {
+                            rows: number;
+                            bytes: number;
+                            seconds: number;
+                        };
+                        title: string;
+                        description: string;
+                        retired: boolean;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description The definition at its latest version: the one cut, or the one before where nothing changed */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "definition": {
+                     *         "schemaVersion": 1,
+                     *         "connection": "00000000-0000-4000-8000-000000000001",
+                     *         "parameters": [],
+                     *         "fetch": {
+                     *           "kind": "sql",
+                     *           "text": "example"
+                     *         },
+                     *         "columns": [
+                     *           {
+                     *             "name": "example",
+                     *             "from": {
+                     *               "column": "example"
+                     *             },
+                     *             "type": {
+                     *               "base": "text"
+                     *             }
+                     *           }
+                     *         ],
+                     *         "key": [],
+                     *         "order": "multiset",
+                     *         "empty": "valid",
+                     *         "limits": {
+                     *           "rows": 1,
+                     *           "bytes": 1,
+                     *           "seconds": 1
+                     *         },
+                     *         "title": "example",
+                     *         "description": "example",
+                     *         "retired": false
+                     *       },
+                     *       "connection": {
+                     *         "id": "example",
+                     *         "name": "example",
+                     *         "identity": "service",
+                     *         "retired": false
+                     *       },
+                     *       "mayEdit": false,
+                     *       "mayRun": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        definition: {
+                            /** @constant */
+                            schemaVersion: 1;
+                            /** Format: uuid */
+                            connection: string;
+                            parameters: {
+                                name: string;
+                                type: {
+                                    /** @constant */
+                                    base: "text";
+                                } | {
+                                    /** @constant */
+                                    base: "integer";
+                                } | {
+                                    /** @constant */
+                                    base: "decimal";
+                                    precision: number;
+                                    scale: number;
+                                } | {
+                                    /** @constant */
+                                    base: "date";
+                                } | {
+                                    /** @constant */
+                                    base: "time";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "localDateTime";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "instant";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "boolean";
+                                };
+                                required: boolean;
+                                list: boolean;
+                                permitted?: {
+                                    values: (string | boolean | null)[];
+                                } | {
+                                    minimum?: string | boolean | null;
+                                    maximum?: string | boolean | null;
+                                };
+                                variation?: {
+                                    key: string;
+                                    sql: string;
+                                }[];
+                            }[];
+                            fetch: {
+                                /** @constant */
+                                kind: "sql";
+                                text: string;
+                            };
+                            columns: {
+                                name: string;
+                                from: {
+                                    column: string;
+                                };
+                                type: {
+                                    /** @constant */
+                                    base: "text";
+                                } | {
+                                    /** @constant */
+                                    base: "integer";
+                                } | {
+                                    /** @constant */
+                                    base: "decimal";
+                                    precision: number;
+                                    scale: number;
+                                } | {
+                                    /** @constant */
+                                    base: "date";
+                                } | {
+                                    /** @constant */
+                                    base: "time";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "localDateTime";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "instant";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "boolean";
+                                };
+                            }[];
+                            key: string[];
+                            order: "multiset" | {
+                                column: string;
+                                /** @enum {string} */
+                                direction: "ascending" | "descending";
+                            }[];
+                            /** @enum {string} */
+                            empty: "valid" | "invalid";
+                            limits: {
+                                rows: number;
+                                bytes: number;
+                                seconds: number;
+                            };
+                            title: string;
+                            description: string;
+                            retired: boolean;
+                        };
+                        /** @description The connection it names, at its latest version */
+                        connection: {
+                            id: string;
+                            /** @description Its name, or null where the caller may not read the connection */
+                            name: string | null;
+                            /**
+                             * @description Whose identity the connection runs a query as
+                             * @enum {string}
+                             */
+                            identity: "service" | "endUser";
+                            retired: boolean;
+                        } | null;
+                        /** @description Whether the caller may cut its next version: edit on it, and use connection and write SQL on its connection */
+                        mayEdit: boolean;
+                        /** @description Whether the caller may describe and sample SQL against its connection */
+                        mayRun: boolean;
+                    };
+                };
+            };
+            /** @description `definition_invalid`: the definition fails a rule, each problem named, or names no connection the caller may read */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
+                        /** @enum {string} */
+                        reason?: "untested" | "not_read_only";
+                        problems?: {
+                            /** @constant */
+                            rule: "definition_invalid";
+                            /** @description The member refused, dotted, as `columns.2.name` */
+                            path: string;
+                            message: string;
+                        }[];
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            definition: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                /** Format: uuid */
+                                connection: string;
+                                parameters: {
+                                    name: string;
+                                    type: {
+                                        /** @constant */
+                                        base: "text";
+                                    } | {
+                                        /** @constant */
+                                        base: "integer";
+                                    } | {
+                                        /** @constant */
+                                        base: "decimal";
+                                        precision: number;
+                                        scale: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "date";
+                                    } | {
+                                        /** @constant */
+                                        base: "time";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "localDateTime";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "instant";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "boolean";
+                                    };
+                                    required: boolean;
+                                    list: boolean;
+                                    permitted?: {
+                                        values: (string | boolean | null)[];
+                                    } | {
+                                        minimum?: string | boolean | null;
+                                        maximum?: string | boolean | null;
+                                    };
+                                    variation?: {
+                                        key: string;
+                                        sql: string;
+                                    }[];
+                                }[];
+                                fetch: {
+                                    /** @constant */
+                                    kind: "sql";
+                                    text: string;
+                                };
+                                columns: {
+                                    name: string;
+                                    from: {
+                                        column: string;
+                                    };
+                                    type: {
+                                        /** @constant */
+                                        base: "text";
+                                    } | {
+                                        /** @constant */
+                                        base: "integer";
+                                    } | {
+                                        /** @constant */
+                                        base: "decimal";
+                                        precision: number;
+                                        scale: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "date";
+                                    } | {
+                                        /** @constant */
+                                        base: "time";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "localDateTime";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "instant";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "boolean";
+                                    };
+                                }[];
+                                key: string[];
+                                order: "multiset" | {
+                                    column: string;
+                                    /** @enum {string} */
+                                    direction: "ascending" | "descending";
+                                }[];
+                                /** @enum {string} */
+                                empty: "valid" | "invalid";
+                                limits: {
+                                    rows: number;
+                                    bytes: number;
+                                    seconds: number;
+                                };
+                                title: string;
+                                description: string;
+                                retired: boolean;
+                            };
+                            /** @description The connection it names, at its latest version */
+                            connection: {
+                                id: string;
+                                /** @description Its name, or null where the caller may not read the connection */
+                                name: string | null;
+                                /**
+                                 * @description Whose identity the connection runs a query as
+                                 * @enum {string}
+                                 */
+                                identity: "service" | "endUser";
+                                retired: boolean;
+                            } | null;
+                            /** @description Whether the caller may cut its next version: edit on it, and use connection and write SQL on its connection */
+                            mayEdit: boolean;
+                            /** @description Whether the caller may describe and sample SQL against its connection */
+                            mayRun: boolean;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the definition but may not edit it, or does not hold use connection and write SQL on the connection */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such query definition in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `version_precondition`: the definition has a newer version than the one named, answered with it; `connection_retired`: the connection it names is retired; `sql_not_permitted`: the connection has not been tested clean at its latest version and credential, or its account was found able to write, and SQL is refused on it */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
+                        /** @enum {string} */
+                        reason?: "untested" | "not_read_only";
+                        problems?: {
+                            /** @constant */
+                            rule: "definition_invalid";
+                            /** @description The member refused, dotted, as `columns.2.name` */
+                            path: string;
+                            message: string;
+                        }[];
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            definition: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                /** Format: uuid */
+                                connection: string;
+                                parameters: {
+                                    name: string;
+                                    type: {
+                                        /** @constant */
+                                        base: "text";
+                                    } | {
+                                        /** @constant */
+                                        base: "integer";
+                                    } | {
+                                        /** @constant */
+                                        base: "decimal";
+                                        precision: number;
+                                        scale: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "date";
+                                    } | {
+                                        /** @constant */
+                                        base: "time";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "localDateTime";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "instant";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "boolean";
+                                    };
+                                    required: boolean;
+                                    list: boolean;
+                                    permitted?: {
+                                        values: (string | boolean | null)[];
+                                    } | {
+                                        minimum?: string | boolean | null;
+                                        maximum?: string | boolean | null;
+                                    };
+                                    variation?: {
+                                        key: string;
+                                        sql: string;
+                                    }[];
+                                }[];
+                                fetch: {
+                                    /** @constant */
+                                    kind: "sql";
+                                    text: string;
+                                };
+                                columns: {
+                                    name: string;
+                                    from: {
+                                        column: string;
+                                    };
+                                    type: {
+                                        /** @constant */
+                                        base: "text";
+                                    } | {
+                                        /** @constant */
+                                        base: "integer";
+                                    } | {
+                                        /** @constant */
+                                        base: "decimal";
+                                        precision: number;
+                                        scale: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "date";
+                                    } | {
+                                        /** @constant */
+                                        base: "time";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "localDateTime";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "instant";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "boolean";
+                                    };
+                                }[];
+                                key: string[];
+                                order: "multiset" | {
+                                    column: string;
+                                    /** @enum {string} */
+                                    direction: "ascending" | "descending";
+                                }[];
+                                /** @enum {string} */
+                                empty: "valid" | "invalid";
+                                limits: {
+                                    rows: number;
+                                    bytes: number;
+                                    seconds: number;
+                                };
+                                title: string;
+                                description: string;
+                                retired: boolean;
+                            };
+                            /** @description The connection it names, at its latest version */
+                            connection: {
+                                id: string;
+                                /** @description Its name, or null where the caller may not read the connection */
+                                name: string | null;
+                                /**
+                                 * @description Whose identity the connection runs a query as
+                                 * @enum {string}
+                                 */
+                                identity: "service" | "endUser";
+                                retired: boolean;
+                            } | null;
+                            /** @description Whether the caller may cut its next version: edit on it, and use connection and write SQL on its connection */
+                            mayEdit: boolean;
+                            /** @description Whether the caller may describe and sample SQL against its connection */
+                            mayRun: boolean;
+                        };
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     listRoles: {
         parameters: {
             query: {
@@ -13073,7 +15316,7 @@ export interface operations {
                         items: {
                             id: string;
                             name: string;
-                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection")[];
+                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql")[];
                         }[];
                         /** @description The cursor for the next page, or null at the end */
                         next: string | null;
@@ -13469,7 +15712,7 @@ export interface operations {
                         capped: boolean;
                         items: {
                             /** @enum {string} */
-                            kind: "component" | "document" | "section" | "publication" | "template" | "asset" | "field" | "metadataSchema" | "componentType";
+                            kind: "component" | "document" | "section" | "publication" | "template" | "asset" | "field" | "metadataSchema" | "componentType" | "queryDefinition";
                             artifactId: string;
                             /** @description A section's outline node; null for anything else */
                             node: string | null;
@@ -13479,7 +15722,7 @@ export interface operations {
                                 name: string;
                             } | null;
                             changedAt: string;
-                            /** @description Where it matched best: `title`, `block:<id>`, `field:<id>`, `section:<key>`, `description`, `fields` or `schemas` */
+                            /** @description Where it matched best: `title`, `block:<id>`, `field:<id>`, `section:<key>`, `description`, `fields`, `schemas` or `columns` */
                             place: string | null;
                             /** @description Words from that place, about thirty, each matched word a piece of its own */
                             passage: {
@@ -13578,6 +15821,236 @@ export interface operations {
             };
             /** @description No session, or not one this environment issued */
             401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getDataSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The data settings, with the ceilings */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "rows": -9007199254740991,
+                     *       "bytes": -9007199254740991,
+                     *       "seconds": -9007199254740991,
+                     *       "ceilings": {
+                     *         "rows": -9007199254740991,
+                     *         "bytes": -9007199254740991,
+                     *         "seconds": -9007199254740991
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        rows: number | null;
+                        bytes: number | null;
+                        seconds: number | null;
+                        /** @description The product's ceilings, which no definition passes and an environment only lowers */
+                        ceilings: {
+                            rows: number;
+                            bytes: number;
+                            seconds: number;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    setDataSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /** @example {} */
+                "application/json": {
+                    /** @description The most rows a run may read, 1 to 100000; null or absent lowers none */
+                    rows?: number | null;
+                    /** @description The most bytes a run's result may hold, 1 to 26214400; null or absent lowers none */
+                    bytes?: number | null;
+                    /** @description The most seconds a run may take, 1 to 120; null or absent lowers none */
+                    seconds?: number | null;
+                };
+            };
+        };
+        responses: {
+            /** @description The data settings, as changed */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "rows": -9007199254740991,
+                     *       "bytes": -9007199254740991,
+                     *       "seconds": -9007199254740991,
+                     *       "ceilings": {
+                     *         "rows": -9007199254740991,
+                     *         "bytes": -9007199254740991,
+                     *         "seconds": -9007199254740991
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        rows: number | null;
+                        bytes: number | null;
+                        seconds: number | null;
+                        /** @description The product's ceilings, which no definition passes and an environment only lowers */
+                        ceilings: {
+                            rows: number;
+                            bytes: number;
+                            seconds: number;
+                        };
+                    };
+                };
+            };
+            /** @description A limit that is not a whole number from 1 to its ceiling */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
@@ -15177,6 +17650,17 @@ export interface operations {
                                  */
                                 attribution: "connector" | "query" | "product";
                                 message: string;
+                                /** @description What the source said, where it refused the statement: `source_refused` alone */
+                                source?: {
+                                    /** @description The source's five-character SQLSTATE */
+                                    sqlstate: string;
+                                    /** @description The source's own message, cut to 1,000 characters */
+                                    message: string;
+                                };
+                                /** @description The column the failure names, where it names one */
+                                column?: string;
+                                /** @description The row the failure names, counted from 1 */
+                                row?: number;
                             };
                             at: string;
                             by: {
@@ -15303,6 +17787,17 @@ export interface operations {
                                      */
                                     attribution: "connector" | "query" | "product";
                                     message: string;
+                                    /** @description What the source said, where it refused the statement: `source_refused` alone */
+                                    source?: {
+                                        /** @description The source's five-character SQLSTATE */
+                                        sqlstate: string;
+                                        /** @description The source's own message, cut to 1,000 characters */
+                                        message: string;
+                                    };
+                                    /** @description The column the failure names, where it names one */
+                                    column?: string;
+                                    /** @description The row the failure names, counted from 1 */
+                                    row?: number;
                                 };
                                 at: string;
                                 by: {
@@ -15319,6 +17814,16 @@ export interface operations {
                             mayAdminister: boolean;
                             /** @description Whether the caller may test it and list its tables */
                             mayUse: boolean;
+                        };
+                        /** @description Where retiring is refused, the query definitions still naming the connection that are not retired */
+                        definitions?: {
+                            readable: {
+                                id: string;
+                                title: string;
+                                retired: boolean;
+                            }[];
+                            /** @description How many more name it that the caller may not read */
+                            others: number;
                         };
                     };
                 };
@@ -15705,6 +18210,819 @@ export interface operations {
                         rule?: string;
                         /** @description Quote this when reporting a problem */
                         traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    createQueryDefinition: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "definition": {
+                 *         "schemaVersion": 1,
+                 *         "connection": "00000000-0000-4000-8000-000000000001",
+                 *         "parameters": [],
+                 *         "fetch": {
+                 *           "kind": "sql",
+                 *           "text": "example"
+                 *         },
+                 *         "columns": [
+                 *           {
+                 *             "name": "example",
+                 *             "from": {
+                 *               "column": "example"
+                 *             },
+                 *             "type": {
+                 *               "base": "text"
+                 *             }
+                 *           }
+                 *         ],
+                 *         "key": [],
+                 *         "order": "multiset",
+                 *         "empty": "valid",
+                 *         "limits": {
+                 *           "rows": 1,
+                 *           "bytes": 1,
+                 *           "seconds": 1
+                 *         },
+                 *         "title": "example",
+                 *         "description": "example",
+                 *         "retired": false
+                 *       }
+                 *     }
+                 */
+                "application/json": {
+                    definition: {
+                        /** @constant */
+                        schemaVersion: 1;
+                        /** Format: uuid */
+                        connection: string;
+                        parameters: {
+                            name: string;
+                            type: {
+                                /** @constant */
+                                base: "text";
+                            } | {
+                                /** @constant */
+                                base: "integer";
+                            } | {
+                                /** @constant */
+                                base: "decimal";
+                                precision: number;
+                                scale: number;
+                            } | {
+                                /** @constant */
+                                base: "date";
+                            } | {
+                                /** @constant */
+                                base: "time";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "localDateTime";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "instant";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "boolean";
+                            };
+                            required: boolean;
+                            list: boolean;
+                            permitted?: {
+                                values: (string | boolean | null)[];
+                            } | {
+                                minimum?: string | boolean | null;
+                                maximum?: string | boolean | null;
+                            };
+                            variation?: {
+                                key: string;
+                                sql: string;
+                            }[];
+                        }[];
+                        fetch: {
+                            /** @constant */
+                            kind: "sql";
+                            text: string;
+                        };
+                        columns: {
+                            name: string;
+                            from: {
+                                column: string;
+                            };
+                            type: {
+                                /** @constant */
+                                base: "text";
+                            } | {
+                                /** @constant */
+                                base: "integer";
+                            } | {
+                                /** @constant */
+                                base: "decimal";
+                                precision: number;
+                                scale: number;
+                            } | {
+                                /** @constant */
+                                base: "date";
+                            } | {
+                                /** @constant */
+                                base: "time";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "localDateTime";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "instant";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "boolean";
+                            };
+                        }[];
+                        key: string[];
+                        order: "multiset" | {
+                            column: string;
+                            /** @enum {string} */
+                            direction: "ascending" | "descending";
+                        }[];
+                        /** @enum {string} */
+                        empty: "valid" | "invalid";
+                        limits: {
+                            rows: number;
+                            bytes: number;
+                            seconds: number;
+                        };
+                        title: string;
+                        description: string;
+                        retired: boolean;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Made, at version 0.1 */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": {
+                     *         "id": "example",
+                     *         "name": "example"
+                     *       },
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example",
+                     *         "author": "example",
+                     *         "createdAt": "example",
+                     *         "note": "example"
+                     *       },
+                     *       "definition": {
+                     *         "schemaVersion": 1,
+                     *         "connection": "00000000-0000-4000-8000-000000000001",
+                     *         "parameters": [],
+                     *         "fetch": {
+                     *           "kind": "sql",
+                     *           "text": "example"
+                     *         },
+                     *         "columns": [
+                     *           {
+                     *             "name": "example",
+                     *             "from": {
+                     *               "column": "example"
+                     *             },
+                     *             "type": {
+                     *               "base": "text"
+                     *             }
+                     *           }
+                     *         ],
+                     *         "key": [],
+                     *         "order": "multiset",
+                     *         "empty": "valid",
+                     *         "limits": {
+                     *           "rows": 1,
+                     *           "bytes": 1,
+                     *           "seconds": 1
+                     *         },
+                     *         "title": "example",
+                     *         "description": "example",
+                     *         "retired": false
+                     *       },
+                     *       "connection": {
+                     *         "id": "example",
+                     *         "name": "example",
+                     *         "identity": "service",
+                     *         "retired": false
+                     *       },
+                     *       "mayEdit": false,
+                     *       "mayRun": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: {
+                            id: string;
+                            name: string;
+                        };
+                        version: {
+                            id: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            /** @description The principal who cut it; null for a starter definition */
+                            author: string | null;
+                            createdAt: string;
+                            note: string | null;
+                        };
+                        definition: {
+                            /** @constant */
+                            schemaVersion: 1;
+                            /** Format: uuid */
+                            connection: string;
+                            parameters: {
+                                name: string;
+                                type: {
+                                    /** @constant */
+                                    base: "text";
+                                } | {
+                                    /** @constant */
+                                    base: "integer";
+                                } | {
+                                    /** @constant */
+                                    base: "decimal";
+                                    precision: number;
+                                    scale: number;
+                                } | {
+                                    /** @constant */
+                                    base: "date";
+                                } | {
+                                    /** @constant */
+                                    base: "time";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "localDateTime";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "instant";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "boolean";
+                                };
+                                required: boolean;
+                                list: boolean;
+                                permitted?: {
+                                    values: (string | boolean | null)[];
+                                } | {
+                                    minimum?: string | boolean | null;
+                                    maximum?: string | boolean | null;
+                                };
+                                variation?: {
+                                    key: string;
+                                    sql: string;
+                                }[];
+                            }[];
+                            fetch: {
+                                /** @constant */
+                                kind: "sql";
+                                text: string;
+                            };
+                            columns: {
+                                name: string;
+                                from: {
+                                    column: string;
+                                };
+                                type: {
+                                    /** @constant */
+                                    base: "text";
+                                } | {
+                                    /** @constant */
+                                    base: "integer";
+                                } | {
+                                    /** @constant */
+                                    base: "decimal";
+                                    precision: number;
+                                    scale: number;
+                                } | {
+                                    /** @constant */
+                                    base: "date";
+                                } | {
+                                    /** @constant */
+                                    base: "time";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "localDateTime";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "instant";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "boolean";
+                                };
+                            }[];
+                            key: string[];
+                            order: "multiset" | {
+                                column: string;
+                                /** @enum {string} */
+                                direction: "ascending" | "descending";
+                            }[];
+                            /** @enum {string} */
+                            empty: "valid" | "invalid";
+                            limits: {
+                                rows: number;
+                                bytes: number;
+                                seconds: number;
+                            };
+                            title: string;
+                            description: string;
+                            retired: boolean;
+                        };
+                        /** @description The connection it names, at its latest version */
+                        connection: {
+                            id: string;
+                            /** @description Its name, or null where the caller may not read the connection */
+                            name: string | null;
+                            /**
+                             * @description Whose identity the connection runs a query as
+                             * @enum {string}
+                             */
+                            identity: "service" | "endUser";
+                            retired: boolean;
+                        } | null;
+                        /** @description Whether the caller may cut its next version: edit on it, and use connection and write SQL on its connection */
+                        mayEdit: boolean;
+                        /** @description Whether the caller may describe and sample SQL against its connection */
+                        mayRun: boolean;
+                    };
+                };
+            };
+            /** @description `definition_invalid`: the definition fails a rule, each problem named, or names no connection the caller may read */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
+                        /** @enum {string} */
+                        reason?: "untested" | "not_read_only";
+                        problems?: {
+                            /** @constant */
+                            rule: "definition_invalid";
+                            /** @description The member refused, dotted, as `columns.2.name` */
+                            path: string;
+                            message: string;
+                        }[];
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            definition: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                /** Format: uuid */
+                                connection: string;
+                                parameters: {
+                                    name: string;
+                                    type: {
+                                        /** @constant */
+                                        base: "text";
+                                    } | {
+                                        /** @constant */
+                                        base: "integer";
+                                    } | {
+                                        /** @constant */
+                                        base: "decimal";
+                                        precision: number;
+                                        scale: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "date";
+                                    } | {
+                                        /** @constant */
+                                        base: "time";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "localDateTime";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "instant";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "boolean";
+                                    };
+                                    required: boolean;
+                                    list: boolean;
+                                    permitted?: {
+                                        values: (string | boolean | null)[];
+                                    } | {
+                                        minimum?: string | boolean | null;
+                                        maximum?: string | boolean | null;
+                                    };
+                                    variation?: {
+                                        key: string;
+                                        sql: string;
+                                    }[];
+                                }[];
+                                fetch: {
+                                    /** @constant */
+                                    kind: "sql";
+                                    text: string;
+                                };
+                                columns: {
+                                    name: string;
+                                    from: {
+                                        column: string;
+                                    };
+                                    type: {
+                                        /** @constant */
+                                        base: "text";
+                                    } | {
+                                        /** @constant */
+                                        base: "integer";
+                                    } | {
+                                        /** @constant */
+                                        base: "decimal";
+                                        precision: number;
+                                        scale: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "date";
+                                    } | {
+                                        /** @constant */
+                                        base: "time";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "localDateTime";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "instant";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "boolean";
+                                    };
+                                }[];
+                                key: string[];
+                                order: "multiset" | {
+                                    column: string;
+                                    /** @enum {string} */
+                                    direction: "ascending" | "descending";
+                                }[];
+                                /** @enum {string} */
+                                empty: "valid" | "invalid";
+                                limits: {
+                                    rows: number;
+                                    bytes: number;
+                                    seconds: number;
+                                };
+                                title: string;
+                                description: string;
+                                retired: boolean;
+                            };
+                            /** @description The connection it names, at its latest version */
+                            connection: {
+                                id: string;
+                                /** @description Its name, or null where the caller may not read the connection */
+                                name: string | null;
+                                /**
+                                 * @description Whose identity the connection runs a query as
+                                 * @enum {string}
+                                 */
+                                identity: "service" | "endUser";
+                                retired: boolean;
+                            } | null;
+                            /** @description Whether the caller may cut its next version: edit on it, and use connection and write SQL on its connection */
+                            mayEdit: boolean;
+                            /** @description Whether the caller may describe and sample SQL against its connection */
+                            mayRun: boolean;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not edit in the space, or does not hold use connection and write SQL on the connection */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `connection_retired`: the connection it names is retired; `sql_not_permitted`: the connection has not been tested clean at its latest version and credential, or its account was found able to write, and SQL is refused on it */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
+                        /** @enum {string} */
+                        reason?: "untested" | "not_read_only";
+                        problems?: {
+                            /** @constant */
+                            rule: "definition_invalid";
+                            /** @description The member refused, dotted, as `columns.2.name` */
+                            path: string;
+                            message: string;
+                        }[];
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            definition: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                /** Format: uuid */
+                                connection: string;
+                                parameters: {
+                                    name: string;
+                                    type: {
+                                        /** @constant */
+                                        base: "text";
+                                    } | {
+                                        /** @constant */
+                                        base: "integer";
+                                    } | {
+                                        /** @constant */
+                                        base: "decimal";
+                                        precision: number;
+                                        scale: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "date";
+                                    } | {
+                                        /** @constant */
+                                        base: "time";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "localDateTime";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "instant";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "boolean";
+                                    };
+                                    required: boolean;
+                                    list: boolean;
+                                    permitted?: {
+                                        values: (string | boolean | null)[];
+                                    } | {
+                                        minimum?: string | boolean | null;
+                                        maximum?: string | boolean | null;
+                                    };
+                                    variation?: {
+                                        key: string;
+                                        sql: string;
+                                    }[];
+                                }[];
+                                fetch: {
+                                    /** @constant */
+                                    kind: "sql";
+                                    text: string;
+                                };
+                                columns: {
+                                    name: string;
+                                    from: {
+                                        column: string;
+                                    };
+                                    type: {
+                                        /** @constant */
+                                        base: "text";
+                                    } | {
+                                        /** @constant */
+                                        base: "integer";
+                                    } | {
+                                        /** @constant */
+                                        base: "decimal";
+                                        precision: number;
+                                        scale: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "date";
+                                    } | {
+                                        /** @constant */
+                                        base: "time";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "localDateTime";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "instant";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "boolean";
+                                    };
+                                }[];
+                                key: string[];
+                                order: "multiset" | {
+                                    column: string;
+                                    /** @enum {string} */
+                                    direction: "ascending" | "descending";
+                                }[];
+                                /** @enum {string} */
+                                empty: "valid" | "invalid";
+                                limits: {
+                                    rows: number;
+                                    bytes: number;
+                                    seconds: number;
+                                };
+                                title: string;
+                                description: string;
+                                retired: boolean;
+                            };
+                            /** @description The connection it names, at its latest version */
+                            connection: {
+                                id: string;
+                                /** @description Its name, or null where the caller may not read the connection */
+                                name: string | null;
+                                /**
+                                 * @description Whose identity the connection runs a query as
+                                 * @enum {string}
+                                 */
+                                identity: "service" | "endUser";
+                                retired: boolean;
+                            } | null;
+                            /** @description Whether the caller may cut its next version: edit on it, and use connection and write SQL on its connection */
+                            mayEdit: boolean;
+                            /** @description Whether the caller may describe and sample SQL against its connection */
+                            mayRun: boolean;
+                        };
                     };
                 };
             };
@@ -16767,7 +20085,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -16884,7 +20202,7 @@ export interface operations {
                     /** @description 1 to 80 characters, trimmed */
                     name: string;
                     /** @description The permissions it may use: a mask over its creator's grants, never a grant */
-                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection")[];
+                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql")[];
                     /**
                      * Format: date-time
                      * @description When it stops working: required, in the future and at most 365 days away
@@ -16918,7 +20236,7 @@ export interface operations {
                         /** @description What the person called it, to tell their tokens apart */
                         name: string;
                         /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection")[];
+                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql")[];
                         createdAt: string;
                         /** @description When it stops working; nothing extends a token */
                         expiresAt: string;

@@ -21,7 +21,8 @@ async function main(): Promise<number> {
   } catch {
     return 2;
   }
-  const answer = await answerRequest(request);
+  // Its deadline from when the process started, which is as close as it can see to the spawn.
+  const answer = await answerRequest(request, { startedAt: Math.floor(performance.timeOrigin) });
   await new Promise<void>((resolve) =>
     process.stdout.write(`${JSON.stringify(answer)}\n`, () => resolve()),
   );

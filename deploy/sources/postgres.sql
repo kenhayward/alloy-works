@@ -52,3 +52,44 @@ insert into sample.restricted values (1, 'not for the reader');
 
 grant select on sample.site, sample.reading, sample.site_summary to reader, writer;
 grant insert on sample.reading to writer;
+
+-- Case 6's one logical result (the D2 plan, task 3): three rows in PostgreSQL's own types, which a
+-- run reads to one checksum in every time zone. Composed and decomposed text are kept apart.
+create table sample.typed (
+  k integer primary key,
+  dec numeric(28, 10),
+  big bigint,
+  amount numeric(19, 4),
+  d date,
+  ldt timestamp(6) without time zone,
+  inst timestamptz(6),
+  tm time(6),
+  flag boolean,
+  note text,
+  empty text,
+  txt text
+);
+insert into sample.typed values
+  (1, 123456789012345678.1234567891, 9223372036854775807, 1234.5600, '2026-03-29',
+      '2026-03-29 01:30:00.123456', '2026-03-29T01:30:00.123456+01:00', '23:59:59.999999',
+      true, null, '', U&'\0391\03B8\03AE\03BD\03B1 \6771\4EAC \+020BB7'),
+  (2, -0.0000000001, -9223372036854775808, 922337203685477.5807, '1900-03-01',
+      '1900-03-01 00:00:00', '1969-12-31T23:59:59.999999Z', '00:00:00',
+      false, 'x', '', U&'caf\00E9'),
+  (3, 0, 9007199254740993, 0.1000, '2000-02-29',
+      '2026-10-25 01:30:00', '2026-10-25T00:30:00Z', '12:00:00.5',
+      null, '', null, U&'cafe\0301');
+
+-- Thirty rows whose heap order moves when a row is rewritten, with ties in `category`: a result with
+-- no total order is checksummed as a multiset, and rewriting unchanged rows moves no checksum.
+create table sample.unordered (
+  id integer primary key,
+  category text not null,
+  v integer not null
+);
+insert into sample.unordered
+  select g, case when g % 3 = 0 then 'a' when g % 3 = 1 then 'b' else 'c' end, g * 10
+  from generate_series(1, 30) g;
+alter table sample.unordered set (autovacuum_enabled = false);
+
+grant select on sample.typed, sample.unordered to reader, writer;

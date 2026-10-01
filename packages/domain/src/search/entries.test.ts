@@ -5,6 +5,7 @@ import { parseContentDocument } from '../content/model/document.js';
 import { parseOutlineDocument } from '../structure/outline.js';
 import { templateDefinitionSchema } from '../template/definition.js';
 import { parseAssetVersion } from '../assets/version.js';
+import type { QueryDefinition } from '../data/definition.js';
 import {
   componentTypeDefinitionSchema,
   fieldDefinitionSchema,
@@ -27,6 +28,7 @@ const ADA = '20000000-0000-4000-8000-000000000001';
 const INTRO = 'a'.repeat(26);
 const SCOPE = 'b'.repeat(26);
 const ASSET_VERSION = '30000000-0000-4000-8000-000000000001';
+const CONNECTION = '40000000-0000-4000-8000-000000000001';
 
 const context: SearchContext = {
   fields: new Map([
@@ -282,6 +284,48 @@ describe('what search reads from a version', () => {
       'simple',
       { title: 'Procedure', schemas: 'Sign-off' },
     ]);
+  });
+
+  it("reads a query definition by its title, its description and its columns' names, and never its SQL or its connection", () => {
+    const definition: QueryDefinition = {
+      schemaVersion: 1,
+      title: 'Readings by site',
+      description: 'Each reading at a site.',
+      connection: CONNECTION,
+      parameters: [{ name: 'site', type: { base: 'integer' }, required: true, list: false }],
+      fetch: { kind: 'sql', text: 'select id, taken from sample.reading where site = {{site}}' },
+      columns: [
+        { name: 'id', from: { column: 'id' }, type: { base: 'integer' } },
+        { name: 'Taken at', from: { column: 'taken' }, type: { base: 'instant', fraction: 3 } },
+      ],
+      key: ['id'],
+      order: [{ column: 'id', direction: 'ascending' }],
+      empty: 'valid',
+      limits: { rows: 10, bytes: 1000, seconds: 5 },
+      retired: false,
+    };
+    const read = (source: Parameters<typeof entriesOf>[0]) => {
+      const [entry] = entriesOf(source, context);
+      return [entry!.kind, entry!.title, entry!.configuration, places(entry!)];
+    };
+    expect(read({ kind: 'queryDefinition', content: definition })).toEqual([
+      'queryDefinition',
+      'Readings by site',
+      'simple',
+      {
+        title: 'Readings by site',
+        description: 'Each reading at a site.',
+        columns: 'id Taken at',
+      },
+    ]);
+    // An empty description is no place.
+    const [entry] = entriesOf(
+      { kind: 'queryDefinition', content: { ...definition, description: '' } },
+      context,
+    );
+    expect(places(entry!)).toEqual({ title: 'Readings by site', columns: 'id Taken at' });
+    expect(JSON.stringify(entry)).not.toContain('sample.reading');
+    expect(JSON.stringify(entry)).not.toContain(CONNECTION);
   });
 
   it('composes what it reads, so two spellings a reader cannot tell apart are one', () => {

@@ -24,6 +24,8 @@ import {
   type ListingRequest,
   type SortOf,
 } from './listing.js';
+import { ConnectionInUse } from './definition-references.js';
+import { definitionsNaming, type NamingDefinitions } from './queryDefinitions.js';
 import { readableArtifacts } from './readable-artifacts.js';
 import type { TenantTransaction } from './tables.js';
 import { createArtifact, latestVersion, recordVersion, type StoredVersion } from './versions.js';
@@ -51,6 +53,11 @@ export type ConnectionAnswer =
   | { readonly answer: 'version.precondition'; readonly current: StoredConnection }
   /** Settings that do not pass, each problem named (DAT-001, DAT-078); nothing is written. */
   | { readonly answer: 'connection.refused'; readonly problems: readonly ConnectionProblem[] }
+  /**
+   * A version retiring the connection while a query definition in service names it (DAT-065): those
+   * the author may read, by title, and the rest counted. Nothing is cut.
+   */
+  | { readonly answer: 'connection.in_use'; readonly definitions: NamingDefinitions }
   | { readonly answer: 'space.missing' }
   | { readonly answer: 'connection.missing' };
 
@@ -135,7 +142,8 @@ export async function createConnection(
 
 /**
  * Cuts a connection's next version from the one its administrator opened, from whole settings that
- * pass as a new connection's must (DAT-007). Retiring and reinstating are versions like any other.
+ * pass as a new connection's must (DAT-007). Retiring and reinstating are versions like any other, and
+ * retiring one a query definition in service still names is refused, naming the definitions (DAT-065).
  */
 export async function recordConnectionVersion(
   trx: TenantTransaction,
@@ -150,12 +158,21 @@ export async function recordConnectionVersion(
   if (!current) return { answer: 'connection.missing' };
   const parsed = forWrite(input.settings);
   if ('problems' in parsed) return { answer: 'connection.refused', problems: parsed.problems };
-  const answer = await recordVersion(trx, {
-    artifactId: input.id,
-    openedFrom: input.openedFrom,
-    author: input.author,
-    substance: { kind: 'connection', content: parsed.settings },
-  });
+  let answer;
+  try {
+    answer = await recordVersion(trx, {
+      artifactId: input.id,
+      openedFrom: input.openedFrom,
+      author: input.author,
+      substance: { kind: 'connection', content: parsed.settings },
+    });
+  } catch (error) {
+    if (!(error instanceof ConnectionInUse)) throw error;
+    return {
+      answer: 'connection.in_use',
+      definitions: await definitionsNaming(trx, input.author, input.id, { inService: true }),
+    };
+  }
   switch (answer.answer) {
     case 'recorded':
       return { answer: 'recorded', connection: await storedConnection(trx, answer.version) };

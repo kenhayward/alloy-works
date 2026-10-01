@@ -27,6 +27,8 @@ export function resultLink(result: {
       return documentLink(result.artifactId);
     case 'publication':
       return `#/publications/${result.artifactId}`;
+    case 'queryDefinition':
+      return `#/query-definitions/${result.artifactId}`;
     default:
       return null;
   }
@@ -75,5 +77,6 @@ export function whereFound(
   if (place === 'description') return 'In its description';
   if (place === 'fields') return 'In the fields it groups';
   if (place === 'schemas') return 'In the schemas it assigns';
+  if (place === 'columns') return 'In its column names';
   return null;
 }

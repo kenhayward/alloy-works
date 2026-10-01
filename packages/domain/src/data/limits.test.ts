@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { defaultLimits, limitCeilings } from './limits.js';
+import { defaultLimits, effectiveLimits, limitCeilings } from './limits.js';
 
 describe("a run's limits", () => {
   it('default to 10,000 rows, 5 MiB and 30 s, under ceilings of 100,000 rows, 25 MiB and 120 s', () => {
@@ -10,5 +10,20 @@ describe("a run's limits", () => {
       expect(defaultLimits[limit]).toBeLessThanOrEqual(limitCeilings[limit]);
     }
     expect(Object.isFrozen(defaultLimits) && Object.isFrozen(limitCeilings)).toBe(true);
+  });
+});
+
+describe("a run's effective limits", () => {
+  it("take the least of the definition's and the tenant's, each a tenant has not lowered being the definition's", () => {
+    const definition = { rows: 500, bytes: 1_000_000, seconds: 30 };
+    expect(effectiveLimits(definition, {})).toEqual(definition);
+    expect(effectiveLimits(definition, { rows: null, bytes: null, seconds: null })).toEqual(
+      definition,
+    );
+    expect(effectiveLimits(definition, { rows: 100, bytes: 2_000_000, seconds: 10 })).toEqual({
+      rows: 100,
+      bytes: 1_000_000,
+      seconds: 10,
+    });
   });
 });

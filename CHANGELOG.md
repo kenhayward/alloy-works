@@ -3,6 +3,42 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.130.0 - 2026-09-30 (PR #369)
+
+### Added
+
+- **Query definitions: SQL written against a connection, and run against sample values.** **Query
+  definitions**, beside Connections, lists the ones you may read. Somebody who may edit in a space
+  and has the new permission **write SQL** on a connection writes one there with **New query
+  definition**, in steps: the connection and a title; the SQL, with a value marked `{{name}}` and a
+  fragment of SQL chosen by a key marked `{{#name}}`, and what each parameter is - its type, whether
+  it is required or a list, and the values or range it allows; **Describe**, which asks the database
+  what the statement would return without running it and proposes a type for each column for you to
+  confirm; the key, whether the rows must come in the SQL's order, whether no rows is a valid answer,
+  and the most rows, bytes and seconds a run may take; and **Run sample**, which runs it against
+  values you type exactly as a document will, showing the first hundred rows, how many there were,
+  their checksum and the SQL that ran, or the one reason it failed. Every value is sent to the
+  database separately from the SQL, so no value can change the query, and one that does not fit its
+  parameter is refused by name before anything runs. Save it as a version once every column is
+  confirmed; retire and reinstate it the same way. Nothing is kept from a run yet.
+- **SQL runs only on a connection found read-only.** A connection whose latest test found its account
+  able to change data refuses SQL, saying so, and so does one not tested since its settings or its
+  password changed. **write SQL** is held by no starting role, so give it on purpose from **Manage
+  access**.
+- **Where a connection is used.** A connection's page lists the query definitions that use it, and a
+  connection still used cannot be retired: the page names what to retire first. Setting a password
+  whose test fails names the query definitions that depend on it.
+- **Search finds query definitions** by their title, description and column names. A query
+  definition names its connection only to somebody who may read that connection; anybody else who
+  reads the definition is told only that it runs against a connection they may not read.
+- **Limits on a query run for the whole environment.** An administrator can lower the most rows,
+  bytes and seconds any run may take, through the API; a run takes the lower of its own and these.
+
+### Changed
+
+- The connector in the development stack and in a deployment made from `deploy/compose.yaml` is held
+  to 3 GiB of memory.
+
 ## 0.129.2 - 2026-09-30 (PR #371)
 
 ### Fixed

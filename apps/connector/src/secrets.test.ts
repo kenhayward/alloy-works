@@ -8,12 +8,17 @@ import { loadConnectorConfig } from './config.js';
 import { createConnectorServer } from './server.js';
 import { childSpawn, runChild, type ChildSpec, type SpawnChild } from './supervisor.js';
 import {
+  column,
+  describeSqlRequest,
+  draft,
   requestFor,
+  runRequest,
   SEALING_KEY,
   settings,
   suiteChild,
   suiteDeny,
   suiteIsolation,
+  LOADED_TIMEOUT_MS,
 } from './testing/source.js';
 
 /** An invented secret, with characters each encoding spells differently. */
@@ -46,7 +51,7 @@ async function listening(
   return { server, port: (server.address() as AddressInfo).port, sockets };
 }
 
-describe("the connector's secrets", () => {
+describe("the connector's secrets", { timeout: LOADED_TIMEOUT_MS }, () => {
   // A source that answers PostgreSQL's request for TLS with no, and one that never answers at all.
   let plain: Awaited<ReturnType<typeof listening>>;
   let silent: Awaited<ReturnType<typeof listening>>;
@@ -116,6 +121,29 @@ describe("the connector's secrets", () => {
     expect((await call(real.url, '/v1/describe', requestFor(settings(), CANARY))).text).toBe(
       '{"failure":{"code":"connection_failed","attribution":"connector"}}',
     );
+    // A run and a SQL describe, each failing each way (the D2 plan): a wrong credential, an unknown
+    // host, and a source that refuses TLS.
+    const definition = draft('select id from sample.site order by id', [
+      column('id', { base: 'integer' }),
+    ]);
+    for (const source of [
+      settings(),
+      settings({ host: 'no-such-source.invalid' }),
+      settings({ port: plain.port }),
+    ]) {
+      expect((await call(real.url, '/v1/run', runRequest(source, CANARY, definition))).text).toBe(
+        failed,
+      );
+      expect(
+        (
+          await call(
+            real.url,
+            '/v1/describe',
+            describeSqlRequest(source, CANARY, 'select 1 as one'),
+          )
+        ).text,
+      ).toBe('{"failure":{"code":"connection_failed","attribution":"connector"}}');
+    }
     // A malformed host carrying the secret, and a seal refused and one taken, each echo none of it.
     const malformed = requestFor(settings(), CANARY);
     const withHost = {

@@ -70,7 +70,11 @@ function service(
     test?: () => Response;
     describe?: () => Response;
     credential?: () => Response;
-    version?: (body: { openedFrom: string; settings: ReturnType<typeof settings> }) => Response;
+    version?: (body: {
+      openedFrom: string;
+      settings: ReturnType<typeof settings>;
+    }) => Response | undefined;
+    uses?: () => Response;
   } = {},
 ) {
   const asked: Asked[] = [];
@@ -217,6 +221,9 @@ function service(
         credential,
         test: { outcome: 'ok', findings: [], at: '2026-09-30T10:00:01.000Z' },
       });
+    }
+    if (request.method === 'GET' && path === `/v1/connections/${READINGS}/uses`) {
+      return options.uses?.() ?? json(200, { definitions: { readable: [], others: 0 } });
     }
     if (request.method === 'POST' && path === `/v1/connections/${READINGS}/test`) {
       return (
@@ -619,6 +626,46 @@ describe('a connection on its own page', () => {
     expect(
       versions.map((each) => (each.body as { settings: { retired: boolean } }).settings.retired),
     ).toEqual([true, false]);
+  });
+
+  it('says which query definitions use a connection, and why retiring it was refused', async () => {
+    const user = userEvent.setup();
+    const naming = {
+      readable: [
+        { id: '88888888-8888-4888-8888-888888888888', title: 'Site by id', retired: false },
+      ],
+      others: 2,
+    };
+    const { client } = service({
+      version: (body) =>
+        body.settings.retired
+          ? json(409, {
+              code: 'connection_in_use',
+              message: 'This connection is used by a query definition that is not retired.',
+              definitions: naming,
+            })
+          : undefined,
+      uses: () => json(200, { definitions: naming }),
+    });
+    render(<ConnectionPage client={client} id={READINGS} />);
+    const used = await screen.findByRole('region', { name: 'Used by' });
+    expect(await within(used).findByRole('link', { name: 'Site by id' })).toHaveAttribute(
+      'href',
+      '#/query-definitions/88888888-8888-4888-8888-888888888888',
+    );
+    expect(within(used).getByText('And 2 more you may not read.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Retire' }));
+    const retiring = screen.getByRole('region', { name: 'Retiring' });
+    expect(
+      await within(retiring).findByText(
+        'This connection is used by a query definition that is not retired.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(retiring).getByText('Retire these first: Site by id, and 2 more you may not read.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Retire' })).toBeInTheDocument();
   });
 
   it('keeps a change typed into the settings, unsaved, across Retire and Reinstate', async () => {

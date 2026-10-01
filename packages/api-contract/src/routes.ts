@@ -4,6 +4,7 @@ import { connectionRoutes } from './connections.js';
 import { definitionRoutes } from './definitions.js';
 import { peopleRoutes } from './people.js';
 import { presentationRoutes } from './presentation.js';
+import { queryDefinitionRoutes } from './query-definitions.js';
 import { searchRoutes } from './search.js';
 import { settingsRoutes } from './settings.js';
 import type { RouteContract } from './contract.js';
@@ -273,6 +274,7 @@ export const routes = {
   ...assetRoutes,
   ...templateRoutes,
   ...connectionRoutes,
+  ...queryDefinitionRoutes,
   ...definitionRoutes,
   ...peopleRoutes,
   ...searchRoutes,

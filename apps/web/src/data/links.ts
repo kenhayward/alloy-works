@@ -17,3 +17,21 @@ export function connectionLink(connection: string): string {
 export function connectionAccessLink(connection: string): string {
   return `#/connections/${connection}/access`;
 }
+
+/** The address at which a new query definition is written. */
+export const NEW_QUERY_DEFINITION = '#/query-definitions/new';
+
+const QUERY_DEFINITION = /^#\/query-definitions\/(new|[0-9a-f-]{36})$/;
+
+/**
+ * What a `#/query-definitions/...` address names: a definition by id, or `new` for one being written;
+ * or null for any other address.
+ */
+export function queryDefinitionAddress(hash: string): string | null {
+  return QUERY_DEFINITION.exec(hash)?.[1] ?? null;
+}
+
+/** The address of a query definition's own page. */
+export function queryDefinitionLink(definition: string): string {
+  return `#/query-definitions/${definition}`;
+}

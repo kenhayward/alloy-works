@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import {
+  CONNECTION_SCHEMA_VERSION,
+  QUERY_DEFINITION_SCHEMA_VERSION,
   defaultNumberingScheme,
   DEFINITION_SCHEMA_VERSION,
   OUTLINE_SCHEMA_VERSION,
@@ -62,7 +64,9 @@ export async function publish(
 /**
  * One of every kind search finds, each holding `word` - for a test that must reach every kind, as the
  * leak suite does (SCH-010). The document's one section holds the word too, and so does the
- * publication, by its document's title. Answers each kind's artifact, and the section's node.
+ * publication, by its document's title; the query definition names a connection it makes. Answers each
+ * kind's artifact, and the section's node. `before0046` leaves the query definition and its connection
+ * out, for a tenant migrated only as far as a test of an earlier migration needs.
  */
 export async function everyKind(
   trx: TenantTransaction,
@@ -72,8 +76,14 @@ export async function everyKind(
     readonly word: string;
     /** The tenant's role, which an object key names. */
     readonly role: string;
+    readonly before0046?: boolean;
   },
-): Promise<Readonly<Record<SearchKind, string>> & { readonly node: string }> {
+): Promise<
+  Readonly<Record<Exclude<SearchKind, 'queryDefinition'>, string>> & {
+    readonly queryDefinition?: string;
+    readonly node: string;
+  }
+> {
   const { author, spaceId, word } = input;
   const component = await createComponent(trx, {
     spaceId,
@@ -175,7 +185,57 @@ export async function everyKind(
     },
   });
   const publication = await publish(trx, { document, author, role: input.role });
+  let queryDefinition: string | undefined;
+  if (!input.before0046) {
+    // A query definition names a connection, which is in no search of its own.
+    const connection = await createArtifact(trx, {
+      author,
+      spaceId,
+      substance: {
+        kind: 'connection',
+        content: {
+          schemaVersion: CONNECTION_SCHEMA_VERSION,
+          name: `${word} connection`,
+          description: '',
+          type: 'postgres',
+          source: {
+            host: 'source-postgres',
+            port: 5432,
+            database: 'readings',
+            account: 'reader',
+            tls: 'require',
+          },
+          identity: { kind: 'service' },
+          retired: false,
+        },
+      },
+    });
+    queryDefinition = (
+      await createArtifact(trx, {
+        author,
+        spaceId,
+        substance: {
+          kind: 'queryDefinition',
+          content: {
+            schemaVersion: QUERY_DEFINITION_SCHEMA_VERSION,
+            title: `${word} query definition`,
+            description: '',
+            connection: connection.artifactId,
+            parameters: [],
+            fetch: { kind: 'sql', text: 'select id from sample.site order by id' },
+            columns: [{ name: 'id', from: { column: 'id' }, type: { base: 'integer' } }],
+            key: ['id'],
+            order: [{ column: 'id', direction: 'ascending' }],
+            empty: 'valid',
+            limits: { rows: 100, bytes: 100_000, seconds: 10 },
+            retired: false,
+          },
+        },
+      })
+    ).artifactId;
+  }
   return {
+    ...(queryDefinition === undefined ? {} : { queryDefinition }),
     component: component.version.artifactId,
     document: document.artifactId,
     section: document.artifactId,

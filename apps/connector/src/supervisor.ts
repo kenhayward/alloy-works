@@ -7,10 +7,16 @@ import {
   credentialContext,
   dataFailure,
   describeAnswerSchema,
+  describeSqlAnswerSchema,
+  runAnswerSchema,
   testAnswerSchema,
   type ChildRequest,
   type DataFailureCode,
   type DescribeAnswer,
+  type DescribeSqlAnswer,
+  type DescribeSqlRequest,
+  type RunAnswer,
+  type RunRequest,
   type TestAnswer,
   type TestRequest,
 } from '@alloy-works/domain';
@@ -163,22 +169,52 @@ export const runChild: SpawnChild = (spec, input, deadlineMs, stderr) =>
     child.stdin.end(`${input}\n`);
   });
 
-export type RequestKind = 'test' | 'describe';
-export type AnswerOf<K extends RequestKind> = K extends 'test' ? TestAnswer : DescribeAnswer;
+export type RequestKind = 'test' | 'describe' | 'run' | 'describeSql';
+
+interface Kinds {
+  readonly test: { readonly request: TestRequest; readonly answer: TestAnswer };
+  readonly describe: { readonly request: TestRequest; readonly answer: DescribeAnswer };
+  readonly run: { readonly request: RunRequest; readonly answer: RunAnswer };
+  readonly describeSql: {
+    readonly request: DescribeSqlRequest;
+    readonly answer: DescribeSqlAnswer;
+  };
+}
+
+export type RequestOf<K extends RequestKind> = Kinds[K]['request'];
+export type AnswerOf<K extends RequestKind> = Kinds[K]['answer'];
+
+/** What each kind's answer is parsed by, as it leaves the child. */
+const answerSchemas = {
+  test: testAnswerSchema,
+  describe: describeAnswerSchema,
+  run: runAnswerSchema,
+  describeSql: describeSqlAnswerSchema,
+} as const satisfies Record<RequestKind, unknown>;
+
+/**
+ * The most runs of a definition at once, whatever the cap of children (the D2 plan, D2-J, final review
+ * 5): a run at a result's ceiling peaked at about 370 MiB in its child, and the supervisor holds about
+ * 90 MiB more parsing its answer, so four of them fit the container's 3 GiB beside the supervisor,
+ * where eight would not. A test and a describe hold far less, and keep the other slots.
+ */
+export const MAX_RUNS = 4;
 
 /** The connect timeout, and the least time a failure to reach or authenticate takes (D1-L). */
 export const CONNECT_TIMEOUT_MS = 5000;
 
 export interface Supervisor {
   /** The request's answer, or `busy` when the cap of children is running. */
-  run<K extends RequestKind>(kind: K, request: TestRequest): Promise<AnswerOf<K> | 'busy'>;
+  run<K extends RequestKind>(kind: K, request: RequestOf<K>): Promise<AnswerOf<K> | 'busy'>;
   /** How many children are running. */
   active(): number;
 }
 
 function failed<K extends RequestKind>(kind: K, code: DataFailureCode): AnswerOf<K> {
   const failure = dataFailure(code);
-  return (kind === 'test' ? { outcome: 'failed', failure } : { failure }) as AnswerOf<K>;
+  return (
+    kind === 'test' || kind === 'run' ? { outcome: 'failed', failure } : { failure }
+  ) as AnswerOf<K>;
 }
 
 const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
@@ -188,6 +224,8 @@ export function createSupervisor(options: {
   /** The ranges the child's guard refuses: production's, or the suite's, never configuration's alone. */
   readonly deny: readonly string[];
   readonly maxChildren: number;
+  /** The most of those children that may be runs at once: `MAX_RUNS` unless a test says. */
+  readonly maxRuns?: number;
   /** How a child is started, fixed or by its slot: production's own users unless a test says. */
   readonly spec?: ChildSpec | ((slot: number) => ChildSpec);
   readonly spawn?: SpawnChild;
@@ -211,11 +249,13 @@ export function createSupervisor(options: {
   const failureFloorMs = options.failureFloorMs ?? CONNECT_TIMEOUT_MS;
   /** Which slots of the cap are free: a running child holds its slot, and so its user. */
   const free = Array.from({ length: options.maxChildren }, (_, slot) => slot);
+  const maxRuns = options.maxRuns ?? MAX_RUNS;
   let active = 0;
+  let runs = 0;
 
   async function work<K extends RequestKind>(
     kind: K,
-    request: TestRequest,
+    request: RequestOf<K>,
     slot: number,
     sweeping: (done: Promise<void>) => void,
   ): Promise<AnswerOf<K>> {
@@ -236,14 +276,14 @@ export function createSupervisor(options: {
       await pause(started + failureFloorMs - Date.now());
       return failed(kind, 'connection_failed');
     }
-    const input: ChildRequest = {
+    const input = {
       kind,
       request,
       secret,
       deny: [...options.deny],
       connectTimeoutMs,
       failureFloorMs,
-    };
+    } as ChildRequest;
     const spec = specFor(slot);
     let stderrBytes = 0;
     let outcome: ChildOutcome;
@@ -261,22 +301,23 @@ export function createSupervisor(options: {
     if (outcome.kind !== 'answer') {
       return failed(kind, outcome.kind === 'timeout' ? 'timeout' : 'connector_error');
     }
-    const parsed = (kind === 'test' ? testAnswerSchema : describeAnswerSchema).safeParse(
-      outcome.answer,
-    );
+    const parsed = answerSchemas[kind].safeParse(outcome.answer);
     return parsed.success ? (parsed.data as AnswerOf<K>) : failed(kind, 'connector_error');
   }
 
   return {
-    run<K extends RequestKind>(kind: K, request: TestRequest): Promise<AnswerOf<K> | 'busy'> {
+    run<K extends RequestKind>(kind: K, request: RequestOf<K>): Promise<AnswerOf<K> | 'busy'> {
+      if (kind === 'run' && runs >= maxRuns) return Promise.resolve('busy');
       const slot = free.shift();
       if (slot === undefined) return Promise.resolve('busy');
       active += 1;
+      if (kind === 'run') runs += 1;
       let swept: Promise<void> = Promise.resolve();
       const answer = work(kind, request, slot, (done) => {
         swept = done;
       }).finally(() => {
         active -= 1;
+        if (kind === 'run') runs -= 1;
       });
       void answer
         .catch(() => {})

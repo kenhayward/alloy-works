@@ -121,7 +121,13 @@ describe('migration 0044, over an environment made before it', () => {
           .where('name', '=', 'General')
           .executeTakeFirstOrThrow()
       ).id;
-      await everyKind(trx, { author: ada, spaceId: general, word: 'kept', role: upgraded.role });
+      await everyKind(trx, {
+        author: ada,
+        spaceId: general,
+        word: 'kept',
+        role: upgraded.role,
+        before0046: true,
+      });
     });
     counts = await countRows(upgraded.schema);
   });
@@ -136,6 +142,7 @@ describe('migration 0044, over an environment made before it', () => {
     expect((await migrate(db.migratorUrl)).tenants[upgraded.id]).toEqual([
       '0044_connections',
       '0045_connection_credential_target',
+      '0046_query_definitions',
     ]);
     // Every row still there: each rewritten constraint was checked against them as it was added.
     expect(await countRows(upgraded.schema)).toEqual(counts);

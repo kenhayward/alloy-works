@@ -7,6 +7,7 @@ import {
   createArtifact,
   createAssetUpload,
   createConnection,
+  createQueryDefinition,
   createDocument,
   createGroup,
   createRole,
@@ -71,6 +72,22 @@ const aTemplate = () => ({
   changes: { add: true, remove: true, reorder: true },
 });
 
+/** A query definition's shape, naming a connection by id: what a route's shape needs. */
+const aQueryDefinition = (connection: string) => ({
+  schemaVersion: 1,
+  title: 'Elsewhere',
+  description: '',
+  connection,
+  parameters: [],
+  fetch: { kind: 'sql', text: 'select 1 as one' },
+  columns: [{ name: 'one', from: { column: 'one' }, type: { base: 'integer' } }],
+  key: ['one'],
+  order: [{ column: 'one', direction: 'ascending' }],
+  empty: 'valid',
+  limits: { rows: 10, bytes: 1024, seconds: 5 },
+  retired: false,
+});
+
 /** A connection's settings any environment takes. */
 const aConnection = () =>
   ({
@@ -105,6 +122,7 @@ describe('routes that check a permission', () => {
   let reportPublication: string;
   let plan: string;
   let readings: string;
+  let dailyReadings: string;
   let clinicalImage: string;
   let graceAuthors: string;
 
@@ -261,6 +279,15 @@ describe('routes that check a permission', () => {
       });
       if (connection.answer !== 'created') throw new Error(`refused: ${connection.answer}`);
       readings = connection.connection.id;
+      // And a query definition in Clinical naming it, which a route reading or changing it must
+      // refuse to name.
+      const definition = await createQueryDefinition(trx, {
+        spaceId: clinical,
+        definition: aQueryDefinition(readings),
+        author: ids.ada!,
+      });
+      if (definition.answer !== 'created') throw new Error(`refused: ${definition.answer}`);
+      dailyReadings = definition.definition.id;
       // And an image in Clinical, made as the `ingest` job makes one, over an object that need not
       // exist: a route reading it must refuse before it reads the store.
       const upload = await createAssetUpload(trx, {
@@ -756,6 +783,28 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: {},
     }),
+    sampleConnection: () => ({
+      url: `/v1/connections/${readings}/sample`,
+      status: 404,
+      payload: {
+        definition: (({ title: _t, description: _d, retired: _r, ...draft }) => draft)(
+          aQueryDefinition(readings),
+        ),
+        values: {},
+      },
+    }),
+    getConnectionUses: () => ({ url: `/v1/connections/${readings}/uses`, status: 404 }),
+    createQueryDefinition: () => ({
+      url: `/v1/spaces/${clinical}/query-definitions`,
+      status: 404,
+      payload: { definition: aQueryDefinition(readings) },
+    }),
+    getQueryDefinition: () => ({ url: `/v1/query-definitions/${dailyReadings}`, status: 404 }),
+    recordQueryDefinitionVersion: () => ({
+      url: `/v1/query-definitions/${dailyReadings}/versions`,
+      status: 404,
+      payload: { openedFrom: MISSING, definition: aQueryDefinition(readings) },
+    }),
     listDefinitions: () => ({ url: '/v1/definitions', status: 403 }),
     createDefinition: () => ({
       url: '/v1/definitions',
@@ -869,6 +918,7 @@ describe('routes that check a permission', () => {
       status: 403,
       payload: { iterationRetentionDays: 7 },
     }),
+    setDataSettings: () => ({ url: '/v1/settings/data', status: 403, payload: { rows: 10 } }),
     createAssetUpload: () => ({
       url: `/v1/spaces/${clinical}/asset-uploads`,
       status: 404,

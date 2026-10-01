@@ -311,6 +311,8 @@ export function describeGrant(grant: ShownGrant): string {
 
 /** A permission as a person reads it: `manage_definitions` is "manage definitions". */
 export function permissionName(permission: string): string {
+  // SQL is an initialism, and reads as one.
+  if (permission === 'write_sql') return 'write SQL';
   return permission.replaceAll('_', ' ');
 }
 

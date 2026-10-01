@@ -79,6 +79,7 @@ const KINDS: Record<string, string> = {
   field: 'Field',
   metadataSchema: 'Metadata schema',
   componentType: 'Component type',
+  queryDefinition: 'Query definition',
 };
 
 const RANGES: Record<string, string> = {
