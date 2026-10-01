@@ -406,6 +406,7 @@ async function inTurn<T, R>(items: readonly T[], work: (item: T) => Promise<R>):
 }
 
 const idColumn = column('id', { base: 'integer' });
+const receivedColumn = column('received', { base: 'text' });
 
 describe('injection through every parameter type', { timeout: LOADED_TIMEOUT_MS }, () => {
   it('DAT-021 attempts injection through every parameter type and refuses each value by name or binds it inert', async () => {
@@ -424,35 +425,47 @@ describe('injection through every parameter type', { timeout: LOADED_TIMEOUT_MS 
         return { position, outcome: 'refused' as const };
       }
       const started = Date.now();
+      // The position's statement beside the text the source received, which it reports itself: one
+      // row of it where the statement matches nothing.
       const answer = await runHere(
         runRequest(
           settings(),
           PASSWORDS.reader,
-          draft(`${PROBE} ${sql}`, [idColumn], { parameters: [parameter] }),
+          draft(
+            `${PROBE} select s.id, r.received from (select current_query() as received) r
+              left join lateral (${sql}) s on true`,
+            [idColumn, receivedColumn],
+            { parameters: [parameter], key: [], order: 'multiset' },
+          ),
           values,
         ),
       );
-      const got = answer.outcome === 'ok' ? answer.result.rows.map((row) => row[0]) : answer;
+      const rows = answer.outcome === 'ok' ? answer.result.rows : [];
+      const got =
+        answer.outcome === 'ok' ? rows.flatMap((row) => (row[0] === null ? [] : [row[0]])) : answer;
       const want = expected(value as never);
       const inert = JSON.stringify(got) === JSON.stringify(want) && Date.now() - started < 2500;
       return {
         position,
         outcome: inert ? ('inert' as const) : ('NOT INERT' as const),
         ran: answer.outcome === 'ok' ? answer.ran.sql : undefined,
+        received: rows.length > 0 ? String(rows[0]![1]) : undefined,
         ...(inert ? {} : { value: String(value).slice(0, 60), got, want }),
       };
     });
     // Every attempt either refused by name or bound inert: none changed what the query did.
     expect(outcomes.filter((each) => each.outcome === 'NOT INERT')).toEqual([]);
     // And no value reached the text: every value a position bound ran as exactly the same SQL, the
-    // value only ever a parameter beside it.
+    // value only ever a parameter beside it - as the binder wrote it, and as the source received it.
     for (const [position] of POSITIONS) {
-      const ran = new Set(
-        outcomes.flatMap((each) =>
-          each.position === position && 'ran' in each && each.ran !== undefined ? [each.ran] : [],
-        ),
-      );
+      const at = outcomes.filter(
+        (each) => each.position === position && 'ran' in each && each.ran !== undefined,
+      ) as { ran: string; received?: string }[];
+      expect(at.length, position).toBeGreaterThan(0);
+      const ran = new Set(at.map((each) => each.ran));
+      const received = new Set(at.map((each) => each.received));
       expect([...ran].length, position).toBe(1);
+      expect([...received], position).toEqual([...ran]);
     }
     // Not vacuous: every position took some values and refused others.
     for (const [position] of POSITIONS) {
