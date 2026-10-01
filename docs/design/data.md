@@ -516,7 +516,9 @@ longest fragment and each value marker by its placeholder - at most 300,000 char
 run reports it ran; either past its bound is refused `definition_invalid`, naming the size, on every
 write and on a sample's draft. A run's request to the connector may be 1 MiB and 64 KiB, the
 service's own body limit and room for the connection and its sealed credential, so a definition at
-its bound, with the values it is sampled with, always fits.
+its bound always fits with room. The values are not bounded by the definition: a sample's are held by
+the service's body limit, which answers a larger body 413 before anything reaches the connector, and
+D3's resolve, whose values come from a document, must bound them before it asks.
 
 ### Parameters
 
@@ -690,7 +692,16 @@ definition names, or it is declared decorative (DAT-097's declaration; its failu
   its child, against 88 MiB for a child at rest, and the supervisor held about 87 MiB of heap parsing
   each such answer (measured under `tsx` on Windows). Four fit the container's 3 GiB (`mem_limit:
 3g`) beside the supervisor; eight would not. A fifth run at once is `connector_busy`, and a test or
-  a describe, which holds far less, takes one of the other slots.
+  a describe, which holds far less, takes one of the other slots. **The seconds limit is the run's
+  wall time from its child's start**, as the supervisor kills it a second after: the child counts its
+  deadline from its process's start, so the process starting - a few hundred milliseconds - is inside
+  the limit, and a statement close to it can answer `timeout` one time and not the next.
+  **A limit reached cancels at the source by the protocol's cancel request alone** (DAT-109): the
+  connector never falls back to `pg_cancel_backend`, since through a pooler the key the backend sent is
+  the pooler's, and the process it names could be another session's. So through a relay or a pooler
+  that drops cancel requests, a statement whose SQL turned off the server's own checks -
+  `client_connection_check_interval` and `statement_timeout` - runs on at the source until the source
+  stops it; the connector has answered `timeout` or the limit and holds nothing of it.
 
 ### Searchable
 

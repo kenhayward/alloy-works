@@ -32,8 +32,10 @@ const CONTROL = /\p{Cc}/u;
 const CONTROL_BUT_LINE_FEED = /(?!\n)\p{Cc}/u;
 
 /**
- * The most a definition may be, in bytes of its canonical JSON's UTF-8: so that one, with the values it
- * is sampled with, always fits a run's request (`RUN_REQUEST_MAX_BYTES`).
+ * The most a definition may be, in bytes of its canonical JSON's UTF-8: so that one always fits a run's
+ * request (`RUN_REQUEST_MAX_BYTES`) with room to spare. The values it is run with are not bounded
+ * here: a sample's are held by the service's own body limit, 1 MiB, which the request's limit covers
+ * with the connection and its credential beside them.
  */
 export const DEFINITION_MAX_BYTES = 512 * 1024;
 
