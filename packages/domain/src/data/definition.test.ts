@@ -600,7 +600,9 @@ describe('a query definition', () => {
     void [title, description, retired];
     expect(bytes(draft)).toBeGreaterThan(LIMIT);
     expect(() => parseDraftDefinition(draft)).toThrow(DefinitionRefused);
-  });
+    // The time is the builder's, which serialises the whole definition once for each value it adds
+    // (about 180 times over half a megabyte), not the check's: CI's loaded runner took 6 s of it.
+  }, 60_000);
 
   it('binds to at most 300,000 characters of SQL with its longest fragments, so that what ran can always be reported', () => {
     const LIMIT = 300_000;
