@@ -407,6 +407,7 @@ async function inTurn<T, R>(items: readonly T[], work: (item: T) => Promise<R>):
 
 const idColumn = column('id', { base: 'integer' });
 const receivedColumn = column('received', { base: 'text' });
+const presentColumn = column('present', { base: 'boolean' });
 
 describe('injection through every parameter type', { timeout: LOADED_TIMEOUT_MS }, () => {
   it('DAT-021 attempts injection through every parameter type and refuses each value by name or binds it inert', async () => {
@@ -426,15 +427,16 @@ describe('injection through every parameter type', { timeout: LOADED_TIMEOUT_MS 
       }
       const started = Date.now();
       // The position's statement beside the text the source received, which it reports itself: one
-      // row of it where the statement matches nothing.
+      // row of it where the statement matches nothing, and each row the statement returned marked
+      // present, so a row of nulls it returned is judged as any other.
       const answer = await runHere(
         runRequest(
           settings(),
           PASSWORDS.reader,
           draft(
-            `${PROBE} select s.id, r.received from (select current_query() as received) r
-              left join lateral (${sql}) s on true`,
-            [idColumn, receivedColumn],
+            `${PROBE} select r.received, s.* from (select current_query() as received) r
+              left join lateral (select true as present, q.* from (${sql}) q) s on true`,
+            [idColumn, receivedColumn, presentColumn],
             { parameters: [parameter], key: [], order: 'multiset' },
           ),
           values,
@@ -442,7 +444,7 @@ describe('injection through every parameter type', { timeout: LOADED_TIMEOUT_MS 
       );
       const rows = answer.outcome === 'ok' ? answer.result.rows : [];
       const got =
-        answer.outcome === 'ok' ? rows.flatMap((row) => (row[0] === null ? [] : [row[0]])) : answer;
+        answer.outcome === 'ok' ? rows.flatMap((row) => (row[2] === true ? [row[0]] : [])) : answer;
       const want = expected(value as never);
       const inert = JSON.stringify(got) === JSON.stringify(want) && Date.now() - started < 2500;
       return {
