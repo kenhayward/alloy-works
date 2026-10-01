@@ -80,7 +80,8 @@ export async function connectPostgres(
     enableChannelBinding: true,
     application_name: 'alloy-connector',
     // The source notices a client gone within a quarter of a second, and stops a statement at the
-    // request's deadline whatever the driver does (case 7). A run reads every value as the server's
+    // request's deadline - a second line behind the child's own cancel, since a statement can set
+    // either of these to nothing (DAT-109; the D2 plan, final review 3). A run reads every value as the server's
     // text, which these two fix: an instant in UTC, and dates and times in ISO order (D2-Q). And a
     // standard string's backslash is itself, as the lexer that found a definition's markers read it,
     // whatever the source's or the account's default (the D2 plan, final review 8).
