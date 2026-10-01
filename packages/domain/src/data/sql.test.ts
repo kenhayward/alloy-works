@@ -106,6 +106,20 @@ describe("the lexer, where PostgreSQL's own scanner reads otherwise", () => {
     expect(lexPostgres(quoted)).toEqual([{ kind: 'text', text: quoted }]);
   });
 
+  it('reads a $ that opens nothing as a token of its own, so a letter after it can still begin a string', () => {
+    // PostgreSQL 18 reads `$E'...'` as a lone `$` and an escape string, which here runs to the last
+    // quote with the marker inside it; read as one name `$E` and a standard string, it was outside.
+    const escaped = `select 1::int8 as id $E'${BACKSLASH}' where {{x}} is not null --'`;
+    expect(lexPostgres(escaped)).toMatchObject({
+      line: 1,
+      problem: expect.stringMatching(/marker/),
+    });
+    // A name that holds a $ after its first letter is still one name, and a $ before a name is text.
+    for (const text of ['select x$E from t', 'select $abc from t']) {
+      expect(lexPostgres(text), text).toEqual([{ kind: 'text', text }]);
+    }
+  });
+
   it('refuses a number followed directly by a letter, a quote or a $, which PostgreSQL versions read apart', () => {
     // PostgreSQL 14 reads `1e5E'...'` as a number and an escape string, and `1a$b$` as 1 and the name
     // a$b$; 15 and later refuse both as trailing junk. Refused when written, naming the line.

@@ -227,6 +227,12 @@ function scan(
         at = close + tag[0].length;
         continue;
       }
+      // Opening nothing, it is a token of its own: PostgreSQL reads `$E'...'` as a `$` and an escape
+      // string, so the letters after it begin a run of their own rather than a name with the `$`.
+      pending += character;
+      at += 1;
+      run = '';
+      continue;
     }
     // A number, outside a name: read whole, and refused where a letter, a quote or a $ follows it
     // directly - PostgreSQL 14 reads `1e5E'...'` as a number and an escape string and `1a$b$` as 1 and
