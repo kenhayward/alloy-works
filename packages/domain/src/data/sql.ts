@@ -48,7 +48,7 @@ const INSIDE =
   'A marker is written outside strings, quoted names and comments, where it would be read as text';
 const POSITIONAL = 'A value is written as a named marker, {{name}}, never as $1';
 const TRAILING =
-  'A number is followed directly by a letter, a quote or a $, which PostgreSQL versions read differently: set it apart with a space';
+  'A number is followed directly by a letter, a quote or a $, which PostgreSQL versions read differently. Write a number in plain decimal digits, without 0x, 0o, 0b or underscores, and set a name, a quote or a $ after it apart with a space';
 
 /**
  * Where a string closed just before `at` goes on: PostgreSQL reads a quote after white space that

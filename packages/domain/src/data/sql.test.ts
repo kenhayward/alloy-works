@@ -125,6 +125,18 @@ describe("the lexer, where PostgreSQL's own scanner reads otherwise", () => {
         problem: expect.stringMatching(/number/),
       });
     }
+    // The words say how to write the number, for one PostgreSQL 16 would take as it is.
+    for (const text of [
+      'select 0x1F',
+      'select 1_000',
+      'select 10_000.000_1',
+      'select 0o17',
+      'select 0b101',
+    ]) {
+      const lexed = lexPostgres(text) as { problem: string };
+      expect(lexed.problem, text).toMatch(/plain decimal digits/);
+      expect(lexed.problem, text).toMatch(/0x, 0o, 0b or underscores/);
+    }
     // A number written whole, its exponent among it, is a number; a name holds a $ and digits.
     for (const text of [
       'select 1, 1.5, .5, 1e5, 1.5E+3, 2e-1 from t',
