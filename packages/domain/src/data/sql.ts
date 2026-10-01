@@ -316,6 +316,13 @@ export function longestBinding(
   return length;
 }
 
+/**
+ * A binding refused because its text, read back, does not hold exactly the placeholders written: a
+ * fragment ran into the SQL around it. The definition's checks refuse it before it is saved; one
+ * reaching a run is answered `definition_unbindable`, never sent.
+ */
+export class BindingRefused extends Error {}
+
 /** A value as the driver is handed it: its canonical text, a list's as an array, or null. */
 export type BoundValue = string | readonly string[] | null;
 
@@ -385,7 +392,9 @@ export function bindPostgres(
   // Nothing is sent unless the placeholders outside every literal are exactly those written.
   const found = placeholdersIn(text);
   if (found === undefined || found.join(',') !== written.join(',')) {
-    throw new Error('The bound SQL does not hold exactly the placeholders the binder wrote');
+    throw new BindingRefused(
+      'The bound SQL does not hold exactly the placeholders the binder wrote',
+    );
   }
   return { text, values: bound };
 }

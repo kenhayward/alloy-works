@@ -32,6 +32,8 @@ const MESSAGES: Partial<Record<DataFailureCode, string>> = {
     'A value has more digits or places than its declared type holds. Nothing was rounded.',
   value_unrepresentable:
     'A value cannot be held by its declared type: not a number, an infinity, or a date or time out of range.',
+  definition_unbindable:
+    'The SQL cannot be bound: a fragment runs into the SQL around it where it is placed. Set it apart with a space, and save the definition again.',
   empty_result:
     'The query returned no rows, and this definition says no rows is not a valid answer.',
   source_refused: 'The source refused the statement.',

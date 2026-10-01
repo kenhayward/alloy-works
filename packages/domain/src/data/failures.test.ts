@@ -42,6 +42,8 @@ describe('a data failure', () => {
       // declared type can hold.
       source_refused: 'query',
       value_unrepresentable: 'query',
+      // The re-review's: a binding the binder refused, never sent.
+      definition_unbindable: 'query',
     });
     expect(new Set(dataFailureCodes).size).toBe(dataFailureCodes.length);
     for (const code of dataFailureCodes) {

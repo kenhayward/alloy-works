@@ -1,4 +1,5 @@
 import {
+  BindingRefused,
   bindPostgres,
   dataFailure,
   type ChildRequest,
@@ -55,7 +56,13 @@ async function describeSql(
   const values: ParameterValues = Object.fromEntries(
     parameters.map((parameter) => [parameter.name, parameter.variation?.[0]?.key ?? null]),
   );
-  const bound = bindPostgres({ parameters, fetch: { kind: 'sql', text } }, values);
+  let bound: ReturnType<typeof bindPostgres>;
+  try {
+    bound = bindPostgres({ parameters, fetch: { kind: 'sql', text } }, values);
+  } catch (error) {
+    if (error instanceof BindingRefused) throw new Failed(dataFailure('definition_unbindable'));
+    throw error;
+  }
   let description;
   try {
     description = await describeStatement(client, bound.text);

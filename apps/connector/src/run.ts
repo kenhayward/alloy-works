@@ -1,6 +1,7 @@
 import type { Socket } from 'node:net';
 
 import {
+  BindingRefused,
   bindPostgres,
   dataFailure,
   sourceNameSchema,
@@ -61,8 +62,15 @@ export async function runStatement(
   cancel: () => Promise<void>,
 ): Promise<RunAnswer> {
   const started = Date.now();
-  const bound = bindPostgres(definition, values);
   const failed = (failure: DataFailure): RunAnswer => ({ outcome: 'failed', failure });
+  let bound: ReturnType<typeof bindPostgres>;
+  try {
+    bound = bindPostgres(definition, values);
+  } catch (error) {
+    // A binding refused is the definition's to fix, and nothing of it is sent.
+    if (error instanceof BindingRefused) return failed(dataFailure('definition_unbindable'));
+    throw error;
+  }
   try {
     await client.query('begin transaction read only');
     const description = await describeStatement(client, bound.text);

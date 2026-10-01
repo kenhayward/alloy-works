@@ -41,7 +41,7 @@ export type {
   Parameter,
   QueryDefinition,
 } from './definition.js';
-export { bindPostgres, lexPostgres, RAN_MAX_CHARACTERS } from './sql.js';
+export { BindingRefused, bindPostgres, lexPostgres, RAN_MAX_CHARACTERS } from './sql.js';
 export type { BoundStatement, BoundValue, LexProblem, SqlPiece } from './sql.js';
 export { checkParameterValues, MAX_LIST_ITEMS, MAX_TEXT_VALUE } from './parameters.js';
 export type { ParameterProblem, ParameterRule, ParameterValues } from './parameters.js';

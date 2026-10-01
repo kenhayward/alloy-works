@@ -3,16 +3,19 @@ import { createHash } from 'node:crypto';
 import {
   canonicalResultBytes,
   runRequestSchema,
+  type ChildRequest,
   type Parameter,
   type RunAnswer,
 } from '@alloy-works/domain';
 import { describe, expect, it } from 'vitest';
 
-import { childSpawn, createSupervisor } from './supervisor.js';
+import { childSpawn, CONNECT_TIMEOUT_MS, createSupervisor } from './supervisor.js';
+import { answerRequest } from './work.js';
 import {
   asAccount,
   asSuperuser,
   column,
+  describeSqlRequest,
   draft,
   LOADED_TIMEOUT_MS,
   PASSWORDS,
@@ -122,6 +125,49 @@ describe('a run', { timeout: LOADED_TIMEOUT_MS }, () => {
     } finally {
       await asSuperuser((client) => client.query('drop schema lookalike cascade'));
     }
+  });
+
+  it("answers a definition its binding refuses as the query's, definition_unbindable, and sends nothing", async () => {
+    // A definition the checks would refuse - a fragment making a comment of the placeholder after
+    // it - reaching the child unchecked, as a definition saved before the check could.
+    const parameters: Parameter[] = [
+      { name: 'v', type: { base: 'integer' }, required: true, list: false },
+      {
+        name: 'f',
+        type: { base: 'text' },
+        required: true,
+        list: false,
+        variation: [{ key: 'minus', sql: '-' }],
+      },
+    ];
+    const text = 'select 1 -{{#f}}{{v}} as id';
+    const child = (kind: 'run' | 'describeSql', request: unknown) =>
+      answerRequest({
+        kind,
+        request,
+        secret: PASSWORDS.reader,
+        deny: [...suiteDeny],
+        connectTimeoutMs: CONNECT_TIMEOUT_MS,
+        failureFloorMs: 0,
+      } as ChildRequest);
+    expect(
+      await child(
+        'run',
+        runRequest(settings(), PASSWORDS.reader, draft(text, [id], { parameters }), {
+          v: '1',
+          f: 'minus',
+        }),
+      ),
+    ).toEqual({
+      outcome: 'failed',
+      failure: { code: 'definition_unbindable', attribution: 'query' },
+    });
+    expect(
+      await child(
+        'describeSql',
+        describeSqlRequest(settings(), PASSWORDS.reader, text, parameters),
+      ),
+    ).toEqual({ failure: { code: 'definition_unbindable', attribution: 'query' } });
   });
 
   it('DAT-106 refuses a result whose columns, types, order or key do not fit the declaration, by name, and never adjusts it', async () => {

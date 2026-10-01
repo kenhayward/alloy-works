@@ -395,6 +395,7 @@ describe('the domain package', () => {
         'parseQueryDefinitionForWrite',
         'queryDefinitionSchema',
         'valueTypeSchema',
+        'BindingRefused',
         'bindPostgres',
         'lexPostgres',
         'RAN_MAX_CHARACTERS',

@@ -592,7 +592,10 @@ value is a typed filter the connector applies to its canonical rows.
   `date`, `time`, `timestamp`, `timestamptz`, `boolean`, or that type's array for a list - and hands
   the value's canonical text to the driver; a marker used twice binds once; the SQL that ran is that
   rewritten text (D2-C). The rewritten text is read again by the same lexer, and nothing is sent
-  unless its placeholders outside every literal and comment are exactly those written. Saving one needs `write_sql` on the connection
+  unless its placeholders outside every literal and comment are exactly those written. A
+  definition's checks bind it so with each variation's fragment in place, and refuse, at the
+  fragment, one that runs into the SQL around it - a minus before a minus, an E before a quote - so a
+  definition that passes always binds; one that reaches a run unchecked is `definition_unbindable`. Saving one needs `write_sql` on the connection
   (DAT-101). It is refused, `sql_not_permitted`, on a PostgreSQL connection whose identity is asserted,
   when saved and when run (DAT-102), and on any connection whose last test found its account not
   read-only (DAT-103).
@@ -851,30 +854,31 @@ versions, which is DAT-013's audit half. When LIF's log is designed, each act is
 Every failure is one code, `attribution` fixed per code (DAT-049), naming the definition and, where
 the act has them, the binding and the document (DAT-086). A failed act records nothing.
 
-| Code                      | Attribution | When                                                                                                                                             |
-| ------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `connection_failed`       | connector   | Any failure to reach or authenticate, one reason for all (DAT-075)                                                                               |
-| `address_refused`         | connector   | The guard refused the address, in a run; a test says `connection_failed`                                                                         |
-| `timeout`                 | connector   | The deadline passed; the source was cancelled (DAT-109)                                                                                          |
-| `row_limit`, `byte_limit` | query       | A limit was reached; nothing stored (DAT-051, DAT-110)                                                                                           |
-| `result_incomplete`       | connector   | A stated length, digest or row count did not match what arrived (DAT-108)                                                                        |
-| `result_mismatch`         | query       | Columns or order did not fit the declaration (DAT-106)                                                                                           |
-| `precision_lost` and kin  | query       | A value was not exact in its declared type (DAT-080)                                                                                             |
-| `nested_value`            | query       | A nested JSON value in a column not declared text (DAT-095)                                                                                      |
-| `image_refused`           | query       | An image was not a PNG or a JPEG, or `ingest` refused it (DAT-096)                                                                               |
-| `empty_result`            | query       | No rows, where the definition says empty is invalid (DAT-068)                                                                                    |
-| `identity_unavailable`    | product     | A delegated act by a person with no provider token (DAT-076)                                                                                     |
-| `identity_expired`        | connector   | The provider token has expired; sign in again                                                                                                    |
-| `identity_unmatched`      | connector   | The source does not know the asserted person                                                                                                     |
-| `sql_not_permitted`       | product     | A SQL fetch on a connection that refuses one (DAT-102, DAT-103)                                                                                  |
-| `parameter_invalid`       | product     | A value failed its declaration before anything ran (DAT-020)                                                                                     |
-| `binding_unresolved`      | product     | A publish met a binding with no stored result - raised by the publish (DAT-087, `bindings.md`)                                                   |
-| `source_unsupported`      | connector   | The source signed the account in and is older than PostgreSQL 14, which a test cannot check                                                      |
-| `connector_error`         | connector   | The connector's child ended without an answer                                                                                                    |
-| `connector_unavailable`   | product     | No connector is configured, or it did not answer; nothing was asked of the source                                                                |
-| `connector_busy`          | product     | The connector was running as many requests as it may                                                                                             |
-| `source_refused`          | query       | The source refused the statement - a syntax error, a permission, a division by zero - with its SQLSTATE and its message, cut to 1,000 characters |
-| `value_unrepresentable`   | query       | A value no canonical form of its declared type can hold: `NaN`, an infinity, a date out of range                                                 |
+| Code                      | Attribution | When                                                                                                                                                                                                                           |
+| ------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `connection_failed`       | connector   | Any failure to reach or authenticate, one reason for all (DAT-075)                                                                                                                                                             |
+| `address_refused`         | connector   | The guard refused the address, in a run; a test says `connection_failed`                                                                                                                                                       |
+| `timeout`                 | connector   | The deadline passed; the source was cancelled (DAT-109)                                                                                                                                                                        |
+| `row_limit`, `byte_limit` | query       | A limit was reached; nothing stored (DAT-051, DAT-110)                                                                                                                                                                         |
+| `result_incomplete`       | connector   | A stated length, digest or row count did not match what arrived (DAT-108)                                                                                                                                                      |
+| `result_mismatch`         | query       | Columns or order did not fit the declaration (DAT-106)                                                                                                                                                                         |
+| `precision_lost` and kin  | query       | A value was not exact in its declared type (DAT-080)                                                                                                                                                                           |
+| `nested_value`            | query       | A nested JSON value in a column not declared text (DAT-095)                                                                                                                                                                    |
+| `image_refused`           | query       | An image was not a PNG or a JPEG, or `ingest` refused it (DAT-096)                                                                                                                                                             |
+| `empty_result`            | query       | No rows, where the definition says empty is invalid (DAT-068)                                                                                                                                                                  |
+| `identity_unavailable`    | product     | A delegated act by a person with no provider token (DAT-076)                                                                                                                                                                   |
+| `identity_expired`        | connector   | The provider token has expired; sign in again                                                                                                                                                                                  |
+| `identity_unmatched`      | connector   | The source does not know the asserted person                                                                                                                                                                                   |
+| `sql_not_permitted`       | product     | A SQL fetch on a connection that refuses one (DAT-102, DAT-103)                                                                                                                                                                |
+| `parameter_invalid`       | product     | A value failed its declaration before anything ran (DAT-020)                                                                                                                                                                   |
+| `binding_unresolved`      | product     | A publish met a binding with no stored result - raised by the publish (DAT-087, `bindings.md`)                                                                                                                                 |
+| `source_unsupported`      | connector   | The source signed the account in and is older than PostgreSQL 14, which a test cannot check                                                                                                                                    |
+| `connector_error`         | connector   | The connector's child ended without an answer                                                                                                                                                                                  |
+| `connector_unavailable`   | product     | No connector is configured, or it did not answer; nothing was asked of the source                                                                                                                                              |
+| `connector_busy`          | product     | The connector was running as many requests as it may                                                                                                                                                                           |
+| `source_refused`          | query       | The source refused the statement - a syntax error, a permission, a division by zero - with its SQLSTATE and its message, cut to 1,000 characters                                                                               |
+| `value_unrepresentable`   | query       | A value no canonical form of its declared type can hold: `NaN`, an infinity, a date out of range                                                                                                                               |
+| `definition_unbindable`   | query       | The binder refused the definition's binding: a fragment runs into the SQL around it where it is placed. The definition's checks refuse it when it is written; one reaching a run unchecked is answered so, and nothing is sent |
 
 The four before those two were added by the D1 plan (D1-M, D1-Q), and the last two by the D2 plan
 (D2-H), whose `source_refused` is answered with the source's message only to somebody holding

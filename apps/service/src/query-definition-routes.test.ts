@@ -473,6 +473,7 @@ describe('query definitions through the service', () => {
       'result_mismatch',
       'precision_lost',
       'value_unrepresentable',
+      'definition_unbindable',
       'empty_result',
       'source_refused',
       'connector_error',

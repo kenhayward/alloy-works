@@ -7,7 +7,13 @@ import { limitCeilings } from './limits.js';
 import { MAX_TEXT_VALUE } from './parameters.js';
 import { MAX_COLUMNS } from './columns.js';
 import { canonicalJson } from '../stored/canonical.js';
-import { lexPostgres, longestBinding, RAN_MAX_CHARACTERS } from './sql.js';
+import {
+  BindingRefused,
+  bindPostgres,
+  lexPostgres,
+  longestBinding,
+  RAN_MAX_CHARACTERS,
+} from './sql.js';
 
 /**
  * A query definition version (data.md, "What a query definition version holds"; the D2 plan, task 1):
@@ -319,6 +325,7 @@ export function checkQueryDefinition(
         problem(`parameters.${at}`, `No marker uses the parameter ${parameter.name}`);
       }
     }
+    if (problems.length === 0) checkBindings(definition, problem);
   }
 
   const columns = new Set<string>();
@@ -352,6 +359,53 @@ export function checkQueryDefinition(
     }
   }
   return problems;
+}
+
+/**
+ * Binds the SQL with each variation's fragment in place, one at a time, the others at their first,
+ * and reads it back as the binder does: a fragment that runs into the text around it - a minus
+ * before a minus, an E before a quote - could make a comment or a literal of a placeholder, and the
+ * definition would pass every check and never bind. Refused at that fragment, so nothing that passes
+ * is refused when it runs.
+ */
+function checkBindings(
+  definition: Pick<DraftDefinition, 'parameters' | 'fetch'>,
+  problem: (path: string, message: string) => void,
+): void {
+  const varied = definition.parameters.flatMap((parameter, at) =>
+    parameter.variation === undefined ? [] : [{ parameter, at }],
+  );
+  const firsts = Object.fromEntries(
+    definition.parameters.map((parameter) => [
+      parameter.name,
+      parameter.variation?.[0]?.key ?? null,
+    ]),
+  );
+  const binds = (values: Record<string, string | null>) => {
+    try {
+      bindPostgres(definition, values);
+      return true;
+    } catch (error) {
+      if (error instanceof BindingRefused) return false;
+      throw error;
+    }
+  };
+  if (varied.length === 0) {
+    if (!binds(firsts)) {
+      problem('fetch.text', 'The SQL does not hold its placeholders where they are written');
+    }
+    return;
+  }
+  for (const { parameter, at } of varied) {
+    for (const [index, each] of parameter.variation!.entries()) {
+      if (!binds({ ...firsts, [parameter.name]: each.key })) {
+        problem(
+          `parameters.${at}.variation.${index}.sql`,
+          `The fragment runs into the SQL around it where it is placed, and makes a comment or a literal of what follows; set it apart with a space`,
+        );
+      }
+    }
+  }
 }
 
 function checkPermitted(

@@ -11,7 +11,10 @@ export type Attribution = 'connector' | 'query' | 'product';
  * `connector_busy` (D1-Q), and `source_unsupported`, a source too old to be checked once authenticated
  * (D1-M); and the D2 plan's two (D2-H): `source_refused`, the source refused the author's statement -
  * a syntax error, a permission, a division by zero - and `value_unrepresentable`, a value no canonical
- * form of its declared type can hold, a numeric `NaN` or an infinite date among them.
+ * form of its declared type can hold, a numeric `NaN` or an infinite date among them; and the re-review's
+ * `definition_unbindable`, a definition whose binding the binder refused - a fragment running into the
+ * SQL around it - which the definition's checks refuse when it is written, answered as the query's
+ * should one reach a run unchecked, and never sent.
  */
 export const dataFailures = Object.freeze({
   connection_failed: 'connector',
@@ -41,6 +44,7 @@ export const dataFailures = Object.freeze({
   source_unsupported: 'connector',
   source_refused: 'query',
   value_unrepresentable: 'query',
+  definition_unbindable: 'query',
 } as const satisfies Record<string, Attribution>);
 
 export type DataFailureCode = keyof typeof dataFailures;

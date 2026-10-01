@@ -493,6 +493,47 @@ describe('a query definition', () => {
     expect(draftDefinitionSchema.safeParse({ ...draft, title: 'x' }).success).toBe(false);
   });
 
+  it('refuses a fragment that runs into the SQL around it where it is placed, so every definition that passes can be bound', () => {
+    const backslash = String.fromCharCode(92);
+    const placed = (text: string, fragment: string): QueryDefinition =>
+      withParameters(
+        [
+          { name: 'v', type: { base: 'integer' }, required: true, list: false },
+          {
+            name: 'f',
+            type: { base: 'text' },
+            required: true,
+            list: false,
+            variation: [
+              { key: 'plain', sql: '0' },
+              { key: 'joined', sql: fragment },
+            ],
+          },
+        ],
+        text,
+      );
+    // A minus before a minus makes a comment of the value's placeholder; an E before a quote makes an
+    // escape string that swallows it. Each fragment lexes whole on its own, and the text around it too.
+    for (const [text, fragment] of [
+      ['select 1 -{{#f}}{{v}} as id', '-'],
+      [`select {{#f}}'${backslash}' as a, {{v}} as id --'`, 'E'],
+    ] as const) {
+      const definition = placed(text, fragment);
+      expect(refusedAt(definition), text).toEqual(['parameters.1.variation.1.sql']);
+      const { title, description, retired, ...draft } = definition;
+      void [title, description, retired];
+      expect(() => parseDraftDefinition(draft), text).toThrow(DefinitionRefused);
+      try {
+        parseQueryDefinitionForWrite(definition);
+      } catch (error) {
+        expect((error as DefinitionRefused).problems[0]!.message).toMatch(/runs into/);
+      }
+    }
+    // The same fragments where they run into nothing are taken.
+    expect(refusedAt(placed('select 1 - {{#f}} {{v}} as id', '-'))).toEqual([]);
+    expect(refusedAt(placed('select {{#f}} {{v}} as id', 'E'))).toEqual([]);
+  });
+
   it("counts a permitted text value's length in characters, as a parameter's value is counted", () => {
     const astral = String.fromCodePoint(0x1f600);
     const permitting = (value: string) =>
