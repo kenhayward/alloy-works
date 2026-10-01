@@ -11,6 +11,7 @@ const READINGS = '33333333-3333-4333-8333-333333333333';
 const DEFINITION = '44444444-4444-4444-8444-444444444444';
 const FIRST = '55555555-5555-4555-8555-555555555555';
 const SECOND = '66666666-6666-4666-8666-666666666666';
+const WAREHOUSE = '77777777-7777-4777-8777-777777777777';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -67,13 +68,17 @@ interface Asked {
 function service(
   options: {
     sqlWriter?: boolean;
+    /** A second connection the person may write SQL against, Warehouse. */
+    warehouse?: boolean;
+    /** The definition the service holds at first. */
+    held?: ReturnType<typeof view>;
     describe?: () => Response | Promise<Response>;
     sample?: () => Response;
     version?: (body: { openedFrom: string; definition: Record<string, unknown> }) => Response;
   } = {},
 ) {
   const asked: Asked[] = [];
-  let held = view();
+  let held = options.held ?? view();
   let cuts = 0;
   const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
@@ -99,9 +104,24 @@ function service(
             lastTest: null,
             changedAt: '2026-09-30T09:00:00.000Z',
           },
+          ...(options.warehouse
+            ? [
+                {
+                  id: WAREHOUSE,
+                  name: 'Warehouse',
+                  space: { id: GENERAL, name: 'General' },
+                  type: 'postgres',
+                  retired: false,
+                  version: { id: FIRST, number: '0.1' },
+                  credentialSet: true,
+                  lastTest: null,
+                  changedAt: '2026-09-30T09:00:00.000Z',
+                },
+              ]
+            : []),
         ],
         next: null,
-        total: 1,
+        total: options.warehouse ? 2 : 1,
         facets: { spaces: [] },
       });
     }
@@ -113,8 +133,15 @@ function service(
         permissions: [
           { permission: 'read', allowed: true },
           { permission: 'edit', allowed: target === `space:${GENERAL}` },
-          { permission: 'use_connection', allowed: target === `artifact:${READINGS}` },
-          { permission: 'write_sql', allowed: sql && target === `artifact:${READINGS}` },
+          {
+            permission: 'use_connection',
+            allowed: target === `artifact:${READINGS}` || target === `artifact:${WAREHOUSE}`,
+          },
+          {
+            permission: 'write_sql',
+            allowed:
+              sql && (target === `artifact:${READINGS}` || target === `artifact:${WAREHOUSE}`),
+          },
         ],
       });
     }
@@ -152,7 +179,11 @@ function service(
       held = view(sent.definition, crypto.randomUUID(), `0.${cuts + 2}`);
       return json(200, held);
     }
-    if (request.method === 'POST' && path === `/v1/connections/${READINGS}/describe`) {
+    if (
+      request.method === 'POST' &&
+      (path === `/v1/connections/${READINGS}/describe` ||
+        path === `/v1/connections/${WAREHOUSE}/describe`)
+    ) {
       return (
         options.describe?.() ??
         json(200, {
@@ -521,6 +552,116 @@ describe('the query definition page', () => {
     await waitFor(() => expect(answers).toHaveLength(2));
     await user.type(sql, 'x');
     answers[1]!(
+      json(200, {
+        columns: [{ name: 'other', sourceType: 'text', proposed: { base: 'text' } }],
+        parameters: [],
+      }),
+    );
+    expect(
+      await screen.findByText('The SQL changed while it was described. Describe it again.'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('table', { name: 'Columns' }))
+        .getAllByRole('row')
+        .slice(1)
+        .map((row) => within(row).getAllByRole('cell')[0]!.textContent),
+    ).toEqual(['id', 'name']);
+  });
+
+  it('keeps a declared type the source proposes nothing for, to be confirmed again, after the SQL changes', async () => {
+    const user = userEvent.setup();
+    const depth = view({
+      fetch: {
+        kind: 'sql',
+        text: 'select id, depth from sample.site where id = {{site}} order by id',
+      },
+      columns: [
+        { name: 'id', from: { column: 'id' }, type: { base: 'integer' } },
+        {
+          name: 'depth',
+          from: { column: 'depth' },
+          type: { base: 'decimal', precision: 8, scale: 2 },
+        },
+      ],
+    });
+    const { client } = service({
+      held: depth,
+      describe: () =>
+        json(200, {
+          columns: [
+            { name: 'id', sourceType: 'integer', proposed: { base: 'integer' } },
+            { name: 'depth', sourceType: 'numeric', proposed: null },
+          ],
+          parameters: ['bigint'],
+        }),
+    });
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    await screen.findByRole('heading', { name: 'Site by id' });
+    await user.type(screen.getByLabelText('SQL'), ' ');
+    await user.click(screen.getByRole('button', { name: 'Describe' }));
+    await screen.findByText('2 columns proposed. Confirm the type of each.');
+    const [, , row] = within(screen.getByRole('table', { name: 'Columns' })).getAllByRole('row');
+    expect(within(row!).getByLabelText('Type of depth')).toHaveValue('decimal');
+    expect(within(row!).getByLabelText('Digits of depth')).toHaveValue('8');
+    expect(within(row!).getByLabelText('Places of depth')).toHaveValue('2');
+    expect(within(row!).queryByText('Declare a type for this column')).toBeNull();
+    expect(within(row!).getByRole('button', { name: 'Confirm depth' })).toBeInTheDocument();
+  });
+
+  it('gives back the confirmations when the SQL, its parameters and its connection are as they were confirmed', async () => {
+    const user = userEvent.setup();
+    const { client } = service({ warehouse: true });
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    await screen.findByRole('heading', { name: 'Site by id' });
+    const sql = screen.getByLabelText('SQL');
+    await user.type(sql, ' x');
+    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    await user.type(sql, '{Backspace}{Backspace}');
+    expect(screen.getByRole('button', { name: 'Save version' })).toBeInTheDocument();
+
+    // A parameter changed and changed back.
+    const parameter = screen.getByRole('group', { name: 'Parameter 1' });
+    await user.click(within(parameter).getByLabelText('Required'));
+    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    await user.click(within(parameter).getByLabelText('Required'));
+    expect(screen.getByRole('button', { name: 'Save version' })).toBeInTheDocument();
+
+    // A connection is part of what the columns were confirmed for.
+    const connection = screen.getByLabelText('Connection');
+    await waitFor(() =>
+      expect(
+        within(connection)
+          .getAllByRole('option')
+          .map((each) => each.textContent),
+      ).toContain('Warehouse'),
+    );
+    await user.selectOptions(connection, WAREHOUSE);
+    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    await user.selectOptions(connection, READINGS);
+    expect(screen.getByRole('button', { name: 'Save version' })).toBeInTheDocument();
+  });
+
+  it('drops a describe answering for a connection changed since it was sent', async () => {
+    const user = userEvent.setup();
+    const answers: ((response: Response) => void)[] = [];
+    const { client } = service({
+      warehouse: true,
+      describe: () => new Promise<Response>((resolve) => answers.push(resolve)),
+    });
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    await screen.findByRole('heading', { name: 'Site by id' });
+    const connection = screen.getByLabelText('Connection');
+    await waitFor(() =>
+      expect(
+        within(connection)
+          .getAllByRole('option')
+          .map((each) => each.textContent),
+      ).toContain('Warehouse'),
+    );
+    await user.click(screen.getByRole('button', { name: 'Describe' }));
+    await waitFor(() => expect(answers).toHaveLength(1));
+    await user.selectOptions(connection, WAREHOUSE);
+    answers[0]!(
       json(200, {
         columns: [{ name: 'other', sourceType: 'text', proposed: { base: 'text' } }],
         parameters: [],

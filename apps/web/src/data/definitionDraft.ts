@@ -69,6 +69,14 @@ export interface DefinitionDraft {
   readonly empty: 'valid' | 'invalid';
   readonly limits: { readonly rows: string; readonly bytes: string; readonly seconds: string };
   readonly retired: boolean;
+  /**
+   * The columns as they stood for the statement last left with any of them confirmed: given back
+   * when the connection, the SQL and its parameters are exactly that statement again.
+   */
+  readonly confirmedFor?: {
+    readonly statement: string;
+    readonly columns: readonly ColumnDraft[];
+  };
 }
 
 export const NO_TYPE: TypeDraft = { base: '', precision: '', scale: '', fraction: '' };
@@ -300,19 +308,57 @@ const sameType = (one: TypeDraft, other: TypeDraft) =>
   one.fraction === other.fraction;
 
 /**
- * The columns as they are, each to be confirmed again: what the SQL or a parameter changed may have
- * changed what the statement returns, so nothing is saved until the author has looked again (DAT-105).
+ * The columns as they are, each to be confirmed again, its declared type kept: what the SQL or a
+ * parameter changed may have changed what the statement returns, so nothing is saved until the author
+ * has looked again (DAT-105).
  */
 export function unconfirmed(columns: readonly ColumnDraft[]): ColumnDraft[] {
   return columns.map((column) => (column.confirmed ? { ...column, confirmed: false } : column));
 }
 
+/** What the columns are confirmed for: the connection, the SQL and its parameters, exactly. */
+export function statementOf(draft: Pick<DefinitionDraft, 'connection' | 'sql' | 'parameters'>) {
+  return JSON.stringify([draft.connection, draft.sql, draft.parameters]);
+}
+
+/**
+ * The draft with its connection, SQL or parameters changed. A change withdraws every column's
+ * confirmation and keeps its declared type; one that returns the statement to exactly what the columns
+ * were last confirmed for gives back the confirmations of the columns still declared as they were.
+ */
+export function withStatement(
+  held: DefinitionDraft,
+  over: Pick<Partial<DefinitionDraft>, 'connection' | 'sql' | 'parameters'>,
+): DefinitionDraft {
+  const next = { ...held, ...over };
+  const before = statementOf(held);
+  const after = statementOf(next);
+  if (before === after) return next;
+  const remembered = held.columns.some((column) => column.confirmed)
+    ? { statement: before, columns: held.columns }
+    : held.confirmedFor;
+  const confirmedFor = remembered === undefined ? {} : { confirmedFor: remembered };
+  if (remembered?.statement === after) {
+    return {
+      ...next,
+      ...confirmedFor,
+      columns: next.columns.map((column) => ({
+        ...column,
+        confirmed: remembered.columns.some(
+          (each) => each.confirmed && each.name === column.name && sameType(each.type, column.type),
+        ),
+      })),
+    };
+  }
+  return { ...next, ...confirmedFor, columns: unconfirmed(next.columns) };
+}
+
 /**
  * The columns a describe proposed (DAT-105), each to be confirmed: the source's type where it proposed
- * one, and none where the author must declare it. A column already confirmed by that name stays so
- * where the source proposes the type it was confirmed as, so describing again asks only about what is
- * new or changed; one the source now proposes otherwise takes the proposal, and one it proposes
- * nothing for keeps its type, each to be confirmed again.
+ * one, and none where the author must declare it. A column already declared by that name keeps its
+ * confirmation where the source proposes the type it was declared as, so describing again asks only
+ * about what is new or changed; one the source now proposes otherwise takes the proposal, and one it
+ * proposes nothing for keeps the type the author declared - each of those to be confirmed again.
  */
 export function proposedColumns(
   described: readonly {
@@ -325,7 +371,7 @@ export function proposedColumns(
   return described.map((column) => {
     const declared = held.find((each) => each.name === column.name);
     const proposed = column.proposed === null ? null : typeDraftOf(column.proposed);
-    if (declared?.confirmed) {
+    if (declared !== undefined && (proposed === null || declared.type.base !== '')) {
       if (proposed !== null && sameType(proposed, declared.type)) {
         return { ...declared, sourceType: column.sourceType };
       }

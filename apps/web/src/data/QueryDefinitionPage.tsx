@@ -12,7 +12,8 @@ import {
   newDraft,
   parametersOf,
   proposedColumns,
-  unconfirmed,
+  statementOf,
+  withStatement,
   sampleDefinition,
   sampleValues,
   type ColumnDraft,
@@ -27,10 +28,10 @@ import { isRecord, refusalText } from './shapes.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
-/** A definition as the service answers it, checked before it is read. */
 /** What a connection the person may not read is called, where its name is withheld. */
 const UNREADABLE_CONNECTION = 'A connection you may not read';
 
+/** A definition as the service answers it, checked before it is read. */
 interface DefinitionView {
   readonly id: string;
   readonly space: { readonly id: string; readonly name: string };
@@ -592,8 +593,9 @@ export function QueryDefinitionPage({
   const mayRun = isNew || (shown !== null && shown.mayRun);
   const change = (over: Partial<DefinitionDraft>) => setDraft((held) => ({ ...held, ...over }));
   /** A change to the SQL or its parameters, which may change what it returns: asked again of each column. */
-  const changeStatement = (over: Pick<Partial<DefinitionDraft>, 'sql' | 'parameters'>) =>
-    setDraft((held) => ({ ...held, ...over, columns: unconfirmed(held.columns) }));
+  const changeStatement = (
+    over: Pick<Partial<DefinitionDraft>, 'connection' | 'sql' | 'parameters'>,
+  ) => setDraft((held) => withStatement(held, over));
   const setParameter = (at: number, parameter: ParameterDraft) =>
     changeStatement({
       parameters: draft.parameters.map((held, place) => (place === at ? parameter : held)),
@@ -621,7 +623,7 @@ export function QueryDefinitionPage({
         setDescribed(['Choose a connection first.']);
         return;
       }
-      const sent = { sql: draft.sql, parameters: JSON.stringify(draft.parameters) };
+      const sent = statementOf(draft);
       try {
         const { data, error } = await client.POST('/v1/connections/{id}/describe', {
           params: { path: { id: draft.connection } },
@@ -631,7 +633,7 @@ export function QueryDefinitionPage({
         if (isRecord(answer) && Array.isArray(answer.columns)) {
           // An answer for a statement changed since it was sent describes another one: dropped.
           const now = latest.current;
-          if (now.sql !== sent.sql || JSON.stringify(now.parameters) !== sent.parameters) {
+          if (statementOf(now) !== sent) {
             setDescribed(['The SQL changed while it was described. Describe it again.']);
             return;
           }
@@ -822,7 +824,7 @@ export function QueryDefinitionPage({
                   <select
                     id={id}
                     value={draft.connection}
-                    onChange={(event) => change({ connection: event.target.value })}
+                    onChange={(event) => changeStatement({ connection: event.target.value })}
                   >
                     {draft.connection === '' && <option value="">Choose a connection</option>}
                     {connections.map((each) => (
