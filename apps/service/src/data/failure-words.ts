@@ -33,7 +33,7 @@ const MESSAGES: Partial<Record<DataFailureCode, string>> = {
   value_unrepresentable:
     'A value cannot be held by its declared type: not a number, an infinity, or a date or time out of range.',
   definition_unbindable:
-    'The SQL cannot be bound: a fragment runs into the SQL around it where it is placed. Set it apart with a space, and save the definition again.',
+    'The SQL cannot be bound: a fragment runs into the SQL around it where it is placed. Change the fragment.',
   empty_result:
     'The query returned no rows, and this definition says no rows is not a valid answer.',
   source_refused: 'The source refused the statement.',

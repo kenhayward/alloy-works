@@ -10,6 +10,7 @@ import { canonicalJson } from '../stored/canonical.js';
 import {
   BindingRefused,
   bindPostgres,
+  fragmentProblem,
   lexPostgres,
   longestBinding,
   RAN_MAX_CHARACTERS,
@@ -293,12 +294,8 @@ export function checkQueryDefinition(
       for (const [index, each] of parameter.variation.entries()) {
         if (keys.has(each.key)) problem(`${path}.variation.${index}.key`, 'A key is declared once');
         keys.add(each.key);
-        const lexed = lexPostgres(each.sql);
-        if (!Array.isArray(lexed)) {
-          problem(`${path}.variation.${index}.sql`, `${lexed.problem} (line ${lexed.line})`);
-        } else if (lexed.some((piece) => piece.kind !== 'text')) {
-          problem(`${path}.variation.${index}.sql`, 'A fragment holds no marker');
-        }
+        const unsound = fragmentProblem(each.sql);
+        if (unsound !== undefined) problem(`${path}.variation.${index}.sql`, unsound);
       }
     }
   }
@@ -364,49 +361,26 @@ export function checkQueryDefinition(
 }
 
 /**
- * Binds the SQL with each variation's fragment in place, one at a time, the others at their first,
- * and reads it back as the binder does: a fragment that runs into the text around it - a minus
- * before a minus, an E before a quote - could make a comment or a literal of a placeholder, and the
- * definition would pass every check and never bind. Refused at that fragment, so nothing that passes
- * is refused when it runs.
+ * Binds the SQL once, each variation at its first key, and reads it back as the binder does: a check
+ * that the binding holds its placeholders. Every fragment is set apart where it is placed and sound on
+ * its own (`fragmentProblem`), so the other keys bind as this one does; this costs one binding, in
+ * time linear in the definition's size.
  */
 function checkBindings(
   definition: Pick<DraftDefinition, 'parameters' | 'fetch'>,
   problem: (path: string, message: string) => void,
 ): void {
-  const varied = definition.parameters.flatMap((parameter, at) =>
-    parameter.variation === undefined ? [] : [{ parameter, at }],
-  );
   const firsts = Object.fromEntries(
     definition.parameters.map((parameter) => [
       parameter.name,
       parameter.variation?.[0]?.key ?? null,
     ]),
   );
-  const binds = (values: Record<string, string | null>) => {
-    try {
-      bindPostgres(definition, values);
-      return true;
-    } catch (error) {
-      if (error instanceof BindingRefused) return false;
-      throw error;
-    }
-  };
-  if (varied.length === 0) {
-    if (!binds(firsts)) {
-      problem('fetch.text', 'The SQL does not hold its placeholders where they are written');
-    }
-    return;
-  }
-  for (const { parameter, at } of varied) {
-    for (const [index, each] of parameter.variation!.entries()) {
-      if (!binds({ ...firsts, [parameter.name]: each.key })) {
-        problem(
-          `parameters.${at}.variation.${index}.sql`,
-          `The fragment runs into the SQL around it where it is placed, and makes a comment or a literal of what follows; set it apart with a space`,
-        );
-      }
-    }
+  try {
+    bindPostgres(definition, firsts);
+  } catch (error) {
+    if (!(error instanceof BindingRefused)) throw error;
+    problem('fetch.text', 'The SQL does not hold its placeholders where they are written');
   }
 }
 

@@ -128,8 +128,9 @@ describe('a run', { timeout: LOADED_TIMEOUT_MS }, () => {
   });
 
   it("answers a definition its binding refuses as the query's, definition_unbindable, and sends nothing", async () => {
-    // A definition the checks would refuse - a fragment making a comment of the placeholder after
-    // it - reaching the child unchecked, as a definition saved before the check could.
+    // A definition the checks would refuse - a fragment leaving a line comment open, which makes a
+    // comment of the placeholder after it - reaching the child unchecked, as a definition saved before
+    // the check could.
     const parameters: Parameter[] = [
       { name: 'v', type: { base: 'integer' }, required: true, list: false },
       {
@@ -137,10 +138,10 @@ describe('a run', { timeout: LOADED_TIMEOUT_MS }, () => {
         type: { base: 'text' },
         required: true,
         list: false,
-        variation: [{ key: 'minus', sql: '-' }],
+        variation: [{ key: 'minus', sql: '-- note' }],
       },
     ];
-    const text = 'select 1 -{{#f}}{{v}} as id';
+    const text = 'select 1 {{#f}} + {{v}} as id';
     const child = (kind: 'run' | 'describeSql', request: unknown) =>
       answerRequest({
         kind,
@@ -434,6 +435,24 @@ describe('a run', { timeout: LOADED_TIMEOUT_MS }, () => {
         ),
       ),
     ).toEqual([['1', '7']]);
+
+    // Two fragments placed side by side, each a minus: set apart, never a comment of what follows.
+    const minus = (name: string): Parameter => ({
+      name,
+      type: { base: 'text' },
+      required: true,
+      list: false,
+      variation: [{ key: 'minus', sql: '-' }],
+    });
+    const n: Parameter = { name: 'n', type: { base: 'integer' }, required: true, list: false };
+    const minuses = await asReader(
+      draft('select 1 {{#a}}{{#b}}{{n}} as id', [id], { parameters: [n, minus('a'), minus('b')] }),
+      { n: '5', a: 'minus', b: 'minus' },
+    );
+    expect(rows(minuses)).toEqual([['6']]);
+    expect(minuses.outcome === 'ok' && minuses.ran.sql).toBe(
+      'select 1  /**/ - /**/  /**/ - /**/  ($1::int8)  as id',
+    );
 
     // A dollar quote whose tag is two hundred characters long.
     const tag = `$${'t'.repeat(200)}$`;

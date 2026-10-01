@@ -297,6 +297,38 @@ function placeholder(number: number, parameter: Parameter): string {
 }
 
 /**
+ * A variation's fragment as the binder places it: set apart from the SQL around it, and from another
+ * fragment beside it, by an empty comment and a space either side. Nothing either side can run into
+ * it: the spaces split a word, a number or an operator (PostgreSQL ends an operator at `/*`, and the
+ * spaces keep a `-` from the comment), a prefix such as `E`, `U&`, `B` or `X` no longer touches a
+ * quote, and a comment is not the white space that continues a string across a line. So every
+ * combination of fragments binds wherever each fragment is sound on its own, which the definition's
+ * checks hold it to.
+ */
+export function placeFragment(sql: string): string {
+  return ` /**/ ${sql} /**/ `;
+}
+
+/** The characters `placeFragment` adds around a fragment. */
+const FRAGMENT_APART = placeFragment('').length;
+
+/**
+ * Why a variation's fragment is not sound on its own, or undefined where it is: it lexes whole, holds
+ * no marker, and has no line comment running to its end, which would run past it into the SQL after.
+ */
+export function fragmentProblem(sql: string): string | undefined {
+  const lexed = lexPostgres(sql);
+  if (!Array.isArray(lexed)) return `${lexed.problem} (line ${lexed.line})`;
+  if (lexed.some((piece) => piece.kind !== 'text')) return 'A fragment holds no marker';
+  // What follows the fragment on its last line, read with it: a marker there inside a comment is a
+  // line comment the fragment leaves open.
+  if (!Array.isArray(lexPostgres(`${sql} {{after}}`))) {
+    return 'A fragment holds no line comment running to its end, which would run on into the SQL after it';
+  }
+  return undefined;
+}
+
+/**
  * The length of the longest SQL a definition can bind to, as `RAN_MAX_CHARACTERS` counts it: its text
  * with each variation marker replaced by its longest fragment and each value marker by its
  * placeholder, as `bindPostgres` writes them. Undefined where the SQL does not lex, or a marker names
@@ -321,7 +353,7 @@ export function longestBinding(
     if (!parameter) return undefined;
     if (piece.kind === 'variation') {
       if (parameter.variation === undefined) return undefined;
-      length += Math.max(...parameter.variation.map((each) => each.sql.length));
+      length += FRAGMENT_APART + Math.max(...parameter.variation.map((each) => each.sql.length));
       continue;
     }
     let number = numbers.get(piece.name);
@@ -387,7 +419,7 @@ export function bindPostgres(
       if (fragment === undefined) {
         throw new Error(`The variation ${piece.name} declares no fragment for the value given`);
       }
-      text += fragment.sql;
+      text += placeFragment(fragment.sql);
       continue;
     }
     let number = numbers.get(piece.name);

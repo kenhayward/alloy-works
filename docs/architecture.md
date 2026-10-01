@@ -2940,9 +2940,9 @@ the value, before the connector is asked), takes the least of the definition's l
 tenant's `data_policy` (DAT-050), and asks the connector's `/v1/run` after its deciding transaction
 commits. The connector binds by its own type's binder, `bindPostgres`, each marker written
 `($n::type)`, parenthesised with a space either side, and each value the driver's parameter (DAT-081), the rewritten
-text read again and refused unless its placeholders are exactly those written - which a
-definition's checks also do, with each fragment in place, and a run answers `definition_unbindable`
-(query) should one reach it, a fragment placed by its key and the key
+text read again and refused unless its placeholders are exactly those written - a run answers
+`definition_unbindable` (query) should one reach it - a fragment placed by its key, set apart as
+`/**/ <fragment> /**/` so that no combination of fragments runs into its neighbours, and the key
 never sent (DAT-019); in its child it describes the bound statement first and holds its columns to the
 declaration by D2-L's admissions, then runs it `BEGIN READ ONLY` a page of 500 rows at a time,
 counting the bytes that arrive at the socket and what it keeps, and stopping at a limit or the

@@ -493,45 +493,135 @@ describe('a query definition', () => {
     expect(draftDefinitionSchema.safeParse({ ...draft, title: 'x' }).success).toBe(false);
   });
 
-  it('refuses a fragment that runs into the SQL around it where it is placed, so every definition that passes can be bound', () => {
+  it('sets every fragment apart from the SQL around it, so every definition that passes binds with any of its keys', () => {
     const backslash = String.fromCharCode(92);
-    const placed = (text: string, fragment: string): QueryDefinition =>
+    const variation = (name: string, keys: Record<string, string>): Parameter => ({
+      name,
+      type: { base: 'text' },
+      required: true,
+      list: false,
+      variation: Object.entries(keys).map(([key, sql]) => ({ key, sql })),
+    });
+    const n: Parameter = { name: 'n', type: { base: 'integer' }, required: true, list: false };
+    /** Every combination of the variations' keys. */
+    const combinations = (parameters: readonly Parameter[]): Record<string, string>[] =>
+      parameters.reduce<Record<string, string>[]>(
+        (all, parameter) =>
+          parameter.variation === undefined
+            ? all
+            : all.flatMap((each) =>
+                parameter.variation!.map((fragment) => ({
+                  ...each,
+                  [parameter.name]: fragment.key,
+                })),
+              ),
+        [{}],
+      );
+    // Fragments that would run into the text around them, or into each other: a minus before a
+    // minus, an E before a quote, a dot and an exponent before a quote.
+    for (const definition of [
+      withParameters(
+        [n, variation('f', { plain: 'x', minus: '-' })],
+        'select 1 -{{#f}}{{n}} as id',
+      ),
+      withParameters(
+        [n, variation('f', { plain: 'x', e: 'E' })],
+        `select {{#f}}'${backslash}' as a, {{n}} as id --'`,
+      ),
+      withParameters(
+        [n, variation('a', { plus: '+', minus: '-' }), variation('b', { plus: '+', minus: '-' })],
+        'select 1 {{#a}}{{#b}}{{n}} as id',
+      ),
       withParameters(
         [
-          { name: 'v', type: { base: 'integer' }, required: true, list: false },
-          {
-            name: 'f',
-            type: { base: 'text' },
-            required: true,
-            list: false,
-            variation: [
-              { key: 'plain', sql: 'x' },
-              { key: 'joined', sql: fragment },
-            ],
-          },
+          n,
+          variation('a', { plus: '+', e: 'E' }),
+          variation('b', { s: "'a'", bs: `'${backslash}'` }),
         ],
-        text,
-      );
-    // A minus before a minus makes a comment of the value's placeholder; an E before a quote makes an
-    // escape string that swallows it. Each fragment lexes whole on its own, and the text around it too.
-    for (const [text, fragment] of [
-      ['select 1 -{{#f}}{{v}} as id', '-'],
-      [`select {{#f}}'${backslash}' as a, {{v}} as id --'`, 'E'],
-    ] as const) {
-      const definition = placed(text, fragment);
-      expect(refusedAt(definition), text).toEqual(['parameters.1.variation.1.sql']);
-      const { title, description, retired, ...draft } = definition;
-      void [title, description, retired];
-      expect(() => parseDraftDefinition(draft), text).toThrow(DefinitionRefused);
-      try {
-        parseQueryDefinitionForWrite(definition);
-      } catch (error) {
-        expect((error as DefinitionRefused).problems[0]!.message).toMatch(/runs into/);
+        "select {{#a}}{{#b}} as x, {{n}} as id, 'y'",
+      ),
+      withParameters(
+        [n, variation('a', { zero: ' ', dot: '.' }), variation('b', { zero: ' ', e: 'e5' })],
+        "select 1{{#a}}{{#b}}'x' as id, {{n}}",
+      ),
+    ]) {
+      const text = definition.fetch.text;
+      expect(refusedAt(definition), text).toEqual([]);
+      for (const keys of combinations(definition.parameters)) {
+        expect(
+          () => bindPostgres(definition, { n: '1', ...keys }),
+          `${text} ${JSON.stringify(keys)}`,
+        ).not.toThrow();
       }
     }
-    // The same fragments where they run into nothing are taken.
-    expect(refusedAt(placed('select 1 - {{#f}} {{v}} as id', '-'))).toEqual([]);
-    expect(refusedAt(placed('select {{#f}} {{v}} as id', 'E'))).toEqual([]);
+    // The minus case binds as the source reads it: two minus signs apart, then the value.
+    expect(
+      bindPostgres(
+        withParameters(
+          [n, variation('a', { minus: '-' }), variation('b', { minus: '-' })],
+          'select 1 {{#a}}{{#b}}{{n}} as id',
+        ),
+        { n: '5', a: 'minus', b: 'minus' },
+      ).text,
+    ).toBe('select 1  /**/ - /**/  /**/ - /**/  ($1::int8)  as id');
+
+    // A fragment is sound on its own, or refused at it: a line comment running past its end, or
+    // anything left open.
+    for (const fragment of ['id -- newest first', 'id /* open', "'open", '"open', '$q$ open']) {
+      expect(
+        refusedAt(
+          withParameters(
+            [n, variation('f', { one: 'id', two: fragment })],
+            'select {{n}} as id order by {{#f}}',
+          ),
+        ),
+        fragment,
+      ).toEqual(['parameters.1.variation.1.sql']);
+    }
+    // A line comment that ends within the fragment runs past nothing.
+    expect(
+      refusedAt(
+        withParameters(
+          [n, variation('f', { one: 'id -- newest\n' })],
+          'select {{n}} as id order by {{#f}}',
+        ),
+      ),
+    ).toEqual([]);
+  });
+
+  it('checks a definition in time linear in its size: fifty variations of fifty keys over 100,000 characters of SQL', () => {
+    const variations: Parameter[] = Array.from({ length: 50 }, (_, at) => ({
+      name: `v${at}`,
+      type: { base: 'text' },
+      required: true,
+      list: false,
+      variation: Array.from({ length: 50 }, (_, key) => ({
+        key: `k${key}`,
+        sql: `c${key} + ${at}`,
+      })),
+    }));
+    const markers = variations.map((each) => `{{#${each.name}}} as ${each.name}`).join(', ');
+    // Read a character at a time, as SQL is: a long expression of names, not one comment.
+    const head = `select 1::int8 as id, ${markers}, `;
+    const tail = ' a as pad from t';
+    const body = 'a + '.repeat(Math.floor((100_000 - head.length - tail.length) / 4));
+    const text = `${head}${body}${' '.repeat(100_000 - head.length - body.length - tail.length)}${tail}`;
+    expect(text.length).toBe(100_000);
+    const definition = withParameters(variations, text);
+    definition.columns.splice(0, definition.columns.length, {
+      name: 'id',
+      from: { column: 'id' },
+      type: { base: 'integer' },
+    });
+    const started = performance.now();
+    const problems = checkQueryDefinition({
+      ...definition,
+      key: ['id'],
+      order: [{ column: 'id', direction: 'ascending' }],
+    });
+    const took = performance.now() - started;
+    expect(problems).toEqual([]);
+    expect(took).toBeLessThan(2000);
   });
 
   it("counts a permitted text value's length in characters, as a parameter's value is counted", () => {

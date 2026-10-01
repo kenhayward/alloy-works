@@ -517,7 +517,7 @@ describe('injection through every parameter type', { timeout: LOADED_TIMEOUT_MS 
       ),
     );
     if (sorted.outcome !== 'ok') throw new Error(JSON.stringify(sorted));
-    expect(sorted.ran.sql).toContain('order by label collate "C", id');
+    expect(sorted.ran.sql).toContain('order by  /**/ label collate "C", id /**/ ');
     expect(sorted.ran.sql).not.toContain('by_label');
     // And a key the definition does not declare runs nothing: the request is not a run.
     expect(() =>

@@ -87,6 +87,12 @@ describe("the lexer, where PostgreSQL's own scanner reads otherwise", () => {
     // A standard string continues too, past a comment before the newline; a marker after it is found.
     expect(lexPostgres("select 'a' -- {{x}}\n  'b' as c")).toMatchObject({ line: 1 });
     expect(lexPostgres("select 'a'\n'b' || {{x}}")).toContainEqual({ kind: 'value', name: 'x' });
+    // An empty comment between them is not the white space that continues a string, as PostgreSQL 18
+    // has it too (a syntax error there): the binder sets a fragment apart so.
+    expect(
+      lexPostgres(`select E'a' /**/
+'${BACKSLASH}' as b, {{x}} as c --'`),
+    ).toContainEqual({ kind: 'value', name: 'x' });
     // Without a newline between them, two strings are two, and a marker between them is outside.
     expect(lexPostgres("select 'a' || {{x}} || 'b'")).toContainEqual({ kind: 'value', name: 'x' });
   });
@@ -235,7 +241,8 @@ describe("PostgreSQL's binder", () => {
   });
 
   it('refuses a binding whose text, read again, does not hold exactly the placeholders it wrote', () => {
-    // A fragment ending as the text after it begins makes a comment of the placeholder: nothing runs.
+    // A fragment the definition's checks refuse - a line comment running past its end - placed all the
+    // same makes a comment of the placeholder after it: nothing runs.
     const definition = {
       parameters: [
         integer('x'),
@@ -244,13 +251,13 @@ describe("PostgreSQL's binder", () => {
           type: { base: 'text' as const },
           required: true,
           list: false,
-          variation: [{ key: 'minus', sql: '-' }],
+          variation: [{ key: 'note', sql: '-- note' }],
         },
       ],
-      fetch: fetch('select 1 {{#v}}-{{x}} as id'),
+      fetch: fetch('select 1 {{#v}} + {{x}} as id'),
     };
     expect(lexPostgres(definition.fetch.text)).not.toHaveProperty('problem');
-    expect(() => bindPostgres(definition, { x: '1', v: 'minus' })).toThrow(/placeholder/);
+    expect(() => bindPostgres(definition, { x: '1', v: 'note' })).toThrow(/placeholder/);
   });
 
   it("DAT-019 places a variation's declared fragment by its key, and never the key itself", () => {
@@ -272,11 +279,11 @@ describe("PostgreSQL's binder", () => {
       fetch: fetch('select id from t where site = {{site}} order by {{#sort}}'),
     };
     expect(bindPostgres(definition, { sort: 'label', site: '1' })).toEqual({
-      text: 'select id from t where site =  ($1::int8)  order by label collate "C", id',
+      text: 'select id from t where site =  ($1::int8)  order by  /**/ label collate "C", id /**/ ',
       values: ['1'],
     });
     expect(bindPostgres(definition, { sort: 'amount', site: '1' }).text).toBe(
-      'select id from t where site =  ($1::int8)  order by amount desc, id',
+      'select id from t where site =  ($1::int8)  order by  /**/ amount desc, id /**/ ',
     );
     // A key that is not declared - an inherited member's name among them - places nothing, and the
     // binder refuses rather than run the query without it.
