@@ -641,6 +641,36 @@ describe('the query definition page', () => {
     expect(screen.getByRole('button', { name: 'Save version' })).toBeInTheDocument();
   });
 
+  it('gives back no confirmation where a describe since has changed the columns, in their names or their order', async () => {
+    for (const described of [['id'], ['name', 'id']]) {
+      const user = userEvent.setup();
+      const { client } = service({
+        describe: () =>
+          json(200, {
+            columns: described.map((name) => ({
+              name,
+              sourceType: name === 'id' ? 'integer' : 'text',
+              proposed: { base: name === 'id' ? 'integer' : 'text' },
+            })),
+            parameters: ['bigint'],
+          }),
+      });
+      const { unmount } = render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+      await screen.findByRole('heading', { name: 'Site by id' });
+      const sql = screen.getByLabelText('SQL');
+      await user.type(sql, ' x');
+      await user.click(screen.getByRole('button', { name: 'Describe' }));
+      await screen.findByText(
+        `${described.length} ${described.length === 1 ? 'column' : 'columns'} proposed. Confirm the type of each.`,
+      );
+      // The SQL as the columns were confirmed for, and the columns not as they were: asked again.
+      await user.type(sql, '{Backspace}{Backspace}');
+      expect(screen.queryByRole('button', { name: 'Save version' }), described.join()).toBeNull();
+      expect(screen.getByText('Confirm every column to save.')).toBeInTheDocument();
+      unmount();
+    }
+  });
+
   it('drops a describe answering for a connection changed since it was sent', async () => {
     const user = userEvent.setup();
     const answers: ((response: Response) => void)[] = [];

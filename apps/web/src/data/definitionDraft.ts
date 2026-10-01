@@ -324,7 +324,8 @@ export function statementOf(draft: Pick<DefinitionDraft, 'connection' | 'sql' | 
 /**
  * The draft with its connection, SQL or parameters changed. A change withdraws every column's
  * confirmation and keeps its declared type; one that returns the statement to exactly what the columns
- * were last confirmed for gives back the confirmations of the columns still declared as they were.
+ * were last confirmed for gives back the confirmations, where the columns are still exactly those -
+ * their names, their order and their declared types.
  */
 export function withStatement(
   held: DefinitionDraft,
@@ -338,15 +339,22 @@ export function withStatement(
     ? { statement: before, columns: held.columns }
     : held.confirmedFor;
   const confirmedFor = remembered === undefined ? {} : { confirmedFor: remembered };
-  if (remembered?.statement === after) {
+  // Given back only where the columns are still those confirmed - the same names, in the same order,
+  // each declared as it was: a describe since may have changed them, and then the author looks again.
+  const same =
+    remembered !== undefined &&
+    remembered.columns.length === next.columns.length &&
+    remembered.columns.every(
+      (each, at) =>
+        each.name === next.columns[at]!.name && sameType(each.type, next.columns[at]!.type),
+    );
+  if (remembered?.statement === after && same) {
     return {
       ...next,
       ...confirmedFor,
-      columns: next.columns.map((column) => ({
+      columns: next.columns.map((column, at) => ({
         ...column,
-        confirmed: remembered.columns.some(
-          (each) => each.confirmed && each.name === column.name && sameType(each.type, column.type),
-        ),
+        confirmed: remembered.columns[at]!.confirmed,
       })),
     };
   }
