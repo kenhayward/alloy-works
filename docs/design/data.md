@@ -833,7 +833,11 @@ Adds a resolution row naming the waiting version and the one it replaces (DAT-03
 `edit` on the document and **queries nothing**. Where the version was fetched under the accepting
 person's own identity, the request must carry `sharesOwnView: true`, or it is refused,
 `acknowledgement_required`: the screen's warning that everybody who may read the document will see it
-is `bindings.md`'s (DAT-091), and the route will not accept without it.
+is `bindings.md`'s (DAT-091), and the route will not accept without it. **Acts on one binding take turns**: an
+accept, and a resolve's and a check's recording transactions, take a transaction-scoped lock on each
+document, node and binding they read what is held of before reading it, so two accepts each replacing
+the version held cannot both succeed - the second reads what the first recorded and is refused
+`resolution_precondition`.
 
 ### Sample run, describe and test
 

@@ -18,6 +18,7 @@ import {
   datasetName,
   documentsResolving,
   findApiToken,
+  lockBindings,
   nameDataset,
   readDocument,
   readQueryDefinition,
@@ -575,6 +576,12 @@ export async function resolveAct(
     questions.forEach((each, at) => ran.set(each.question, outcomes[at]!));
     return db.withTenant(tenant, async (record) => {
       const succeeded = prepared.filter((each) => ran.get(each.question)!.ok);
+      // Before what each holds is read: an accept or another resolve of one of them waits its turn.
+      await lockBindings(
+        record,
+        id,
+        succeeded.map(({ placed: { node, binding } }) => ({ node, binding: binding.id })),
+      );
       await decideAgain(record, request, { id, permission: 'edit' }, succeeded);
       await unchangedSince(
         record,
@@ -721,6 +728,11 @@ export async function checkAct(
     const ran = new Map(asking.map((each, at) => [each.question, outcomes[at]!]));
     return db.withTenant(tenant, async (record) => {
       const succeeded = toRun.filter((each) => ran.get(each.question)?.ok === true);
+      await lockBindings(
+        record,
+        id,
+        succeeded.map(({ placed: { node, binding } }) => ({ node, binding: binding.id })),
+      );
       await decideAgain(record, request, { id, permission: 'read' }, succeeded);
       await unchangedSince(
         record,
@@ -800,6 +812,8 @@ export function bindingHandlers(
           `The component the node ${body.node} places holds no binding ${body.binding}.`,
         );
       }
+      // Before what it holds is read, so two accepts, or an accept and a resolve, take turns.
+      await lockBindings(trx, id, [{ node: found.node, binding: found.binding.id }]);
       const held = (await heldBy(trx, id)).get(key(body.node, body.binding));
       const precondition = async () =>
         refused(

@@ -376,6 +376,7 @@ export {
   datasetIdentity,
   datasetName,
   documentsResolving,
+  lockBindings,
   nameDataset,
   recordDatasetVersion,
   recordResolution,

@@ -248,6 +248,28 @@ export async function recordResolution(
   };
 }
 
+/**
+ * Takes the lock on what bindings hold in a document, held to the end of the caller's transaction:
+ * every act that reads what a binding holds and then writes, or answers, from it - a resolve, a check
+ * and an accept - takes this first, so two of them on one binding take turns and the second reads what
+ * the first recorded. Several are taken in one order, whatever order they are asked in, so two acts
+ * locking overlapping bindings never wait on each other.
+ */
+export async function lockBindings(
+  trx: TenantTransaction,
+  document: string,
+  bindings: readonly { readonly node: string; readonly binding: string }[],
+): Promise<void> {
+  const keys = [
+    ...new Set(
+      bindings.map(({ node, binding }) => `alloy-works:binding:${document}:${node}:${binding}`),
+    ),
+  ].sort();
+  for (const each of keys) {
+    await sql`select pg_advisory_xact_lock(hashtextextended(${each}, 0))`.execute(trx);
+  }
+}
+
 /** A dataset version as a resolution holds it: which, its number, and its provenance. */
 export interface HeldVersion {
   readonly dataset: string;

@@ -376,7 +376,7 @@ describe('bindings and datasets through the service', () => {
       });
     }
     expect((await accept(revision, held.version)).statusCode).toBe(200);
-    // Two acceptances of one revision at once: the second names what the binding no longer holds.
+    // The same acceptance again, after the first: it names what the binding no longer holds.
     expect((await accept(revision, held.version)).statusCode).toBe(409);
     const missing = await h.call('ada', 'POST', `/v1/documents/${document.id}/bindings/accept`, {
       node,
@@ -390,6 +390,47 @@ describe('bindings and datasets through the service', () => {
       binding: 'nothing',
       document: document.id,
     });
+  });
+
+  it('accepts one of two revisions accepted at once, each replacing the version held, and refuses the other', async () => {
+    // Each round a binding holding v1 with v2 and v3 waiting, and both accepted at the same moment.
+    for (let round = 0; round < 10; round += 1) {
+      const definition = await h.definition(connection.id);
+      const site = String(2000 + round);
+      const { document, node } = await placed(
+        binding('b1', definition.id, { parameters: { site: { literal: site } } }),
+      );
+      h.connector.run = ranOk([[site, 'One']]);
+      await resolve('ada', document.id, [{ node, binding: 'b1' }]);
+      const held = (await stateOf('ada', document.id, 'b1')).held!;
+      const revisions: string[] = [];
+      for (const name of ['Two', 'Three']) {
+        h.connector.run = ranOk([[site, name]]);
+        revisions.push(
+          (await check('ada', document.id)).json<{ results: { version: string }[] }>().results[0]!
+            .version,
+        );
+      }
+      const answers = await Promise.all(
+        revisions.map((version) =>
+          h.call('ada', 'POST', `/v1/documents/${document.id}/bindings/accept`, {
+            node,
+            binding: 'b1',
+            version,
+            replaces: held.version,
+          }),
+        ),
+      );
+      const codes = answers.map((each) => each.statusCode).sort();
+      expect(codes, `round ${round}`).toEqual([200, 409]);
+      expect(answers.find((each) => each.statusCode === 409)!.json()).toMatchObject({
+        code: 'resolution_precondition',
+      });
+      const rows = (await rowsOf('binding_resolution')).filter(
+        (row) => row.document_id === document.id,
+      );
+      expect(rows.map((row) => row.act)).toEqual(['resolve', 'accept']);
+    }
   });
 
   it('DAT-090 answers a stored result to whoever may read the document holding it, and to nobody else', async () => {
