@@ -9362,13 +9362,12 @@
                                       "description": "The source's five-character SQLSTATE"
                                     },
                                     "message": {
-                                      "type": "string",
-                                      "description": "The source's own message, cut to 1,000 characters"
+                                      "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                                      "type": "string"
                                     }
                                   },
                                   "required": [
-                                    "sqlstate",
-                                    "message"
+                                    "sqlstate"
                                   ],
                                   "description": "What the source said, where it refused the statement: `source_refused` alone"
                                 },
@@ -9881,13 +9880,12 @@
                                       "description": "The source's five-character SQLSTATE"
                                     },
                                     "message": {
-                                      "type": "string",
-                                      "description": "The source's own message, cut to 1,000 characters"
+                                      "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                                      "type": "string"
                                     }
                                   },
                                   "required": [
-                                    "sqlstate",
-                                    "message"
+                                    "sqlstate"
                                   ],
                                   "description": "What the source said, where it refused the statement: `source_refused` alone"
                                 },
@@ -10188,13 +10186,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },
@@ -10263,13 +10260,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },
@@ -11010,13 +11006,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },
@@ -11267,13 +11262,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },
@@ -11349,13 +11343,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },
@@ -11424,13 +11417,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },
@@ -11499,13 +11491,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },
@@ -12354,13 +12345,12 @@
                                   "description": "The source's five-character SQLSTATE"
                                 },
                                 "message": {
-                                  "type": "string",
-                                  "description": "The source's own message, cut to 1,000 characters"
+                                  "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                                  "type": "string"
                                 }
                               },
                               "required": [
-                                "sqlstate",
-                                "message"
+                                "sqlstate"
                               ],
                               "description": "What the source said, where it refused the statement: `source_refused` alone"
                             },
@@ -12450,13 +12440,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },
@@ -12707,13 +12696,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },
@@ -12789,13 +12777,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },
@@ -12996,13 +12983,12 @@
                                   "description": "The source's five-character SQLSTATE"
                                 },
                                 "message": {
-                                  "type": "string",
-                                  "description": "The source's own message, cut to 1,000 characters"
+                                  "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                                  "type": "string"
                                 }
                               },
                               "required": [
-                                "sqlstate",
-                                "message"
+                                "sqlstate"
                               ],
                               "description": "What the source said, where it refused the statement: `source_refused` alone"
                             },
@@ -13213,13 +13199,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },
@@ -13288,13 +13273,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },
@@ -14248,13 +14232,12 @@
                                       "description": "The source's five-character SQLSTATE"
                                     },
                                     "message": {
-                                      "type": "string",
-                                      "description": "The source's own message, cut to 1,000 characters"
+                                      "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                                      "type": "string"
                                     }
                                   },
                                   "required": [
-                                    "sqlstate",
-                                    "message"
+                                    "sqlstate"
                                   ],
                                   "description": "What the source said, where it refused the statement: `source_refused` alone"
                                 },
@@ -14767,13 +14750,12 @@
                                           "description": "The source's five-character SQLSTATE"
                                         },
                                         "message": {
-                                          "type": "string",
-                                          "description": "The source's own message, cut to 1,000 characters"
+                                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                                          "type": "string"
                                         }
                                       },
                                       "required": [
-                                        "sqlstate",
-                                        "message"
+                                        "sqlstate"
                                       ],
                                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                                     },
@@ -15398,13 +15380,12 @@
                                           "description": "The source's five-character SQLSTATE"
                                         },
                                         "message": {
-                                          "type": "string",
-                                          "description": "The source's own message, cut to 1,000 characters"
+                                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                                          "type": "string"
                                         }
                                       },
                                       "required": [
-                                        "sqlstate",
-                                        "message"
+                                        "sqlstate"
                                       ],
                                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                                     },
@@ -21152,13 +21133,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },
@@ -22300,13 +22280,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },
@@ -23516,13 +23495,12 @@
                                         "description": "The source's five-character SQLSTATE"
                                       },
                                       "message": {
-                                        "type": "string",
-                                        "description": "The source's own message, cut to 1,000 characters"
+                                        "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                                        "type": "string"
                                       }
                                     },
                                     "required": [
-                                      "sqlstate",
-                                      "message"
+                                      "sqlstate"
                                     ],
                                     "description": "What the source said, where it refused the statement: `source_refused` alone"
                                   },
@@ -23752,13 +23730,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },
@@ -24777,13 +24754,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },
@@ -25990,13 +25966,12 @@
                                         "description": "The source's five-character SQLSTATE"
                                       },
                                       "message": {
-                                        "type": "string",
-                                        "description": "The source's own message, cut to 1,000 characters"
+                                        "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                                        "type": "string"
                                       }
                                     },
                                     "required": [
-                                      "sqlstate",
-                                      "message"
+                                      "sqlstate"
                                     ],
                                     "description": "What the source said, where it refused the statement: `source_refused` alone"
                                   },
@@ -26102,13 +26077,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },
@@ -27168,13 +27142,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },
@@ -28234,13 +28207,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },
@@ -29259,13 +29231,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },
@@ -50106,13 +50077,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },
@@ -50971,13 +50941,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },
@@ -57395,13 +57364,12 @@
                                       "description": "The source's five-character SQLSTATE"
                                     },
                                     "message": {
-                                      "type": "string",
-                                      "description": "The source's own message, cut to 1,000 characters"
+                                      "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                                      "type": "string"
                                     }
                                   },
                                   "required": [
-                                    "sqlstate",
-                                    "message"
+                                    "sqlstate"
                                   ],
                                   "description": "What the source said, where it refused the statement: `source_refused` alone"
                                 },
@@ -57914,13 +57882,12 @@
                                           "description": "The source's five-character SQLSTATE"
                                         },
                                         "message": {
-                                          "type": "string",
-                                          "description": "The source's own message, cut to 1,000 characters"
+                                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                                          "type": "string"
                                         }
                                       },
                                       "required": [
-                                        "sqlstate",
-                                        "message"
+                                        "sqlstate"
                                       ],
                                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                                     },
@@ -60494,13 +60461,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },
@@ -61359,13 +61325,12 @@
                           "description": "The source's five-character SQLSTATE"
                         },
                         "message": {
-                          "type": "string",
-                          "description": "The source's own message, cut to 1,000 characters"
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
                         }
                       },
                       "required": [
-                        "sqlstate",
-                        "message"
+                        "sqlstate"
                       ],
                       "description": "What the source said, where it refused the statement: `source_refused` alone"
                     },

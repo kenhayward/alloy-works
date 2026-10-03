@@ -540,6 +540,58 @@ describe('bindings and datasets through the service', () => {
     expect((await rowsOf('binding_resolution')).length).toBe(resolutions);
   });
 
+  it("answers the source's own message of a refused statement only to somebody who may write SQL on the connection", async () => {
+    const definition = await h.definition(connection.id);
+    const { document, node } = await placed(
+      binding('b1', definition.id, { parameters: { site: { literal: '62' } } }),
+    );
+    h.connector.run = {
+      outcome: 'failed',
+      failure: {
+        code: 'source_refused',
+        attribution: 'query',
+        source: { sqlstate: '42501', message: 'permission denied for table payroll_secret' },
+      },
+    };
+    // Grace may use the connection and may not write SQL on it; Ada may.
+    for (const [as, sees] of [
+      ['grace', false],
+      ['ada', true],
+    ] as const) {
+      const answer = await resolve(as, document.id, [{ node, binding: 'b1' }]);
+      expect(answer.statusCode, answer.body).toBe(200);
+      const { failure } = answer.json<{
+        results: { failure: { message: string; source: Json } }[];
+      }>().results[0]!;
+      expect(failure.source, as).toEqual(
+        sees
+          ? { sqlstate: '42501', message: 'permission denied for table payroll_secret' }
+          : { sqlstate: '42501' },
+      );
+      expect(failure.message.includes('payroll_secret'), as).toBe(sees);
+      expect(failure.message, as).toContain('42501');
+    }
+    // A check answers it alike.
+    h.connector.run = ranOk([['62', 'Held']]);
+    expect((await resolve('ada', document.id, [{ node, binding: 'b1' }])).statusCode).toBe(200);
+    h.connector.run = {
+      outcome: 'failed',
+      failure: {
+        code: 'source_refused',
+        attribution: 'query',
+        source: { sqlstate: '42501', message: 'permission denied for table payroll_secret' },
+      },
+    };
+    const checked = await check('grace', document.id);
+    expect(checked.statusCode, checked.body).toBe(200);
+    expect(checked.body).not.toContain('payroll_secret');
+    expect(checked.json()).toMatchObject({
+      results: [
+        { outcome: 'failed', failure: { code: 'source_refused', source: { sqlstate: '42501' } } },
+      ],
+    });
+  });
+
   it('refuses a resolve before anything runs: a binding the node does not hold, a retired definition, a document parameter, and a caller who may not use the connection', async () => {
     const definition = await h.definition(connection.id);
     const { document, node } = await placed(

@@ -910,7 +910,9 @@ the act has them, the binding and the document (DAT-086). A failed act records n
 
 The four before those two were added by the D1 plan (D1-M, D1-Q), and the last two by the D2 plan
 (D2-H), whose `source_refused` is answered with the source's message only to somebody holding
-`write_sql`; who else sees one is D3's. A failure is answered with its HTTP status by
+`write_sql`. D3 keeps that rule for a resolve and a check, which need only `use_connection`: a
+caller holding `write_sql` at the connection is given the source's SQLSTATE and message, and anybody
+else the SQLSTATE alone, with words that quote nothing the source said. A failure is answered with its HTTP status by
 where it arose: a failed test is an answer, 200; describe's `connection_failed`, `connector_error` and
 `source_unsupported` are 502 and `timeout` 504; `connector_unavailable` and `connector_busy` 503. A
 sample's failure is an answer, 200, as a failed test is; a describe of a statement answers the

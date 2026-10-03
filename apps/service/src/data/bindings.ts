@@ -64,7 +64,7 @@ import { AppError, storageUnavailable } from '../errors.js';
 import { findSession, hashToken } from '../sessions.js';
 import { bearerSecret, isBearer } from '../tokens.js';
 import { refused } from '../wire-codes.js';
-import { failureView, type FailureIn } from './failure-words.js';
+import { failureViewFor, type FailureIn } from './failure-words.js';
 import { connectionFacts, requireSqlPermitted } from './sql-access.js';
 
 /**
@@ -216,6 +216,8 @@ interface Prepared {
   readonly limits: Limits;
   /** The question it asks: one run answers every binding asking it (D3-I). */
   readonly question: string;
+  /** Whether the caller holds `write_sql` at the connection, so sees what its source says (D2-H). */
+  readonly seesSource: boolean;
 }
 
 /**
@@ -311,6 +313,7 @@ async function prepare(
       values: literal.values,
       limits,
       question: `${stored.id} ${version} ${sha256(parametersDigestInput(literal.values))}`,
+      seesSource: decide('write_sql', atConnection).allowed,
     };
   } catch (error) {
     throw named(error, naming);
@@ -471,8 +474,15 @@ async function unchangedSince(
   }
 }
 
-/** A failure for one binding, named (DAT-086): a data failure, or a refusal of what it needs. */
-function bindingFailure(failure: FailureIn | AppError, naming: Required<Naming>) {
+/**
+ * A failure for one binding, named (DAT-086): a data failure, or a refusal of what it needs. What the
+ * source said of a statement it refused is shown only where `seesSource` (D2-H).
+ */
+function bindingFailure(
+  failure: FailureIn | AppError,
+  naming: Required<Naming>,
+  seesSource = false,
+) {
   if (failure instanceof AppError) {
     const said = failure.members.attribution;
     const attribution: 'connector' | 'query' | 'product' =
@@ -484,7 +494,7 @@ function bindingFailure(failure: FailureIn | AppError, naming: Required<Naming>)
       ...naming,
     };
   }
-  return { ...failureView(failure), ...naming };
+  return { ...failureViewFor(failure, seesSource), ...naming };
 }
 
 /** The view of one binding as a document holds it now (D3-J, D3-R). */
@@ -599,12 +609,11 @@ export async function resolveAct(
           results.push({
             node,
             binding: binding.id,
-            failure: bindingFailure(outcome.failure, {
-              definition: each.definition.id,
-              binding: binding.id,
-              node,
-              document: id,
-            }),
+            failure: bindingFailure(
+              outcome.failure,
+              { definition: each.definition.id, binding: binding.id, node, document: id },
+              each.seesSource,
+            ),
           });
           continue;
         }
@@ -751,7 +760,7 @@ export async function checkAct(
             node,
             binding: binding.id,
             outcome: 'failed',
-            failure: bindingFailure(outcome.failure, naming),
+            failure: bindingFailure(outcome.failure, naming, each.seesSource),
           });
           continue;
         }

@@ -92,6 +92,22 @@ export function failureMessage(failure: DataFailure): string {
   return at === '' ? words : `${at}${words.charAt(0).toLowerCase()}${words.slice(1)}`;
 }
 
+/**
+ * A failure as it is answered to a caller who may or may not see what the source said (D2-H, D3):
+ * `source_refused`'s own message goes only to somebody holding `write_sql` at the connection, since it
+ * can name a table, a column or a value the statement reached; anybody else is given its SQLSTATE.
+ */
+export function failureViewFor(failure: FailureIn, seesSource: boolean) {
+  const view = failureView(failure);
+  if (seesSource || view.source === undefined) return view;
+  const { sqlstate } = view.source;
+  return {
+    ...view,
+    source: { sqlstate },
+    message: `The source refused the statement (SQLSTATE ${sqlstate}).`,
+  };
+}
+
 /** A failure as the API answers it: its code, its attribution, its details and its words (DAT-049). */
 export function failureView(failure: FailureIn | DataFailureCode) {
   // Made again from the code, so the attribution is always the code's own (DAT-049).

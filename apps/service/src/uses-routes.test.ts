@@ -118,8 +118,8 @@ describe('where a query definition and a connection are used', () => {
     const byId = (left: { id: string }, right: { id: string }) => left.id.localeCompare(right.id);
     expect([...body.documents.readable].sort(byId)).toEqual(
       [
-        { id: titles.generalDocument, title: 'The readings report' },
-        { id: titles.siblingDocument, title: 'The readings report' },
+        { id: titles.generalDocument!, title: 'The readings report' },
+        { id: titles.siblingDocument!, title: 'The readings report' },
       ].sort(byId),
     );
     expect(body.documents).toMatchObject({ others: 1 });

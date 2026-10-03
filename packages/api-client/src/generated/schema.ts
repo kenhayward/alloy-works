@@ -5170,8 +5170,8 @@ export interface operations {
                                 source?: {
                                     /** @description The source's five-character SQLSTATE */
                                     sqlstate: string;
-                                    /** @description The source's own message, cut to 1,000 characters */
-                                    message: string;
+                                    /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                                    message?: string;
                                 };
                                 /** @description The column the failure names, where it names one */
                                 column?: string;
@@ -5364,8 +5364,8 @@ export interface operations {
                                 source?: {
                                     /** @description The source's five-character SQLSTATE */
                                     sqlstate: string;
-                                    /** @description The source's own message, cut to 1,000 characters */
-                                    message: string;
+                                    /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                                    message?: string;
                                 };
                                 /** @description The column the failure names, where it names one */
                                 column?: string;
@@ -5490,8 +5490,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;
@@ -5521,8 +5521,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;
@@ -5726,8 +5726,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;
@@ -5830,8 +5830,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;
@@ -5863,8 +5863,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;
@@ -5894,8 +5894,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;
@@ -5925,8 +5925,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;
@@ -6172,8 +6172,8 @@ export interface operations {
                             source?: {
                                 /** @description The source's five-character SQLSTATE */
                                 sqlstate: string;
-                                /** @description The source's own message, cut to 1,000 characters */
-                                message: string;
+                                /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                                message?: string;
                             };
                             /** @description The column the failure names, where it names one */
                             column?: string;
@@ -6206,8 +6206,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;
@@ -6310,8 +6310,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;
@@ -6343,8 +6343,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;
@@ -6429,8 +6429,8 @@ export interface operations {
                             source?: {
                                 /** @description The source's five-character SQLSTATE */
                                 sqlstate: string;
-                                /** @description The source's own message, cut to 1,000 characters */
-                                message: string;
+                                /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                                message?: string;
                             };
                             /** @description The column the failure names, where it names one */
                             column?: string;
@@ -6524,8 +6524,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;
@@ -6555,8 +6555,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;
@@ -6949,8 +6949,8 @@ export interface operations {
                                 source?: {
                                     /** @description The source's five-character SQLSTATE */
                                     sqlstate: string;
-                                    /** @description The source's own message, cut to 1,000 characters */
-                                    message: string;
+                                    /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                                    message?: string;
                                 };
                                 /** @description The column the failure names, where it names one */
                                 column?: string;
@@ -7086,8 +7086,8 @@ export interface operations {
                                     source?: {
                                         /** @description The source's five-character SQLSTATE */
                                         sqlstate: string;
-                                        /** @description The source's own message, cut to 1,000 characters */
-                                        message: string;
+                                        /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                                        message?: string;
                                     };
                                     /** @description The column the failure names, where it names one */
                                     column?: string;
@@ -7294,8 +7294,8 @@ export interface operations {
                                     source?: {
                                         /** @description The source's five-character SQLSTATE */
                                         sqlstate: string;
-                                        /** @description The source's own message, cut to 1,000 characters */
-                                        message: string;
+                                        /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                                        message?: string;
                                     };
                                     /** @description The column the failure names, where it names one */
                                     column?: string;
@@ -9324,8 +9324,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;
@@ -9617,8 +9617,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;
@@ -9922,8 +9922,8 @@ export interface operations {
                                 source?: {
                                     /** @description The source's five-character SQLSTATE */
                                     sqlstate: string;
-                                    /** @description The source's own message, cut to 1,000 characters */
-                                    message: string;
+                                    /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                                    message?: string;
                                 };
                                 /** @description The column the failure names, where it names one */
                                 column?: string;
@@ -10022,8 +10022,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;
@@ -10255,8 +10255,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;
@@ -10563,8 +10563,8 @@ export interface operations {
                                 source?: {
                                     /** @description The source's five-character SQLSTATE */
                                     sqlstate: string;
-                                    /** @description The source's own message, cut to 1,000 characters */
-                                    message: string;
+                                    /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                                    message?: string;
                                 };
                                 /** @description The column the failure names, where it names one */
                                 column?: string;
@@ -10603,8 +10603,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;
@@ -10856,8 +10856,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;
@@ -11109,8 +11109,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;
@@ -11342,8 +11342,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;
@@ -18580,8 +18580,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;
@@ -18820,8 +18820,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;
@@ -21375,8 +21375,8 @@ export interface operations {
                                 source?: {
                                     /** @description The source's five-character SQLSTATE */
                                     sqlstate: string;
-                                    /** @description The source's own message, cut to 1,000 characters */
-                                    message: string;
+                                    /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                                    message?: string;
                                 };
                                 /** @description The column the failure names, where it names one */
                                 column?: string;
@@ -21512,8 +21512,8 @@ export interface operations {
                                     source?: {
                                         /** @description The source's five-character SQLSTATE */
                                         sqlstate: string;
-                                        /** @description The source's own message, cut to 1,000 characters */
-                                        message: string;
+                                        /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                                        message?: string;
                                     };
                                     /** @description The column the failure names, where it names one */
                                     column?: string;
@@ -22350,8 +22350,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;
@@ -22590,8 +22590,8 @@ export interface operations {
                         source?: {
                             /** @description The source's five-character SQLSTATE */
                             sqlstate: string;
-                            /** @description The source's own message, cut to 1,000 characters */
-                            message: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
                         };
                         column?: string;
                         row?: number;

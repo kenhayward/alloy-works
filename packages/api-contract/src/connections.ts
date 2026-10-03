@@ -76,7 +76,12 @@ export type CredentialState = z.infer<typeof CredentialState>;
 export const SourceRefusalView = z
   .object({
     sqlstate: z.string().describe("The source's five-character SQLSTATE"),
-    message: z.string().describe("The source's own message, cut to 1,000 characters"),
+    message: z
+      .string()
+      .optional()
+      .describe(
+        "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+      ),
   })
   .describe('What the source said, where it refused the statement: `source_refused` alone');
 
