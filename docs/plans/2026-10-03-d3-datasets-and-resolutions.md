@@ -6,7 +6,8 @@
 > [ADR-0035](../decisions/0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md),
 > on what [D1](2026-09-30-d1-connections-and-the-connector.md) and
 > [D2](2026-09-30-d2-query-definitions.md) built. data.md's decisions DA-A to DA-AF were approved by
-> Ken on 2026-09-30. This plan's own decisions, D3-A to D3-T below, are **proposed, for Ken**.
+> Ken on 2026-09-30. This plan's own decisions, D3-A to D3-T below, were approved by Ken on 2026-10-03, every one as
+> recommended.
 
 **Goal:** a binding in a component's content names a query definition, its parameters and the value
 it takes; resolving it in a document runs the definition through the connector as the person acting,
@@ -47,7 +48,8 @@ the expected answer, none found, and says what changes if one is.
 
 ## Decisions
 
-Proposed, for Ken. Each is the recommendation; the column beside it is what it was chosen over.
+Approved by Ken on 2026-10-03, every one as recommended; the column beside each is what it was chosen
+over.
 
 | #    | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Instead of                                                                                                                             |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
@@ -282,6 +284,8 @@ next Minor.
   binding opened in the editor, read-only, saying why.
 
 ## Questions for Ken before the build
+
+Answered on 2026-10-03: all five as recommended.
 
 1. **D3-B**: may the orchestrator run the evidence query, read-only, on your stack's database? It
    counts components holding the old binding node per environment and reads no content. Recommended;
