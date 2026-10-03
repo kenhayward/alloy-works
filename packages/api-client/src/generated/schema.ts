@@ -580,7 +580,7 @@ export interface paths {
         };
         /**
          * A document's bindings, what each holds, and any newer result waiting
-         * @description Lists every binding in the components the document's latest version places that the caller may read, in the outline's order: the binding as its component holds it, the dataset version it holds in this document with that result's provenance and name, whether the binding has changed since, and any newer result a check recorded and nobody has accepted. Reading needs only read on the document, never use of a connection; a provenance shows the SQL that ran and the connection only to a caller who may read its query definition.
+         * @description Lists every binding in the components the document's latest version places that the caller may read, in the outline's order: the binding as its component holds it, the dataset version it holds in this document with that result's provenance and name, whether the binding has changed since, and any newer result a check recorded and nobody has accepted. Reading needs only read on the document, never use of a connection; a provenance shows the SQL that ran, the connection and the source's column each declared column reads only to a caller who may read its query definition.
          */
         get: operations["getDocumentBindings"];
         put?: never;
@@ -680,7 +680,7 @@ export interface paths {
         };
         /**
          * A stored result the document holds or has waiting, whole
-         * @description Returns a stored result whole - its columns, every row in canonical form, and its provenance - where the document holds it or has it waiting. Reading needs only read on the document; the provenance shows the SQL that ran and the connection only to a caller who may read its query definition.
+         * @description Returns a stored result whole - its columns, every row in canonical form, and its provenance - but only a version the document's bindings show the caller: one a binding in a component they may read holds, or has waiting while that binding has not changed. A version held only in a component they may not read, at a node the outline no longer has, or waiting for a binding that has changed since, is not found. Reading needs only read on the document; the provenance shows the SQL that ran, the connection and the source's column each declared column reads only to a caller who may read its query definition.
          */
         get: operations["getDocumentDataset"];
         put?: never;
@@ -8762,11 +8762,13 @@ export interface operations {
                                     at: string;
                                     durationMs: number;
                                     rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
                                     columns: {
                                         name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
                                         from: {
                                             column: string;
-                                        };
+                                        } | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -8846,11 +8848,13 @@ export interface operations {
                                     at: string;
                                     durationMs: number;
                                     rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
                                     columns: {
                                         name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
                                         from: {
                                             column: string;
-                                        };
+                                        } | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -9180,11 +9184,13 @@ export interface operations {
                                 at: string;
                                 durationMs: number;
                                 rowCount: number;
+                                /** @description The definition's declared columns: each one's name and type, and where it reads */
                                 columns: {
                                     name: string;
+                                    /** @description The source's column it reads, or null where the caller may not read the query definition */
                                     from: {
                                         column: string;
-                                    };
+                                    } | null;
                                     type: {
                                         /** @constant */
                                         base: "text";
@@ -9264,11 +9270,13 @@ export interface operations {
                                 at: string;
                                 durationMs: number;
                                 rowCount: number;
+                                /** @description The definition's declared columns: each one's name and type, and where it reads */
                                 columns: {
                                     name: string;
+                                    /** @description The source's column it reads, or null where the caller may not read the query definition */
                                     from: {
                                         column: string;
-                                    };
+                                    } | null;
                                     type: {
                                         /** @constant */
                                         base: "text";
@@ -9416,11 +9424,13 @@ export interface operations {
                                     at: string;
                                     durationMs: number;
                                     rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
                                     columns: {
                                         name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
                                         from: {
                                             column: string;
-                                        };
+                                        } | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -9500,11 +9510,13 @@ export interface operations {
                                     at: string;
                                     durationMs: number;
                                     rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
                                     columns: {
                                         name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
                                         from: {
                                             column: string;
-                                        };
+                                        } | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -9566,7 +9578,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may read the document but may not edit it */
+            /** @description The caller may read the document but may not edit it, or may not use the connection the accepted result ran on. Nothing is recorded */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -9713,11 +9725,13 @@ export interface operations {
                                     at: string;
                                     durationMs: number;
                                     rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
                                     columns: {
                                         name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
                                         from: {
                                             column: string;
-                                        };
+                                        } | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -9797,11 +9811,13 @@ export interface operations {
                                     at: string;
                                     durationMs: number;
                                     rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
                                     columns: {
                                         name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
                                         from: {
                                             column: string;
-                                        };
+                                        } | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -10122,11 +10138,13 @@ export interface operations {
                                     at: string;
                                     durationMs: number;
                                     rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
                                     columns: {
                                         name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
                                         from: {
                                             column: string;
-                                        };
+                                        } | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -10206,11 +10224,13 @@ export interface operations {
                                     at: string;
                                     durationMs: number;
                                     rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
                                     columns: {
                                         name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
                                         from: {
                                             column: string;
-                                        };
+                                        } | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -10359,11 +10379,13 @@ export interface operations {
                                     at: string;
                                     durationMs: number;
                                     rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
                                     columns: {
                                         name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
                                         from: {
                                             column: string;
-                                        };
+                                        } | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -10443,11 +10465,13 @@ export interface operations {
                                     at: string;
                                     durationMs: number;
                                     rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
                                     columns: {
                                         name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
                                         from: {
                                             column: string;
-                                        };
+                                        } | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -10604,7 +10628,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `binding_missing`: no such binding in the component the node places, or a pinned version that is not its definition's; `take_invalid`: what it takes is not the definition's; `parameter_invalid`: a value fails its parameter, or a parameter is taken from the document, which has none yet */
+            /** @description `binding_missing`: no such binding in the component the node places, a definition that is not there or that the caller may not read, answered alike, or a pinned version that is not its definition's; `take_invalid`: what it takes is not the definition's; `parameter_invalid`: a value fails its parameter, or a parameter is taken from the document, which has none yet */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -10711,11 +10735,13 @@ export interface operations {
                                     at: string;
                                     durationMs: number;
                                     rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
                                     columns: {
                                         name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
                                         from: {
                                             column: string;
-                                        };
+                                        } | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -10795,11 +10821,13 @@ export interface operations {
                                     at: string;
                                     durationMs: number;
                                     rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
                                     columns: {
                                         name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
                                         from: {
                                             column: string;
-                                        };
+                                        } | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -10861,7 +10889,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may read the document but may not edit it, or may not read a definition or use its connection */
+            /** @description The caller may read the document but may not edit it, or may not use the connection a binding runs on */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -10968,11 +10996,13 @@ export interface operations {
                                     at: string;
                                     durationMs: number;
                                     rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
                                     columns: {
                                         name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
                                         from: {
                                             column: string;
-                                        };
+                                        } | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -11052,11 +11082,13 @@ export interface operations {
                                     at: string;
                                     durationMs: number;
                                     rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
                                     columns: {
                                         name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
                                         from: {
                                             column: string;
-                                        };
+                                        } | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -11225,11 +11257,13 @@ export interface operations {
                                     at: string;
                                     durationMs: number;
                                     rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
                                     columns: {
                                         name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
                                         from: {
                                             column: string;
-                                        };
+                                        } | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -11309,11 +11343,13 @@ export interface operations {
                                     at: string;
                                     durationMs: number;
                                     rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
                                     columns: {
                                         name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
                                         from: {
                                             column: string;
-                                        };
+                                        } | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -11462,11 +11498,13 @@ export interface operations {
                                     at: string;
                                     durationMs: number;
                                     rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
                                     columns: {
                                         name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
                                         from: {
                                             column: string;
-                                        };
+                                        } | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -11546,11 +11584,13 @@ export interface operations {
                                     at: string;
                                     durationMs: number;
                                     rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
                                     columns: {
                                         name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
                                         from: {
                                             column: string;
-                                        };
+                                        } | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -11853,11 +11893,13 @@ export interface operations {
                             at: string;
                             durationMs: number;
                             rowCount: number;
+                            /** @description The definition's declared columns: each one's name and type, and where it reads */
                             columns: {
                                 name: string;
+                                /** @description The source's column it reads, or null where the caller may not read the query definition */
                                 from: {
                                     column: string;
-                                };
+                                } | null;
                                 type: {
                                     /** @constant */
                                     base: "text";
@@ -11946,7 +11988,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description No such document the caller may read, or a dataset version it neither holds nor has waiting */
+            /** @description No such document the caller may read, or a dataset version its bindings do not show the caller: one no binding they can see holds, or has waiting while that binding is unchanged */
             404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

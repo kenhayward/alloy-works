@@ -1,4 +1,4 @@
-import { bindingNodeSchema, provenanceSchema } from '@alloy-works/domain';
+import { bindingNodeSchema, MAX_COLUMNS, provenanceSchema } from '@alloy-works/domain';
 import { z } from 'zod';
 import { DataFailureView, DataProblemsRefusal, UsesView } from './connections.js';
 import type { RouteContract } from './contract.js';
@@ -28,10 +28,24 @@ const NodeBinding = z.strictObject({
 
 /**
  * A dataset version's provenance record (DAT-085): what ran, as whom, when, and the checksum - the SQL
- * that ran and the connection shown only to a caller who may read the query definition, as D2 shows a
- * definition's connection only to its reader. The stored record is whole either way.
+ * that ran, the connection and the source's column each declared column reads shown only to a caller
+ * who may read the query definition, as D2 shows a definition only to its reader. The stored record
+ * is whole either way.
  */
 export const ProvenanceView = provenanceSchema.extend({
+  columns: z
+    .array(
+      provenanceSchema.shape.columns.element.extend({
+        from: provenanceSchema.shape.columns.element.shape.from
+          .nullable()
+          .describe(
+            "The source's column it reads, or null where the caller may not read the query definition",
+          ),
+      }),
+    )
+    .min(1)
+    .max(MAX_COLUMNS)
+    .describe("The definition's declared columns: each one's name and type, and where it reads"),
   connection: provenanceSchema.shape.connection
     .nullable()
     .describe(
@@ -280,13 +294,13 @@ export const bindingRoutes = {
       },
       400: {
         description:
-          "`binding_missing`: no such binding in the component the node places, or a pinned version that is not its definition's; `take_invalid`: what it takes is not the definition's; `parameter_invalid`: a value fails its parameter, or a parameter is taken from the document, which has none yet",
+          "`binding_missing`: no such binding in the component the node places, a definition that is not there or that the caller may not read, answered alike, or a pinned version that is not its definition's; `take_invalid`: what it takes is not the definition's; `parameter_invalid`: a value fails its parameter, or a parameter is taken from the document, which has none yet",
         schema: BindingRefusal,
       },
       401: unauthenticated,
       403: {
         description:
-          'The caller may read the document but may not edit it, or may not read a definition or use its connection',
+          'The caller may read the document but may not edit it, or may not use the connection a binding runs on',
         schema: BindingRefusal,
       },
       404: documentNotFound,
@@ -345,7 +359,8 @@ export const bindingRoutes = {
       },
       401: unauthenticated,
       403: {
-        description: 'The caller may read the document but may not edit it',
+        description:
+          'The caller may read the document but may not edit it, or may not use the connection the accepted result ran on. Nothing is recorded',
         schema: ErrorBody,
       },
       404: documentNotFound,
@@ -373,7 +388,7 @@ export const bindingRoutes = {
       },
       404: {
         description:
-          'No such document the caller may read, or a dataset version it neither holds nor has waiting',
+          'No such document the caller may read, or a dataset version its bindings do not show the caller: one no binding they can see holds, or has waiting while that binding is unchanged',
         schema: ErrorBody,
       },
       503: {

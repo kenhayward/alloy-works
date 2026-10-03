@@ -1,5 +1,5 @@
 import { canonicalResultBytes } from '@alloy-works/domain';
-import { queryAs } from '@alloy-works/db/testing';
+import { holdingAdvisoryLock, queryAs, untilWaitingOnLocks } from '@alloy-works/db/testing';
 import { removeGrant } from '@alloy-works/db';
 import { tenantPrefix } from '@alloy-works/objects';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -478,7 +478,12 @@ describe('bindings and datasets through the service', () => {
     const before = await resolutions(noUse.document.id);
     const forbidden = await noUse.accept();
     expect(forbidden.statusCode, forbidden.body).toBe(403);
-    expect(forbidden.json()).toMatchObject({ code: 'forbidden' });
+    // A plain refusal, as the route's 403 is for an editor too: it names no binding.
+    expect(forbidden.json()).toEqual({
+      code: 'forbidden',
+      message: 'This needs the use connection permission on the connection the binding b1 runs on.',
+      traceId: expect.any(String),
+    });
     expect(await resolutions(noUse.document.id)).toEqual(before);
     expect((await stateOf('ada', noUse.document.id, 'b1')).held!.version).toBe(noUse.held.version);
 
@@ -498,6 +503,14 @@ describe('bindings and datasets through the service', () => {
     expect((await stateOf('ada', noRead.document.id, 'b1')).held!.version).toBe(
       noRead.held.version,
     );
+    // In the very words a binding naming no definition at all is answered in, so they tell nothing.
+    const { document: nowhere, node: nowhereNode } = await placed(
+      binding('b1', '00000000-0000-4000-8000-000000000000'),
+    );
+    const none = await resolve('ada', nowhere.id, [{ node: nowhereNode, binding: 'b1' }]);
+    expect(none.statusCode, none.body).toBe(400);
+    const words = ({ code, message }: Json) => ({ code, message });
+    expect(words(missing.json())).toEqual(words(none.json()));
 
     // With both, the same editor accepts it.
     const both = await waiting('93', { read: true, use: true });
@@ -605,9 +618,14 @@ describe('bindings and datasets through the service', () => {
     expect((await read('ada', document.id, held)).statusCode).toBe(404);
   });
 
-  it('shows the SQL that ran and the connection only to a reader of the document who may read the definition', async () => {
-    // A definition in Quality, which Alice may not read, bound in General, which she may.
-    const definition = await h.definition(connection.id, {}, h.quality);
+  it("shows the SQL that ran, the connection and the source's column names only to a reader of the document who may read the definition", async () => {
+    // A definition in Quality, which Alice may not read, bound in General, which she may, reading
+    // columns whose names at the source are its own.
+    const columns = [
+      { name: 'id', from: { column: 'site_ref_internal' }, type: { base: 'integer' } },
+      { name: 'name', from: { column: 'site_label_internal' }, type: { base: 'text' } },
+    ];
+    const definition = await h.definition(connection.id, { columns }, h.quality);
     const { document, node } = await placed(
       binding('b1', definition.id, { parameters: { site: { literal: '53' } } }),
     );
@@ -619,17 +637,21 @@ describe('bindings and datasets through the service', () => {
     expect(asAda.held!.provenance).toMatchObject({
       ran: { sql: expect.stringContaining('sample.site') },
       connection: { artifact: connection.id },
+      columns,
     });
     const asAlice = await stateOf('alice', document.id, 'b1');
     for (const provenance of [asAlice.held!.provenance, asAlice.waiting!.provenance]) {
       expect(provenance).toMatchObject({ ran: { sql: null }, connection: null });
-      // What the rows are stays inspectable: their checksum, count and declared columns.
+      // What the rows are stays inspectable: their checksum, count, the parameters the document
+      // supplied, and each declared column's name and type - but not the source's column it reads.
       expect(provenance).toMatchObject({
         checksum: expect.stringMatching(/^[0-9a-f]{64}$/),
         rowCount: 1,
-        columns: definitionBody(connection.id).columns,
+        parameters: { site: '53' },
       });
+      expect(provenance.columns).toEqual(columns.map((column) => ({ ...column, from: null })));
     }
+    expect(JSON.stringify(asAlice)).not.toContain('_internal');
     const read = await h.call(
       'alice',
       'GET',
@@ -638,6 +660,7 @@ describe('bindings and datasets through the service', () => {
     expect(read.statusCode, read.body).toBe(200);
     expect(read.body).not.toContain('sample.site');
     expect(read.body).not.toContain(connection.id);
+    expect(read.body).not.toContain('_internal');
     expect(read.json()).toMatchObject({
       provenance: { ran: { sql: null }, connection: null },
       result: { rows: [['53', 'Hidden']] },
@@ -887,6 +910,51 @@ describe('bindings and datasets through the service', () => {
     expect((await rowsOf('binding_resolution')).length).toBe(before);
   });
 
+  it('answers no source message where write SQL on the connection is revoked while the source answers, to a resolve or a check', async () => {
+    const own = await h.connection("Ivy's writing");
+    const definition = await h.definition(own.id);
+    const { component, document, node } = await placed(
+      binding('b1', definition.id, { parameters: { site: { literal: '86' } } }),
+    );
+    await h.allow(h.ids.ivy!, h.roles.Author!, { kind: 'artifact', id: document.id });
+    await h.allow(h.ids.ivy!, h.roles.Reader!, { kind: 'artifact', id: component.id });
+    await h.allow(h.ids.ivy!, h.roles.Reader!, { kind: 'artifact', id: definition.id });
+    await h.allow(h.ids.ivy!, h.roles['Connection user']!, { kind: 'artifact', id: own.id });
+    h.connector.run = ranOk([['86', 'Held']]);
+    expect((await resolve('ivy', document.id, [{ node, binding: 'b1' }])).statusCode).toBe(200);
+    const refusedBySource = {
+      outcome: 'failed' as const,
+      failure: {
+        code: 'source_refused' as const,
+        attribution: 'query' as const,
+        source: { sqlstate: '42501', message: 'permission denied for table payroll_secret' },
+      },
+    };
+    for (const act of ['resolve', 'check'] as const) {
+      const writes = await h.allow(h.ids.ivy!, h.roles['SQL writer']!, {
+        kind: 'artifact',
+        id: own.id,
+      });
+      h.connector.run = refusedBySource;
+      let release!: () => void;
+      h.connector.hold = new Promise<void>((done) => (release = done));
+      const pending =
+        act === 'resolve'
+          ? resolve('ivy', document.id, [{ node, binding: 'b1' }])
+          : check('ivy', document.id);
+      await new Promise((settle) => setTimeout(settle, 150));
+      await h.tenantDb.withTenant(h.tenant, (trx) => removeGrant(trx, writes));
+      release();
+      h.connector.hold = undefined;
+      const answer = await pending;
+      expect(answer.statusCode, `${act}: ${answer.body}`).toBe(200);
+      expect(answer.body, act).not.toContain('payroll_secret');
+      expect(answer.json(), act).toMatchObject({
+        results: [{ failure: { code: 'source_refused', source: { sqlstate: '42501' } } }],
+      });
+    }
+  });
+
   it('records nothing where a component version changes the binding while the source answers', async () => {
     const definition = await h.definition(connection.id);
     const { component, document, node } = await placed(
@@ -939,6 +1007,92 @@ describe('bindings and datasets through the service', () => {
     const answer = await pending;
     expect(answer.statusCode, answer.body).toBe(200);
     expect(answer.json()).toEqual({ results: [{ node, binding: 'b1', outcome: 'unchanged' }] });
+  });
+
+  /**
+   * A binding holding v1 with v2 waiting, and an act on it - a resolve or a check - stopped while it
+   * records a third result, after it has read what the binding holds: at the dataset's own lock, which
+   * recording a version takes and this holds. v2 is accepted meanwhile. Answers both acts' answers,
+   * whether the accept had been answered while the act was still recording, and what was held.
+   */
+  const acceptWhileRecording = async (site: string, act: 'resolve' | 'check') => {
+    const definition = await h.definition(connection.id);
+    const { document, node } = await placed(
+      binding('b1', definition.id, { parameters: { site: { literal: site } } }),
+    );
+    h.connector.run = ranOk([[site, 'One']]);
+    expect((await resolve('ada', document.id, [{ node, binding: 'b1' }])).statusCode).toBe(200);
+    const held = (await stateOf('ada', document.id, 'b1')).held!;
+    h.connector.run = ranOk([[site, 'Two']]);
+    const revision = (await check('ada', document.id)).json<{ results: { version: string }[] }>()
+      .results[0]!.version;
+    h.connector.run = ranOk([[site, 'Three']]);
+    const release = await holdingAdvisoryLock(
+      h.db.adminUrl,
+      `alloy-works:artifact:${held.dataset}`,
+    );
+    let acting: Promise<{ statusCode: number; body: string; json<T>(): T }>;
+    let accepting: Promise<{ statusCode: number; body: string; json<T>(): T }>;
+    let answeredWhileRecording: boolean;
+    try {
+      acting =
+        act === 'resolve'
+          ? resolve('ada', document.id, [{ node, binding: 'b1' }])
+          : check('ada', document.id);
+      await untilWaitingOnLocks(h.db.adminUrl, 1);
+      let answered = false;
+      accepting = h.call('ada', 'POST', `/v1/documents/${document.id}/bindings/accept`, {
+        node,
+        binding: 'b1',
+        version: revision,
+        replaces: held.version,
+      });
+      void accepting.then(() => (answered = true));
+      // Either the accept waits behind the act's lock on the binding, or it is answered.
+      await Promise.race([accepting, untilWaitingOnLocks(h.db.adminUrl, 2).catch(() => undefined)]);
+      answeredWhileRecording = answered;
+    } finally {
+      await release();
+    }
+    const [acted, accepted] = await Promise.all([acting, accepting]);
+    const rows = (await rowsOf('binding_resolution')).filter(
+      (row) => row.document_id === document.id,
+    );
+    return { held, revision, acted, accepted, answeredWhileRecording, rows };
+  };
+
+  it('takes turns on a binding: an accept while a resolve records waits for it, so what the binding held is replaced once', async () => {
+    const { held, acted, accepted, answeredWhileRecording, rows } = await acceptWhileRecording(
+      '87',
+      'resolve',
+    );
+    expect(answeredWhileRecording).toBe(false);
+    expect(acted.statusCode, acted.body).toBe(200);
+    const now = acted.json<{ results: { held: { version: string } }[] }>().results[0]!.held.version;
+    // The resolve recorded first, replacing v1; the accept, from v1, then found it no longer held.
+    expect(accepted.statusCode, accepted.body).toBe(409);
+    expect(accepted.json()).toMatchObject({
+      code: 'resolution_precondition',
+      current: { held: { version: now } },
+    });
+    expect(rows.map((row) => [row.act, row.replaces, row.dataset_version])).toEqual([
+      ['resolve', null, held.version],
+      ['resolve', held.version, now],
+    ]);
+  });
+
+  it('takes turns on a binding: an accept while a check records waits for it, so the check answers against what is held when it is answered', async () => {
+    const { held, revision, acted, accepted, answeredWhileRecording, rows } =
+      await acceptWhileRecording('88', 'check');
+    expect(answeredWhileRecording).toBe(false);
+    expect(acted.statusCode, acted.body).toBe(200);
+    expect(acted.json()).toMatchObject({ results: [{ outcome: 'revision' }] });
+    // The check records no resolution, so nothing forks; the accept, after it, moves the binding.
+    expect(accepted.statusCode, accepted.body).toBe(200);
+    expect(rows.map((row) => [row.act, row.replaces, row.dataset_version])).toEqual([
+      ['resolve', null, held.version],
+      ['accept', held.version, revision],
+    ]);
   });
 
   it('shows a resolution as stale once a component version changes its binding, and checks it no more', async () => {

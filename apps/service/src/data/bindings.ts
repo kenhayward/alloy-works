@@ -19,6 +19,7 @@ import {
   documentsResolving,
   findApiToken,
   lockBindings,
+  lockDatasetQuestions,
   nameDataset,
   readDocument,
   readQueryDefinition,
@@ -80,16 +81,22 @@ import { connectionFacts, requireSqlPermitted } from './sql-access.js';
 
 /**
  * A provenance record as the contract answers it, its values as JSON writes them: whole to a caller who
- * may read its query definition, and otherwise without the SQL that ran or the connection it ran on,
- * as a definition names its connection only to the connection's reader (D2). The stored record is
- * unchanged; the rows, their checksum and the declared columns stay inspectable.
+ * may read its query definition, and otherwise without what only the definition says - the SQL that
+ * ran, the connection it ran on and the source's column each declared column reads - as D2 shows a
+ * definition, the id of the connection it names among it, only to the definition's reader. (D2 hides
+ * a connection's name, not its id, from a reader of the definition who may not read the connection.)
+ * The stored record is unchanged; the rows, their checksum and count, each declared column's name and
+ * type, and the parameter values the document itself supplied stay inspectable.
  */
 const provenanceView = (provenance: Provenance, readsDefinition: boolean) =>
   (readsDefinition
     ? provenance
-    : { ...provenance, connection: null, ran: { sql: null } }) as unknown as z.infer<
-    typeof ProvenanceView
-  >;
+    : {
+        ...provenance,
+        connection: null,
+        ran: { sql: null },
+        columns: provenance.columns.map((column) => ({ ...column, from: null })),
+      }) as unknown as z.infer<typeof ProvenanceView>;
 
 /** Whether the caller may read a query definition, each asked once a request. */
 function definitionReader(trx: TenantTransaction, caller: Caller) {
@@ -243,8 +250,6 @@ interface Prepared {
   readonly limits: Limits;
   /** The question it asks: one run answers every binding asking it (D3-I). */
   readonly question: string;
-  /** Whether the caller holds `write_sql` at the connection, so sees what its source says (D2-H). */
-  readonly seesSource: boolean;
 }
 
 /**
@@ -336,7 +341,6 @@ async function prepare(
       values: literal.values,
       limits,
       question: `${stored.id} ${version} ${sha256(parametersDigestInput(literal.values))}`,
-      seesSource: decide('write_sql', atConnection).allowed,
     };
   } catch (error) {
     throw named(error, naming);
@@ -472,6 +476,32 @@ async function decideAgain(
   }
 }
 
+/**
+ * The connections whose source messages the caller may see now, decided again in the recording
+ * transaction (D2-H, D3-H): `write_sql` revoked while the source answered shows a failure without what
+ * the source said, as it would have been shown had it been revoked before.
+ */
+async function seeingSourceNow(
+  trx: TenantTransaction,
+  caller: Caller,
+  runs: readonly Prepared[],
+): Promise<(run: Prepared) => boolean> {
+  const sees = new Map<string, boolean>();
+  for (const { connection } of runs) {
+    if (sees.has(connection.id)) continue;
+    const facts = await connectionFacts(trx, caller, connection.id);
+    sees.set(connection.id, facts !== undefined && decide('write_sql', facts).allowed);
+  }
+  return (run) => sees.get(run.connection.id) === true;
+}
+
+/** The provenance of each result these runs recorded, for the locks on their questions. */
+const recordable = (runs: readonly Prepared[], ran: ReadonlyMap<string, Ran>): Provenance[] =>
+  runs.flatMap((each) => {
+    const outcome = ran.get(each.question);
+    return outcome?.ok === true ? [outcome.provenance] : [];
+  });
+
 /** Re-reads each binding a run answers, refusing the act where one has changed since (D3-H). */
 async function unchangedSince(
   trx: TenantTransaction,
@@ -499,7 +529,8 @@ async function unchangedSince(
 
 /**
  * A failure for one binding, named (DAT-086): a data failure, or a refusal of what it needs. What the
- * source said of a statement it refused is shown only where `seesSource` (D2-H).
+ * source said of a statement it refused is shown only where `seesSource`: the caller holds `write_sql`
+ * at the connection, decided in the transaction that answers it (D2-H).
  */
 function bindingFailure(
   failure: FailureIn | AppError,
@@ -522,9 +553,10 @@ function bindingFailure(
 
 /**
  * What taking a result into a document asks of the source side, as a fetch does (DAT-090): `read` on
- * the query definition it ran, one the caller may not read refused as `binding_missing`, as a resolve
- * refuses it, so the refusal never tells them whether it exists; and `use_connection` on the
- * connection it ran on. Each refusal names the binding, its node and the document.
+ * the query definition it ran, one the caller may not read refused as `binding_missing` in the words a
+ * resolve refuses one naming no definition in, so the refusal never tells them whether it exists,
+ * naming the binding, its node and the document; and `use_connection` on the connection it ran on,
+ * refused `forbidden` as the route's 403 answers any refusal, its message naming the binding alone.
  */
 async function mayTakeResult(
   trx: TenantTransaction,
@@ -538,13 +570,10 @@ async function mayTakeResult(
   }
   const connection = await connectionFacts(trx, caller, provenance.connection.artifact);
   if (!connection || !decide('use_connection', connection).allowed) {
-    throw named(
-      new AppError(
-        403,
-        'forbidden',
-        `This needs the use connection permission on the connection the binding ${naming.binding} runs on.`,
-      ),
-      naming,
+    throw new AppError(
+      403,
+      'forbidden',
+      `This needs the use connection permission on the connection the binding ${naming.binding} runs on.`,
     );
   }
 }
@@ -659,7 +688,11 @@ export async function resolveAct(
         principalId,
         succeeded.map((each) => each.placed),
       );
+      const seesSource = await seeingSourceNow(record, caller, prepared);
       const held = await heldBy(record, id);
+      // Every question this records, in turn, before the first: after the bindings' locks, as every
+      // act takes them, so two acts recording the same questions never wait on each other.
+      await lockDatasetQuestions(record, recordable(succeeded, ran));
       const versions = new Map<string, Awaited<ReturnType<typeof recordDatasetVersion>>>();
       const results: ResolveResult[] = [];
       for (const each of prepared) {
@@ -672,7 +705,7 @@ export async function resolveAct(
             failure: bindingFailure(
               outcome.failure,
               { definition: each.definition.id, binding: binding.id, node, document: id },
-              each.seesSource,
+              seesSource(each),
             ),
           });
           continue;
@@ -812,6 +845,8 @@ export async function checkAct(
       // What each holds now, under the lock: an accept while the source answered moves what the
       // result is compared with, so what was read before the run is not the comparison.
       const holdingNow = await heldBy(record, id);
+      const seesSource = await seeingSourceNow(record, caller, toRun);
+      await lockDatasetQuestions(record, recordable(succeeded, ran));
       const versions = new Map<string, Awaited<ReturnType<typeof recordDatasetVersion>>>();
       for (const each of toRun) {
         const outcome = ran.get(each.question);
@@ -823,7 +858,7 @@ export async function checkAct(
             node,
             binding: binding.id,
             outcome: 'failed',
-            failure: bindingFailure(outcome.failure, naming, each.seesSource),
+            failure: bindingFailure(outcome.failure, naming, seesSource(each)),
           });
           continue;
         }
