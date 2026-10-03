@@ -9,7 +9,9 @@ import { definitionKinds } from '@alloy-works/domain';
  * template, added by 0028, lives in one space (TPL-001) and is no content kind: `create` and `edit`
  * do not reach it, `design` does (access.md). A connection, added by 0044, lives in one space too and
  * is no content kind either: `administer` makes and changes it (data.md). A query definition, added by
- * 0046, lives in one space and is authored, `edit` in its space making and changing it (data.md).
+ * 0046, lives in one space and is authored, `edit` in its space making and changing it (data.md). A
+ * dataset, added by 0047, lives in its definition's space; each version is a stored result, recorded by
+ * a person's act of resolving or checking a binding (the D3 plan, D3-A).
  */
 export const artifactKinds = [
   'component',
@@ -23,6 +25,7 @@ export const artifactKinds = [
   'template',
   'connection',
   'queryDefinition',
+  'dataset',
 ] as const;
 
 export type ArtifactKind = (typeof artifactKinds)[number];
@@ -40,4 +43,5 @@ export const spacedKinds = [
   'template',
   'connection',
   'queryDefinition',
+  'dataset',
 ] as const satisfies readonly ArtifactKind[];

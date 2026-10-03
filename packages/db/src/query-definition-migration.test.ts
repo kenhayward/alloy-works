@@ -128,6 +128,7 @@ describe('migration 0046, over an environment made before it', () => {
   it('migrates every environment made before it, keeping every row, to what a fresh environment is', async () => {
     expect((await migrate(db.migratorUrl)).tenants[upgraded.id]).toEqual([
       '0046_query_definitions',
+      '0047_datasets',
     ]);
     expect(await countRows(upgraded.schema)).toEqual(counts);
 

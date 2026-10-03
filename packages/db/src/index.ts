@@ -370,6 +370,25 @@ export {
   type QueryDefinitionSummary,
   type StoredQueryDefinition,
 } from './queryDefinitions.js';
+export {
+  componentsBinding,
+  datasetFor,
+  datasetIdentity,
+  datasetName,
+  documentsResolving,
+  nameDataset,
+  recordDatasetVersion,
+  recordResolution,
+  resolutionsOf,
+  type DatasetIdentity,
+  type DatasetName,
+  type HeldResolution,
+  type HeldVersion,
+  type RecordedDatasetVersion,
+  type StoredDataset,
+  type StoredResolution,
+  type Uses,
+} from './datasets.js';
 export { numberingInputs, type NumberingInputs, type OccurrenceResolution } from './numbering.js';
 export {
   createComponent,

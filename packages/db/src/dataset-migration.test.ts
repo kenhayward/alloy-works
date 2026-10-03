@@ -1,27 +1,26 @@
-import { randomBytes } from 'node:crypto';
 import { cp, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
 import { createTenant, provisionTenant, type Tenant } from './provision.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { everyKind } from './testing/every-kind.js';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import { everyKind } from './testing/every-kind.js';
 
-/** The constraints 0044 rewrites. */
+/** The constraints 0047 rewrites. */
 const REWRITTEN = [
   ['artifact', 'artifact_kind_check'],
   ['artifact', 'artifact_space_by_kind'],
   ['artifact_version', 'artifact_version_component_author'],
-  ['role', 'role_permissions_closed'],
-  ['api_token', 'api_token_scopes_closed'],
 ] as const;
 
-describe('migration 0044, over an environment made before it', () => {
+/** The tables 0047 makes. */
+const MADE = ['dataset', 'dataset_name', 'binding_resolution'] as const;
+
+describe('migration 0047, over an environment made before it', () => {
   let db: TestDatabase;
   let before: string;
   let service: TenantDatabase;
@@ -31,13 +30,14 @@ describe('migration 0044, over an environment made before it', () => {
 
   const countRows = async (schema: string) => {
     const out: Record<string, number> = {};
-    for (const table of ['artifact', 'artifact_version', 'role', 'api_token', 'access_grant']) {
+    for (const table of ['artifact', 'artifact_version', 'search_entry']) {
       const rows = await queryAs(db.adminUrl, `select count(*)::int as n from ${schema}.${table}`);
       out[table] = rows.rows[0].n as number;
     }
     return out;
   };
 
+  /** Every constraint 0047 rewrites, and every constraint and index on the tables it makes. */
   const constraints = async (schema: string) => {
     const out: Record<string, string> = {};
     for (const [table, name] of REWRITTEN) {
@@ -48,27 +48,48 @@ describe('migration 0044, over an environment made before it', () => {
           where n.nspname = $1 and t.relname = $2 and c.conname = $3`,
         [schema, table, name],
       );
-      // A function the check calls is named with its schema, which is each environment's own.
       out[name] = (rows.rows[0]?.def as string).replaceAll(`${schema}.`, '');
+    }
+    for (const table of MADE) {
+      const rows = await queryAs(
+        db.adminUrl,
+        `select c.conname, pg_get_constraintdef(c.oid) as def from pg_constraint c
+           join pg_class t on t.oid = c.conrelid join pg_namespace n on n.oid = t.relnamespace
+          where n.nspname = $1 and t.relname = $2 order by c.conname`,
+        [schema, table],
+      );
+      for (const row of rows.rows) {
+        out[row.conname as string] = (row.def as string).replaceAll(`${schema}.`, '');
+      }
+      const indexes = await queryAs(
+        db.adminUrl,
+        `select indexname, indexdef from pg_indexes where schemaname = $1 and tablename = $2
+          order by indexname`,
+        [schema, table],
+      );
+      for (const row of indexes.rows) {
+        out[row.indexname as string] = (row.indexdef as string).replaceAll(`${schema}.`, '');
+      }
     }
     return out;
   };
 
-  /** The runtime role's privileges on the two tables, table by table and column by column. */
+  /** The runtime role's privileges on the tables 0047 makes, by table and by column. */
   const privileges = async (schema: string) => {
     const tables = await queryAs(
       db.adminUrl,
       `select table_name, privilege_type from information_schema.table_privileges
-        where table_schema = $1 and grantee = $1 and table_name in ('connection_credential', 'connection_test')
+        where table_schema = $1 and grantee = $1 and table_name = any($2)
         order by table_name, privilege_type`,
-      [schema],
+      [schema, [...MADE]],
     );
     const columns = await queryAs(
       db.adminUrl,
       `select table_name, column_name, privilege_type from information_schema.column_privileges
-        where table_schema = $1 and grantee = $1 and table_name in ('connection_credential', 'connection_test')
+        where table_schema = $1 and grantee = $1 and table_name = any($2)
+          and privilege_type <> 'SELECT'
         order by table_name, column_name, privilege_type`,
-      [schema],
+      [schema, [...MADE]],
     );
     return { tables: tables.rows, columns: columns.rows };
   };
@@ -76,13 +97,13 @@ describe('migration 0044, over an environment made before it', () => {
   beforeAll(async () => {
     db = await freshDatabase();
     await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
-    // Every tenant migration up to 0043 and none after.
-    before = await mkdtemp(join(tmpdir(), 'aw-before-0044-'));
+    // Every tenant migration up to 0046 and none after.
+    before = await mkdtemp(join(tmpdir(), 'aw-before-0047-'));
     await cp(new URL('../migrations/', import.meta.url), before, {
       recursive: true,
       filter: (source) => {
         const numbered = /[\\/]tenant[\\/](\d{4})_[a-z0-9_]+\.sql$/.exec(source);
-        return numbered === null || Number(numbered[1]) < 44;
+        return numbered === null || Number(numbered[1]) < 47;
       },
     });
     await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
@@ -93,9 +114,9 @@ describe('migration 0044, over an environment made before it', () => {
     });
     await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${before}/`) });
     service = createTenantDatabase(db.serviceUrl);
-    // A role, a scoped token and one artifact of every kind search finds, made before 0044.
+    // One of every kind there was before 0047, so each rewritten constraint is checked against them.
     await service.withTenant(upgraded, async (trx) => {
-      const ada = (
+      const author = (
         await trx
           .insertInto('principal')
           .values({
@@ -107,14 +128,7 @@ describe('migration 0044, over an environment made before it', () => {
           .returning('id')
           .executeTakeFirstOrThrow()
       ).id;
-      await sql`insert into role (name, permissions) values ('Keeper', array['read', 'administer', 'design'])`.execute(
-        trx,
-      );
-      await sql`insert into api_token (principal_id, name, token_hash, scopes, expires_at)
-                values (${ada}, 'Scoped', ${randomBytes(32).toString('hex')}, array['edit', 'manage_definitions'], now() + interval '1 day')`.execute(
-        trx,
-      );
-      const general = (
+      const spaceId = (
         await trx
           .selectFrom('space')
           .select('id')
@@ -122,11 +136,11 @@ describe('migration 0044, over an environment made before it', () => {
           .executeTakeFirstOrThrow()
       ).id;
       await everyKind(trx, {
-        author: ada,
-        spaceId: general,
-        word: 'kept',
-        role: upgraded.role,
-        before0046: true,
+        author,
+        spaceId,
+        word: 'before',
+        role: upgraded.schema,
+        before0047: true,
       });
     });
     counts = await countRows(upgraded.schema);
@@ -139,13 +153,7 @@ describe('migration 0044, over an environment made before it', () => {
   });
 
   it('migrates every environment made before it, keeping every row, to what a fresh environment is', async () => {
-    expect((await migrate(db.migratorUrl)).tenants[upgraded.id]).toEqual([
-      '0044_connections',
-      '0045_connection_credential_target',
-      '0046_query_definitions',
-      '0047_datasets',
-    ]);
-    // Every row still there: each rewritten constraint was checked against them as it was added.
+    expect((await migrate(db.migratorUrl)).tenants[upgraded.id]).toEqual(['0047_datasets']);
     expect(await countRows(upgraded.schema)).toEqual(counts);
 
     fresh = await createTenant(db.adminUrl, db.migratorUrl, {
@@ -156,46 +164,52 @@ describe('migration 0044, over an environment made before it', () => {
     const upgradedConstraints = await constraints(upgraded.schema);
     expect(Object.values(upgradedConstraints).every((def) => typeof def === 'string')).toBe(true);
     expect(upgradedConstraints).toEqual(await constraints(fresh.schema));
-    for (const name of [
-      'artifact_kind_check',
-      'artifact_space_by_kind',
-      'artifact_version_component_author',
-    ]) {
-      expect(upgradedConstraints[name], name).toContain("'connection'");
+    for (const [, name] of REWRITTEN) {
+      expect(upgradedConstraints[name], name).toContain("'dataset'");
     }
-    for (const name of ['role_permissions_closed', 'api_token_scopes_closed']) {
-      expect(upgradedConstraints[name], name).toContain("'use_connection'");
-    }
+    expect(upgradedConstraints.binding_resolution_latest).toContain(
+      '(document_id, node_id, binding_id, id DESC)',
+    );
 
+    // Each table read by the runtime role, and written by what a row says alone - never its number or
+    // its time - and nothing changed or removed.
     const upgradedPrivileges = await privileges(upgraded.schema);
     expect(upgradedPrivileges).toEqual(await privileges(fresh.schema));
-    // Select on both, insert on every column but the time and the row's own number, and nothing else.
     expect(upgradedPrivileges.tables).toEqual([
-      { table_name: 'connection_credential', privilege_type: 'SELECT' },
-      { table_name: 'connection_test', privilege_type: 'SELECT' },
+      { table_name: 'binding_resolution', privilege_type: 'SELECT' },
+      { table_name: 'dataset', privilege_type: 'SELECT' },
+      { table_name: 'dataset_name', privilege_type: 'SELECT' },
     ]);
-    const inserted = upgradedPrivileges.columns
-      .filter((row) => row.privilege_type === 'INSERT')
-      .map((row) => `${row.table_name}.${row.column_name}`);
-    expect(inserted).toEqual([
-      'connection_credential.connection_id',
-      'connection_credential.connection_kind',
-      'connection_credential.sealed',
-      'connection_credential.set_by',
-      'connection_credential.target_digest',
-      'connection_test.connection_id',
-      'connection_test.connection_kind',
-      'connection_test.connection_version_id',
-      'connection_test.credential_id',
-      'connection_test.failure',
-      'connection_test.findings',
-      'connection_test.outcome',
-      'connection_test.tested_by',
+    const inserted = (table: string) =>
+      upgradedPrivileges.columns
+        .filter((row) => row.table_name === table)
+        .map((row) => `${row.column_name as string} ${row.privilege_type as string}`);
+    expect(inserted('dataset')).toEqual([
+      'artifact_id INSERT',
+      'artifact_kind INSERT',
+      'identity_key INSERT',
+      'parameters_digest INSERT',
+      'query_definition INSERT',
+      'query_definition_kind INSERT',
     ]);
-    expect(
-      upgradedPrivileges.columns.filter(
-        (row) => row.privilege_type !== 'INSERT' && row.privilege_type !== 'SELECT',
-      ),
-    ).toEqual([]);
+    expect(inserted('dataset_name')).toEqual([
+      'dataset_id INSERT',
+      'dataset_kind INSERT',
+      'name INSERT',
+      'named_by INSERT',
+    ]);
+    expect(inserted('binding_resolution')).toEqual([
+      'act INSERT',
+      'binding_digest INSERT',
+      'binding_id INSERT',
+      'dataset_id INSERT',
+      'dataset_kind INSERT',
+      'dataset_version INSERT',
+      'document_id INSERT',
+      'document_kind INSERT',
+      'node_id INSERT',
+      'replaces INSERT',
+      'resolved_by INSERT',
+    ]);
   });
 });

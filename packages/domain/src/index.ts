@@ -22,6 +22,7 @@ export type {
   CatalogueSubstance,
   ConnectionSubstance,
   QueryDefinitionSubstance,
+  DatasetSubstance,
   VersionSubstance,
 } from './version/substance.js';
 
