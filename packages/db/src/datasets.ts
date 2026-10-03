@@ -94,7 +94,8 @@ export interface RecordedDatasetVersion {
  * checksum: a check compares it with what each document holds (D3-J).
  *
  * Two acts asking one question take turns on a lock on the question, held to the end of the caller's
- * transaction, so the second sees the first's dataset and version. The object holding the rows is the
+ * transaction, so the second sees the first's dataset and version; an act recording several takes
+ * them all first, with `lockDatasetQuestions`. The object holding the rows is the
  * caller's to have stored under the checksum first (D3-G). Throws on a provenance that is not a
  * record, or names a definition or connection version that is not one of theirs.
  */
@@ -108,8 +109,8 @@ export async function recordDatasetVersion(
     parameters: provenance.parameters,
     identity: provenance.identity,
   });
-  const question = `alloy-works:dataset:${identity.definition}:${identity.parametersDigest}:${identity.identityKey}`;
-  await sql`select pg_advisory_xact_lock(hashtextextended(${question}, 0))`.execute(trx);
+  // Re-entrant: an act recording several takes them all first, in turn, with `lockDatasetQuestions`.
+  await lockDatasetQuestions(trx, [provenance]);
 
   const found = await datasetFor(trx, identity);
   if (!found) {
@@ -249,25 +250,64 @@ export async function recordResolution(
 }
 
 /**
+ * Takes transaction-scoped advisory locks on these keys, in one order whatever order they are asked
+ * in: by the hashed key itself, which is what is locked, so two acts locking overlapping sets never
+ * each hold what the other waits for. An advisory lock is the whole cluster's, and every tenant is a
+ * schema of one database, so each key carries the tenant's schema: two tenants never wait on each
+ * other. Postgres' advisory locks are re-entrant, so a key already held is taken again at no cost.
+ */
+async function lockInTurn(trx: TenantTransaction, keys: readonly string[]): Promise<void> {
+  if (keys.length === 0) return;
+  const { rows } = await sql<{ key: string }>`
+    select hashed::text as key
+      from (select distinct hashtextextended(current_schema() || ':' || each, 0) as hashed
+              from unnest(${[...keys]}::text[]) as each) keys
+     order by hashed`.execute(trx);
+  for (const { key } of rows) {
+    await sql`select pg_advisory_xact_lock(${key}::bigint)`.execute(trx);
+  }
+}
+
+/**
  * Takes the lock on what bindings hold in a document, held to the end of the caller's transaction:
  * every act that reads what a binding holds and then writes, or answers, from it - a resolve, a check
  * and an accept - takes this first, so two of them on one binding take turns and the second reads what
- * the first recorded. Several are taken in one order, whatever order they are asked in, so two acts
- * locking overlapping bindings never wait on each other.
+ * the first recorded. Several are taken in one order, whatever order they are asked in, and before any
+ * lock on a question (`lockDatasetQuestions`), so two acts locking overlapping bindings never wait on
+ * each other.
  */
 export async function lockBindings(
   trx: TenantTransaction,
   document: string,
   bindings: readonly { readonly node: string; readonly binding: string }[],
 ): Promise<void> {
-  const keys = [
-    ...new Set(
-      bindings.map(({ node, binding }) => `alloy-works:binding:${document}:${node}:${binding}`),
-    ),
-  ].sort();
-  for (const each of keys) {
-    await sql`select pg_advisory_xact_lock(hashtextextended(${each}, 0))`.execute(trx);
-  }
+  await lockInTurn(
+    trx,
+    bindings.map(({ node, binding }) => `alloy-works:binding:${document}:${node}:${binding}`),
+  );
+}
+
+/**
+ * Takes the lock on each question these results answer - a definition, its parameters and its
+ * identity - held to the end of the caller's transaction, in one order whatever order they are asked
+ * in: an act recording several results takes them all before it records the first, so two acts
+ * recording results of the same two questions never each hold what the other waits for.
+ */
+export async function lockDatasetQuestions(
+  trx: TenantTransaction,
+  provenances: readonly Provenance[],
+): Promise<void> {
+  await lockInTurn(
+    trx,
+    provenances.map((provenance) => {
+      const identity = datasetIdentity({
+        definition: provenance.queryDefinition.artifact,
+        parameters: provenance.parameters,
+        identity: provenance.identity,
+      });
+      return `alloy-works:dataset:${identity.definition}:${identity.parametersDigest}:${identity.identityKey}`;
+    }),
+  );
 }
 
 /** A dataset version as a resolution holds it: which, its number, and its provenance. */

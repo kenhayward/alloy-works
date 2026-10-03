@@ -17,6 +17,8 @@ import {
   datasetIdentity,
   datasetName,
   documentsResolving,
+  lockBindings,
+  lockDatasetQuestions,
   nameDataset,
   recordDatasetVersion,
   recordResolution,
@@ -792,6 +794,83 @@ describe('datasets and resolutions', () => {
         documentsResolving(trx, ada, { connection: '00000000-0000-4000-8000-0000000000f2' }),
       ),
     ).toEqual({ readable: [], others: 0 });
+  });
+
+  /** Advisory locks in this database: granted, and waited for. */
+  const advisoryLocks = async () =>
+    (
+      await queryAs(
+        db.adminUrl,
+        `select count(*) filter (where granted)::int as granted,
+                count(*) filter (where not granted)::int as waiting
+           from pg_locks
+          where locktype = 'advisory'
+            and database = (select oid from pg_database where datname = current_database())`,
+      )
+    ).rows[0] as { granted: number; waiting: number };
+
+  /** Holds what `take` locks in a transaction of a tenant's own until released. */
+  const holding = async (on: Tenant, take: (trx: TenantTransaction) => Promise<void>) => {
+    let release!: () => void;
+    let held!: () => void;
+    const taken = new Promise<void>((done) => (held = done));
+    const finished = service.withTenant(on, async (trx) => {
+      await take(trx);
+      held();
+      await new Promise<void>((done) => (release = done));
+    });
+    await taken;
+    return async () => {
+      release();
+      await finished;
+    };
+  };
+
+  /** Waits until some act waits on an advisory lock, and answers what is granted meanwhile. */
+  const whileWaiting = async () => {
+    for (let tries = 0; tries < 200; tries += 1) {
+      const locks = await advisoryLocks();
+      if (locks.waiting > 0) return locks;
+      await new Promise((settle) => setTimeout(settle, 10));
+    }
+    throw new Error('Nothing came to wait on an advisory lock');
+  };
+
+  it('takes the lock on a binding in its own tenant: another tenant naming the same identifiers never waits on it', async () => {
+    const other = await createTenant(db.adminUrl, db.migratorUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id: db.newTenantId(), name: 'Development' },
+      hostnames: ['dev.acme.alloy.test'],
+    });
+    const document = '00000000-0000-4000-8000-00000000a001';
+    const at = [{ node: node('a'), binding: 'k1' }];
+    const release = await holding(production, (trx) => lockBindings(trx, document, at));
+    try {
+      await service.withTenant(other, async (trx) => {
+        await sql`set local lock_timeout = '2s'`.execute(trx);
+        await lockBindings(trx, document, at);
+      });
+    } finally {
+      await release();
+    }
+  });
+
+  it('takes several locks on questions in one order, whatever order they are asked in', async () => {
+    const asked = [
+      provenance({ parameters: { site: 'first' } }),
+      provenance({ parameters: { site: 'second' } }),
+    ];
+    // Somebody holds the first question; an act asking both waits for it holding the same either way,
+    // so two acts asking the same questions in opposite orders never each hold what the other waits for.
+    const heldWhileWaiting: number[] = [];
+    for (const order of [asked, [...asked].reverse()]) {
+      const release = await holding(production, (trx) => lockDatasetQuestions(trx, [asked[0]!]));
+      const act = tenant((trx) => lockDatasetQuestions(trx, order));
+      heldWhileWaiting.push((await whileWaiting()).granted);
+      await release();
+      await act;
+    }
+    expect(heldWhileWaiting[0]).toBe(heldWhileWaiting[1]);
   });
 
   it('keeps a dataset version in no search', async () => {

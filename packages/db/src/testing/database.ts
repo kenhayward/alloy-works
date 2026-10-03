@@ -117,6 +117,30 @@ export async function untilBlockedBy(
   }
 }
 
+/**
+ * Takes the transaction-scoped advisory lock the store keys by `key` - `hashtextextended(key, 0)`, as
+ * `recordVersion` takes `alloy-works:artifact:<id>` - in a transaction of its own, and holds it until
+ * the answer is called, so a test can stop an act at the moment it asks for that lock.
+ */
+export async function holdingAdvisoryLock(url: string, key: string): Promise<() => Promise<void>> {
+  const client = new pg.Client({ connectionString: url });
+  await client.connect();
+  try {
+    await client.query('begin');
+    await client.query('select pg_advisory_xact_lock(hashtextextended($1, 0))', [key]);
+  } catch (error) {
+    await client.end();
+    throw error;
+  }
+  return async () => {
+    try {
+      await client.query('commit');
+    } finally {
+      await client.end();
+    }
+  };
+}
+
 const DEFAULT_SERVER_URL = 'postgres://postgres:postgres@127.0.0.1:5432/postgres';
 
 export const TEST_PASSWORDS = {
