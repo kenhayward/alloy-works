@@ -786,11 +786,12 @@ with its parameters, not a URL that could carry one, and a header by name alone.
 - **Reading a dataset** is through a document that resolves to it, on `read` on that document
   (DAT-090), and only a version that document's bindings show the caller: one a binding they can see
   holds, or has waiting while it is not stale - never one in a component they may not read, or at a
-  node the outline no longer has. Its rows, their checksum and its declared columns are the
-  reader's; **the SQL that ran and the connection it ran on are shown only to a caller who may also
-  read the query definition**, `ran.sql` and `connection` answered null otherwise, as a definition
-  names its connection only to a reader of the connection (D2). The stored provenance is whole
-  either way. Browsing datasets in their own right, and querying them, wait for T4 (DAT-094).
+  node the outline no longer has. Its rows, their checksum and count, each declared column's name
+  and type, and the parameter values the document supplied are the reader's; **the SQL that ran, the
+  connection it ran on and the source's column each declared column reads are shown only to a caller
+  who may also read the query definition**, `ran.sql`, `connection` and each column's `from` answered
+  null otherwise, since each is the definition's to show and D2 shows a definition only to its
+  reader. The stored provenance is whole either way. Browsing datasets in their own right, and querying them, wait for T4 (DAT-094).
 - **Nothing sweeps a dataset in T2.** An object is held while any dataset version, publication or
   baseline names it, as an asset's are.
 - **Images** (DAT-096): the connector reads each image cell from its declared encoding, admits only a
@@ -839,15 +840,21 @@ Adds a resolution row naming the waiting version and the one it replaces (DAT-03
 `edit` on the document and what a fetch asks of the source side (DAT-090): `read` on the query
 definition the accepted version ran and `use_connection` on the connection it ran on, decided in
 the transaction that records it and refused as a resolve refuses - a definition the caller may not
-read answered `binding_missing`, as one that is not there is, and a connection they may not use
-`forbidden` - recording nothing. It **queries nothing**. Where the version was fetched under the accepting
+read answered `binding_missing`, in the words one that is not there is, naming the binding, its node
+and the document, and a connection they may not use `forbidden`, a plain refusal as the route's 403 is
+for any refusal - recording nothing. It **queries nothing**. Where the version was fetched under the accepting
 person's own identity, the request must carry `sharesOwnView: true`, or it is refused,
 `acknowledgement_required`: the screen's warning that everybody who may read the document will see it
 is `bindings.md`'s (DAT-091), and the route will not accept without it. **Acts on one binding take turns**: an
 accept, and a resolve's and a check's recording transactions, take a transaction-scoped lock on each
 document, node and binding they read what is held of before reading it, so two accepts each replacing
 the version held cannot both succeed - the second reads what the first recorded and is refused
-`resolution_precondition`.
+`resolution_precondition` - and an accept while a resolve records waits for it, and is refused, rather
+than both replacing the same version. A resolve and a check then take the lock on each question they
+record a result of, all before the first. Each set is taken in the order of its hashed keys, bindings'
+before questions', and each key carries the tenant's schema, since an advisory lock is the whole
+cluster's: two acts never each hold what the other waits for, and two tenants never wait on each
+other.
 
 ### Sample run, describe and test
 
@@ -922,7 +929,9 @@ The four before those two were added by the D1 plan (D1-M, D1-Q), and the last t
 (D2-H), whose `source_refused` is answered with the source's message only to somebody holding
 `write_sql`. D3 keeps that rule for a resolve and a check, which need only `use_connection`: a
 caller holding `write_sql` at the connection is given the source's SQLSTATE and message, and anybody
-else the SQLSTATE alone, with words that quote nothing the source said. A failure is answered with its HTTP status by
+else the SQLSTATE alone, with words that quote nothing the source said. `write_sql` is decided again
+in the transaction that answers, as `use_connection` is (D3-H): revoked while the source answered, the
+failure is answered without the message. A failure is answered with its HTTP status by
 where it arose: a failed test is an answer, 200; describe's `connection_failed`, `connector_error` and
 `source_unsupported` are 502 and `timeout` 504; `connector_unavailable` and `connector_busy` 503. A
 sample's failure is an answer, 200, as a failed test is; a describe of a statement answers the

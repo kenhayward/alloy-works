@@ -14,9 +14,10 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   as whom, when and how many rows, which that document then holds. Checking a document runs its
   checked values again and keeps any different result waiting beside the one it holds; accepting
   that result changes that document alone, records who accepted it and when, and asks the database
-  nothing. Anybody who may read the document may read the results it holds, and the SQL that ran
-  and its connection are shown only to somebody who may also read the query definition. A result can
-  be named.
+  nothing. Accepting needs edit on the document and what running the query would: read on the
+  query definition and use of the connection the result ran on. Anybody who may read the document
+  may read the results it holds, and the SQL that ran, its connection and the database's own column
+  names are shown only to somebody who may also read the query definition. A result can be named.
   **All of this is through the API alone for now**: no page places, shows or accepts a bound value
   yet, and the editor opens a component holding one read-only and says why.
 - **Where a query definition is used.** A definition's page lists, under **Used by** and before

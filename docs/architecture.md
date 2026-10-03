@@ -3046,23 +3046,30 @@ to run with - **runs** each distinct question once after it commits, two at a ti
 answer to its checksum and storing its bytes, and **records** in a second transaction that decides
 the session or token, the document's permission, each definition's `read` and each connection's
 `use_connection` again and re-reads each binding: anything changed is `access_changed` or
-`binding_changed`, 409, and nothing is recorded (D3-H). A resolve's refusals before the run refuse the
+`binding_changed`, 409, and nothing is recorded (D3-H). `write_sql`, which shows a failure's source
+message, is decided again there too. That transaction, and an accept's, first takes `lockBindings` on
+each binding it reads what is held of, and a resolve and a check then `lockDatasetQuestions` on each
+question they record, every set in the order of its hashed keys, each key carrying the tenant's
+schema, so acts on one binding take turns and none waits on another in a cycle. A resolve's refusals before the run refuse the
 whole act; its run failures, and every failure of a check, are per binding, each naming the
 definition, the binding, its node and the document (DAT-086). A check runs at most fifty questions,
 the rest `unchecked: 'limit'`; a binding whose connection the caller may not use is `unchecked:
 'permission'`, and one holding nothing current `unchecked: 'unresolved'`. **Accept queries nothing**:
 it adds a row moving one document's binding to a newer version of the dataset it holds, naming what
-it replaces, or is refused `resolution_precondition` with the binding as it stands (D3-K).
+it replaces, or is refused `resolution_precondition` with the binding as it stands (D3-K); it asks
+what a fetch asks of the source side (DAT-090), `read` on the definition and `use_connection` on the
+connection the accepted version ran. A provenance is answered whole to a caller who may read its
+definition, and otherwise with `ran.sql`, `connection` and each column's `from` null.
 
-| Route                                       | Needs                                                           | Does                                                                               |
-| ------------------------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `GET /v1/documents/{id}/bindings`           | `read` on the document                                          | Each binding the caller may read, what it holds, whether it is stale, what waits   |
-| `POST /v1/documents/{id}/bindings/resolve`  | `edit` on it; `read` on each definition; `use_connection`       | Runs 1 to 50 named bindings and holds each result; no idempotency key              |
-| `POST /v1/documents/{id}/bindings/check`    | `read` on it; `use_connection` per connection, others unchecked | Runs its checked bindings again, a different result recorded as waiting            |
-| `POST /v1/documents/{id}/bindings/accept`   | `edit` on it                                                    | Holds a waiting version for one binding, from the one it replaces                  |
-| `GET /v1/documents/{id}/datasets/{version}` | `read` on it                                                    | A result it holds or has waiting, whole, from the bytes held to their checksum     |
-| `PUT /v1/datasets/{id}/name`                | `edit` on the dataset                                           | A name, the latest the name                                                        |
-| `GET /v1/query-definitions/{id}/uses`       | `read`                                                          | The components whose latest versions bind it and the documents holding its results |
+| Route                                       | Needs                                                           | Does                                                                                |
+| ------------------------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `GET /v1/documents/{id}/bindings`           | `read` on the document                                          | Each binding the caller may read, what it holds, whether it is stale, what waits    |
+| `POST /v1/documents/{id}/bindings/resolve`  | `edit` on it; `read` on each definition; `use_connection`       | Runs 1 to 50 named bindings and holds each result; no idempotency key               |
+| `POST /v1/documents/{id}/bindings/check`    | `read` on it; `use_connection` per connection, others unchecked | Runs its checked bindings again, a different result recorded as waiting             |
+| `POST /v1/documents/{id}/bindings/accept`   | `edit` on it; `read` on the definition; `use_connection`        | Holds a waiting version for one binding, from the one it replaces                   |
+| `GET /v1/documents/{id}/datasets/{version}` | `read` on it                                                    | A result its bindings show the caller, whole, from the bytes held to their checksum |
+| `PUT /v1/datasets/{id}/name`                | `edit` on the dataset                                           | A name, the latest the name                                                         |
+| `GET /v1/query-definitions/{id}/uses`       | `read`                                                          | The components whose latest versions bind it and the documents holding its results  |
 
 The definition's page shows **Used by** - those components and documents, the readable ones linked
 and the rest counted - before **Save version**.

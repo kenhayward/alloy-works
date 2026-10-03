@@ -643,9 +643,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   document alone. **Checking** a document runs its checked bindings again, each distinct question
   once, and keeps a different result waiting beside what the document holds; **accepting** it moves
   that document alone, records what it held and holds after, who and when, and asks the database
-  nothing. Anybody who may read the document may read the results it holds, and use of a connection
-  is needed only to fetch one; the SQL that ran, and the connection it ran on, are shown only to
-  somebody who may also read the query definition. A dataset can be named. **A document holding a binding cannot be
+  nothing. Anybody who may read the document may read the results it holds; fetching one, and
+  accepting one, need what running the query would - read on the query definition and use of the
+  connection it ran on - and accepting needs edit on the document too. The SQL that ran, the
+  connection it ran on and the database's own column names are shown only to somebody who may also
+  read the query definition. A dataset can be named. **A document holding a binding cannot be
   published or previewed yet**: it is refused before anything is queued, naming each binding.
 - **Search.** **Search**, beside Components, Documents and Publications, finds everything you may read
   by its words, and nothing you may not: components, documents and each of their sections,
