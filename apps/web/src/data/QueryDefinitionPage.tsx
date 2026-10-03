@@ -26,6 +26,7 @@ import { connectionLink, queryDefinitionLink } from './links.js';
 import { useSqlPlaces, type Place } from './places.js';
 import styles from './QueryDefinitionPage.module.css';
 import { isRecord, refusalText } from './shapes.js';
+import { isUses, UsedList, type Uses } from './uses.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -497,6 +498,12 @@ function ReadOnly({ definition }: { readonly definition: QueryDefinition }) {
   );
 }
 
+/** Where a definition is used: the components binding it and the documents holding its results. */
+interface DefinitionUses {
+  readonly components: Uses;
+  readonly documents: Uses;
+}
+
 /**
  * A query definition (data.md, "What a query definition version holds"; the D2 plan, D2-U), at
  * `#/query-definitions/<id>` or `#/query-definitions/new`, written in five steps: the connection; the
@@ -505,73 +512,6 @@ function ReadOnly({ definition }: { readonly definition: QueryDefinition }) {
  * first rows or the one reason it failed (DAT-014); and its key, order, empty and limits. **Save
  * version** is offered once every column is confirmed; **Retire** and **Reinstate** are versions too.
  */
-/** What uses something: those the caller may read, by title, and how many more there are (D3-M). */
-interface Uses {
-  readonly readable: readonly { readonly id: string; readonly title: string }[];
-  readonly others: number;
-}
-
-function isUses(value: unknown): value is Uses {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as { others?: unknown }).others === 'number' &&
-    Array.isArray((value as { readable?: unknown }).readable) &&
-    (value as { readable: unknown[] }).readable.every(
-      (each) =>
-        typeof each === 'object' &&
-        each !== null &&
-        typeof (each as { id?: unknown }).id === 'string' &&
-        typeof (each as { title?: unknown }).title === 'string',
-    )
-  );
-}
-
-/** Where a definition is used: the components binding it and the documents holding its results. */
-interface DefinitionUses {
-  readonly components: Uses;
-  readonly documents: Uses;
-}
-
-/**
- * One kind of use, the readable ones linked and the rest counted, never named (DAT-016): `counted` says
- * how the rest use it - a component binds the definition, a document holds a result of it.
- */
-function UsedList({
-  heading,
-  uses,
-  link,
-  counted,
-}: {
-  readonly heading: string;
-  readonly uses: Uses;
-  readonly link: (id: string) => string;
-  readonly counted: (others: number) => string;
-}) {
-  if (uses.readable.length === 0 && uses.others === 0) return null;
-  return (
-    <>
-      <h3>{heading}</h3>
-      {uses.readable.length > 0 && (
-        <ul>
-          {uses.readable.map((each) => (
-            <li key={each.id}>
-              <a href={link(each.id)}>{each.title}</a>
-            </li>
-          ))}
-        </ul>
-      )}
-      {uses.others > 0 && (
-        <p>
-          {uses.readable.length > 0
-            ? `And ${uses.others} more you may not read.`
-            : counted(uses.others)}
-        </p>
-      )}
-    </>
-  );
-}
-
 export function QueryDefinitionPage({
   client,
   id,

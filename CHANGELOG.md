@@ -19,7 +19,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   yet, and the editor opens a component holding one read-only and says why.
 - **Where a query definition is used.** A definition's page lists, under **Used by** and before
   **Save version**, the components that bind it and the documents holding a result of it - those
-  you may read by title, and how many more - and a connection's uses name the documents too.
+  you may read by title, and how many more - and a connection's page lists, under **Used by** and
+  above **Retire**, the documents holding a result from it beside its query definitions.
 
 ### Changed
 

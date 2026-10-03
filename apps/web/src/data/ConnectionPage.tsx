@@ -3,6 +3,7 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import { ManageAccessLink } from '../access/ManageAccessLink.js';
 import { Notice } from '../states/Notice.js';
+import { documentLink } from '../structure/links.js';
 import styles from './ConnectionPage.module.css';
 import { connectionAccessLink, queryDefinitionLink } from './links.js';
 import {
@@ -27,6 +28,7 @@ import {
   type Settings,
   type Tested,
 } from './shapes.js';
+import { isUses, UsedList, type Uses } from './uses.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -146,6 +148,12 @@ function isNaming(value: unknown): value is Naming {
   );
 }
 
+/** Where a connection is used: the definitions naming it and the documents holding its results. */
+interface ConnectionUses {
+  readonly definitions: Naming;
+  readonly documents: Uses;
+}
+
 /** Those the caller may not read, counted, never named. */
 const unread = (others: number) =>
   `${others} ${others === 1 ? 'query definition' : 'query definitions'} you may not read`;
@@ -206,7 +214,7 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
   const [tested, setTested] = useState<Tested | string | null>(null);
   const [tables, setTables] = useState<Described | string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [uses, setUses] = useState<Naming | 'failed' | null>(null);
+  const [uses, setUses] = useState<ConnectionUses | 'failed' | null>(null);
   const [retiring, setRetiring] = useState<readonly string[] | null>(null);
   const working = useRef(false);
 
@@ -264,7 +272,8 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
     void load();
   }, [load]);
 
-  // Where it is used, read with it: the definitions naming it (D2-O).
+  // Where it is used, read with it: the definitions naming it (D2-O) and the documents holding results
+  // from it (DAT-064), shown above Retire so they are seen before it is asked for.
   useEffect(() => {
     let current = true;
     void (async () => {
@@ -274,7 +283,11 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
         });
         const answer: unknown = data;
         if (current) {
-          setUses(isRecord(answer) && isNaming(answer.definitions) ? answer.definitions : 'failed');
+          setUses(
+            isRecord(answer) && isNaming(answer.definitions) && isUses(answer.documents)
+              ? { definitions: answer.definitions, documents: answer.documents }
+              : 'failed',
+          );
         }
       } catch {
         if (current) setUses('failed');
@@ -571,13 +584,19 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
       <Part title="Used by">
         {uses === null ? null : uses === 'failed' ? (
           <p>What uses this connection could not be read.</p>
-        ) : uses.readable.length === 0 && uses.others === 0 ? (
-          <p>No query definition uses this connection.</p>
+        ) : uses.definitions.readable.length === 0 &&
+          uses.definitions.others === 0 &&
+          uses.documents.readable.length === 0 &&
+          uses.documents.others === 0 ? (
+          <p>Nothing uses this connection.</p>
         ) : (
           <>
-            {uses.readable.length > 0 && (
+            {(uses.definitions.readable.length > 0 || uses.definitions.others > 0) && (
+              <h3>Query definitions</h3>
+            )}
+            {uses.definitions.readable.length > 0 && (
               <ul>
-                {uses.readable.map((each) => (
+                {uses.definitions.readable.map((each) => (
                   <li key={each.id}>
                     <a href={queryDefinitionLink(each.id)}>{each.title}</a>
                     {each.retired && ' (retired)'}
@@ -585,13 +604,21 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
                 ))}
               </ul>
             )}
-            {uses.others > 0 && (
+            {uses.definitions.others > 0 && (
               <p>
-                {uses.readable.length > 0
-                  ? `And ${uses.others} more you may not read.`
-                  : `Used by ${unread(uses.others)}.`}
+                {uses.definitions.readable.length > 0
+                  ? `And ${uses.definitions.others} more you may not read.`
+                  : `Used by ${unread(uses.definitions.others)}.`}
               </p>
             )}
+            <UsedList
+              heading="Documents"
+              uses={uses.documents}
+              link={documentLink}
+              counted={(others) =>
+                `Held by ${others} ${others === 1 ? 'document' : 'documents'} you may not read.`
+              }
+            />
           </>
         )}
       </Part>

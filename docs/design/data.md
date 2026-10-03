@@ -863,7 +863,10 @@ that long while the person it revokes kept running.
   the caller may read by name and counts the rest. When [relationships.md](relationships.md)'s
   reference index is built, a binding is one more reference it records.
 - **Retiring** a connection or a definition shows its uses first; a connection is refused while a
-  definition that is not retired names it (DAT-065). Nothing is deleted. D1 builds retiring and
+  definition that is not retired names it (DAT-065). A connection's page shows, under **Used by**
+  above **Retire**, the definitions naming it and the documents holding results from it, readable
+  ones linked and the rest counted (DAT-064); a document holding a result does not refuse the retire,
+  since what it holds is kept and DAT-064 asks for it to be shown, not to block. Nothing is deleted. D1 builds retiring and
   reinstating, each a version, and refuses a test, a describe and a credential on a retired
   connection, `connection_retired`; where used, and the refusal to retire one in use, arrive with D2,
   when there is a definition to name (the D1 plan, D1-O).

@@ -607,8 +607,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   by the connector, a separate process on networks of its own with no route to anything else of
   Alloy Works but the service that asks it, and only the connector can open it; it signs in to a
   database only in a way that never sends the password itself. A connection's page lists, under
-  **Used by**, the query definitions that name it - those you may read by title, and how many more -
-  and a connection a query definition still uses cannot be retired: the page names what to retire
+  **Used by**, the query definitions that name it and the documents holding results from it - those
+  you may read by title, and how many more - and a connection a query definition still uses cannot be retired: the page names what to retire
   first.
 - **Query definitions.** **Query definitions**, beside Connections, lists the query definitions you may
   read, by space, each with its connection. Somebody who may edit in a space and holds the new
