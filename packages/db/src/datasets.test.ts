@@ -390,6 +390,24 @@ describe('datasets and resolutions', () => {
     }
   });
 
+  it('refuses a provenance naming a connection that is not the one its definition version names', async () => {
+    const other = await tenant(async (trx) => {
+      const made = await createConnection(trx, {
+        author: ada,
+        spaceId: general,
+        settings: { ...settings, name: 'Elsewhere' },
+      });
+      if (made.answer !== 'created') throw new Error(made.answer);
+      return made.connection;
+    });
+    await expect(
+      recorded({
+        parameters: { site: 'elsewhere' },
+        connection: { artifact: other.id, version: other.version.id },
+      }),
+    ).rejects.toThrow(/provenance/);
+  });
+
   it('holds one dataset for each question: one definition, the same parameters, the same identity', async () => {
     const north = await recorded({ parameters: { site: 'question' } });
     const again = await recorded({ parameters: { site: 'question' }, checksum: 'e'.repeat(64) });
