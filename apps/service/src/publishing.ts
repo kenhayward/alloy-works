@@ -261,6 +261,7 @@ async function refuseBindings(
   documentId: string,
   version: string,
   principalId: string,
+  asked: 'publish' | 'preview',
 ): Promise<void> {
   const met = await bindingsMet(trx, documentId, version, principalId);
   if (met.length === 0) return;
@@ -268,7 +269,9 @@ async function refuseBindings(
   throw refused(
     400,
     'binding.unresolved',
-    `This document holds a value bound to a query (${named}), and a document holding one cannot be published or previewed yet. Remove the binding to publish it.`,
+    asked === 'publish'
+      ? `This document holds a value bound to a query (${named}), and a document holding one cannot be published yet. Remove the binding to publish it.`
+      : `This document holds a value bound to a query (${named}), and a document holding one cannot be previewed yet. Remove the binding to preview it.`,
     { attribution: 'product', document: documentId, bindings: met },
   );
 }
@@ -294,7 +297,7 @@ export function publishingHandlers(
     ): Promise<PublicationRequestView> => {
       const { id } = request.params as DocumentParams;
       const body = request.body as RequestPublicationBody;
-      await refuseBindings(trx, id, body.version, principalId);
+      await refuseBindings(trx, id, body.version, principalId, 'publish');
       const answer = await requestPublication(trx, {
         documentId: id,
         version: body.version,
@@ -315,7 +318,7 @@ export function publishingHandlers(
     ): Promise<PublicationRequestView> => {
       const { id } = request.params as DocumentParams;
       const body = request.body as RequestPreviewBody;
-      await refuseBindings(trx, id, body.version, principalId);
+      await refuseBindings(trx, id, body.version, principalId, 'preview');
       const answer = await requestPublication(trx, {
         documentId: id,
         version: body.version,

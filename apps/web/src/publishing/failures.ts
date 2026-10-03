@@ -400,7 +400,7 @@ export function failureWords(failure: Failure, wordOffered = false): string {
     // stage, and the service refuses a document holding one at the door, so this is met only by a
     // request built past it. Publishing again would meet it again.
     case 'binding_unresolved':
-      return 'This holds a value bound to a query, and nothing publishes one yet. Remove the binding to publish this document.';
+      return 'This holds a value bound to a query, and nothing publishes or previews one yet. Remove the binding to publish or preview this document.';
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:

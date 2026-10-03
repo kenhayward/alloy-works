@@ -659,7 +659,7 @@ describe('publishing from the document page', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
     const why = await screen.findByRole('list', { name: 'Why it could not be published' });
     expect(why).toHaveTextContent(
-      'This holds a value bound to a query, and nothing publishes one yet. Remove the binding to publish this document.',
+      'This holds a value bound to a query, and nothing publishes or previews one yet. Remove the binding to publish or preview this document.',
     );
     expect(why).not.toHaveTextContent('Publish again');
   });

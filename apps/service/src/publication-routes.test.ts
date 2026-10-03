@@ -1019,14 +1019,22 @@ describe('publishing a document through the service', () => {
         )
       ).rows[0] as { jobs: number };
     const jobsBefore = await jobs();
-    for (const [asked, answer] of [
-      ['publish', await publish('grace', document, ['pdf', 'docx'])],
-      ['preview', await preview('grace', document)],
+    for (const [asked, answer, words] of [
+      [
+        'publish',
+        await publish('grace', document, ['pdf', 'docx']),
+        'This document holds a value bound to a query (b1), and a document holding one cannot be published yet. Remove the binding to publish it.',
+      ],
+      [
+        'preview',
+        await preview('grace', document),
+        'This document holds a value bound to a query (b1), and a document holding one cannot be previewed yet. Remove the binding to preview it.',
+      ],
     ] as const) {
       expect(answer.statusCode, `${asked}: ${answer.body}`).toBe(400);
       expect(refusal(answer), asked).toEqual({
         code: 'binding_unresolved',
-        message: expect.stringContaining('b1'),
+        message: words,
         attribution: 'product',
         document: document.id,
         bindings: [{ node: document.nodes[0], binding: 'b1' }],
