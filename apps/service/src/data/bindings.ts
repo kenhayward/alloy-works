@@ -248,10 +248,11 @@ interface Prepared {
 
 /**
  * Decides, for one binding, everything its run needs (D3-E, D3-L): `read` on the definition it names,
- * the version it resolves to - its pin, or the latest - a definition not retired, what it takes
- * checked against that version, its values against its parameters, and at the connection that
- * version names `use_connection`, a connection that can run, SQL permitted there (DAT-103) and a
- * credential to run with. Each refusal names the binding, its node and the document.
+ * one the caller may not read refused as `binding_missing`, as one that is not there is; the version
+ * it resolves to - its pin, or the latest - a definition not retired, what it takes checked against
+ * that version, its values against its parameters, and at the connection that version names
+ * `use_connection`, a connection that can run, SQL permitted there (DAT-103) and a credential to run
+ * with. Each refusal names the binding, its node and the document.
  */
 async function prepare(
   trx: TenantTransaction,
@@ -270,15 +271,10 @@ async function prepare(
   try {
     const stored = await readQueryDefinition(trx, binding.query);
     const facts = stored && (await connectionFacts(trx, caller, stored.id));
-    if (!stored) {
+    // A definition the caller may not read is answered as one that is not there, so a binding's
+    // refusal never tells them whether it exists.
+    if (!stored || !facts || !decide('read', facts).allowed) {
       throw bindingMissing(naming, `The binding ${binding.id} names no query definition here.`);
-    }
-    if (!facts || !decide('read', facts).allowed) {
-      throw new AppError(
-        403,
-        'forbidden',
-        `This needs the read permission on the query definition the binding ${binding.id} names.`,
-      );
     }
     if (stored.definition.retired) {
       throw refused(

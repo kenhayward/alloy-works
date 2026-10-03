@@ -683,6 +683,24 @@ describe('bindings and datasets through the service', () => {
     expect(runs().length).toBe(asked);
   });
 
+  it('answers a binding naming a definition the caller may not read exactly as one naming no definition', async () => {
+    const definition = await h.definition(connection.id);
+    const answers = [];
+    for (const query of [definition.id, '00000000-0000-4000-8000-000000000000']) {
+      const { component, document, node } = await placed(binding('b1', query));
+      // Ivy may edit the document and read the component, and may not read the definition.
+      await h.allow(h.ids.ivy!, h.roles.Author!, { kind: 'artifact', id: document.id });
+      await h.allow(h.ids.ivy!, h.roles.Reader!, { kind: 'artifact', id: component.id });
+      const answer = await resolve('ivy', document.id, [{ node, binding: 'b1' }]);
+      expect(answer.statusCode, answer.body).toBe(400);
+      const { code, message, definition: named } = answer.json<Json>();
+      expect(named).toBe(query);
+      answers.push({ code, message });
+    }
+    expect(answers[0]).toEqual(answers[1]);
+    expect(answers[0]).toMatchObject({ code: 'binding_missing' });
+  });
+
   /**
    * A binding Ivy may resolve and nothing more: on a connection and definition of its own, edit on the
    * document, read on the component and the definition, and use of the connection.
