@@ -372,7 +372,14 @@ describe('the content document', () => {
       { type: 'citation', entry: 'bib-1' },
       { type: 'equation', mathml: `<math xmlns="${MATHML_NAMESPACE}"><mi>x</mi></math>` },
       { type: 'variable', name: 'productName' },
-      { type: 'binding', query: 'query-1' },
+      {
+        type: 'binding',
+        id: 'k1',
+        query: '00000000-0000-4000-8000-00000000d001',
+        parameters: {},
+        mode: 'checked',
+        take: { column: 'depth' },
+      },
     ]) {
       expect(() => parseContentDocument(doc([noting([note(inline)])]))).not.toThrow();
     }

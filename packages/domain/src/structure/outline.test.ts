@@ -10,6 +10,7 @@ import { canonicaliseVersion, canonicaliseVersionContent } from '../version/subs
 import { applyOutlineOperation, outlineOperationSchema } from './operations.js';
 
 import {
+  BINDING_IN_TITLE,
   canonicaliseOutline,
   canonicaliseTitle,
   mayBeFront,
@@ -445,6 +446,22 @@ describe('a section title, under the content model rules', () => {
     // What the content model admits in a heading, the outline admits too.
     const parsed = parseOutlineDocument(titled([words, footnote([paragraph])]));
     expect(parsed.nodes[0]).toMatchObject({ title: [words, footnote([paragraph])] });
+  });
+
+  it('refuses a binding in a title, which belongs to no component a resolution could hold it under', () => {
+    const binding = {
+      type: 'binding',
+      id: 'k1',
+      query: '00000000-0000-4000-8000-00000000d001',
+      parameters: {},
+      mode: 'checked',
+      take: { column: 'depth' },
+    };
+    expect(() => parseOutlineDocument(titled([words, binding]))).toThrow(BINDING_IN_TITLE);
+    // In a footnote's paragraph in a title too.
+    expect(() =>
+      parseOutlineDocument(titled([words, footnote([{ ...paragraph, content: [binding] }])])),
+    ).toThrow(BINDING_IN_TITLE);
   });
 
   it('lets a cross-reference in a title target an outline node, and nothing a title cannot show', () => {

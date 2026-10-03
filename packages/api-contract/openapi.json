@@ -766,14 +766,152 @@
                       "type": "string",
                       "const": "binding"
                     },
-                    "query": {
+                    "id": {
                       "type": "string",
                       "minLength": 1
+                    },
+                    "query": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "version": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                      },
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "literal": {
+                                "anyOf": [
+                                  {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 1000
+                                      },
+                                      {
+                                        "type": "boolean"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "minItems": 1,
+                                    "maxItems": 50,
+                                    "type": "array",
+                                    "items": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "maxLength": 1000
+                                        },
+                                        {
+                                          "type": "boolean"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "literal"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "document": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                              }
+                            },
+                            "required": [
+                              "document"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    },
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "checked",
+                        "pinned"
+                      ]
+                    },
+                    "take": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "column": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "column"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "key": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 1000
+                                  },
+                                  {
+                                    "type": "boolean"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "column": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "key",
+                            "column"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
                     }
                   },
                   "required": [
                     "type",
-                    "query"
+                    "id",
+                    "query",
+                    "parameters",
+                    "mode",
+                    "take"
                   ],
                   "additionalProperties": false
                 },
@@ -1480,14 +1618,152 @@
                       "type": "string",
                       "const": "binding"
                     },
-                    "query": {
+                    "id": {
                       "type": "string",
                       "minLength": 1
+                    },
+                    "query": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "version": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                      },
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "literal": {
+                                "anyOf": [
+                                  {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 1000
+                                      },
+                                      {
+                                        "type": "boolean"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "minItems": 1,
+                                    "maxItems": 50,
+                                    "type": "array",
+                                    "items": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "maxLength": 1000
+                                        },
+                                        {
+                                          "type": "boolean"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "literal"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "document": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                              }
+                            },
+                            "required": [
+                              "document"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    },
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "checked",
+                        "pinned"
+                      ]
+                    },
+                    "take": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "column": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "column"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "key": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "maxLength": 1000
+                                  },
+                                  {
+                                    "type": "boolean"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "column": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "key",
+                            "column"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
                     }
                   },
                   "required": [
                     "type",
-                    "query"
+                    "id",
+                    "query",
+                    "parameters",
+                    "mode",
+                    "take"
                   ],
                   "additionalProperties": false
                 },
@@ -19666,14 +19942,152 @@
                                               "type": "string",
                                               "const": "binding"
                                             },
-                                            "query": {
+                                            "id": {
                                               "type": "string",
                                               "minLength": 1
+                                            },
+                                            "query": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "version": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "parameters": {
+                                              "type": "object",
+                                              "propertyNames": {
+                                                "type": "string",
+                                                "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                                              },
+                                              "additionalProperties": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "literal": {
+                                                        "anyOf": [
+                                                          {
+                                                            "anyOf": [
+                                                              {
+                                                                "type": "string",
+                                                                "maxLength": 1000
+                                                              },
+                                                              {
+                                                                "type": "boolean"
+                                                              },
+                                                              {
+                                                                "type": "null"
+                                                              }
+                                                            ]
+                                                          },
+                                                          {
+                                                            "minItems": 1,
+                                                            "maxItems": 50,
+                                                            "type": "array",
+                                                            "items": {
+                                                              "anyOf": [
+                                                                {
+                                                                  "type": "string",
+                                                                  "maxLength": 1000
+                                                                },
+                                                                {
+                                                                  "type": "boolean"
+                                                                },
+                                                                {
+                                                                  "type": "null"
+                                                                }
+                                                              ]
+                                                            }
+                                                          }
+                                                        ]
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "literal"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  },
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "document": {
+                                                        "type": "string",
+                                                        "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "document"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            "mode": {
+                                              "type": "string",
+                                              "enum": [
+                                                "checked",
+                                                "pinned"
+                                              ]
+                                            },
+                                            "take": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "column": {
+                                                      "type": "string"
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "column"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "key": {
+                                                      "type": "object",
+                                                      "propertyNames": {
+                                                        "type": "string"
+                                                      },
+                                                      "additionalProperties": {
+                                                        "anyOf": [
+                                                          {
+                                                            "type": "string",
+                                                            "maxLength": 1000
+                                                          },
+                                                          {
+                                                            "type": "boolean"
+                                                          },
+                                                          {
+                                                            "type": "null"
+                                                          }
+                                                        ]
+                                                      }
+                                                    },
+                                                    "column": {
+                                                      "type": "string"
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "key",
+                                                    "column"
+                                                  ],
+                                                  "additionalProperties": false
+                                                }
+                                              ]
                                             }
                                           },
                                           "required": [
                                             "type",
-                                            "query"
+                                            "id",
+                                            "query",
+                                            "parameters",
+                                            "mode",
+                                            "take"
                                           ],
                                           "additionalProperties": false
                                         },
@@ -20483,14 +20897,152 @@
                                       "type": "string",
                                       "const": "binding"
                                     },
-                                    "query": {
+                                    "id": {
                                       "type": "string",
                                       "minLength": 1
+                                    },
+                                    "query": {
+                                      "type": "string",
+                                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                    },
+                                    "version": {
+                                      "type": "string",
+                                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                    },
+                                    "parameters": {
+                                      "type": "object",
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                                      },
+                                      "additionalProperties": {
+                                        "anyOf": [
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "literal": {
+                                                "anyOf": [
+                                                  {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "string",
+                                                        "maxLength": 1000
+                                                      },
+                                                      {
+                                                        "type": "boolean"
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
+                                                  },
+                                                  {
+                                                    "minItems": 1,
+                                                    "maxItems": 50,
+                                                    "type": "array",
+                                                    "items": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "string",
+                                                          "maxLength": 1000
+                                                        },
+                                                        {
+                                                          "type": "boolean"
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "literal"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "document": {
+                                                "type": "string",
+                                                "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                                              }
+                                            },
+                                            "required": [
+                                              "document"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "mode": {
+                                      "type": "string",
+                                      "enum": [
+                                        "checked",
+                                        "pinned"
+                                      ]
+                                    },
+                                    "take": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "column": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "column"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "key": {
+                                              "type": "object",
+                                              "propertyNames": {
+                                                "type": "string"
+                                              },
+                                              "additionalProperties": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "string",
+                                                    "maxLength": 1000
+                                                  },
+                                                  {
+                                                    "type": "boolean"
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            "column": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "key",
+                                            "column"
+                                          ],
+                                          "additionalProperties": false
+                                        }
+                                      ]
                                     }
                                   },
                                   "required": [
                                     "type",
-                                    "query"
+                                    "id",
+                                    "query",
+                                    "parameters",
+                                    "mode",
+                                    "take"
                                   ],
                                   "additionalProperties": false
                                 },

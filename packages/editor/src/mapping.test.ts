@@ -475,6 +475,74 @@ describe('the mapping carries a list, both ways', () => {
     });
   });
 
+  it('opens read-only a component holding a binding, in a paragraph, a cell or a footnote, naming it', () => {
+    // No screen places a binding in D3 (the D3 plan, D3-P): the editor has no node for one, so a
+    // component holding one - placed through the API - opens read-only by name rather than dropping
+    // it on the next save.
+    const binding = {
+      type: 'binding' as const,
+      id: 'k1',
+      query: '00000000-0000-4000-8000-00000000d001',
+      parameters: { site: { literal: 'north' } },
+      mode: 'checked' as const,
+      take: { column: 'depth' },
+    };
+    const inParagraph = parseContentDocument(
+      document([
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [{ type: 'text', value: 'Depth ', marks: [] }, binding],
+        },
+      ]),
+    );
+    expect(toEditor(inParagraph)).toEqual({ editable: false, unsupported: ['binding'] });
+    const inFootnote = parseContentDocument(
+      document([
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'Depth', marks: [] },
+            {
+              type: 'footnote',
+              id: 'f1',
+              anchor: { kind: 'span' },
+              content: [{ type: 'paragraph', id: 'fp1', style: 'body', content: [binding] }],
+            },
+          ],
+        },
+      ]),
+    );
+    expect(toEditor(inFootnote)).toEqual({ editable: false, unsupported: ['binding'] });
+    const inCell = parseContentDocument(
+      document([
+        {
+          type: 'table',
+          id: 't1',
+          style: 'table',
+          caption: [],
+          headerRows: 0,
+          headerColumns: 0,
+          rows: [
+            {
+              cells: [
+                {
+                  colspan: 1,
+                  rowspan: 1,
+                  content: [{ type: 'paragraph', id: 'c1', style: 'body', content: [binding] }],
+                },
+              ],
+            },
+          ],
+        },
+      ]),
+    );
+    expect(toEditor(inCell)).toEqual({ editable: false, unsupported: ['binding'] });
+  });
+
   it('opens read-only for a node it cannot edit that is inside a list item, naming it', () => {
     expect(toEditor(document([listHolding(cited('t1'))]))).toEqual({
       editable: false,

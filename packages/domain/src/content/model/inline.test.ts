@@ -50,8 +50,16 @@ describe('the inline vocabulary', () => {
   });
 
   it('CNT-030 carries a query reference and no value on a binding', () => {
-    expect(inlineNodeSchema.parse({ type: 'binding', query: 'q-2' }).type).toBe('binding');
-    expect(() => inlineNodeSchema.parse({ type: 'binding', query: 'q-2', value: '42' })).toThrow();
+    const binding = {
+      type: 'binding',
+      id: 'k1',
+      query: '00000000-0000-4000-8000-00000000d001',
+      parameters: {},
+      mode: 'checked',
+      take: { column: 'depth' },
+    };
+    expect(inlineNodeSchema.parse(binding).type).toBe('binding');
+    expect(() => inlineNodeSchema.parse({ ...binding, value: '42' })).toThrow();
   });
 
   it('CNT-026 makes a footnote anchor an inline node in each of its four kinds, and never a block', () => {

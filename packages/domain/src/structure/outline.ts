@@ -1,7 +1,12 @@
 import { z } from 'zod';
 
 import { marksAsASet } from '../content/model/canonical.js';
-import { checkInlineContent, contentDocumentSchema, newScope } from '../content/model/document.js';
+import {
+  BindingInTitle,
+  checkInlineContent,
+  contentDocumentSchema,
+  newScope,
+} from '../content/model/document.js';
 import {
   artifactIdentifierSchema as artifactIdentifier,
   nodeIdentifierSchema as nodeIdentifier,
@@ -101,8 +106,10 @@ export const outlineNodeSchema: z.ZodType<OutlineNode> = z.lazy(() =>
  * within that title. Anything in a title is reached through its node, as anything in a component is
  * through its occurrence, so the title is the scope, as the component is for a block.
  *
- * **What a heading may hold is what the content model allows** - a footnote, an image, a binding, an
- * equation (CNT-046), a variable (REU-019) - validated identically. Word allows a footnote in a
+ * **What a heading may hold is what the content model allows** - a footnote, an image, an equation
+ * (CNT-046), a variable (REU-019) - validated identically, **but a binding** (the D3 plan, D3-D): a
+ * binding holds what its document resolved it to through the component reference node it stands
+ * under, and a title stands under no component, so it is refused, `BINDING_IN_TITLE`. Word allows a footnote in a
  * heading, and nothing in the corpus or structure.md narrows it; a narrower rule would be a second
  * inline vocabulary to keep in step with the first. A cross-reference in a heading targets an outline
  * node and nothing else, and shows a number or a page, never a title that could loop back to its own
@@ -123,14 +130,20 @@ export const outlineNodeSchema: z.ZodType<OutlineNode> = z.lazy(() =>
  * title is stored with its paragraphs as parsed (issue #124) and two spellings of one title are one
  * canonical string and one digest. The wire body's published schema is the array it takes in.
  */
+/** What a title holding a binding is refused with (D3-D, `binding_in_title`). */
+export const BINDING_IN_TITLE = 'A title holds no binding: a binding belongs to a component';
+
 export const sectionTitleSchema = z.array(inlineNodeSchema).transform((title, context) => {
   let parsed: InlineNode[] = title;
   try {
     parsed = checkInlineContent(title, 'title', newScope());
-  } catch {
+  } catch (error) {
     context.addIssue({
       code: 'custom',
-      message: 'A title holds inline content the content model refuses',
+      message:
+        error instanceof BindingInTitle
+          ? BINDING_IN_TITLE
+          : 'A title holds inline content the content model refuses',
     });
   }
   const words = title.map((inline) => (inline.type === 'text' ? inline.value : '')).join('');

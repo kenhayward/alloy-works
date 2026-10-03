@@ -20088,7 +20088,7 @@
     {
       "id": "CNT-153",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 583,
+      "line": 590,
       "kind": "title"
     },
     {
@@ -20100,19 +20100,19 @@
     {
       "id": "STR-025",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 1950,
+      "line": 1957,
       "kind": "title"
     },
     {
       "id": "AST-015",
       "file": "packages/domain/src/content/model/inline.test.ts",
-      "line": 86,
+      "line": 94,
       "kind": "title"
     },
     {
       "id": "CNT-022",
       "file": "packages/domain/src/content/model/inline.test.ts",
-      "line": 86,
+      "line": 94,
       "kind": "title"
     },
     {
@@ -20124,7 +20124,7 @@
     {
       "id": "CNT-026",
       "file": "packages/domain/src/content/model/inline.test.ts",
-      "line": 57,
+      "line": 65,
       "kind": "title"
     },
     {
@@ -20154,7 +20154,7 @@
     {
       "id": "CNT-043",
       "file": "packages/domain/src/content/model/inline.test.ts",
-      "line": 76,
+      "line": 84,
       "kind": "title"
     },
     {
@@ -20172,7 +20172,7 @@
     {
       "id": "CNT-123",
       "file": "packages/domain/src/content/model/inline.test.ts",
-      "line": 170,
+      "line": 178,
       "kind": "title"
     },
     {
@@ -20242,6 +20242,18 @@
       "kind": "title"
     },
     {
+      "id": "DAT-029",
+      "file": "packages/domain/src/data/binding.test.ts",
+      "line": 52,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-067",
+      "file": "packages/domain/src/data/binding.test.ts",
+      "line": 93,
+      "kind": "title"
+    },
+    {
       "id": "DAT-001",
       "file": "packages/domain/src/data/connection.test.ts",
       "line": 53,
@@ -20280,7 +20292,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 426,
+      "line": 439,
       "kind": "title"
     },
     {
@@ -20826,37 +20838,37 @@
     {
       "id": "STR-001",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 80,
+      "line": 81,
       "kind": "title"
     },
     {
       "id": "STR-002",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 95,
+      "line": 96,
       "kind": "title"
     },
     {
       "id": "STR-048",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 129,
+      "line": 130,
       "kind": "title"
     },
     {
       "id": "STR-049",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 142,
+      "line": 143,
       "kind": "title"
     },
     {
       "id": "STR-058",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 171,
+      "line": 172,
       "kind": "title"
     },
     {
       "id": "STR-064",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 692,
+      "line": 709,
       "kind": "title"
     },
     {
@@ -21198,13 +21210,13 @@
     {
       "id": "CNT-014",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 1033,
+      "line": 1101,
       "kind": "title"
     },
     {
       "id": "CNT-018",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 673,
+      "line": 741,
       "kind": "title"
     },
     {

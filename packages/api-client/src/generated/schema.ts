@@ -1793,7 +1793,26 @@ export interface components {
             } | {
                 /** @constant */
                 type: "binding";
+                id: string;
                 query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
             } | {
                 /** @constant */
                 type: "image";
@@ -1949,7 +1968,26 @@ export interface components {
             } | {
                 /** @constant */
                 type: "binding";
+                id: string;
                 query: string;
+                version?: string;
+                parameters: {
+                    [key: string]: {
+                        literal: (string | boolean | null) | (string | boolean | null)[];
+                    } | {
+                        document: string;
+                    };
+                };
+                /** @enum {string} */
+                mode: "checked" | "pinned";
+                take: {
+                    column: string;
+                } | {
+                    key: {
+                        [key: string]: string | boolean | null;
+                    };
+                    column: string;
+                };
             } | {
                 /** @constant */
                 type: "image";
@@ -8797,7 +8835,26 @@ export interface operations {
                             } | {
                                 /** @constant */
                                 type: "binding";
+                                id: string;
                                 query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
+                                take: {
+                                    column: string;
+                                } | {
+                                    key: {
+                                        [key: string]: string | boolean | null;
+                                    };
+                                    column: string;
+                                };
                             } | {
                                 /** @constant */
                                 type: "image";
@@ -8973,7 +9030,26 @@ export interface operations {
                         } | {
                             /** @constant */
                             type: "binding";
+                            id: string;
                             query: string;
+                            version?: string;
+                            parameters: {
+                                [key: string]: {
+                                    literal: (string | boolean | null) | (string | boolean | null)[];
+                                } | {
+                                    document: string;
+                                };
+                            };
+                            /** @enum {string} */
+                            mode: "checked" | "pinned";
+                            take: {
+                                column: string;
+                            } | {
+                                key: {
+                                    [key: string]: string | boolean | null;
+                                };
+                                column: string;
+                            };
                         } | {
                             /** @constant */
                             type: "image";

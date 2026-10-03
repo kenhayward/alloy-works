@@ -118,7 +118,15 @@
         },
         { "type": "citation", "entry": "bib-1", "locator": "p. 12" },
         { "type": "variable", "name": "productName" },
-        { "type": "binding", "query": "query-1" },
+        {
+          "type": "binding",
+          "id": "k-every",
+          "query": "00000000-0000-4000-8000-00000000d001",
+          "version": "00000000-0000-4000-8000-00000000d002",
+          "parameters": { "site": { "literal": "north" }, "ids": { "literal": ["1", "2"] } },
+          "mode": "checked",
+          "take": { "key": { "id": "7" }, "column": "depth" }
+        },
         {
           "type": "image",
           "asset": "00000000-0000-4000-8000-00000000a551",
