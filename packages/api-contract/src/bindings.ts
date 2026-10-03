@@ -26,8 +26,23 @@ const NodeBinding = z.strictObject({
   binding: z.string().min(1).max(200).describe("The binding's identifier in that component"),
 });
 
-/** A dataset version's provenance record (DAT-085): what ran, as whom, when, and the checksum. */
-export const ProvenanceView = provenanceSchema;
+/**
+ * A dataset version's provenance record (DAT-085): what ran, as whom, when, and the checksum - the SQL
+ * that ran and the connection shown only to a caller who may read the query definition, as D2 shows a
+ * definition's connection only to its reader. The stored record is whole either way.
+ */
+export const ProvenanceView = provenanceSchema.extend({
+  connection: provenanceSchema.shape.connection
+    .nullable()
+    .describe(
+      'The connection version it ran on, or null where the caller may not read the query definition',
+    ),
+  ran: z.strictObject({
+    sql: provenanceSchema.shape.ran.shape.sql
+      .nullable()
+      .describe('The SQL that ran, or null where the caller may not read the query definition'),
+  }),
+});
 
 /** What a binding holds in a document: a dataset version, from the latest resolution for it. */
 const HeldView = z.object({

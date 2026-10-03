@@ -77,9 +77,35 @@ import { connectionFacts, requireSqlPermitted } from './sql-access.js';
  * transaction that decides again (D3-H).
  */
 
-/** A provenance record as the contract answers it: the same record, its values as JSON writes them. */
-const provenanceView = (provenance: Provenance) =>
-  provenance as unknown as z.infer<typeof ProvenanceView>;
+/**
+ * A provenance record as the contract answers it, its values as JSON writes them: whole to a caller who
+ * may read its query definition, and otherwise without the SQL that ran or the connection it ran on,
+ * as a definition names its connection only to the connection's reader (D2). The stored record is
+ * unchanged; the rows, their checksum and the declared columns stay inspectable.
+ */
+const provenanceView = (provenance: Provenance, readsDefinition: boolean) =>
+  (readsDefinition
+    ? provenance
+    : { ...provenance, connection: null, ran: { sql: null } }) as unknown as z.infer<
+    typeof ProvenanceView
+  >;
+
+/** Whether the caller may read a query definition, each asked once a request. */
+function definitionReader(trx: TenantTransaction, caller: Caller) {
+  const known = new Map<string, Promise<boolean>>();
+  return (definition: string) => {
+    let reads = known.get(definition);
+    if (!reads) {
+      reads = connectionFacts(trx, caller, definition).then(
+        (facts) => facts !== undefined && decide('read', facts).allowed,
+      );
+      known.set(definition, reads);
+    }
+    return reads;
+  };
+}
+
+type Reads = ReturnType<typeof definitionReader>;
 
 const sha256 = (text: string) => createHash('sha256').update(text, 'utf8').digest('hex');
 
@@ -500,12 +526,14 @@ function bindingFailure(
 /** The view of one binding as a document holds it now (D3-J, D3-R). */
 async function stateView(
   trx: TenantTransaction,
+  reads: Reads,
   placed: Placed,
   held: HeldResolution | undefined,
 ): Promise<BindingStateView> {
   if (!held) return { node: placed.node, binding: placed.binding, held: null, waiting: null };
   const stale = held.digest !== placed.digest;
   const name = await datasetName(trx, held.held.dataset);
+  const readsDefinition = await reads(held.held.provenance.queryDefinition.artifact);
   return {
     node: placed.node,
     binding: placed.binding,
@@ -513,7 +541,7 @@ async function stateView(
       dataset: held.held.dataset,
       version: held.held.version,
       number: `${held.held.number.revision}.${held.held.number.version}`,
-      provenance: provenanceView(held.held.provenance),
+      provenance: provenanceView(held.held.provenance, readsDefinition),
       name: name?.name ?? null,
       stale,
       act: held.act,
@@ -522,7 +550,13 @@ async function stateView(
     },
     waiting:
       !stale && held.waiting
-        ? { version: held.waiting.version, provenance: provenanceView(held.waiting.provenance) }
+        ? {
+            version: held.waiting.version,
+            provenance: provenanceView(
+              held.waiting.provenance,
+              await reads(held.waiting.provenance.queryDefinition.artifact),
+            ),
+          }
         : null,
   };
 }
@@ -796,9 +830,10 @@ export function bindingHandlers(
       const placed = await bindingsPlaced(trx, id, principalId);
       if (!placed) throw notFound();
       const held = await heldBy(trx, id);
+      const reads = definitionReader(trx, callerOf(request));
       const bindings: BindingStateView[] = [];
       for (const each of placed) {
-        bindings.push(await stateView(trx, each, held.get(key(each.node, each.binding.id))));
+        bindings.push(await stateView(trx, reads, each, held.get(key(each.node, each.binding.id))));
       }
       return { bindings };
     },
@@ -824,12 +859,13 @@ export function bindingHandlers(
       // Before what it holds is read, so two accepts, or an accept and a resolve, take turns.
       await lockBindings(trx, id, [{ node: found.node, binding: found.binding.id }]);
       const held = (await heldBy(trx, id)).get(key(body.node, body.binding));
+      const reads = definitionReader(trx, callerOf(request));
       const precondition = async () =>
         refused(
           409,
           'resolution.precondition',
           'This binding no longer holds what this was accepted from, or that is not a newer result of it.',
-          { current: await stateView(trx, found, held) },
+          { current: await stateView(trx, reads, found, held) },
         );
       if (!held || held.digest !== found.digest || held.held.version !== body.replaces) {
         throw await precondition();
@@ -853,7 +889,12 @@ export function bindingHandlers(
         act: 'accept',
         by: principalId,
       });
-      return stateView(trx, found, (await heldBy(trx, id)).get(key(body.node, body.binding)));
+      return stateView(
+        trx,
+        reads,
+        found,
+        (await heldBy(trx, id)).get(key(body.node, body.binding)),
+      );
     },
 
     /**
@@ -889,7 +930,10 @@ export function bindingHandlers(
         dataset: found.dataset,
         version,
         name: name?.name ?? null,
-        provenance: provenanceView(found.provenance),
+        provenance: provenanceView(
+          found.provenance,
+          await definitionReader(trx, callerOf(request))(found.provenance.queryDefinition.artifact),
+        ),
         result: { columns: result.columns, rows: result.rows },
       };
     },

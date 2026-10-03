@@ -784,7 +784,10 @@ additively.
 with its parameters, not a URL that could carry one, and a header by name alone.
 
 - **Reading a dataset** is through a document that resolves to it, on `read` on that document
-  (DAT-090). Browsing datasets in their own right, and querying them, wait for T4 (DAT-094).
+  (DAT-090). Its rows, their checksum and its declared columns are the reader's; **the SQL that ran
+  and the connection it ran on are shown only to a caller who may also read the query definition**,
+  `ran.sql` and `connection` answered null otherwise, as a definition names its connection only to a
+  reader of the connection (D2). The stored provenance is whole either way. Browsing datasets in their own right, and querying them, wait for T4 (DAT-094).
 - **Nothing sweeps a dataset in T2.** An object is held while any dataset version, publication or
   baseline names it, as an asset's are.
 - **Images** (DAT-096): the connector reads each image cell from its declared encoding, admits only a

@@ -484,6 +484,46 @@ describe('bindings and datasets through the service', () => {
     ).toBe(404);
   });
 
+  it('shows the SQL that ran and the connection only to a reader of the document who may read the definition', async () => {
+    // A definition in Quality, which Alice may not read, bound in General, which she may.
+    await h.allow(h.ids.ada!, h.roles.Author!, { kind: 'space', id: h.quality });
+    const definition = await h.definition(connection.id, {}, h.quality);
+    const { document, node } = await placed(
+      binding('b1', definition.id, { parameters: { site: { literal: '53' } } }),
+    );
+    h.connector.run = ranOk([['53', 'Hidden']]);
+    await resolve('ada', document.id, [{ node, binding: 'b1' }]);
+    h.connector.run = ranOk([['53', 'Hidden still']]);
+    expect((await check('ada', document.id)).statusCode).toBe(200);
+    const asAda = await stateOf('ada', document.id, 'b1');
+    expect(asAda.held!.provenance).toMatchObject({
+      ran: { sql: expect.stringContaining('sample.site') },
+      connection: { artifact: connection.id },
+    });
+    const asAlice = await stateOf('alice', document.id, 'b1');
+    for (const provenance of [asAlice.held!.provenance, asAlice.waiting!.provenance]) {
+      expect(provenance).toMatchObject({ ran: { sql: null }, connection: null });
+      // What the rows are stays inspectable: their checksum, count and declared columns.
+      expect(provenance).toMatchObject({
+        checksum: expect.stringMatching(/^[0-9a-f]{64}$/),
+        rowCount: 1,
+        columns: definitionBody(connection.id).columns,
+      });
+    }
+    const read = await h.call(
+      'alice',
+      'GET',
+      `/v1/documents/${document.id}/datasets/${asAlice.held!.version}`,
+    );
+    expect(read.statusCode, read.body).toBe(200);
+    expect(read.body).not.toContain('sample.site');
+    expect(read.body).not.toContain(connection.id);
+    expect(read.json()).toMatchObject({
+      provenance: { ran: { sql: null }, connection: null },
+      result: { rows: [['53', 'Hidden']] },
+    });
+  });
+
   it('DAT-086 fails a resolve with a named error identifying the definition, the binding and the document, and records nothing', async () => {
     const definition = await h.definition(connection.id);
     const { document, node } = await placed(

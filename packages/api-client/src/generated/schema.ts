@@ -580,7 +580,7 @@ export interface paths {
         };
         /**
          * A document's bindings, what each holds, and any newer result waiting
-         * @description Lists every binding in the components the document's latest version places that the caller may read, in the outline's order: the binding as its component holds it, the dataset version it holds in this document with that result's provenance and name, whether the binding has changed since, and any newer result a check recorded and nobody has accepted. Reading needs only read on the document, never use of a connection.
+         * @description Lists every binding in the components the document's latest version places that the caller may read, in the outline's order: the binding as its component holds it, the dataset version it holds in this document with that result's provenance and name, whether the binding has changed since, and any newer result a check recorded and nobody has accepted. Reading needs only read on the document, never use of a connection; a provenance shows the SQL that ran and the connection only to a caller who may read its query definition.
          */
         get: operations["getDocumentBindings"];
         put?: never;
@@ -680,7 +680,7 @@ export interface paths {
         };
         /**
          * A stored result the document holds or has waiting, whole
-         * @description Returns a stored result whole - its columns, every row in canonical form, and its provenance - where the document holds it or has it waiting. Reading needs only read on the document.
+         * @description Returns a stored result whole - its columns, every row in canonical form, and its provenance - where the document holds it or has it waiting. Reading needs only read on the document; the provenance shows the SQL that ran and the connection only to a caller who may read its query definition.
          */
         get: operations["getDocumentDataset"];
         put?: never;
@@ -8743,15 +8743,17 @@ export interface operations {
                                         artifact: string;
                                         version: string;
                                     };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
                                     connection: {
                                         artifact: string;
                                         version: string;
-                                    };
+                                    } | null;
                                     parameters: {
                                         [key: string]: (string | boolean | null) | (string | boolean | null)[];
                                     };
                                     ran: {
-                                        sql: string;
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -8825,15 +8827,17 @@ export interface operations {
                                         artifact: string;
                                         version: string;
                                     };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
                                     connection: {
                                         artifact: string;
                                         version: string;
-                                    };
+                                    } | null;
                                     parameters: {
                                         [key: string]: (string | boolean | null) | (string | boolean | null)[];
                                     };
                                     ran: {
-                                        sql: string;
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -9157,15 +9161,17 @@ export interface operations {
                                     artifact: string;
                                     version: string;
                                 };
+                                /** @description The connection version it ran on, or null where the caller may not read the query definition */
                                 connection: {
                                     artifact: string;
                                     version: string;
-                                };
+                                } | null;
                                 parameters: {
                                     [key: string]: (string | boolean | null) | (string | boolean | null)[];
                                 };
                                 ran: {
-                                    sql: string;
+                                    /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                    sql: string | null;
                                 };
                                 identity: {
                                     /** @constant */
@@ -9239,15 +9245,17 @@ export interface operations {
                                     artifact: string;
                                     version: string;
                                 };
+                                /** @description The connection version it ran on, or null where the caller may not read the query definition */
                                 connection: {
                                     artifact: string;
                                     version: string;
-                                };
+                                } | null;
                                 parameters: {
                                     [key: string]: (string | boolean | null) | (string | boolean | null)[];
                                 };
                                 ran: {
-                                    sql: string;
+                                    /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                    sql: string | null;
                                 };
                                 identity: {
                                     /** @constant */
@@ -9389,15 +9397,17 @@ export interface operations {
                                         artifact: string;
                                         version: string;
                                     };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
                                     connection: {
                                         artifact: string;
                                         version: string;
-                                    };
+                                    } | null;
                                     parameters: {
                                         [key: string]: (string | boolean | null) | (string | boolean | null)[];
                                     };
                                     ran: {
-                                        sql: string;
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -9471,15 +9481,17 @@ export interface operations {
                                         artifact: string;
                                         version: string;
                                     };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
                                     connection: {
                                         artifact: string;
                                         version: string;
-                                    };
+                                    } | null;
                                     parameters: {
                                         [key: string]: (string | boolean | null) | (string | boolean | null)[];
                                     };
                                     ran: {
-                                        sql: string;
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -9682,15 +9694,17 @@ export interface operations {
                                         artifact: string;
                                         version: string;
                                     };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
                                     connection: {
                                         artifact: string;
                                         version: string;
-                                    };
+                                    } | null;
                                     parameters: {
                                         [key: string]: (string | boolean | null) | (string | boolean | null)[];
                                     };
                                     ran: {
-                                        sql: string;
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -9764,15 +9778,17 @@ export interface operations {
                                         artifact: string;
                                         version: string;
                                     };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
                                     connection: {
                                         artifact: string;
                                         version: string;
-                                    };
+                                    } | null;
                                     parameters: {
                                         [key: string]: (string | boolean | null) | (string | boolean | null)[];
                                     };
                                     ran: {
-                                        sql: string;
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -10087,15 +10103,17 @@ export interface operations {
                                         artifact: string;
                                         version: string;
                                     };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
                                     connection: {
                                         artifact: string;
                                         version: string;
-                                    };
+                                    } | null;
                                     parameters: {
                                         [key: string]: (string | boolean | null) | (string | boolean | null)[];
                                     };
                                     ran: {
-                                        sql: string;
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -10169,15 +10187,17 @@ export interface operations {
                                         artifact: string;
                                         version: string;
                                     };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
                                     connection: {
                                         artifact: string;
                                         version: string;
-                                    };
+                                    } | null;
                                     parameters: {
                                         [key: string]: (string | boolean | null) | (string | boolean | null)[];
                                     };
                                     ran: {
-                                        sql: string;
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -10320,15 +10340,17 @@ export interface operations {
                                         artifact: string;
                                         version: string;
                                     };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
                                     connection: {
                                         artifact: string;
                                         version: string;
-                                    };
+                                    } | null;
                                     parameters: {
                                         [key: string]: (string | boolean | null) | (string | boolean | null)[];
                                     };
                                     ran: {
-                                        sql: string;
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -10402,15 +10424,17 @@ export interface operations {
                                         artifact: string;
                                         version: string;
                                     };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
                                     connection: {
                                         artifact: string;
                                         version: string;
-                                    };
+                                    } | null;
                                     parameters: {
                                         [key: string]: (string | boolean | null) | (string | boolean | null)[];
                                     };
                                     ran: {
-                                        sql: string;
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -10668,15 +10692,17 @@ export interface operations {
                                         artifact: string;
                                         version: string;
                                     };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
                                     connection: {
                                         artifact: string;
                                         version: string;
-                                    };
+                                    } | null;
                                     parameters: {
                                         [key: string]: (string | boolean | null) | (string | boolean | null)[];
                                     };
                                     ran: {
-                                        sql: string;
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -10750,15 +10776,17 @@ export interface operations {
                                         artifact: string;
                                         version: string;
                                     };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
                                     connection: {
                                         artifact: string;
                                         version: string;
-                                    };
+                                    } | null;
                                     parameters: {
                                         [key: string]: (string | boolean | null) | (string | boolean | null)[];
                                     };
                                     ran: {
-                                        sql: string;
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -10921,15 +10949,17 @@ export interface operations {
                                         artifact: string;
                                         version: string;
                                     };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
                                     connection: {
                                         artifact: string;
                                         version: string;
-                                    };
+                                    } | null;
                                     parameters: {
                                         [key: string]: (string | boolean | null) | (string | boolean | null)[];
                                     };
                                     ran: {
-                                        sql: string;
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -11003,15 +11033,17 @@ export interface operations {
                                         artifact: string;
                                         version: string;
                                     };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
                                     connection: {
                                         artifact: string;
                                         version: string;
-                                    };
+                                    } | null;
                                     parameters: {
                                         [key: string]: (string | boolean | null) | (string | boolean | null)[];
                                     };
                                     ran: {
-                                        sql: string;
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -11174,15 +11206,17 @@ export interface operations {
                                         artifact: string;
                                         version: string;
                                     };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
                                     connection: {
                                         artifact: string;
                                         version: string;
-                                    };
+                                    } | null;
                                     parameters: {
                                         [key: string]: (string | boolean | null) | (string | boolean | null)[];
                                     };
                                     ran: {
-                                        sql: string;
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -11256,15 +11290,17 @@ export interface operations {
                                         artifact: string;
                                         version: string;
                                     };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
                                     connection: {
                                         artifact: string;
                                         version: string;
-                                    };
+                                    } | null;
                                     parameters: {
                                         [key: string]: (string | boolean | null) | (string | boolean | null)[];
                                     };
                                     ran: {
-                                        sql: string;
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -11407,15 +11443,17 @@ export interface operations {
                                         artifact: string;
                                         version: string;
                                     };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
                                     connection: {
                                         artifact: string;
                                         version: string;
-                                    };
+                                    } | null;
                                     parameters: {
                                         [key: string]: (string | boolean | null) | (string | boolean | null)[];
                                     };
                                     ran: {
-                                        sql: string;
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -11489,15 +11527,17 @@ export interface operations {
                                         artifact: string;
                                         version: string;
                                     };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
                                     connection: {
                                         artifact: string;
                                         version: string;
-                                    };
+                                    } | null;
                                     parameters: {
                                         [key: string]: (string | boolean | null) | (string | boolean | null)[];
                                     };
                                     ran: {
-                                        sql: string;
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -11794,15 +11834,17 @@ export interface operations {
                                 artifact: string;
                                 version: string;
                             };
+                            /** @description The connection version it ran on, or null where the caller may not read the query definition */
                             connection: {
                                 artifact: string;
                                 version: string;
-                            };
+                            } | null;
                             parameters: {
                                 [key: string]: (string | boolean | null) | (string | boolean | null)[];
                             };
                             ran: {
-                                sql: string;
+                                /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                sql: string | null;
                             };
                             identity: {
                                 /** @constant */
