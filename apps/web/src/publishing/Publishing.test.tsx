@@ -650,6 +650,20 @@ describe('publishing from the document page', () => {
     expect(why).not.toHaveTextContent('Word');
   });
 
+  it('names a value bound to a query as one nothing publishes yet, never as one to publish again (D3)', async () => {
+    // The service refuses such a document at the door; a request built past it fails in the worker.
+    const fake = failing([
+      { stage: 'compose', code: 'binding_unresolved', node: 'n7', block: 'p1', detail: 'b1' },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      'This holds a value bound to a query, and nothing publishes one yet. Remove the binding to publish this document.',
+    );
+    expect(why).not.toHaveTextContent('Publish again');
+  });
+
   it('names a cross-reference Word would not print as the PDF does, and why, pointing at the PDF', async () => {
     // Word 3's ruling R5: `detail` is `<form>:<why>`, and the reference is the author's to change.
     const refused = (detail: string) => ({

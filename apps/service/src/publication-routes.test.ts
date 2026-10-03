@@ -234,6 +234,59 @@ describe('publishing a document through the service', () => {
       if (!('granted' in answer)) throw new Error(JSON.stringify(answer));
     });
 
+  /**
+   * Cuts the component's next version through the editing routes, as a client of the API would: one
+   * paragraph holding a binding, which no screen places (the D3 plan, D3-P).
+   */
+  const placeBinding = async (component: { id: string; version: string }, bindingId: string) => {
+    const session = '00000000-0000-4000-8000-0000000000cc';
+    const claimed = await call('grace', 'POST', `/v1/components/${component.id}/lock`, {
+      session,
+      move: true,
+    });
+    expect(claimed.statusCode, claimed.body).toBe(200);
+    const saved = await call(
+      'grace',
+      'PUT',
+      `/v1/components/${component.id}/iterations/${session}/1`,
+      {
+        openedFrom: component.version,
+        content: {
+          schemaVersion: 1,
+          title: 'Readings',
+          language: 'en-GB',
+          direction: 'ltr',
+          content: [
+            {
+              type: 'paragraph',
+              id: 'p1',
+              style: 'body',
+              content: [
+                { type: 'text', value: 'The site is ', marks: [] },
+                {
+                  type: 'binding',
+                  id: bindingId,
+                  query: UNKNOWN,
+                  parameters: { site: { literal: '1' } },
+                  mode: 'checked',
+                  take: { column: 'name' },
+                },
+              ],
+            },
+          ],
+        },
+      },
+    );
+    expect(saved.statusCode, saved.body).toBe(200);
+    const released = await call(
+      'grace',
+      'DELETE',
+      `/v1/components/${component.id}/lock?session=${session}&openedFrom=${component.version}`,
+    );
+    expect(released.statusCode, released.body).toBe(200);
+    expect(released.json<{ outcome: string }>().outcome).toBe('cut');
+  };
+
   /** A refusal's body without its trace id, which differs on every answer. */
   const refusal = (answer: { json: <T>() => T }) => ({
     ...answer.json<Record<string, unknown>>(),
@@ -948,6 +1001,40 @@ describe('publishing a document through the service', () => {
     } finally {
       await storeless.close();
     }
+  });
+
+  // The D3 plan, "Added in phase B": until the publish's binding stage exists (bindings.md), nothing
+  // publishes a binding, and a document holding one is refused at the door rather than queued.
+  it('refuses to publish or preview a document holding a binding before anything is queued, naming the binding and the document', async () => {
+    const component = await componentIn(general, 'Readings');
+    await placeBinding(component, 'b1');
+    const document = await documentReferencing([component.id]);
+    const before = await requestIds();
+    const jobs = async () =>
+      (
+        await queryAs(
+          db.adminUrl,
+          `select count(*)::int as jobs from platform.job where tenant_id = $1`,
+          [tenant.id],
+        )
+      ).rows[0] as { jobs: number };
+    const jobsBefore = await jobs();
+    for (const [asked, answer] of [
+      ['publish', await publish('grace', document, ['pdf', 'docx'])],
+      ['preview', await preview('grace', document)],
+    ] as const) {
+      expect(answer.statusCode, `${asked}: ${answer.body}`).toBe(400);
+      expect(refusal(answer), asked).toEqual({
+        code: 'binding_unresolved',
+        message: expect.stringContaining('b1'),
+        attribution: 'product',
+        document: document.id,
+        bindings: [{ node: document.nodes[0], binding: 'b1' }],
+        traceId: undefined,
+      });
+    }
+    expect(await requestIds()).toEqual(before);
+    expect(await jobs()).toEqual(jobsBefore);
   });
 
   // W10.2: a preview asked for, and followed while it lasts (publishing.md, "Preview").

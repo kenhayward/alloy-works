@@ -23298,6 +23298,7 @@
                               "cross_reference_not_in_word",
                               "preview_words_missing",
                               "heading_too_deep",
+                              "binding_unresolved",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -23415,7 +23416,7 @@
             }
           },
           "400": {
-            "description": "`format_unsupported`: the layout makes no PDF; `layout_language`: the document is not in its layout's language; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves",
+            "description": "`format_unsupported`: the layout makes no PDF; `layout_language`: the document is not in its layout's language; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a component it places holds a value bound to a query, which nothing publishes yet",
             "content": {
               "application/json": {
                 "schema": {
@@ -23542,6 +23543,36 @@
                           "type": "string"
                         },
                         "additionalProperties": {}
+                      }
+                    },
+                    "attribution": {
+                      "description": "binding_unresolved: the product's, since nothing publishes a binding yet",
+                      "type": "string",
+                      "enum": [
+                        "product"
+                      ]
+                    },
+                    "document": {
+                      "description": "binding_unresolved: the document holding the bindings",
+                      "type": "string"
+                    },
+                    "bindings": {
+                      "description": "binding_unresolved: each binding the publish would meet, by the outline node whose component holds it and the binding's identifier",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "node": {
+                            "type": "string"
+                          },
+                          "binding": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "node",
+                          "binding"
+                        ]
                       }
                     }
                   },
@@ -23813,6 +23844,36 @@
                           "type": "string"
                         },
                         "additionalProperties": {}
+                      }
+                    },
+                    "attribution": {
+                      "description": "binding_unresolved: the product's, since nothing publishes a binding yet",
+                      "type": "string",
+                      "enum": [
+                        "product"
+                      ]
+                    },
+                    "document": {
+                      "description": "binding_unresolved: the document holding the bindings",
+                      "type": "string"
+                    },
+                    "bindings": {
+                      "description": "binding_unresolved: each binding the publish would meet, by the outline node whose component holds it and the binding's identifier",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "node": {
+                            "type": "string"
+                          },
+                          "binding": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "node",
+                          "binding"
+                        ]
                       }
                     }
                   },
@@ -24568,6 +24629,7 @@
                               "cross_reference_not_in_word",
                               "preview_words_missing",
                               "heading_too_deep",
+                              "binding_unresolved",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -24685,7 +24747,7 @@
             }
           },
           "400": {
-            "description": "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves",
+            "description": "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a component it places holds a value bound to a query, which nothing publishes yet",
             "content": {
               "application/json": {
                 "schema": {
@@ -24812,6 +24874,36 @@
                           "type": "string"
                         },
                         "additionalProperties": {}
+                      }
+                    },
+                    "attribution": {
+                      "description": "binding_unresolved: the product's, since nothing publishes a binding yet",
+                      "type": "string",
+                      "enum": [
+                        "product"
+                      ]
+                    },
+                    "document": {
+                      "description": "binding_unresolved: the document holding the bindings",
+                      "type": "string"
+                    },
+                    "bindings": {
+                      "description": "binding_unresolved: each binding the publish would meet, by the outline node whose component holds it and the binding's identifier",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "node": {
+                            "type": "string"
+                          },
+                          "binding": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "node",
+                          "binding"
+                        ]
                       }
                     }
                   },
@@ -25083,6 +25175,36 @@
                           "type": "string"
                         },
                         "additionalProperties": {}
+                      }
+                    },
+                    "attribution": {
+                      "description": "binding_unresolved: the product's, since nothing publishes a binding yet",
+                      "type": "string",
+                      "enum": [
+                        "product"
+                      ]
+                    },
+                    "document": {
+                      "description": "binding_unresolved: the document holding the bindings",
+                      "type": "string"
+                    },
+                    "bindings": {
+                      "description": "binding_unresolved: each binding the publish would meet, by the outline node whose component holds it and the binding's identifier",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "node": {
+                            "type": "string"
+                          },
+                          "binding": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "node",
+                          "binding"
+                        ]
                       }
                     }
                   },
@@ -32702,6 +32824,7 @@
                               "cross_reference_not_in_word",
                               "preview_words_missing",
                               "heading_too_deep",
+                              "binding_unresolved",
                               "engine_failed",
                               "store_failed"
                             ]

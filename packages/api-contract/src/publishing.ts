@@ -70,6 +70,17 @@ export const PublicationRefusal = ErrorBody.extend({
     .array(z.record(z.string(), z.unknown()))
     .optional()
     .describe("values_unresolved: what the document's template names that does not resolve now"),
+  attribution: z
+    .enum(['product'])
+    .optional()
+    .describe("binding_unresolved: the product's, since nothing publishes a binding yet"),
+  document: z.string().optional().describe('binding_unresolved: the document holding the bindings'),
+  bindings: z
+    .array(z.object({ node: z.string(), binding: z.string() }))
+    .optional()
+    .describe(
+      "binding_unresolved: each binding the publish would meet, by the outline node whose component holds it and the binding's identifier",
+    ),
 });
 export type PublicationRefusal = z.infer<typeof PublicationRefusal>;
 
@@ -285,7 +296,7 @@ export const publishingRoutes = {
       },
       400: {
         description:
-          "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves",
+          "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a component it places holds a value bound to a query, which nothing publishes yet",
         schema: PublicationRefusal,
       },
       401: unauthenticated,
@@ -322,7 +333,7 @@ export const publishingRoutes = {
       },
       400: {
         description:
-          "`format_unsupported`: the layout makes no PDF; `layout_language`: the document is not in its layout's language; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves",
+          "`format_unsupported`: the layout makes no PDF; `layout_language`: the document is not in its layout's language; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a component it places holds a value bound to a query, which nothing publishes yet",
         schema: PublicationRefusal,
       },
       401: unauthenticated,

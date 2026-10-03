@@ -77,6 +77,20 @@ describe('the rule behind a refusal', () => {
       'credential.missing',
       // A credential set for where the connection no longer signs in (data.md, DA-AF).
       'credential.target_changed',
+      // The D3 plan's refusals (D3-L): a binding a publish would meet before the publish's binding
+      // stage exists (DAT-087's whole answer is bindings.md's), one the node's component does not
+      // hold or a title holds, one changed or a permission lost while its source answered, a take or
+      // a definition the run cannot honour, an acceptance from what the binding no longer holds, and
+      // a dataset's name past its shape. Guards of the design's own, which no requirement names.
+      'binding.unresolved',
+      'binding.missing',
+      'binding.in_title',
+      'binding.changed',
+      'access.changed',
+      'take.invalid',
+      'definition.retired',
+      'resolution.precondition',
+      'name.invalid',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),
