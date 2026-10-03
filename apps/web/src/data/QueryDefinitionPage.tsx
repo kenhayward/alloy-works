@@ -3,6 +3,7 @@ import { defaultLimits, type QueryDefinition, type ValueType } from '@alloy-work
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import { Notice } from '../states/Notice.js';
+import { documentLink } from '../structure/links.js';
 import {
   BASES,
   NEW_PARAMETER,
@@ -504,6 +505,73 @@ function ReadOnly({ definition }: { readonly definition: QueryDefinition }) {
  * first rows or the one reason it failed (DAT-014); and its key, order, empty and limits. **Save
  * version** is offered once every column is confirmed; **Retire** and **Reinstate** are versions too.
  */
+/** What uses something: those the caller may read, by title, and how many more there are (D3-M). */
+interface Uses {
+  readonly readable: readonly { readonly id: string; readonly title: string }[];
+  readonly others: number;
+}
+
+function isUses(value: unknown): value is Uses {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { others?: unknown }).others === 'number' &&
+    Array.isArray((value as { readable?: unknown }).readable) &&
+    (value as { readable: unknown[] }).readable.every(
+      (each) =>
+        typeof each === 'object' &&
+        each !== null &&
+        typeof (each as { id?: unknown }).id === 'string' &&
+        typeof (each as { title?: unknown }).title === 'string',
+    )
+  );
+}
+
+/** Where a definition is used: the components binding it and the documents holding its results. */
+interface DefinitionUses {
+  readonly components: Uses;
+  readonly documents: Uses;
+}
+
+/**
+ * One kind of use, the readable ones linked and the rest counted, never named (DAT-016): `counted` says
+ * how the rest use it - a component binds the definition, a document holds a result of it.
+ */
+function UsedList({
+  heading,
+  uses,
+  link,
+  counted,
+}: {
+  readonly heading: string;
+  readonly uses: Uses;
+  readonly link: (id: string) => string;
+  readonly counted: (others: number) => string;
+}) {
+  if (uses.readable.length === 0 && uses.others === 0) return null;
+  return (
+    <>
+      <h3>{heading}</h3>
+      {uses.readable.length > 0 && (
+        <ul>
+          {uses.readable.map((each) => (
+            <li key={each.id}>
+              <a href={link(each.id)}>{each.title}</a>
+            </li>
+          ))}
+        </ul>
+      )}
+      {uses.others > 0 && (
+        <p>
+          {uses.readable.length > 0
+            ? `And ${uses.others} more you may not read.`
+            : counted(uses.others)}
+        </p>
+      )}
+    </>
+  );
+}
+
 export function QueryDefinitionPage({
   client,
   id,
@@ -521,6 +589,7 @@ export function QueryDefinitionPage({
   const [sampled, setSampled] = useState<Sampled | string[] | null>(null);
   const [saved, setSaved] = useState<string[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [uses, setUses] = useState<DefinitionUses | 'failed' | null>(null);
   const working = useRef(false);
   // The draft as it is now, for an answer that arrives after it was asked for.
   const latest = useRef(draft);
@@ -547,6 +616,33 @@ export function QueryDefinitionPage({
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Where it is used, read with it, so a change shows what it affects before it is made (DAT-016).
+  useEffect(() => {
+    if (isNew) return;
+    let current = true;
+    void (async () => {
+      try {
+        const { data } = await client.GET('/v1/query-definitions/{id}/uses', {
+          params: { path: { id } },
+        });
+        const answer: unknown = data;
+        const read =
+          typeof answer === 'object' &&
+          answer !== null &&
+          isUses((answer as { components?: unknown }).components) &&
+          isUses((answer as { documents?: unknown }).documents)
+            ? (answer as DefinitionUses)
+            : 'failed';
+        if (current) setUses(read);
+      } catch {
+        if (current) setUses('failed');
+      }
+    })();
+    return () => {
+      current = false;
+    };
+  }, [client, id, isNew]);
 
   // A new definition starts in the first space and on the first connection the person may use.
   useEffect(() => {
@@ -1178,6 +1274,42 @@ export function QueryDefinitionPage({
               <p>The SQL that ran</p>
               <pre className={styles['sql']}>{sampled.ran.sql}</pre>
             </div>
+          )}
+        </Step>
+      )}
+
+      {shown !== null && (
+        <Step title="Used by">
+          {uses === null ? null : uses === 'failed' ? (
+            <p>What uses this query definition could not be read.</p>
+          ) : uses.components.readable.length === 0 &&
+            uses.components.others === 0 &&
+            uses.documents.readable.length === 0 &&
+            uses.documents.others === 0 ? (
+            <p>No component binds this query definition yet.</p>
+          ) : (
+            <>
+              <UsedList
+                heading="Components"
+                uses={uses.components}
+                link={(component) => `#/components/${component}`}
+                counted={(others) =>
+                  `Bound by ${others} ${others === 1 ? 'component' : 'components'} you may not read.`
+                }
+              />
+              <UsedList
+                heading="Documents"
+                uses={uses.documents}
+                link={documentLink}
+                counted={(others) =>
+                  `Held by ${others} ${others === 1 ? 'document' : 'documents'} you may not read.`
+                }
+              />
+              <p className={styles['hint']}>
+                A binding that does not pin a version runs the latest one the next time it is
+                resolved or checked.
+              </p>
+            </>
           )}
         </Step>
       )}
