@@ -435,6 +435,81 @@ describe('bindings and datasets through the service', () => {
     }
   });
 
+  it("DAT-090 lets a document's editor accept a result only with read on the definition it ran and use of the connection it ran on, recording nothing otherwise", async () => {
+    /**
+     * A binding Ada resolved and checked, holding one version with a newer one waiting, on a connection
+     * and definition of its own; Ivy may edit the document and read the component, and holds read on
+     * the definition and use of the connection only as asked.
+     */
+    const waiting = async (site: string, rights: { read: boolean; use: boolean }) => {
+      const own = await h.connection(`Accepted ${site}`);
+      const definition = await h.definition(own.id);
+      const { component, document, node } = await placed(
+        binding('b1', definition.id, { parameters: { site: { literal: site } } }),
+      );
+      h.connector.run = ranOk([[site, 'Held']]);
+      expect((await resolve('ada', document.id, [{ node, binding: 'b1' }])).statusCode).toBe(200);
+      const held = (await stateOf('ada', document.id, 'b1')).held!;
+      h.connector.run = ranOk([[site, 'Waiting']]);
+      const revision = (await check('ada', document.id)).json<{ results: { version: string }[] }>()
+        .results[0]!.version;
+      await h.allow(h.ids.ivy!, h.roles.Author!, { kind: 'artifact', id: document.id });
+      await h.allow(h.ids.ivy!, h.roles.Reader!, { kind: 'artifact', id: component.id });
+      if (rights.read) {
+        await h.allow(h.ids.ivy!, h.roles.Reader!, { kind: 'artifact', id: definition.id });
+      }
+      if (rights.use) {
+        await h.allow(h.ids.ivy!, h.roles['Connection user']!, { kind: 'artifact', id: own.id });
+      }
+      const accept = () =>
+        h.call('ivy', 'POST', `/v1/documents/${document.id}/bindings/accept`, {
+          node,
+          binding: 'b1',
+          version: revision,
+          replaces: held.version,
+        });
+      return { document, definition, held, revision, accept };
+    };
+    const resolutions = async (document: string) =>
+      (await rowsOf('binding_resolution')).filter((row) => row.document_id === document);
+
+    // Without use of the connection the result ran on: refused as a resolve is, nothing recorded.
+    const noUse = await waiting('91', { read: true, use: false });
+    const before = await resolutions(noUse.document.id);
+    const forbidden = await noUse.accept();
+    expect(forbidden.statusCode, forbidden.body).toBe(403);
+    expect(forbidden.json()).toMatchObject({ code: 'forbidden' });
+    expect(await resolutions(noUse.document.id)).toEqual(before);
+    expect((await stateOf('ada', noUse.document.id, 'b1')).held!.version).toBe(noUse.held.version);
+
+    // Without read on the definition it ran: answered as a binding naming no definition, nothing
+    // recorded.
+    const noRead = await waiting('92', { read: false, use: true });
+    const unread = await resolutions(noRead.document.id);
+    const missing = await noRead.accept();
+    expect(missing.statusCode, missing.body).toBe(400);
+    expect(missing.json()).toMatchObject({
+      code: 'binding_missing',
+      binding: 'b1',
+      definition: noRead.definition.id,
+      document: noRead.document.id,
+    });
+    expect(await resolutions(noRead.document.id)).toEqual(unread);
+    expect((await stateOf('ada', noRead.document.id, 'b1')).held!.version).toBe(
+      noRead.held.version,
+    );
+
+    // With both, the same editor accepts it.
+    const both = await waiting('93', { read: true, use: true });
+    const accepted = await both.accept();
+    expect(accepted.statusCode, accepted.body).toBe(200);
+    expect(accepted.json<State>().held).toMatchObject({
+      version: both.revision,
+      act: 'accept',
+      by: h.ids.ivy,
+    });
+  });
+
   it('DAT-090 answers a stored result to whoever may read the document holding it, and to nobody else', async () => {
     const definition = await h.definition(connection.id);
     const { document, node } = await placed(

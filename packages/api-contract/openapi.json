@@ -20018,7 +20018,7 @@
       "post": {
         "operationId": "acceptBinding",
         "summary": "Hold a waiting result for one binding in this document, querying nothing",
-        "description": "Holds a waiting result for one binding in this document alone, naming the version it replaces, and queries nothing. Every other document holding the same dataset keeps its version. It needs edit on the document; an acceptance from a version the binding no longer holds is refused with the binding as it stands.",
+        "description": "Holds a waiting result for one binding in this document alone, naming the version it replaces, and queries nothing. Every other document holding the same dataset keeps its version. It needs edit on the document, and what running the query would: read on the query definition the accepted result ran and use of the connection it ran on. A definition the caller may not read is refused as a binding naming none, and a connection they may not use as forbidden; either records nothing. An acceptance from a version the binding no longer holds is refused with the binding as it stands.",
         "tags": [
           "Bindings and datasets"
         ],

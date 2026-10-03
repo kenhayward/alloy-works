@@ -43,6 +43,7 @@ import {
   effectiveLimits,
   literalValues,
   parametersDigestInput,
+  parseProvenance,
   parseQueryDefinition,
   readContent,
   readOutline,
@@ -519,6 +520,35 @@ function bindingFailure(
   return { ...failureViewFor(failure, seesSource), ...naming };
 }
 
+/**
+ * What taking a result into a document asks of the source side, as a fetch does (DAT-090): `read` on
+ * the query definition it ran, one the caller may not read refused as `binding_missing`, as a resolve
+ * refuses it, so the refusal never tells them whether it exists; and `use_connection` on the
+ * connection it ran on. Each refusal names the binding, its node and the document.
+ */
+async function mayTakeResult(
+  trx: TenantTransaction,
+  caller: Caller,
+  provenance: Provenance,
+  naming: Required<Naming>,
+): Promise<void> {
+  const definition = await connectionFacts(trx, caller, provenance.queryDefinition.artifact);
+  if (!definition || !decide('read', definition).allowed) {
+    throw bindingMissing(naming, `The binding ${naming.binding} names no query definition here.`);
+  }
+  const connection = await connectionFacts(trx, caller, provenance.connection.artifact);
+  if (!connection || !decide('use_connection', connection).allowed) {
+    throw named(
+      new AppError(
+        403,
+        'forbidden',
+        `This needs the use connection permission on the connection the binding ${naming.binding} runs on.`,
+      ),
+      naming,
+    );
+  }
+}
+
 /** The view of one binding as a document holds it now (D3-J, D3-R). */
 async function stateView(
   trx: TenantTransaction,
@@ -848,7 +878,10 @@ export function bindingHandlers(
 
     /**
      * Accept (data.md, "Accept"; D3-K): a resolution row naming the waiting version and the one it
-     * replaces, in this document alone (DAT-093), recording who and when (DAT-037). Queries nothing.
+     * replaces, in this document alone (DAT-093), recording who and when (DAT-037). Queries nothing,
+     * and asks what a fetch asks of the source side (DAT-090): `edit` on the document, and `read` on
+     * the definition and `use_connection` on the connection the accepted version ran, decided in the
+     * one transaction that records it.
      */
     acceptBinding: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
       const { id } = request.params as DocumentBindingParams;
@@ -887,6 +920,12 @@ export function bindingHandlers(
           (offered.revision === held.held.number.revision &&
             offered.version > held.held.number.version));
       if (!newer) throw await precondition();
+      await mayTakeResult(trx, callerOf(request), parseProvenance(offered.content), {
+        definition: found.binding.query,
+        binding: found.binding.id,
+        node: found.node,
+        document: id,
+      });
       await recordResolution(trx, {
         document: id,
         node: found.node,

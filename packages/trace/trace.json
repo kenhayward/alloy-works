@@ -16193,7 +16193,7 @@
         },
         {
           "id": "DAT-090",
-          "howItIsMet": "A stored result is read only through a document that resolves to it, on `read` on that document; fetching one - a resolve or a check - asks `use_connection` and runs under the source's rules; accepting one asks `edit` on the document and queries nothing, since the version it accepts was fetched by a check under them ([Accept](#accept))"
+          "howItIsMet": "A stored result is read only through a document that resolves to it, on `read` on that document; fetching one - a resolve or a check - and accepting one each ask what the source side asks: `read` on the query definition it ran and `use_connection` on its connection, an accept on top of `edit` on the document ([Accept](#accept))"
         },
         {
           "id": "DAT-092",
@@ -17958,7 +17958,7 @@
     {
       "id": "DAT-086",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 572,
+      "line": 647,
       "kind": "title"
     },
     {

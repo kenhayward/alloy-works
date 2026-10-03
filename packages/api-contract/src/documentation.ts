@@ -280,7 +280,7 @@ const descriptions: Readonly<Record<string, string>> = {
   checkBindings:
     "Runs the document's checked bindings again, each distinct query once, two at a time and at most 50 a check, and records any different result as a new dataset version waiting to be accepted: nothing the document holds changes. A binding whose connection the caller may not use is left unchecked, as are those holding nothing; pinned bindings are never checked. This route takes no idempotency key.",
   acceptBinding:
-    'Holds a waiting result for one binding in this document alone, naming the version it replaces, and queries nothing. Every other document holding the same dataset keeps its version. It needs edit on the document; an acceptance from a version the binding no longer holds is refused with the binding as it stands.',
+    'Holds a waiting result for one binding in this document alone, naming the version it replaces, and queries nothing. Every other document holding the same dataset keeps its version. It needs edit on the document, and what running the query would: read on the query definition the accepted result ran and use of the connection it ran on. A definition the caller may not read is refused as a binding naming none, and a connection they may not use as forbidden; either records nothing. An acceptance from a version the binding no longer holds is refused with the binding as it stands.',
   getDocumentDataset:
     'Returns a stored result whole - its columns, every row in canonical form, and its provenance - where the document holds it or has it waiting. Reading needs only read on the document; the provenance shows the SQL that ran and the connection only to a caller who may read its query definition.',
   nameDataset:
