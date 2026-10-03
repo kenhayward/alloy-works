@@ -16193,7 +16193,7 @@
         },
         {
           "id": "DAT-090",
-          "howItIsMet": "A stored result is read only through a document that resolves to it, on `read` on that document; fetching or accepting one asks `use_connection` and runs as the person"
+          "howItIsMet": "A stored result is read only through a document that resolves to it, on `read` on that document; fetching one - a resolve or a check - asks `use_connection` and runs under the source's rules; accepting one asks `edit` on the document and queries nothing, since the version it accepts was fetched by a check under them ([Accept](#accept))"
         },
         {
           "id": "DAT-092",
