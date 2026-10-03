@@ -3,6 +3,16 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.130.1 - 2026-10-03 (PR #372)
+
+### Added
+
+- **The plan for storing query results in documents.** Nothing you can use yet. It says how a value
+  from a query will be placed in a component, how running it for a document stores the result with a
+  record of exactly what ran, how opening a document can look for a newer result and keep it waiting
+  beside the one the document holds, and how accepting it changes that document alone, without asking
+  the source again.
+
 ## 0.130.0 - 2026-09-30 (PR #369)
 
 ### Added
