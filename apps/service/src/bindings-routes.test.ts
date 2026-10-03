@@ -836,6 +836,36 @@ describe('bindings and datasets through the service', () => {
     expect((await rowsOf('binding_resolution')).length).toBe(before);
   });
 
+  it('compares a check against what the binding holds once the source has answered, not before', async () => {
+    const definition = await h.definition(connection.id);
+    const { document, node } = await placed(
+      binding('b1', definition.id, { parameters: { site: { literal: '85' } } }),
+    );
+    h.connector.run = ranOk([['85', 'Before']]);
+    await resolve('ada', document.id, [{ node, binding: 'b1' }]);
+    const held = (await stateOf('ada', document.id, 'b1')).held!;
+    h.connector.run = ranOk([['85', 'After']]);
+    const revision = (await check('ada', document.id)).json<{ results: { version: string }[] }>()
+      .results[0]!.version;
+    // A second check waits at the source while the revision is accepted: what it finds is now held.
+    let release!: () => void;
+    h.connector.hold = new Promise<void>((done) => (release = done));
+    const pending = check('ada', document.id);
+    await new Promise((settle) => setTimeout(settle, 150));
+    const accepted = await h.call('ada', 'POST', `/v1/documents/${document.id}/bindings/accept`, {
+      node,
+      binding: 'b1',
+      version: revision,
+      replaces: held.version,
+    });
+    expect(accepted.statusCode, accepted.body).toBe(200);
+    release();
+    h.connector.hold = undefined;
+    const answer = await pending;
+    expect(answer.statusCode, answer.body).toBe(200);
+    expect(answer.json()).toEqual({ results: [{ node, binding: 'b1', outcome: 'unchanged' }] });
+  });
+
   it('shows a resolution as stale once a component version changes its binding, and checks it no more', async () => {
     const definition = await h.definition(connection.id);
     const { component, document, node } = await placed(

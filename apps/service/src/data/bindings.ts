@@ -779,6 +779,9 @@ export async function checkAct(
         principalId,
         succeeded.map((each) => each.placed),
       );
+      // What each holds now, under the lock: an accept while the source answered moves what the
+      // result is compared with, so what was read before the run is not the comparison.
+      const holdingNow = await heldBy(record, id);
       const versions = new Map<string, Awaited<ReturnType<typeof recordDatasetVersion>>>();
       for (const each of toRun) {
         const outcome = ran.get(each.question);
@@ -802,7 +805,16 @@ export async function checkAct(
           });
           versions.set(each.question, recorded);
         }
-        const holding = held.get(key(node, binding.id))!;
+        const holding = holdingNow.get(key(node, binding.id));
+        if (!holding || holding.digest !== each.placed.digest) {
+          results.set(key(node, binding.id), {
+            node,
+            binding: binding.id,
+            outcome: 'unchecked',
+            reason: 'unresolved',
+          });
+          continue;
+        }
         results.set(
           key(node, binding.id),
           outcome.provenance.checksum === holding.held.provenance.checksum
