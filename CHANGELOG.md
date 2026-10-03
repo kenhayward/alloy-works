@@ -3,6 +3,30 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.131.0 - 2026-10-03 (PR #373)
+
+### Added
+
+- **Query results kept in a document, through the API.** A component's text can now hold a value
+  bound to a query definition: which definition, the values it runs with, and which column it takes
+  from the one row or from the row a key names. Resolving it in a document runs the query against
+  your database now, through the connector, and keeps the result with a record of exactly what ran,
+  as whom, when and how many rows, which that document then holds. Checking a document runs its
+  checked values again and keeps any different result waiting beside the one it holds; accepting
+  that result changes that document alone, records who accepted it and when, and asks the database
+  nothing. Anybody who may read the document may read the results it holds. A result can be named.
+  **All of this is through the API alone for now**: no page places, shows or accepts a bound value
+  yet, and the editor opens a component holding one read-only and says why.
+- **Where a query definition is used.** A definition's page lists, under **Used by** and before
+  **Save version**, the components that bind it and the documents holding a result of it - those
+  you may read by title, and how many more - and a connection's uses name the documents too.
+
+### Changed
+
+- **A document holding a bound value cannot be published or previewed yet.** Publishing it, or
+  asking for a preview, is refused straight away, naming each bound value, and nothing is queued.
+  Before, it was queued and failed later with a less helpful reason.
+
 ## 0.130.1 - 2026-10-03 (PR #372)
 
 ### Added

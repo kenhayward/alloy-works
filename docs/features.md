@@ -630,8 +630,22 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   is held by no starting role, so it is granted on purpose. An administrator of the environment can
   lower the most rows, bytes and seconds any run may take, through the API. Search finds a query
   definition by its title, its description and its column names; a definition names its connection
-  only to somebody who may read the connection. Nothing is
-  kept from a run: there is no dataset or bound value yet.
+  only to somebody who may read the connection. A definition's page shows, under **Used by** and
+  before **Save version**, the components that bind it and the documents holding a result of it -
+  those you may read linked, and how many more. A sample keeps nothing.
+- **Results kept and checked, through the API.** A component's text can hold a **binding** - a value
+  taken from a query definition's result, a column of its one row or of the row a key names, with
+  the values it runs with - placed through the API alone: no screen places, shows or accepts one yet,
+  and the editor opens a component holding one read-only, saying why. **Resolving** a binding in a
+  document runs its query against the database now, as the connection's own account, through the
+  connector, and keeps the result as a version of a **dataset** - the rows once, under their
+  checksum, with what ran, as whom, when and how many rows - which the binding then holds in that
+  document alone. **Checking** a document runs its checked bindings again, each distinct question
+  once, and keeps a different result waiting beside what the document holds; **accepting** it moves
+  that document alone, records what it held and holds after, who and when, and asks the database
+  nothing. Anybody who may read the document may read the results it holds, and use of a connection
+  is needed only to fetch one. A dataset can be named. **A document holding a binding cannot be
+  published or previewed yet**: it is refused before anything is queued, naming each binding.
 - **Search.** **Search**, beside Components, Documents and Publications, finds everything you may read
   by its words, and nothing you may not: components, documents and each of their sections,
   publications, templates, images, fields, metadata schemas and component types. Words are found
@@ -1108,10 +1122,12 @@ Named explicitly so nobody has to read the source to find out:
 - No page for component types: a Definitions manager makes and changes them through the API alone,
   and nothing yet changes which one is the environment's default.
 - No way to delete a component or a document, including one made by mistake.
-- Nothing keeps data from a connection: a query definition's sample run shows its rows and keeps
-  none, and there is no dataset and no value bound into a document. A connection reaches PostgreSQL
-  alone, as its own service account; a query is written as SQL by hand, with no builder; and no page
-  shows or changes the environment's lowered run limits, which the API alone sets.
+- A binding is placed, resolved, checked and accepted through the API alone: no screen shows a
+  value bound into a document, what a binding holds or a result waiting, and a document holding a
+  binding cannot be published or previewed. A document's own parameters do not exist, so a binding
+  taking one cannot be resolved. A connection reaches PostgreSQL alone, as its own service account;
+  a query is written as SQL by hand, with no builder; and no page shows or changes the environment's
+  lowered run limits, which the API alone sets.
 - No document view that sets a document as it will publish: its page shows the outline you build
   beside the text in reading order, each component opening in place to be edited. No reading view. No reuse or transclusion.
 - No publishing beyond a laid-out PDF of a document's outline, its formatted paragraphs, lists,

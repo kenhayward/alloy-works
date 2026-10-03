@@ -432,6 +432,7 @@ version and each structural act records the next (see
 | `migrations/tenant/0044_connections`                     | `connection` as a kind, in exactly one space and authored; `use_connection` in the roles' and tokens' closed sets; `connection_credential`, the sealed credential, and `connection_test`, each test the connector answered, both insert-only, the latest of each read by an identity column (see [data connections](#data-connections))                                                                                                                                                                                                                                                                                                   |
 | `migrations/tenant/0045_connection_credential_target`    | `connection_credential.target_digest`, the SHA-256 of the target a credential was set for, insertable by the runtime role and nothing else; a row without one, set before it, is never used (the D1 fix, C3). `connection_test.credential_id`, the credential row a test was made with, bound to one of the same connection (the D1 fix, round two); a test recorded before it names none                                                                                                                                                                                                                                                 |
 | `migrations/tenant/0046_query_definitions`               | `queryDefinition` as a kind, in exactly one space and authored, and as a search kind; `write_sql` in the roles' and tokens' closed sets; `data_policy`, the tenant's one row of lowered run limits, each null or within its ceiling, read and updated by the runtime role and never inserted or deleted (see [query definitions](#query-definitions-and-the-sample-run))                                                                                                                                                                                                                                                                  |
+| `migrations/tenant/0047_datasets`                        | `dataset` as a kind, in its definition's space and authored, in no search; `dataset`, a dataset's identity - its definition, the SHA-256 of its parameters and its identity key, unique together; `dataset_name` and `binding_resolution`, both insert-only, the latter a document's node and binding holding a dataset version, with the digest of the binding it answered and the version of the same dataset it replaces (see [datasets and resolutions](#datasets-and-resolutions))                                                                                                                                                   |
 | `src/version-digest.ts`                                  | `versionDigests`: SHA-256 over `canonicaliseVersionContent` and `canonicaliseVersion` from the domain package                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `src/spaces.ts`                                          | `createSpace`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `src/versions.ts`                                        | `createArtifact` at `0.1`, `readVersion`, `latestVersion`, `versionContents` - each version's content and number, for the texts route - `listVersions` - an artifact's versions newest first, by keyset over `(revision_no, version_no)` with no snapshot, since the chain is append-only (W9.4) - `substanceOf`, and `recordVersion`, each taking a component, a document, a definition or a layout; `createArtifact` refuses a layout, a theme and a catalogue, which only their migrations make, and `recordVersion` a theme and a catalogue, whose versions `themes.ts` reads whole before it writes them through `recordReadVersion` |
@@ -2750,8 +2751,8 @@ D1 of [data.md](design/data.md), under
 by [the D1 plan](plans/2026-09-30-d1-connections-and-the-connector.md): a connection to a tenant's own
 PostgreSQL, its credential set without anybody ever seeing it again, a test and a list of its tables.
 D2 adds the query definitions written against one and run as a sample
-([below](#query-definitions-and-the-sample-run)); **nothing is stored from a run yet**: no dataset
-and no binding exists.
+([below](#query-definitions-and-the-sample-run)), and D3 the results a document's bindings hold
+([datasets and resolutions](#datasets-and-resolutions)).
 
 **A connection is an artifact in a space** whose versions hold its visible settings - its name, a
 description, `type: 'postgres'`, the source's host, port, database, account and TLS, its identity and
@@ -2873,7 +2874,7 @@ source and stays in the deciding transaction, with the write it answers, bounded
 | `POST /v1/connections/{id}/test`      | `use_connection`              | The test, recorded in `connection_test` against the version tested, ok or failed                      |
 | `POST /v1/connections/{id}/describe`  | `use_connection`              | The tables and views, or the failure by its status: 502, 503 or 504                                   |
 | `POST /v1/connections/{id}/sample`    | `use_connection`, `write_sql` | A draft definition run against sample values; see below                                               |
-| `GET /v1/connections/{id}/uses`       | `read`                        | The query definitions naming it; see below                                                            |
+| `GET /v1/connections/{id}/uses`       | `read`                        | The query definitions naming it, and the documents holding a result run on it; see below              |
 
 A retired connection, or one with no credential, is refused `connection_retired` or
 `credential_missing` before the connector is asked, and nothing is recorded.
@@ -2905,8 +2906,8 @@ reinstates it, and manages its access.
 D2 of [data.md](design/data.md), built by [the D2 plan](plans/2026-09-30-d2-query-definitions.md): a
 query definition written in a space against a connection, SQL with named parameters bound by the
 driver, its columns proposed by the source and confirmed, and a sample run answering the canonical,
-checksummed result or one named failure. **Nothing is stored from a run**: no dataset, binding or
-resolution exists until D3.
+checksummed result or one named failure. **Nothing is stored from a sample**; a binding's run is D3's
+([below](#datasets-and-resolutions)).
 
 **A query definition is an artifact in a space** (`queryDefinition`, migration 0046) whose versions
 hold its title and description, the one connection it names by artifact id, its parameters, its fetch
@@ -2995,6 +2996,85 @@ the other four slots.
 | `service: src/data/`                     | `query-definitions.ts`, the routes; `sql-access.ts`; `failure-words.ts`; the sample in `connections.ts`   |
 | `api-contract: src/query-definitions.ts` | The four definition routes; the sample, uses and data settings beside the connection and editing ones     |
 | `web: src/data/`                         | The Query definitions list, a definition's page, and Used by on a connection's page                       |
+
+## Datasets and resolutions
+
+D3 of [data.md](design/data.md), built by
+[the D3 plan](plans/2026-10-03-d3-datasets-and-resolutions.md): a binding in a component's content
+names a query definition, its parameters and the value it takes; resolving it in a document runs the
+definition through the connector, stores the canonical result as an object under its own checksum,
+records it as a version of a dataset whose content is its provenance, and adds a resolution row - what
+that binding holds in that document. **Only the API places, resolves, checks or accepts a binding**:
+no screen does (D3-P), the editor opens a component holding one read-only, saying why, and **a publish
+or a preview of a document holding one is refused at the door**, `binding_unresolved`, until the
+publish's binding stage (`bindings.md`).
+
+**The binding** (`packages/domain/src/content/model/inline.ts`, widened in place at content schema 1
+after task 0 found none stored) holds an `id` claimed among the component's identifiers, `query` and
+an optional pinned `version`, `parameters` each `{ literal }` or `{ document }`, a `mode` -
+`checked` or `pinned` - and a `take`, `{ column }` or `{ key, column }`, every string in NFC. A
+section title refuses one, `binding_in_title`, answered at the door by the title's own schema
+(`apps/service/src/errors.ts`). `bindingsIn` finds every one in a component; `bindingDigestInput`,
+hashed by the caller, is what a resolution holds the binding to (D3-R).
+
+**A dataset** (`dataset`, migration 0047) is a spaced kind in its definition's space whose identity is
+the question it answers - the definition, the SHA-256 of its parameters' canonical JSON, and the
+identity key, `service` for every run in D3 - and whose versions' content is the provenance record
+(`packages/domain/src/data/provenance.ts`): the definition and connection with their versions, the
+parameters, the SQL that ran, the identity, when, how long, the row count, the columns, the canonical
+form's version and the checksum. `recordDatasetVersion` (`packages/db/src/datasets.ts`) makes the
+dataset with its first version under a lock on the question, and reuses the latest version only where
+its checksum, definition version and SQL all equal the run's (D3-F); `checkProvenanceNames`
+(`dataset-references.ts`) holds every version written to a definition and connection version of the
+kinds it names. **The rows are an object**, the canonical bytes put in the tenant's store before any
+row names them (D3-G), whose key is their SHA-256 and so the checksum; nothing sweeps one in T2.
+
+**A resolution** is a `binding_resolution` row, insert-only: a document, an outline node, a binding,
+the binding's digest, the dataset version held, the one it replaces - a version of the same dataset or
+nothing - `resolve` or `accept`, who and when. The latest per node and binding is what the binding
+holds there; `resolutionsOf` answers it with any **waiting** version, the dataset's newest where it
+was recorded after the one held and its checksum differs (D3-J). A binding whose component version
+now differs from the digest held is **stale**, and holds nothing until resolved again.
+
+**Resolve and check ask the connector** and are the connection routes' (`connections.ts`, the one
+importer of its client, DAT-089), which lend `apps/service/src/data/bindings.ts` the run and their own
+refusals. Each **decides and reads** in the transaction its route's permission was decided in - the
+bindings in the component versions the outline resolves to **as the caller**, `read` on each
+definition, the version a binding pins or the latest, what it takes checked against that version, its
+values against its parameters, `use_connection` and SQL permitted at the connection, and a credential
+to run with - **runs** each distinct question once after it commits, two at a time, holding each
+answer to its checksum and storing its bytes, and **records** in a second transaction that decides
+the session or token, the document's permission, each definition's `read` and each connection's
+`use_connection` again and re-reads each binding: anything changed is `access_changed` or
+`binding_changed`, 409, and nothing is recorded (D3-H). A resolve's refusals before the run refuse the
+whole act; its run failures, and every failure of a check, are per binding, each naming the
+definition, the binding, its node and the document (DAT-086). A check runs at most fifty questions,
+the rest `unchecked: 'limit'`; a binding whose connection the caller may not use is `unchecked:
+'permission'`, and one holding nothing current `unchecked: 'unresolved'`. **Accept queries nothing**:
+it adds a row moving one document's binding to a newer version of the dataset it holds, naming what
+it replaces, or is refused `resolution_precondition` with the binding as it stands (D3-K).
+
+| Route                                       | Needs                                                           | Does                                                                               |
+| ------------------------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `GET /v1/documents/{id}/bindings`           | `read` on the document                                          | Each binding the caller may read, what it holds, whether it is stale, what waits   |
+| `POST /v1/documents/{id}/bindings/resolve`  | `edit` on it; `read` on each definition; `use_connection`       | Runs 1 to 50 named bindings and holds each result; no idempotency key              |
+| `POST /v1/documents/{id}/bindings/check`    | `read` on it; `use_connection` per connection, others unchecked | Runs its checked bindings again, a different result recorded as waiting            |
+| `POST /v1/documents/{id}/bindings/accept`   | `edit` on it                                                    | Holds a waiting version for one binding, from the one it replaces                  |
+| `GET /v1/documents/{id}/datasets/{version}` | `read` on it                                                    | A result it holds or has waiting, whole, from the bytes held to their checksum     |
+| `PUT /v1/datasets/{id}/name`                | `edit` on the dataset                                           | A name, the latest the name                                                        |
+| `GET /v1/query-definitions/{id}/uses`       | `read`                                                          | The components whose latest versions bind it and the documents holding its results |
+
+The definition's page shows **Used by** - those components and documents, the readable ones linked
+and the rest counted - before **Save version**.
+
+| Where                                   | What                                                                                             |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `domain: src/data/`                     | `binding.ts`, `provenance.ts`, `identity.ts`                                                     |
+| `db: src/datasets.ts`                   | Recording a dataset version and a resolution, what a document holds, naming, where used          |
+| `db: src/dataset-references.ts`         | The definition and connection versions a provenance names                                        |
+| `service: src/data/bindings.ts`         | Resolve's and check's acts, and the routes that ask no source; `publishing.ts`'s binding refusal |
+| `api-contract: src/bindings.ts`         | The six binding and dataset routes; the definition's uses beside its routes                      |
+| `web: src/data/QueryDefinitionPage.tsx` | Used by                                                                                          |
 
 ## Containers and images
 

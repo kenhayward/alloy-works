@@ -130,7 +130,7 @@ checksummed result or one named failure.
 | DAT-026, DAT-111                   | Nothing caches a result in T2 (ADR-0035), so neither has anything to apply to. A dataset reused is one the same identity key asked for, and is reused only after the source answered with its checksum                                                                                                                                                                                       |
 | DAT-052, DAT-094, IAM-083, IAM-084 | A declared cache life is T7; querying a stored dataset is T4; a dataset's own read grant and publishing only by one who sees every value are T7                                                                                                                                                                                                                                              |
 | DAT-053, DAT-071                   | Execution attributed and throttled per tenant are T3                                                                                                                                                                                                                                                                                                                                         |
-| IAM-082                            | Sign-out stopping a check or a creation in flight needs a stated bound, measured; [Open questions](#open-questions)                                                                                                                                                                                                                                                                          |
+| IAM-082                            | Sign-out stopping data flowing on a connection that carries the person's authority is D7's, where a run first carries a person's own identity (D3-Q). In D3 every run is the service account's, and an act whose session ends while the source answers records nothing (D3-H)                                                                                                                |
 | TPL-063, TPL-065, TPL-019, TPL-041 | Establishing a document's bindings when it is made, and a template's parameters feeding them, are the `templates.md` additions'; they call resolve, below                                                                                                                                                                                                                                    |
 | CNT-039, PUB-049, PUB-099          | `bindings.md`'s                                                                                                                                                                                                                                                                                                                                                                              |
 
@@ -808,20 +808,24 @@ Placing a binding, and creating a document from a template, which is the same ac
 bindings. The service reads the binding in the component the document references, resolves its
 parameters - literals, and the document's own by name - validates them, and asks the connector to run
 the definition **as that person, in that document's context**. The dataset is found or made from
-(definition, parameters digest, identity key); **if the checksum equals the dataset's latest version's,
-that version is reused**, otherwise a new version is recorded; and a resolution row is added. Resolving
+(definition, parameters digest, identity key); **the latest version is reused only where the checksum,
+the definition version and the SQL that ran all equal this run's** (D3-F), otherwise a new version is
+recorded; and a resolution row is added. Resolving
 a binding again under one's own identity - fetching one's own view - is the same act, and carries
 DAT-091's acknowledgement where the identity is the person's own.
 
 ### Check
 
-Opening a document with checked bindings. For each, **the service re-runs only where the opener's
+Asked for on a document with checked bindings (D3 builds the route; when a screen asks is
+`bindings.md`'s). For each, **the service re-runs only where the opener's
 identity key is the dataset's** - a service-account connection always, an end-user one only for the
 identity whose view is stored (DAT-084). For anybody else a different result is a different view, not
 a source that moved, and is never flagged. A different checksum is **recorded as a new dataset version
 but not resolved to**: it is the waiting revision, answered to the screen beside what the document
 holds. Accepting it later accepts exactly the rows the person saw, with no second query. Pinned
-bindings are never checked.
+bindings are never checked. **Each distinct question runs once**, however many bindings ask it, at
+most two at a time of the connector's four run slots and at most fifty a check; past that the rest
+are answered unchecked, `limit`, never a failure, and each binding's answer stands alone (D3-I).
 
 ### Accept
 
@@ -1018,6 +1022,27 @@ approved them the same day.
 | DA-AE | **The accept route asks for `sharesOwnView: true`** where the result is the person's own view, so the API cannot accept past DAT-091's warning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | DA-AF | **A credential is bound to its connection and its connection's target, and signs in by SCRAM alone, bound to TLS where the source offers it** (D1's final review, a clarity addition approved in the build; the connection's id and channel binding from its re-review). Anyone who may set a credential could otherwise cut a version pointing at their own server and press Test, and node-postgres answers a cleartext or MD5 request with the password. A version changing host, port, database, account or TLS leaves no usable credential until one is set again; the seal's associated data names the connection's id as well as its target, so a sealed row copied to another connection opens nothing, and the digest stored is of the target the connector sealed for |
 
+### Settled by the D3 plan, approved by Ken on 2026-10-03
+
+The D3 plan's decisions this design takes as its own; the rest of them are the plan's alone.
+
+| #    | Decision                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D3-C | **The binding, held tight**: `id` an identifier of the component's, `query` and `version` identifiers, `parameters` by D2's name pattern, at most 50, each `{ literal }` or `{ document }`, `mode`, and `take` `{ column }` or `{ key, column }`; every string in NFC, refused rather than normalised, so what is stored is what the digest covers. Widened in place at schema 1: task 0 found none stored |
+| D3-D | **A binding stands wherever component content admits an inline**, and is refused in a section title, `binding_in_title`: a title belongs to no component, so no resolution could hold it                                                                                                                                                                                                                   |
+| D3-F | **A dataset version is reused only where the run's checksum, the definition version and the SQL that ran all equal the latest version's**: a version's content is its provenance (DAT-085), and a reused one naming what did not run would be untrue                                                                                                                                                       |
+| D3-H | **No act holds access while a source answers**: resolve and check decide and read in a short transaction, ask the connector after it commits, and record in a second that decides the session, the permission on the document, `read` on each definition and `use_connection` on each connection again and re-reads each binding. Anything changed records nothing: `access_changed` or `binding_changed`  |
+| D3-I | **A check runs each distinct question once**, two at a time, fifty a check, the rest `unchecked: 'limit'`; each binding's answer stands alone                                                                                                                                                                                                                                                              |
+| D3-K | **Accept takes the version it replaces**, and is refused `resolution_precondition` with the binding as it stands where that is not what it holds, or the version is not a newer result of it                                                                                                                                                                                                               |
+| D3-L | **Named refusals**: `binding_missing`, `binding_in_title`, `binding_changed`, `access_changed`, `take_invalid` (checked at resolve, against the version resolved to), `definition_retired`, `resolution_precondition`, and `parameter_invalid` for a `{ document }` parameter until a document has a parameter set (TPL-020); each names the definition, the binding, its node and the document            |
+| D3-R | **A resolution's digest is SHA-256 over the binding's canonical form, `id` and `mode` included**: a binding turned from pinned to checked is a question nobody re-confirmed, and holds nothing until it is resolved again                                                                                                                                                                                  |
+
+**Until the publish's binding stage exists, nothing publishes a binding** (the D3 plan, "Added in
+phase B"): a publish or a preview of a document whose resolved content holds one is refused before
+anything is queued, `binding_unresolved`, naming each binding by its node and the document, and
+`assemble` refuses one by the same code should a request reach it. DAT-046 and DAT-087 stay
+unclaimed: their answer is the binding stage, `bindings.md`'s.
+
 ## What was ruled out
 
 - **The rows as JSONB in the version row**, which would put every result in the chain's own table,
@@ -1041,8 +1066,9 @@ approved them the same day.
 | Question                                                                                                                                                               | Where it goes                                     |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
 | Mutual TLS between the service and the connector in production                                                                                                         | Hosting, which is open (system.md)                |
-| The cadence and latency of the check on opening a document with many bindings, and the concurrency of a creation's resolves (case 4: 1.4 to 1.8 s for 440 at 8)        | D3's plan, and the `templates.md` additions       |
-| IAM-082's stated bound for a check or a creation stopped by a sign-out                                                                                                 | D3's plan, measured                               |
+| The concurrency of a creation's resolves (case 4: 1.4 to 1.8 s for 440 at 8). A check's is answered by D3-I: each distinct question once, two at a time, fifty a check | The `templates.md` additions                      |
+| When a screen asks for a check - on opening a document, or on request                                                                                                  | `bindings.md`                                     |
+| IAM-082's stated bound for data flowing on the person's authority after a sign-out                                                                                     | D7's plan                                         |
 | Checking the account's own privilege at each asserted run, which would let DAT-112 be claimed                                                                          | D7's plan                                         |
 | Comparison and order under each source's collation, where two keys compare equal: answered for PostgreSQL's SQL by D2-M - checked by code point, ordered `COLLATE "C"` | D4 and D5's plans, for the builder and SQL Server |
 | A nested JSON value kept as text: its source text or a canonical form, which decides whether reformatting at the source moves a checksum                               | D6's plan                                         |
@@ -1052,16 +1078,16 @@ approved them the same day.
 
 Each slice has a plan of its own, written when its turn comes.
 
-| Slice  | What                                                                                                                                                                                                                                                                |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **D1** | The connection kind and its sealed credential; `use_connection`; `apps/connector` with a process per request, the guard, PostgreSQL, `test`, `describe` and `seal`; the compose networks; a Connections page                                                        |
-| **D2** | The query definition kind: parameters, the SQL fallback and `write_sql` with the check that reads it, columns second, the sample run, canonicalising and checksumming in the connector; search. Built by [the D2 plan](../plans/2026-09-30-d2-query-definitions.md) |
-| **D3** | Datasets and resolutions: the dataset kind, objects keyed by checksum, provenance, resolve, check and accept; the binding inline widened after the evidence query. **`bindings.md` is designed after D3**                                                           |
-| **D4** | The builder: the saved query tree, PostgreSQL's SQL generated from it, its screens                                                                                                                                                                                  |
-| **D5** | SQL Server: `tedious`, its dialect, `NVARCHAR` and `CAST`                                                                                                                                                                                                           |
-| **D6** | HTTP and S3 connections and the file formats: the product's own XLSX reader, CSV and JSON                                                                                                                                                                           |
-| **D7** | End-user identity: the delegated token, with the session holding the provider's token, and asserted identity on PostgreSQL and SQL Server                                                                                                                           |
-| **D8** | Image columns through `ingest`                                                                                                                                                                                                                                      |
+| Slice  | What                                                                                                                                                                                                                                                                                  |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **D1** | The connection kind and its sealed credential; `use_connection`; `apps/connector` with a process per request, the guard, PostgreSQL, `test`, `describe` and `seal`; the compose networks; a Connections page                                                                          |
+| **D2** | The query definition kind: parameters, the SQL fallback and `write_sql` with the check that reads it, columns second, the sample run, canonicalising and checksumming in the connector; search. Built by [the D2 plan](../plans/2026-09-30-d2-query-definitions.md)                   |
+| **D3** | Datasets and resolutions: the dataset kind, objects keyed by checksum, provenance, resolve, check and accept; the binding inline widened after the evidence query. Built by [the D3 plan](../plans/2026-10-03-d3-datasets-and-resolutions.md). **`bindings.md` is designed after D3** |
+| **D4** | The builder: the saved query tree, PostgreSQL's SQL generated from it, its screens                                                                                                                                                                                                    |
+| **D5** | SQL Server: `tedious`, its dialect, `NVARCHAR` and `CAST`                                                                                                                                                                                                                             |
+| **D6** | HTTP and S3 connections and the file formats: the product's own XLSX reader, CSV and JSON                                                                                                                                                                                             |
+| **D7** | End-user identity: the delegated token, with the session holding the provider's token, and asserted identity on PostgreSQL and SQL Server; IAM-082, sign-out stopping data flowing on the person's authority                                                                          |
+| **D8** | Image columns through `ingest`                                                                                                                                                                                                                                                        |
 
 Then `tables.md`, and the `templates.md` additions: a template's parameters, and a document's
 bindings established when it is made.
