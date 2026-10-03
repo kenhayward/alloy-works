@@ -36,6 +36,11 @@ export const documentationGroups = [
         description:
           'Write the queries a document will bind to, and run them against sample values first.',
       },
+      {
+        name: 'Bindings and datasets',
+        description:
+          "Resolve, check and accept the results a document's bindings hold, read them, and name the datasets they are versions of.",
+      },
     ],
   },
   {
@@ -135,6 +140,15 @@ const operationTags = {
     'createQueryDefinition',
     'getQueryDefinition',
     'recordQueryDefinitionVersion',
+    'getQueryDefinitionUses',
+  ],
+  'Bindings and datasets': [
+    'getDocumentBindings',
+    'resolveBindings',
+    'checkBindings',
+    'acceptBinding',
+    'getDocumentDataset',
+    'nameDataset',
   ],
   Assets: [
     'createAssetUpload',
@@ -256,7 +270,21 @@ const descriptions: Readonly<Record<string, string>> = {
   sampleConnection:
     'Runs a draft query definition against the sample values given, exactly as a document would run it, and stores nothing. Each value is checked against its declaration before the source is asked. It needs use connection and write SQL on the connection, and a connection whose latest test found its account read-only. A failure is an answer, named and laid at the connector, the query or the product.',
   getConnectionUses:
-    'Lists the query definitions whose latest versions name the connection: those the caller may read by title, and a count of the rest.',
+    'Lists the query definitions whose latest versions name the connection, and the documents where a binding holds a result run on it: those the caller may read by title, and a count of the rest.',
+  getQueryDefinitionUses:
+    'Lists the components whose latest versions hold a binding naming the query definition, and the documents where a binding holds a result of it: those the caller may read by title, and a count of the rest. Ask before changing a definition, to see what the change will affect.',
+  getDocumentBindings:
+    "Lists every binding in the components the document's latest version places that the caller may read, in the outline's order: the binding as its component holds it, the dataset version it holds in this document with that result's provenance and name, whether the binding has changed since, and any newer result a check recorded and nobody has accepted. Reading needs only read on the document, never use of a connection.",
+  resolveBindings:
+    "Runs the named bindings' query definitions through the connector now, as the service account of each connection, and holds each result in this document: the definition version the binding pins, or its latest. Each result is stored once under its checksum and recorded as a version of its dataset, reusing the latest where nothing differs. It needs edit on the document, read on each definition, and use connection on each connection, decided again once the source has answered; a binding that changed meanwhile, or a permission lost, records nothing. Each failed run is answered by name with its definition, binding and document, and records nothing. This route takes no idempotency key.",
+  checkBindings:
+    "Runs the document's checked bindings again, each distinct query once, two at a time and at most 50 a check, and records any different result as a new dataset version waiting to be accepted: nothing the document holds changes. A binding whose connection the caller may not use is left unchecked, as are those holding nothing; pinned bindings are never checked. This route takes no idempotency key.",
+  acceptBinding:
+    'Holds a waiting result for one binding in this document alone, naming the version it replaces, and queries nothing. Every other document holding the same dataset keeps its version. It needs edit on the document; an acceptance from a version the binding no longer holds is refused with the binding as it stands.',
+  getDocumentDataset:
+    'Returns a stored result whole - its columns, every row in canonical form, and its provenance - where the document holds it or has it waiting. Reading needs only read on the document.',
+  nameDataset:
+    'Names a dataset. The name is kept beside every earlier one, and the latest is the name. It needs edit on the dataset, which sits in the space of its query definition.',
   listQueryDefinitions:
     'Lists the query definitions the caller may read, with the space and connection of each, filtered by space or connection.',
   createQueryDefinition:

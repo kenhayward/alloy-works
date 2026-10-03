@@ -33,7 +33,7 @@ const instant = z
 
 const count = z.number().int().min(0);
 
-const provenanceSchema = z.strictObject({
+export const provenanceSchema = z.strictObject({
   schemaVersion: z.literal(PROVENANCE_SCHEMA_VERSION),
   queryDefinition: versioned,
   connection: versioned,

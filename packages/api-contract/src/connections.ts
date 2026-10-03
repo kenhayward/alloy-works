@@ -144,8 +144,20 @@ export const NamingDefinitionsView = z.object({
   others: z.number().int().describe('How many more name it that the caller may not read'),
 });
 
-/** Where a connection is used (D2-O): the definitions naming it. Documents arrive with bindings. */
-export const ConnectionUsesView = z.object({ definitions: NamingDefinitionsView });
+/** Something used, by what the caller may read and how many more there are (D3-M). */
+export const UsesView = z.object({
+  readable: z.array(z.object({ id: z.string(), title: z.string() })),
+  others: z.number().int().describe('How many more the caller may not read, never named'),
+});
+
+/**
+ * Where a connection is used (D2-O, D3-M): the definitions naming it, and the documents where a
+ * binding holds a result run on it.
+ */
+export const ConnectionUsesView = z.object({
+  definitions: NamingDefinitionsView,
+  documents: UsesView.describe('The documents where a binding holds a result run on it'),
+});
 export type ConnectionUsesView = z.infer<typeof ConnectionUsesView>;
 
 /**
@@ -654,14 +666,15 @@ export const connectionRoutes = {
     operationId: 'getConnectionUses',
     method: 'GET',
     path: '/v1/connections/{id}/uses',
-    summary: 'Where a connection is used: the query definitions naming it',
+    summary:
+      'Where a connection is used: the query definitions naming it, and the documents through them',
     tenantScoped: true,
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: ConnectionParams,
     responses: {
       200: {
         description:
-          'The query definitions whose latest versions name it: those the caller may read, and how many more',
+          'The query definitions whose latest versions name it, and the documents holding a result run on it: those the caller may read, and how many more',
         schema: ConnectionUsesView,
       },
       401: unauthenticated,

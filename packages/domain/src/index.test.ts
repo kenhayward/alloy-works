@@ -432,6 +432,9 @@ describe('the domain package', () => {
         'identityKey',
         'parametersDigestInput',
         'BINDING_IN_TITLE',
+        // D3's routes answer a binding and a dataset version's provenance by these shapes.
+        'bindingNodeSchema',
+        'provenanceSchema',
       ].sort(),
     );
   });

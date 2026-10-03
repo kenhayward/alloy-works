@@ -17932,6 +17932,48 @@
       "kind": "title"
     },
     {
+      "id": "DAT-015",
+      "file": "apps/service/src/bindings-routes.test.ts",
+      "line": 191,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-037",
+      "file": "apps/service/src/bindings-routes.test.ts",
+      "line": 318,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-083",
+      "file": "apps/service/src/bindings-routes.test.ts",
+      "line": 80,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-084",
+      "file": "apps/service/src/bindings-routes.test.ts",
+      "line": 235,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-086",
+      "file": "apps/service/src/bindings-routes.test.ts",
+      "line": 446,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-090",
+      "file": "apps/service/src/bindings-routes.test.ts",
+      "line": 395,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-093",
+      "file": "apps/service/src/bindings-routes.test.ts",
+      "line": 277,
+      "kind": "title"
+    },
+    {
       "id": "CNT-143",
       "file": "apps/service/src/component-creation.test.ts",
       "line": 222,
@@ -17988,13 +18030,13 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 745,
+      "line": 792,
       "kind": "title"
     },
     {
       "id": "DAT-005",
       "file": "apps/service/src/data-secrets.test.ts",
-      "line": 147,
+      "line": 162,
       "kind": "title"
     },
     {
@@ -18228,43 +18270,43 @@
     {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 422,
+      "line": 475,
       "kind": "rule"
     },
     {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 357,
+      "line": 410,
       "kind": "title"
     },
     {
       "id": "PUB-014",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 450,
+      "line": 503,
       "kind": "rule"
     },
     {
       "id": "PUB-047",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 658,
+      "line": 711,
       "kind": "title"
     },
     {
       "id": "PUB-048",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 600,
+      "line": 653,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 539,
+      "line": 592,
       "kind": "rule"
     },
     {
       "id": "PUB-095",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 467,
+      "line": 520,
       "kind": "rule"
     },
     {
@@ -18421,6 +18463,18 @@
       "id": "IAM-062",
       "file": "apps/service/src/token-routes.test.ts",
       "line": 554,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-016",
+      "file": "apps/service/src/uses-routes.test.ts",
+      "line": 57,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-064",
+      "file": "apps/service/src/uses-routes.test.ts",
+      "line": 84,
       "kind": "title"
     },
     {
@@ -20304,7 +20358,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 439,
+      "line": 442,
       "kind": "title"
     },
     {

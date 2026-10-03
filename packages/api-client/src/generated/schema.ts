@@ -415,8 +415,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Where a connection is used: the query definitions naming it
-         * @description Lists the query definitions whose latest versions name the connection: those the caller may read by title, and a count of the rest.
+         * Where a connection is used: the query definitions naming it, and the documents through them
+         * @description Lists the query definitions whose latest versions name the connection, and the documents where a binding holds a result run on it: those the caller may read by title, and a count of the rest.
          */
         get: operations["getConnectionUses"];
         put?: never;
@@ -441,6 +441,26 @@ export interface paths {
          * @description Records the next connection version from the version the caller opened. Retiring and reinstating a connection are versions too.
          */
         post: operations["recordConnectionVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/datasets/{id}/name": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Name a dataset; the latest name is its name
+         * @description Names a dataset. The name is kept beside every earlier one, and the latest is the name. It needs edit on the dataset, which sits in the space of its query definition.
+         */
+        put: operations["nameDataset"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -551,6 +571,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{id}/bindings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A document's bindings, what each holds, and any newer result waiting
+         * @description Lists every binding in the components the document's latest version places that the caller may read, in the outline's order: the binding as its component holds it, the dataset version it holds in this document with that result's provenance and name, whether the binding has changed since, and any newer result a check recorded and nobody has accepted. Reading needs only read on the document, never use of a connection.
+         */
+        get: operations["getDocumentBindings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/bindings/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hold a waiting result for one binding in this document, querying nothing
+         * @description Holds a waiting result for one binding in this document alone, naming the version it replaces, and queries nothing. Every other document holding the same dataset keeps its version. It needs edit on the document; an acceptance from a version the binding no longer holds is refused with the binding as it stands.
+         */
+        post: operations["acceptBinding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/bindings/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run a document's checked bindings again and record any different result as waiting
+         * @description Runs the document's checked bindings again, each distinct query once, two at a time and at most 50 a check, and records any different result as a new dataset version waiting to be accepted: nothing the document holds changes. A binding whose connection the caller may not use is left unchecked, as are those holding nothing; pinned bindings are never checked. This route takes no idempotency key.
+         */
+        post: operations["checkBindings"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/bindings/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run the named bindings' queries now and hold their results in this document
+         * @description Runs the named bindings' query definitions through the connector now, as the service account of each connection, and holds each result in this document: the definition version the binding pins, or its latest. Each result is stored once under its checksum and recorded as a version of its dataset, reusing the latest where nothing differs. It needs edit on the document, read on each definition, and use connection on each connection, decided again once the source has answered; a binding that changed meanwhile, or a permission lost, records nothing. Each failed run is answered by name with its definition, binding and document, and records nothing. This route takes no idempotency key.
+         */
+        post: operations["resolveBindings"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents/{id}/contributions": {
         parameters: {
             query?: never;
@@ -563,6 +663,26 @@ export interface paths {
          * @description Shows what each occurrence contributes to the current document, subject to the caller’s readable set.
          */
         get: operations["getContributions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/datasets/{version}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A stored result the document holds or has waiting, whole
+         * @description Returns a stored result whole - its columns, every row in canonical form, and its provenance - where the document holds it or has it waiting. Reading needs only read on the document.
+         */
+        get: operations["getDocumentDataset"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1079,6 +1199,26 @@ export interface paths {
          * @description Returns the latest query definition version, the connection it names, and whether the caller may change it or run it.
          */
         get: operations["getQueryDefinition"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/query-definitions/{id}/uses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Where a query definition is used: the components binding it and the documents resolving them
+         * @description Lists the components whose latest versions hold a binding naming the query definition, and the documents where a binding holds a result of it: those the caller may read by title, and a count of the rest. Ask before changing a definition, to see what the change will affect.
+         */
+        get: operations["getQueryDefinitionUses"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6459,7 +6599,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The query definitions whose latest versions name it: those the caller may read, and how many more */
+            /** @description The query definitions whose latest versions name it, and the documents holding a result run on it: those the caller may read, and how many more */
             200: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -6470,6 +6610,10 @@ export interface operations {
                     /**
                      * @example {
                      *       "definitions": {
+                     *         "readable": [],
+                     *         "others": -9007199254740991
+                     *       },
+                     *       "documents": {
                      *         "readable": [],
                      *         "others": -9007199254740991
                      *       }
@@ -6483,6 +6627,15 @@ export interface operations {
                                 retired: boolean;
                             }[];
                             /** @description How many more name it that the caller may not read */
+                            others: number;
+                        };
+                        /** @description The documents where a binding holds a result run on it */
+                        documents: {
+                            readable: {
+                                id: string;
+                                title: string;
+                            }[];
+                            /** @description How many more the caller may not read, never named */
                             others: number;
                         };
                     };
@@ -7175,6 +7328,160 @@ export interface operations {
                             /** @description How many more name it that the caller may not read */
                             others: number;
                         };
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    nameDataset: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "name": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description 1 to 200 characters, with no space before or after and no control character */
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Named */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "name": "example",
+                     *       "namedBy": "example",
+                     *       "namedAt": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        name: string;
+                        namedBy: string;
+                        namedAt: string;
+                    };
+                };
+            };
+            /** @description `name_invalid`: longer than 200 characters, with a space before or after, a control character, or not in NFC */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the dataset but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such dataset in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };
@@ -8367,6 +8674,2906 @@ export interface operations {
             };
         };
     };
+    getDocumentBindings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every binding the caller may read */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "bindings": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Every binding in the components the document's latest version places that the caller may read, in the outline's order */
+                        bindings: {
+                            node: string;
+                            binding: {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
+                                take: {
+                                    column: string;
+                                } | {
+                                    key: {
+                                        [key: string]: string | boolean | null;
+                                    };
+                                    column: string;
+                                };
+                            };
+                            /** @description What it holds, or null where it has never been resolved */
+                            held: {
+                                dataset: string;
+                                /** @description The dataset version it holds */
+                                version: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        sql: string;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    columns: {
+                                        name: string;
+                                        from: {
+                                            column: string;
+                                        };
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: Record<string, never>;
+                                };
+                                /** @description The dataset's name, or null where nobody has named it */
+                                name: string | null;
+                                /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
+                                stale: boolean;
+                                /**
+                                 * @description The act that made it what the binding holds
+                                 * @enum {string}
+                                 */
+                                act: "resolve" | "accept";
+                                /** @description Who resolved or accepted it */
+                                by: string;
+                                /** @description When */
+                                at: string;
+                            } | null;
+                            /** @description A different result a check recorded after the one held, which nothing holds until it is accepted */
+                            waiting: {
+                                version: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        sql: string;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    columns: {
+                                        name: string;
+                                        from: {
+                                            column: string;
+                                        };
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: Record<string, never>;
+                                };
+                            } | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a document the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    acceptBinding: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "node": "example",
+                 *       "binding": "example",
+                 *       "version": "00000000-0000-4000-8000-000000000001",
+                 *       "replaces": "00000000-0000-4000-8000-000000000001"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The outline node referencing the component */
+                    node: string;
+                    /** @description The binding's identifier in that component */
+                    binding: string;
+                    /** @description The waiting dataset version to hold */
+                    version: string & (unknown & unknown);
+                    /** @description The dataset version the binding holds now, as the caller saw it */
+                    replaces: string & (unknown & unknown);
+                    /** @description Acknowledges that a result fetched under the caller's own identity is shown to everybody who may read the document. No result is fetched so yet, so it is accepted and not needed */
+                    sharesOwnView?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description The binding as it now stands */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "node": "example",
+                     *       "binding": {
+                     *         "type": "binding",
+                     *         "id": "example",
+                     *         "query": "00000000-0000-4000-8000-000000000001",
+                     *         "parameters": {},
+                     *         "mode": "checked",
+                     *         "take": {
+                     *           "column": "example"
+                     *         }
+                     *       },
+                     *       "held": {
+                     *         "dataset": "example",
+                     *         "version": "example",
+                     *         "number": "example",
+                     *         "provenance": {
+                     *           "schemaVersion": 1,
+                     *           "queryDefinition": {
+                     *             "artifact": "00000000-0000-4000-8000-000000000001",
+                     *             "version": "00000000-0000-4000-8000-000000000001"
+                     *           },
+                     *           "connection": {
+                     *             "artifact": "00000000-0000-4000-8000-000000000001",
+                     *             "version": "00000000-0000-4000-8000-000000000001"
+                     *           },
+                     *           "parameters": {},
+                     *           "ran": {
+                     *             "sql": "example"
+                     *           },
+                     *           "identity": {
+                     *             "kind": "service"
+                     *           },
+                     *           "at": "2026-01-01T00:00:00.000Z",
+                     *           "durationMs": 0,
+                     *           "rowCount": 0,
+                     *           "columns": [
+                     *             {
+                     *               "name": "example",
+                     *               "from": {
+                     *                 "column": "example"
+                     *               },
+                     *               "type": {
+                     *                 "base": "text"
+                     *               }
+                     *             }
+                     *           ],
+                     *           "canonical": 1,
+                     *           "checksum": "0000000000000000000000000000000000000000000000000000000000000000",
+                     *           "images": {}
+                     *         },
+                     *         "name": "example",
+                     *         "stale": false,
+                     *         "act": "resolve",
+                     *         "by": "example",
+                     *         "at": "example"
+                     *       },
+                     *       "waiting": {
+                     *         "version": "example",
+                     *         "provenance": {
+                     *           "schemaVersion": 1,
+                     *           "queryDefinition": {
+                     *             "artifact": "00000000-0000-4000-8000-000000000001",
+                     *             "version": "00000000-0000-4000-8000-000000000001"
+                     *           },
+                     *           "connection": {
+                     *             "artifact": "00000000-0000-4000-8000-000000000001",
+                     *             "version": "00000000-0000-4000-8000-000000000001"
+                     *           },
+                     *           "parameters": {},
+                     *           "ran": {
+                     *             "sql": "example"
+                     *           },
+                     *           "identity": {
+                     *             "kind": "service"
+                     *           },
+                     *           "at": "2026-01-01T00:00:00.000Z",
+                     *           "durationMs": 0,
+                     *           "rowCount": 0,
+                     *           "columns": [
+                     *             {
+                     *               "name": "example",
+                     *               "from": {
+                     *                 "column": "example"
+                     *               },
+                     *               "type": {
+                     *                 "base": "text"
+                     *               }
+                     *             }
+                     *           ],
+                     *           "canonical": 1,
+                     *           "checksum": "0000000000000000000000000000000000000000000000000000000000000000",
+                     *           "images": {}
+                     *         }
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        node: string;
+                        binding: {
+                            /** @constant */
+                            type: "binding";
+                            id: string;
+                            query: string;
+                            version?: string;
+                            parameters: {
+                                [key: string]: {
+                                    literal: (string | boolean | null) | (string | boolean | null)[];
+                                } | {
+                                    document: string;
+                                };
+                            };
+                            /** @enum {string} */
+                            mode: "checked" | "pinned";
+                            take: {
+                                column: string;
+                            } | {
+                                key: {
+                                    [key: string]: string | boolean | null;
+                                };
+                                column: string;
+                            };
+                        };
+                        /** @description What it holds, or null where it has never been resolved */
+                        held: {
+                            dataset: string;
+                            /** @description The dataset version it holds */
+                            version: string;
+                            /** @description `revision.version`, as `0.2` */
+                            number: string;
+                            provenance: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                queryDefinition: {
+                                    artifact: string;
+                                    version: string;
+                                };
+                                connection: {
+                                    artifact: string;
+                                    version: string;
+                                };
+                                parameters: {
+                                    [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                };
+                                ran: {
+                                    sql: string;
+                                };
+                                identity: {
+                                    /** @constant */
+                                    kind: "service";
+                                };
+                                at: string;
+                                durationMs: number;
+                                rowCount: number;
+                                columns: {
+                                    name: string;
+                                    from: {
+                                        column: string;
+                                    };
+                                    type: {
+                                        /** @constant */
+                                        base: "text";
+                                    } | {
+                                        /** @constant */
+                                        base: "integer";
+                                    } | {
+                                        /** @constant */
+                                        base: "decimal";
+                                        precision: number;
+                                        scale: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "date";
+                                    } | {
+                                        /** @constant */
+                                        base: "time";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "localDateTime";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "instant";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "boolean";
+                                    };
+                                }[];
+                                /** @constant */
+                                canonical: 1;
+                                checksum: string;
+                                images: Record<string, never>;
+                            };
+                            /** @description The dataset's name, or null where nobody has named it */
+                            name: string | null;
+                            /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
+                            stale: boolean;
+                            /**
+                             * @description The act that made it what the binding holds
+                             * @enum {string}
+                             */
+                            act: "resolve" | "accept";
+                            /** @description Who resolved or accepted it */
+                            by: string;
+                            /** @description When */
+                            at: string;
+                        } | null;
+                        /** @description A different result a check recorded after the one held, which nothing holds until it is accepted */
+                        waiting: {
+                            version: string;
+                            provenance: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                queryDefinition: {
+                                    artifact: string;
+                                    version: string;
+                                };
+                                connection: {
+                                    artifact: string;
+                                    version: string;
+                                };
+                                parameters: {
+                                    [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                };
+                                ran: {
+                                    sql: string;
+                                };
+                                identity: {
+                                    /** @constant */
+                                    kind: "service";
+                                };
+                                at: string;
+                                durationMs: number;
+                                rowCount: number;
+                                columns: {
+                                    name: string;
+                                    from: {
+                                        column: string;
+                                    };
+                                    type: {
+                                        /** @constant */
+                                        base: "text";
+                                    } | {
+                                        /** @constant */
+                                        base: "integer";
+                                    } | {
+                                        /** @constant */
+                                        base: "decimal";
+                                        precision: number;
+                                        scale: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "date";
+                                    } | {
+                                        /** @constant */
+                                        base: "time";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "localDateTime";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "instant";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "boolean";
+                                    };
+                                }[];
+                                /** @constant */
+                                canonical: 1;
+                                checksum: string;
+                                images: Record<string, never>;
+                            };
+                        } | null;
+                    };
+                };
+            };
+            /** @description `binding_missing`: no such binding in the component the node places */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
+                        problems?: ({
+                            /** @constant */
+                            rule: "definition_invalid";
+                            /** @description The member refused, dotted, as `columns.2.name` */
+                            path: string;
+                            message: string;
+                        } | {
+                            parameter: string;
+                            /** @enum {string} */
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            /** @description The value as sent, cut to 1,000 characters */
+                            value: string;
+                        })[];
+                        definition?: string;
+                        binding?: string;
+                        node?: string;
+                        document?: string;
+                        /** @enum {string} */
+                        reason?: "untested" | "not_read_only";
+                        /** @description resolution_precondition: the binding as it now stands */
+                        current?: {
+                            node: string;
+                            binding: {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
+                                take: {
+                                    column: string;
+                                } | {
+                                    key: {
+                                        [key: string]: string | boolean | null;
+                                    };
+                                    column: string;
+                                };
+                            };
+                            /** @description What it holds, or null where it has never been resolved */
+                            held: {
+                                dataset: string;
+                                /** @description The dataset version it holds */
+                                version: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        sql: string;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    columns: {
+                                        name: string;
+                                        from: {
+                                            column: string;
+                                        };
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: Record<string, never>;
+                                };
+                                /** @description The dataset's name, or null where nobody has named it */
+                                name: string | null;
+                                /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
+                                stale: boolean;
+                                /**
+                                 * @description The act that made it what the binding holds
+                                 * @enum {string}
+                                 */
+                                act: "resolve" | "accept";
+                                /** @description Who resolved or accepted it */
+                                by: string;
+                                /** @description When */
+                                at: string;
+                            } | null;
+                            /** @description A different result a check recorded after the one held, which nothing holds until it is accepted */
+                            waiting: {
+                                version: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        sql: string;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    columns: {
+                                        name: string;
+                                        from: {
+                                            column: string;
+                                        };
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: Record<string, never>;
+                                };
+                            } | null;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `resolution_precondition`: the binding no longer holds what `replaces` names, or the version is not a newer result of what it holds, answered with the binding as it stands */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
+                        problems?: ({
+                            /** @constant */
+                            rule: "definition_invalid";
+                            /** @description The member refused, dotted, as `columns.2.name` */
+                            path: string;
+                            message: string;
+                        } | {
+                            parameter: string;
+                            /** @enum {string} */
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            /** @description The value as sent, cut to 1,000 characters */
+                            value: string;
+                        })[];
+                        definition?: string;
+                        binding?: string;
+                        node?: string;
+                        document?: string;
+                        /** @enum {string} */
+                        reason?: "untested" | "not_read_only";
+                        /** @description resolution_precondition: the binding as it now stands */
+                        current?: {
+                            node: string;
+                            binding: {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
+                                take: {
+                                    column: string;
+                                } | {
+                                    key: {
+                                        [key: string]: string | boolean | null;
+                                    };
+                                    column: string;
+                                };
+                            };
+                            /** @description What it holds, or null where it has never been resolved */
+                            held: {
+                                dataset: string;
+                                /** @description The dataset version it holds */
+                                version: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        sql: string;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    columns: {
+                                        name: string;
+                                        from: {
+                                            column: string;
+                                        };
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: Record<string, never>;
+                                };
+                                /** @description The dataset's name, or null where nobody has named it */
+                                name: string | null;
+                                /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
+                                stale: boolean;
+                                /**
+                                 * @description The act that made it what the binding holds
+                                 * @enum {string}
+                                 */
+                                act: "resolve" | "accept";
+                                /** @description Who resolved or accepted it */
+                                by: string;
+                                /** @description When */
+                                at: string;
+                            } | null;
+                            /** @description A different result a check recorded after the one held, which nothing holds until it is accepted */
+                            waiting: {
+                                version: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        sql: string;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    columns: {
+                                        name: string;
+                                        from: {
+                                            column: string;
+                                        };
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: Record<string, never>;
+                                };
+                            } | null;
+                        };
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    checkBindings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /** @example {} */
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description Each checked binding: unchanged, a revision waiting, unchecked and why, or its failure */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": []
+                     *     }
+                     */
+                    "application/json": {
+                        results: ({
+                            node: string;
+                            binding: string;
+                            /** @constant */
+                            outcome: "unchanged";
+                        } | {
+                            node: string;
+                            binding: string;
+                            /** @constant */
+                            outcome: "revision";
+                            /** @description The different result, recorded and waiting to be accepted */
+                            version: string;
+                        } | {
+                            node: string;
+                            binding: string;
+                            /** @constant */
+                            outcome: "unchecked";
+                            /**
+                             * @description `limit`: past the 50 distinct runs a check makes; `permission`: the caller may not use its connection; `unresolved`: it holds nothing to compare, or has changed since it was resolved
+                             * @enum {string}
+                             */
+                            reason: "limit" | "permission" | "unresolved";
+                        } | {
+                            node: string;
+                            binding: string;
+                            /** @constant */
+                            outcome: "failed";
+                            failure: {
+                                /** @description Stable and machine-readable */
+                                code: string;
+                                /**
+                                 * @description Whose failure it is: the source's side, the query's author, or the product
+                                 * @enum {string}
+                                 */
+                                attribution: "connector" | "query" | "product";
+                                message: string;
+                                /** @description What the source said, where it refused the statement: `source_refused` alone */
+                                source?: {
+                                    /** @description The source's five-character SQLSTATE */
+                                    sqlstate: string;
+                                    /** @description The source's own message, cut to 1,000 characters */
+                                    message: string;
+                                };
+                                /** @description The column the failure names, where it names one */
+                                column?: string;
+                                /** @description The row the failure names, counted from 1 */
+                                row?: number;
+                                /** @description The query definition the binding names */
+                                definition: string;
+                                binding: string;
+                                node: string;
+                                document: string;
+                            };
+                        })[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a document the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `access_changed` or `binding_changed`: a permission, the session or a binding changed while the source answered, and nothing is recorded */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
+                        problems?: ({
+                            /** @constant */
+                            rule: "definition_invalid";
+                            /** @description The member refused, dotted, as `columns.2.name` */
+                            path: string;
+                            message: string;
+                        } | {
+                            parameter: string;
+                            /** @enum {string} */
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            /** @description The value as sent, cut to 1,000 characters */
+                            value: string;
+                        })[];
+                        definition?: string;
+                        binding?: string;
+                        node?: string;
+                        document?: string;
+                        /** @enum {string} */
+                        reason?: "untested" | "not_read_only";
+                        /** @description resolution_precondition: the binding as it now stands */
+                        current?: {
+                            node: string;
+                            binding: {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
+                                take: {
+                                    column: string;
+                                } | {
+                                    key: {
+                                        [key: string]: string | boolean | null;
+                                    };
+                                    column: string;
+                                };
+                            };
+                            /** @description What it holds, or null where it has never been resolved */
+                            held: {
+                                dataset: string;
+                                /** @description The dataset version it holds */
+                                version: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        sql: string;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    columns: {
+                                        name: string;
+                                        from: {
+                                            column: string;
+                                        };
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: Record<string, never>;
+                                };
+                                /** @description The dataset's name, or null where nobody has named it */
+                                name: string | null;
+                                /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
+                                stale: boolean;
+                                /**
+                                 * @description The act that made it what the binding holds
+                                 * @enum {string}
+                                 */
+                                act: "resolve" | "accept";
+                                /** @description Who resolved or accepted it */
+                                by: string;
+                                /** @description When */
+                                at: string;
+                            } | null;
+                            /** @description A different result a check recorded after the one held, which nothing holds until it is accepted */
+                            waiting: {
+                                version: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        sql: string;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    columns: {
+                                        name: string;
+                                        from: {
+                                            column: string;
+                                        };
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: Record<string, never>;
+                                };
+                            } | null;
+                        };
+                    };
+                };
+            };
+            /** @description `connector_unavailable`: no connector is configured; `storage_unavailable`: the environment has nowhere to keep a result */
+            503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
+                        problems?: ({
+                            /** @constant */
+                            rule: "definition_invalid";
+                            /** @description The member refused, dotted, as `columns.2.name` */
+                            path: string;
+                            message: string;
+                        } | {
+                            parameter: string;
+                            /** @enum {string} */
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            /** @description The value as sent, cut to 1,000 characters */
+                            value: string;
+                        })[];
+                        definition?: string;
+                        binding?: string;
+                        node?: string;
+                        document?: string;
+                        /** @enum {string} */
+                        reason?: "untested" | "not_read_only";
+                        /** @description resolution_precondition: the binding as it now stands */
+                        current?: {
+                            node: string;
+                            binding: {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
+                                take: {
+                                    column: string;
+                                } | {
+                                    key: {
+                                        [key: string]: string | boolean | null;
+                                    };
+                                    column: string;
+                                };
+                            };
+                            /** @description What it holds, or null where it has never been resolved */
+                            held: {
+                                dataset: string;
+                                /** @description The dataset version it holds */
+                                version: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        sql: string;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    columns: {
+                                        name: string;
+                                        from: {
+                                            column: string;
+                                        };
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: Record<string, never>;
+                                };
+                                /** @description The dataset's name, or null where nobody has named it */
+                                name: string | null;
+                                /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
+                                stale: boolean;
+                                /**
+                                 * @description The act that made it what the binding holds
+                                 * @enum {string}
+                                 */
+                                act: "resolve" | "accept";
+                                /** @description Who resolved or accepted it */
+                                by: string;
+                                /** @description When */
+                                at: string;
+                            } | null;
+                            /** @description A different result a check recorded after the one held, which nothing holds until it is accepted */
+                            waiting: {
+                                version: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        sql: string;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    columns: {
+                                        name: string;
+                                        from: {
+                                            column: string;
+                                        };
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: Record<string, never>;
+                                };
+                            } | null;
+                        };
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    resolveBindings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "bindings": [
+                 *         {
+                 *           "node": "example",
+                 *           "binding": "example"
+                 *         }
+                 *       ]
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The bindings to resolve, 1 to 50 */
+                    bindings: {
+                        /** @description The outline node referencing the component */
+                        node: string;
+                        /** @description The binding's identifier in that component */
+                        binding: string;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Each binding: the dataset version it now holds, or the failure of its run, naming the definition, the binding and the document */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": []
+                     *     }
+                     */
+                    "application/json": {
+                        results: ({
+                            node: string;
+                            binding: string;
+                            held: {
+                                dataset: string;
+                                /** @description The dataset version it now holds */
+                                version: string;
+                                /** @description Whether the run found what the latest version already records, so no version was made */
+                                reused: boolean;
+                            };
+                        } | {
+                            node: string;
+                            binding: string;
+                            failure: {
+                                /** @description Stable and machine-readable */
+                                code: string;
+                                /**
+                                 * @description Whose failure it is: the source's side, the query's author, or the product
+                                 * @enum {string}
+                                 */
+                                attribution: "connector" | "query" | "product";
+                                message: string;
+                                /** @description What the source said, where it refused the statement: `source_refused` alone */
+                                source?: {
+                                    /** @description The source's five-character SQLSTATE */
+                                    sqlstate: string;
+                                    /** @description The source's own message, cut to 1,000 characters */
+                                    message: string;
+                                };
+                                /** @description The column the failure names, where it names one */
+                                column?: string;
+                                /** @description The row the failure names, counted from 1 */
+                                row?: number;
+                                /** @description The query definition the binding names */
+                                definition: string;
+                                binding: string;
+                                node: string;
+                                document: string;
+                            };
+                        })[];
+                    };
+                };
+            };
+            /** @description `binding_missing`: no such binding in the component the node places, or a pinned version that is not its definition's; `take_invalid`: what it takes is not the definition's; `parameter_invalid`: a value fails its parameter, or a parameter is taken from the document, which has none yet */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
+                        problems?: ({
+                            /** @constant */
+                            rule: "definition_invalid";
+                            /** @description The member refused, dotted, as `columns.2.name` */
+                            path: string;
+                            message: string;
+                        } | {
+                            parameter: string;
+                            /** @enum {string} */
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            /** @description The value as sent, cut to 1,000 characters */
+                            value: string;
+                        })[];
+                        definition?: string;
+                        binding?: string;
+                        node?: string;
+                        document?: string;
+                        /** @enum {string} */
+                        reason?: "untested" | "not_read_only";
+                        /** @description resolution_precondition: the binding as it now stands */
+                        current?: {
+                            node: string;
+                            binding: {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
+                                take: {
+                                    column: string;
+                                } | {
+                                    key: {
+                                        [key: string]: string | boolean | null;
+                                    };
+                                    column: string;
+                                };
+                            };
+                            /** @description What it holds, or null where it has never been resolved */
+                            held: {
+                                dataset: string;
+                                /** @description The dataset version it holds */
+                                version: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        sql: string;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    columns: {
+                                        name: string;
+                                        from: {
+                                            column: string;
+                                        };
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: Record<string, never>;
+                                };
+                                /** @description The dataset's name, or null where nobody has named it */
+                                name: string | null;
+                                /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
+                                stale: boolean;
+                                /**
+                                 * @description The act that made it what the binding holds
+                                 * @enum {string}
+                                 */
+                                act: "resolve" | "accept";
+                                /** @description Who resolved or accepted it */
+                                by: string;
+                                /** @description When */
+                                at: string;
+                            } | null;
+                            /** @description A different result a check recorded after the one held, which nothing holds until it is accepted */
+                            waiting: {
+                                version: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        sql: string;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    columns: {
+                                        name: string;
+                                        from: {
+                                            column: string;
+                                        };
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: Record<string, never>;
+                                };
+                            } | null;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not edit it, or may not read a definition or use its connection */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
+                        problems?: ({
+                            /** @constant */
+                            rule: "definition_invalid";
+                            /** @description The member refused, dotted, as `columns.2.name` */
+                            path: string;
+                            message: string;
+                        } | {
+                            parameter: string;
+                            /** @enum {string} */
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            /** @description The value as sent, cut to 1,000 characters */
+                            value: string;
+                        })[];
+                        definition?: string;
+                        binding?: string;
+                        node?: string;
+                        document?: string;
+                        /** @enum {string} */
+                        reason?: "untested" | "not_read_only";
+                        /** @description resolution_precondition: the binding as it now stands */
+                        current?: {
+                            node: string;
+                            binding: {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
+                                take: {
+                                    column: string;
+                                } | {
+                                    key: {
+                                        [key: string]: string | boolean | null;
+                                    };
+                                    column: string;
+                                };
+                            };
+                            /** @description What it holds, or null where it has never been resolved */
+                            held: {
+                                dataset: string;
+                                /** @description The dataset version it holds */
+                                version: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        sql: string;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    columns: {
+                                        name: string;
+                                        from: {
+                                            column: string;
+                                        };
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: Record<string, never>;
+                                };
+                                /** @description The dataset's name, or null where nobody has named it */
+                                name: string | null;
+                                /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
+                                stale: boolean;
+                                /**
+                                 * @description The act that made it what the binding holds
+                                 * @enum {string}
+                                 */
+                                act: "resolve" | "accept";
+                                /** @description Who resolved or accepted it */
+                                by: string;
+                                /** @description When */
+                                at: string;
+                            } | null;
+                            /** @description A different result a check recorded after the one held, which nothing holds until it is accepted */
+                            waiting: {
+                                version: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        sql: string;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    columns: {
+                                        name: string;
+                                        from: {
+                                            column: string;
+                                        };
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: Record<string, never>;
+                                };
+                            } | null;
+                        };
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `definition_retired`, `connection_retired`, `credential_missing`, `credential_target_changed`, `sql_not_permitted`: a run cannot be made; `access_changed`: a permission or the session ended while the source answered; `binding_changed`: the binding changed while the source answered. Nothing is recorded */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
+                        problems?: ({
+                            /** @constant */
+                            rule: "definition_invalid";
+                            /** @description The member refused, dotted, as `columns.2.name` */
+                            path: string;
+                            message: string;
+                        } | {
+                            parameter: string;
+                            /** @enum {string} */
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            /** @description The value as sent, cut to 1,000 characters */
+                            value: string;
+                        })[];
+                        definition?: string;
+                        binding?: string;
+                        node?: string;
+                        document?: string;
+                        /** @enum {string} */
+                        reason?: "untested" | "not_read_only";
+                        /** @description resolution_precondition: the binding as it now stands */
+                        current?: {
+                            node: string;
+                            binding: {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
+                                take: {
+                                    column: string;
+                                } | {
+                                    key: {
+                                        [key: string]: string | boolean | null;
+                                    };
+                                    column: string;
+                                };
+                            };
+                            /** @description What it holds, or null where it has never been resolved */
+                            held: {
+                                dataset: string;
+                                /** @description The dataset version it holds */
+                                version: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        sql: string;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    columns: {
+                                        name: string;
+                                        from: {
+                                            column: string;
+                                        };
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: Record<string, never>;
+                                };
+                                /** @description The dataset's name, or null where nobody has named it */
+                                name: string | null;
+                                /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
+                                stale: boolean;
+                                /**
+                                 * @description The act that made it what the binding holds
+                                 * @enum {string}
+                                 */
+                                act: "resolve" | "accept";
+                                /** @description Who resolved or accepted it */
+                                by: string;
+                                /** @description When */
+                                at: string;
+                            } | null;
+                            /** @description A different result a check recorded after the one held, which nothing holds until it is accepted */
+                            waiting: {
+                                version: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        sql: string;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    columns: {
+                                        name: string;
+                                        from: {
+                                            column: string;
+                                        };
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: Record<string, never>;
+                                };
+                            } | null;
+                        };
+                    };
+                };
+            };
+            /** @description `connector_unavailable`: no connector is configured; `storage_unavailable`: the environment has nowhere to keep a result */
+            503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters */
+                            message: string;
+                        };
+                        column?: string;
+                        row?: number;
+                        problems?: ({
+                            /** @constant */
+                            rule: "definition_invalid";
+                            /** @description The member refused, dotted, as `columns.2.name` */
+                            path: string;
+                            message: string;
+                        } | {
+                            parameter: string;
+                            /** @enum {string} */
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            /** @description The value as sent, cut to 1,000 characters */
+                            value: string;
+                        })[];
+                        definition?: string;
+                        binding?: string;
+                        node?: string;
+                        document?: string;
+                        /** @enum {string} */
+                        reason?: "untested" | "not_read_only";
+                        /** @description resolution_precondition: the binding as it now stands */
+                        current?: {
+                            node: string;
+                            binding: {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
+                                take: {
+                                    column: string;
+                                } | {
+                                    key: {
+                                        [key: string]: string | boolean | null;
+                                    };
+                                    column: string;
+                                };
+                            };
+                            /** @description What it holds, or null where it has never been resolved */
+                            held: {
+                                dataset: string;
+                                /** @description The dataset version it holds */
+                                version: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        sql: string;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    columns: {
+                                        name: string;
+                                        from: {
+                                            column: string;
+                                        };
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: Record<string, never>;
+                                };
+                                /** @description The dataset's name, or null where nobody has named it */
+                                name: string | null;
+                                /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
+                                stale: boolean;
+                                /**
+                                 * @description The act that made it what the binding holds
+                                 * @enum {string}
+                                 */
+                                act: "resolve" | "accept";
+                                /** @description Who resolved or accepted it */
+                                by: string;
+                                /** @description When */
+                                at: string;
+                            } | null;
+                            /** @description A different result a check recorded after the one held, which nothing holds until it is accepted */
+                            waiting: {
+                                version: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        sql: string;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    columns: {
+                                        name: string;
+                                        from: {
+                                            column: string;
+                                        };
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: Record<string, never>;
+                                };
+                            } | null;
+                        };
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     getContributions: {
         parameters: {
             query?: never;
@@ -8467,6 +11674,258 @@ export interface operations {
             };
             /** @description No such document in this environment, or none the caller may read */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getDocumentDataset: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+                version: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The result and its provenance */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "dataset": "example",
+                     *       "version": "example",
+                     *       "name": "example",
+                     *       "provenance": {
+                     *         "schemaVersion": 1,
+                     *         "queryDefinition": {
+                     *           "artifact": "00000000-0000-4000-8000-000000000001",
+                     *           "version": "00000000-0000-4000-8000-000000000001"
+                     *         },
+                     *         "connection": {
+                     *           "artifact": "00000000-0000-4000-8000-000000000001",
+                     *           "version": "00000000-0000-4000-8000-000000000001"
+                     *         },
+                     *         "parameters": {},
+                     *         "ran": {
+                     *           "sql": "example"
+                     *         },
+                     *         "identity": {
+                     *           "kind": "service"
+                     *         },
+                     *         "at": "2026-01-01T00:00:00.000Z",
+                     *         "durationMs": 0,
+                     *         "rowCount": 0,
+                     *         "columns": [
+                     *           {
+                     *             "name": "example",
+                     *             "from": {
+                     *               "column": "example"
+                     *             },
+                     *             "type": {
+                     *               "base": "text"
+                     *             }
+                     *           }
+                     *         ],
+                     *         "canonical": 1,
+                     *         "checksum": "0000000000000000000000000000000000000000000000000000000000000000",
+                     *         "images": {}
+                     *       },
+                     *       "result": {
+                     *         "columns": [],
+                     *         "rows": []
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        dataset: string;
+                        version: string;
+                        name: string | null;
+                        provenance: {
+                            /** @constant */
+                            schemaVersion: 1;
+                            queryDefinition: {
+                                artifact: string;
+                                version: string;
+                            };
+                            connection: {
+                                artifact: string;
+                                version: string;
+                            };
+                            parameters: {
+                                [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                            };
+                            ran: {
+                                sql: string;
+                            };
+                            identity: {
+                                /** @constant */
+                                kind: "service";
+                            };
+                            at: string;
+                            durationMs: number;
+                            rowCount: number;
+                            columns: {
+                                name: string;
+                                from: {
+                                    column: string;
+                                };
+                                type: {
+                                    /** @constant */
+                                    base: "text";
+                                } | {
+                                    /** @constant */
+                                    base: "integer";
+                                } | {
+                                    /** @constant */
+                                    base: "decimal";
+                                    precision: number;
+                                    scale: number;
+                                } | {
+                                    /** @constant */
+                                    base: "date";
+                                } | {
+                                    /** @constant */
+                                    base: "time";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "localDateTime";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "instant";
+                                    fraction: number;
+                                } | {
+                                    /** @constant */
+                                    base: "boolean";
+                                };
+                            }[];
+                            /** @constant */
+                            canonical: 1;
+                            checksum: string;
+                            images: Record<string, never>;
+                        };
+                        result: {
+                            /** @description Each column's name and its type's base */
+                            columns: [
+                                string,
+                                string
+                            ][];
+                            /** @description Every row, each value in its canonical form */
+                            rows: (string | boolean | null)[][];
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a document the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document the caller may read, or a dataset version it neither holds nor has waiting */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `storage_unavailable`: the environment has nowhere results are kept */
+            503: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
@@ -14502,6 +17961,144 @@ export interface operations {
                         mayEdit: boolean;
                         /** @description Whether the caller may describe and sample SQL against its connection */
                         mayRun: boolean;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a definition the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such query definition in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getQueryDefinitionUses: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The components whose latest versions bind it, and the documents holding a result of it: those the caller may read, and how many more */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "components": {
+                     *         "readable": [],
+                     *         "others": -9007199254740991
+                     *       },
+                     *       "documents": {
+                     *         "readable": [],
+                     *         "others": -9007199254740991
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The components whose latest versions hold a binding naming it */
+                        components: {
+                            readable: {
+                                id: string;
+                                title: string;
+                            }[];
+                            /** @description How many more the caller may not read, never named */
+                            others: number;
+                        };
+                        /** @description The documents where a binding holds a result of it */
+                        documents: {
+                            readable: {
+                                id: string;
+                                title: string;
+                            }[];
+                            /** @description How many more the caller may not read, never named */
+                            others: number;
+                        };
                     };
                 };
             };

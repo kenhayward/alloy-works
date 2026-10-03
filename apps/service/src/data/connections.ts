@@ -51,6 +51,7 @@ import {
   type ParameterValues,
   type TestAnswer,
 } from '@alloy-works/domain';
+import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
 import { administerOrAbove, notFound, type Authorised } from '../access.js';
 import { versionView } from '../components.js';
@@ -59,6 +60,7 @@ import { AppError } from '../errors.js';
 import { cursorFor, pageAsked } from '../listing.js';
 import type { SessionPrincipal } from '../sessions.js';
 import { refused } from '../wire-codes.js';
+import { checkAct, documentsOnConnection, resolveAct, type RunsThrough } from './bindings.js';
 import { createConnectorClient, type Answered } from './connector.js';
 import { failureView, type FailureIn } from './failure-words.js';
 import { maySqlWith, requireSqlPermitted, sqlForbidden } from './sql-access.js';
@@ -221,6 +223,7 @@ export function connectionHandlers(
   tenantOf: (request: FastifyRequest) => Tenant,
   principalOf: (request: FastifyRequest) => SessionPrincipal,
   connector?: ConnectorOptions,
+  objects?: ObjectStores,
 ) {
   const client = connector ? createConnectorClient(connector) : undefined;
 
@@ -265,6 +268,12 @@ export function connectionHandlers(
   function connected() {
     if (!client) throw dataRefused(503, 'connector_unavailable');
     return client;
+  }
+
+  /** What a resolve and a check run through: this connector, and these routes' own refusals. */
+  function runsThrough(): RunsThrough {
+    const asking = connected();
+    return { run: (request) => asking.run(request), runnable, usableSealed };
   }
 
   function answered<T>(answer: Answered<T>): T {
@@ -631,8 +640,26 @@ export function connectionHandlers(
       const connection = await readConnection(trx, id);
       if (!connection) throw notFound();
       // The definitions naming it by their latest versions, the caller's readable ones by title and
-      // the rest counted (D2-O). Documents join with D3's bindings.
-      return { definitions: namingView(await definitionsNaming(trx, principalId, id)) };
+      // the rest counted (D2-O), and through them the documents holding a result run on it (D3-M).
+      return {
+        definitions: namingView(await definitionsNaming(trx, principalId, id)),
+        documents: await documentsOnConnection(trx, principalId, id),
+      };
+    },
+
+    // A resolve and a check ask the connector for runs (DAT-089), each a person's act on a document
+    // (data.md, "Resolve" and "Check"): decided and read in the deciding transaction, asked once it
+    // commits, and recorded in a second that decides again (D3-H). `bindings.ts` holds the rest.
+    resolveBindings: async (request: FastifyRequest, authorised: Authorised) => {
+      const through = runsThrough();
+      connected();
+      return resolveAct(db, tenantOf(request), objects, request, authorised, through);
+    },
+
+    checkBindings: async (request: FastifyRequest, authorised: Authorised) => {
+      const through = runsThrough();
+      connected();
+      return checkAct(db, tenantOf(request), objects, request, authorised, through);
     },
   };
 }

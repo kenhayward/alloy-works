@@ -31,12 +31,17 @@ export interface FakeConnector {
   run: RunAnswer;
   /** Where set, a test and a describe wait for it before answering: a source that is slow. */
   hold?: Promise<void> | undefined;
+  /** Where set, each run takes this long to answer: how many it answers at once is counted. */
+  runMs?: number | undefined;
+  /** How many runs it was answering at once, at most, since this was last set to 0. */
+  mostRunning: number;
   /** Where set, a seal waits for it before answering: a connector that is slow to seal. */
   sealHold?: Promise<void> | undefined;
 }
 
 export function fakeConnector(): FakeConnector {
   const sealingKey = randomBytes(32);
+  let running = 0;
   const fake: FakeConnector = {
     asked: [],
     mode: 'answer',
@@ -44,6 +49,7 @@ export function fakeConnector(): FakeConnector {
     describe: { relations: [], truncated: false, leftOut: { relations: 0, columns: 0 } },
     describeSql: { columns: [], parameters: [] },
     run: { outcome: 'failed', failure: { code: 'connector_error', attribution: 'connector' } },
+    mostRunning: 0,
     fetch: (async (url: string | URL | Request, init?: RequestInit) => {
       const path = new URL(String(url)).pathname;
       // A run's and a describe's body are held to the real connector's limit, as its door holds them.
@@ -84,7 +90,18 @@ export function fakeConnector(): FakeConnector {
       if (path === '/v1/describe') {
         return Response.json('sql' in body ? fake.describeSql : fake.describe);
       }
-      if (path === '/v1/run') return Response.json(fake.run);
+      if (path === '/v1/run') {
+        running += 1;
+        fake.mostRunning = Math.max(fake.mostRunning, running);
+        try {
+          if (fake.runMs !== undefined) {
+            await new Promise((settle) => setTimeout(settle, fake.runMs));
+          }
+          return Response.json(fake.run);
+        } finally {
+          running -= 1;
+        }
+      }
       return new Response(null, { status: 404 });
     }) as typeof globalThis.fetch,
   };

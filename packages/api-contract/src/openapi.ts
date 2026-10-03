@@ -49,6 +49,13 @@ function exampleFor(schema: z.ZodType, io: 'input' | 'output', name = ''): unkno
       if (JSON.stringify(node.allOf ?? node.pattern ?? '').includes('0-9a-fA-F')) {
         return '00000000-0000-4000-8000-000000000001';
       }
+      // A lowercase identifier, a SHA-256 in hexadecimal and an instant in UTC, as a dataset
+      // version's provenance holds them (the D3 plan).
+      const pattern = JSON.stringify(node.allOf ?? node.pattern ?? '');
+      if (pattern.includes('[0-9a-f]{8}-[0-9a-f]{4}'))
+        return '00000000-0000-4000-8000-000000000001';
+      if (pattern.includes('[0-9a-f]{64}')) return '0'.repeat(64);
+      if (pattern.includes('\\\\d{4}-\\\\d{2}-\\\\d{2}T')) return '2026-01-01T00:00:00.000Z';
       switch (node.format) {
         case 'uuid':
           return '00000000-0000-4000-8000-000000000001';

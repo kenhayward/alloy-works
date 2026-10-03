@@ -102,6 +102,7 @@ export { bindingDigestInput, bindingsIn, checkTake, literalValues } from './bind
 export type { Binding, BindingAt } from './binding.js';
 export {
   PROVENANCE_SCHEMA_VERSION,
+  provenanceSchema,
   parseProvenance,
   parseProvenanceForWrite,
 } from './provenance.js';

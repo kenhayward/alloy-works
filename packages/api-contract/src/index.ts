@@ -134,6 +134,7 @@ export {
   CredentialBody,
   CredentialSet,
   ConnectionUsesView,
+  UsesView,
   CredentialState,
   DataFailureView,
   DataRefusal,
@@ -150,6 +151,24 @@ export {
   SqlStatementBody,
   TestView,
 } from './connections.js';
+export {
+  AcceptBindingBody,
+  BindingFailureView,
+  BindingRefusal,
+  BindingStateView,
+  CheckBindingsView,
+  DatasetNameBody,
+  DatasetNameView,
+  DatasetParams,
+  DocumentBindingParams,
+  DocumentBindingsView,
+  DocumentDatasetParams,
+  DocumentDatasetView,
+  ProvenanceView,
+  QueryDefinitionUsesView,
+  ResolveBindingsBody,
+  ResolveBindingsView,
+} from './bindings.js';
 export {
   CreateQueryDefinitionBody,
   QueryDefinitionBody,

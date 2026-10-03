@@ -1,4 +1,5 @@
 import { assetRoutes } from './assets.js';
+import { bindingRoutes } from './bindings.js';
 import { componentRoutes } from './components.js';
 import { connectionRoutes } from './connections.js';
 import { definitionRoutes } from './definitions.js';
@@ -275,6 +276,7 @@ export const routes = {
   ...templateRoutes,
   ...connectionRoutes,
   ...queryDefinitionRoutes,
+  ...bindingRoutes,
   ...definitionRoutes,
   ...peopleRoutes,
   ...searchRoutes,

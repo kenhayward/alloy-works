@@ -1,4 +1,5 @@
 import type { ErrorBody } from '@alloy-works/api-contract';
+import { BINDING_IN_TITLE } from '@alloy-works/domain';
 
 /**
  * A refusal the service means to make: its code, message and rule reach the caller as they are, and so
@@ -64,10 +65,13 @@ export function toErrorBody(error: unknown, traceId: string): { status: number; 
     const fields = (fastify.issues ?? []).map(
       (issue) => `${issue.path.join('.') || '(the whole)'}: ${issue.message}`,
     );
+    // A binding in a section title is refused by the title's own schema at the door, and named
+    // apart: a binding belongs to a component, which no title is (the D3 plan, D3-D).
+    const inTitle = (fastify.issues ?? []).some((issue) => issue.message === BINDING_IN_TITLE);
     return {
       status: 400,
       body: {
-        code: 'invalid_request',
+        code: inTitle ? 'binding_in_title' : 'invalid_request',
         message: `The request's ${fastify.validationContext ?? 'input'} is not valid. ${fields.join('; ')}`,
         traceId,
       },

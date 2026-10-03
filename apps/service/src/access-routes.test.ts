@@ -794,6 +794,37 @@ describe('routes that check a permission', () => {
       },
     }),
     getConnectionUses: () => ({ url: `/v1/connections/${readings}/uses`, status: 404 }),
+    getQueryDefinitionUses: () => ({
+      url: `/v1/query-definitions/${dailyReadings}/uses`,
+      status: 404,
+    }),
+    // A document's bindings, and a dataset: the document is one she may not read, and so is the
+    // definition, which stands for a dataset in its space.
+    getDocumentBindings: () => ({ url: `/v1/documents/${report}/bindings`, status: 404 }),
+    resolveBindings: () => ({
+      url: `/v1/documents/${report}/bindings/resolve`,
+      status: 404,
+      payload: { bindings: [{ node: 'a'.repeat(26), binding: 'b1' }] },
+    }),
+    checkBindings: () => ({
+      url: `/v1/documents/${report}/bindings/check`,
+      status: 404,
+      payload: {},
+    }),
+    acceptBinding: () => ({
+      url: `/v1/documents/${report}/bindings/accept`,
+      status: 404,
+      payload: { node: 'a'.repeat(26), binding: 'b1', version: MISSING, replaces: MISSING },
+    }),
+    getDocumentDataset: () => ({
+      url: `/v1/documents/${report}/datasets/${MISSING}`,
+      status: 404,
+    }),
+    nameDataset: () => ({
+      url: `/v1/datasets/${dailyReadings}/name`,
+      status: 404,
+      payload: { name: 'Probe' },
+    }),
     createQueryDefinition: () => ({
       url: `/v1/spaces/${clinical}/query-definitions`,
       status: 404,
