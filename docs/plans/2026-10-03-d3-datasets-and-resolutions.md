@@ -298,7 +298,13 @@ Answered on 2026-10-03: all five as recommended.
    Recommended.
 5. **D3-Q**: IAM-082 left to D7, where a run first carries a person's own identity. Recommended.
 
+## Changed while building
+
+| Found                                                                                                                                                                                                                                 | Change                                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Task 0, run on 2026-10-03 with Ken's agreement, read-only on his stack (`alloy_dev`): `t_acme` held 36 component versions and no iterations, `t_acmedev` 111 versions and 15 iterations, and none of them an inline of type `binding` | None found, so the binding widens in place at content schema 1 (DA-O, D3-B); no migration step |
+
 ## How this plan was made
 
-About 40 minutes of wall-clock time and about 30 tool calls, Q1 among them (about 3 minutes); Q2
-waits for Ken.
+About 40 minutes of wall-clock time and about 30 tool calls, Q1 among them (about 3 minutes); Q2 was
+run on Ken's stack once he agreed ("Changed while building").
