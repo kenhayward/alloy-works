@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { sql } from 'kysely';
 import pg from 'pg';
 import { bootstrapLoginRoles } from '../bootstrap.js';
+import { datasetQuestionKey, type DatasetIdentity } from '../datasets.js';
 import type { Tenant } from '../provision.js';
 import type { TenantTransaction } from '../tables.js';
 import type { TenantDatabase } from '../tenant-database.js';
@@ -139,6 +140,15 @@ export async function holdingAdvisoryLock(url: string, key: string): Promise<() 
       await client.end();
     }
   };
+}
+
+/**
+ * The key `holdingAdvisoryLock` takes to hold the lock `lockDatasetQuestions` takes on a question in
+ * the tenant whose schema this is: the tenant's schema, a colon and the question's own key, as
+ * `lockInTurn` builds it from `current_schema()`.
+ */
+export function datasetQuestionLockKey(schema: string, identity: DatasetIdentity): string {
+  return `${schema}:${datasetQuestionKey(identity)}`;
 }
 
 const DEFAULT_SERVER_URL = 'postgres://postgres:postgres@127.0.0.1:5432/postgres';

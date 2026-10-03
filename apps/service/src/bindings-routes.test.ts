@@ -1,5 +1,10 @@
 import { canonicalResultBytes } from '@alloy-works/domain';
-import { holdingAdvisoryLock, queryAs, untilWaitingOnLocks } from '@alloy-works/db/testing';
+import {
+  datasetQuestionLockKey,
+  holdingAdvisoryLock,
+  queryAs,
+  untilWaitingOnLocks,
+} from '@alloy-works/db/testing';
 import { removeGrant } from '@alloy-works/db';
 import { tenantPrefix } from '@alloy-works/objects';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -1093,6 +1098,89 @@ describe('bindings and datasets through the service', () => {
       ['resolve', null, held.version],
       ['accept', held.version, revision],
     ]);
+  });
+
+  /**
+   * Two bindings asking two questions, each holding one result, newer ones at the source, and an act
+   * on both - a resolve or a check - while somebody holds the lock on the question it records second.
+   * Recording a version takes its own question's lock, so an act that took the second only then would
+   * record the first and wait holding it: two acts recording the same two questions in opposite
+   * orders would each hold what the other waits for. Answers what was recorded - dataset versions and
+   * resolutions - before, while the act waited with the tables it had written by then, and after it
+   * was let go.
+   */
+  const recordWhileQuestionHeld = async (sites: [string, string], act: 'resolve' | 'check') => {
+    const definition = await h.definition(connection.id);
+    const { document, node } = await placed(
+      binding('b1', definition.id, { parameters: { site: { literal: sites[0] } } }),
+      binding('b2', definition.id, { parameters: { site: { literal: sites[1] } } }),
+    );
+    const both = [
+      { node, binding: 'b1' },
+      { node, binding: 'b2' },
+    ];
+    h.connector.run = ranOk([['1', 'One']]);
+    expect((await resolve('ada', document.id, both)).statusCode).toBe(200);
+    const second = (await stateOf('ada', document.id, 'b2')).held!;
+    const question = (
+      await queryAs(
+        h.db.adminUrl,
+        `select query_definition as definition, parameters_digest as "parametersDigest",
+                identity_key as "identityKey"
+           from ${h.tenant.schema}.dataset where artifact_id = $1`,
+        [second.dataset],
+      )
+    ).rows[0] as { definition: string; parametersDigest: string; identityKey: string };
+    h.connector.run = ranOk([['1', 'Two']]);
+    const recorded = async () => ({
+      versions: (await datasetVersions()).n,
+      resolutions: (await rowsOf('binding_resolution')).length,
+    });
+    const before = await recorded();
+    const release = await holdingAdvisoryLock(
+      h.db.adminUrl,
+      datasetQuestionLockKey(h.tenant.schema, question),
+    );
+    let acting: Promise<{ statusCode: number; body: string; json<T>(): T }>;
+    let whileHeld: { versions: number; resolutions: number; written: string[] };
+    try {
+      acting = act === 'resolve' ? resolve('ada', document.id, both) : check('ada', document.id);
+      await untilWaitingOnLocks(h.db.adminUrl, 1);
+      // What it wrote is its transaction's until it commits, so it is read from its locks: a table
+      // written holds a row exclusive lock to the transaction's end.
+      const { rows } = await queryAs(
+        h.db.adminUrl,
+        `select c.relname as name
+           from pg_locks l join pg_class c on c.oid = l.relation
+          where l.mode = 'RowExclusiveLock'
+            and c.relnamespace = $1::regnamespace
+            and l.pid in (select pid from pg_locks where locktype = 'advisory' and not granted)
+          order by 1`,
+        [h.tenant.schema],
+      );
+      whileHeld = {
+        ...(await recorded()),
+        written: (rows as { name: string }[]).map((r) => r.name),
+      };
+    } finally {
+      await release();
+    }
+    const acted = await acting;
+    expect(acted.statusCode, acted.body).toBe(200);
+    return { before, whileHeld, after: await recorded() };
+  };
+
+  it('takes the lock on every question a resolve answers before it records any of them', async () => {
+    const { before, whileHeld, after } = await recordWhileQuestionHeld(['97', '98'], 'resolve');
+    expect(whileHeld).toEqual({ ...before, written: [] });
+    expect(after).toEqual({ versions: before.versions + 2, resolutions: before.resolutions + 2 });
+  });
+
+  it('takes the lock on every question a check answers before it records any of them', async () => {
+    const { before, whileHeld, after } = await recordWhileQuestionHeld(['99', '100'], 'check');
+    expect(whileHeld).toEqual({ ...before, written: [] });
+    // A check records the revisions it finds, and no resolution: each waits to be accepted.
+    expect(after).toEqual({ versions: before.versions + 2, resolutions: before.resolutions });
   });
 
   it('shows a resolution as stale once a component version changes its binding, and checks it no more', async () => {

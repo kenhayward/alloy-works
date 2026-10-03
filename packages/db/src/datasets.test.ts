@@ -36,7 +36,13 @@ import { findRole } from './roles.js';
 import { createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
-import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
+import {
+  datasetQuestionLockKey,
+  freshDatabase,
+  queryAs,
+  TEST_PASSWORDS,
+  type TestDatabase,
+} from './testing/database.js';
 import {
   createArtifact,
   latestVersion,
@@ -856,21 +862,51 @@ describe('datasets and resolutions', () => {
   });
 
   it('takes several locks on questions in one order, whatever order they are asked in', async () => {
-    const asked = [
-      provenance({ parameters: { site: 'first' } }),
-      provenance({ parameters: { site: 'second' } }),
-    ];
-    // Somebody holds the first question; an act asking both waits for it holding the same either way,
-    // so two acts asking the same questions in opposite orders never each hold what the other waits for.
-    const heldWhileWaiting: number[] = [];
-    for (const order of [asked, [...asked].reverse()]) {
-      const release = await holding(production, (trx) => lockDatasetQuestions(trx, [asked[0]!]));
+    // Enough questions that Postgres de-duplicates them by hashing, whose order is not the keys' own:
+    // two questions are de-duplicated by sorting, which would put them in order with or without asking.
+    const asked = Array.from({ length: 40 }, (_, at) =>
+      provenance({ parameters: { site: `site-${at}` } }),
+    );
+    const hashOf = async (each: Provenance) => {
+      const key = datasetQuestionLockKey(
+        production.schema,
+        datasetIdentity({
+          definition: each.queryDefinition.artifact,
+          parameters: each.parameters,
+          identity: each.identity,
+        }),
+      );
+      const { rows } = await queryAs(db.adminUrl, `select hashtextextended($1, 0)::text as h`, [
+        key,
+      ]);
+      return BigInt((rows[0] as { h: string }).h);
+    };
+    const hashes = await Promise.all(asked.map(hashOf));
+    const sorted = [...hashes].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    // Somebody holds the question in the middle of the order; an act asking all of them waits for it
+    // holding exactly those before it, whichever order it asks in, so two acts asking the same
+    // questions never each hold what the other waits for.
+    const middle = sorted[20]!;
+    const before = sorted.slice(0, 20).map(String).sort();
+    const shuffled = asked.map((each, at) => ({ each, at: (at * 17) % 40 }));
+    shuffled.sort((a, b) => a.at - b.at);
+    for (const order of [asked, [...asked].reverse(), shuffled.map(({ each }) => each)]) {
+      const release = await holding(production, (trx) =>
+        lockDatasetQuestions(trx, [asked[hashes.indexOf(middle)]!]),
+      );
       const act = tenant((trx) => lockDatasetQuestions(trx, order));
-      heldWhileWaiting.push((await whileWaiting()).granted);
+      await whileWaiting();
+      const { rows } = await queryAs(
+        db.adminUrl,
+        `select ((held.classid::bigint << 32) | held.objid::bigint)::text as h
+           from pg_locks held
+          where held.locktype = 'advisory' and held.granted
+            and held.pid in (select pid from pg_locks where locktype = 'advisory' and not granted)`,
+      );
       await release();
       await act;
+      expect((rows as { h: string }[]).map((row) => row.h).sort()).toEqual(before);
     }
-    expect(heldWhileWaiting[0]).toBe(heldWhileWaiting[1]);
   });
 
   it('keeps a dataset version in no search', async () => {

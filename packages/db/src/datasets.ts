@@ -305,9 +305,17 @@ export async function lockDatasetQuestions(
         parameters: provenance.parameters,
         identity: provenance.identity,
       });
-      return `alloy-works:dataset:${identity.definition}:${identity.parametersDigest}:${identity.identityKey}`;
+      return datasetQuestionKey(identity);
     }),
   );
+}
+
+/**
+ * The key a question's lock is named by, before `lockInTurn` puts the tenant's schema and a colon in
+ * front of it and hashes the two. Exported for the test helper that holds one; nothing else names it.
+ */
+export function datasetQuestionKey(identity: DatasetIdentity): string {
+  return `alloy-works:dataset:${identity.definition}:${identity.parametersDigest}:${identity.identityKey}`;
 }
 
 /** A dataset version as a resolution holds it: which, its number, and its provenance. */
