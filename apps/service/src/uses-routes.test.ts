@@ -41,13 +41,35 @@ describe('where a query definition and a connection are used', () => {
     const former = await h.component(h.general, 'Formerly bound');
     await h.place(former, binding('b1', definition.id));
     await h.place(former, { type: 'text', value: 'Nothing bound now.', marks: [] });
-    // A component whose key names the definition's identifier binds nothing.
+    // A component whose text spells the definition's identifier binds nothing.
     const lookalike = await h.component(h.general, 'Lookalike');
     await h.place(lookalike, {
       type: 'text',
       value: definition.id,
       marks: [],
     });
+    // Another definition on the connection, and a definition on another connection, each bound and
+    // resolved in General: neither is a use of the definition, and the second no use of the connection.
+    const sibling = await h.definition(connection.id, { title: 'Sibling' });
+    const elsewhere = await h.connection('Elsewhere');
+    const stranger = await h.definition(elsewhere.id, { title: 'Stranger' });
+    for (const [key, bound] of [
+      ['sibling', sibling],
+      ['stranger', stranger],
+    ] as const) {
+      const component = await h.component(h.general, `Bound to ${key}`);
+      await h.place(component, binding('b1', bound.id));
+      const document = await h.documentReferencing([component.id]);
+      const resolved = await h.call(
+        'ada',
+        'POST',
+        `/v1/documents/${document.id}/bindings/resolve`,
+        { bindings: [{ node: document.nodes[0], binding: 'b1' }] },
+      );
+      expect(resolved.statusCode, resolved.body).toBe(200);
+      titles[key] = bound.id;
+      titles[`${key}Document`] = document.id;
+    }
   });
 
   afterAll(async () => {
@@ -84,15 +106,22 @@ describe('where a query definition and a connection are used', () => {
   it('DAT-064 answers where a connection is used, through its definitions to the documents', async () => {
     const answer = await h.call('grace', 'GET', `/v1/connections/${connection.id}/uses`);
     expect(answer.statusCode, answer.body).toBe(200);
-    expect(answer.json()).toEqual({
-      definitions: {
-        readable: [{ id: definition.id, title: 'Site by id', retired: false }],
-        others: 0,
-      },
-      documents: {
-        readable: [{ id: titles.generalDocument, title: 'The readings report' }],
-        others: 1,
-      },
+    const body = answer.json<{ definitions: unknown; documents: { readable: { id: string }[] } }>();
+    expect(body.definitions).toEqual({
+      readable: [
+        { id: titles.sibling, title: 'Sibling', retired: false },
+        { id: definition.id, title: 'Site by id', retired: false },
+      ],
+      others: 0,
     });
+    // The document resolving the sibling is a use of the connection; the stranger's is not.
+    const byId = (left: { id: string }, right: { id: string }) => left.id.localeCompare(right.id);
+    expect([...body.documents.readable].sort(byId)).toEqual(
+      [
+        { id: titles.generalDocument, title: 'The readings report' },
+        { id: titles.siblingDocument, title: 'The readings report' },
+      ].sort(byId),
+    );
+    expect(body.documents).toMatchObject({ others: 1 });
   });
 });
