@@ -40,6 +40,8 @@ describe('bindings and datasets through the service', () => {
   beforeAll(async () => {
     h = await startHarness();
     connection = await h.connection('Readings');
+    // Ada authors in Quality too, where Alice reads nothing.
+    await h.allow(h.ids.ada!, h.roles.Author!, { kind: 'space', id: h.quality });
   });
 
   afterAll(async () => {
@@ -484,9 +486,52 @@ describe('bindings and datasets through the service', () => {
     ).toBe(404);
   });
 
+  it('reads through a document only a result its bindings show the caller: never one in a component they may not read, a node removed, or a waiting one gone stale', async () => {
+    const definition = await h.definition(connection.id);
+    const read = (as: string, document: string, version: string) =>
+      h.call(as, 'GET', `/v1/documents/${document}/datasets/${version}`);
+    // A component in Quality, which Alice may not read, placed by a document in General, which she may.
+    const hidden = await h.component(h.quality, 'Hidden');
+    await h.place(
+      hidden,
+      binding('b1', definition.id, { parameters: { site: { literal: '54' } } }),
+    );
+    const shown = await h.component(h.general, 'Shown');
+    await h.place(shown, binding('b2', definition.id, { parameters: { site: { literal: '55' } } }));
+    const document = await h.documentReferencing([hidden.id, shown.id]);
+    const [hiddenNode, shownNode] = document.nodes as [string, string];
+    h.connector.run = ranOk([['54', 'Hidden']]);
+    await resolve('ada', document.id, [{ node: hiddenNode, binding: 'b1' }]);
+    h.connector.run = ranOk([['55', 'Shown']]);
+    await resolve('ada', document.id, [{ node: shownNode, binding: 'b2' }]);
+    const inHidden = (await stateOf('ada', document.id, 'b1')).held!.version;
+    expect((await read('ada', document.id, inHidden)).statusCode).toBe(200);
+    expect((await read('alice', document.id, inHidden)).statusCode).toBe(404);
+
+    // A waiting result is read while its binding shows it, and not once the binding has changed.
+    h.connector.run = ranOk([['55', 'Shown again']]);
+    await check('ada', document.id);
+    const waiting = (await stateOf('alice', document.id, 'b2')).waiting!.version;
+    expect((await read('alice', document.id, waiting)).statusCode).toBe(200);
+    await h.place(shown, binding('b2', definition.id, { parameters: { site: { literal: '56' } } }));
+    expect((await stateOf('alice', document.id, 'b2')).waiting).toBeNull();
+    expect((await read('alice', document.id, waiting)).statusCode).toBe(404);
+
+    // A node removed from the outline holds nothing there any more.
+    const held = (await stateOf('ada', document.id, 'b2')).held!.version;
+    expect((await read('ada', document.id, held)).statusCode).toBe(200);
+    const removed = await h.call('ada', 'POST', `/v1/documents/${document.id}/outline`, {
+      openedFrom: (await h.call('ada', 'GET', `/v1/documents/${document.id}`)).json<{
+        version: { id: string };
+      }>().version.id,
+      operation: { operation: 'remove', node: shownNode },
+    });
+    expect(removed.statusCode, removed.body).toBe(200);
+    expect((await read('ada', document.id, held)).statusCode).toBe(404);
+  });
+
   it('shows the SQL that ran and the connection only to a reader of the document who may read the definition', async () => {
     // A definition in Quality, which Alice may not read, bound in General, which she may.
-    await h.allow(h.ids.ada!, h.roles.Author!, { kind: 'space', id: h.quality });
     const definition = await h.definition(connection.id, {}, h.quality);
     const { document, node } = await placed(
       binding('b1', definition.id, { parameters: { site: { literal: '53' } } }),

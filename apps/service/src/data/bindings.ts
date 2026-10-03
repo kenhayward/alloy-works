@@ -894,18 +894,24 @@ export function bindingHandlers(
     },
 
     /**
-     * A stored result read through a document (DAT-090; D3-O): on `read` on the document, where it
-     * holds the version or has it waiting, whole, from the bytes kept under its checksum - held to it.
+     * A stored result read through a document (DAT-090; D3-O): on `read` on the document, only a version
+     * its bindings view shows the caller - one a binding they can see holds, or has waiting while it is
+     * not stale - whole, from the bytes kept under its checksum, held to it. A resolution in a component
+     * they may not read, or at a node the outline no longer has, shows nothing and reads nothing.
      */
-    getDocumentDataset: async (request: FastifyRequest, { trx }: Authorised) => {
+    getDocumentDataset: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
       const { id, version } = request.params as DocumentDatasetParams;
-      if (!(await readDocument(trx, id))) throw notFound();
+      const placed = await bindingsPlaced(trx, id, principalId);
+      if (!placed) throw notFound();
+      const held = await heldBy(trx, id);
       let found: { dataset: string; provenance: Provenance } | undefined;
-      for (const each of await resolutionsOf(trx, id)) {
-        if (each.held.version === version) {
-          found = { dataset: each.held.dataset, provenance: each.held.provenance };
-        } else if (each.waiting?.version === version) {
-          found = { dataset: each.held.dataset, provenance: each.waiting.provenance };
+      for (const each of placed) {
+        const holding = held.get(key(each.node, each.binding.id));
+        if (!holding) continue;
+        if (holding.held.version === version) {
+          found = { dataset: holding.held.dataset, provenance: holding.held.provenance };
+        } else if (holding.digest === each.digest && holding.waiting?.version === version) {
+          found = { dataset: holding.held.dataset, provenance: holding.waiting.provenance };
         }
         if (found) break;
       }
