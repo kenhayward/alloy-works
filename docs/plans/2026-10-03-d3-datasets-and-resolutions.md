@@ -1,0 +1,300 @@
+# D3: Datasets and resolutions
+
+> **A sketch**, built in one pull request, test-first, with one final whole-branch review before it
+> opens that is asked for a break of its own against every citation. It builds D3 of
+> [data.md](../design/data.md)'s build order, under
+> [ADR-0035](../decisions/0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md),
+> on what [D1](2026-09-30-d1-connections-and-the-connector.md) and
+> [D2](2026-09-30-d2-query-definitions.md) built. data.md's decisions DA-A to DA-AF were approved by
+> Ken on 2026-09-30. This plan's own decisions, D3-A to D3-T below, are **proposed, for Ken**.
+
+**Goal:** a binding in a component's content names a query definition, its parameters and the value
+it takes; resolving it in a document runs the definition through the connector as the person acting,
+stores the canonical result as an object under its own checksum and records it as a version of a
+dataset whose content is its provenance, and adds a resolution row that is what that binding holds in
+that document. Checking a document's checked bindings records a different result as a waiting
+revision; accepting one moves that document's binding alone and queries nothing. A reader of the
+document reads what it holds, on the document's permission. Nothing publishes a binding yet, and no
+screen places one: the editor's side and the publish's binding stage are `bindings.md`'s, designed
+after this slice.
+
+| PR   | Holds                                                                                                    | Version |
+| ---- | -------------------------------------------------------------------------------------------------------- | ------- |
+| D3.0 | This plan                                                                                                | Build   |
+| D3.1 | The build: the binding widened, the dataset kind, names and resolutions, resolve, check and accept, uses | Minor   |
+
+## What the named questions answered
+
+**Q1: is "where used" cheap enough computed when asked, as DA-S says, or does it need an index
+written with each version? Computed is enough.** In a throwaway PostgreSQL 17 container (the
+platform's image), 20,000 component versions of twelve paragraphs each, one in a hundred holding a
+binding, 8 MB on disk: `content @? '$.**.query ? (@ == "<id>")'` found the hundred naming one
+definition in 84 ms, three runs alike, against 153 ms for a text search over the same rows. Each
+version was smaller than a real one (333 bytes stored, compressed), so a tenant ten times the size
+with versions ten times larger could take a second or two - still a where-used screen's cost, asked
+for, never on a save. **It changes nothing in the design (DA-S).**
+
+**Q2: does any stored component hold a binding in the reserved shape? Not yet run: it needs Ken's
+stack.** data.md makes the third slice's first step the evidence query over every version and
+iteration in every tenant Ken has run, because the answer decides whether the binding widens in
+place at content schema 1 or moves to schema 2 with a migration step (DA-O). What the code says
+already: the inline schema admits `{ type: 'binding', query }`, but no path in the product writes
+one - the editor has no node for it and opens a component holding one read-only
+(`packages/editor/src/mapping.ts`, `marksWithNoType`), the readers and the paste pipeline never make
+one, and no seed or fixture holds one. Only a hand-written API call could have stored one. The query
+is read-only and is run as task 0 with Ken's agreement (question 1); the plan below is written for
+the expected answer, none found, and says what changes if one is.
+
+## Decisions
+
+Proposed, for Ken. Each is the recommendation; the column beside it is what it was chosen over.
+
+| #    | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Instead of                                                                                                                             |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| D3-A | **One tenant migration, `0047_datasets.sql`**: `dataset` in the three artifact checks, a spaced kind in its definition's space; `dataset` (the identity: definition, parameters digest, identity key, unique together), `dataset_name` and `binding_resolution`, the last two insert-only as `connection_credential` is                                                                                                                                                                                                                                                                                                                           | A migration per table                                                                                                                  |
+| D3-B | **Task 0 is the evidence query, run read-only on Ken's stack with his agreement**: in every tenant schema, every `artifact_version.content` and every `iteration` content of a component, `jsonb_path_exists(content, '$.**.type ? (@ == "binding")')`, reported as counts per schema, never the content. None found: the binding widens in place at schema 1 (DA-O). Any found: content goes to schema 2, whose migration step refuses the old node by name, and this plan gains that step before task 2                                                                                                                                         | Widening in place on the code's evidence alone, which a hand-written API call would make wrong                                         |
+| D3-C | **The widened binding** is data.md's `BindingCore` and inline `take`, held tight: `id` as a block's identifier is, unique in its component as every identifier is (CNT-002); `query` and `version` UUIDs; `parameters` keyed by D2's parameter-name pattern, at most 50, each `{ literal }` - a canonical value or a list of at most 50, never null in a list - or `{ document: name }`; `mode`; `take` `{ column }` or `{ key, column }`, a key's values canonical, at most 32. **Every string in NFC**, as D2-F holds a definition's: the canonical form makes a decomposed literal the composed one, and the source would not                  | Admitting a literal not in NFC, which would be compared at the source as written and digested as another                               |
+| D3-D | **A binding is admitted wherever component content admits an inline** - a paragraph, a list item, a table's cell, a caption, a footnote - and **refused in a document's section title**, whose inlines belong to no component, so no resolution could hold it (`binding_in_title`)                                                                                                                                                                                                                                                                                                                                                                | A resolution keyed by a title, which `binding_resolution`'s node has no place for                                                      |
+| D3-E | **Which binding a document resolves**: the one in the component version its outline node resolves to - the pinned version, or the latest for a floating node - read when the act runs. Which definition version: the binding's `version` if it pins one, else the latest (DAT-015). Both are recorded in the provenance                                                                                                                                                                                                                                                                                                                           | Resolving against the component's latest whatever the node pins                                                                        |
+| D3-F | **A dataset version is reused only when the run's checksum, the definition version and the SQL that ran all equal the latest version's**; otherwise a new version is recorded. data.md reuses on the checksum alone, but a version's content is its provenance (DAT-085), and a reused one would name a definition version or SQL that did not run                                                                                                                                                                                                                                                                                                | Reusing on the checksum alone, which would record a provenance untrue of the run                                                       |
+| D3-G | **The object first, then the rows**: the service checks the run's canonical bytes against its checksum (as the sample does), puts them in the tenant's store, whose key is their SHA-256 and so the checksum, then records the dataset version and the resolution in one transaction. A failure after the put leaves an object nothing names, which nothing sweeps in T2 (DA-R) and which the next identical result reuses                                                                                                                                                                                                                        | Rows first, which would name an object not yet stored                                                                                  |
+| D3-H | **No act holds access while a source answers** (D1's `AfterCommit`): resolve and check decide and read inside a short transaction, ask the connector after it commits, and record in a second that **decides the permission again** and re-reads the binding's digest. A permission revoked, a session ended or a binding changed meanwhile records nothing, and the act answers `access_changed` or `binding_changed`                                                                                                                                                                                                                            | Recording whatever the run returned, which would let a revoked person's act land                                                       |
+| D3-I | **Check** runs each **distinct dataset** once among the document's checked bindings - many bindings asking one question cost one run - at most **2 at a time** of the connector's 4 run slots (D2's `MAX_RUNS`) and at most **50 distinct runs** per check; past that the rest answer `unchecked: 'limit'`, never a failure. Each binding's answer stands alone: `unchanged`, `revision` with the waiting version, or its failure. In D3 every connection runs as the service account, so every identity key is `service` and every checked binding is compared (DAT-084)                                                                         | One run per binding; or a check that fails whole when one binding fails, which one broken source would make of every document using it |
+| D3-J | **A waiting revision** is the newest dataset version of the binding's dataset, recorded after the version the document holds, with a different checksum. `GET /v1/documents/{id}/bindings` answers it beside what is held                                                                                                                                                                                                                                                                                                                                                                                                                         | A flag column, which a second check would have to clear                                                                                |
+| D3-K | **Accept** takes `{ node, binding, version, replaces }`: the version must be of the dataset the binding holds and newer than what it holds, and `replaces` must be what it holds now, or 409 `resolution_precondition` with the current one, as `openedFrom` is for a version. It queries nothing. `sharesOwnView` is accepted and checked where the version was fetched under the person's own identity, which no D3 version is                                                                                                                                                                                                                  | Accepting without a precondition, which two people accepting at once would make the second silently replace the first                  |
+| D3-L | **Failures**: a resolve or check failure names the definition, the binding and the document (DAT-086); the data failures are D2's. New refusals, each a 409 or 400 the route answers before or after the run: `binding_missing` (no such binding in the node's component version), `binding_in_title`, `binding_changed`, `access_changed`, `take_invalid` (the take's column is not declared, or its key is not the definition's key - checked at resolve, as a cross-reference's target is), `definition_retired`, `resolution_precondition`, `parameter_invalid` for a `{ document }` parameter until a document has a parameter set (TPL-020) | Checking a take against the definition when the component is written, which a floating definition makes untrue later                   |
+| D3-M | **Where used** (DAT-016, DAT-064): a definition's `uses` answers the components whose latest versions hold a binding naming it (by `@?`, Q1) and the documents with a resolution to one of its datasets; a connection's `uses` gains those documents. Readable ones by name, the rest counted. The definition's page shows them beside **Save version**                                                                                                                                                                                                                                                                                           | A stored reference index, which relationships.md will own                                                                              |
+| D3-N | **Naming a dataset**: `PUT /v1/datasets/{id}/name`, `edit` on the dataset, which sits in its definition's space; a row in `dataset_name`, the latest the name (DAT-092). Nothing lists datasets in their own right (T4)                                                                                                                                                                                                                                                                                                                                                                                                                           | Leaving datasets unnameable until T4                                                                                                   |
+| D3-O | **Reading a result**: `GET /v1/documents/{id}/datasets/{version}` answers the canonical result, whole, on `read` on the document, where the document holds that version or has it waiting (DAT-090)                                                                                                                                                                                                                                                                                                                                                                                                                                               | A route by dataset, which would read a result outside any document's permission                                                        |
+| D3-P | **No screen places, shows or accepts a binding in D3.** `bindings.md`, designed after this slice, owns the editor's node, the document view's held and waiting values and the accept warning (DAT-082, DAT-091); building them now would be built twice. D3 ships the API, documented at `/docs`, the definition page's **Used by**, and an end-to-end test that places a binding by the API, resolves, checks and accepts over the whole system                                                                                                                                                                                                  | A provisional data panel on the document page                                                                                          |
+| D3-Q | **IAM-082 stays a named gap, for D7.** It asks that signing out stop data flowing on a connection carrying the person's authority; in D3 every run is the service account's. D3-H already records nothing for an act whose session ended during its run, which bounds what a signed-out person's act can leave at nothing; the run itself ends by its own deadline                                                                                                                                                                                                                                                                                | Claiming IAM-082 for service-account runs, where no authority of the person's flows                                                    |
+| D3-R | **The digest a resolution holds** is SHA-256 over the binding's canonical form (`canonicalJson`, no set rule), its `id` included; a component version that changes the binding's query, version, parameters, mode or take moves it, and the binding holds nothing in that document until it is resolved again (DA-AA)                                                                                                                                                                                                                                                                                                                             | Excluding `mode`, which would let a binding turned from pinned to checked keep a resolution nobody re-confirmed                        |
+| D3-S | **Development and CI**: the seed gains nothing; the end-to-end test makes its own definition on `source-postgres`, a component holding a binding, and a document referencing it                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | A seeded binding in every development environment                                                                                      |
+| D3-T | **Citations**: DAT-092, DAT-083, DAT-085, DAT-093, DAT-084, DAT-037, DAT-029, DAT-067, DAT-090, DAT-015, DAT-016, DAT-064, DAT-086 by the tests named below. **Not cited**: DAT-030, whose document parameter set (TPL-020) does not exist yet; DAT-043's retention half, which needs baselines; DAT-082 and DAT-091, which are `bindings.md`'s screens                                                                                                                                                                                                                                                                                           | Citing a requirement for the half D3 can show                                                                                          |
+
+## Global constraints
+
+- Test titles cite only what they show, checked with `pnpm trace show <ID>`, in a literal title; an
+  `it.each` title cites nothing, and a `rule:` field in a test cites its requirement.
+- Each test is watched fail: a new test before the code, or, where the code exists, by breaking it.
+- No em or en dash in user-facing text, and no real names, addresses or paths in a fixture.
+- `pnpm typecheck`, `pnpm lint`, `pnpm format`, the affected suites, then `pnpm trace generate` after
+  Prettier and `pnpm trace pins`; pins from the tool, never by hand. The full suite before the pull
+  request, and its CI log read, `##[error]` and every step's exit code included.
+- A stored shape is checked against every write path it admits (below).
+- Every trigger or function reading a table reads it by `tg_table_schema`.
+- **No secret in a URL, an argument, an environment variable of a child, a log line, an error or an
+  answer**; resolve and check join D1's DAT-005 tests.
+- **A test that measures time leaves room for CI's loaded runner** (D2's rows on CI load): a budget
+  that is not the property under test gets room; a bound that is the property keeps it.
+- **Never test against the development stack's compose project, its database on 5432 or its store on 8333.** Every suite run sets `ALLOY_TEST_DATABASE_URL`, `ALLOY_TEST_OBJECT_STORE` with its key and
+  secret, and `ALLOY_TEST_SOURCE_PORT` to the build's own; every whole-system or browser run sets
+  every `ALLOY_E2E_*` and `ALLOY_BROWSER_*` target to a compose project of the build's own. Task 0 is
+  the one exception, read-only, run by the orchestrator with Ken's agreement.
+
+## The stored-shape check
+
+**The write paths.** A binding: every path that writes component content - `createComponent`, a
+component version from `openedFrom`, an iteration's save, a paste, a template's components - parses
+it with the content model's schema in `packages/domain`, and nothing else writes content. A section
+title: the outline's operations, which refuse a binding (D3-D). A dataset version:
+`recordDatasetVersion` alone, called by resolve and check, through `recordVersion`'s `prepare`, which
+parses the provenance with `parseProvenanceForWrite`. A resolution: `recordResolution` alone. A name:
+`nameDataset` alone.
+
+**The canonical forms.** A binding is inside content, canonicalised by the content model's rule
+(strings NFC, `marks` a set). Its `parameters` and a key's `key` are records keyed by an author's
+names, so a parameter or a column named `marks` reaches the rule as a member name - but the set rule
+sorts only an **array** under `marks`, and neither record's values are arrays where a list could be
+keyed `marks`: a parameter's list is under `literal`, and a key's values are single values. Proved by
+a test with a parameter named `marks` holding a list in two orders, two digests. A provenance record
+is canonicalised by the shared rule; its arrays (columns) keep their order.
+
+| #   | Member                     | Validated on every write path by                                                                                                                                                                                        | Loose or tight                                                          | Points at, and who checks                                                                                          |
+| --- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| 1   | binding `id`               | An identifier, NFC, unique among the component's identifiers                                                                                                                                                            | Tight                                                                   | Nothing                                                                                                            |
+| 2   | binding `query`, `version` | UUIDs; `version` optional                                                                                                                                                                                               | Tight                                                                   | A definition and one of its versions: checked at resolve, `binding_missing` or `definition_retired` (D3-L)         |
+| 3   | binding `parameters`       | At most 50, keys `^[a-z][a-z0-9_]{0,62}$`; `{ literal }` a canonical value or a list of 1 to 50 non-null canonical values, NFC; or `{ document }` a name                                                                | Tight                                                                   | The definition's parameters: checked at resolve by D2's `checkParameterValues`, `parameter_invalid`                |
+| 4   | binding `mode`             | `'checked' \| 'pinned'`                                                                                                                                                                                                 | Tight                                                                   | Nothing                                                                                                            |
+| 5   | inline `take`              | `{ column }` or `{ key, column }`, a column a source name; a key of 1 to 32 entries keyed by column names, values canonical, NFC                                                                                        | Tight; no third form (DAT-067)                                          | The definition's columns and key: checked at resolve, `take_invalid`                                               |
+| 6   | binding in a section title | Refused by the outline's title schema                                                                                                                                                                                   | Tight                                                                   | Nothing                                                                                                            |
+| 7   | `dataset`                  | `(query_definition, parameters_digest, identity_key)` unique; the digest 64 hex; the key `service` or the two end-user forms of data.md                                                                                 | Tight; end-user forms written only from D7                              | A definition, by `(id, kind)`                                                                                      |
+| 8   | dataset version content    | data.md's provenance record, strict; `ran` the SQL alone in D3; `identity` `service` alone in D3; `canonical: 1`; `checksum` 64 hex; `images` empty                                                                     | Tight; the request form with D6, end-user identities with D7, images D8 | The definition and connection versions it names, by foreign key through `artifact_version (id, artifact_id, kind)` |
+| 9   | `dataset_name`             | 1 to 200 characters, trimmed, NFC, no control; insert-only                                                                                                                                                              | Tight                                                                   | Its dataset                                                                                                        |
+| 10  | `binding_resolution`       | `document_id` a document; `node_id` and `binding_id` identifiers; `binding_digest` 64 hex; `dataset_version` a version of a dataset; `replaces` null or one of the same dataset; `act` `resolve \| accept`; insert-only | Tight                                                                   | The document, the dataset version, by `(id, artifact_id, kind)`; the node's existence is the service's at the act  |
+
+## Task 0: The evidence query
+
+Run by the orchestrator, not the build, once Ken agrees (D3-B): read-only, as the `postgres` role of
+his stack, over every `t_*` schema of `alloy_dev`, counting versions and iterations whose content
+holds an inline of type `binding`, reported as counts per schema and never content. The answer is
+recorded in this plan's "Changed while building" table, and decides DA-O.
+
+## Task 1: The domain
+
+`packages/domain/src/content/model/inline.ts`: `bindingNodeSchema` widened to D3-C (stored-shape rows
+1 to 5); `packages/domain/src/structure/outline.ts`: a section title refuses a binding (row 6).
+`packages/domain/src/data/`:
+
+```ts
+// binding.ts
+export type Binding = z.infer<typeof bindingNodeSchema>;
+export function bindingDigest(binding: Binding): string; // canonical form; hashed in db
+export function bindingsIn(content: ContentDocument): { binding: Binding; path: string }[];
+export function checkTake(take: Binding['take'], definition: QueryDefinition): string | null; // take_invalid
+export function literalValues(binding: Binding): ParameterValues | { document: string }; // D3-L
+
+// provenance.ts - data.md's record, D3's arms
+export type Provenance = {
+  schemaVersion: 1;
+  queryDefinition: { artifact; version };
+  connection: { artifact; version };
+  parameters: ParameterValues;
+  ran: { sql: string };
+  identity: { kind: 'service' };
+  at: string;
+  durationMs: number;
+  rowCount: number;
+  columns: Column[];
+  canonical: 1;
+  checksum: string;
+  images: Record<string, never>;
+};
+export function parseProvenance(value: unknown): Provenance;
+export function parseProvenanceForWrite(value: unknown): Provenance;
+
+// identity.ts
+export function identityKey(identity: { kind: 'service' }): 'service';
+export function parametersDigestInput(values: ParameterValues): string; // canonicalJson, RFC 8785 shape
+```
+
+`failures.ts` gains nothing (D2's codes); the refusals of D3-L are the service's. **Tests:**
+`binding.test.ts`: `DAT-029 holds a binding's definition, its parameters and the value it takes, or
+refuses it by rule`; `DAT-067 refuses an inline binding that names neither a single-row column nor a
+key and a column, when it is written`; uncited, every stored-shape row refused by its rule, NFC, a
+parameter named `marks` holding a list in two orders giving two digests, a binding in a section title
+refused, and the editor still opening a component with a binding read-only.
+`provenance.test.ts`: uncited, the record whole or refused by rule.
+
+## Task 2: The migration and the database
+
+**`0047_datasets.sql`** (D3-A): `dataset` in the three artifact checks (the author check as 0044
+does); `dataset (artifact_id, artifact_kind default 'dataset', query_definition,
+query_definition_kind default 'queryDefinition', parameters_digest, identity_key, unique (...))`;
+`dataset_name (id identity, dataset_id, name, named_by, named_at)`; `binding_resolution (id identity,
+document_id, document_kind, node_id, binding_id, binding_digest, dataset_version, dataset_id,
+dataset_kind, replaces, act, resolved_by, resolved_at)` with the checks of rows 9 and 10, foreign
+keys by `(id, artifact_id, kind)` so a resolution's version and the one it replaces are of one
+dataset; an index on `(document_id, node_id, binding_id, id desc)`. Both name and resolution
+insert-only: `revoke insert, update, delete, truncate`, then `grant insert` on every column but `id`
+and the time, and `grant select`, as 0044.
+
+**`packages/db/src/datasets.ts`**: `datasetFor(trx, { definition, parametersDigest, identityKey,
+spaceId, author })` (found or made, under a lock on the identity), `recordDatasetVersion(trx,
+{ dataset, provenance, author })` answering `{ version, reused: boolean }` by D3-F,
+`recordResolution(trx, { document, node, binding, digest, version, replaces, act, by })`,
+`resolutionsOf(trx, documentId)` (the latest per node and binding, each with its version's provenance
+and any waiting version, D3-J), `nameDataset`, `datasetName`, `componentsBinding(trx, principal,
+definitionId)` by `@?` (Q1), `documentsResolving(trx, principal, { definition } | { connection })`.
+`artifactKinds`, `spacedKinds`, `VersionSubstance`, `prepare` and `substanceOf` gain the kind;
+`testing/every-kind.ts` makes one; search declares it not searchable.
+
+**Tests** (`packages/db`): `datasets.test.ts`: `DAT-092 records each stored result as an immutable
+version of a dataset, apart from the bindings using it, which may be named` (a version refusing an
+update; a name a row, the latest wins); `DAT-085 records with each dataset version its provenance:
+the definition and connection with their versions, the parameters, the identity, the SQL that ran,
+the time, the row count, the canonical form's version and the SHA-256 checksum`; uncited, the
+identity unique, D3-F's reuse and its three refusals to reuse, a resolution refusing an update and a
+version of another dataset as `replaces`; `migration 0047, over an environment made before it`, fresh
+against upgraded, as 0044's and 0046's.
+
+## Task 3: The service
+
+Routes, as data.md's table, with D3's answers:
+
+| Route                                       | Access                                                                      | Body                                                   | Answer                                                                                                                                                      |
+| ------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /v1/documents/{id}/bindings`           | `read` on the document                                                      |                                                        | Per node and binding: the binding, what it holds (`{ version, provenance, name } \| null`, `stale` where its digest no longer matches), any waiting version |
+| `POST /v1/documents/{id}/bindings/resolve`  | `edit` on the document; `read` on each definition; `use_connection`         | `{ bindings: { node, binding }[] }`, 1 to 50           | Per binding: `{ held: { version, reused } } \| { failure }`; each records its own (D3-L)                                                                    |
+| `POST /v1/documents/{id}/bindings/check`    | `read` on the document; `use_connection` per connection, others `unchecked` | `{}`                                                   | Per checked binding: `unchanged \| { revision: version } \| { unchecked: 'limit' \| 'permission' } \| { failure }` (D3-I)                                   |
+| `POST /v1/documents/{id}/bindings/accept`   | `edit` on the document                                                      | `{ node, binding, version, replaces, sharesOwnView? }` | The binding's new state; 409 `resolution_precondition` with the current one                                                                                 |
+| `GET /v1/documents/{id}/datasets/{version}` | `read` on the document                                                      |                                                        | The canonical result (D3-O)                                                                                                                                 |
+| `PUT /v1/datasets/{id}/name`                | `edit` on the dataset                                                       | `{ name }`                                             | `{ name, namedBy, namedAt }`                                                                                                                                |
+| `GET /v1/query-definitions/{id}/uses`       | `read` on the definition                                                    |                                                        | `{ components, documents }`, each `{ readable, others }` (D3-M)                                                                                             |
+| `GET /v1/connections/{id}/uses`             | `read` on the connection                                                    |                                                        | D2's `definitions`, and `documents`                                                                                                                         |
+
+Resolve and check are `data/connections.ts`'s, the one importer of the connector client (D1), each by
+D3-H: decide and read, commit, ask, then a recording transaction that decides again. Their requests
+take no idempotency key, as the sample's does not. OpenAPI and the client are regenerated; each route
+documented as #353 requires.
+
+**Tests** (`apps/service`, the fake connector): `bindings-routes.test.ts`: `DAT-083 resolves a
+binding to a dataset version stored with its provenance, whatever its mode`; `DAT-015 resolves a
+binding pinned to a definition's version against that version, and a floating one against the
+latest`; `DAT-084 records a different result found by a check as a waiting revision and resolves
+nothing to it`; `DAT-093 moves only the accepting document's binding to the accepted version, and
+another document holding the same dataset keeps its own`; `DAT-037 records each acceptance with what
+the binding held and what it holds after, who and when`; `DAT-090 answers a stored result to whoever
+may read the document holding it, and to nobody else`; `DAT-086 fails a resolve with a named error
+identifying the definition, the binding and the document, and records nothing`; uncited, D3-H's
+three races (a grant revoked, a session ended, a component version cut while the connector answers,
+each recording nothing), D3-I's distinct runs and its limit, D3-K's precondition, a stale resolution
+after a component version changes the binding, the object stored under its checksum and refused when
+the bytes do not match it. `uses-routes.test.ts`: `DAT-016 answers where a definition is used: the
+components whose latest versions bind it, and the documents resolving them, naming those the caller
+may read`; `DAT-064 answers where a connection is used, through its definitions to the documents`.
+`connector-boundary.test.ts` and `data-secrets.test.ts` gain resolve and check (DAT-089, DAT-005).
+
+## Task 4: The page
+
+`apps/web/src/data/QueryDefinitionPage.tsx` gains **Used by** - components and documents, readable
+ones linked, the rest counted - shown beside **Save version** (DAT-016's "before the change is
+made"). **Tests:** `DAT-016 shows where a definition is used before a version is saved`; uncited, the
+counted others. Nothing else in `apps/web` changes (D3-P).
+
+## Task 5: The whole system
+
+`tests/e2e/src/bindings.test.ts`: uncited, `places a binding by the API, resolves it in a document,
+checks it after the source changed, and accepts the revision, over the whole system` - a definition
+on `source-postgres` as `reader`, a component holding a binding, a document referencing it; resolve;
+a row changed at the source by the test's superuser connection; check answering a revision; accept;
+the rows read through the document; a second document holding the first version still. The source
+change uses a table of the test's own in schema `sample`, made and dropped by the test.
+
+## Task 6: Docs and the release
+
+`docs/design/data.md`: D3-C, D3-D, D3-F, D3-H, D3-I, D3-K, D3-L and D3-R folded in as Ken decides
+them, the check cadence open question answered, IAM-082 moved to D7's row. `docs/architecture.md`:
+the dataset kind, migration 0047, the act's two transactions, the routes. `docs/features.md` and the
+README: results stored and checked through the API; nothing shown or published yet.
+`docs/testing.md`: the end-to-end test's source change. This plan's row: Built. The changelog: the
+next Minor.
+
+## Verification
+
+- **Suites**, each alone while building, every target set to the build's own: `packages/domain`,
+  `packages/db`, `apps/service`, `packages/api-contract`, `apps/web`, `apps/desktop`; then the full
+  `pnpm test`, and `pnpm test:e2e` and `pnpm test:browser` against a compose project of the build's
+  own with `--profile sources`.
+- **CI**: the whole-system job runs task 5; the traceability gate reads every suite.
+- **By hand, before the pull request**, in a compose project of the build's own: the end-to-end
+  test's steps through `/docs`'s API against `source-postgres`, and the component holding the
+  binding opened in the editor, read-only, saying why.
+
+## Questions for Ken before the build
+
+1. **D3-B**: may the orchestrator run the evidence query, read-only, on your stack's database? It
+   counts components holding the old binding node per environment and reads no content. Recommended;
+   the alternative is widening on the code's evidence alone.
+2. **D3-F**: reusing a dataset version only when the definition version and the SQL that ran are
+   also unchanged, against data.md's checksum alone. Recommended.
+3. **D3-P**: no screen for bindings in D3, the API and the definition's **Used by** only, the screens
+   coming with `bindings.md`. Recommended; it means you try D3 through `/docs` or not at all.
+4. **D3-I**: a check runs each distinct question once, two at a time, at most fifty per check.
+   Recommended.
+5. **D3-Q**: IAM-082 left to D7, where a run first carries a person's own identity. Recommended.
+
+## How this plan was made
+
+About 40 minutes of wall-clock time and about 30 tool calls, Q1 among them (about 3 minutes); Q2
+waits for Ken.
