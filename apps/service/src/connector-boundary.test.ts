@@ -38,16 +38,20 @@ describe("the connector's one caller", () => {
     for (const file of scheduled) {
       expect(importsOf(join(here, file)), file).not.toContain('./data/connections.js');
     }
-    // Of those routes, the ones that ask the connector are the four a person calls to act on a
-    // source: setting a credential, a test, a describe - of the tables or of a statement - and a
-    // sample run. Listing uses, reading and versioning a connection ask it nothing.
+    // Of those routes, the ones that ask the connector are the six a person calls to act on a
+    // source: setting a credential, a test, a describe - of the tables or of a statement - a sample
+    // run, and resolving and checking a document's bindings (D3). Listing uses, reading and
+    // versioning a connection ask it nothing, and neither do reading, accepting or naming a result,
+    // whose module, `bindings.ts`, imports nothing of the connector's: it is lent the run.
     const routesText = readFileSync(join(here, 'data/connections.ts'), 'utf8');
     const handlers = routesText.split(/\n {4}(?=\w+: async \()/).slice(1);
     const asking = handlers
       .filter((body) => /\bconnected\(\)/.test(body))
       .map((body) => body.slice(0, body.indexOf(':')));
     expect(asking.sort()).toEqual([
+      'checkBindings',
       'describeConnection',
+      'resolveBindings',
       'sampleConnection',
       'setConnectionCredential',
       'testConnection',

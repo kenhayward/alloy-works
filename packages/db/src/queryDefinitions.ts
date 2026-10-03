@@ -192,7 +192,7 @@ export async function recordQueryDefinitionVersion(
 }
 
 /** Whether a readable set holds an artifact in a space: the readable-set predicate, for one row. */
-function mayReadArtifact(
+export function mayReadArtifact(
   readable: ReadableSet,
   artifact: { readonly id: string; readonly spaceId: string | null },
 ): boolean {

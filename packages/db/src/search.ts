@@ -27,7 +27,11 @@ import { readVersion, type StoredVersion } from './versions.js';
  * never a record: `reindexSearch` makes it all again from the chain.
  */
 
-/** The kinds found by their versions. A layout, a theme and a catalogue are not searched (SCH-054). */
+/**
+ * The kinds found by their versions. A layout, a theme and a catalogue are not searched (SCH-054), nor
+ * a connection, nor a dataset: a stored result is browsed and queried in its own right only from T4
+ * (DAT-094), and read until then through a document holding it (the D3 plan, D3-O).
+ */
 const versioned = new Set<string>([
   'component',
   'document',

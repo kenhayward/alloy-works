@@ -446,6 +446,46 @@ export interface DataPolicyTable {
   seconds: ColumnType<number | null, never, number | null>;
 }
 
+/** A dataset's identity (0047; the D3 plan, D3-A): the question its versions answer. Insert-only. */
+export interface DatasetTable {
+  artifact_id: ColumnType<string, string, never>;
+  artifact_kind: ColumnType<'dataset', 'dataset' | undefined, never>;
+  query_definition: ColumnType<string, string, never>;
+  query_definition_kind: ColumnType<'queryDefinition', 'queryDefinition' | undefined, never>;
+  parameters_digest: ColumnType<string, string, never>;
+  identity_key: ColumnType<string, string, never>;
+}
+
+/** A dataset's names (0047; DAT-092): the latest row is the name. Insert-only. */
+export interface DatasetNameTable {
+  id: ColumnType<string, never, never>;
+  dataset_id: ColumnType<string, string, never>;
+  dataset_kind: ColumnType<'dataset', 'dataset' | undefined, never>;
+  name: ColumnType<string, string, never>;
+  named_by: ColumnType<string, string, never>;
+  named_at: ColumnType<Date, never, never>;
+}
+
+/**
+ * What a binding holds in a document (0047; DAT-093, DAT-037): the latest row for a document, a node
+ * and a binding. Insert-only.
+ */
+export interface BindingResolutionTable {
+  id: ColumnType<string, never, never>;
+  document_id: ColumnType<string, string, never>;
+  document_kind: ColumnType<'document', 'document' | undefined, never>;
+  node_id: ColumnType<string, string, never>;
+  binding_id: ColumnType<string, string, never>;
+  binding_digest: ColumnType<string, string, never>;
+  dataset_version: ColumnType<string, string, never>;
+  dataset_id: ColumnType<string, string, never>;
+  dataset_kind: ColumnType<'dataset', 'dataset' | undefined, never>;
+  replaces: ColumnType<string | null, string | null, never>;
+  act: ColumnType<'resolve' | 'accept', 'resolve' | 'accept', never>;
+  resolved_by: ColumnType<string, string, never>;
+  resolved_at: ColumnType<Date, never, never>;
+}
+
 export interface TenantTables {
   component_lock: ComponentLockTable;
   iteration: IterationTable;
@@ -493,6 +533,9 @@ export interface TenantTables {
   connection_credential: ConnectionCredentialTable;
   connection_test: ConnectionTestTable;
   data_policy: DataPolicyTable;
+  dataset: DatasetTable;
+  dataset_name: DatasetNameTable;
+  binding_resolution: BindingResolutionTable;
 }
 
 /** A transaction inside withTenant: what every read and write of tenant data is given. */

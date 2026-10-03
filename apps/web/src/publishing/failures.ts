@@ -396,6 +396,11 @@ export function failureWords(failure: Failure, wordOffered = false): string {
     // asked for at all, which a preview and a layout with no Word page cannot.
     case 'heading_too_deep':
       return `This heading is nested more than six levels deep, which a PDF cannot tag as a heading. Move it up a level${wordOffered ? ', or publish this document to Word alone' : ''}.`;
+    // D3 (the plan's "Added in phase B"): nothing publishes a binding until the publish's binding
+    // stage, and the service refuses a document holding one at the door, so this is met only by a
+    // request built past it. Publishing again would meet it again.
+    case 'binding_unresolved':
+      return 'This holds a value bound to a query, and nothing publishes or previews one yet. Remove the binding to publish or preview this document.';
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:

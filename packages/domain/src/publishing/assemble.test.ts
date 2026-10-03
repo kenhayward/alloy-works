@@ -6603,3 +6603,68 @@ describe('a preview, assembled (W10.1)', () => {
     expect(JSON.stringify(untold.document)).not.toContain('Preview');
   });
 });
+
+// The D3 plan, "Added in phase B": nothing publishes a binding until the publish's binding stage
+// (bindings.md), and the service refuses one at the door. Should a request ever reach the worker
+// holding one, it fails by name wherever the binding stands, and never prints the run without it.
+describe('a binding met by assemble', () => {
+  const binding = (name: string) => ({
+    type: 'binding',
+    id: name,
+    query: OTHER,
+    parameters: { site: { literal: '1' } },
+    mode: 'checked',
+    take: { column: 'name' },
+  });
+  const cellOf = (...blocks: unknown[]) => ({ content: blocks, colspan: 1, rowspan: 1 });
+
+  it('refuses a binding wherever an inline stands, by name, for every format, and publishes nothing', () => {
+    const holding = component([
+      paragraph('p1', text('The site is '), binding('b1')),
+      {
+        type: 'table',
+        id: 't1',
+        style: 'table',
+        caption: [text('Readings '), binding('b2')],
+        headerRows: 0,
+        headerColumns: 0,
+        rows: [{ cells: [cellOf(paragraph('c1', binding('b3')))] }],
+      },
+      storedList('l1', 'definition', [
+        { term: [binding('b4')], content: [paragraph('d1', text('A site.'))] },
+      ]),
+      {
+        type: 'blockquote',
+        id: 'q1',
+        content: [paragraph('q2', text('Quoted.'))],
+        attribution: [binding('b5')],
+      },
+      paragraph('p2', text('Noted.'), {
+        type: 'footnote',
+        id: 'f1',
+        anchor: { kind: 'span' },
+        content: [paragraph('f2', binding('b6'))],
+      }),
+    ]);
+    for (const formats of [['pdf'], ['pdf', 'docx'], ['docx']] as const) {
+      const assembled = assemble({
+        ...oneOccurrence(holding),
+        formats: [...formats],
+      });
+      expect(assembled.ok, formats.join()).toBe(false);
+      const failures = failuresOf(assembled);
+      expect(
+        failures
+          .filter((each) => each.code === 'binding_unresolved')
+          .map((each) => [each.stage, each.node, each.detail])
+          .sort(),
+        formats.join(),
+      ).toEqual(['b1', 'b2', 'b3', 'b4', 'b5', 'b6'].map((name) => ['compose', id('calib'), name]));
+      // Named as a binding, never as an inline the product cannot publish yet.
+      expect(
+        failures.filter((each) => each.detail === 'binding'),
+        formats.join(),
+      ).toEqual([]);
+    }
+  });
+});

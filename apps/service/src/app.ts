@@ -47,6 +47,7 @@ import {
 } from './access.js';
 import { assetHandlers, type BinaryBody } from './assets.js';
 import { componentHandlers } from './components.js';
+import { bindingHandlers } from './data/bindings.js';
 import { connectionHandlers, type ConnectorOptions } from './data/connections.js';
 import { queryDefinitionHandlers } from './data/query-definitions.js';
 import type { GoogleSettings } from './config.js';
@@ -415,8 +416,9 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...componentHandlers(db, tenantOf, principalOf),
     ...documentHandlers(db, tenantOf, principalOf),
     ...templateHandlers(db, tenantOf, principalOf),
-    ...connectionHandlers(db, tenantOf, principalOf, options.connector),
+    ...connectionHandlers(db, tenantOf, principalOf, options.connector, options.objects),
     ...queryDefinitionHandlers(db, tenantOf, principalOf),
+    ...bindingHandlers(tenantOf, options.objects),
     ...definitionHandlers(db, tenantOf, principalOf),
     ...searchHandlers(db, tenantOf, principalOf),
     ...presentationHandlers(db, tenantOf),

@@ -12,6 +12,8 @@ const DEFINITION = '44444444-4444-4444-8444-444444444444';
 const FIRST = '55555555-5555-4555-8555-555555555555';
 const SECOND = '66666666-6666-4666-8666-666666666666';
 const WAREHOUSE = '77777777-7777-4777-8777-777777777777';
+const COMPONENT = '88888888-8888-4888-8888-888888888888';
+const DOCUMENT = '99999999-9999-4999-8999-999999999999';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -75,6 +77,8 @@ function service(
     describe?: () => Response | Promise<Response>;
     sample?: () => Response;
     version?: (body: { openedFrom: string; definition: Record<string, unknown> }) => Response;
+    /** Where the definition is used (D3-M); used nowhere unless told. */
+    uses?: unknown;
   } = {},
 ) {
   const asked: Asked[] = [];
@@ -165,6 +169,15 @@ function service(
     }
     if (request.method === 'GET' && path === `/v1/query-definitions/${DEFINITION}`) {
       return json(200, held);
+    }
+    if (request.method === 'GET' && path === `/v1/query-definitions/${DEFINITION}/uses`) {
+      return json(
+        200,
+        options.uses ?? {
+          components: { readable: [], others: 0 },
+          documents: { readable: [], others: 0 },
+        },
+      );
     }
     if (request.method === 'POST' && path === `/v1/spaces/${GENERAL}/query-definitions`) {
       held = view((body as { definition: Record<string, unknown> }).definition);
@@ -706,6 +719,57 @@ describe('the query definition page', () => {
         .slice(1)
         .map((row) => within(row).getAllByRole('cell')[0]!.textContent),
     ).toEqual(['id', 'name']);
+  });
+
+  it('DAT-016 shows where a definition is used before a version is saved', async () => {
+    const { client } = service({
+      uses: {
+        components: {
+          readable: [{ id: COMPONENT, title: 'Harbour readings' }],
+          others: 2,
+        },
+        documents: { readable: [{ id: DOCUMENT, title: 'The readings report' }], others: 0 },
+      },
+    });
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    const used = await screen.findByRole('region', { name: 'Used by' });
+    expect(await within(used).findByRole('link', { name: 'Harbour readings' })).toHaveAttribute(
+      'href',
+      `#/components/${COMPONENT}`,
+    );
+    expect(within(used).getByRole('link', { name: 'The readings report' })).toHaveAttribute(
+      'href',
+      `#/documents/${DOCUMENT}`,
+    );
+    expect(within(used).getByText('And 2 more you may not read.')).toBeInTheDocument();
+    // Shown before the act it warns of: the region comes before Save version on the page.
+    const save = screen.getByRole('button', { name: 'Save version' });
+    expect(used.compareDocumentPosition(save) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('counts the uses a reader may not read, and names none of them', async () => {
+    const { client } = service({
+      uses: {
+        components: { readable: [], others: 1 },
+        documents: { readable: [], others: 3 },
+      },
+    });
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    const used = await screen.findByRole('region', { name: 'Used by' });
+    expect(
+      await within(used).findByText('Bound by 1 component you may not read.'),
+    ).toBeInTheDocument();
+    expect(within(used).getByText('Held by 3 documents you may not read.')).toBeInTheDocument();
+    expect(within(used).queryAllByRole('link')).toEqual([]);
+  });
+
+  it('says so when nothing uses a definition yet', async () => {
+    const { client } = service();
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    const used = await screen.findByRole('region', { name: 'Used by' });
+    expect(
+      await within(used).findByText('No component binds this query definition yet.'),
+    ).toBeInTheDocument();
   });
 
   it('shows a definition to somebody who may read it and change nothing', async () => {

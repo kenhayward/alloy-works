@@ -1,6 +1,7 @@
 import { queryDefinitionSchema } from '@alloy-works/domain';
 import { z } from 'zod';
 import { SpaceParams, VersionSummary } from './components.js';
+import { QueryDefinitionUsesView } from './bindings.js';
 import { SqlRefusal } from './connections.js';
 import type { RouteContract } from './contract.js';
 import { FacetCountView, idsFilter, listingQuery, listingTotal, nextCursor } from './listing.js';
@@ -227,6 +228,29 @@ export const queryDefinitionRoutes = {
           onTheConnection.description,
         schema: QueryDefinitionRefusal,
       },
+    },
+  },
+  getQueryDefinitionUses: {
+    operationId: 'getQueryDefinitionUses',
+    method: 'GET',
+    path: '/v1/query-definitions/{id}/uses',
+    summary:
+      'Where a query definition is used: the components binding it and the documents resolving them',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    params: QueryDefinitionParams,
+    responses: {
+      200: {
+        description:
+          'The components whose latest versions bind it, and the documents holding a result of it: those the caller may read, and how many more',
+        schema: QueryDefinitionUsesView,
+      },
+      401: unauthenticated,
+      403: {
+        description: 'Never answered: a definition the caller may not read is not found',
+        schema: ErrorBody,
+      },
+      404: notFound,
     },
   },
 } as const satisfies Record<string, RouteContract>;

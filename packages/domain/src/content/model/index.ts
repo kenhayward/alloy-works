@@ -1,7 +1,7 @@
 export { markSchema, markTypes, allowedLinkSchemes } from './marks.js';
 export type { Mark, MarkType } from './marks.js';
 
-export { inlineNodeSchema, alternativeSchema } from './inline.js';
+export { inlineNodeSchema, alternativeSchema, bindingNodeSchema } from './inline.js';
 export type {
   InlineNode,
   Alternative,

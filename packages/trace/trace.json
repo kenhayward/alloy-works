@@ -16193,7 +16193,7 @@
         },
         {
           "id": "DAT-090",
-          "howItIsMet": "A stored result is read only through a document that resolves to it, on `read` on that document; fetching or accepting one asks `use_connection` and runs as the person"
+          "howItIsMet": "A stored result is read only through a document that resolves to it, on `read` on that document; fetching one - a resolve or a check - and accepting one each ask what the source side asks: `read` on the query definition it ran and `use_connection` on its connection, an accept on top of `edit` on the document ([Accept](#accept))"
         },
         {
           "id": "DAT-092",
@@ -17932,6 +17932,48 @@
       "kind": "title"
     },
     {
+      "id": "DAT-015",
+      "file": "apps/service/src/bindings-routes.test.ts",
+      "line": 198,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-037",
+      "file": "apps/service/src/bindings-routes.test.ts",
+      "line": 325,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-083",
+      "file": "apps/service/src/bindings-routes.test.ts",
+      "line": 87,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-084",
+      "file": "apps/service/src/bindings-routes.test.ts",
+      "line": 242,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-086",
+      "file": "apps/service/src/bindings-routes.test.ts",
+      "line": 675,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-090",
+      "file": "apps/service/src/bindings-routes.test.ts",
+      "line": 443,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-093",
+      "file": "apps/service/src/bindings-routes.test.ts",
+      "line": 284,
+      "kind": "title"
+    },
+    {
       "id": "CNT-143",
       "file": "apps/service/src/component-creation.test.ts",
       "line": 222,
@@ -17988,13 +18030,13 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 745,
+      "line": 792,
       "kind": "title"
     },
     {
       "id": "DAT-005",
       "file": "apps/service/src/data-secrets.test.ts",
-      "line": 147,
+      "line": 162,
       "kind": "title"
     },
     {
@@ -18228,43 +18270,43 @@
     {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 422,
+      "line": 475,
       "kind": "rule"
     },
     {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 357,
+      "line": 410,
       "kind": "title"
     },
     {
       "id": "PUB-014",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 450,
+      "line": 503,
       "kind": "rule"
     },
     {
       "id": "PUB-047",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 658,
+      "line": 711,
       "kind": "title"
     },
     {
       "id": "PUB-048",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 600,
+      "line": 653,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 539,
+      "line": 592,
       "kind": "rule"
     },
     {
       "id": "PUB-095",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 467,
+      "line": 520,
       "kind": "rule"
     },
     {
@@ -18424,6 +18466,18 @@
       "kind": "title"
     },
     {
+      "id": "DAT-016",
+      "file": "apps/service/src/uses-routes.test.ts",
+      "line": 79,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-064",
+      "file": "apps/service/src/uses-routes.test.ts",
+      "line": 106,
+      "kind": "title"
+    },
+    {
       "id": "IAM-029",
       "file": "apps/web/src/access/AccessPanel.test.tsx",
       "line": 1474,
@@ -18450,25 +18504,37 @@
     {
       "id": "DAT-004",
       "file": "apps/web/src/data/connections.test.tsx",
-      "line": 418,
+      "line": 424,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-064",
+      "file": "apps/web/src/data/connections.test.tsx",
+      "line": 677,
       "kind": "title"
     },
     {
       "id": "DAT-075",
       "file": "apps/web/src/data/connections.test.tsx",
-      "line": 366,
+      "line": 372,
       "kind": "title"
     },
     {
       "id": "DAT-014",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 339,
+      "line": 352,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-016",
+      "file": "apps/web/src/data/query-definitions.test.tsx",
+      "line": 724,
       "kind": "title"
     },
     {
       "id": "DAT-105",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 269,
+      "line": 282,
       "kind": "title"
     },
     {
@@ -19420,6 +19486,18 @@
       "kind": "title"
     },
     {
+      "id": "DAT-085",
+      "file": "packages/db/src/datasets.test.ts",
+      "line": 339,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-092",
+      "file": "packages/db/src/datasets.test.ts",
+      "line": 268,
+      "kind": "title"
+    },
+    {
       "id": "STY-024",
       "file": "packages/db/src/default-theme.test.ts",
       "line": 99,
@@ -20088,7 +20166,7 @@
     {
       "id": "CNT-153",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 583,
+      "line": 590,
       "kind": "title"
     },
     {
@@ -20100,19 +20178,19 @@
     {
       "id": "STR-025",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 1950,
+      "line": 1957,
       "kind": "title"
     },
     {
       "id": "AST-015",
       "file": "packages/domain/src/content/model/inline.test.ts",
-      "line": 86,
+      "line": 94,
       "kind": "title"
     },
     {
       "id": "CNT-022",
       "file": "packages/domain/src/content/model/inline.test.ts",
-      "line": 86,
+      "line": 94,
       "kind": "title"
     },
     {
@@ -20124,7 +20202,7 @@
     {
       "id": "CNT-026",
       "file": "packages/domain/src/content/model/inline.test.ts",
-      "line": 57,
+      "line": 65,
       "kind": "title"
     },
     {
@@ -20154,7 +20232,7 @@
     {
       "id": "CNT-043",
       "file": "packages/domain/src/content/model/inline.test.ts",
-      "line": 76,
+      "line": 84,
       "kind": "title"
     },
     {
@@ -20172,7 +20250,7 @@
     {
       "id": "CNT-123",
       "file": "packages/domain/src/content/model/inline.test.ts",
-      "line": 170,
+      "line": 178,
       "kind": "title"
     },
     {
@@ -20242,6 +20320,18 @@
       "kind": "title"
     },
     {
+      "id": "DAT-029",
+      "file": "packages/domain/src/data/binding.test.ts",
+      "line": 52,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-067",
+      "file": "packages/domain/src/data/binding.test.ts",
+      "line": 93,
+      "kind": "title"
+    },
+    {
       "id": "DAT-001",
       "file": "packages/domain/src/data/connection.test.ts",
       "line": 53,
@@ -20280,7 +20370,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 426,
+      "line": 442,
       "kind": "title"
     },
     {
@@ -20826,37 +20916,37 @@
     {
       "id": "STR-001",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 80,
+      "line": 81,
       "kind": "title"
     },
     {
       "id": "STR-002",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 95,
+      "line": 96,
       "kind": "title"
     },
     {
       "id": "STR-048",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 129,
+      "line": 130,
       "kind": "title"
     },
     {
       "id": "STR-049",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 142,
+      "line": 143,
       "kind": "title"
     },
     {
       "id": "STR-058",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 171,
+      "line": 172,
       "kind": "title"
     },
     {
       "id": "STR-064",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 692,
+      "line": 709,
       "kind": "title"
     },
     {
@@ -21198,13 +21288,13 @@
     {
       "id": "CNT-014",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 1033,
+      "line": 1101,
       "kind": "title"
     },
     {
       "id": "CNT-018",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 673,
+      "line": 741,
       "kind": "title"
     },
     {

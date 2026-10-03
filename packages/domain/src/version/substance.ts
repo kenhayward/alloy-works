@@ -16,6 +16,7 @@ import type { TemplateDefinition } from '../template/definition.js';
 import type { Catalogue, Catalogue1, Theme } from '../theme/schema.js';
 import type { ConnectionSettings } from '../data/connection.js';
 import type { QueryDefinition } from '../data/definition.js';
+import type { Provenance } from '../data/provenance.js';
 
 /**
  * What a component version says (ADR-0024): its content, its metadata values, the values it did not
@@ -104,8 +105,16 @@ export type QueryDefinitionSubstance = {
   readonly content: QueryDefinition;
 };
 
+/**
+ * A dataset version says its provenance record, and nothing else (data.md, "Storage of results and
+ * provenance"; DAT-085): the result is an object under its checksum, never in the version. The shared
+ * rule: its columns keep their order, and its parameters' lists theirs, which no set rule reaches.
+ */
+export type DatasetSubstance = { readonly kind: 'dataset'; readonly content: Provenance };
+
 export type VersionSubstance =
   | ComponentSubstance
+  | DatasetSubstance
   | ConnectionSubstance
   | QueryDefinitionSubstance
   | TemplateSubstance

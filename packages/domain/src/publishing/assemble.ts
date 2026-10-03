@@ -798,6 +798,13 @@ export function assemble(given: AssembleInput): Assembled {
         if (equation !== null) runs.push({ equation });
         continue;
       }
+      // Nothing publishes a binding until the publish's binding stage (bindings.md), and the service
+      // refuses one at the door (the D3 plan, "Added in phase B"): one reaching here is named, by
+      // its identifier, so the run is never printed without its value.
+      if (inline.type === 'binding') {
+        failures.push(failure('compose', 'binding_unresolved', node, block, inline.id));
+        continue;
+      }
       if (inline.type !== 'text') {
         failures.push(failure('compose', 'inline_not_publishable', node, block, inline.type));
         continue;

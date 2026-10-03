@@ -11,6 +11,9 @@ import {
   createConnection,
   createQueryDefinition,
   createTemplate,
+  readConnection,
+  readQueryDefinition,
+  recordDatasetVersion,
   createTenant,
   DEFAULT_LAYOUT_ID,
   DEFAULT_THEME_ID,
@@ -184,6 +187,16 @@ const OTHER_TENANT_IDS: Readonly<
   describeConnection: async (tenant, db) => ({ id: await connectionIdIn(tenant, db) }),
   sampleConnection: async (tenant, db) => ({ id: await connectionIdIn(tenant, db) }),
   getConnectionUses: async (tenant, db) => ({ id: await connectionIdIn(tenant, db) }),
+  getQueryDefinitionUses: async (tenant, db) => ({ id: await queryDefinitionIdIn(tenant, db) }),
+  getDocumentBindings: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  resolveBindings: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  checkBindings: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  acceptBinding: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  getDocumentDataset: async (tenant, db) => ({
+    id: await documentIdIn(tenant, db),
+    version: (await datasetIn(tenant, db)).version,
+  }),
+  nameDataset: async (tenant, db) => ({ id: (await datasetIn(tenant, db)).dataset }),
   createQueryDefinition: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getQueryDefinition: async (tenant, db) => ({ id: await queryDefinitionIdIn(tenant, db) }),
   recordQueryDefinitionVersion: async (tenant, db) => ({
@@ -227,6 +240,12 @@ const VALID_INPUT: Readonly<
     },
   },
   createQueryDefinition: { payload: { definition: aQueryDefinition(SESSION) } },
+  resolveBindings: { payload: { bindings: [{ node: 'a'.repeat(26), binding: 'b1' }] } },
+  checkBindings: { payload: {} },
+  acceptBinding: {
+    payload: { node: 'a'.repeat(26), binding: 'b1', version: SESSION, replaces: SESSION },
+  },
+  nameDataset: { payload: { name: 'Elsewhere' } },
   recordQueryDefinitionVersion: {
     payload: { openedFrom: SESSION, definition: aQueryDefinition(SESSION) },
   },
@@ -472,6 +491,34 @@ const queryDefinitionIdIn = async (tenant: Tenant, db: TenantDatabase) => {
     });
     if (made.answer !== 'created') throw new Error(`refused: ${made.answer}`);
     return made.definition.id;
+  });
+};
+
+/** A dataset in environment B, with one version: a result of a definition made there. */
+const datasetIn = async (tenant: Tenant, db: TenantDatabase) => {
+  const definition = await queryDefinitionIdIn(tenant, db);
+  return db.withTenant(tenant, async (trx) => {
+    const stored = (await readQueryDefinition(trx, definition))!;
+    const connection = (await readConnection(trx, stored.definition.connection))!;
+    const recorded = await recordDatasetVersion(trx, {
+      author: stored.version.author!,
+      provenance: {
+        schemaVersion: 1,
+        queryDefinition: { artifact: stored.id, version: stored.version.id },
+        connection: { artifact: connection.id, version: connection.version.id },
+        parameters: {},
+        ran: { sql: 'select 1' },
+        identity: { kind: 'service' },
+        at: '2026-10-03T09:00:00.000Z',
+        durationMs: 1,
+        rowCount: 0,
+        columns: stored.definition.columns,
+        canonical: 1,
+        checksum: 'e'.repeat(64),
+        images: {},
+      },
+    });
+    return { dataset: recorded.dataset.id, version: recorded.version.id };
   });
 };
 

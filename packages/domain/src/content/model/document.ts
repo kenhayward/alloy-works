@@ -362,6 +362,12 @@ export function checkInlineContent(
         throw new Error(`Cross-reference ${inline.id} in a title shows what could name a title`);
       }
     }
+    if (inline.type === 'binding') {
+      // A binding is resolved per document through the component reference node it stands under, and
+      // a title is under no component, so no resolution could hold one (the D3 plan, D3-D).
+      if (home === 'title') throw new BindingInTitle(inline.id);
+      claim(inline.id, claimed.ids);
+    }
     if (inline.type !== 'footnote') return inline;
     claim(inline.id, claimed.ids);
     const parsed = footnoteContentSchema.parse(inline.content);
@@ -613,6 +619,17 @@ function shownInATitle(reference: { display: string; withoutPages?: string | und
     reference.display === 'page' &&
     (reference.withoutPages === undefined || reference.withoutPages === 'number')
   );
+}
+
+/**
+ * A binding in a section title (the D3 plan, D3-D, `binding_in_title`): its own error, so the outline's
+ * title schema can say so rather than that the content model refuses something. Names the binding's
+ * identifier and nothing of the author's text.
+ */
+export class BindingInTitle extends Error {
+  constructor(readonly binding: string) {
+    super(`Binding ${binding} stands in a title, which belongs to no component`);
+  }
 }
 
 /** Where inline content is stored, which decides what a cross-reference in it may target. */

@@ -76,8 +76,9 @@ const sourceName = (what: string) =>
     .refine((value) => !CONTROL.test(value), { message: `${what} holds no control character` });
 
 // A permitted value's text is counted in characters, as a parameter's value is (D2-R), never left to
-// how the schema library happens to count a string's length.
-const canonicalValue = z.union([
+// how the schema library happens to count a string's length. A binding's literal is held to the same
+// (the D3 plan, D3-C): canonical in its parameter's type is decided where it is resolved.
+export const canonicalValueSchema = z.union([
   storable('A value')
     // Published as JSON Schema's maxLength, which counts characters too.
     .max(MAX_TEXT_VALUE)
@@ -89,8 +90,11 @@ const canonicalValue = z.union([
 ]);
 
 const permitted = z.union([
-  z.strictObject({ values: z.array(canonicalValue) }),
-  z.strictObject({ minimum: canonicalValue.optional(), maximum: canonicalValue.optional() }),
+  z.strictObject({ values: z.array(canonicalValueSchema) }),
+  z.strictObject({
+    minimum: canonicalValueSchema.optional(),
+    maximum: canonicalValueSchema.optional(),
+  }),
 ]);
 
 const variation = z
@@ -116,7 +120,8 @@ export const parameterSchema = z.strictObject({
   variation: variation.optional(),
 });
 
-const columnSchema = z.strictObject({
+/** A declared column (D2): a dataset version's provenance names its columns by the same shape. */
+export const columnSchema = z.strictObject({
   name: sourceName('A column name'),
   // A source's column by name; a pointer, a header and a letter arrive with D6's sources.
   from: z.strictObject({ column: sourceName('A source column') }),

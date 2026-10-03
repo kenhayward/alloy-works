@@ -17,7 +17,9 @@ import {
   readDocument,
   readPublication,
   readPublicationRequest,
+  readVersion,
   requestPublication,
+  resolveOccurrences,
   type PublicationRequestAnswer,
   type PublicationSummary,
   type StoredPublicationRequest,
@@ -25,7 +27,7 @@ import {
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { readOutline, walkOutline } from '@alloy-works/domain';
+import { bindingsIn, readContent, readOutline, walkOutline } from '@alloy-works/domain';
 import type { ObjectStores, TenantStore } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
 import { authoriseAt, callerOf, notFound, type Authorised } from './access.js';
@@ -208,6 +210,72 @@ async function answered(
   }
 }
 
+/** A binding a publish would meet: the outline node whose component holds it, and its identifier. */
+interface HeldBinding {
+  readonly node: string;
+  readonly binding: string;
+}
+
+/**
+ * Every binding in the components a publish of the document's latest version would read, resolved as
+ * the publisher, in the outline's order: none where the version named is not the latest, which the
+ * request refuses as stale before anything else (the D3 plan, "Added in phase B"). A component the
+ * publisher may not read is not read here either; the request fails it as unreadable.
+ */
+async function bindingsMet(
+  trx: TenantTransaction,
+  documentId: string,
+  version: string,
+  principalId: string,
+): Promise<HeldBinding[]> {
+  const document = await readDocument(trx, documentId);
+  if (!document || document.version.id !== version) return [];
+  const read = readOutline(document.version.content, { artifact: documentId, version });
+  if (!read.ok) return [];
+  const found: HeldBinding[] = [];
+  for (const occurrence of await resolveOccurrences(trx, read.outline, principalId)) {
+    if (occurrence.outcome !== 'resolved') continue;
+    const stored = await readVersion(trx, occurrence.version);
+    if (!stored) continue;
+    const content = readContent(stored.content, {
+      artifact: occurrence.component,
+      version: occurrence.version,
+    });
+    if (!content.ok) continue;
+    for (const { binding } of bindingsIn(content.document)) {
+      found.push({ node: occurrence.node, binding: binding.id });
+    }
+  }
+  return found;
+}
+
+/**
+ * **A publish never prints a document with a value silently missing** (DAT-046, DAT-087, whose whole
+ * answer is the publish's binding stage, `bindings.md`'s). Until that stage exists nothing publishes a
+ * binding, so a publish or a preview of a document holding one is refused here, before a request or a
+ * job is recorded, naming each binding by its node and the document; the worker's `assemble` refuses
+ * one too, should a request ever reach it.
+ */
+async function refuseBindings(
+  trx: TenantTransaction,
+  documentId: string,
+  version: string,
+  principalId: string,
+  asked: 'publish' | 'preview',
+): Promise<void> {
+  const met = await bindingsMet(trx, documentId, version, principalId);
+  if (met.length === 0) return;
+  const named = [...new Set(met.map((each) => each.binding))].join(', ');
+  throw refused(
+    400,
+    'binding.unresolved',
+    asked === 'publish'
+      ? `This document holds a value bound to a query (${named}), and a document holding one cannot be published yet. Remove the binding to publish it.`
+      : `This document holds a value bound to a query (${named}), and a document holding one cannot be previewed yet. Remove the binding to preview it.`,
+    { attribution: 'product', document: documentId, bindings: met },
+  );
+}
+
 export function publishingHandlers(
   db: TenantDatabase,
   tenantOf: (request: FastifyRequest) => Tenant,
@@ -229,6 +297,7 @@ export function publishingHandlers(
     ): Promise<PublicationRequestView> => {
       const { id } = request.params as DocumentParams;
       const body = request.body as RequestPublicationBody;
+      await refuseBindings(trx, id, body.version, principalId, 'publish');
       const answer = await requestPublication(trx, {
         documentId: id,
         version: body.version,
@@ -249,6 +318,7 @@ export function publishingHandlers(
     ): Promise<PublicationRequestView> => {
       const { id } = request.params as DocumentParams;
       const body = request.body as RequestPreviewBody;
+      await refuseBindings(trx, id, body.version, principalId, 'preview');
       const answer = await requestPublication(trx, {
         documentId: id,
         version: body.version,

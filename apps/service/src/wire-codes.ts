@@ -56,6 +56,15 @@ const WIRE_CODES = {
   'credential.target_changed': 'credential_target_changed',
   'sql.not_permitted': 'sql_not_permitted',
   'parameter.invalid': 'parameter_invalid',
+  'binding.unresolved': 'binding_unresolved',
+  'binding.missing': 'binding_missing',
+  'binding.in_title': 'binding_in_title',
+  'binding.changed': 'binding_changed',
+  'access.changed': 'access_changed',
+  'take.invalid': 'take_invalid',
+  'definition.retired': 'definition_retired',
+  'resolution.precondition': 'resolution_precondition',
+  'name.invalid': 'name_invalid',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;

@@ -960,6 +960,8 @@ describe('connections through the service', () => {
         readable: [{ id: readable.id, title: 'Weekly sums', retired: false }],
         others: 1,
       },
+      // No binding holds a result of either yet (D3-M).
+      documents: { readable: [], others: 0 },
     });
     // Grace reads both; Alice reads neither the connection nor its uses.
     expect(

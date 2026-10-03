@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { sql } from 'kysely';
 import pg from 'pg';
 import { bootstrapLoginRoles } from '../bootstrap.js';
+import { datasetQuestionKey, type DatasetIdentity } from '../datasets.js';
 import type { Tenant } from '../provision.js';
 import type { TenantTransaction } from '../tables.js';
 import type { TenantDatabase } from '../tenant-database.js';
@@ -115,6 +116,39 @@ export async function untilBlockedBy(
   } finally {
     await client.end();
   }
+}
+
+/**
+ * Takes the transaction-scoped advisory lock the store keys by `key` - `hashtextextended(key, 0)`, as
+ * `recordVersion` takes `alloy-works:artifact:<id>` - in a transaction of its own, and holds it until
+ * the answer is called, so a test can stop an act at the moment it asks for that lock.
+ */
+export async function holdingAdvisoryLock(url: string, key: string): Promise<() => Promise<void>> {
+  const client = new pg.Client({ connectionString: url });
+  await client.connect();
+  try {
+    await client.query('begin');
+    await client.query('select pg_advisory_xact_lock(hashtextextended($1, 0))', [key]);
+  } catch (error) {
+    await client.end();
+    throw error;
+  }
+  return async () => {
+    try {
+      await client.query('commit');
+    } finally {
+      await client.end();
+    }
+  };
+}
+
+/**
+ * The key `holdingAdvisoryLock` takes to hold the lock `lockDatasetQuestions` takes on a question in
+ * the tenant whose schema this is: the tenant's schema, a colon and the question's own key, as
+ * `lockInTurn` builds it from `current_schema()`.
+ */
+export function datasetQuestionLockKey(schema: string, identity: DatasetIdentity): string {
+  return `${schema}:${datasetQuestionKey(identity)}`;
 }
 
 const DEFAULT_SERVER_URL = 'postgres://postgres:postgres@127.0.0.1:5432/postgres';

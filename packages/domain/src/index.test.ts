@@ -419,6 +419,22 @@ describe('the domain package', () => {
         'runAnswerSchema',
         'runRequestSchema',
         'effectiveLimits',
+        // Data, D3: a binding's digest, where it stands, what it takes and runs with, a dataset
+        // version's provenance and a dataset's identity, and the refusal of a binding in a title
+        // (the D3 plan).
+        'bindingDigestInput',
+        'bindingsIn',
+        'checkTake',
+        'literalValues',
+        'PROVENANCE_SCHEMA_VERSION',
+        'parseProvenance',
+        'parseProvenanceForWrite',
+        'identityKey',
+        'parametersDigestInput',
+        'BINDING_IN_TITLE',
+        // D3's routes answer a binding and a dataset version's provenance by these shapes.
+        'bindingNodeSchema',
+        'provenanceSchema',
       ].sort(),
     );
   });

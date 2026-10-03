@@ -223,7 +223,13 @@ function service(
       });
     }
     if (request.method === 'GET' && path === `/v1/connections/${READINGS}/uses`) {
-      return options.uses?.() ?? json(200, { definitions: { readable: [], others: 0 } });
+      return (
+        options.uses?.() ??
+        json(200, {
+          definitions: { readable: [], others: 0 },
+          documents: { readable: [], others: 0 },
+        })
+      );
     }
     if (request.method === 'POST' && path === `/v1/connections/${READINGS}/test`) {
       return (
@@ -645,7 +651,7 @@ describe('a connection on its own page', () => {
               definitions: naming,
             })
           : undefined,
-      uses: () => json(200, { definitions: naming }),
+      uses: () => json(200, { definitions: naming, documents: { readable: [], others: 0 } }),
     });
     render(<ConnectionPage client={client} id={READINGS} />);
     const used = await screen.findByRole('region', { name: 'Used by' });
@@ -666,6 +672,54 @@ describe('a connection on its own page', () => {
       within(retiring).getByText('Retire these first: Site by id, and 2 more you may not read.'),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Retire' })).toBeInTheDocument();
+  });
+
+  it('DAT-064 shows the documents holding results from a connection beside its definitions, above Retire', async () => {
+    const { client } = service({
+      uses: () =>
+        json(200, {
+          definitions: {
+            readable: [
+              { id: '88888888-8888-4888-8888-888888888888', title: 'Site by id', retired: false },
+            ],
+            others: 0,
+          },
+          documents: {
+            readable: [{ id: '99999999-9999-4999-8999-999999999999', title: 'Harbour report' }],
+            others: 3,
+          },
+        }),
+    });
+    render(<ConnectionPage client={client} id={READINGS} />);
+    const used = await screen.findByRole('region', { name: 'Used by' });
+    const documents = await within(used).findByRole('heading', { name: 'Documents' });
+    expect(within(used).getByRole('heading', { name: 'Query definitions' })).toBeInTheDocument();
+    expect(within(used).getByRole('link', { name: 'Harbour report' })).toHaveAttribute(
+      'href',
+      '#/documents/99999999-9999-4999-8999-999999999999',
+    );
+    expect(within(used).getByText('And 3 more you may not read.')).toBeInTheDocument();
+    // Shown before Retire, so what retiring leaves is seen before it is asked for.
+    const retire = screen.getByRole('button', { name: 'Retire' });
+    expect(
+      documents.compareDocumentPosition(retire) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('counts the documents holding results from a connection that the person may not read, never naming them', async () => {
+    const { client } = service({
+      uses: () =>
+        json(200, {
+          definitions: { readable: [], others: 0 },
+          documents: { readable: [], others: 1 },
+        }),
+    });
+    render(<ConnectionPage client={client} id={READINGS} />);
+    const used = await screen.findByRole('region', { name: 'Used by' });
+    expect(
+      await within(used).findByText('Held by 1 document you may not read.'),
+    ).toBeInTheDocument();
+    expect(within(used).queryByRole('link')).toBeNull();
   });
 
   it('keeps a change typed into the settings, unsaved, across Retire and Reinstate', async () => {

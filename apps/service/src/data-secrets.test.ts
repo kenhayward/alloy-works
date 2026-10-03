@@ -1,6 +1,7 @@
 import { Writable } from 'node:stream';
 import {
   bootstrapCluster,
+  createComponent,
   createRole,
   createTenant,
   createTenantDatabase,
@@ -12,12 +13,15 @@ import {
 } from '@alloy-works/db';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
 import type { ConnectionSettings } from '@alloy-works/domain';
+import { createObjectStores } from '@alloy-works/objects';
+import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app.js';
 import { createOidcClient } from './oidc.js';
 import { environmentSecrets } from './secrets.js';
+import { ranOk } from './test/bindings-harness.js';
 import { FAKE_CONNECTOR_KEY, fakeConnector } from './test/fake-connector.js';
 import { configureStandIn, signIn, TEST_SEALING_KEY } from './test/sign-in.js';
 
@@ -55,6 +59,9 @@ describe("the service's handling of a credential", () => {
   let tenant: Tenant;
   let cookie = '';
   let connection = '';
+  let store: TestObjectStore;
+  let space = '';
+  let adaId = '';
   const lines: string[] = [];
   const connector = fakeConnector();
 
@@ -77,6 +84,8 @@ describe("the service's handling of a credential", () => {
       hostnames: [HOST],
     });
     await configureStandIn(db.adminUrl, tenant, { issuer: idp.issuer, clientId: 'alloy' });
+    store = await testObjectStore();
+    await store.setUp(db.adminUrl, tenant);
     tenantDb = createTenantDatabase(db.serviceUrl);
     // Every line the service writes, at its most talkative.
     const logStream = new Writable({
@@ -92,6 +101,7 @@ describe("the service's handling of a credential", () => {
       oidc: createOidcClient({ allowInsecureIssuers: true }),
       secrets: environmentSecrets({}),
       sealingKey: TEST_SEALING_KEY,
+      objects: createObjectStores(store.settings, store.sealingKey),
       connector: {
         url: 'http://connector.test:8090',
         key: FAKE_CONNECTOR_KEY,
@@ -115,7 +125,9 @@ describe("the service's handling of a credential", () => {
       ]);
       if (!('role' in made)) throw new Error(made.refused);
       const administrator = await findRole(trx, 'Administrator');
-      for (const role of [administrator!.id, made.role.id]) {
+      // And an author there, who may make a definition, a component and a document to bind in (D3).
+      const author = await findRole(trx, 'Author');
+      for (const role of [administrator!.id, made.role.id, author!.id]) {
         await grant(trx, {
           roleId: role,
           subject: { principal: ada },
@@ -135,12 +147,15 @@ describe("the service's handling of a credential", () => {
       payload: { settings },
     });
     connection = created.json<{ id: string }>().id;
+    space = general;
+    adaId = ada;
   });
 
   afterAll(async () => {
     await app?.close();
     await tenantDb?.close();
     await idp?.close();
+    await store?.drop();
     await db?.drop();
   });
 
@@ -210,6 +225,125 @@ describe("the service's handling of a credential", () => {
       connector.mode = mode;
       expect(await ask('describe', statement), mode).toBe(503);
       expect(await ask('sample', { definition: draft, values: { site: '1' } }), mode).toBe(503);
+    }
+    connector.mode = 'answer';
+    // A document's binding resolved and checked with that credential (D3), each answered, failing,
+    // and meeting a connector that cannot answer: the sealed credential goes to the connector, and
+    // nothing of the secret comes back or is kept with what is recorded.
+    const as = { host: HOST, cookie };
+    const definition = await app.inject({
+      method: 'POST',
+      url: `/v1/spaces/${space}/query-definitions`,
+      headers: as,
+      payload: {
+        definition: { ...draft, title: 'Sites', description: '', retired: false },
+      },
+    });
+    expect(definition.statusCode, definition.body).toBe(200);
+    const made = await tenantDb.withTenant(tenant, (trx) =>
+      createComponent(trx, {
+        spaceId: space,
+        title: 'Sites',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: adaId,
+      }),
+    );
+    if (made.answer !== 'created') throw new Error(made.answer);
+    const component = made.version.artifactId;
+    const session = '00000000-0000-4000-8000-0000000000dd';
+    for (const [method, url, payload] of [
+      ['POST', `/v1/components/${component}/lock`, { session }],
+      [
+        'PUT',
+        `/v1/components/${component}/iterations/${session}/1`,
+        {
+          openedFrom: made.version.id,
+          content: {
+            schemaVersion: 1,
+            title: 'Sites',
+            language: 'en-GB',
+            direction: 'ltr',
+            content: [
+              {
+                type: 'paragraph',
+                id: 'p1',
+                style: 'body',
+                content: [
+                  {
+                    type: 'binding',
+                    id: 'b1',
+                    query: definition.json<{ id: string }>().id,
+                    parameters: { site: { literal: '1' } },
+                    mode: 'checked',
+                    take: { column: 'id' },
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+      [
+        'DELETE',
+        `/v1/components/${component}/lock?session=${session}&openedFrom=${made.version.id}`,
+        undefined,
+      ],
+    ] as const) {
+      const answer = await app.inject({
+        method,
+        url,
+        headers: as,
+        ...(payload ? { payload } : {}),
+      });
+      expect(answer.statusCode, answer.body).toBe(200);
+    }
+    const document = (
+      await app.inject({
+        method: 'POST',
+        url: `/v1/spaces/${space}/documents`,
+        headers: as,
+        payload: { title: 'Sites', language: 'en-GB', direction: 'ltr' },
+      })
+    ).json<{ id: string; version: { id: string } }>();
+    const outline = await app.inject({
+      method: 'POST',
+      url: `/v1/documents/${document.id}/outline`,
+      headers: as,
+      payload: {
+        openedFrom: document.version.id,
+        operation: {
+          operation: 'insert',
+          parent: null,
+          position: 0,
+          node: { type: 'reference', component, mode: { kind: 'latest' } },
+        },
+      },
+    });
+    expect(outline.statusCode, outline.body).toBe(200);
+    const node = outline.json<{ outline: { nodes: { id: string }[] } }>().outline.nodes[0]!.id;
+    const bindingAct = async (act: 'resolve' | 'check'): Promise<number> => {
+      const answer = await app.inject({
+        method: 'POST',
+        url: `/v1/documents/${document.id}/bindings/${act}`,
+        headers: { ...as, 'idempotency-key': 'the-canary-key' },
+        payload: act === 'resolve' ? { bindings: [{ node, binding: 'b1' }] } : {},
+      });
+      responses.push(JSON.stringify(answer.headers), answer.body);
+      return answer.statusCode;
+    };
+    const refusedAtTheSource = connector.run;
+    connector.run = ranOk([['1', 'North']]);
+    expect(await bindingAct('resolve')).toBe(200);
+    connector.run = ranOk([['1', 'South']]);
+    expect(await bindingAct('check')).toBe(200);
+    connector.run = refusedAtTheSource;
+    expect(await bindingAct('resolve')).toBe(200);
+    expect(await bindingAct('check')).toBe(200);
+    for (const mode of ['unreachable', 'busy', 'broken', 'nonsense'] as const) {
+      connector.mode = mode;
+      expect(await bindingAct('resolve'), mode).toBe(200);
+      expect(await bindingAct('check'), mode).toBe(200);
     }
     connector.mode = 'answer';
     // And a value its declaration refuses, named as it was sent.

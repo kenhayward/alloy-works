@@ -3,6 +3,7 @@ import { defaultLimits, type QueryDefinition, type ValueType } from '@alloy-work
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import { Notice } from '../states/Notice.js';
+import { documentLink } from '../structure/links.js';
 import {
   BASES,
   NEW_PARAMETER,
@@ -25,6 +26,7 @@ import { connectionLink, queryDefinitionLink } from './links.js';
 import { useSqlPlaces, type Place } from './places.js';
 import styles from './QueryDefinitionPage.module.css';
 import { isRecord, refusalText } from './shapes.js';
+import { isUses, UsedList, type Uses } from './uses.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -496,6 +498,12 @@ function ReadOnly({ definition }: { readonly definition: QueryDefinition }) {
   );
 }
 
+/** Where a definition is used: the components binding it and the documents holding its results. */
+interface DefinitionUses {
+  readonly components: Uses;
+  readonly documents: Uses;
+}
+
 /**
  * A query definition (data.md, "What a query definition version holds"; the D2 plan, D2-U), at
  * `#/query-definitions/<id>` or `#/query-definitions/new`, written in five steps: the connection; the
@@ -521,6 +529,7 @@ export function QueryDefinitionPage({
   const [sampled, setSampled] = useState<Sampled | string[] | null>(null);
   const [saved, setSaved] = useState<string[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [uses, setUses] = useState<DefinitionUses | 'failed' | null>(null);
   const working = useRef(false);
   // The draft as it is now, for an answer that arrives after it was asked for.
   const latest = useRef(draft);
@@ -547,6 +556,33 @@ export function QueryDefinitionPage({
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Where it is used, read with it, so a change shows what it affects before it is made (DAT-016).
+  useEffect(() => {
+    if (isNew) return;
+    let current = true;
+    void (async () => {
+      try {
+        const { data } = await client.GET('/v1/query-definitions/{id}/uses', {
+          params: { path: { id } },
+        });
+        const answer: unknown = data;
+        const read =
+          typeof answer === 'object' &&
+          answer !== null &&
+          isUses((answer as { components?: unknown }).components) &&
+          isUses((answer as { documents?: unknown }).documents)
+            ? (answer as DefinitionUses)
+            : 'failed';
+        if (current) setUses(read);
+      } catch {
+        if (current) setUses('failed');
+      }
+    })();
+    return () => {
+      current = false;
+    };
+  }, [client, id, isNew]);
 
   // A new definition starts in the first space and on the first connection the person may use.
   useEffect(() => {
@@ -1178,6 +1214,42 @@ export function QueryDefinitionPage({
               <p>The SQL that ran</p>
               <pre className={styles['sql']}>{sampled.ran.sql}</pre>
             </div>
+          )}
+        </Step>
+      )}
+
+      {shown !== null && (
+        <Step title="Used by">
+          {uses === null ? null : uses === 'failed' ? (
+            <p>What uses this query definition could not be read.</p>
+          ) : uses.components.readable.length === 0 &&
+            uses.components.others === 0 &&
+            uses.documents.readable.length === 0 &&
+            uses.documents.others === 0 ? (
+            <p>No component binds this query definition yet.</p>
+          ) : (
+            <>
+              <UsedList
+                heading="Components"
+                uses={uses.components}
+                link={(component) => `#/components/${component}`}
+                counted={(others) =>
+                  `Bound by ${others} ${others === 1 ? 'component' : 'components'} you may not read.`
+                }
+              />
+              <UsedList
+                heading="Documents"
+                uses={uses.documents}
+                link={documentLink}
+                counted={(others) =>
+                  `Held by ${others} ${others === 1 ? 'document' : 'documents'} you may not read.`
+                }
+              />
+              <p className={styles['hint']}>
+                A binding that does not pin a version runs the latest one the next time it is
+                resolved or checked.
+              </p>
+            </>
           )}
         </Step>
       )}

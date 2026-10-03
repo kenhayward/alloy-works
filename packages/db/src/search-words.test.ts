@@ -274,7 +274,9 @@ describe('searching words', () => {
     });
     const kinds = itemsOf(await search(ada, 'zebra')).map((each) => each.kind);
     expect([...new Set(kinds)].sort()).toEqual([...searchKinds].sort());
-    expect(Object.keys(made).length).toBe(searchKinds.length + 1);
+    // Every kind search finds, the section's node, and a dataset, which search never finds (D3).
+    expect(Object.keys(made).length).toBe(searchKinds.length + 2);
+    expect(made.dataset).toBeDefined();
 
     for (const query of [
       'zebra',

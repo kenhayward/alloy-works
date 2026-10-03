@@ -13,6 +13,7 @@ import { DEFAULT_LAYOUT_ID } from '../layouts.js';
 import { recordPublication, requestPublication } from '../publishing.js';
 import type { TenantTransaction } from '../tables.js';
 import { DEFAULT_THEME_ID } from '../themes.js';
+import { recordDatasetVersion } from '../datasets.js';
 import { createArtifact } from '../versions.js';
 
 const text = (value: string) => [{ type: 'text', value, marks: [] }];
@@ -66,7 +67,8 @@ export async function publish(
  * leak suite does (SCH-010). The document's one section holds the word too, and so does the
  * publication, by its document's title; the query definition names a connection it makes. Answers each
  * kind's artifact, and the section's node. `before0046` leaves the query definition and its connection
- * out, for a tenant migrated only as far as a test of an earlier migration needs.
+ * out, for a tenant migrated only as far as a test of an earlier migration needs, and `before0047` the
+ * dataset, which records one result of the query definition as a service account's run.
  */
 export async function everyKind(
   trx: TenantTransaction,
@@ -77,10 +79,12 @@ export async function everyKind(
     /** The tenant's role, which an object key names. */
     readonly role: string;
     readonly before0046?: boolean;
+    readonly before0047?: boolean;
   },
 ): Promise<
   Readonly<Record<Exclude<SearchKind, 'queryDefinition'>, string>> & {
     readonly queryDefinition?: string;
+    readonly dataset?: string;
     readonly node: string;
   }
 > {
@@ -186,6 +190,7 @@ export async function everyKind(
   });
   const publication = await publish(trx, { document, author, role: input.role });
   let queryDefinition: string | undefined;
+  let dataset: string | undefined;
   if (!input.before0046) {
     // A query definition names a connection, which is in no search of its own.
     const connection = await createArtifact(trx, {
@@ -210,32 +215,55 @@ export async function everyKind(
         },
       },
     });
-    queryDefinition = (
-      await createArtifact(trx, {
-        author,
-        spaceId,
-        substance: {
-          kind: 'queryDefinition',
-          content: {
-            schemaVersion: QUERY_DEFINITION_SCHEMA_VERSION,
-            title: `${word} query definition`,
-            description: '',
-            connection: connection.artifactId,
-            parameters: [],
-            fetch: { kind: 'sql', text: 'select id from sample.site order by id' },
-            columns: [{ name: 'id', from: { column: 'id' }, type: { base: 'integer' } }],
-            key: ['id'],
-            order: [{ column: 'id', direction: 'ascending' }],
-            empty: 'valid',
-            limits: { rows: 100, bytes: 100_000, seconds: 10 },
-            retired: false,
-          },
+    const defined = await createArtifact(trx, {
+      author,
+      spaceId,
+      substance: {
+        kind: 'queryDefinition',
+        content: {
+          schemaVersion: QUERY_DEFINITION_SCHEMA_VERSION,
+          title: `${word} query definition`,
+          description: '',
+          connection: connection.artifactId,
+          parameters: [],
+          fetch: { kind: 'sql', text: 'select id from sample.site order by id' },
+          columns: [{ name: 'id', from: { column: 'id' }, type: { base: 'integer' } }],
+          key: ['id'],
+          order: [{ column: 'id', direction: 'ascending' }],
+          empty: 'valid',
+          limits: { rows: 100, bytes: 100_000, seconds: 10 },
+          retired: false,
         },
-      })
-    ).artifactId;
+      },
+    });
+    queryDefinition = defined.artifactId;
+    if (!input.before0047) {
+      // A dataset is in no search either; it is here so a test reaching every kind reaches it.
+      dataset = (
+        await recordDatasetVersion(trx, {
+          author,
+          provenance: {
+            schemaVersion: 1,
+            queryDefinition: { artifact: defined.artifactId, version: defined.id },
+            connection: { artifact: connection.artifactId, version: connection.id },
+            parameters: {},
+            ran: { sql: 'select id from sample.site order by id' },
+            identity: { kind: 'service' },
+            at: '2026-10-03T09:00:00.000Z',
+            durationMs: 1,
+            rowCount: 0,
+            columns: [{ name: 'id', from: { column: 'id' }, type: { base: 'integer' } }],
+            canonical: 1,
+            checksum: 'e'.repeat(64),
+            images: {},
+          },
+        })
+      ).dataset.id;
+    }
   }
   return {
     ...(queryDefinition === undefined ? {} : { queryDefinition }),
+    ...(dataset === undefined ? {} : { dataset }),
     component: component.version.artifactId,
     document: document.artifactId,
     section: document.artifactId,

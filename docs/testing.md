@@ -249,7 +249,18 @@ The service's suite never reaches a connector: `apps/service/src/test/fake-conne
 hand-written one, answered through `fetch`, that seals with a key of its own and answers each request
 
 - a test, a describe of the tables or of a statement, and a run - as a test tells it to, or fails as a
-  real one can - unreachable, full, broken or talking nonsense.
+  real one can - unreachable, full, broken or talking nonsense. A run can be held, or made to take a
+  moment so the fake counts how many it answered at once (`runMs`, `mostRunning`), which is how a
+  check is held to two at a time. The D3 suites share `src/test/bindings-harness.ts`: an environment
+  with an object store, that fake, a connection found read-only, and a component's binding placed
+  through the editing routes, as a client of the API places one.
+
+**The end-to-end binding test changes the source** (`tests/e2e/src/bindings.test.ts`): it makes a
+table of its own in schema `sample`, `d3_sites_<time>`, as the source's superuser inside the
+`source-postgres` container of the compose project it was pointed at (`docker exec ... psql`), grants
+`reader` its select, changes a row between a resolve and a check so the check finds a revision, and
+drops the table afterwards. The seed is never changed, so a rerun against the same stack starts
+from the same rows.
 
 ## The regression corpus and veraPDF
 

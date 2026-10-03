@@ -155,6 +155,12 @@ export const publishFailureCodes = [
   // engine tags a seventh level as a paragraph, so a reader would not be told it is a heading
   // (PUB-103). Word numbers and tags nine levels, and publishes it.
   'heading_too_deep',
+  // compose, from D3 (the plan's "Added in phase B"): a binding in a component the request resolved,
+  // naming its block and, in `detail`, the binding's identifier. Nothing publishes a binding until the
+  // publish's binding stage (bindings.md, DAT-087), and the service refuses a document holding one at
+  // the door, so this is met only by a request built past that check - never a run printed without
+  // its value.
+  'binding_unresolved',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',

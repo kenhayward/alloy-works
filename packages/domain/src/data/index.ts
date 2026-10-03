@@ -98,3 +98,13 @@ export type {
 } from './protocol.js';
 export { defaultLimits, effectiveLimits, limitCeilings } from './limits.js';
 export type { Limits, TenantLimits } from './limits.js';
+export { bindingDigestInput, bindingsIn, checkTake, literalValues } from './binding.js';
+export type { Binding, BindingAt } from './binding.js';
+export {
+  PROVENANCE_SCHEMA_VERSION,
+  provenanceSchema,
+  parseProvenance,
+  parseProvenanceForWrite,
+} from './provenance.js';
+export type { Provenance } from './provenance.js';
+export { identityKey, parametersDigestInput } from './identity.js';

@@ -15,6 +15,8 @@ import {
   parseConnectionForWrite,
   parseQueryDefinition,
   parseQueryDefinitionForWrite,
+  parseProvenance,
+  parseProvenanceForWrite,
   type CatalogueSubstance,
   type DefinitionRef,
   type DefinitionSubstance,
@@ -26,6 +28,7 @@ import {
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import type { ArtifactKind } from './artifact-kind.js';
+import { checkProvenanceNames } from './dataset-references.js';
 import { checkNamedConnection, checkNotInUse } from './definition-references.js';
 import { checkedLimit } from './listing.js';
 import { indexVersion } from './search.js';
@@ -90,7 +93,7 @@ export type NewArtifact = Authorship &
 
 /** The kinds a version is written for in a space: every spaced kind but a publication, which has none. */
 type SpacedSubstanceKind =
-  'component' | 'document' | 'asset' | 'template' | 'connection' | 'queryDefinition';
+  'component' | 'document' | 'asset' | 'template' | 'connection' | 'queryDefinition' | 'dataset';
 
 const spacedSubstanceKinds: readonly string[] = [
   'component',
@@ -99,6 +102,7 @@ const spacedSubstanceKinds: readonly string[] = [
   'template',
   'connection',
   'queryDefinition',
+  'dataset',
 ] satisfies readonly SpacedSubstanceKind[];
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -181,6 +185,12 @@ function prepare(substance: VersionSubstance): VersionSubstance {
     // every write, whatever the writer (the D2 plan's stored-shape check). The connection it names is
     // the writer's to check, with a transaction in hand.
     return { kind: 'queryDefinition', content: parseQueryDefinitionForWrite(substance.content) };
+  }
+  if (substance.kind === 'dataset') {
+    // Nor does a dataset version: it is in its definition's space. Its provenance record, strict, with
+    // every string in NFC, on every write (the D3 plan's stored-shape check, row 8); what it names is
+    // the writer's to check, with a transaction in hand.
+    return { kind: 'dataset', content: parseProvenanceForWrite(substance.content) };
   }
   if (!isDefinition(substance)) {
     // A theme or a catalogue, already read whole by its own writer, which is the only way here.
@@ -296,6 +306,8 @@ export async function createArtifact(
     }
     await checkNamedConnection(trx, substance.content.connection);
   }
+  // A dataset version names a version of its definition and of its connection, on every path.
+  if (substance.kind === 'dataset') await checkProvenanceNames(trx, substance.content);
   const artifact = await trx
     .insertInto('artifact')
     .values(
@@ -533,6 +545,10 @@ export function substanceOf(stored: StoredVersion): VersionSubstance {
     // The shape alone, likewise: a check widened later never makes a stored version unreadable.
     return { kind: 'queryDefinition', content: parseQueryDefinition(stored.content) };
   }
+  if (stored.kind === 'dataset') {
+    // The shape alone, likewise: an arm added later (D6's request, D7's identity) reads every one stored.
+    return { kind: 'dataset', content: parseProvenance(stored.content) };
+  }
   return { kind: stored.kind, content: stored.content } as VersionSubstance;
 }
 
@@ -637,6 +653,7 @@ async function record(
   if (substance.kind === 'queryDefinition') {
     await checkNamedConnection(trx, substance.content.connection);
   }
+  if (substance.kind === 'dataset') await checkProvenanceNames(trx, substance.content);
   if (
     substance.kind === 'connection' &&
     substance.content.retired &&

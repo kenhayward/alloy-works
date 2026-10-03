@@ -143,6 +143,7 @@ describe('migration 0044, over an environment made before it', () => {
       '0044_connections',
       '0045_connection_credential_target',
       '0046_query_definitions',
+      '0047_datasets',
     ]);
     // Every row still there: each rewritten constraint was checked against them as it was added.
     expect(await countRows(upgraded.schema)).toEqual(counts);

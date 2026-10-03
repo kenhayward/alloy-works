@@ -1,4 +1,5 @@
 export {
+  BINDING_IN_TITLE,
   OUTLINE_SCHEMA_VERSION,
   outlineDocumentSchema,
   outlineNodeSchema,
