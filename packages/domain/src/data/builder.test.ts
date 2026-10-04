@@ -639,6 +639,32 @@ describe("The builder's format", () => {
     ).toMatch(/2 to 32/);
   });
 
+  it("words an average's places past their bounds as the product's own sentence", () => {
+    const averaged = (places: number) =>
+      sites({
+        select: [
+          { name: 'id', of: ref('s', 'id') },
+          { name: 'name', of: { aggregate: 'average', of: ref('s', 'depth'), places } },
+        ],
+        groupBy: [ref('s', 'id')],
+      });
+    for (const places of [1001, -1]) {
+      let refused: unknown;
+      try {
+        parseQueryDefinitionForWrite(averaged(places));
+      } catch (error) {
+        refused = error;
+      }
+      expect(refused).toBeInstanceOf(DefinitionRefused);
+      const problem = (refused as DefinitionRefused).problems.find(
+        (each) => each.path === 'fetch.query.select.1.of.places',
+      );
+      expect(problem?.message).toBe(
+        'An average is rounded to a whole number of places, 0 to 1,000',
+      );
+    }
+  });
+
   it('refuses text not in NFC in an alias, a name and a literal', () => {
     const decomposed = 'café';
     expect(refusedAt(sites({ sources: [{ ...site, alias: decomposed }] }))).toContain(

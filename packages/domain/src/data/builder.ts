@@ -114,10 +114,19 @@ const conditionSchema: z.ZodType<Condition> = z.lazy(() =>
   ]),
 );
 
+const PLACES = 'An average is rounded to a whole number of places, 0 to 1,000';
+
 const aggregateSchema = z.strictObject({
   aggregate: z.enum(aggregates),
   of: columnRefSchema.optional(),
-  places: z.number().int().min(0).max(1000).optional(),
+  // A fraction is refused as a type, which leaves the select item's union no arm to word it by; a
+  // whole number out of bounds is the aggregate's, and refused in these words.
+  places: z
+    .number()
+    .int({ message: PLACES })
+    .min(0, { message: PLACES })
+    .max(1000, { message: PLACES })
+    .optional(),
 });
 
 const alias = z.string().regex(PARAMETER_NAME, {
