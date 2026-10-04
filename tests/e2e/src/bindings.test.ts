@@ -70,7 +70,7 @@ describe('a binding over the whole system', () => {
     )!.id;
     atTheSource(
       `create table ${table} (id integer primary key, name text not null);
-       insert into ${table} values (1, 'North weir');
+       insert into ${table} values (1, 'North weir'), (2, 'South quay');
        grant select on ${table} to reader;`,
     );
   }, 180_000);
@@ -280,4 +280,259 @@ describe('a binding over the whole system', () => {
       bindings: [{ node: first.node, binding: 'site-name' }],
     });
   }, 180_000);
+
+  it('answers the value each binding takes through the bindings view, its provenance redacted to a reader as the definition and the connection allow, over the whole system', async () => {
+    const graceCookie = await signIn('grace');
+    const asGrace = async (path: string) => {
+      const response = await fetch(`${SERVICE}${path}`, { headers: { cookie: graceCookie } });
+      return { status: response.status, body: (await response.json()) as Json };
+    };
+    const grace = ok(await asGrace('/v1/me'))['id'] as string;
+
+    const connectionName = `Readings for values ${Date.now()}`;
+    const connection = ok(
+      await call('POST', `/v1/spaces/${general}/connections`, {
+        settings: {
+          schemaVersion: 1,
+          name: connectionName,
+          description: 'The development source.',
+          type: 'postgres',
+          source: {
+            host: 'source-postgres',
+            port: 5432,
+            database: 'readings',
+            account: READER.account,
+            tls: 'require',
+          },
+          identity: { kind: 'service' },
+          retired: false,
+        },
+      }),
+    )['id'] as string;
+    ok(await call('PUT', `/v1/connections/${connection}/credential`, { secret: READER.password }));
+    const definitionTitled = async (title: string) =>
+      ok(
+        await call('POST', `/v1/spaces/${general}/query-definitions`, {
+          definition: {
+            schemaVersion: 1,
+            title,
+            description: 'One site, by its id.',
+            connection,
+            parameters: [{ name: 'site', type: { base: 'integer' }, required: true, list: false }],
+            fetch: {
+              kind: 'sql',
+              text: `select id, name from ${table} where id = {{site}} order by id`,
+            },
+            columns: [
+              { name: 'id', from: { column: 'id' }, type: { base: 'integer' } },
+              { name: 'name', from: { column: 'name' }, type: { base: 'text' } },
+            ],
+            key: ['id'],
+            order: [{ column: 'id', direction: 'ascending' }],
+            empty: 'valid',
+            limits: { rows: 100, bytes: 65_536, seconds: 10 },
+            retired: false,
+          },
+        }),
+      )['id'] as string;
+    const shown = await definitionTitled(`Sites shown ${Date.now()}`);
+    const hidden = await definitionTitled(`Sites hidden ${Date.now()}`);
+
+    // Grace reads General, so each of these, but is denied reading the connection and one definition.
+    const roles = ok(await call('GET', `/v1/roles?level=space:${general}`))['items'] as {
+      id: string;
+      name: string;
+    }[];
+    const reader = roles.find((role) => role.name === 'Reader')!.id;
+    for (const artifact of [connection, hidden]) {
+      ok(
+        await call('POST', '/v1/grants', {
+          role: reader,
+          subject: { principal: grace },
+          level: `artifact:${artifact}`,
+          effect: 'deny',
+        }),
+      );
+    }
+
+    // A component taking the site's name by both definitions, and its id by the first.
+    const binding = (id: string, query: string, column: string) => ({
+      type: 'binding',
+      id,
+      query,
+      parameters: { site: { literal: '2' } },
+      mode: 'checked',
+      take: { column },
+    });
+    const component = ok(
+      await call('POST', `/v1/spaces/${general}/components`, {
+        title: 'Site values',
+        language: 'en-GB',
+        direction: 'ltr',
+      }),
+    ) as { id: string; version: { id: string } };
+    const session = randomUUID();
+    ok(await call('POST', `/v1/components/${component.id}/lock`, { session }));
+    ok(
+      await call('PUT', `/v1/components/${component.id}/iterations/${session}/1`, {
+        openedFrom: component.version.id,
+        content: {
+          schemaVersion: 1,
+          title: 'Site values',
+          language: 'en-GB',
+          direction: 'ltr',
+          content: [
+            {
+              type: 'paragraph',
+              id: 'p1',
+              style: 'body',
+              content: [
+                { type: 'text', value: 'The site is ', marks: [] },
+                binding('by-shown', shown, 'name'),
+                binding('by-hidden', hidden, 'name'),
+                binding('its-id', shown, 'id'),
+              ],
+            },
+          ],
+        },
+      }),
+    );
+    ok(
+      await call(
+        'DELETE',
+        `/v1/components/${component.id}/lock?session=${session}&openedFrom=${component.version.id}`,
+      ),
+    );
+    const made = ok(
+      await call('POST', `/v1/spaces/${general}/documents`, {
+        title: `Values report ${Date.now()}`,
+        language: 'en-GB',
+        direction: 'ltr',
+      }),
+    ) as { id: string; version: { id: string } };
+    const edited = ok(
+      await call('POST', `/v1/documents/${made.id}/outline`, {
+        openedFrom: made.version.id,
+        operation: {
+          operation: 'insert',
+          parent: null,
+          position: 0,
+          node: { type: 'reference', component: component.id, mode: { kind: 'latest' } },
+        },
+      }),
+    ) as { outline: { nodes: { id: string }[] } };
+    const node = edited.outline.nodes[0]!.id;
+    ok(
+      await call('POST', `/v1/documents/${made.id}/bindings/resolve`, {
+        bindings: ['by-shown', 'by-hidden', 'its-id'].map((each) => ({ node, binding: each })),
+      }),
+    );
+
+    type Shown = {
+      binding: { id: string };
+      held: { version: string; taken: unknown; provenance: { ran: { sql: string | null } } };
+      definition: { title: string } | null;
+      connection: { name: string } | null;
+    };
+    const viewOf = async (body: Json) =>
+      new Map((body['bindings'] as Shown[]).map((each) => [each.binding.id, each]));
+    const asAda = await viewOf(ok(await call('GET', `/v1/documents/${made.id}/bindings`)));
+    const asGraceView = await viewOf(ok(await asGrace(`/v1/documents/${made.id}/bindings`)));
+    const name = { value: 'South quay', column: { name: 'name', type: { base: 'text' } } };
+    for (const view of [asAda, asGraceView]) {
+      expect(view.get('by-shown')!.held.taken).toEqual(name);
+      expect(view.get('by-hidden')!.held.taken).toEqual(name);
+      expect(view.get('its-id')!.held.taken).toEqual({
+        value: '2',
+        column: { name: 'id', type: { base: 'integer' } },
+      });
+    }
+    expect(asAda.get('by-shown')).toMatchObject({
+      definition: { title: expect.stringMatching(/^Sites shown/) },
+      connection: { name: connectionName },
+    });
+    // Grace reads the definition and not its connection: its title, and no connection's name.
+    expect(asGraceView.get('by-shown')).toMatchObject({
+      definition: { title: expect.stringMatching(/^Sites shown/) },
+      connection: null,
+    });
+    // Nor the other definition: nothing of it, and no SQL.
+    expect(asGraceView.get('by-hidden')).toMatchObject({
+      definition: null,
+      connection: null,
+      held: { provenance: { ran: { sql: null } } },
+    });
+    expect(JSON.stringify(asGraceView.get('by-hidden'))).not.toContain('Sites hidden');
+
+    // One derived row for each version and take: two takes of the first's version, one of the other's.
+    const versions = [
+      asAda.get('by-shown')!.held.version,
+      asAda.get('by-hidden')!.held.version,
+    ] as const;
+    expect(versions[0]).not.toBe(versions[1]);
+    const counted = takesAtTheService(versions);
+    expect(counted).toEqual({ [versions[0]]: 2, [versions[1]]: 1 });
+  }, 180_000);
 });
+
+/**
+ * How many `dataset_take` rows each version has, read in the project's own database as its owner: one
+ * row for each version and take, whichever tenant's schema holds them.
+ */
+function takesAtTheService(versions: readonly string[]): Record<string, number> {
+  const ids = execFileSync(
+    'docker',
+    [
+      'ps',
+      '-q',
+      '--filter',
+      `label=com.docker.compose.project=${PROJECT}`,
+      '--filter',
+      'label=com.docker.compose.service=postgres',
+    ],
+    { encoding: 'utf8', timeout: 60_000 },
+  )
+    .split(/\s+/)
+    .filter(Boolean);
+  if (ids.length !== 1) throw new Error(`${PROJECT} runs ${ids.length} database containers`);
+  const psql = (sql: string) =>
+    execFileSync(
+      'docker',
+      [
+        'exec',
+        '-i',
+        ids[0]!,
+        'psql',
+        '-U',
+        'postgres',
+        '-d',
+        'alloy_dev',
+        '-At',
+        '-v',
+        'ON_ERROR_STOP=1',
+      ],
+      { input: sql, encoding: 'utf8', timeout: 60_000 },
+    );
+  const schemas = psql(
+    "select table_schema from information_schema.tables where table_name = 'dataset_take';",
+  )
+    .split(/\s+/)
+    .filter(Boolean);
+  const listed = versions.map((each) => `'${each}'`).join(', ');
+  const rows = psql(
+    schemas
+      .map(
+        (schema) =>
+          `select dataset_version, count(*) from ${schema}.dataset_take where dataset_version in (${listed}) group by 1`,
+      )
+      .join(' union all ') + ';',
+  )
+    .split(/\s+/)
+    .filter(Boolean);
+  return Object.fromEntries(
+    rows.map((row) => {
+      const [version, count] = row.split('|');
+      return [version!, Number(count)];
+    }),
+  );
+}
