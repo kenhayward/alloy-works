@@ -312,6 +312,16 @@ describe("the default theme's version 0.6", () => {
     });
   });
 
+  it('freezes the default formats and the value catalogue at every level, since every caller shares them', () => {
+    const frozenThrough = (value: unknown): boolean =>
+      typeof value !== 'object' ||
+      value === null ||
+      (Object.isFrozen(value) && Object.values(value).every(frozenThrough));
+    expect(frozenThrough(DEFAULT_VALUE_FORMATS)).toBe(true);
+    expect(frozenThrough(DEFAULT_CATALOGUES.value)).toBe(true);
+    expect(Object.isFrozen(DEFAULT_VALUE_FORMATS.boolean)).toBe(true);
+  });
+
   it('reads as its 0.5 does, style for style, with its value catalogue beside', () => {
     const now = readTheme(DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION);
     const before = readTheme(FIFTH_DEFAULT_THEME, FIFTH_DEFAULT_CATALOGUES_BY_VERSION);

@@ -403,7 +403,20 @@ const version = z.literal(CATALOGUE_SCHEMA_VERSION);
  */
 export const VALUE_CATALOGUE_KIND = 'value' as const;
 
-/** A boolean's word: 1 to 40 code points, in NFC, no control character, with no space at either end. */
+/** Every code point a renderer draws nothing for unless it is told to (Unicode's own property). */
+const IGNORABLE = /\p{Default_Ignorable_Code_Point}/gu;
+
+/** A code point that is drawn on its own: neither a space, nor ignorable, nor a mark on another. */
+const VISIBLE = /[^\p{White_Space}\p{Default_Ignorable_Code_Point}\p{M}]/u;
+
+/** A word as it is seen: what is never drawn taken out, so two words can be compared as read. */
+const seen = (word: string): string => word.replace(IGNORABLE, '');
+
+/**
+ * A boolean's word: 1 to 40 code points, in NFC, no control or format character - nothing invisible,
+ * and nothing that reorders what follows it - with no space at either end, and at least one character
+ * that is drawn.
+ */
 const valueWord = z
   .string()
   .refine((word) => {
@@ -412,38 +425,45 @@ const valueWord = z
   }, 'is 1 to 40 characters')
   .refine((word) => word === word.normalize('NFC'), 'is in NFC')
   .refine((word) => !/\p{Cc}/u.test(word), 'holds no control character')
-  .refine((word) => word === word.trim(), 'has no space at either end');
+  .refine((word) => !/\p{Cf}/u.test(word), 'holds no format character')
+  .refine((word) => word === word.trim(), 'has no space at either end')
+  .refine((word) => VISIBLE.test(word), 'holds a character that can be seen');
 
 /**
  * **How a value is printed** (bindings.md's `ValueFormats`, member for member; stored-shape row 2),
  * declared, never derived from a locale: every member a closed set, strict at every level. A space
  * that groups digits is stored as its token, `U+00A0` or `U+202F`, never as the character, and so is
- * the minus, which a reader could not tell from a hyphen. A group is never the decimal separator, and
- * a boolean's two words differ.
+ * the minus, which a reader could not tell from a hyphen. A group is never the decimal separator, nor
+ * is a time's separator, which a time's fraction follows; and a boolean's two words differ as seen,
+ * whatever is never drawn taken out.
  */
-export const valueFormatsSchema = z.strictObject({
-  number: z
-    .strictObject({
-      decimal: z.enum(['.', ',']),
-      group: z.enum(['none', ',', '.', "'", 'U+00A0', 'U+202F']),
-      groupFrom: z.union([z.literal(4), z.literal(5)]),
-      minus: z.enum(['U+002D', 'U+2212']),
-    })
-    .refine((number) => number.group !== number.decimal, {
-      message: 'A number is never grouped by its decimal separator',
+export const valueFormatsSchema = z
+  .strictObject({
+    number: z
+      .strictObject({
+        decimal: z.enum(['.', ',']),
+        group: z.enum(['none', ',', '.', "'", 'U+00A0', 'U+202F']),
+        groupFrom: z.union([z.literal(4), z.literal(5)]),
+        minus: z.enum(['U+002D', 'U+2212']),
+      })
+      .refine((number) => number.group !== number.decimal, {
+        message: 'A number is never grouped by its decimal separator',
+      }),
+    date: z.strictObject({
+      order: z.enum(['ymd', 'dmy', 'mdy']),
+      separator: z.enum(['-', '/', '.']),
+      pad: z.boolean(),
     }),
-  date: z.strictObject({
-    order: z.enum(['ymd', 'dmy', 'mdy']),
-    separator: z.enum(['-', '/', '.']),
-    pad: z.boolean(),
-  }),
-  time: z.strictObject({ separator: z.enum([':', '.']) }),
-  boolean: z
-    .strictObject({ true: valueWord, false: valueWord })
-    .refine((words) => words.true !== words.false, {
-      message: "A boolean's two words differ",
-    }),
-});
+    time: z.strictObject({ separator: z.enum([':', '.']) }),
+    boolean: z
+      .strictObject({ true: valueWord, false: valueWord })
+      .refine((words) => seen(words.true) !== seen(words.false), {
+        message: "A boolean's two words differ as seen",
+      }),
+  })
+  .refine((formats) => formats.time.separator !== formats.number.decimal, {
+    message: "A time's parts are never separated by the decimal separator",
+  });
 
 /**
  * The value catalogue, at `catalogue/3` alone (stored-shape rows 2 and 3): the formats, and formats

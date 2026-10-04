@@ -947,22 +947,26 @@ export const FIFTH_DEFAULT_THEME: Theme = {
  * **The product's default value formats** (bindings.md, "Formatting"): a full stop for the decimal,
  * a comma grouping from four digits, the hyphen-minus, a date `ymd` with `-`, padded (ISO 8601), a
  * colon in a time, and _Yes_ and _No_. What the value catalogue's 0.1 states, and what a value is
- * formatted by where a theme names no value catalogue (`formatsFor`).
+ * formatted by where a theme names no value catalogue (`formatsFor`). Frozen at every level, since
+ * `formatsFor` hands the one object to every caller.
  */
-export const DEFAULT_VALUE_FORMATS: ValueFormats = {
-  number: { decimal: '.', group: ',', groupFrom: 4, minus: 'U+002D' },
-  date: { order: 'ymd', separator: '-', pad: true },
-  time: { separator: ':' },
-  boolean: { true: 'Yes', false: 'No' },
-};
+export const DEFAULT_VALUE_FORMATS: ValueFormats = Object.freeze({
+  number: Object.freeze({ decimal: '.', group: ',', groupFrom: 4, minus: 'U+002D' }),
+  date: Object.freeze({ order: 'ymd', separator: '-', pad: true }),
+  time: Object.freeze({ separator: ':' }),
+  boolean: Object.freeze({ true: 'Yes', false: 'No' }),
+} as const);
 
-/** The value catalogue the theme's 0.6 binds, its first version: the default formats, in every language. */
-const value: ValueCatalogue = {
+/**
+ * The value catalogue the theme's 0.6 binds, its first version: the default formats, in every
+ * language. Frozen at every level, as they are.
+ */
+const value: ValueCatalogue = Object.freeze({
   schemaVersion: 3,
   kind: VALUE_CATALOGUE_KIND,
   formats: DEFAULT_VALUE_FORMATS,
-  byLanguage: [],
-};
+  byLanguage: Object.freeze([]) as unknown as ValueCatalogue['byLanguage'],
+} as const);
 
 /**
  * The catalogue versions the theme's 0.6 binds: 0.5's six, and a new, fixed identifier for the value

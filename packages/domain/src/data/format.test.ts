@@ -159,4 +159,15 @@ describe('formatsFor', () => {
     expect(formatsFor(null, 'de-CH')).toBe(DEFAULT_VALUE_FORMATS);
     expect(formatsFor(null, null)).toBe(DEFAULT_VALUE_FORMATS);
   });
+
+  it('hands out the product default frozen at every level, so no caller can change it for the next', () => {
+    const shared = formatsFor(null, null) as unknown as Record<string, Record<string, unknown>>;
+    expect(() => {
+      shared.boolean!.true = 'Oui';
+    }).toThrow(TypeError);
+    expect(() => {
+      shared.number = {};
+    }).toThrow(TypeError);
+    expect(formatsFor(null, null).boolean.true).toBe('Yes');
+  });
 });

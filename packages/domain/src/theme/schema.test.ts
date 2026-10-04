@@ -606,6 +606,11 @@ describe('the value catalogue, at catalogue/3 beside the six kinds', () => {
           if (part === 'number' && member === 'decimal' && value === ',') {
             changed.number!.group = '.';
           }
+          // A time separated by the decimal is refused below; set the decimal apart from it here.
+          if (part === 'time' && value === '.') {
+            changed.number!.decimal = ',';
+            changed.number!.group = '.';
+          }
           const label = `${part}.${member} ${String(value)}`;
           expect(acceptsValues(values({ formats: changed })), label).toBe(true);
         }
@@ -641,6 +646,47 @@ describe('the value catalogue, at catalogue/3 beside the six kinds', () => {
       changed.number!.decimal = mark;
       expect(acceptsValues(values({ formats: changed })), mark).toBe(false);
     }
+  });
+
+  it("never separates a time's parts by the decimal separator, which its fraction follows", () => {
+    const ambiguous = formatsWith('time', 'separator', '.');
+    expect(ambiguous.number!.decimal).toBe('.');
+    expect(acceptsValues(values({ formats: ambiguous })), 'formats').toBe(false);
+    expect(
+      acceptsValues(values({ byLanguage: [{ language: 'de', formats: ambiguous }] })),
+      'byLanguage',
+    ).toBe(false);
+    const commaDecimal = formatsWith('time', 'separator', '.');
+    commaDecimal.number = { ...commaDecimal.number, decimal: ',', group: '.' };
+    expect(acceptsValues(values({ formats: commaDecimal }))).toBe(true);
+    const colonComma = formatsWith('number', 'decimal', ',');
+    colonComma.number!.group = '.';
+    expect(acceptsValues(values({ formats: colonComma }))).toBe(true);
+  });
+
+  it("refuses a boolean's word that cannot be seen, or that looks like the other", () => {
+    const words = (yes: string, no: string) =>
+      acceptsValues(values({ formats: { ...formats(), boolean: { true: yes, false: no } } }));
+    const ZWSP = String.fromCodePoint(0x200b);
+    const RLO = String.fromCodePoint(0x202e);
+    const SHY = String.fromCodePoint(0xad);
+    const HANGUL_FILLER = String.fromCodePoint(0x3164);
+    const VS16 = String.fromCodePoint(0xfe0f);
+    const CGJ = String.fromCodePoint(0x34f);
+    const CHECK = String.fromCodePoint(0x2714);
+    // A format character anywhere: invisible, or reordering what follows it.
+    expect(words(ZWSP, 'No')).toBe(false);
+    expect(words(`Yes${ZWSP}`, 'Yes')).toBe(false);
+    expect(words(`${RLO}Yes`, 'No')).toBe(false);
+    expect(words(`Ye${SHY}s`, 'No')).toBe(false);
+    // No visible character at all.
+    expect(words(HANGUL_FILLER, 'No')).toBe(false);
+    expect(words(VS16, 'No')).toBe(false);
+    // Two words alike once what is never drawn is taken out.
+    expect(words(`Yes${VS16}`, 'Yes')).toBe(false);
+    expect(words(`Y${CGJ}es`, 'Yes')).toBe(false);
+    // A visible character with its presentation selector is a word of its own.
+    expect(words(`${CHECK}${VS16}`, 'No')).toBe(true);
   });
 
   it("holds a boolean's words to 1 to 40 code points, in NFC, with no control, trimmed and different", () => {
