@@ -4116,7 +4116,7 @@
     {
       "id": "DAT-032",
       "area": "DAT",
-      "statement": "An inline binding whose query returns no value must fail, and must never render as an empty string",
+      "statement": "An inline binding whose query returns no value - no row, or a value that is null or text of no characters - must fail, and must never render as an empty string",
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
@@ -4162,7 +4162,7 @@
       "id": "DAT-057",
       "area": "DAT",
       "statement": "An author must be able to revise a resolved value in place - an inline bound value, or a cell of a bound table - without editing the query definition or the binding",
-      "tranche": "T2",
+      "tranche": "T3",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
       "line": 234
@@ -4171,7 +4171,7 @@
       "id": "DAT-058",
       "area": "DAT",
       "statement": "A revision must never replace what the query returned. The binding must retain the resolved value, the value a person entered, who entered it, when, and the reason they gave, and the revision must be audited with what it was and what it became",
-      "tranche": "Constraint",
+      "tranche": "T3",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
       "line": 235
@@ -4181,45 +4181,54 @@
       "area": "DAT",
       "statement": "A revised value must be marked as revised by a person wherever it appears - in the editor, in review and in published output - and must never be indistinguishable from a value a query produced",
       "tranche": "Constraint",
-      "status": "Specified",
+      "status": "Superseded by DAT-115",
       "document": "DAT-data-connectivity-and-bindings.md",
       "line": 236
     },
     {
-      "id": "DAT-060",
+      "id": "DAT-115",
       "area": "DAT",
-      "statement": "A revised binding must still take revisions from its source. Where a source revision arrives (DAT-084), the binding must be flagged, the source value must be shown beside the person's revision, and the author must accept or reject the change deliberately. Accepting a source revision must never silently discard a person's revision, and must never silently keep one over a source that has changed",
-      "tranche": "T2",
+      "statement": "A revised value must be marked as revised by a person wherever the product shows it - in the editor, in review and in a document's account of its bindings - and in the provenance that accompanies a publication (DAT-042), and must never be indistinguishable there from a value a query produced. The printed output need not mark it",
+      "tranche": "T3",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
       "line": 237
     },
     {
-      "id": "DAT-061",
+      "id": "DAT-060",
       "area": "DAT",
-      "statement": "An outstanding revision must be surfaced to reviewers as something to review, and a lifecycle gate must be able to require that a document has none before it is issued (**COL**, **LIF**)",
-      "tranche": "T2",
+      "statement": "A revised binding must still take revisions from its source. Where a source revision arrives (DAT-084), the binding must be flagged, the source value must be shown beside the person's revision, and the author must accept or reject the change deliberately. Accepting a source revision must never silently discard a person's revision, and must never silently keep one over a source that has changed",
+      "tranche": "T3",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
       "line": 238
     },
     {
-      "id": "DAT-062",
+      "id": "DAT-061",
       "area": "DAT",
-      "statement": "Provenance (DAT-040) for a revised value must record both halves: what the query returned, and the revision that stands in front of it. \"Where did this number come from\" must be answerable as \"a person changed it, and here is what the query said\"",
-      "tranche": "Constraint",
+      "statement": "An outstanding revision must be surfaced to reviewers as something to review, and a lifecycle gate must be able to require that a document has none before it is issued (**COL**, **LIF**)",
+      "tranche": "T3",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
       "line": 239
     },
     {
-      "id": "DAT-063",
+      "id": "DAT-062",
       "area": "DAT",
-      "statement": "A revision to a cell of a bound table must be anchored by key (DAT-012), and a revision whose row the query no longer returns must produce a named diagnostic identifying the revision, the key and the query, exactly as DAT-048 does for a footnote",
-      "tranche": "T2",
+      "statement": "Provenance (DAT-040) for a revised value must record both halves: what the query returned, and the revision that stands in front of it. \"Where did this number come from\" must be answerable as \"a person changed it, and here is what the query said\"",
+      "tranche": "T3",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
       "line": 240
+    },
+    {
+      "id": "DAT-063",
+      "area": "DAT",
+      "statement": "A revision to a cell of a bound table must be anchored by key (DAT-012), and a revision whose row the query no longer returns must produce a named diagnostic identifying the revision, the key and the query, exactly as DAT-048 does for a footnote",
+      "tranche": "T3",
+      "status": "Specified",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 241
     },
     {
       "id": "DAT-034",
@@ -4228,7 +4237,7 @@
       "tranche": "T2",
       "status": "Superseded by DAT-082",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 269
+      "line": 280
     },
     {
       "id": "DAT-082",
@@ -4237,7 +4246,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 270
+      "line": 281
     },
     {
       "id": "DAT-035",
@@ -4246,7 +4255,7 @@
       "tranche": "T2",
       "status": "Superseded by DAT-083",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 271
+      "line": 282
     },
     {
       "id": "DAT-083",
@@ -4255,7 +4264,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 272
+      "line": 283
     },
     {
       "id": "DAT-092",
@@ -4264,7 +4273,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 273
+      "line": 284
     },
     {
       "id": "DAT-093",
@@ -4273,7 +4282,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 274
+      "line": 285
     },
     {
       "id": "DAT-094",
@@ -4282,7 +4291,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 275
+      "line": 286
     },
     {
       "id": "DAT-088",
@@ -4291,7 +4300,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 276
+      "line": 287
     },
     {
       "id": "DAT-089",
@@ -4300,7 +4309,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 277
+      "line": 288
     },
     {
       "id": "DAT-036",
@@ -4309,7 +4318,7 @@
       "tranche": "T2",
       "status": "Superseded by DAT-084",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 278
+      "line": 289
     },
     {
       "id": "DAT-084",
@@ -4318,7 +4327,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 279
+      "line": 290
     },
     {
       "id": "DAT-037",
@@ -4327,7 +4336,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 280
+      "line": 291
     },
     {
       "id": "DAT-038",
@@ -4336,7 +4345,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 281
+      "line": 292
     },
     {
       "id": "DAT-039",
@@ -4345,7 +4354,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 282
+      "line": 293
     },
     {
       "id": "DAT-070",
@@ -4354,16 +4363,25 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 283
+      "line": 294
     },
     {
       "id": "DAT-072",
       "area": "DAT",
       "statement": "Accepting a source revision, changing a binding's mode or revising a binding is a change to the component holding it, and must be governed by the same concurrency rules as any other edit: the component lock (**COL-005**, **COL-041**) and the API's version precondition (**API-037**). Last-write-wins must not be the answer",
       "tranche": "Constraint",
+      "status": "Superseded by DAT-116",
+      "document": "DAT-data-connectivity-and-bindings.md",
+      "line": 295
+    },
+    {
+      "id": "DAT-116",
+      "area": "DAT",
+      "statement": "Accepting a source revision or revising a bound value is a change to the document holding the binding, never to the component (DAT-093), and must be refused unless it names the resolution or revision it replaces. Changing a binding, its mode included, is a change to the component holding it, governed by the component lock (**COL-005**, **COL-041**) and the API's version precondition (**API-037**). Last-write-wins must not be the answer for either",
+      "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 284
+      "line": 296
     },
     {
       "id": "DAT-040",
@@ -4372,7 +4390,7 @@
       "tranche": "T2",
       "status": "Superseded by DAT-085",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 316
+      "line": 331
     },
     {
       "id": "DAT-085",
@@ -4381,7 +4399,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 317
+      "line": 332
     },
     {
       "id": "DAT-041",
@@ -4390,7 +4408,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 318
+      "line": 333
     },
     {
       "id": "DAT-042",
@@ -4399,7 +4417,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 319
+      "line": 334
     },
     {
       "id": "DAT-043",
@@ -4408,7 +4426,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 320
+      "line": 335
     },
     {
       "id": "DAT-044",
@@ -4417,7 +4435,7 @@
       "tranche": "T2",
       "status": "Superseded by DAT-086",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 336
+      "line": 351
     },
     {
       "id": "DAT-086",
@@ -4426,7 +4444,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 337
+      "line": 352
     },
     {
       "id": "DAT-087",
@@ -4435,7 +4453,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 338
+      "line": 353
     },
     {
       "id": "DAT-045",
@@ -4444,7 +4462,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 339
+      "line": 354
     },
     {
       "id": "DAT-108",
@@ -4453,7 +4471,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 340
+      "line": 355
     },
     {
       "id": "DAT-046",
@@ -4462,7 +4480,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 341
+      "line": 356
     },
     {
       "id": "DAT-047",
@@ -4471,7 +4489,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 342
+      "line": 357
     },
     {
       "id": "DAT-048",
@@ -4480,7 +4498,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 343
+      "line": 358
     },
     {
       "id": "DAT-049",
@@ -4489,7 +4507,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 344
+      "line": 359
     },
     {
       "id": "DAT-069",
@@ -4498,7 +4516,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 345
+      "line": 360
     },
     {
       "id": "DAT-050",
@@ -4507,7 +4525,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 370
+      "line": 385
     },
     {
       "id": "DAT-109",
@@ -4516,7 +4534,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 371
+      "line": 386
     },
     {
       "id": "DAT-110",
@@ -4525,7 +4543,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 372
+      "line": 387
     },
     {
       "id": "DAT-051",
@@ -4534,7 +4552,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 373
+      "line": 388
     },
     {
       "id": "DAT-052",
@@ -4543,7 +4561,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 374
+      "line": 389
     },
     {
       "id": "DAT-053",
@@ -4552,7 +4570,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 375
+      "line": 390
     },
     {
       "id": "DAT-071",
@@ -4561,7 +4579,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 376
+      "line": 391
     },
     {
       "id": "DAT-054",
@@ -4570,7 +4588,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 394
+      "line": 409
     },
     {
       "id": "DAT-055",
@@ -4579,7 +4597,7 @@
       "tranche": "T5",
       "status": "Superseded by DAT-078",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 395
+      "line": 410
     },
     {
       "id": "DAT-078",
@@ -4588,7 +4606,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 396
+      "line": 411
     },
     {
       "id": "DAT-079",
@@ -4597,7 +4615,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 397
+      "line": 412
     },
     {
       "id": "DAT-056",
@@ -4606,7 +4624,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 398
+      "line": 413
     },
     {
       "id": "DAT-112",
@@ -4615,7 +4633,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 399
+      "line": 414
     },
     {
       "id": "DAT-113",
@@ -4624,7 +4642,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 400
+      "line": 415
     },
     {
       "id": "DAT-114",
@@ -4633,7 +4651,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 401
+      "line": 416
     },
     {
       "id": "DAT-073",
@@ -4642,7 +4660,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 402
+      "line": 417
     },
     {
       "id": "GEN-001",
@@ -8303,9 +8321,45 @@
       "area": "PUB",
       "statement": "The resolution order's test must place and prove each stage as it arrives - bindings, transclusion, conditions and variables (PUB-002) - so that no stage joins the order untested",
       "tranche": "T2",
-      "status": "Specified",
+      "status": "Superseded by PUB-108",
       "document": "PUB-publishing-and-output.md",
       "line": 48
+    },
+    {
+      "id": "PUB-108",
+      "area": "PUB",
+      "statement": "The resolution order's test must place and prove the binding stage (PUB-002): every bound value must be in the content before anything is numbered, a cross-reference resolved or a list generated, and the test must fail if the stage moves after any of them",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "PUB-publishing-and-output.md",
+      "line": 49
+    },
+    {
+      "id": "PUB-109",
+      "area": "PUB",
+      "statement": "The resolution order's test must place and prove the transclusion stage (PUB-002) when it arrives: before conditions (**REU-030**) and before anything is numbered, a cross-reference resolved or a list generated, and the test must fail if the stage moves",
+      "tranche": "T4",
+      "status": "Specified",
+      "document": "PUB-publishing-and-output.md",
+      "line": 50
+    },
+    {
+      "id": "PUB-110",
+      "area": "PUB",
+      "statement": "The resolution order's test must place and prove the conditions stage (PUB-002) when it arrives: before anything is numbered, a cross-reference resolved or a list generated (**REU-028**, **REU-029**), and the test must fail if the stage moves",
+      "tranche": "T4",
+      "status": "Specified",
+      "document": "PUB-publishing-and-output.md",
+      "line": 51
+    },
+    {
+      "id": "PUB-111",
+      "area": "PUB",
+      "statement": "The resolution order's test must place and prove the variables stage (PUB-002) when it arrives: before anything is numbered, a cross-reference resolved or a list generated, and the test must fail if the stage moves",
+      "tranche": "T4",
+      "status": "Specified",
+      "document": "PUB-publishing-and-output.md",
+      "line": 52
     },
     {
       "id": "PUB-004",
@@ -8314,7 +8368,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 49
+      "line": 53
     },
     {
       "id": "PUB-005",
@@ -8323,7 +8377,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 50
+      "line": 54
     },
     {
       "id": "PUB-006",
@@ -8332,7 +8386,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 51
+      "line": 55
     },
     {
       "id": "PUB-061",
@@ -8341,7 +8395,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 52
+      "line": 56
     },
     {
       "id": "PUB-062",
@@ -8350,7 +8404,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 53
+      "line": 57
     },
     {
       "id": "PUB-007",
@@ -8359,7 +8413,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 63
+      "line": 71
     },
     {
       "id": "PUB-008",
@@ -8368,7 +8422,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 64
+      "line": 72
     },
     {
       "id": "PUB-009",
@@ -8377,7 +8431,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 65
+      "line": 73
     },
     {
       "id": "PUB-010",
@@ -8386,7 +8440,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-088",
       "document": "PUB-publishing-and-output.md",
-      "line": 66
+      "line": 74
     },
     {
       "id": "PUB-088",
@@ -8395,7 +8449,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 67
+      "line": 75
     },
     {
       "id": "PUB-089",
@@ -8404,7 +8458,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 68
+      "line": 76
     },
     {
       "id": "PUB-011",
@@ -8413,7 +8467,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 69
+      "line": 77
     },
     {
       "id": "PUB-012",
@@ -8422,7 +8476,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 70
+      "line": 78
     },
     {
       "id": "PUB-013",
@@ -8431,7 +8485,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 71
+      "line": 79
     },
     {
       "id": "PUB-014",
@@ -8440,7 +8494,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 72
+      "line": 80
     },
     {
       "id": "PUB-095",
@@ -8449,7 +8503,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 73
+      "line": 81
     },
     {
       "id": "PUB-015",
@@ -8458,7 +8512,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-087",
       "document": "PUB-publishing-and-output.md",
-      "line": 79
+      "line": 87
     },
     {
       "id": "PUB-087",
@@ -8467,7 +8521,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 80
+      "line": 88
     },
     {
       "id": "PUB-016",
@@ -8476,7 +8530,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 81
+      "line": 89
     },
     {
       "id": "PUB-017",
@@ -8485,7 +8539,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 82
+      "line": 90
     },
     {
       "id": "PUB-018",
@@ -8494,7 +8548,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-092",
       "document": "PUB-publishing-and-output.md",
-      "line": 83
+      "line": 91
     },
     {
       "id": "PUB-092",
@@ -8503,7 +8557,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-106",
       "document": "PUB-publishing-and-output.md",
-      "line": 84
+      "line": 92
     },
     {
       "id": "PUB-106",
@@ -8512,7 +8566,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 85
+      "line": 93
     },
     {
       "id": "PUB-107",
@@ -8521,7 +8575,7 @@
       "tranche": "T8",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 86
+      "line": 94
     },
     {
       "id": "PUB-019",
@@ -8530,7 +8584,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 87
+      "line": 95
     },
     {
       "id": "PUB-020",
@@ -8539,7 +8593,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 88
+      "line": 96
     },
     {
       "id": "PUB-021",
@@ -8548,7 +8602,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 89
+      "line": 97
     },
     {
       "id": "PUB-022",
@@ -8557,7 +8611,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-096",
       "document": "PUB-publishing-and-output.md",
-      "line": 90
+      "line": 98
     },
     {
       "id": "PUB-096",
@@ -8566,7 +8620,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 91
+      "line": 99
     },
     {
       "id": "PUB-097",
@@ -8575,7 +8629,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 92
+      "line": 100
     },
     {
       "id": "PUB-068",
@@ -8584,7 +8638,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 93
+      "line": 101
     },
     {
       "id": "PUB-069",
@@ -8593,7 +8647,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 94
+      "line": 102
     },
     {
       "id": "PUB-070",
@@ -8602,7 +8656,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 95
+      "line": 103
     },
     {
       "id": "PUB-023",
@@ -8611,7 +8665,7 @@
       "tranche": "T8",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 119
+      "line": 127
     },
     {
       "id": "PUB-024",
@@ -8620,7 +8674,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 120
+      "line": 128
     },
     {
       "id": "PUB-025",
@@ -8629,7 +8683,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 121
+      "line": 129
     },
     {
       "id": "PUB-026",
@@ -8638,7 +8692,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 122
+      "line": 130
     },
     {
       "id": "PUB-027",
@@ -8647,7 +8701,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 123
+      "line": 131
     },
     {
       "id": "PUB-028",
@@ -8656,7 +8710,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 124
+      "line": 132
     },
     {
       "id": "PUB-029",
@@ -8665,7 +8719,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 125
+      "line": 133
     },
     {
       "id": "PUB-065",
@@ -8674,7 +8728,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 126
+      "line": 134
     },
     {
       "id": "PUB-066",
@@ -8683,7 +8737,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 127
+      "line": 135
     },
     {
       "id": "PUB-067",
@@ -8692,7 +8746,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 128
+      "line": 136
     },
     {
       "id": "PUB-078",
@@ -8701,7 +8755,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 129
+      "line": 137
     },
     {
       "id": "PUB-030",
@@ -8710,7 +8764,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-090",
       "document": "PUB-publishing-and-output.md",
-      "line": 153
+      "line": 161
     },
     {
       "id": "PUB-090",
@@ -8719,7 +8773,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-103",
       "document": "PUB-publishing-and-output.md",
-      "line": 154
+      "line": 162
     },
     {
       "id": "PUB-103",
@@ -8728,7 +8782,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 155
+      "line": 163
     },
     {
       "id": "PUB-104",
@@ -8737,7 +8791,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-105",
       "document": "PUB-publishing-and-output.md",
-      "line": 156
+      "line": 164
     },
     {
       "id": "PUB-105",
@@ -8746,7 +8800,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 157
+      "line": 165
     },
     {
       "id": "PUB-031",
@@ -8755,7 +8809,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 158
+      "line": 166
     },
     {
       "id": "PUB-032",
@@ -8764,7 +8818,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 159
+      "line": 167
     },
     {
       "id": "PUB-033",
@@ -8773,7 +8827,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 160
+      "line": 168
     },
     {
       "id": "PUB-034",
@@ -8782,7 +8836,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 161
+      "line": 169
     },
     {
       "id": "PUB-035",
@@ -8791,7 +8845,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-100",
       "document": "PUB-publishing-and-output.md",
-      "line": 162
+      "line": 170
     },
     {
       "id": "PUB-100",
@@ -8800,7 +8854,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 163
+      "line": 171
     },
     {
       "id": "PUB-101",
@@ -8809,7 +8863,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 164
+      "line": 172
     },
     {
       "id": "PUB-036",
@@ -8818,7 +8872,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-091",
       "document": "PUB-publishing-and-output.md",
-      "line": 165
+      "line": 173
     },
     {
       "id": "PUB-091",
@@ -8827,7 +8881,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 166
+      "line": 174
     },
     {
       "id": "PUB-080",
@@ -8836,7 +8890,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 167
+      "line": 175
     },
     {
       "id": "PUB-037",
@@ -8845,7 +8899,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 186
+      "line": 194
     },
     {
       "id": "PUB-038",
@@ -8854,7 +8908,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 187
+      "line": 195
     },
     {
       "id": "PUB-039",
@@ -8863,7 +8917,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 188
+      "line": 196
     },
     {
       "id": "PUB-040",
@@ -8872,7 +8926,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 189
+      "line": 197
     },
     {
       "id": "PUB-041",
@@ -8881,7 +8935,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 190
+      "line": 198
     },
     {
       "id": "PUB-042",
@@ -8890,7 +8944,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 191
+      "line": 199
     },
     {
       "id": "PUB-043",
@@ -8899,7 +8953,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 207
+      "line": 215
     },
     {
       "id": "PUB-063",
@@ -8908,7 +8962,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 208
+      "line": 216
     },
     {
       "id": "PUB-064",
@@ -8917,7 +8971,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-085",
       "document": "PUB-publishing-and-output.md",
-      "line": 209
+      "line": 217
     },
     {
       "id": "PUB-085",
@@ -8926,7 +8980,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-102",
       "document": "PUB-publishing-and-output.md",
-      "line": 210
+      "line": 218
     },
     {
       "id": "PUB-102",
@@ -8935,7 +8989,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 211
+      "line": 219
     },
     {
       "id": "PUB-044",
@@ -8944,7 +8998,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 212
+      "line": 220
     },
     {
       "id": "PUB-045",
@@ -8953,7 +9007,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 213
+      "line": 221
     },
     {
       "id": "PUB-082",
@@ -8962,7 +9016,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 214
+      "line": 222
     },
     {
       "id": "PUB-046",
@@ -8971,7 +9025,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 215
+      "line": 223
     },
     {
       "id": "PUB-075",
@@ -8980,7 +9034,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 216
+      "line": 224
     },
     {
       "id": "PUB-076",
@@ -8989,7 +9043,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 217
+      "line": 225
     },
     {
       "id": "PUB-077",
@@ -8998,7 +9052,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 218
+      "line": 226
     },
     {
       "id": "PUB-047",
@@ -9007,7 +9061,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 243
+      "line": 251
     },
     {
       "id": "PUB-093",
@@ -9016,7 +9070,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 244
+      "line": 252
     },
     {
       "id": "PUB-048",
@@ -9025,7 +9079,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 245
+      "line": 253
     },
     {
       "id": "PUB-049",
@@ -9034,7 +9088,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 246
+      "line": 254
     },
     {
       "id": "PUB-050",
@@ -9043,7 +9097,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 247
+      "line": 255
     },
     {
       "id": "PUB-057",
@@ -9052,7 +9106,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 248
+      "line": 256
     },
     {
       "id": "PUB-058",
@@ -9061,7 +9115,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 249
+      "line": 257
     },
     {
       "id": "PUB-059",
@@ -9070,7 +9124,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 250
+      "line": 258
     },
     {
       "id": "PUB-060",
@@ -9079,7 +9133,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 251
+      "line": 259
     },
     {
       "id": "PUB-073",
@@ -9088,7 +9142,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 252
+      "line": 260
     },
     {
       "id": "PUB-074",
@@ -9097,7 +9151,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 253
+      "line": 261
     },
     {
       "id": "PUB-081",
@@ -9106,7 +9160,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 254
+      "line": 262
     },
     {
       "id": "PUB-083",
@@ -9115,7 +9169,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 255
+      "line": 263
     },
     {
       "id": "PUB-084",
@@ -9124,7 +9178,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 256
+      "line": 264
     },
     {
       "id": "PUB-051",
@@ -9133,7 +9187,7 @@
       "tranche": "Constraint",
       "status": "Superseded by PUB-072",
       "document": "PUB-publishing-and-output.md",
-      "line": 286
+      "line": 294
     },
     {
       "id": "PUB-052",
@@ -9142,7 +9196,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 287
+      "line": 295
     },
     {
       "id": "PUB-053",
@@ -9151,7 +9205,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 288
+      "line": 296
     },
     {
       "id": "PUB-071",
@@ -9160,7 +9214,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 289
+      "line": 297
     },
     {
       "id": "PUB-072",
@@ -9169,7 +9223,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 290
+      "line": 298
     },
     {
       "id": "PUB-094",
@@ -9178,7 +9232,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 291
+      "line": 299
     },
     {
       "id": "PUB-079",
@@ -9187,7 +9241,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 292
+      "line": 300
     },
     {
       "id": "PUB-054",
@@ -9196,7 +9250,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 308
+      "line": 316
     },
     {
       "id": "PUB-055",
@@ -9205,7 +9259,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 309
+      "line": 317
     },
     {
       "id": "PUB-056",
@@ -9214,7 +9268,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 310
+      "line": 318
     },
     {
       "id": "REL-001",
@@ -11809,13 +11863,22 @@
       "line": 156
     },
     {
+      "id": "STY-082",
+      "area": "STY",
+      "statement": "A theme must declare the formats a bound value is printed in, by its column type (**DAT-080**) - a number's decimal and group separators and its minus sign, a date's order and separator, a time's separator, a boolean's words - with overrides per language, and a value in content must be formatted from those declarations alone, the same in every output. A decimal must print at its declared scale, never rounded, and an instant in UTC; no locale data is read until a named, versioned source supplies these declarations (**LOC-038**) (**DAT-033**)",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "STY-styles-and-presentation-themes.md",
+      "line": 157
+    },
+    {
       "id": "STY-025",
       "area": "STY",
       "statement": "A template must bind a theme (**TPL**), and a document must take the theme its template binds",
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 157
+      "line": 158
     },
     {
       "id": "STY-026",
@@ -11824,7 +11887,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 158
+      "line": 159
     },
     {
       "id": "STY-027",
@@ -11833,7 +11896,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 159
+      "line": 160
     },
     {
       "id": "STY-028",
@@ -11842,7 +11905,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 160
+      "line": 161
     },
     {
       "id": "STY-066",
@@ -11851,7 +11914,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 161
+      "line": 162
     },
     {
       "id": "STY-067",
@@ -11860,7 +11923,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 162
+      "line": 163
     },
     {
       "id": "STY-072",
@@ -11869,7 +11932,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 163
+      "line": 164
     },
     {
       "id": "STY-029",
@@ -11878,7 +11941,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 182
+      "line": 190
     },
     {
       "id": "STY-030",
@@ -11887,7 +11950,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 183
+      "line": 191
     },
     {
       "id": "STY-031",
@@ -11896,7 +11959,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 184
+      "line": 192
     },
     {
       "id": "STY-032",
@@ -11905,7 +11968,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 185
+      "line": 193
     },
     {
       "id": "STY-033",
@@ -11914,7 +11977,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 186
+      "line": 194
     },
     {
       "id": "STY-034",
@@ -11923,7 +11986,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 187
+      "line": 195
     },
     {
       "id": "STY-035",
@@ -11932,7 +11995,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 193
+      "line": 201
     },
     {
       "id": "STY-036",
@@ -11941,7 +12004,7 @@
       "tranche": "T1",
       "status": "Superseded by STY-058",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 194
+      "line": 202
     },
     {
       "id": "STY-037",
@@ -11950,7 +12013,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 195
+      "line": 203
     },
     {
       "id": "STY-038",
@@ -11959,7 +12022,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 196
+      "line": 204
     },
     {
       "id": "STY-053",
@@ -11968,7 +12031,7 @@
       "tranche": "T1",
       "status": "Superseded by STY-080",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 197
+      "line": 205
     },
     {
       "id": "STY-080",
@@ -11977,7 +12040,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 198
+      "line": 206
     },
     {
       "id": "STY-081",
@@ -11986,7 +12049,7 @@
       "tranche": "T8",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 199
+      "line": 207
     },
     {
       "id": "STY-058",
@@ -11995,7 +12058,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 200
+      "line": 208
     },
     {
       "id": "STY-060",
@@ -12004,7 +12067,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 201
+      "line": 209
     },
     {
       "id": "STY-070",
@@ -12013,7 +12076,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 202
+      "line": 210
     },
     {
       "id": "STY-039",
@@ -12022,7 +12085,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 226
+      "line": 234
     },
     {
       "id": "STY-040",
@@ -12031,7 +12094,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 227
+      "line": 235
     },
     {
       "id": "STY-041",
@@ -12040,7 +12103,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 228
+      "line": 236
     },
     {
       "id": "STY-042",
@@ -12049,7 +12112,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 229
+      "line": 237
     },
     {
       "id": "STY-045",
@@ -12058,7 +12121,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 230
+      "line": 238
     },
     {
       "id": "STY-046",
@@ -12067,7 +12130,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 231
+      "line": 239
     },
     {
       "id": "STY-047",
@@ -12076,7 +12139,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 232
+      "line": 240
     },
     {
       "id": "STY-048",
@@ -12085,7 +12148,7 @@
       "tranche": "T1",
       "status": "Superseded by STY-074",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 233
+      "line": 241
     },
     {
       "id": "STY-074",
@@ -12094,7 +12157,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 234
+      "line": 242
     },
     {
       "id": "STY-075",
@@ -12103,7 +12166,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 235
+      "line": 243
     },
     {
       "id": "STY-049",
@@ -12112,7 +12175,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 236
+      "line": 244
     },
     {
       "id": "STY-052",
@@ -12121,7 +12184,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 237
+      "line": 245
     },
     {
       "id": "STY-062",
@@ -12130,7 +12193,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 238
+      "line": 246
     },
     {
       "id": "STY-043",
@@ -12139,7 +12202,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 272
+      "line": 280
     },
     {
       "id": "STY-044",
@@ -12148,7 +12211,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 273
+      "line": 281
     },
     {
       "id": "STY-071",
@@ -12157,7 +12220,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 274
+      "line": 282
     },
     {
       "id": "STY-073",
@@ -12166,7 +12229,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 275
+      "line": 283
     },
     {
       "id": "TAB-001",
@@ -13917,43 +13980,43 @@
       "id": "DAT-N01",
       "statement": "**Not an ETL tool.** Reshaping, joining and aggregating happen in the source or in the query, not in a pipeline this product owns",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 420
+      "line": 435
     },
     {
       "id": "DAT-N02",
       "statement": "**No writing back to a source.** Every connection is read-only, and a connector that could write would make this product part of somebody's change-control boundary",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 421
+      "line": 436
     },
     {
       "id": "DAT-N03",
       "statement": "**No ad-hoc queries written by document authors.** A query is a reviewed artifact; an author chooses one and supplies parameters",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 422
+      "line": 437
     },
     {
       "id": "DAT-N04",
       "statement": "**No dashboards and no exploratory analysis.** Scope §8 is explicit, and a report is not a BI tool with prose around it",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 423
+      "line": 438
     },
     {
       "id": "DAT-N05",
       "statement": "**No revising the source.** A revision (DAT-057) changes what this document says, never what the source system holds. DAT-N02 is why: a connection that could write back would put this product inside somebody else's change control",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 424
+      "line": 439
     },
     {
       "id": "DAT-N06",
-      "statement": "**No unmarked revision.** There is no way to make a hand-entered value look like a queried one (DAT-059), and no setting that turns the marking off",
+      "statement": "**No unmarked revision.** There is no way to make a hand-entered value look like a queried one wherever DAT-115 marks it - in the product and in a publication's provenance - and no setting that turns the marking off",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 425
+      "line": 440
     },
     {
       "id": "DAT-N07",
       "statement": "**No uploaded file as a data source.** An upload is a push, and a push can never be checked for a source revision. A file is read from S3-compatible storage or over HTTP (DAT-074)",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 426
+      "line": 441
     },
     {
       "id": "GEN-N01",
@@ -14199,25 +14262,25 @@
       "id": "PUB-N01",
       "statement": "**Not a prepress system.** No imposition, colour separation, trapping or bleed management",
       "document": "PUB-publishing-and-output.md",
-      "line": 316
+      "line": 324
     },
     {
       "id": "PUB-N02",
       "statement": "**No web publishing channel, and no anonymous distribution.** The output is documents, not a site. A report meant for the public goes on a web server, and the product's involvement ends at the file ([ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md))",
       "document": "PUB-publishing-and-output.md",
-      "line": 317
+      "line": 325
     },
     {
       "id": "PUB-N03",
       "statement": "**No editing of output.** A published artifact is produced from a baseline; correcting it means correcting the document and publishing again",
       "document": "PUB-publishing-and-output.md",
-      "line": 318
+      "line": 326
     },
     {
       "id": "PUB-N04",
       "statement": "**Google Docs is not held to the fidelity bar**, and must not be sold as though it were",
       "document": "PUB-publishing-and-output.md",
-      "line": 319
+      "line": 327
     },
     {
       "id": "REL-N01",
@@ -14337,31 +14400,31 @@
       "id": "STY-N01",
       "statement": "**No per-document and no per-author overrides.** A document that needs a different look uses a different theme (CNT-N08)",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 281
+      "line": 289
     },
     {
       "id": "STY-N02",
       "statement": "**No page geometry.** Size, margins, running heads and columns belong to the publishing layout",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 282
+      "line": 290
     },
     {
       "id": "STY-N03",
       "statement": "**No stylesheet or code supplied by a tenant.** Extension is declarative, from a fixed set of properties. Arbitrary style code would be an injection surface and would make every output format a rendering engine",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 283
+      "line": 291
     },
     {
       "id": "STY-N04",
       "statement": "**Not a design tool.** A theme is configured, not drawn",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 284
+      "line": 292
     },
     {
       "id": "STY-N05",
       "statement": "**No inverting content in dark mode.** The application's chrome may go dark; the document canvas stays the theme's paper and ink, because a theme's colours were chosen for paper",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 285
+      "line": 293
     },
     {
       "id": "TAB-N01",
@@ -14729,42 +14792,42 @@
       "question": "**May a block binding produce a chart as well as a table?** A declared chart in a report is ordinary in this market and is not the exploratory analysis §8 rules out - but it needs a declared chart type and encodings, resolved by a style",
       "settledBy": "Whether a first customer's reports contain generated charts. If yes it is an **STY** catalogue plus a renderer, not a BI tool",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 432
+      "line": 447
     },
     {
       "id": "DAT-Q02",
       "question": "**How is \"the source has moved\" detected cheaply (DAT-084)?** Re-running every query to find out whether anything changed defeats the point of pinning",
       "settledBy": "What connectors can actually offer - a row version, an etag, a modified timestamp - which differs by source. Whatever the answer, it is declared per connector under DAT-073 rather than assumed of all of them",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 433
+      "line": 448
     },
     {
       "id": "DAT-Q03",
       "question": "**What does a pinned value mean to a reader who cannot see the source (DAT-024)?** They see a number obtained under somebody else's access",
       "settledBy": "**Settled.** The document's permission governs who reads a binding's stored result, and the source's own rules only who may fetch or accept one; accepting a result obtained under one's own identity warns that everyone who may read the document will see it (DAT-090, DAT-091). See [ADR-0035](../../decisions/0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md)",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 434
+      "line": 449
     },
     {
       "id": "DAT-Q04",
       "question": "**Do query definitions need to compose?** One query over the result of another is a common request and a common way to end up with an ETL tool nobody meant to build",
       "settledBy": "A customer requirement that cannot be met by writing one query in the source",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 435
+      "line": 450
     },
     {
       "id": "DAT-Q05",
       "question": "**How much does a published document show about a revision (DAT-059, DAT-062)?** That a value was revised, or also what the query had returned and why somebody disagreed with it",
-      "settledBy": "A decision with **PUB**, and the first customer whose output a regulator reads. Provenance holds both halves either way; this is about what the page shows",
+      "settledBy": "**Settled.** The page shows nothing: the provenance accompanying a publication marks a revised value and holds both halves, what the query returned and the revision, and the printed output need not mark it (DAT-115, DAT-062). Ken's answer to `bindings.md`'s question 2, 2026-10-04; section 17",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 436
+      "line": 451
     },
     {
       "id": "DAT-Q06",
       "question": "**What is the aggregate execution limit (DAT-071), and is it per tenant, per connection or per source?** A baseline with four hundred live bindings is one document to an author and a denial of service to a source",
       "settledBy": "Measurement against a real source, and what connectors report about their own capacity. The limit exists either way; the number and its shape do not yet",
       "document": "DAT-data-connectivity-and-bindings.md",
-      "line": 437
+      "line": 452
     },
     {
       "id": "GEN-Q01",
@@ -15079,35 +15142,35 @@
       "question": "**Which pagination and PDF engine?**",
       "settledBy": "**Settled.** Typst, rendering the resolved content model through one fixed template. See [ADR-0013](../../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md)",
       "document": "PUB-publishing-and-output.md",
-      "line": 325
+      "line": 333
     },
     {
       "id": "PUB-Q02",
       "question": "**Does Google Docs export survive at all?** It exists because customers ask for it and cannot express what the product is for, and it now has a second problem: writing to a user's Google Docs needs Drive scopes, which are restricted, which means app verification and a periodic security assessment - exactly what IAM-044 and [ADR-0009](../../decisions/0009-federation-and-google-accounts-no-local-passwords.md) were taken to avoid",
       "settledBy": "Whether a customer wants it enough to accept both that it is visibly worse and that it carries a compliance cost nothing else in the product does",
       "document": "PUB-publishing-and-output.md",
-      "line": 326
+      "line": 334
     },
     {
       "id": "PUB-Q03",
       "question": "**Is PDF/A required, and at which conformance level?** Archival and submission requirements differ by regime, and the levels are not interchangeable",
       "settledBy": "The first customer with a submission requirement that names one",
       "document": "PUB-publishing-and-output.md",
-      "line": 327
+      "line": 335
     },
     {
       "id": "PUB-Q04",
       "question": "**How is preview made fast enough (CNT-096) while using the same pipeline (PUB-006)?**",
       "settledBy": "**Settled.** Typst compiles incrementally, reusing unchanged layout between compiles: an edit reaches page 40 of a 300-page document in under half a second, whatever page it is on. The one difference is PUB-061. See [ADR-0013](../../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md). Since [ADR-0027](../../decisions/0027-the-warm-range-preview-leaves-t1.md) this answers T3's warm preview; T1's is the whole document, compiled cold, and CNT-096 is withdrawn",
       "document": "PUB-publishing-and-output.md",
-      "line": 328
+      "line": 336
     },
     {
       "id": "PUB-Q05",
       "question": "**Can an incremental compilation be made byte-identical to a clean one (PUB-076)?** Reusing layout between compiles is what makes preview fast; producing the same bytes either way is what makes PUB-043 checkable",
       "settledBy": "Measurement against the engine. If it cannot, the answer is that preview compiles incrementally and publication always compiles clean - which costs seconds on a path that already takes thirty",
       "document": "PUB-publishing-and-output.md",
-      "line": 329
+      "line": 337
     },
     {
       "id": "REL-Q01",
@@ -15261,35 +15324,35 @@
       "question": "**Are catalogues tenant-wide, or per space?** A consultancy working for two clients may need two house styles that authors must not confuse",
       "settledBy": "Whether early customers serve more than one end client from one tenant. Likely yes in this market",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 291
+      "line": 299
     },
     {
       "id": "STY-Q02",
       "question": "**Does STY-N03 survive a real house style?** Declarative properties cover most of typography and none of the last five per cent somebody's brand guideline insists on",
       "settledBy": "The first house style that cannot be expressed. The answer is probably to widen the declared property set rather than open an escape hatch",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 292
+      "line": 300
     },
     {
       "id": "STY-Q03",
       "question": "**Who supplies typefaces, and who holds the licence?**",
       "settledBy": "**Settled.** Product-supplied faces are open-licence only; a customer's brand face is supplied by the customer under the customer's own licence. See [ADR-0010](../../decisions/0010-open-licence-typefaces-only.md)",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 293
+      "line": 301
     },
     {
       "id": "STY-Q04",
       "question": "**Does a theme need variants - screen against print, light against dark?**",
       "settledBy": "**Settled for the editor.** No: the canvas stays paper when the application goes dark (STY-N05). Whether the HTML reading format needs a screen palette is left to its design. See [themes.md](../../design/themes.md)",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 294
+      "line": 302
     },
     {
       "id": "STY-Q05",
       "question": "**What contrast ratio binds a customer's own brand palette (STY-069)?** A house style whose colours fail 4.5:1 is a real thing, and refusing it outright refuses the customer",
       "settledBy": "Legal and commercial advice with the first brand that fails. The likely answer is that the product's own themes must pass while a tenant's are warned rather than refused, which is a different requirement from the one written today",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 295
+      "line": 303
     },
     {
       "id": "TAB-Q01",
@@ -15600,6 +15663,14 @@
         {
           "id": "DAT-060",
           "howItIsMet": "A revised binding is still checked. A source revision waiting for one shows three values - what the query returned, the revision, and what the source returns now - and accepting it must say `withdraw` or `keep`, refused `revision_decision_required` otherwise; keeping records the revision again against the newer version in the same transaction"
+        },
+        {
+          "id": "DAT-116",
+          "howItIsMet": "Accepting and revising are the document's acts, on the document's routes, writing the document's rows, never the component (BI-O): accept is refused `resolution_precondition` unless `replaces` names the resolution held (D3-K), and revise and withdraw `revision_precondition` unless it names the revision standing. Changing a binding, its mode included, is an edit to the component's content, saved as every edit is, under the component's lock (COL-005) and carrying the version it was opened from (API-037); no binding route writes a component"
+        },
+        {
+          "id": "STY-082",
+          "howItIsMet": "The theme's value catalogue (BI-F) declares a number's decimal and group separators and its minus, a date's order and separator, a time's separator and a boolean's words, with `byLanguage` overrides; `formatValue`, the domain's own code with no `Intl` and no locale data, is the one function the editor, the read text, Typst and Word print from; a decimal prints at its declared scale, an instant in UTC; LOC-038's data arrives as a source of these declarations"
         },
         {
           "id": "DAT-062",

@@ -160,6 +160,7 @@ describe('the real corpus', () => {
     // 1369, from 1368: STR-063, the service's share of STR-039's budget (issue #119), narrowed.
     // 1368, from 1367: IAM-073, a number revealing nothing a reader may not read (issue #130), narrowed.
     // 1367, from 1366: STR-062 (issue #73).
+    // 1532, from 1525 (2026-10-04): bindings.md's questions, answered by Ken - DAT-115 supersedes DAT-059 (a revision marked in a publication's provenance, not its print), DAT-116 supersedes DAT-072 (each binding act's precondition on what it changes), STY-082 (a theme's value formats), and PUB-108 to PUB-111 supersede PUB-099, one per stage. DAT-057, 058, 060, 061 and 062 move whole to T3. DAT-Q05 settled.
     // 1525, from 1524 (2026-09-30): API-062 adds the versioned, navigable and token-executable developer API reference (issue #352).
     // 1524, from 1522 (2026-09-30): IAM-083 and IAM-084 (T7) supersede IAM-020, Ken's answer that a dataset's own read grant comes later and the document's permission alone governs in T2.
     // 1522, from 1479 (2026-09-30): ADR-0035, Ken's decisions on data connectivity - DAT-074 to DAT-114 (41 rows; twelve supersede DAT-002, 006, 008, 011, 017, 023, 034, 035, 036, 040, 044 and 055), IAM-082 superseding IAM-067 and TPL-065 superseding TPL-023. Non-requirements 118, from 117: DAT-N07, no uploaded file as a source. DAT-052 moves whole to T7.
@@ -180,7 +181,7 @@ describe('the real corpus', () => {
     // metadata and component types superseded - a template assigning schemas rather than owning
     // one, a component's type in its closed set, and relationship types using the same schemas.
     // Superseded rows keep their place, so the count only ever rises.
-    expect(total((document) => document.requirements)).toBe(1525);
+    expect(total((document) => document.requirements)).toBe(1532);
     expect(total((document) => document.nonRequirements)).toBe(118);
     expect(total((document) => document.questions)).toBe(135);
   });

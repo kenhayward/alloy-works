@@ -242,8 +242,8 @@ publishing build as **PUB-093**, claimed here.
 ## The order
 
 PUB-003 asked for the order to be fixed, stated and tested, because every part of it has a failure the
-output hides. Since 2026-09-28 that is PUB-098, each stage that exists, in T1, and PUB-099, each stage
-as it arrives, from T2. structure.md fixes four stages by type; publishing extends them, and **corrects one**:
+output hides. Since 2026-09-28 that is PUB-098, each stage that exists, in T1, and since 2026-10-04 PUB-108 to PUB-111, each stage
+as it arrives - the binding stage in T2, transclusion, conditions and variables in T4. structure.md fixes four stages by type; publishing extends them, and **corrects one**:
 
 ```
 1 resolve      the latest document version, and each occurrence's version     (at the request)

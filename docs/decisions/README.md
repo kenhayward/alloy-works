@@ -42,6 +42,7 @@ exist.
 | [0003](0003-one-renderer-two-deliveries.md)                                       | One renderer, two deliveries                                                  | Accepted           |
 | [0004](0004-brand-assets-and-packaging.md)                                        | Brand assets and desktop packaging                                            | Accepted           |
 | [0005](0005-purpose-built-node-and-mark-content-model.md)                         | A purpose-built node-and-mark content model                                   | Accepted           |
+| [0036](0036-revising-a-bound-value-by-hand-moves-to-t3.md)                        | Revising a bound value by hand moves to T3                                    | Accepted           |
 | [0035](0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md) | Bindings hold stored results, and a publish never queries a source            | Accepted           |
 | [0034](0034-data-connectors-run-apart-as-a-declared-identity.md)                  | Data connectors run apart, as a declared identity, and pin a canonical result | Superseded by 0035 |
 | [0033](0033-t2-is-the-data-spine.md)                                              | T2 is the data spine                                                          | Accepted           |
