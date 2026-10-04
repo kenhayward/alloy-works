@@ -15590,6 +15590,91 @@
       ]
     },
     {
+      "document": "bindings.md",
+      "owns": [
+        {
+          "id": "DAT-027",
+          "howItIsMet": "In a document, an inline binding is drawn and printed as the one value `takeValue` takes from the result the document holds, formatted by the document's theme, standing in the text where the binding stands ([A value, taken and formatted](#a-value-taken-and-formatted))"
+        },
+        {
+          "id": "DAT-031",
+          "howItIsMet": "A binding taking `{ column }` from a result of more than one row is `value_many`, naming the count, the binding and the definition, in the editor, the Data tab and the publish alike; nothing takes a first row"
+        },
+        {
+          "id": "DAT-032",
+          "howItIsMet": "No rows is `value_none`, a key no row holds `row_missing`, a null `value_null` and an empty text `value_empty`; each is shown as a failure in place and fails a publish, and nothing prints an empty string"
+        },
+        {
+          "id": "DAT-047",
+          "howItIsMet": "A binding whose value fails is drawn in place as a marker saying why, apart by more than colour, and every other node of the component and the document draws as before; the Data tab lists it"
+        },
+        {
+          "id": "DAT-022",
+          "howItIsMet": "The Value dialog names, beside each definition and again on the chosen one, the identity it runs as - the service account, or each person's own view by the connection's mechanism - read from the definition's route, which answers its connection's identity to every reader of the definition"
+        },
+        {
+          "id": "DAT-024",
+          "howItIsMet": "The provenance panel and the Data tab say whose view a value is, from the dataset version's provenance: the service account, or a person by name with their sign-in route and the identity as the source saw it"
+        },
+        {
+          "id": "DAT-041",
+          "howItIsMet": "Activating a value - a click, or Enter on the value's button in the read text, or selecting it in an open editor - opens its provenance panel in one step: the definition and its version, the connection, the parameters, whose view, when, the rows, the checksum, the dataset version, who accepted it, and the SQL where the reader may read the definition"
+        },
+        {
+          "id": "DAT-039",
+          "howItIsMet": "The document page's **Data** tab lists every binding the document holds with its state: never resolved, changed since it was resolved, failed (a value that cannot be taken, or the check made on opening failing), a source revision waiting, a definition moved on, revised by hand, changed since last published, or holding"
+        },
+        {
+          "id": "DAT-082",
+          "howItIsMet": "A checked binding is checked when the document page opens, by whoever may check it, and on **Check now**; a pinned one never. A waiting revision's value is shown beside the value held, in the Data tab and the value's panel, and nothing moves until somebody accepts"
+        },
+        {
+          "id": "DAT-070",
+          "howItIsMet": "A floating binding whose definition has a version newer than the one its held result ran is flagged **Definition changed** beside a source revision's flag, and a check's result of the newer version is waiting even where its rows are the same (BI-K); the Data tab lists the bindings whose question, definition or value differs from what the document's latest publication printed"
+        },
+        {
+          "id": "DAT-091",
+          "howItIsMet": "Accepting a result fetched under the accepting person's own identity opens a confirmation saying that everybody who may read the document will see it, with the readers counted; only its **Share my view** sends `sharesOwnView: true`, without which the route refuses"
+        },
+        {
+          "id": "DAT-087",
+          "howItIsMet": "A publish or a preview request is refused before anything is queued, `binding_unresolved`, naming the document and each binding with no resolution matching its digest, by its node and identifier, and whether it was never resolved or changed since; `assemble` refuses the same should a request reach it"
+        },
+        {
+          "id": "DAT-088",
+          "howItIsMet": "The worker reads each binding's dataset version recorded on the request, and its rows from the tenant's store by their checksum, held to it; neither it nor the service on a publish or a preview has a route to the connector (DAT-089)"
+        },
+        {
+          "id": "DAT-046",
+          "howItIsMet": "The binding stage either sets a value `takeValue` took and the theme formatted, or fails the job by name; it has no path that sets a blank, a zero, a placeholder or the binding's own description in a value's place"
+        },
+        {
+          "id": "DAT-042",
+          "howItIsMet": "A publication records every binding it printed, `publication_binding`, held whole to its request, and is accompanied by `provenance.json`, an output beside the PDF and Word: for each value, where it stood, what was printed, what the query returned, any revision, and the dataset version's provenance; `GET /v1/publications/{id}/bindings` answers the same"
+        },
+        {
+          "id": "PUB-049",
+          "howItIsMet": "As DAT-042, which it restates"
+        },
+        {
+          "id": "DAT-058",
+          "howItIsMet": "A revision is a row of its own, `binding_revision`, beside the resolution and never in place of it: the value entered, the dataset version it stands in front of, who, when and the reason; insert-only, each naming the revision it replaces, so the rows are its audit with what it was and what it became"
+        },
+        {
+          "id": "DAT-060",
+          "howItIsMet": "A revised binding is still checked. A source revision waiting for one shows three values - what the query returned, the revision, and what the source returns now - and accepting it must say `withdraw` or `keep`, refused `revision_decision_required` otherwise; keeping records the revision again against the newer version in the same transaction"
+        },
+        {
+          "id": "DAT-062",
+          "howItIsMet": "The provenance panel, the Data tab and `provenance.json` give a revised value both halves: the revision - value, who, when, why - and the dataset version's provenance with the value the query returned"
+        },
+        {
+          "id": "DAT-097",
+          "howItIsMet": "A bound image, after D8, takes its description from the column its definition names, or is decorative; a row whose description is null or empty fails the publish by name, `image_description_missing`, naming the binding, the row and the column ([Bound images](#bound-images))"
+        }
+      ]
+    },
+    {
       "document": "component-editor.md",
       "owns": [
         {

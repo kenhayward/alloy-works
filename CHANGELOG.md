@@ -22,6 +22,35 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   transclusion, conditions and variables in T4. A value with no row, a null or empty text is now
   stated plainly as no value, which fails rather than printing nothing.
 
+## 0.132.2 - 2026-10-04 (PR #380)
+
+### Added
+
+- **How values from your own data will appear in your documents.** Nothing you can use yet. The
+  design says how an author will place a value from a query in a component's text, choosing the
+  query, its parameters and which value to take; how a document shows the value it holds, formatted
+  by its theme, or says plainly why it has none; how one place in a document lists every value with
+  what needs attention - a newer result waiting, a query that changed, a value never fetched - and
+  lets you check, accept or keep each; and how publishing will print each value from what the
+  document holds, never asking the source again, refusing by name rather than printing a blank, and
+  sending with every publication a file saying where each value came from. It also proposes leaving
+  values corrected by hand to the review tranche.
+
+## 0.132.1 - 2026-10-04 (PR #379)
+
+### Fixed
+
+- **A connection's account can no longer change what the product reads of its database.** Testing
+  a connection, describing a source and describing or running a query each read your database's own
+  catalogue, to find a column's type, the tables you may read and whether the account may write. An
+  account whose search path put a schema of its own ahead of PostgreSQL's could answer those reads
+  with objects of the same names, so a column could be shown, proposed and admitted as a type it is
+  not, or an account that may write found read-only. Every one of those reads now names
+  PostgreSQL's own catalogue, so the types the product reads and uses, and whether it finds the
+  account may write, no longer depend on the account's search path. A column's type as displayed
+  can still be written with its schema, such as `pg_catalog.oid`, where the account has a type of
+  the same name of its own.
+
 ## 0.132.0 - 2026-10-04 (PR #375)
 
 ### Added
