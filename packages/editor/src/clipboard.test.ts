@@ -767,6 +767,27 @@ describe('copying, cutting and pasting a binding', () => {
     expect(counts(again)).toEqual([{ action: 'rewritten', subject: 'bindingCopied', count: 1 }]);
   });
 
+  it("never points a reference left behind at a binding's copy, though its target names the binding", () => {
+    // Content the API could have stored: a reference whose block target is a binding's identifier,
+    // which no block holds. The binding arrives from elsewhere under that identifier.
+    const reference: Inline = {
+      type: 'crossReference',
+      id: 'x1',
+      target: { kind: 'block', block: 'k9' },
+      display: 'number',
+    };
+    const from = stateOf([withRuns('b1', text('Mean '), bound('k9'))]);
+    const state = stateOf([withRuns('o1', text('See '), reference), paragraph('o2', 'End')]);
+    const { state: next, report } = pasted(atEndOf(state, 'o2'), copyOf(from, 'b1'));
+    const targets: unknown[] = [];
+    next.doc.descendants((node) => {
+      if (node.type.name === 'crossReference') targets.push(node.attrs.target);
+    });
+    expect(targets).toEqual([{ kind: 'block', block: 'k9' }]);
+    expect(report.some((entry) => entry.subject === 'crossReferenceRepointed')).toBe(false);
+    expect(bindingsIn(next)).toEqual(['k9']);
+  });
+
   it('keeps the identifier of a binding pasted over its original', () => {
     const state = component();
     const { from, to } = rangeOf(state, 'b1');

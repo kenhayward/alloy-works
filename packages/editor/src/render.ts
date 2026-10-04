@@ -1,5 +1,6 @@
 import { parseContentDocument, type ContentDocument } from '@alloy-works/domain';
-import { DOMSerializer, type Node } from 'prosemirror-model';
+import { DOMSerializer, type Node, type Slice } from 'prosemirror-model';
+import type { EditorView } from 'prosemirror-view';
 
 import {
   ALONE_CLASS,
@@ -150,4 +151,36 @@ export function drawBindings(
     if (context?.kind === 'alone') element.classList.add(ALONE_CLASS);
     fillBinding(element, each);
   });
+}
+
+/**
+ * **What a copy writes for another application** (cross-references 1; the B1 plan, B1-D): the slice as
+ * HTML, ProseMirror's own serialisation, and as plain text, with each reference and each binding the
+ * slice holds - `references` and `bindings`, in document order - filled with the words it shows, its
+ * words alone, where the node would otherwise write `toDOM`'s, or nothing. The surface's copy and a
+ * footnote's own editor's write by it.
+ */
+export function copiedAsShown(
+  view: EditorView,
+  slice: Slice,
+  references: readonly { readonly text: string; readonly broken: boolean }[],
+  bindings: readonly BindingShown[],
+): { readonly html: string; readonly text: string } {
+  const { dom } = view.serializeForClipboard(slice);
+  drawReferences(dom, references);
+  drawBindings(
+    dom,
+    bindings.map((each) => ({ ...each, hidden: '', marker: null, resolved: false })),
+    null,
+  );
+  const words = references.map((each) => each.text);
+  const values = bindings.map((each) => each.text);
+  const text = slice.content.textBetween(0, slice.content.size, '\n\n', (leaf) =>
+    leaf.type.name === 'crossReference'
+      ? (words.shift() ?? '')
+      : leaf.type.name === 'binding'
+        ? (values.shift() ?? '')
+        : (leaf.type.spec.leafText?.(leaf) ?? ''),
+  );
+  return { html: dom.innerHTML, text };
 }

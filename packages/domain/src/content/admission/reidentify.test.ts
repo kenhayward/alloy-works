@@ -456,7 +456,7 @@ describe('the re-identify stage', () => {
     ]);
   });
 
-  it('gives a pasted binding a new identifier, records it in renamed, and counts it copied', () => {
+  it('gives a pasted binding a new identifier, records it apart from the blocks renamed, and counts it copied', () => {
     const bound = binding('k1');
     const report = createReport();
     const identified = reidentify(
@@ -471,10 +471,8 @@ describe('the re-identify stage', () => {
         schemaVersion: 1,
         content: [paragraph('n3', [text('Mean '), { ...bound, id: 'n4' }])],
       },
-      renamed: new Map([
-        ['old-paragraph', 'n3'],
-        ['k1', 'n4'],
-      ]),
+      renamed: new Map([['old-paragraph', 'n3']]),
+      bindingsRenamed: new Map([['k1', 'n4']]),
     });
     expect(report.entries.map(({ message: _, ...entry }) => entry)).toEqual([
       { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 1 },
@@ -485,6 +483,17 @@ describe('the re-identify stage', () => {
     expect(copied!.message).toBe(
       'Bound values were copied, each to be resolved in a document before it shows a value.',
     );
+  });
+
+  it('keeps a block and a binding that arrived under one identifier apart, neither making the other ambiguous', () => {
+    const identified = reidentify(
+      { schemaVersion: 1, content: [paragraph('z', [text('Mean '), binding('z')])] },
+      receiver(),
+      createReport(),
+    );
+    if (!identified.ok) throw new Error(identified.failure);
+    expect([...identified.renamed]).toEqual([['z', 'n3']]);
+    expect([...identified.bindingsRenamed]).toEqual([['z', 'n4']]);
   });
 
   it("never makes a binding a reference's target, wherever its identifier stands", () => {

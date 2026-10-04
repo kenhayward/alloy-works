@@ -18,7 +18,7 @@ import { imageView } from './imageView.js';
 import { referenceContextOf, referenceView } from './referenceView.js';
 import { newBlockIdentifier } from './identity.js';
 import { referencesShown, type ReferenceShown } from './referenceText.js';
-import { drawBindings, drawReferences } from './render.js';
+import { copiedAsShown } from './render.js';
 
 export interface MountOptions {
   readonly state: EditorState;
@@ -165,28 +165,15 @@ function writeClipboard(view: EditorView, event: ClipboardEvent, remove: boolean
   if (!data || view.state.selection.empty) return false;
   event.preventDefault();
   const { from, to } = view.state.selection;
-  const slice = view.state.selection.content();
-  const { dom } = view.serializeForClipboard(slice);
-  const shown = copiedReferences(view);
-  drawReferences(dom, shown);
-  const words = shown.map((each) => each.text);
   // A binding is copied as what it shows, its words alone (B1-D): the value, or why there is none.
-  const bound = copiedBindings(view);
-  drawBindings(
-    dom,
-    bound.map((each) => ({ ...each, hidden: '', marker: null, resolved: false })),
-    null,
-  );
-  const values = bound.map((each) => each.text);
-  const text = slice.content.textBetween(0, slice.content.size, '\n\n', (leaf) =>
-    leaf.type.name === 'crossReference'
-      ? (words.shift() ?? '')
-      : leaf.type.name === 'binding'
-        ? (values.shift() ?? '')
-        : (leaf.type.spec.leafText?.(leaf) ?? ''),
+  const { html, text } = copiedAsShown(
+    view,
+    view.state.selection.content(),
+    copiedReferences(view),
+    copiedBindings(view),
   );
   data.clearData();
-  data.setData('text/html', dom.innerHTML);
+  data.setData('text/html', html);
   data.setData('text/plain', text);
   const product = productClipboard(view.state, from, to);
   if (product !== undefined) data.setData(PRODUCT_CLIPBOARD_TYPE, product);

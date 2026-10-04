@@ -189,7 +189,7 @@ export function pasteInto(
     placed.setSelection(TextSelection.near(placed.doc.resolve(placed.mapping.map(to)), -1));
   }
   const repointed = repointLeftBehind(placed, admitted.renamed);
-  const given = bindingsGivenBack(placed, admitted.renamed);
+  const given = bindingsGivenBack(placed, admitted.bindingsRenamed);
   const transaction = placed
     .scrollIntoView()
     .setMeta('paste', true)
@@ -267,6 +267,8 @@ function bindingsGivenBack(
 /**
  * Points every reference in the placed document whose `block` target it no longer holds at the block
  * admission renamed that target to, where the paste placed one (ruling R8), and answers how many.
+ * `renamed` holds blocks and footnotes alone - admission keeps its bindings apart - so a reference is
+ * never pointed at a binding's copy, whatever its target names.
  * A reference that travelled with its target was pointed at the copy by admission already, and one
  * whose target still stands is left alone. Attribute steps move nothing, so the positions read from
  * the placed document hold for every change.

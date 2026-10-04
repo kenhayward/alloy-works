@@ -1181,7 +1181,11 @@ describe('a binding through the mapping (B1)', () => {
         },
       ]),
     );
-    expect(fromEditor(openedDoc(stored))).toEqual(stored);
+    const opened = openedDoc(stored);
+    // `toEditor` builds with `create`, which checks nothing: each home must admit a binding by the
+    // schema's own content expressions too.
+    expect(() => opened.check()).not.toThrow();
+    expect(fromEditor(opened)).toEqual(stored);
   });
 
   it('holds its members as attributes, objects held as objects, and a version absent as null', () => {

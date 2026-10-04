@@ -6,6 +6,7 @@ import {
   createEditorState,
   mountEditor,
   NodeSelection,
+  openFootnote as openFootnoteEditor,
   Selection,
   toEditor,
   type BindingContext,
@@ -222,6 +223,39 @@ describe('a binding on the editing surface', () => {
     expect(bindingsIn(html).slice(0, 2)).toEqual([
       { text: '1,234.5', failed: false },
       { text: 'No value - the query returned 3 rows', failed: true },
+    ]);
+  });
+
+  it("is copied from a footnote's own editor as what it shows, as from the surface", () => {
+    const view = mount(false, CONTEXT);
+    const editor = openFootnote(view);
+    const inner = openFootnoteEditor(view);
+    if (inner === null) throw new Error('No footnote editor is open');
+    const paragraph = inner.state.doc.firstChild!;
+    inner.dispatch(
+      inner.state.tr.setSelection(
+        Selection.fromJSON(inner.state.doc, {
+          type: 'text',
+          anchor: 1,
+          head: paragraph.nodeSize - 1,
+        }),
+      ),
+    );
+    const written = new Map<string, string>();
+    const event = new Event('copy', { bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'clipboardData', {
+      value: {
+        clearData: () => written.clear(),
+        setData: (type: string, value: string) => written.set(type, value),
+      },
+    });
+    editor.dispatchEvent(event);
+    expect(written.get('text/plain')).toBe('Also 7 and No value - empty');
+    const html = document.createElement('div');
+    html.innerHTML = written.get('text/html')!;
+    expect(bindingsIn(html)).toEqual([
+      { text: '7', failed: false },
+      { text: 'No value - empty', failed: true },
     ]);
   });
 
