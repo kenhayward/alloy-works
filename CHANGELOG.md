@@ -9,8 +9,8 @@ Every pull request adds one entry at the top, and the topmost version matches `v
 
 - **Revising a bound value by hand now arrives in T3, not T2.** A hand-entered value exists to be
   reviewed, and the reviewer's queue and the gate before issue arrive in T3; the requirements for
-  revising a value move there together, already designed. T2 still ships every value a source
-  supplies, its provenance and the binding stage of a publish.
+  revising a value, a cell of a bound table's included, move there together, already designed. T2
+  still ships every value a source supplies, its provenance and the binding stage of a publish.
 - **A revised value is marked in a publication's provenance, not on its printed page.** The editor,
   review and a document's list of its values always mark it; the published PDF and Word need not.
 - **Accepting a source's new result or revising a value changes the document, not the component.**

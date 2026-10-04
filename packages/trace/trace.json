@@ -4225,7 +4225,7 @@
       "id": "DAT-063",
       "area": "DAT",
       "statement": "A revision to a cell of a bound table must be anchored by key (DAT-012), and a revision whose row the query no longer returns must produce a named diagnostic identifying the revision, the key and the query, exactly as DAT-048 does for a footnote",
-      "tranche": "T2",
+      "tranche": "T3",
       "status": "Specified",
       "document": "DAT-data-connectivity-and-bindings.md",
       "line": 241
@@ -15663,6 +15663,18 @@
         {
           "id": "DAT-060",
           "howItIsMet": "A revised binding is still checked. A source revision waiting for one shows three values - what the query returned, the revision, and what the source returns now - and accepting it must say `withdraw` or `keep`, refused `revision_decision_required` otherwise; keeping records the revision again against the newer version in the same transaction"
+        },
+        {
+          "id": "DAT-115",
+          "howItIsMet": "A revised value is marked as a person's wherever the product shows it: in the editor and the read text, a marker always shown, _revised by hand_, in its accessible name too, drawn by the text's own rendering in every mode of the document page, review's included; in the Data tab, a state of its own; and in the provenance panel and `provenance.json`, the revision beside what the query returned. Nothing turns the mark off, and the printed PDF and Word set the value unmarked, as DAT-115 allows"
+        },
+        {
+          "id": "DAT-116",
+          "howItIsMet": "Accepting and revising are the document's acts, on the document's routes, writing the document's rows, never the component (BI-O): accept is refused `resolution_precondition` unless `replaces` names the resolution held (D3-K), and revise and withdraw `revision_precondition` unless it names the revision standing. Changing a binding, its mode included, is an edit to the component's content, saved as every edit is, under the component's lock (COL-005) and carrying the version it was opened from (API-037); no binding route writes a component"
+        },
+        {
+          "id": "STY-082",
+          "howItIsMet": "The theme's value catalogue (BI-F) declares a number's decimal and group separators and its minus, a date's order and separator, a time's separator and a boolean's words, with `byLanguage` overrides; `formatValue`, the domain's own code with no `Intl` and no locale data, is the one function the editor, the read text, Typst and Word print from; a decimal prints at its declared scale, an instant in UTC; LOC-038's data arrives as a source of these declarations"
         },
         {
           "id": "DAT-062",
