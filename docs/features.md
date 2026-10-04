@@ -656,8 +656,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   taken from a query definition's result, a column of its one row or of the row a key names, with
   the values it runs with - placed through the API alone: no screen places or accepts one yet. A
   component holding one opens for editing, and a binding is deleted, undone, copied, cut and pasted as
-  any atom is: a copy takes a new identifier and holds no value until a document resolves it, and a
-  cut and paste keeps its own, so a value moved within its component is kept. **Resolving** a binding in a
+  any atom is: a pasted binding keeps its identifier wherever the receiving component does not
+  already hold it - a cut and paste, or a paste into another component - so its value is kept, and
+  takes a new one, holding no value until a document resolves it, only where its original still
+  stands. **Resolving** a binding in a
   document runs its query against the database now, as the connection's own account, through the
   connector, and keeps the result as a version of a **dataset** - the rows once, under their
   checksum, with what ran, as whom, when and how many rows - which the binding then holds in that
