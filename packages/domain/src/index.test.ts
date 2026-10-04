@@ -110,7 +110,7 @@ describe('the domain package', () => {
         'starterRoles',
         // W12.1: what a personal token may be scoped to, every permission but read (TK-B).
         'tokenScopes',
-        // Scaffolding, and not a decision about the content model. See CLAUDE.md.
+        // Scaffolding, and not a decision about the content model. See index.ts.
         'componentSchema',
         'componentTypes',
         'createComponent',

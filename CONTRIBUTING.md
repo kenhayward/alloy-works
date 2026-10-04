@@ -4,8 +4,7 @@ Thanks for taking a look. This document is the working agreement written for a p
 the repository. [`CLAUDE.md`](CLAUDE.md) is the same ground rules written for Claude Code, and the
 two are kept in step - when they disagree, `CLAUDE.md` is the one to fix.
 
-> **The repository is scaffolding.** There is no content storage, no authoring UI and no publishing
-> yet. [`docs/features.md`](docs/features.md) is honest about what does and does not exist.
+> [`docs/features.md`](docs/features.md) says what exists and what does not.
 
 ## Getting set up
 
@@ -26,7 +25,7 @@ desktop deliveries.
 1. Branch off `main`. Never commit to `main` directly.
 2. If you are fixing a bug, **open a GitHub issue first**.
 3. Write the failing test, watch it fail, then make it pass.
-4. Bump the version and add a changelog entry.
+4. Add a change fragment to [`changes/`](changes/README.md).
 5. Push the branch and open a PR. Never merge locally.
 
 ## Working on the specification rather than the code
@@ -42,7 +41,7 @@ Reviews of those documents live in [`docs/reviews/`](docs/reviews/), kept exactl
 Answering one means amending the requirements and ending the document with a change history: a row
 per change naming the review point behind it, and a row for anything raised that was deliberately not
 changed, with the reason. Declining a review point is a legitimate answer; declining it silently is
-not. `docs/specification/` still needs a version bump and a changelog entry like any other PR, and
+not. `docs/specification/` still needs a change fragment like any other PR, and
 `packages/trace/src/requirements.test.ts` checks the identifiers, the numbering and the index.
 
 ## Test-driven development
@@ -99,9 +98,8 @@ A PR should:
 - **Close its issue**, if it has one, with a closing keyword on its own line in the **PR body**:
   `Fixes #12`. GitHub does not auto-close from a PR title or from a comment. Check the issue
   actually closed after the merge.
-- **Bump the version and add one changelog entry** - see below.
-- **Update the docs it invalidates**, in the same PR. `docs/architecture.md` when a component,
-  contract, dependency or packaging detail changes; `README.md` and `docs/features.md` together when
+- **Add one change fragment** - see below.
+- **Update the docs it invalidates**, in the same PR: `README.md` and `docs/features.md` together when
   a user-facing feature changes; a new record in `docs/decisions/` - **and its row in that folder's
   index** - when the PR makes a choice that constrains later work and whose reasoning would
   otherwise have to be reconstructed from the diff.
@@ -109,31 +107,18 @@ A PR should:
 Commit messages: a short imperative subject line saying what the commit does, and a body explaining
 why when the why is not obvious. There is no enforced format.
 
-## Versioning and the changelog
+## Versions and the changelog
 
-The scheme is **Major.Minor.Build**, and the canonical version is `version.json` (mirrored only by
-the root `package.json` - workspace packages are deliberately unversioned).
-
-| Kind of change             | Bump                                                |
-| -------------------------- | --------------------------------------------------- |
-| Functional enhancement     | **Minor +1, Build reset to 0** - `0.1.2` -> `0.2.0` |
-| Fix, chore, docs, refactor | **Build +1** - `0.2.0` -> `0.2.1`                   |
-| Anything else              | Ask. Major bumps only when a maintainer says so     |
-
-Then add one entry to the top of [`CHANGELOG.md`](CHANGELOG.md) with the version, the date, the PR
-number and `Added` / `Changed` / `Fixed` bullets. Write it for someone who wants to know what
-changed for them, not for someone reading the diff.
+A PR adds a fragment to [`changes/`](changes/README.md) and does not touch `version.json` or
+`CHANGELOG.md`. A slice or tranche close folds the fragments in and bumps the version
+([ADR-0037](docs/decisions/0037-change-fragments-and-versions-at-a-close.md)). Write fragments for
+someone who wants to know what changed for them.
 
 ## Continuous integration
 
-CI runs on every push and every pull request: install, lint, format, typecheck, build, test.
-
-**The check steps are `continue-on-error` right now** - deliberately, while the repository finds its
-baseline. CI reports and does not block. That is not permission to ignore a red check: look at it,
-and fix it in the PR that caused it. Please do not add new `continue-on-error` steps.
-
-[`docs/ci-and-releases.md`](docs/ci-and-releases.md) has the checklist for turning CI into a real
-gate.
+CI runs on every push and pull request. Lint, format, typecheck, build, the whole-system suites and
+the traceability gate block a merge. [`docs/ci-and-releases.md`](docs/ci-and-releases.md) has the
+detail.
 
 ## Things that will get a PR sent back
 
@@ -149,7 +134,7 @@ gate.
   even when the data is your evidence: report counts and percentages instead, and invent fixture
   names (`Ada`, `Grace`, `Alice`).
 - Secrets or tokens in the repository, the logs, or anything a crash report could pick up.
-- **Em or en dashes in user-facing text.** Plain hyphens in UI strings and changelog entries.
+- **Em or en dashes in user-facing text.** Plain hyphens in UI strings and change fragments.
   Code, comments and internal docs are exempt.
 - Path separator or case-sensitivity assumptions. Windows, macOS and Linux are all first-class.
 

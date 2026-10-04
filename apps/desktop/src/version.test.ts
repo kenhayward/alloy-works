@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -49,5 +49,31 @@ describe('the version mirrors', () => {
 
     expect(newest).toMatch(/^\d+\.\d+\.\d+ - \d{4}-\d{2}-\d{2} \(PR #\d+\)$/);
     expect(newest.split(' ')[0]).toBe(canonical);
+  });
+});
+
+/**
+ * A PR records its change as a fragment in `changes/`; a slice or tranche close folds them into
+ * CHANGELOG.md and bumps the version (ADR-0037). Two PRs never edit the same lines.
+ */
+describe('the change fragments', () => {
+  const dir = join(repoRoot, 'changes');
+  const fragments = (): string[] => readdirSync(dir).filter((name) => name !== 'README.md');
+
+  it('has a folder explaining itself', () => {
+    expect(existsSync(join(dir, 'README.md'))).toBe(true);
+  });
+
+  it('holds only markdown fragments, each with Added, Changed or Fixed bullets and nothing else', () => {
+    for (const name of fragments()) {
+      expect(name, name).toMatch(/^[a-z0-9-]+\.md$/);
+      const text = readFileSync(join(dir, name), 'utf8').trim();
+      const sections = text.split(/^(?=### )/m);
+
+      expect(sections.length, name).toBeGreaterThan(0);
+      for (const section of sections) {
+        expect(section, name).toMatch(/^### (Added|Changed|Fixed)\n+- \S/);
+      }
+    }
   });
 });

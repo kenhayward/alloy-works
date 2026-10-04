@@ -85,29 +85,19 @@ jobs:
       - name: Word validator
         run: pnpm --filter @alloy-works/worker fetch-ooxml-check
 
-      # ---------------------------------------------------------------------------------------
-      # TEMPORARY: every check below is continue-on-error while the repo is finding its baseline.
-      # The run reports results without blocking a merge.
-      #
-      # These flags come off, and `main` gets branch protection requiring this job, once the
-      # baseline is agreed. See docs/ci-and-releases.md ("Turning CI into a gate") for the
-      # checklist. Until then a red check is information, not permission to ignore it.
-      # ---------------------------------------------------------------------------------------
+      # Lint, format, typecheck and build block (docs/ci-and-releases.md). Test keeps continue-on-error:
+      # the traceability gate already fails the run on a failed test report, after the reports upload.
       - name: Lint
         run: pnpm lint
-        continue-on-error: true
 
       - name: Format
         run: pnpm format
-        continue-on-error: true
 
       - name: Typecheck
         run: pnpm typecheck
-        continue-on-error: true
 
       - name: Build
         run: pnpm build
-        continue-on-error: true
 
       - name: Test
         run: pnpm test

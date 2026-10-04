@@ -18,6 +18,13 @@ actually claims, the same numbers read as "complete, over a declared scope, with
 explicitly deferred and named". The second sentence is what an auditor can act on; the first is not
 even wrong, it is just the wrong question answered precisely.
 
+## When one is declared
+
+At every slice or tranche close ([ADR-0037](../../decisions/0037-change-fragments-and-versions-at-a-close.md)),
+named by the version that close bumps to. The agent drafts it in the close PR; Ken declares it by
+merging. It carries forward every row of the baseline before it - the gate reads only the newest -
+and drops one only under `## Excluded`, with a reason. So the gate ratchets.
+
 ## Hand-written, committed, and never rewritten by a command
 
 A baseline is authored the way a decision record is: a person writes it, reviews it in a pull
