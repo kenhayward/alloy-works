@@ -4,6 +4,7 @@ import {
   canonicalResultBytes,
   generatePostgres,
   type ColumnRef,
+  type DescribeSqlAnswer,
   type DraftDefinition,
   type Query,
   type RunAnswer,
@@ -15,6 +16,7 @@ import {
   asSuperuser,
   built,
   column,
+  describeBuiltRequest,
   draft,
   LOADED_TIMEOUT_MS,
   PASSWORDS,
@@ -39,6 +41,14 @@ const run = async (...args: Parameters<typeof runRequest>): Promise<RunAnswer> =
   return answer;
 };
 
+const describeBuilt = async (
+  ...args: Parameters<typeof describeBuiltRequest>
+): Promise<DescribeSqlAnswer> => {
+  const answer = await supervisor.run('describeSql', describeBuiltRequest(...args));
+  if (answer === 'busy') throw new Error('busy');
+  return answer;
+};
+
 const asReader = (definition: Omit<DraftDefinition, 'connection'>) =>
   run(settings(), PASSWORDS.reader, definition);
 
@@ -50,6 +60,12 @@ const ok = (answer: RunAnswer) => {
 const ref = (source: string, columnName: string): ColumnRef => ({ source, column: columnName });
 const site = { alias: 's', table: { schema: 'sample', name: 'site' } };
 const tag = { alias: 't', table: { schema: 'sample', name: 'tag' } };
+
+/** A built definition's query. */
+const queryOf = (definition: Omit<DraftDefinition, 'connection'>): Query => {
+  if (definition.fetch.kind !== 'builder') throw new Error('Not a built query');
+  return definition.fetch.query;
+};
 
 /** The SHA-256 of a result's canonical bytes, computed apart from the connector. */
 const checksumOf = (answer: Extract<RunAnswer, { outcome: 'ok' }>) =>
@@ -333,13 +349,21 @@ describe(
         await client.query(`create role ${PLANTED.account} login password '${PLANTED.password}'`);
         await client.query(`create schema ${PLANTED.schema}`);
         await client.query(`grant usage on schema ${PLANTED.schema}, sample to ${PLANTED.account}`);
-        await client.query(`grant select on sample.site, sample.tag to ${PLANTED.account}`);
+        await client.query(
+          `grant select on sample.site, sample.reading, sample.tag to ${PLANTED.account}`,
+        );
         // A collation named "C" that is neither byte order nor deterministic: case is ignored.
         await client.query(
           `create collation ${PLANTED.schema}."C" (provider = icu, locale = 'und-u-ks-level2', deterministic = false)`,
         );
         await client.query(
           `alter role ${PLANTED.account} set search_path = ${PLANTED.schema}, pg_catalog, public`,
+        );
+        // A function a site's row can be passed to, which PostgreSQL would call for "s"."leak" where
+        // the site has no column leak. Were it ever called, the statement would fail in its words.
+        await client.query(
+          `create function ${PLANTED.schema}.leak(sample.site) returns text language plpgsql
+             as $$ begin raise exception 'the planted function ran'; end $$`,
         );
       });
     });
@@ -388,6 +412,130 @@ describe(
         ),
       );
       expect(filtered.result.rows).toEqual([['2']]);
+    });
+
+    it('refuses a column its table or view does not have before anything runs: a function named as one is never called', async () => {
+      const absent = (alias: string, columnName: string) => ({
+        code: 'source_refused',
+        attribution: 'query',
+        source: {
+          sqlstate: '42703',
+          message: `The table or view "sample"."site", the query's source ${alias}, has no column "${columnName}"`,
+        },
+        column: columnName,
+      });
+      // The planted function, found through the search path: refused, and never called - a call
+      // would have failed the run in the function's own words.
+      const leak = built(
+        {
+          sources: [site],
+          joins: [],
+          select: [{ name: 'leaked', of: ref('s', 'leak') }],
+          groupBy: [],
+        },
+        {},
+        { key: [], order: 'multiset' },
+      );
+      expect(await asPlanted(leak)).toEqual({ outcome: 'failed', failure: absent('s', 'leak') });
+      expect(
+        await describeBuilt(
+          settings({ account: PLANTED.account }),
+          PLANTED.password,
+          queryOf(leak),
+        ),
+      ).toEqual({ failure: absent('s', 'leak') });
+      // row_to_json(s) is pg_catalog's own: "s"."row_to_json" would answer each site's row as JSON.
+      const whole = built(
+        {
+          sources: [site],
+          joins: [],
+          select: [{ name: 'whole', of: ref('s', 'row_to_json') }],
+          groupBy: [],
+        },
+        {},
+        { key: [], order: 'multiset' },
+      );
+      expect(await asReader(whole)).toEqual({
+        outcome: 'failed',
+        failure: absent('s', 'row_to_json'),
+      });
+      expect(await describeBuilt(settings(), PASSWORDS.reader, queryOf(whole))).toEqual({
+        failure: absent('s', 'row_to_json'),
+      });
+    });
+
+    it("checks every place a query names a column of a table, a nested query's tables among them", async () => {
+      const id = ref('s', 'id');
+      const leak = ref('s', 'leak');
+      const reading = { alias: 'r', table: { schema: 'sample', name: 'reading' } };
+      const places: Query[] = [
+        {
+          sources: [site],
+          joins: [],
+          select: [{ name: 'id', of: id }],
+          where: { column: leak, is: 'isNull' },
+          groupBy: [],
+        },
+        {
+          sources: [site],
+          joins: [],
+          select: [{ name: 'id', of: id }],
+          where: { column: id, is: 'equal', to: { column: leak } },
+          groupBy: [],
+        },
+        {
+          sources: [site, reading],
+          joins: [
+            {
+              kind: 'inner',
+              source: 'r',
+              on: { column: ref('r', 'site'), is: 'equal', to: { column: leak } },
+            },
+          ],
+          select: [{ name: 'id', of: id }],
+          groupBy: [],
+        },
+        { sources: [site], joins: [], select: [{ name: 'id', of: id }], groupBy: [id, leak] },
+        {
+          sources: [site],
+          joins: [],
+          select: [{ name: 'n', of: { aggregate: 'count', of: leak } }],
+          groupBy: [],
+        },
+        {
+          sources: [
+            {
+              alias: 'n',
+              query: {
+                sources: [site],
+                joins: [],
+                select: [{ name: 'leaked', of: leak }],
+                groupBy: [],
+              },
+            },
+          ],
+          joins: [],
+          select: [{ name: 'leaked', of: ref('n', 'leaked') }],
+          groupBy: [],
+        },
+      ];
+      for (const [at, query] of places.entries()) {
+        expect(
+          await describeBuilt(settings({ account: PLANTED.account }), PLANTED.password, query),
+          String(at),
+        ).toMatchObject({
+          failure: { code: 'source_refused', source: { sqlstate: '42703' }, column: 'leak' },
+        });
+      }
+      // A table the source does not have, or a relation of a kind it does not list, is named as such.
+      expect(
+        await describeBuilt(settings(), PASSWORDS.reader, {
+          sources: [{ alias: 'q', table: { schema: 'sample', name: 'nothing' } }],
+          joins: [],
+          select: [{ name: 'id', of: ref('q', 'id') }],
+          groupBy: [],
+        }),
+      ).toMatchObject({ failure: { code: 'source_refused', source: { sqlstate: '42P01' } } });
     });
   },
 );

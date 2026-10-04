@@ -1079,5 +1079,47 @@ describe('query definitions through the service', () => {
         'The source refused the statement (SQLSTATE 22012).',
       );
     });
+
+    it('refuses Grace a column her table does not have at describe and at sample, naming the column she wrote', async () => {
+      const source = await connection('Absent column');
+      connector.mode = 'answer';
+      // The connector's refusal of a table's column the catalogue does not have (named-columns.ts).
+      const failure = {
+        code: 'source_refused' as const,
+        attribution: 'query' as const,
+        source: {
+          sqlstate: '42703',
+          message:
+            'The table or view "sample"."site", the query\'s source s, has no column "row_to_json"',
+        },
+        column: 'row_to_json',
+      };
+      connector.run = { outcome: 'failed', failure };
+      connector.describeSql = { failure };
+      const query: Json = {
+        ...builtFetch.query,
+        select: [{ name: 'whole', of: { source: 's', column: 'row_to_json' } }],
+      };
+      const said = 'The source has no column the query names (SQLSTATE 42703): row_to_json.';
+
+      const described = await describeBuilt('grace', source.id, query);
+      expect(described.statusCode).toBe(400);
+      expect(described.json<{ message: string }>().message).toBe(said);
+      expect(described.body).not.toContain('"sample"."site"');
+
+      const sampled = await sample(
+        'grace',
+        source.id,
+        draft(source.id, {
+          fetch: { ...builtFetch, query },
+          columns: [{ name: 'whole', from: { column: 'whole' }, type: { base: 'text' } }],
+          key: ['whole'],
+          order: [{ column: 'whole', direction: 'ascending' }],
+        }),
+      );
+      const hers = sampled.json<{ failure: { message: string; column: string } }>().failure;
+      expect(hers).toMatchObject({ message: said, column: 'row_to_json' });
+      expect(sampled.body).not.toContain('"sample"."site"');
+    });
   });
 });

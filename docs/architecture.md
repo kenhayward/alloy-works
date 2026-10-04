@@ -3024,7 +3024,11 @@ binds a SQL fetch by `bindPostgres` and a built query by the generator, as its *
 no limit, no key outside a filter - or its **run**. The connector's describe of a built query
 describes its shape; a run describes and admits the shape's columns by D2-L first, then describes,
 admits and runs the run statement by D2's path, and reports its text as the SQL that ran
-(`admittedColumns` in `apps/connector/src/run.ts`).
+(`admittedColumns` in `apps/connector/src/run.ts`). Before either, in the same session and
+read-only transaction, `absentColumn` (`apps/connector/src/named-columns.ts`) asks `pg_catalog` for
+every column the tree names of a table or view, by bound names, and refuses one the relation does not
+have `source_refused` `42703`, naming it: PostgreSQL would read `"s"."f"` as a call `f(s)` of a
+function found through the search path.
 
 **Permission is decided by the fetch** (D4-J), in `apps/service/src/data/sql-access.ts`'s
 `mayRunFetch`: a built query needs `use_connection` and `edit`, never `write_sql`, and is never refused
@@ -3034,7 +3038,8 @@ version they run. `mayEdit` and `mayRun` follow. `POST /v1/connections/{id}/desc
 { query, parameters } }` on `use_connection` alone, checked by `checkTree` before the connector is
 asked (D4-Q). A built query's `source_refused` is worded by its SQLSTATE (`42P01`, `42703`, `42883`,
 `42804`, `42501`) in `failure-words.ts`, the source's message after the words only for a holder of
-`write_sql` (D4-K).
+`write_sql` (D4-K); a column the connector found absent is named after them, since its author wrote
+it.
 
 **The page's Query step** is written with **Builder** or, where the person may write SQL on the
 connection, **SQL** (D4-O): `BuilderFields.tsx` chooses one table or view from the source's describe,
@@ -3045,13 +3050,13 @@ A built definition the page cannot show - joined, nested, or anything `queryOf` 
 exactly - opens read-only with its SQL, saying why (D4-D). `useDefinitionPlaces` (`places.ts`) answers
 the spaces the person may edit, the connections they may use, and those they may write SQL on.
 
-| Where                         | What                                                                                                           |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `domain: src/data/`           | `builder.ts` (the tree, its walk and checks), `generate.ts` (PostgreSQL's generator), `fetch.ts` (`bindFetch`) |
-| `connector: src/`             | `run.ts` and `work.ts`, a built query's shape and run through `bindFetch`                                      |
-| `service: src/data/`          | `sql-access.ts`'s `mayRunFetch`; a built describe in `connections.ts`; D4-K's words in `failure-words.ts`      |
-| `web: src/data/`              | `BuilderFields.tsx`, the builder's half of `definitionDraft.ts`, `Choice.tsx`, `places.ts`                     |
-| `deploy/sources/postgres.sql` | `citext`, the enum `sample.colour` and `sample.tag`, which the connector's suite groups and orders by          |
+| Where                         | What                                                                                                                                     |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain: src/data/`           | `builder.ts` (the tree, its walk and checks), `generate.ts` (PostgreSQL's generator), `fetch.ts` (`bindFetch`)                           |
+| `connector: src/`             | `run.ts` and `work.ts`, a built query's shape and run through `bindFetch`; `named-columns.ts`, its columns checked against the catalogue |
+| `service: src/data/`          | `sql-access.ts`'s `mayRunFetch`; a built describe in `connections.ts`; D4-K's words in `failure-words.ts`                                |
+| `web: src/data/`              | `BuilderFields.tsx`, the builder's half of `definitionDraft.ts`, `Choice.tsx`, `places.ts`                                               |
+| `deploy/sources/postgres.sql` | `citext`, the enum `sample.colour` and `sample.tag`, which the connector's suite groups and orders by                                    |
 
 ## Datasets and resolutions
 

@@ -16,6 +16,7 @@ import pg from 'pg';
 
 import { describeStatement, QUERY_CANCELED, sourceRefused } from './describe.js';
 import { admits, fromPostgresText } from './from-text.js';
+import { absentColumn } from './named-columns.js';
 import { SERVER_TEXT, sourceTypes } from './postgres.js';
 import { finishResult } from './result.js';
 
@@ -78,6 +79,12 @@ export async function runStatement(
   }
   try {
     await client.query('begin transaction read only');
+    // A built query's columns are the source's before anything of it is sent: a table's column it
+    // does not have would be read as a function of the row (the D4 plan, "Changed while building").
+    if (definition.fetch.kind === 'builder') {
+      const absent = await absentColumn(client, definition.fetch.query);
+      if (absent !== undefined) return failed(absent);
+    }
     if (shape !== undefined) {
       const admitted = await admittedColumns(client, shape.text, definition);
       if ('failure' in admitted) return failed(admitted.failure);

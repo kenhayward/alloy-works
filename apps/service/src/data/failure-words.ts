@@ -95,12 +95,20 @@ const BUILT_REFUSALS: Readonly<Record<string, string>> = {
   '42501': 'The connection account may not read a table or view the query names',
 };
 
-/** A built query's refusal in the product's words, with what the source said where it may be shown. */
-function builtRefusal(source: { readonly sqlstate: string; readonly message?: string }) {
+/**
+ * A built query's refusal in the product's words, with what the source said where it may be shown.
+ * A column the connector found no table of the query's to have is named: the author wrote it, so
+ * it tells nobody anything of the source they could not already read in their own query.
+ */
+function builtRefusal(
+  source: { readonly sqlstate: string; readonly message?: string },
+  column?: string,
+) {
   const words = BUILT_REFUSALS[source.sqlstate];
   if (words === undefined) return undefined;
+  const named = column === undefined ? '' : `: ${column}`;
   const said = source.message === undefined ? '' : ` The source said: ${source.message}`;
-  return `${words} (SQLSTATE ${source.sqlstate}).${said}`;
+  return `${words} (SQLSTATE ${source.sqlstate})${named}.${said}`;
 }
 
 /**
@@ -110,7 +118,7 @@ function builtRefusal(source: { readonly sqlstate: string; readonly message?: st
 export function failureMessage(failure: DataFailure, built = false): string {
   if (failure.code === 'result_mismatch') return mismatch(failure);
   if (failure.code === 'source_refused' && failure.source) {
-    const words = built ? builtRefusal(failure.source) : undefined;
+    const words = built ? builtRefusal(failure.source, failure.column) : undefined;
     if (words !== undefined) return words;
     return `The source refused the statement (SQLSTATE ${failure.source.sqlstate}): ${failure.source.message}`;
   }
@@ -132,7 +140,8 @@ export function failureViewFor(failure: FailureIn, seesSource: boolean, built = 
     ...view,
     source: { sqlstate },
     message:
-      builtRefusal({ sqlstate }) ?? `The source refused the statement (SQLSTATE ${sqlstate}).`,
+      builtRefusal({ sqlstate }, view.column) ??
+      `The source refused the statement (SQLSTATE ${sqlstate}).`,
   };
 }
 

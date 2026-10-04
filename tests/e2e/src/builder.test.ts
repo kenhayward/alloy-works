@@ -64,22 +64,13 @@ describe('a built query over the whole system', () => {
     return answer.body;
   };
 
-  beforeAll(async () => {
-    await untilReady();
-    cookies.ada = await signIn('ada');
-    cookies.grace = await signIn('grace');
-    const spaces = await call('ada', 'GET', '/v1/spaces');
-    general = (spaces.body['items'] as { id: string; name: string }[]).find(
-      (space) => space.name === 'General',
-    )!.id;
-  }, 180_000);
-
-  it("DAT-099 stores a built query's structure and never its SQL, and generates the SQL from it each time it runs, over the whole system", async () => {
+  /** A connection Ada makes to the development source as its reader, its credential tested. */
+  const readerConnection = async (name: string) => {
     const connection = ok(
       await call('ada', 'POST', `/v1/spaces/${general}/connections`, {
         settings: {
           schemaVersion: 1,
-          name: `Readings for the builder ${Date.now()}`,
+          name: `${name} ${Date.now()}`,
           description: 'The development source.',
           type: 'postgres',
           source: {
@@ -101,6 +92,21 @@ describe('a built query over the whole system', () => {
         }),
       ),
     ).toMatchObject({ test: { outcome: 'ok', findings: [] } });
+    return connection;
+  };
+
+  beforeAll(async () => {
+    await untilReady();
+    cookies.ada = await signIn('ada');
+    cookies.grace = await signIn('grace');
+    const spaces = await call('ada', 'GET', '/v1/spaces');
+    general = (spaces.body['items'] as { id: string; name: string }[]).find(
+      (space) => space.name === 'General',
+    )!.id;
+  }, 180_000);
+
+  it("DAT-099 stores a built query's structure and never its SQL, and generates the SQL from it each time it runs, over the whole system", async () => {
+    const connection = await readerConnection('Readings for the builder');
 
     // Grace may write no SQL on it.
     const asSql = await call('grace', 'POST', `/v1/connections/${connection}/describe`, {
@@ -287,6 +293,42 @@ describe('a built query over the whole system', () => {
     expect(second.provenance).toMatchObject({
       queryDefinition: { artifact: made.id, version: next.version.id },
       ran: { sql: ranSql('<>') },
+    });
+  }, 180_000);
+
+  it('refuses Grace a column a table does not have, at describe and at sample, so the builder never calls a function of the row', async () => {
+    const connection = await readerConnection('Readings for an absent column');
+    const whole = {
+      sources: [{ alias: 's', table: { schema: 'sample', name: 'site' } }],
+      joins: [],
+      select: [{ name: 'whole', of: { source: 's', column: 'row_to_json' } }],
+      groupBy: [],
+    };
+    const said = 'The source has no column the query names (SQLSTATE 42703): row_to_json.';
+
+    const described = await call('grace', 'POST', `/v1/connections/${connection}/describe`, {
+      builder: { query: whole, parameters: [] },
+    });
+    expect(described.status, JSON.stringify(described.body)).toBe(400);
+    expect(described.body).toMatchObject({ code: 'source_refused', message: said });
+
+    const sampled = await call('grace', 'POST', `/v1/connections/${connection}/sample`, {
+      definition: {
+        schemaVersion: 1,
+        connection,
+        parameters: [],
+        fetch: { kind: 'builder', format: 1, query: whole },
+        columns: [{ name: 'whole', from: { column: 'whole' }, type: { base: 'text' } }],
+        key: [],
+        order: 'multiset',
+        empty: 'valid',
+        limits: { rows: 100, bytes: 1000000, seconds: 30 },
+      },
+      values: {},
+    });
+    expect(JSON.stringify(sampled.body)).not.toContain('North weir');
+    expect(sampled.body).toMatchObject({
+      failure: { code: 'source_refused', column: 'row_to_json', message: said },
     });
   }, 180_000);
 });

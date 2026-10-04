@@ -17760,7 +17760,7 @@
     {
       "id": "DAT-100",
       "file": "apps/connector/src/builder.test.ts",
-      "line": 59,
+      "line": 75,
       "kind": "title"
     },
     {
@@ -21492,7 +21492,7 @@
     {
       "id": "DAT-099",
       "file": "tests/e2e/src/builder.test.ts",
-      "line": 77,
+      "line": 108,
       "kind": "title"
     },
     {

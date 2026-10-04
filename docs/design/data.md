@@ -633,6 +633,18 @@ value is a typed filter the connector applies to its canonical rows.
   column's type; then the **run**, with the keys, the declared order (nulls last ascending, first
   descending) and the limit, described and run by D2's path unchanged.
 
+  **A table's column is the source's before anything is sent.** The generator writes it
+  `"alias"."name"`, and where the table has no such column PostgreSQL reads `t.f` as `f(t)`, a
+  function found through the search path - `"s"."row_to_json"` would answer each row as JSON, and a
+  function an account plants would run - so before a built query is described or run, in the same
+  session and read-only transaction, the connector asks the catalogue for every column the tree names
+  of a table or view, in its select and aggregates, both sides of every condition and its grouping,
+  nested queries' tables too. The check reads `pg_catalog.pg_attribute`, `pg_class` and
+  `pg_namespace` by those names alone, its names bound values compared byte for byte, a live column
+  (`attnum > 0`, not dropped) of a relation of a kind the describe lists. A column absent is refused
+  `source_refused` with `42703`, the failure naming the column, and a relation absent or of no such kind `42P01`,
+  so the author reads D4-K's words for them; nothing of the query reaches the source.
+
   A source's refusal of a built query is answered in the product's words by its SQLSTATE (D4-K) -
   `42P01` a table or view the source does not have, `42703` a column, `42883` and `42804` two types it
   cannot compare or an aggregate a column's type cannot take, `42501` the account may not read it -

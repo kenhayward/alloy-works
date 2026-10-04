@@ -15,6 +15,7 @@ import type pg from 'pg';
 
 import { describedColumns, describeStatement, QUERY_CANCELED, sourceRefused } from './describe.js';
 import { guardedAddress, type Lookup } from './guard.js';
+import { absentColumn } from './named-columns.js';
 import {
   cancelBackend,
   connectPostgres,
@@ -70,6 +71,13 @@ async function describeSql(
   }
   let description;
   try {
+    if (fetch.kind === 'builder') {
+      // A built query's columns are checked against the catalogue first, in the read-only
+      // transaction it is then described in, as a run checks them (`named-columns.ts`).
+      await client.query('begin transaction read only');
+      const absent = await absentColumn(client, fetch.query);
+      if (absent !== undefined) throw new Failed(absent);
+    }
     description = await describeStatement(client, bound.text);
   } catch (error) {
     const refused = sourceRefused(error);
