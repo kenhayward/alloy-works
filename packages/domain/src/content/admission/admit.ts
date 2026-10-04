@@ -61,6 +61,12 @@ export type AdmissionOutcome =
        * (structure.md, XR-E), while every pasted block is still newly named.
        */
       readonly renamed: ReadonlyMap<string, string>;
+      /**
+       * Each admitted binding's new identifier, by the one it arrived with, kept apart from `renamed`
+       * so a reference is never re-pointed at a binding (B1-C): what the editor gives a binding back
+       * where nothing else holds its original after the paste.
+       */
+      readonly bindingsRenamed: ReadonlyMap<string, string>;
     }
   | AdmissionRefused;
 
@@ -119,6 +125,7 @@ export function admit(input: AdmissionInput, receiver: Receiver): AdmissionOutco
       content: document.content,
       report: report.entries,
       renamed: identified.renamed,
+      bindingsRenamed: identified.bindingsRenamed,
     };
   } catch (error) {
     report.add('validate', 'refused', 'invalid');

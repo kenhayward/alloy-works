@@ -1,8 +1,19 @@
 import { renderContent, toEditor, type EditorView } from '@alloy-works/editor';
-import { parseContentDocument } from '@alloy-works/domain';
+import { bindingDigestInput, parseContentDocument, type Binding } from '@alloy-works/domain';
 import { describe, expect, it } from 'vitest';
 
 import { positionAtTextOffset, textOffsetIn } from './caret.js';
+
+const BOUND = {
+  type: 'binding',
+  id: 'k1',
+  query: '00000000-0000-4000-8000-00000000d001',
+  parameters: { site: { literal: 'north' } },
+  mode: 'checked',
+  take: { column: 'count' },
+};
+const SQUARED =
+  '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x squared"><msup><mi>x</mi><mn>2</mn></msup></math>';
 
 const doc = (
   toEditor(
@@ -131,5 +142,123 @@ describe('the caret carried from the rendered text into the editor', () => {
     expect(opened.textBetween(pos, opened.child(0).nodeSize - 1)).toBe('for readings.');
     // A click inside the reference's words lands just before it.
     expect(textOffsetIn(root, root.querySelector('[data-reference]')!.firstChild!, 3)).toBe(4);
+  });
+
+  it("counts a value's drawn and hidden words, and an equation's, as nothing, as the editor's document holds none, so a click after one lands where it was made", () => {
+    const stored = parseContentDocument({
+      schemaVersion: 1,
+      title: 'Site visits',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'There are ', marks: [] },
+            BOUND,
+            { type: 'text', value: ' sites, ', marks: [] },
+            { type: 'equation', mathml: SQUARED },
+            { type: 'text', value: ' each.', marks: [] },
+          ],
+        },
+      ],
+    });
+    const root = document.createElement('div');
+    root.append(
+      renderContent(stored, document, null, {
+        kind: 'document',
+        held: new Map([
+          [
+            'k1',
+            {
+              binding: bindingDigestInput(BOUND as Binding),
+              shown: { value: '12', waiting: false },
+            },
+          ],
+        ]),
+      })!,
+    );
+    expect(root.querySelector('[data-binding]')!.textContent).toMatch(/^12/);
+    const opened = (toEditor(stored) as { doc: EditorView['state']['doc'] }).doc;
+    const [, , sites, , each] = [...root.querySelector('p')!.childNodes];
+    expect(sites!.textContent).toBe(' sites, ');
+    expect(each!.textContent).toBe(' each.');
+
+    // A click just before "sites": the space after the value is the one character counted past it.
+    const afterValue = textOffsetIn(root, sites!, 1)!;
+    expect(afterValue).toBe(11);
+    const at = positionAtTextOffset(opened, afterValue);
+    expect(opened.textBetween(at, opened.child(0).nodeSize - 1)).toBe('sites,  each.');
+    // And past the equation too.
+    const afterEquation = textOffsetIn(root, each!, 1)!;
+    expect(afterEquation).toBe(19);
+    expect(
+      opened.textBetween(positionAtTextOffset(opened, afterEquation), opened.child(0).nodeSize - 1),
+    ).toBe('each.');
+    // A click inside the value's words lands just before it.
+    const walker = document.createTreeWalker(
+      root.querySelector('[data-binding]')!,
+      NodeFilter.SHOW_TEXT,
+    );
+    expect(textOffsetIn(root, walker.nextNode()!, 1)).toBe(10);
+  });
+
+  it('opens at the start of a paragraph beginning with a value, before it, where nothing is counted', () => {
+    const opened = (
+      toEditor(
+        parseContentDocument({
+          schemaVersion: 1,
+          title: 'Site visits',
+          language: 'en-GB',
+          direction: 'ltr',
+          content: [
+            {
+              type: 'paragraph',
+              id: 'b1',
+              style: 'body',
+              content: [BOUND, { type: 'text', value: ' sites.', marks: [] }],
+            },
+          ],
+        }),
+      ) as { doc: EditorView['state']['doc'] }
+    ).doc;
+    const at = positionAtTextOffset(opened, 0);
+    expect(at).toBe(1);
+    // The value stands after the caret, so ArrowRight reaches it (B1-L).
+    expect(opened.resolve(at).nodeAfter?.type.name).toBe('binding');
+  });
+
+  it('opens at the start of the first text, never in an empty caption before it', () => {
+    const opened = (
+      toEditor(
+        parseContentDocument({
+          schemaVersion: 1,
+          title: 'Site visits',
+          language: 'en-GB',
+          direction: 'ltr',
+          content: [
+            {
+              type: 'figure',
+              id: 'f1',
+              asset: '00000000-0000-4000-8000-00000000a551',
+              imageStyle: 'figure',
+              caption: [],
+              alternative: { kind: 'decorative' },
+            },
+            {
+              type: 'paragraph',
+              id: 'b1',
+              style: 'body',
+              content: [{ type: 'text', value: 'Visit sites.', marks: [] }],
+            },
+          ],
+        }),
+      ) as { doc: EditorView['state']['doc'] }
+    ).doc;
+    const at = positionAtTextOffset(opened, 0);
+    expect(opened.resolve(at).parent.type.name).toBe('paragraph');
+    expect(opened.resolve(at).nodeAfter?.text).toBe('Visit sites.');
   });
 });

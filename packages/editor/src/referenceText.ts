@@ -211,14 +211,20 @@ export function referencesShown(
 /**
  * Every node of the component carrying an identifier, by it: a block, a list's item, a table's cell's
  * paragraph, a footnote and its paragraphs - whatever a `block` target could name - but **never a
- * reference**, whose identifier is its own and names nothing a reference could point at. The first
+ * reference or a binding**, whose identifiers are their own and name nothing a reference could point
+ * at (B1-C). The first
  * holder wins, as the identity plugin keeps only one.
  */
 function identified(component: Node): Map<string, Held> {
   const held = new Map<string, Held>();
   component.descendants((node, pos) => {
     const id = node.attrs.id as unknown;
-    if (typeof id === 'string' && node.type.name !== 'crossReference' && !held.has(id)) {
+    if (
+      typeof id === 'string' &&
+      node.type.name !== 'crossReference' &&
+      node.type.name !== 'binding' &&
+      !held.has(id)
+    ) {
       held.set(id, { node, pos });
     }
     return true;

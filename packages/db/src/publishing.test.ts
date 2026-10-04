@@ -2,6 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import {
   blockIdentifierFrom,
   DEFAULT_CATALOGUE_VERSIONS,
+  FIFTH_DEFAULT_CATALOGUE_VERSIONS,
   defaultNumberingScheme,
   type ContentDocument,
   type OutlineDocument,
@@ -517,13 +518,13 @@ describe('requesting and recording a publication', () => {
           theme: { ...declared.content, paper: '#fafafa' },
         });
         if (next.answer !== 'recorded') throw new Error(next.answer);
-        // The default is at 0.5 since 0043, so the version recorded after it is 0.6.
-        expect((await defaultTheme(trx)).number).toBe('0.6');
+        // The default is at 0.6 since 0048, so the version recorded after it is 0.7.
+        expect((await defaultTheme(trx)).number).toBe('0.7');
 
         const inputs = await publicationInputs(trx, id);
         expect(inputs!.theme).toEqual({ versionId: declared.versionId, theme: declared.theme });
         expect(inputs!.theme!.theme.paper).toBe('#ffffff');
-        // Thrown to roll the theme's 0.5 back: the rest of the suite publishes under the default.
+        // Thrown to roll the theme's 0.7 back: the rest of the suite publishes under the default.
         throw rolledBack;
       }),
     ).rejects.toBe(rolledBack);
@@ -834,7 +835,8 @@ describe('requesting and recording a publication', () => {
         expect(inputs.map((each) => each!.request.spaceId)).toEqual([general, quality]);
         for (const each of inputs) {
           expect(each!.theme!.versionId).toBe(declared.versionId);
-          expect(each!.theme!.theme.catalogues).toEqual(DEFAULT_CATALOGUE_VERSIONS);
+          // The six kinds, which the value catalogue stands beside rather than among (B1-F).
+          expect(each!.theme!.theme.catalogues).toEqual(FIFTH_DEFAULT_CATALOGUE_VERSIONS);
         }
         const publications = [];
         for (const id of requests) publications.push(await recordPublication(trx, recording(id)));
@@ -843,7 +845,8 @@ describe('requesting and recording a publication', () => {
     );
 
     // Two publications, one in each space, each recording the one theme version, which names the six
-    // catalogue versions: versions of catalogues that are the tenant's, in no space.
+    // catalogue versions and the value catalogue's: versions of catalogues that are the tenant's, in
+    // no space.
     const rows = await service.withTenant(production, (trx) =>
       trx
         .selectFrom('publication as p')
@@ -874,7 +877,7 @@ describe('requesting and recording a publication', () => {
         .where('v.id', 'in', Object.values(DEFAULT_CATALOGUE_VERSIONS))
         .execute(),
     );
-    expect(catalogues).toHaveLength(6);
+    expect(catalogues).toHaveLength(7);
     for (const each of catalogues)
       expect(each).toMatchObject({ kind: 'catalogue', space_id: null });
   });

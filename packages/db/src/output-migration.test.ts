@@ -192,6 +192,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0045_connection_credential_target',
       '0046_query_definitions',
       '0047_datasets',
+      '0048_bound_values',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

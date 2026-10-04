@@ -344,6 +344,31 @@ describe('identity through undo and redo', () => {
     ]);
   });
 
+  it('brings a deleted binding back under its identifier, so every document still holds its value', () => {
+    const binding = (id: string | null) =>
+      editorSchema.nodes.binding!.create({
+        id,
+        query: '00000000-0000-4000-8000-00000000d001',
+        parameters: { site: { literal: 'north' } },
+        mode: 'checked',
+        take: { column: 'depth' },
+      });
+    const state = stateOf(
+      documentOf(
+        editorSchema.node('paragraph', { id: 'b1', style: 'body' }, [
+          editorSchema.text('Mean '),
+          binding('k1'),
+        ]),
+      ),
+    );
+    const gone = deleted(state, 'k1');
+    expect(identifiersIn(gone.doc)).toEqual(['b1']);
+    expect(identifiersIn(history(gone, undo).doc)).toEqual(['b1', 'k1']);
+    // And one placed with none, as no command places one yet, is named as a block is.
+    const placed = state.apply(state.tr.insert(1, binding(null)));
+    expect(identifiersIn(placed.doc)).toEqual(['b1', 'n1', 'k1']);
+  });
+
   it('keeps what a transaction says it has named itself, where no other node holds it', () => {
     const state = stateOf(documentOf(paragraph('b1', 'alpha')));
     const tr = state.tr

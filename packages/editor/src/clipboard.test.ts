@@ -681,6 +681,158 @@ describe('pasting what a cross-reference points at', () => {
 });
 
 /**
+ * B1-C: a binding's identifier is what keeps its values in every document, so a copy is a new binding
+ * and a move - a cut and a paste, a paste over it, a paste into another component - keeps it.
+ */
+describe('copying, cutting and pasting a binding', () => {
+  type Inline = Extract<
+    ContentDocument['content'][number],
+    { type: 'paragraph' }
+  >['content'][number];
+  const text = (value: string): Inline => ({ type: 'text', value, marks: [] });
+  const bound = (id: string): Inline => ({
+    type: 'binding',
+    id,
+    query: '00000000-0000-4000-8000-00000000d001',
+    parameters: { site: { literal: 'north' } },
+    mode: 'checked',
+    take: { column: 'depth' },
+  });
+  const withRuns = (id: string, ...content: Inline[]) => ({
+    type: 'paragraph' as const,
+    id,
+    style: 'body',
+    content,
+  });
+
+  const rangeOf = (state: EditorState, id: string) => {
+    let from = -1;
+    state.doc.descendants((node, pos) => {
+      if (from === -1 && node.attrs.id === id) from = pos;
+      return from === -1;
+    });
+    if (from === -1) throw new Error(`no ${id}`);
+    return { from, to: from + state.doc.nodeAt(from)!.nodeSize };
+  };
+  const copyOf = (state: EditorState, id: string) => {
+    const { from, to } = rangeOf(state, id);
+    return { [PRODUCT_CLIPBOARD_TYPE]: productClipboard(state, from, to)! };
+  };
+  const cut = (state: EditorState, id: string) => {
+    const { from, to } = rangeOf(state, id);
+    return state.apply(state.tr.delete(from, to));
+  };
+  const atEndOf = (state: EditorState, id: string) => at(state, rangeOf(state, id).to - 1);
+  const bindingsIn = (state: EditorState): unknown[] => {
+    const found: unknown[] = [];
+    state.doc.descendants((node) => {
+      if (node.type.name === 'binding') found.push(node.attrs.id);
+    });
+    return found;
+  };
+  const pasted = (state: EditorState, data: Record<string, string>) => {
+    const outcome = pasteInto(state, readClipboard(clipboard(data), 'blocks'), counter('p'));
+    if (!outcome.ok) throw new Error(outcome.report.at(-1)?.message);
+    return { state: state.apply(outcome.transaction), report: outcome.report };
+  };
+  const counts = (report: readonly { action: string; subject: string; count?: number }[]) =>
+    report
+      .filter((entry) => entry.subject === 'bindingCopied' || entry.subject === 'bindingIdentifier')
+      .map(({ action, subject, count }) => ({ action, subject, count }));
+
+  const component = () =>
+    stateOf([withRuns('b1', text('Mean '), bound('k1')), paragraph('b2', 'End')]);
+
+  it('gives a copy pasted into its own component a new identifier, and counts it copied', () => {
+    const state = component();
+    const { state: next, report } = pasted(atEndOf(state, 'b2'), copyOf(state, 'b1'));
+    const [original, copy] = bindingsIn(next);
+    expect(original).toBe('k1');
+    expect(copy).not.toBe('k1');
+    expect(counts(report)).toEqual([{ action: 'rewritten', subject: 'bindingCopied', count: 1 }]);
+    expect(() => fromEditor(next.doc)).not.toThrow();
+  });
+
+  it('gives a binding cut and pasted in its component its own identifier back, saying it kept it', () => {
+    const state = component();
+    const clipped = copyOf(state, 'b1');
+    const { state: back, report } = pasted(atEndOf(cut(state, 'b1'), 'b2'), clipped);
+    expect(bindingsIn(back)).toEqual(['k1']);
+    expect(counts(report)).toEqual([{ action: 'kept', subject: 'bindingIdentifier', count: 1 }]);
+    // And a second paste of what was cut is a copy: k1 stands again.
+    const { state: twice, report: again } = pasted(atEndOf(back, 'b2'), clipped);
+    const [first, second] = bindingsIn(twice);
+    expect(first).toBe('k1');
+    expect(second).not.toBe('k1');
+    expect(counts(again)).toEqual([{ action: 'rewritten', subject: 'bindingCopied', count: 1 }]);
+  });
+
+  it("never points a reference left behind at a binding's copy, though its target names the binding", () => {
+    // Content the API could have stored: a reference whose block target is a binding's identifier,
+    // which no block holds. The binding arrives from elsewhere under that identifier.
+    const reference: Inline = {
+      type: 'crossReference',
+      id: 'x1',
+      target: { kind: 'block', block: 'k9' },
+      display: 'number',
+    };
+    const from = stateOf([withRuns('b1', text('Mean '), bound('k9'))]);
+    const state = stateOf([withRuns('o1', text('See '), reference), paragraph('o2', 'End')]);
+    const { state: next, report } = pasted(atEndOf(state, 'o2'), copyOf(from, 'b1'));
+    const targets: unknown[] = [];
+    next.doc.descendants((node) => {
+      if (node.type.name === 'crossReference') targets.push(node.attrs.target);
+    });
+    expect(targets).toEqual([{ kind: 'block', block: 'k9' }]);
+    expect(report.some((entry) => entry.subject === 'crossReferenceRepointed')).toBe(false);
+    expect(bindingsIn(next)).toEqual(['k9']);
+  });
+
+  it('keeps the identifier of a binding pasted over its original', () => {
+    const state = component();
+    const { from, to } = rangeOf(state, 'b1');
+    const over = state.apply(
+      state.tr.setSelection(TextSelection.create(state.doc, from + 1, to - 1)),
+    );
+    const { state: next, report } = pasted(over, copyOf(state, 'b1'));
+    expect(bindingsIn(next)).toEqual(['k1']);
+    expect(counts(report)).toEqual([{ action: 'kept', subject: 'bindingIdentifier', count: 1 }]);
+  });
+
+  it('keeps the identifier of a binding pasted into another component, promising no value there', () => {
+    const from = component();
+    const other = stateOf([paragraph('o1', 'Other')]);
+    const { state: next, report } = pasted(atEndOf(other, 'o1'), copyOf(from, 'b1'));
+    expect(bindingsIn(next)).toEqual(['k1']);
+    const kept = report.find((entry) => entry.subject === 'bindingIdentifier');
+    expect(kept?.message).toBe(
+      'Bound values kept their identifiers. One moved from another component shows no value in a document until it is resolved there.',
+    );
+  });
+
+  it("takes a binding pasted into a footnote's text", () => {
+    const footnote: Inline = {
+      type: 'footnote',
+      id: 'f1',
+      anchor: { kind: 'span' },
+      content: [withRuns('f1p', text('Also'))],
+    };
+    const state = stateOf([
+      withRuns('b1', text('Mean '), bound('k1')),
+      withRuns('b2', text('Noted'), footnote),
+    ]);
+    const { state: next } = pasted(atEndOf(state, 'f1p'), copyOf(state, 'b1'));
+    const note = (stored(next)[1] as { content: { type: string; content?: unknown }[] })
+      .content[1]!;
+    expect(note).toMatchObject({
+      type: 'footnote',
+      id: 'f1',
+      content: [{ content: [{ type: 'text', value: 'AlsoMean ' }, { type: 'binding' }] }],
+    });
+  });
+});
+
+/**
  * Equations 1: the product's own clipboard carries an equation whole, inline or a block, its LaTeX
  * with it where it has one - the one way an equation is pasted in this slice.
  */

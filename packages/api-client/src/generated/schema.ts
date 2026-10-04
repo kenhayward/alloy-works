@@ -580,7 +580,7 @@ export interface paths {
         };
         /**
          * A document's bindings, what each holds, and any newer result waiting
-         * @description Lists every binding in the components the document's latest version places that the caller may read, in the outline's order: the binding as its component holds it, the dataset version it holds in this document with that result's provenance and name, whether the binding has changed since, and any newer result a check recorded and nobody has accepted. Reading needs only read on the document, never use of a connection; a provenance shows the SQL that ran, the connection and the source's column each declared column reads only to a caller who may read its query definition.
+         * @description Lists every binding in the components the document's latest version places that the caller may read, in the outline's order: the binding as its component holds it, the dataset version it holds in this document with that result's provenance and name, whether the binding has changed since, and any newer result a check recorded and nobody has accepted. Beside each result is what the binding takes from it, as every reader of the document sees it: the value in its column's canonical form with the column's name and type, or why there is none - no rows, more than one with the count, no row the key names, a null, an empty text, or a column the result does not have. It is null for a result the binding has changed since, and unavailable, recording nothing, where the stored result cannot be read now. Each binding also carries its query definition's title and version, null unless the caller may read the definition, and the name of the connection its result ran on, null unless the caller may read both the definition and the connection; and who resolved or accepted it, by name. Reading needs only read on the document, never use of a connection; a provenance shows the SQL that ran, the connection and the source's column each declared column reads only to a caller who may read its query definition.
          */
         get: operations["getDocumentBindings"];
         put?: never;
@@ -9887,13 +9887,72 @@ export interface operations {
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                                 stale: boolean;
+                                /** @description The value the binding takes from the version held, or null where it is stale */
+                                taken: ({
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                }) | null;
                                 /**
                                  * @description The act that made it what the binding holds
                                  * @enum {string}
                                  */
                                 act: "resolve" | "accept";
                                 /** @description Who resolved or accepted it */
-                                by: string;
+                                by: {
+                                    id: string;
+                                    /** @description Their name, or null where they have none */
+                                    displayName: string | null;
+                                };
                                 /** @description When */
                                 at: string;
                             } | null;
@@ -9969,6 +10028,71 @@ export interface operations {
                                     checksum: string;
                                     images: Record<string, never>;
                                 };
+                                /** @description The value the binding would take from it */
+                                taken: {
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                };
+                            } | null;
+                            /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
+                            definition: {
+                                title: string;
+                                /** @description `revision.version`, as `0.2` */
+                                version: string;
+                            } | null;
+                            /** @description The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection */
+                            connection: {
+                                name: string;
                             } | null;
                         }[];
                     };
@@ -10159,8 +10283,20 @@ export interface operations {
                      *         },
                      *         "name": "example",
                      *         "stale": false,
+                     *         "taken": {
+                     *           "value": "example",
+                     *           "column": {
+                     *             "name": "example",
+                     *             "type": {
+                     *               "base": "text"
+                     *             }
+                     *           }
+                     *         },
                      *         "act": "resolve",
-                     *         "by": "example",
+                     *         "by": {
+                     *           "id": "example",
+                     *           "displayName": "example"
+                     *         },
                      *         "at": "example"
                      *       },
                      *       "waiting": {
@@ -10199,7 +10335,23 @@ export interface operations {
                      *           "canonical": 1,
                      *           "checksum": "0000000000000000000000000000000000000000000000000000000000000000",
                      *           "images": {}
+                     *         },
+                     *         "taken": {
+                     *           "value": "example",
+                     *           "column": {
+                     *             "name": "example",
+                     *             "type": {
+                     *               "base": "text"
+                     *             }
+                     *           }
                      *         }
+                     *       },
+                     *       "definition": {
+                     *         "title": "example",
+                     *         "version": "example"
+                     *       },
+                     *       "connection": {
+                     *         "name": "example"
                      *       }
                      *     }
                      */
@@ -10309,13 +10461,72 @@ export interface operations {
                             name: string | null;
                             /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                             stale: boolean;
+                            /** @description The value the binding takes from the version held, or null where it is stale */
+                            taken: ({
+                                /** @description The value, in its column's canonical form: a string, or a boolean */
+                                value: string | boolean;
+                                column: {
+                                    /** @description The declared column it was taken from */
+                                    name: string;
+                                    type: {
+                                        /** @constant */
+                                        base: "text";
+                                    } | {
+                                        /** @constant */
+                                        base: "integer";
+                                    } | {
+                                        /** @constant */
+                                        base: "decimal";
+                                        precision: number;
+                                        scale: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "date";
+                                    } | {
+                                        /** @constant */
+                                        base: "time";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "localDateTime";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "instant";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "boolean";
+                                    };
+                                };
+                            } | {
+                                /**
+                                 * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                 * @enum {string}
+                                 */
+                                failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                /** @description `value_many`: how many rows there were */
+                                count?: number;
+                                /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                column?: string;
+                            } | {
+                                /**
+                                 * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                 * @constant
+                                 */
+                                unavailable: true;
+                            }) | null;
                             /**
                              * @description The act that made it what the binding holds
                              * @enum {string}
                              */
                             act: "resolve" | "accept";
                             /** @description Who resolved or accepted it */
-                            by: string;
+                            by: {
+                                id: string;
+                                /** @description Their name, or null where they have none */
+                                displayName: string | null;
+                            };
                             /** @description When */
                             at: string;
                         } | null;
@@ -10391,6 +10602,71 @@ export interface operations {
                                 checksum: string;
                                 images: Record<string, never>;
                             };
+                            /** @description The value the binding would take from it */
+                            taken: {
+                                /** @description The value, in its column's canonical form: a string, or a boolean */
+                                value: string | boolean;
+                                column: {
+                                    /** @description The declared column it was taken from */
+                                    name: string;
+                                    type: {
+                                        /** @constant */
+                                        base: "text";
+                                    } | {
+                                        /** @constant */
+                                        base: "integer";
+                                    } | {
+                                        /** @constant */
+                                        base: "decimal";
+                                        precision: number;
+                                        scale: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "date";
+                                    } | {
+                                        /** @constant */
+                                        base: "time";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "localDateTime";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "instant";
+                                        fraction: number;
+                                    } | {
+                                        /** @constant */
+                                        base: "boolean";
+                                    };
+                                };
+                            } | {
+                                /**
+                                 * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                 * @enum {string}
+                                 */
+                                failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                /** @description `value_many`: how many rows there were */
+                                count?: number;
+                                /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                column?: string;
+                            } | {
+                                /**
+                                 * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                 * @constant
+                                 */
+                                unavailable: true;
+                            };
+                        } | null;
+                        /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
+                        definition: {
+                            title: string;
+                            /** @description `revision.version`, as `0.2` */
+                            version: string;
+                        } | null;
+                        /** @description The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection */
+                        connection: {
+                            name: string;
                         } | null;
                     };
                 };
@@ -10549,13 +10825,72 @@ export interface operations {
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                                 stale: boolean;
+                                /** @description The value the binding takes from the version held, or null where it is stale */
+                                taken: ({
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                }) | null;
                                 /**
                                  * @description The act that made it what the binding holds
                                  * @enum {string}
                                  */
                                 act: "resolve" | "accept";
                                 /** @description Who resolved or accepted it */
-                                by: string;
+                                by: {
+                                    id: string;
+                                    /** @description Their name, or null where they have none */
+                                    displayName: string | null;
+                                };
                                 /** @description When */
                                 at: string;
                             } | null;
@@ -10631,6 +10966,71 @@ export interface operations {
                                     checksum: string;
                                     images: Record<string, never>;
                                 };
+                                /** @description The value the binding would take from it */
+                                taken: {
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                };
+                            } | null;
+                            /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
+                            definition: {
+                                title: string;
+                                /** @description `revision.version`, as `0.2` */
+                                version: string;
+                            } | null;
+                            /** @description The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection */
+                            connection: {
+                                name: string;
                             } | null;
                         };
                     };
@@ -10850,13 +11250,72 @@ export interface operations {
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                                 stale: boolean;
+                                /** @description The value the binding takes from the version held, or null where it is stale */
+                                taken: ({
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                }) | null;
                                 /**
                                  * @description The act that made it what the binding holds
                                  * @enum {string}
                                  */
                                 act: "resolve" | "accept";
                                 /** @description Who resolved or accepted it */
-                                by: string;
+                                by: {
+                                    id: string;
+                                    /** @description Their name, or null where they have none */
+                                    displayName: string | null;
+                                };
                                 /** @description When */
                                 at: string;
                             } | null;
@@ -10932,6 +11391,71 @@ export interface operations {
                                     checksum: string;
                                     images: Record<string, never>;
                                 };
+                                /** @description The value the binding would take from it */
+                                taken: {
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                };
+                            } | null;
+                            /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
+                            definition: {
+                                title: string;
+                                /** @description `revision.version`, as `0.2` */
+                                version: string;
+                            } | null;
+                            /** @description The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection */
+                            connection: {
+                                name: string;
                             } | null;
                         };
                     };
@@ -11263,13 +11787,72 @@ export interface operations {
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                                 stale: boolean;
+                                /** @description The value the binding takes from the version held, or null where it is stale */
+                                taken: ({
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                }) | null;
                                 /**
                                  * @description The act that made it what the binding holds
                                  * @enum {string}
                                  */
                                 act: "resolve" | "accept";
                                 /** @description Who resolved or accepted it */
-                                by: string;
+                                by: {
+                                    id: string;
+                                    /** @description Their name, or null where they have none */
+                                    displayName: string | null;
+                                };
                                 /** @description When */
                                 at: string;
                             } | null;
@@ -11345,6 +11928,71 @@ export interface operations {
                                     checksum: string;
                                     images: Record<string, never>;
                                 };
+                                /** @description The value the binding would take from it */
+                                taken: {
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                };
+                            } | null;
+                            /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
+                            definition: {
+                                title: string;
+                                /** @description `revision.version`, as `0.2` */
+                                version: string;
+                            } | null;
+                            /** @description The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection */
+                            connection: {
+                                name: string;
                             } | null;
                         };
                     };
@@ -11504,13 +12152,72 @@ export interface operations {
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                                 stale: boolean;
+                                /** @description The value the binding takes from the version held, or null where it is stale */
+                                taken: ({
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                }) | null;
                                 /**
                                  * @description The act that made it what the binding holds
                                  * @enum {string}
                                  */
                                 act: "resolve" | "accept";
                                 /** @description Who resolved or accepted it */
-                                by: string;
+                                by: {
+                                    id: string;
+                                    /** @description Their name, or null where they have none */
+                                    displayName: string | null;
+                                };
                                 /** @description When */
                                 at: string;
                             } | null;
@@ -11586,6 +12293,71 @@ export interface operations {
                                     checksum: string;
                                     images: Record<string, never>;
                                 };
+                                /** @description The value the binding would take from it */
+                                taken: {
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                };
+                            } | null;
+                            /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
+                            definition: {
+                                title: string;
+                                /** @description `revision.version`, as `0.2` */
+                                version: string;
+                            } | null;
+                            /** @description The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection */
+                            connection: {
+                                name: string;
                             } | null;
                         };
                     };
@@ -11860,13 +12632,72 @@ export interface operations {
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                                 stale: boolean;
+                                /** @description The value the binding takes from the version held, or null where it is stale */
+                                taken: ({
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                }) | null;
                                 /**
                                  * @description The act that made it what the binding holds
                                  * @enum {string}
                                  */
                                 act: "resolve" | "accept";
                                 /** @description Who resolved or accepted it */
-                                by: string;
+                                by: {
+                                    id: string;
+                                    /** @description Their name, or null where they have none */
+                                    displayName: string | null;
+                                };
                                 /** @description When */
                                 at: string;
                             } | null;
@@ -11942,6 +12773,71 @@ export interface operations {
                                     checksum: string;
                                     images: Record<string, never>;
                                 };
+                                /** @description The value the binding would take from it */
+                                taken: {
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                };
+                            } | null;
+                            /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
+                            definition: {
+                                title: string;
+                                /** @description `revision.version`, as `0.2` */
+                                version: string;
+                            } | null;
+                            /** @description The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection */
+                            connection: {
+                                name: string;
                             } | null;
                         };
                     };
@@ -12121,13 +13017,72 @@ export interface operations {
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                                 stale: boolean;
+                                /** @description The value the binding takes from the version held, or null where it is stale */
+                                taken: ({
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                }) | null;
                                 /**
                                  * @description The act that made it what the binding holds
                                  * @enum {string}
                                  */
                                 act: "resolve" | "accept";
                                 /** @description Who resolved or accepted it */
-                                by: string;
+                                by: {
+                                    id: string;
+                                    /** @description Their name, or null where they have none */
+                                    displayName: string | null;
+                                };
                                 /** @description When */
                                 at: string;
                             } | null;
@@ -12203,6 +13158,71 @@ export interface operations {
                                     checksum: string;
                                     images: Record<string, never>;
                                 };
+                                /** @description The value the binding would take from it */
+                                taken: {
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                };
+                            } | null;
+                            /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
+                            definition: {
+                                title: string;
+                                /** @description `revision.version`, as `0.2` */
+                                version: string;
+                            } | null;
+                            /** @description The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection */
+                            connection: {
+                                name: string;
                             } | null;
                         };
                     };
@@ -12382,13 +13402,72 @@ export interface operations {
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                                 stale: boolean;
+                                /** @description The value the binding takes from the version held, or null where it is stale */
+                                taken: ({
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                }) | null;
                                 /**
                                  * @description The act that made it what the binding holds
                                  * @enum {string}
                                  */
                                 act: "resolve" | "accept";
                                 /** @description Who resolved or accepted it */
-                                by: string;
+                                by: {
+                                    id: string;
+                                    /** @description Their name, or null where they have none */
+                                    displayName: string | null;
+                                };
                                 /** @description When */
                                 at: string;
                             } | null;
@@ -12464,6 +13543,71 @@ export interface operations {
                                     checksum: string;
                                     images: Record<string, never>;
                                 };
+                                /** @description The value the binding would take from it */
+                                taken: {
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                };
+                            } | null;
+                            /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
+                            definition: {
+                                title: string;
+                                /** @description `revision.version`, as `0.2` */
+                                version: string;
+                            } | null;
+                            /** @description The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection */
+                            connection: {
+                                name: string;
                             } | null;
                         };
                     };
@@ -12623,13 +13767,72 @@ export interface operations {
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                                 stale: boolean;
+                                /** @description The value the binding takes from the version held, or null where it is stale */
+                                taken: ({
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                }) | null;
                                 /**
                                  * @description The act that made it what the binding holds
                                  * @enum {string}
                                  */
                                 act: "resolve" | "accept";
                                 /** @description Who resolved or accepted it */
-                                by: string;
+                                by: {
+                                    id: string;
+                                    /** @description Their name, or null where they have none */
+                                    displayName: string | null;
+                                };
                                 /** @description When */
                                 at: string;
                             } | null;
@@ -12705,6 +13908,71 @@ export interface operations {
                                     checksum: string;
                                     images: Record<string, never>;
                                 };
+                                /** @description The value the binding would take from it */
+                                taken: {
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                };
+                            } | null;
+                            /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
+                            definition: {
+                                title: string;
+                                /** @description `revision.version`, as `0.2` */
+                                version: string;
+                            } | null;
+                            /** @description The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection */
+                            connection: {
+                                name: string;
                             } | null;
                         };
                     };

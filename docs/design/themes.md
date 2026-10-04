@@ -1070,6 +1070,27 @@ page, and Word's rule would keep the row with the caption only if every paragrap
 to. A floated figure's caption above its image in Word has the leading Word sets above a line's text at
 the head of its box, where the PDF's band has none; neither was measured in Word itself.
 
+## The value catalogue
+
+**A bound value is formatted by the theme**, by a value catalogue
+([bindings.md](bindings.md#formatting); [B1](../plans/2026-10-04-b1-the-value-shown.md), B1-F): its
+number, date, time and boolean formats, with each language's own beside them, declared rather than
+taken from `Intl`, so the editor, the read text and later the PDF and Word print the same characters.
+
+- **It stands beside the six kinds, not as a seventh.** `VALUE_CATALOGUE_KIND = 'value'` is outside
+  `CATALOGUE_KINDS` and `CatalogueKind`, so STY-003's six catalogues, STY-024's "one catalogue of
+  each kind", TH-C and every record keyed by kind stand as they were. It shares their `catalogue/3`, in
+  an arm of `catalogueSchema` of its own; `readCatalogue` refuses one at `catalogue/1` or `/2`, which
+  never held one.
+- **A theme names it as an optional `catalogues.value`** at `theme/1`, which a theme before the
+  default's 0.6 omits. `readTheme` answers it as `ResolvedTheme.valueCatalogue`, null where a theme
+  names none, and `formatsFor` then gives the product's default formats, `DEFAULT_VALUE_FORMATS`. A
+  publication records the six kinds' versions as it did; the value catalogue's version is the
+  theme's, through `catalogues.value`.
+- **Migration 0048 seeds its 0.1 and the default theme's 0.6** naming it, under 0043's guard: only
+  where the environment's theme stands at 0.5, unchanged and authored by nobody. An environment that
+  recorded a theme of its own keeps it, and reads its values in the default formats.
+
 ## Safety
 
 STY-N03 is kept everywhere. Nothing a tenant supplies reaches a renderer as syntax: the CSS projection

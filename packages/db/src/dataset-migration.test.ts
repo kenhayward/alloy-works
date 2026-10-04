@@ -153,8 +153,17 @@ describe('migration 0047, over an environment made before it', () => {
   });
 
   it('migrates every environment made before it, keeping every row, to what a fresh environment is', async () => {
-    expect((await migrate(db.migratorUrl)).tenants[upgraded.id]).toEqual(['0047_datasets']);
-    expect(await countRows(upgraded.schema)).toEqual(counts);
+    expect((await migrate(db.migratorUrl)).tenants[upgraded.id]).toEqual([
+      '0047_datasets',
+      '0048_bound_values',
+    ]);
+    // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
+    // default theme's 0.6 (B1).
+    expect(await countRows(upgraded.schema)).toEqual({
+      ...counts,
+      artifact: counts.artifact! + 1,
+      artifact_version: counts.artifact_version! + 2,
+    });
 
     fresh = await createTenant(db.adminUrl, db.migratorUrl, {
       organisation: { id: 'acme', name: 'Acme' },

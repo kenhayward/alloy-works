@@ -168,6 +168,7 @@ export {
   QueryDefinitionUsesView,
   ResolveBindingsBody,
   ResolveBindingsView,
+  TakeOutcomeView,
 } from './bindings.js';
 export {
   CreateQueryDefinitionBody,

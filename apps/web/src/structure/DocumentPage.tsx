@@ -26,6 +26,8 @@ import { PaneSeparator, usePaneWidth } from '../layouts/PaneWidth.js';
 import { StatusBar, useStatus } from '../shell/Status.js';
 import styles from './DocumentPage.module.css';
 import { ComponentEditor } from '../editor/ComponentEditor.js';
+import { ProvenancePanel } from '../data/ProvenancePanel.js';
+import { bindingStatesIn, holdsBinding, type BindingState } from './bindingContexts.js';
 import { DocumentText, type Editable, type Place } from './DocumentText.js';
 import { GeneratedLists, type Known } from './GeneratedLists.js';
 import { documentAccessLink, nodeLink } from './links.js';
@@ -522,6 +524,69 @@ export function DocumentPage({
     const givenUp = setTimeout(() => setTextsRead(shownVersion), LINK_WAITS_MS);
     return () => clearTimeout(givenUp);
   }, [shownVersion]);
+  // What the document holds for each binding its texts hold (the B1 plan, B1-N): read with the texts,
+  // and again whenever they are read again - after an editor's Done, a version cut, an outline act -
+  // and only where a text holds a binding. A failed read shows no values, and says nothing.
+  const [bindingStates, setBindingStates] = useState<readonly BindingState[] | null>(null);
+  const holdsBindings = useMemo(() => [...texts.values()].some(holdsBinding), [texts]);
+  useEffect(() => {
+    if (!holdsBindings) {
+      setBindingStates(null);
+      return undefined;
+    }
+    let current = true;
+    client
+      .GET('/v1/documents/{id}/bindings', { params: { path: { id } } })
+      .then(({ data }) => {
+        if (current) setBindingStates(bindingStatesIn(data) ?? null);
+      })
+      .catch(() => {
+        if (current) setBindingStates(null);
+      });
+    return () => {
+      current = false;
+    };
+  }, [client, id, texts, holdsBindings]);
+  // The value whose provenance is open beside the text, and what opened it, to be given the focus back.
+  // `last` is the view of it last read, kept while a re-read answers nothing for it or fails, so the
+  // panel, and the focus in it, stay where they are.
+  const [provenance, setProvenance] = useState<{
+    readonly node: string;
+    readonly binding: string;
+    readonly opener: HTMLElement | null;
+    readonly last?: BindingState;
+  } | null>(null);
+  const closeProvenance = () => {
+    const opened = provenance;
+    setProvenance(null);
+    if (opened === null) return;
+    // The text may have been drawn again since: the value's button is then found where it stands.
+    const back =
+      opened.opener?.isConnected === true
+        ? opened.opener
+        : textColumn.current?.querySelector<HTMLElement>(
+            `[data-node="${opened.node}"] button[data-binding="${opened.binding}"]`,
+          );
+    back?.focus();
+  };
+  const provenanceFound =
+    provenance === null
+      ? undefined
+      : bindingStates?.find(
+          (each) => each.node === provenance.node && each.binding.id === provenance.binding,
+        );
+  const provenanceState = provenanceFound?.held ? provenanceFound : provenance?.last;
+  useEffect(() => {
+    if (!provenanceFound?.held) return;
+    setProvenance((open) =>
+      open !== null &&
+      open.last !== provenanceFound &&
+      open.node === provenanceFound.node &&
+      open.binding === provenanceFound.binding.id
+        ? { ...open, last: provenanceFound }
+        : open,
+    );
+  }, [provenanceFound]);
   // Who holds what changes while the page is in another window's shadow: returning to it hears it.
   useEffect(() => {
     const again = () => setTextsAttempt((attempt) => attempt + 1);
@@ -1188,6 +1253,8 @@ export function DocumentPage({
               // The version is chosen from the label in Authoring, by whoever may restructure the
               // document (DV-F); anywhere else the label says it and offers nothing.
               {...(document.mayEdit && authoring ? { choosing } : {})}
+              bindingStates={bindingStates}
+              onProvenance={(node, binding, opener) => setProvenance({ node, binding, opener })}
               {...(principalId === undefined || !authoring
                 ? {}
                 : {
@@ -1214,6 +1281,16 @@ export function DocumentPage({
             placeOf={(node) => placeInOutline(document.outline, node, names, document.scheme)}
           />
           <div className={styles['side']}>
+            {/* A value's provenance, beside the text it stands in (the B1 plan, B1-M; DAT-041). */}
+            {provenanceState?.held && (
+              <ProvenancePanel
+                client={client}
+                document={document.id}
+                language={document.outline.language}
+                state={provenanceState}
+                onClose={closeProvenance}
+              />
+            )}
             {/* What the document's template asks of the document itself, filled in and checked as it
               is typed, and saved a pause after (definitions.md, "Shown as they arise"). */}
             {document.fields.document.length > 0 && (

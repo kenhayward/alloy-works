@@ -1,6 +1,14 @@
 import type { ComponentView, createApiClient } from '@alloy-works/api-client';
-import { parseContentDocument, readContent, type ReportEntry } from '@alloy-works/domain';
 import {
+  bindingsIn,
+  parseContentDocument,
+  readContent,
+  type ReportEntry,
+} from '@alloy-works/domain';
+import {
+  bindingContextOf,
+  bindingSelected,
+  bindingsShown,
   changeEquation,
   changeReference,
   createEditorState,
@@ -34,11 +42,13 @@ import {
   Selection as EditorSelection,
   setDirection,
   setLanguage,
+  setBindingContext,
   setReferenceContext,
   setStyleCheck,
   setTitle,
   somewhereToPutMark,
   toEditor,
+  type BindingContext,
   type ComponentHeader as Header,
   type EditorState,
   type EditorView,
@@ -64,6 +74,8 @@ import { PreformattedPanel } from './PreformattedPanel.js';
 import { iterationLabel, sentenceCase, unsavedSentence } from './recovery.js';
 import { RecoveryPanel } from './RecoveryPanel.js';
 import { TablePanel } from './TablePanel.js';
+import { ValuePanel } from './ValuePanel.js';
+import type { BindingState } from '../structure/bindingContexts.js';
 import { MarkPrompt, type Refused } from './MarkPrompt.js';
 import { askAndApply, pressCommand, type AskForValue, type MarkCommand } from './press.js';
 import { referenceChoicesIn, type ReferenceChoices } from './referenceChoices.js';
@@ -164,6 +176,20 @@ export interface ComponentEditorProps {
    * the Reference dialog offers the component's own figures, tables and footnotes alone.
    */
   readonly referenceContext?: ReferenceContext | null;
+  /**
+   * Where its bindings are shown (the B1 plan, B1-D, B1-K): open in place in a document, what the
+   * document holds for each - null where the page has not read it, or could not - which the page passes
+   * again whenever it reads it again. Absent on the component's own page, where each binding shows what
+   * it asks for, its definition's title read here once per definition, and never a value.
+   */
+  readonly bindingContext?: BindingContext | null;
+  /** What the bindings view says of each binding, by identifier, in a document: the Value panel's. */
+  readonly bindingStates?: ReadonlyMap<string, BindingState>;
+  /**
+   * Opens a value's provenance beside the text, from the Value panel's **Provenance** (B1-M), given the
+   * button, which the focus returns to as it closes.
+   */
+  readonly onProvenance?: (binding: string, opener: HTMLElement) => void;
   /**
    * The seam to whatever hosts the page, told the component's base language while it is open, for the
    * spelling checker (CNT-178); the host's own otherwise. Given in tests.
@@ -301,6 +327,9 @@ export function ComponentEditor({
   openAt,
   linked = null,
   referenceContext = null,
+  bindingContext,
+  bindingStates,
+  onProvenance,
   bridge = resolveBridge(),
 }: ComponentEditorProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
@@ -372,6 +401,7 @@ export function ComponentEditor({
   const tableRegion = useRef<HTMLDivElement | null>(null);
   // The figure panel's, while the cursor stands in a figure (figures 2, ruling R5).
   const figureRegion = useRef<HTMLDivElement | null>(null);
+  const valueRegion = useRef<HTMLElement | null>(null);
   // The Recovery panel's, while the session is in Recovery (W11.2).
   const recoveryRegion = useRef<HTMLElement | null>(null);
   // What was focused when Recovery was asked for, which the focus goes back to as it closes where it
@@ -695,6 +725,17 @@ export function ComponentEditor({
   // cut or a claim refused would otherwise start with none, and every reference would lose its label.
   const referenceContextRef = useRef(referenceContext);
   referenceContextRef.current = referenceContext;
+  // On its own page, each definition's title, by its identifier (B1-K): read once per definition the
+  // component's bindings name, null where the reader may not read it. Never a value.
+  const [titles, setTitles] = useState<ReadonlyMap<string, string | null>>(new Map());
+  const alone = bindingContext === undefined;
+  const shownBindings: BindingContext | null = useMemo(
+    () => (alone ? { kind: 'alone', titles } : (bindingContext ?? null)),
+    [alone, titles, bindingContext],
+  );
+  // And the context every fresh state starts from, as the references' is.
+  const bindingContextRef = useRef(shownBindings);
+  bindingContextRef.current = shownBindings;
   // The session the component's last `GET` named, whose sequence it answered (final review of W11.3,
   // D3): a page that goes on under that id goes on above it.
   const askedSession = useRef<string | null>(null);
@@ -788,6 +829,7 @@ export function ComponentEditor({
           return runPromptingRef.current(into, command);
         },
         referenceContext: referenceContextRef.current,
+        bindingContext: bindingContextRef.current,
         ...(selection ? { selection } : {}),
       });
     let base = opened.doc;
@@ -1203,6 +1245,55 @@ export function ComponentEditor({
     }
   }, [surface, referenceContext]);
 
+  // The page reads what the document holds again, or the component's own page hears a definition's
+  // title: every binding on the surface, and in a footnote's open editor, is drawn again (B1-D, B1-N).
+  useEffect(() => {
+    if (surface === null || surface.isDestroyed) return;
+    if (bindingContextOf(surface.state) !== shownBindings) {
+      setBindingContext(surface, shownBindings);
+    }
+  }, [surface, shownBindings]);
+
+  // On its own page, the titles of the definitions its bindings name, each asked once (B1-K).
+  const namedDefinitions = useMemo(() => {
+    if (!alone || component === null) return '';
+    const read = readContent(component.content, { artifact: component.id, version: '' });
+    if (!read.ok) return '';
+    return [...new Set(bindingsIn(read.document).map((each) => each.binding.query))]
+      .sort()
+      .join(' ');
+  }, [alone, component]);
+  useEffect(() => {
+    if (namedDefinitions === '') return undefined;
+    let current = true;
+    const ids = namedDefinitions.split(' ');
+    void Promise.all(
+      ids.map(async (definition) => {
+        try {
+          const { data } = await client.GET('/v1/query-definitions/{id}', {
+            params: { path: { id: definition } },
+          });
+          const body: unknown = data;
+          const title =
+            typeof body === 'object' &&
+            body !== null &&
+            'definition' in body &&
+            typeof (body as { definition: { title?: unknown } }).definition?.title === 'string'
+              ? (body as { definition: { title: string } }).definition.title
+              : null;
+          return [definition, title] as const;
+        } catch {
+          return [definition, null] as const;
+        }
+      }),
+    ).then((answered) => {
+      if (current) setTitles(new Map(answered));
+    });
+    return () => {
+      current = false;
+    };
+  }, [client, namedDefinitions]);
+
   // The theme the page is set in marks, on the surface and in a footnote's editor, what will not
   // resolve in it (themes.md, "What will not resolve", ET-I; STY-070); nothing is marked without one.
   const presentation = usePresentation();
@@ -1313,6 +1404,7 @@ export function ComponentEditor({
       preformattedRegion.current,
       tableRegion.current,
       figureRegion.current,
+      valueRegion.current,
       pasteRegion.current,
       recoveryRegion.current,
       place.current,
@@ -1397,6 +1489,14 @@ export function ComponentEditor({
   const preformatted = surface === null ? null : preformattedAt(surface.state);
   const table = surface === null ? null : tableAt(surface.state);
   const figure = surface === null ? null : figureAt(surface.state);
+  // A binding selected whole, and what it shows where it stands (B1-M): the Value panel's.
+  const selectedBinding = surface === null ? null : bindingSelected(surface.state);
+  const selectedShown =
+    selectedBinding === null || surface === null
+      ? null
+      : (bindingsShown(surface.state.doc, bindingContextOf(surface.state)).find(
+          (each) => each.pos === selectedBinding.pos,
+        ) ?? null);
   const mayFormat = shown.mayEdit && isEditablePhase(phase);
   // What the toolbar acts on: the footnote's own text while one is open, and the surface otherwise
   // (footnotes 1, ruling R9). Every button is asked of that state, so a mark applies in the footnote
@@ -1742,6 +1842,25 @@ export function ComponentEditor({
                 enabled={mayFormat}
                 client={client}
                 onReplace={() => setFigureDialog('Replace image')}
+              />
+            )}
+            {/* And while a binding is selected whole: what it shows, and its provenance (B1-M). */}
+            {selectedBinding !== null && selectedShown !== null && (
+              <ValuePanel
+                key={`value-${selectedBinding.pos}`}
+                ref={valueRegion}
+                binding={selectedBinding.binding}
+                shown={selectedShown.text}
+                resolved={selectedShown.resolved}
+                state={bindingStates?.get(selectedBinding.binding.id)}
+                // Undefined until the title is answered, so the panel says nothing of it yet.
+                {...(alone ? { title: titles.get(selectedBinding.binding.query) } : {})}
+                {...(onProvenance
+                  ? {
+                      onProvenance: (opener: HTMLElement) =>
+                        onProvenance(selectedBinding.binding.id, opener),
+                    }
+                  : {})}
               />
             )}
             {/* What the last paste changed, while the surface takes changes: a report about a paste

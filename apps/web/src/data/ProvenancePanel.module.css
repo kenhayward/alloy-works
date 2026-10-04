@@ -1,0 +1,38 @@
+/* A value's provenance, in the document page's side column (the B1 plan, B1-M). */
+
+.panel {
+  display: grid;
+  gap: var(--space-8);
+  font-size: var(--size-body-small);
+}
+
+.heading {
+  margin: 0;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-4) var(--space-8);
+  margin: 0;
+}
+
+.facts dt {
+  font-weight: 600;
+}
+
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.sql {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* The result's rows scroll within the column rather than widening the page. */
+.result {
+  max-height: 24rem;
+  overflow: auto;
+}

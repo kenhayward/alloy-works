@@ -25,10 +25,13 @@ nearest thing the editor already has to a binding; the one scroll, its modes and
 [themes.md](themes.md)'s. A bound table's presentation is `tables.md`'s, not designed; a template's
 parameters feeding a binding are the `templates.md` additions'.
 
-> **Not built.** D3 built the binding's stored shape, datasets, resolutions and the resolve, check and
-> accept routes, and refuses to publish or preview any document holding a binding. No screen places,
-> shows or accepts one, and the editor opens a component holding one read-only. This document is what
-> replaces both.
+> **B1 built; B2 to B6 not built.** D3 built the binding's stored shape, datasets, resolutions and the
+> resolve, check and accept routes, and refuses to publish or preview any document holding a binding.
+> [B1](../plans/2026-10-04-b1-the-value-shown.md) built the editor's node - a component holding a
+> binding opens for editing - `takeValue`, `formatValue` and the value catalogue, `dataset_take`, the
+> bindings view's values, and each value, its failure and its provenance shown in a document. No screen
+> places, resolves or accepts a binding yet (B2, B4), and a publish and a preview still refuse one
+> (B3).
 
 ## The shape in one paragraph
 
@@ -83,7 +86,7 @@ it was made.
 | **DAT-047** | A binding whose value fails is drawn in place as a marker saying why, apart by more than colour, and every other node of the component and the document draws as before; the Data tab lists it                                                                                                                                                                                                                                                                                                                                                                  |
 | **DAT-022** | The Value dialog names, beside each definition and again on the chosen one, the identity it runs as - the service account, or each person's own view by the connection's mechanism - read from the definition's route, which answers its connection's identity to every reader of the definition                                                                                                                                                                                                                                                                |
 | **DAT-024** | The provenance panel and the Data tab say whose view a value is, from the dataset version's provenance: the service account, or a person by name with their sign-in route and the identity as the source saw it                                                                                                                                                                                                                                                                                                                                                 |
-| **DAT-041** | Activating a value - a click, or Enter on the value's button in the read text, or selecting it in an open editor - opens its provenance panel in one step: the definition and its version, the connection, the parameters, whose view, when, the rows, the checksum, the dataset version, who accepted it, and the SQL where the reader may read the definition                                                                                                                                                                                                 |
+| **DAT-041** | Activating a value in the read text - a click, or Enter on the value's button - opens its provenance panel in one step (in an open editor, selecting it opens the Value panel, whose **Provenance** opens the same panel): the definition and its version, the connection, the parameters, whose view, when, the rows, the checksum, the dataset version, who accepted it, and the SQL where the reader may read the definition                                                                                                                                 |
 | **DAT-039** | The document page's **Data** tab lists every binding the document holds with its state: never resolved, changed since it was resolved, failed (a value that cannot be taken, or the check made on opening failing), a source revision waiting, a definition moved on, revised by hand, changed since last published, or holding                                                                                                                                                                                                                                 |
 | **DAT-082** | A checked binding is checked when the document page opens, by whoever may check it, and on **Check now**; a pinned one never. A waiting revision's value is shown beside the value held, in the Data tab and the value's panel, and nothing moves until somebody accepts                                                                                                                                                                                                                                                                                        |
 | **DAT-070** | A floating binding whose definition has a version newer than the one its held result ran is flagged **Definition changed** beside a source revision's flag, and a check's result of the newer version is waiting even where its rows are the same (BI-K); the Data tab lists the bindings whose question, definition or value differs from what the document's latest publication printed                                                                                                                                                                       |
@@ -123,18 +126,18 @@ it was made.
 
 ## What is built, and what this design changes in it
 
-| Built                                                                                                                                                                                                   | Changed by                                                                                                                                                                                                                            |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bindingNodeSchema` (`packages/domain/src/content/model/inline.ts`): `{ type, id, query, version?, parameters, mode, take }`, every string NFC, widened in place at content schema 1 (D3-C)             | Nothing. It is the node this design edits. **It has no `marks`**, as a cross-reference has none (BI-A)                                                                                                                                |
-| The editor opens a component holding a binding read-only, by name (`packages/editor/src/mapping.ts`, `marksWithNoType`)                                                                                 | B1: the editor schema gains the node, and such a component opens for editing                                                                                                                                                          |
-| **The admission pipeline's re-identify stage keeps a binding's identifier** (`reidentify.ts`, `reidentifyInline` returns any inline but text, a reference and a footnote as it came)                    | B1, **a fix**: a pasted binding is given a new identifier, so a copy pasted into the component it came from does not hold an identifier twice, which the content walk refuses at save; a cut and a paste gives it back its own (BI-D) |
-| Resolve reads a binding from the component version the node resolves to (D3-E)                                                                                                                          | B2: it may also read it from the caller's own editing session's latest iteration, where the node floats at latest, so a binding just placed shows a value without a version being cut (BI-C)                                          |
-| `resolutionsOf` answers a newer dataset version as waiting only where its checksum differs (D3, "Changed while building")                                                                               | B4: also where it ran a newer version of a floating binding's definition, so a definition moved on with the same rows is offered (BI-K)                                                                                               |
-| `binding_resolution.act` is `resolve` or `accept` (0047)                                                                                                                                                | B2: gains `confirm`, a held result kept across a binding change that leaves its question unchanged (BI-J)                                                                                                                             |
-| A publish and a preview of a document holding any binding are refused, `binding_unresolved` (`apps/service/src/publishing.ts`, `refuseBindings`); `assemble` refuses one too (`publishing/assemble.ts`) | B3: the request refuses only a binding holding no matching resolution, and records the rest; `assemble`'s refusal becomes the stage's own check (BI-L)                                                                                |
-| `packages/domain/src/content/binding.ts`, `resolveBoundTable` over string rows, and `cases/case-03-bound-table-footnote.test.ts`: the scaffolding's bound table, which nothing outside its test imports | Left to `tables.md`, which replaces it; it is not the rule this design takes a value by. It cites no requirement, so the trace is unchanged by its removal                                                                            |
-| The theme has paragraph, character, table and image styles, and nothing for a value's format                                                                                                            | B1: a value catalogue, the theme's seventh, and the default theme's 0.6 naming it (BI-F)                                                                                                                                              |
-| [component-editor.md](component-editor.md)'s table says of a binding "Create: No; Edit: Removal only; DAT, T2"                                                                                          | B1 and B2 make it true otherwise; that row is updated by the slice that changes it, as the editor's rows always have been                                                                                                             |
+| Built                                                                                                                                                                                                   | Changed by                                                                                                                                                                                                                                                  |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bindingNodeSchema` (`packages/domain/src/content/model/inline.ts`): `{ type, id, query, version?, parameters, mode, take }`, every string NFC, widened in place at content schema 1 (D3-C)             | Nothing. It is the node this design edits. **It has no `marks`**, as a cross-reference has none (BI-A)                                                                                                                                                      |
+| The editor opens a component holding a binding read-only, by name (`packages/editor/src/mapping.ts`, `marksWithNoType`)                                                                                 | B1, built: the editor schema gains the node, and such a component opens for editing                                                                                                                                                                         |
+| **The admission pipeline's re-identify stage keeps a binding's identifier** (`reidentify.ts`, `reidentifyInline` returns any inline but text, a reference and a footnote as it came)                    | B1, built, **a fix**: a pasted binding is given a new identifier (`bindingsRenamed`), so a copy pasted into the component it came from does not hold an identifier twice; the editor's paste gives it back its own where nothing else holds it (BI-D, B1-C) |
+| Resolve reads a binding from the component version the node resolves to (D3-E)                                                                                                                          | B2: it may also read it from the caller's own editing session's latest iteration, where the node floats at latest, so a binding just placed shows a value without a version being cut (BI-C)                                                                |
+| `resolutionsOf` answers a newer dataset version as waiting only where its checksum differs (D3, "Changed while building")                                                                               | B4: also where it ran a newer version of a floating binding's definition, so a definition moved on with the same rows is offered (BI-K)                                                                                                                     |
+| `binding_resolution.act` is `resolve` or `accept` (0047)                                                                                                                                                | B2: gains `confirm`, a held result kept across a binding change that leaves its question unchanged (BI-J)                                                                                                                                                   |
+| A publish and a preview of a document holding any binding are refused, `binding_unresolved` (`apps/service/src/publishing.ts`, `refuseBindings`); `assemble` refuses one too (`publishing/assemble.ts`) | B3: the request refuses only a binding holding no matching resolution, and records the rest; `assemble`'s refusal becomes the stage's own check (BI-L)                                                                                                      |
+| `packages/domain/src/content/binding.ts`, `resolveBoundTable` over string rows, and `cases/case-03-bound-table-footnote.test.ts`: the scaffolding's bound table, which nothing outside its test imports | Left to `tables.md`, which replaces it; it is not the rule this design takes a value by. It cites no requirement, so the trace is unchanged by its removal                                                                                                  |
+| The theme has paragraph, character, table and image styles, and nothing for a value's format                                                                                                            | B1, built: a value catalogue beside the six kinds, not a seventh, at catalogue/3, and the default theme's 0.6 naming it as an optional `catalogues.value` (BI-F, B1-F)                                                                                      |
+| [component-editor.md](component-editor.md)'s table says of a binding "Create: No; Edit: Removal only; DAT, T2"                                                                                          | B1 and B2 make it true otherwise; that row is updated by the slice that changes it, as the editor's rows always have been                                                                                                                                   |
 
 ## The binding in the editor
 
@@ -220,24 +223,30 @@ identifier is what keeps its values in every document. By [Identity, by operatio
 - **Undo** keeps it: the identity plugin keeps an identifier exactly one node holds in an undo or a
   redo, so deleting a binding and undoing brings back the binding every document holds a value for.
 - **Copy and paste** gives the pasted binding a new identifier in the admission pipeline's re-identify
-  stage, which today returns a binding as it came (the fix above): a copy holds nothing anywhere until
-  a document resolves it, and the paste report counts _bound values pasted, each to be resolved in a
-  document_. Nothing but the product's own clipboard type carries a binding; the readers never make one.
-- **Cut and paste** in one component gives it back its own identifier (BI-D): where a pasted binding
-  arrived with an identifier no node of the component still holds - its original was cut - the paste
-  keeps it, by the `keepsIdentifiers` meta a paste already uses, so moving a value within its
-  component loses no document's value and queries nothing. A cut from one component and a paste into
-  another is a new binding: the other component is placed by other nodes.
+  stage, which records it in `bindingsRenamed`, apart from the blocks' `renamed` (the fix above): a
+  copy holds nothing anywhere until a document resolves it, and the paste report says _Bound values
+  were copied, each to be resolved in a document before it shows a value_. Nothing but the product's
+  own clipboard type carries a binding; the readers never make one.
+- **Cut and paste** gives it back its own identifier (BI-D, B1-C): `pasteInto` gives each pasted
+  binding back its original where, after the paste, no other node of the receiving component holds it
+  (a cut and a paste in one component, a paste over the original, or a paste into another component),
+  in the transaction that already says `keepsIdentifiers`, so moving a value within its component loses
+  no document's value and queries nothing. The report says _Bound values kept their identifiers_, and
+  promises no value: one moved from another component is placed by other nodes, and holds none there
+  until it is resolved. A second paste of the same cut is a copy, renamed.
 - **Split, join and move** never touch an atom's identifier: it is the atom's own attribute, which
   ProseMirror's split does not copy, since an atom is never split.
 
 ### Keyboard and accessibility
 
-The atom is reached by the arrow keys as a whole, a node selection, and its accessible name is what
-it shows with its kind - _1,234.5, bound value, revision waiting_. Selecting it shows the **Value
-panel** in the dock, beside the Figure and Table panels: its provenance in brief, **Change**, and
-**Provenance** for the whole panel. In the read text, a value is a button in the tab order, as a
-link in text is, and Enter or a click opens its provenance (DAT-041); the Data tab reaches every value
+The atom is reached by the arrow keys as a whole, a node selection, and holds its kind in visually
+hidden words after what it shows - _1,234.5, bound value_, _No value - empty, bound value, failed_ -
+never an `aria-label` on its `span`, which ARIA prohibits on a generic element (B1-L). Selecting it
+shows the **Value panel** in the dock, beside the Figure and Table panels: what it shows, its
+definition, its mode and when it was fetched, and **Provenance** for the whole panel (B1 builds no
+**Change**: that is B2's). In the read text, a value the document holds a resolution for is a
+`<button type="button">` in the tab order, styled as the text it stands in, and Enter or a click opens
+its provenance (DAT-041); the Data tab reaches every value
 too, so no value is reachable only by the pointer. The dialog is worked by keyboard as the other
 dialogs are. The browser suite's keyboard and axe tests take each surface, as every dialog's have.
 
@@ -245,18 +254,19 @@ dialogs are. The browser suite's keyboard and axe tests take each surface, as ev
 
 ### Taking
 
-**`takeValue(take, result)`**, in `packages/domain/src/data/`, pure: the one rule by which the page,
+**`takeValue(take, result, columns)`**, in `packages/domain/src/data/take.ts`, pure, its columns the
+dataset version's provenance's, never the definition's latest (B1-E): the one rule by which the page,
 the editor and the publish take a value from a stored result (BI-E).
 
-| Take                | Result                         | Answer                                                    |
-| ------------------- | ------------------------------ | --------------------------------------------------------- |
-| `{ column }`        | One row                        | Its cell                                                  |
-| `{ column }`        | No rows                        | `value_none` (DAT-032)                                    |
-| `{ column }`        | More than one                  | `value_many`, naming the count (DAT-031); never the first |
-| `{ key, column }`   | The row whose key equals `key` | Its cell; the key is unique by D2-M, so at most one       |
-| `{ key, column }`   | No such row                    | `row_missing`, naming the key                             |
-| Either, the cell    | `null`                         | `value_null` (DAT-032)                                    |
-| Either, a text cell | No characters, or spaces alone | `value_empty` (DAT-032)                                   |
+| Take                | Result                                    | Answer                                                    |
+| ------------------- | ----------------------------------------- | --------------------------------------------------------- |
+| `{ column }`        | One row                                   | Its cell                                                  |
+| `{ column }`        | No rows                                   | `value_none` (DAT-032)                                    |
+| `{ column }`        | More than one                             | `value_many`, naming the count (DAT-031); never the first |
+| `{ key, column }`   | The row whose key equals `key`            | Its cell; the key is unique by D2-M, so at most one       |
+| `{ key, column }`   | No such row                               | `row_missing`, naming the key                             |
+| Either, the cell    | `null`                                    | `value_null` (DAT-032)                                    |
+| Either, a text cell | No characters, or `\p{White_Space}` alone | `value_empty` (DAT-032)                                   |
 
 A key is compared in canonical form, which is what the result and the take both hold. A column not
 declared is `take_invalid`, checked at resolve already (D3-L) and again here, since a result read
@@ -265,9 +275,10 @@ later is the result of the version it ran.
 ### Formatting
 
 **A value is formatted by the document's theme, never by the binding** (DAT-033's half; BI-F): a
-**value catalogue**, the theme's seventh, at catalogue/1, which the default theme's 0.6 names - added
-by a migration as 0043 added 0.5, over the same guard - and which a theme naming none reads as the
-product's default. **Declared, never derived**: the formatter is the domain's own code over what the
+**value catalogue** beside the theme's six catalogues - not a seventh kind, so STY-003's six and every
+loop over the kinds stand - at the shared catalogue/3 (B1-F), which the default theme's 0.6 names as
+an optional `catalogues.value` - added by migration 0048 as 0043 added 0.5, over the same guard - and
+which a theme naming none reads as the product's default (`DEFAULT_VALUE_FORMATS`). **Declared, never derived**: the formatter is the domain's own code over what the
 catalogue declares, with no `Intl` and no locale data, because the editor runs in Chromium and
 Electron and the worker in Node, each with its own ICU and CLDR, and Word does not run either; one
 pure function over declared separators prints the same characters everywhere, which themes.md's
@@ -276,7 +287,7 @@ these declarations, not instead of them.
 
 ```ts
 ValueCatalogue = {
-  kind: 'value', schemaVersion: 1,
+  kind: 'value', schemaVersion: 3,
   formats: ValueFormats,                                     // the default
   byLanguage: { language: string, formats: ValueFormats }[], // a primary language subtag each, at most 32, each once
 }
@@ -302,7 +313,8 @@ ValueFormats = {
   `:`, _Yes_ and _No_. An environment that has recorded a theme of its own keeps it, read with the
   product's default value formats, as 0043's reader does for catalogue/2.
 
-`formatValue(value, column, catalogue, language)` is the one function: the editor's node view, the
+`formatValue(value, type, formats)` is the one function, its formats picked by
+`formatsFor(catalogue, language)` (`packages/domain/src/data/format.ts`, B1-G): the editor's node view, the
 read text, the Typst projection and the Word writer all print what it returns.
 
 ### The taken value, held as derived data
@@ -318,7 +330,7 @@ computes, and writes it:
 dataset_take (
   dataset_version  uuid not null,        -- with its artifact and kind, by foreign key to artifact_version
   take_digest      text not null,        -- SHA-256 over the take's canonical form
-  outcome          jsonb not null,       -- { value, column } | { failure, count? }, strict
+  outcome          jsonb not null,       -- { value, column: { name, type } } | { failure, count?, column? }, strict
   primary key (dataset_version, take_digest)
 )                                        -- derived: rewritten by the same function, deletable, never authoritative
 ```
@@ -654,20 +666,20 @@ their words.
 
 ## Where the code lives
 
-| Where                                                      | What                                                                                                                                         |
-| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `domain: src/data/take.ts`, `src/data/format.ts`           | `takeValue` and `formatValue`, pure, and the outcome's schema                                                                                |
-| `domain: src/theme/`                                       | The value catalogue's schema, its reader's default, and the default theme's 0.6                                                              |
-| `domain: src/publishing/`                                  | The binding stage in `assemble`, the projected `value` inline, its failures, its place in `order.test.ts`; the Typst projection's value text |
-| `domain: src/word/`                                        | A value as a run                                                                                                                             |
-| `domain: src/content/admission/reidentify.ts`              | A binding re-identified, and kept on a cut and paste                                                                                         |
-| `editor: src/bindings.ts`, `bindingView.ts`                | The node, its plugin holding the `BindingContext`, its decorations and node view, after `references.ts` and `referenceView.ts`               |
-| `db: migrations/tenant/`                                   | One migration per slice that stores something: B1, B2, B3, B5                                                                                |
-| `db: src/datasets.ts`, `src/bindings.ts`, `src/publishing` | `recordTake`, confirm, revisions, the request's and the publication's binding rows                                                           |
-| `service: src/data/bindings.ts`, `src/publishing.ts`       | The routes, the view's values, the request's binding rows in place of `refuseBindings`                                                       |
-| `worker: src/jobs/publish.ts`, `preview.ts`                | Reading each result by its checksum, and `provenance.json`                                                                                   |
-| `web: src/editor/ValueDialog.tsx`, `ValuePanel.tsx`        | The dialog and the panel                                                                                                                     |
-| `web: src/structure/DataTab.tsx`                           | The Data tab, the check on opening, accept and its warning                                                                                   |
+| Where                                                                                                                   | What                                                                                                                                         |
+| ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain: src/data/take.ts`, `src/data/format.ts`                                                                        | `takeValue` and `formatValue`, pure, and the outcome's schema                                                                                |
+| `domain: src/theme/`                                                                                                    | The value catalogue's schema, its reader's default, and the default theme's 0.6                                                              |
+| `domain: src/publishing/`                                                                                               | The binding stage in `assemble`, the projected `value` inline, its failures, its place in `order.test.ts`; the Typst projection's value text |
+| `domain: src/word/`                                                                                                     | A value as a run                                                                                                                             |
+| `domain: src/content/admission/reidentify.ts`                                                                           | A binding re-identified, and kept on a cut and paste                                                                                         |
+| `editor: src/bindings.ts`, `bindingView.ts`                                                                             | The node, its plugin holding the `BindingContext`, its decorations and node view, after `references.ts` and `referenceView.ts`               |
+| `db: migrations/tenant/`                                                                                                | One migration per slice that stores something: B1, B2, B3, B5                                                                                |
+| `db: src/takes.ts`, `src/datasets.ts`, `src/publishing`                                                                 | `recordTake` and `takesOf` (B1); confirm, revisions, the request's and the publication's binding rows                                        |
+| `service: src/data/bindings.ts`, `src/publishing.ts`                                                                    | The routes, the view's values, the request's binding rows in place of `refuseBindings`                                                       |
+| `worker: src/jobs/publish.ts`, `preview.ts`                                                                             | Reading each result by its checksum, and `provenance.json`                                                                                   |
+| `web: src/editor/ValueDialog.tsx`, `ValuePanel.tsx`, `src/data/ProvenancePanel.tsx`, `src/structure/bindingContexts.ts` | The dialog (B2), the Value panel, the provenance panel and each occurrence's binding context (B1)                                            |
+| `web: src/structure/DataTab.tsx`                                                                                        | The Data tab, the check on opening, accept and its warning                                                                                   |
 
 ## Verification
 

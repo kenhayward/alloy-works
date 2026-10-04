@@ -12,10 +12,13 @@ import {
 import { AddNodeMarkStep, AttrStep, RemoveNodeMarkStep, StepMap } from 'prosemirror-transform';
 import { DecorationSet, EditorView, type NodeView } from 'prosemirror-view';
 
+import { bindingsShown } from './bindings.js';
+import { bindingContextOf, bindingDecorations, bindingView } from './bindingView.js';
 import { equationView } from './equationView.js';
 import { pasteInto, readClipboard, type ClipboardSource, type PasteOutcome } from './clipboard.js';
 import { footnoteAt, openFootnote, recordOpenFootnote } from './footnotes.js';
 import { referenceContextOf, referenceDecorations, referenceView } from './referenceView.js';
+import { copiedAsShown } from './render.js';
 import { styleCheckOf, unresolvedDecorations, type StyleCheck } from './resolution.js';
 import { footnotePluginsOf } from './state.js';
 
@@ -162,14 +165,22 @@ export function footnoteView(
         // And an equation as one in the component's is (equations 1, ruling R5); only an inline one
         // stands in a footnote's text (CNT-129).
         equation: (node) => equationView(node, document),
+        // And a binding as one in the component's is (B1-D), from the surface's context.
+        binding: (node, _view, _getPos, decorations) => bindingView(node, document, decorations),
       },
       decorations: (state) => {
         const pos = getPos();
         if (pos === undefined) return null;
-        const references = referenceDecorations(state.doc, referenceContextOf(outer.state), {
+        const shown = referenceDecorations(state.doc, referenceContextOf(outer.state), {
           component: outer.state.doc,
           offset: pos + 1,
         });
+        // What each binding in the footnote's text shows, from the surface's context: its words do
+        // not depend on where it stands, so the footnote's own positions are all it needs.
+        const references = DecorationSet.create(state.doc, [
+          ...shown.find(),
+          ...bindingDecorations(state.doc, bindingContextOf(outer.state)).find(),
+        ]);
         // What will not resolve in the footnote's own text, by the component's check (ET-I): made again
         // only when the footnote's text or the check changes, not on every draw.
         const check = styleCheckOf(outer.state);
@@ -196,6 +207,8 @@ export function footnoteView(
           if (outcome !== null) options.pasted({ ok: outcome.ok, report: outcome.report });
           return true;
         },
+        copy: (view, event) => copyFromFootnote(view, outer, event, false),
+        cut: (view, event) => copyFromFootnote(view, outer, event, outer.editable),
       },
       // Reached only by `pasteHTML` and `pasteText` called on the view, as on the surface.
       handlePaste: () => true,
@@ -294,4 +307,34 @@ export function pasteIntoOpenFootnote(
     );
   }
   return outcome;
+}
+
+/**
+ * Copy, and cut where the component takes changes, from a footnote's own editor: HTML and plain text
+ * as ProseMirror writes them, but with each binding in the selection written as what it shows, from
+ * the surface's context (B1-D), as the surface's copy writes one. A reference keeps what ProseMirror
+ * writes for it here: the words it shows are judged against the surface's document, and the footnote's
+ * selection would have to be read there first, which this copy does not yet do.
+ */
+function copyFromFootnote(
+  view: EditorView,
+  outer: EditorView,
+  event: ClipboardEvent,
+  remove: boolean,
+): boolean {
+  const data = event.clipboardData;
+  if (!data || view.state.selection.empty) return false;
+  event.preventDefault();
+  const { ranges } = view.state.selection;
+  const bindings = bindingsShown(view.state.doc, bindingContextOf(outer.state)).filter(({ pos }) =>
+    ranges.some(({ $from, $to }) => pos >= $from.pos && pos < $to.pos),
+  );
+  const { html, text } = copiedAsShown(view, view.state.selection.content(), [], bindings);
+  data.clearData();
+  data.setData('text/html', html);
+  data.setData('text/plain', text);
+  if (remove) {
+    view.dispatch(view.state.tr.deleteSelection().scrollIntoView().setMeta('uiEvent', 'cut'));
+  }
+  return true;
 }

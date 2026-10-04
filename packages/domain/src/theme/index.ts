@@ -13,6 +13,8 @@ export {
   ROLES,
   STYLED_MARKS,
   THEME_SCHEMA_VERSION,
+  VALUE_CATALOGUE_KIND,
+  valueFormatsSchema,
 } from './schema.js';
 export type {
   AdmonitionCatalogue,
@@ -55,6 +57,8 @@ export type {
   TableStyle2,
   Theme,
   Typeface,
+  ValueCatalogue,
+  ValueFormats,
 } from './schema.js';
 
 export {
@@ -80,6 +84,12 @@ export {
   DEFAULT_CATALOGUE_VERSIONS,
   DEFAULT_THEME,
   DEFAULT_THEME_VERSION,
+  DEFAULT_VALUE_FORMATS,
+  FIFTH_DEFAULT_CATALOGUES,
+  FIFTH_DEFAULT_CATALOGUES_BY_VERSION,
+  FIFTH_DEFAULT_CATALOGUE_VERSIONS,
+  FIFTH_DEFAULT_THEME,
+  FIFTH_DEFAULT_THEME_VERSION,
   FIRST_DEFAULT_CATALOGUES,
   FIRST_DEFAULT_CATALOGUES_BY_VERSION,
   FIRST_DEFAULT_CATALOGUE_VERSIONS,

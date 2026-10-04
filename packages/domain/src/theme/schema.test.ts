@@ -15,8 +15,10 @@ import {
   STYLED_MARKS,
   catalogueSchema,
   catalogueSchema1,
+  VALUE_CATALOGUE_KIND,
   catalogueSchema2,
   themeSchema,
+  valueFormatsSchema,
 } from './schema.js';
 
 /**
@@ -536,5 +538,201 @@ describe('theme/1', () => {
     const theme = clone(DEFAULT_THEME);
     const odd = { ...theme.typefaces[0]!, licence: 'free for all <b>' };
     expect(() => themeSchema.parse({ ...theme, typefaces: [odd] })).toThrow();
+  });
+});
+
+/** A value catalogue's formats, as the default theme's 0.6 states them, built here so a test owns it. */
+const formats = () => ({
+  number: { decimal: '.', group: ',', groupFrom: 4, minus: 'U+002D' },
+  date: { order: 'ymd', separator: '-', pad: true },
+  time: { separator: ':' },
+  boolean: { true: 'Yes', false: 'No' },
+});
+
+const values = (over: Record<string, unknown> = {}) => ({
+  schemaVersion: 3,
+  kind: VALUE_CATALOGUE_KIND,
+  formats: formats(),
+  byLanguage: [],
+  ...over,
+});
+
+const acceptsValues = (catalogue: unknown) => catalogueSchema.safeParse(catalogue).success;
+
+/** The formats with one member of one part replaced. */
+const formatsWith = (part: string, member: string, value: unknown) => {
+  const changed: Record<string, Record<string, unknown>> = formats();
+  changed[part] = { ...changed[part], [member]: value };
+  return changed;
+};
+
+describe('the value catalogue, at catalogue/3 beside the six kinds', () => {
+  it('stands beside the six kinds, not as a seventh', () => {
+    expect(VALUE_CATALOGUE_KIND).toBe('value');
+    expect(CATALOGUE_KINDS).not.toContain(VALUE_CATALOGUE_KIND);
+    expect(CATALOGUE_KINDS).toHaveLength(6);
+    expect(acceptsValues(values())).toBe(true);
+    expect(valueFormatsSchema.safeParse(formats()).success).toBe(true);
+  });
+
+  it('is refused at catalogue/1 and catalogue/2, which it never existed at', () => {
+    for (const schemaVersion of [1, 2]) {
+      const stored = values({ schemaVersion });
+      expect(acceptsValues(stored), String(schemaVersion)).toBe(false);
+      expect(catalogueSchema1.safeParse(stored).success).toBe(false);
+      expect(catalogueSchema2.safeParse(stored).success).toBe(false);
+    }
+  });
+
+  it('holds each format to its closed set, strict at every level', () => {
+    const allowed: Record<string, Record<string, readonly unknown[]>> = {
+      number: {
+        decimal: ['.', ','],
+        group: ['none', ',', '.', "'", 'U+00A0', 'U+202F'],
+        groupFrom: [4, 5],
+        minus: ['U+002D', 'U+2212'],
+      },
+      date: { order: ['ymd', 'dmy', 'mdy'], separator: ['-', '/', '.'], pad: [true, false] },
+      time: { separator: [':', '.'] },
+    };
+    for (const [part, members] of Object.entries(allowed)) {
+      for (const [member, each] of Object.entries(members)) {
+        for (const value of each) {
+          // A group that is the decimal is refused below; set the decimal apart from it here.
+          const changed = formatsWith(part, member, value);
+          if (part === 'number' && member === 'group' && value === '.') {
+            changed.number!.decimal = ',';
+          }
+          if (part === 'number' && member === 'decimal' && value === ',') {
+            changed.number!.group = '.';
+          }
+          // A time separated by the decimal is refused below; set the decimal apart from it here.
+          if (part === 'time' && value === '.') {
+            changed.number!.decimal = ',';
+            changed.number!.group = '.';
+          }
+          const label = `${part}.${member} ${String(value)}`;
+          expect(acceptsValues(values({ formats: changed })), label).toBe(true);
+        }
+      }
+    }
+    for (const [part, member, value] of [
+      ['number', 'decimal', ' '],
+      ['number', 'group', ' '],
+      ['number', 'group', String.fromCodePoint(0xa0)],
+      ['number', 'groupFrom', 3],
+      ['number', 'minus', '-'],
+      ['number', 'minus', String.fromCodePoint(0x2212)],
+      ['date', 'order', 'ydm'],
+      ['date', 'separator', ' '],
+      ['date', 'pad', 'yes'],
+      ['time', 'separator', 'h'],
+      ['number', 'exponent', 'e'],
+      ['boolean', 'maybe', 'Perhaps'],
+    ] as const) {
+      const changed = formatsWith(part, member, value);
+      expect(acceptsValues(values({ formats: changed })), `${part}.${member}`).toBe(false);
+    }
+    expect(acceptsValues(values({ formats: { ...formats(), currency: {} } }))).toBe(false);
+    expect(acceptsValues(values({ styles: [] }))).toBe(false);
+    const missing: Record<string, unknown> = formats();
+    delete missing.time;
+    expect(acceptsValues(values({ formats: missing }))).toBe(false);
+  });
+
+  it('never groups by the decimal separator', () => {
+    for (const mark of ['.', ',']) {
+      const changed = formatsWith('number', 'group', mark);
+      changed.number!.decimal = mark;
+      expect(acceptsValues(values({ formats: changed })), mark).toBe(false);
+    }
+  });
+
+  it("never separates a time's parts by the decimal separator, which its fraction follows", () => {
+    const ambiguous = formatsWith('time', 'separator', '.');
+    expect(ambiguous.number!.decimal).toBe('.');
+    expect(acceptsValues(values({ formats: ambiguous })), 'formats').toBe(false);
+    expect(
+      acceptsValues(values({ byLanguage: [{ language: 'de', formats: ambiguous }] })),
+      'byLanguage',
+    ).toBe(false);
+    const commaDecimal = formatsWith('time', 'separator', '.');
+    commaDecimal.number = { ...commaDecimal.number, decimal: ',', group: '.' };
+    expect(acceptsValues(values({ formats: commaDecimal }))).toBe(true);
+    const colonComma = formatsWith('number', 'decimal', ',');
+    colonComma.number!.group = '.';
+    expect(acceptsValues(values({ formats: colonComma }))).toBe(true);
+  });
+
+  it("refuses a boolean's word that cannot be seen, or that looks like the other", () => {
+    const words = (yes: string, no: string) =>
+      acceptsValues(values({ formats: { ...formats(), boolean: { true: yes, false: no } } }));
+    const ZWSP = String.fromCodePoint(0x200b);
+    const RLO = String.fromCodePoint(0x202e);
+    const SHY = String.fromCodePoint(0xad);
+    const HANGUL_FILLER = String.fromCodePoint(0x3164);
+    const VS16 = String.fromCodePoint(0xfe0f);
+    const CGJ = String.fromCodePoint(0x34f);
+    const CHECK = String.fromCodePoint(0x2714);
+    // A format character anywhere: invisible, or reordering what follows it.
+    expect(words(ZWSP, 'No')).toBe(false);
+    expect(words(`Yes${ZWSP}`, 'Yes')).toBe(false);
+    expect(words(`${RLO}Yes`, 'No')).toBe(false);
+    expect(words(`Ye${SHY}s`, 'No')).toBe(false);
+    // No visible character at all.
+    expect(words(HANGUL_FILLER, 'No')).toBe(false);
+    expect(words(VS16, 'No')).toBe(false);
+    // Two words alike once what is never drawn is taken out.
+    expect(words(`Yes${VS16}`, 'Yes')).toBe(false);
+    expect(words(`Y${CGJ}es`, 'Yes')).toBe(false);
+    // A visible character with its presentation selector is a word of its own.
+    expect(words(`${CHECK}${VS16}`, 'No')).toBe(true);
+  });
+
+  it("holds a boolean's words to 1 to 40 code points, in NFC, with no control, trimmed and different", () => {
+    const words = (yes: string, no: string) =>
+      acceptsValues(values({ formats: { ...formats(), boolean: { true: yes, false: no } } }));
+    const ACUTE = String.fromCodePoint(0x301);
+    const SMILE = String.fromCodePoint(0x1f600);
+    expect(words('Oui', 'Non')).toBe(true);
+    expect(words(SMILE.repeat(40), 'No')).toBe(true);
+    expect(words('a'.repeat(41), 'No')).toBe(false);
+    expect(words(SMILE.repeat(41), 'No')).toBe(false);
+    expect(words('', 'No')).toBe(false);
+    expect(words(`Ye${ACUTE}s`, 'No')).toBe(false);
+    expect(words(`Yes${String.fromCodePoint(0x7)}`, 'No')).toBe(false);
+    expect(words(' Yes', 'No')).toBe(false);
+    expect(words('Yes', 'No ')).toBe(false);
+    expect(words('Same', 'Same')).toBe(false);
+  });
+
+  it('gives formats for at most 32 languages, each a primary subtag once', () => {
+    const language = (tag: string) => ({ language: tag, formats: formats() });
+    expect(acceptsValues(values({ byLanguage: [language('de'), language('fil')] }))).toBe(true);
+    for (const tag of ['DE', 'de-CH', 'd', 'deut', 'd1', '']) {
+      expect(acceptsValues(values({ byLanguage: [language(tag)] })), tag).toBe(false);
+    }
+    expect(acceptsValues(values({ byLanguage: [language('de'), language('de')] }))).toBe(false);
+    const many = Array.from({ length: 33 }, (_, at) =>
+      language(String.fromCharCode(97 + Math.floor(at / 26), 97 + (at % 26))),
+    );
+    expect(acceptsValues(values({ byLanguage: many.slice(0, 32) }))).toBe(true);
+    expect(acceptsValues(values({ byLanguage: many }))).toBe(false);
+    expect(acceptsValues(values({ byLanguage: [{ ...language('de'), note: 'x' }] }))).toBe(false);
+    const wrong = { language: 'de', formats: formatsWith('date', 'order', 'x') };
+    expect(acceptsValues(values({ byLanguage: [wrong] }))).toBe(false);
+  });
+});
+
+describe('theme/1 naming a value catalogue', () => {
+  it('names one optionally, by artifact version, so a theme before 0.6 still reads', () => {
+    const theme = clone(DEFAULT_THEME);
+    const six: Record<string, unknown> = { ...theme.catalogues };
+    delete six.value;
+    expect(themeSchema.safeParse({ ...theme, catalogues: six }).success).toBe(true);
+    const named = { ...six, value: '00000000-0000-4000-8000-0000000000aa' };
+    expect(themeSchema.safeParse({ ...theme, catalogues: named }).success).toBe(true);
+    const notAVersion = { ...six, value: 'value' };
+    expect(themeSchema.safeParse({ ...theme, catalogues: notAVersion }).success).toBe(false);
   });
 });

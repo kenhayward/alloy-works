@@ -476,6 +476,80 @@
   text-decoration: underline wavy var(--danger);
 }
 
+/* A binding (the B1 plan, B1-D, B1-L): in a document, the value it holds, set as the text it stands
+ * in - a read text's button included, which takes the paragraph's face and size - and marked only
+ * where the pointer or the focus is on it, or it is selected, by a dotted underline. Not scoped to the
+ * surface, since a document's text shows the same binding. */
+.aw-binding {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  text-decoration: none;
+  text-underline-offset: 0.2em;
+  cursor: default;
+}
+
+button.aw-binding {
+  cursor: pointer;
+}
+
+.aw-binding:hover,
+.aw-binding:focus-visible,
+.aw-binding.ProseMirror-selectednode {
+  text-decoration: underline dotted;
+}
+
+/* The read text's button takes the focus ring the theme's links take. */
+button.aw-binding:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.aw-binding.ProseMirror-selectednode {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* On its own, what it asks for, in the application's chip: never a value (B1-K). */
+.aw-binding.aw-binding-alone {
+  padding: 0 0.3em;
+  border-radius: 3px;
+  background: var(--chip-bg);
+  font-style: italic;
+}
+
+/* A binding with no value (DAT-047): its words say why, and it is drawn apart by a dashed border and
+ * a wavy underline as well as by colour, as a broken reference is, so a reader who cannot see the
+ * colour can still tell it from a value. */
+.aw-binding.aw-binding-failed {
+  border: 1px dashed var(--danger);
+  color: var(--danger);
+  font-style: italic;
+  text-decoration: underline wavy var(--danger);
+}
+
+/* A held value with a newer result waiting: an icon and its words, shown always (B1-J). */
+.aw-binding-marker {
+  margin-left: 0.25em;
+  padding: 0 0.25em;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font-size: 0.8em;
+}
+
+/* The words a screen reader is told after a binding - its kind - and nobody sees (B1-L). */
+.aw-binding-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* An equation (equations 1, ruling R5): its stored MathML drawn natively, in the reader's own maths
  * font - no maths face is shipped for the screen in this slice. Inline, it sits on the baseline of the
  * text it stands in, as MathML's own layout sets it; a block stands on its own line, centred, with

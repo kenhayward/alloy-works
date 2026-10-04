@@ -597,9 +597,9 @@ A value from a tenant's own data standing in a component's text, designed in
 the editor's side of a binding and the publish's binding stage, built in the six slices its build
 order names, each planned when its turn comes.
 
-| #   | Plan                                                | Builds                                                                                                                                                                                                                                                                                                             | Status  |
-| --- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
-| B1  | [The value shown](2026-10-04-b1-the-value-shown.md) | The binding as an editor node, opened for editing, its identifier kept on a cut and paste and renewed on a copy; `takeValue` and `formatValue`, the theme's value catalogue and the default theme's 0.6; taken values held as derived data; values and failures shown in place in a document; the provenance panel | Planned |
+| #   | Plan                                                | Builds                                                                                                                                                                                                                                                                                                             | Status |
+| --- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
+| B1  | [The value shown](2026-10-04-b1-the-value-shown.md) | The binding as an editor node, opened for editing, its identifier kept on a cut and paste and renewed on a copy; `takeValue` and `formatValue`, the theme's value catalogue and the default theme's 0.6; taken values held as derived data; values and failures shown in place in a document; the provenance panel | Built  |
 
 ## Publishing
 

@@ -54,6 +54,16 @@ const figure = (id: string, asset: string, caption: string) => ({
   caption,
   alternative: { kind: 'decorative' },
 });
+/** A query definition's identifier, invented. */
+const QUERY = '00000000-0000-4000-8000-00000000d001';
+const binding = (id: string) => ({
+  type: 'binding',
+  id,
+  query: QUERY,
+  parameters: { site: { literal: 'north' } },
+  mode: 'checked',
+  take: { column: 'depth' },
+});
 const footnote = (id: string, content: unknown[]) => ({
   type: 'footnote',
   id,
@@ -444,6 +454,107 @@ describe('the re-identify stage', () => {
       { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 2 },
       { stage: 'reidentify', action: 'kept', subject: 'crossReferenceUnresolved', count: 1 },
     ]);
+  });
+
+  it('gives a pasted binding a new identifier, records it apart from the blocks renamed, and counts it copied', () => {
+    const bound = binding('k1');
+    const report = createReport();
+    const identified = reidentify(
+      { schemaVersion: 1, content: [paragraph('old-paragraph', [text('Mean '), bound])] },
+      receiver(),
+      report,
+    );
+    // A copy pasted into the component it came from would otherwise hold k1 twice.
+    expect(identified).toEqual({
+      ok: true,
+      value: {
+        schemaVersion: 1,
+        content: [paragraph('n3', [text('Mean '), { ...bound, id: 'n4' }])],
+      },
+      renamed: new Map([['old-paragraph', 'n3']]),
+      bindingsRenamed: new Map([['k1', 'n4']]),
+    });
+    expect(report.entries.map(({ message: _, ...entry }) => entry)).toEqual([
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 1 },
+      { stage: 'reidentify', action: 'rewritten', subject: 'bindingCopied', count: 1 },
+    ]);
+    // Its words promise no value: a copy holds none until a document resolves it.
+    const [, copied] = report.entries;
+    expect(copied!.message).toBe(
+      'Bound values were copied, each to be resolved in a document before it shows a value.',
+    );
+  });
+
+  it('keeps a block and a binding that arrived under one identifier apart, neither making the other ambiguous', () => {
+    const identified = reidentify(
+      { schemaVersion: 1, content: [paragraph('z', [text('Mean '), binding('z')])] },
+      receiver(),
+      createReport(),
+    );
+    if (!identified.ok) throw new Error(identified.failure);
+    expect([...identified.renamed]).toEqual([['z', 'n3']]);
+    expect([...identified.bindingsRenamed]).toEqual([['z', 'n4']]);
+  });
+
+  it("never makes a binding a reference's target, wherever its identifier stands", () => {
+    // The receiver holds a binding b1, its key naming a column called id.
+    const holding: ContentDocument = {
+      ...document,
+      content: [
+        {
+          type: 'paragraph',
+          id: 'n1',
+          style: 'body',
+          content: [
+            {
+              type: 'binding',
+              id: 'b1',
+              query: QUERY,
+              parameters: {},
+              mode: 'checked',
+              take: { key: { id: 'p7' }, column: 'depth' },
+            },
+          ],
+        },
+      ],
+    };
+    const cited = (block: string) =>
+      run(
+        {
+          schemaVersion: 1,
+          content: [paragraph('old-paragraph', [reference('old-x1', { kind: 'block', block })])],
+        },
+        receiver({ document: holding }),
+      ).entries;
+    for (const block of ['b1', 'p7']) {
+      expect(cited(block), block).toEqual([
+        { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 2 },
+        { stage: 'reidentify', action: 'kept', subject: 'crossReferenceUnresolved', count: 1 },
+      ]);
+    }
+
+    // A reference travelling with a binding it names is not pointed at the binding's copy.
+    const { outcome } = run({
+      schemaVersion: 1,
+      content: [
+        paragraph('old-paragraph', [
+          binding('k1'),
+          reference('old-x1', { kind: 'block', block: 'k1' }),
+        ]),
+      ],
+    });
+    expect(outcome).toEqual({
+      ok: true,
+      value: {
+        schemaVersion: 1,
+        content: [
+          paragraph('n3', [
+            { ...binding('k1'), id: 'n4' },
+            reference('n5', { kind: 'block', block: 'k1' }),
+          ]),
+        ],
+      },
+    });
   });
 
   it('gives every mark a new identifier, and the fragments of one annotation one between them', () => {

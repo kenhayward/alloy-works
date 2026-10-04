@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import {
   DEFAULT_CATALOGUES,
+  DEFAULT_CATALOGUES_BY_VERSION,
   DEFAULT_CATALOGUE_VERSIONS,
   DEFAULT_THEME,
+  FIFTH_DEFAULT_CATALOGUES_BY_VERSION,
+  FIFTH_DEFAULT_CATALOGUE_VERSIONS,
+  FIFTH_DEFAULT_THEME,
   FIRST_DEFAULT_CATALOGUES,
   FIRST_DEFAULT_CATALOGUES_BY_VERSION,
   FIRST_DEFAULT_CATALOGUE_VERSIONS,
@@ -13,7 +17,14 @@ import {
 } from './default.js';
 import { readCatalogue, readTheme, themeRefusalCodes } from './read.js';
 import { CATALOGUE_KINDS, PLACES, ROLES, STYLED_MARKS } from './schema.js';
-import { codes, defaultInputs, plainInputs, read, resolved } from './theme.fixture.js';
+import {
+  codes,
+  defaultInputs,
+  plainInputs,
+  read,
+  resolved,
+  type ThemeInputs,
+} from './theme.fixture.js';
 
 /**
  * The reader (themes 1, ruling R2): the one place a theme's rules live (STY-035). A theme and the
@@ -21,6 +32,10 @@ import { codes, defaultInputs, plainInputs, read, resolved } from './theme.fixtu
  * each a stable code and a sentence (STY-061). The store, `assemble` and these tests all read through
  * it, so none of them can read a theme differently.
  */
+/** The value catalogue the inputs' theme names, under the version it names it by (B1-F). */
+const valueOf = (inputs: ThemeInputs) =>
+  [inputs.theme.catalogues.value!, inputs.catalogues.value] as const;
+
 describe('readTheme', () => {
   it('STY-001 resolves every style as a named definition in the catalogue of its kind, and refuses one without a name', () => {
     const theme = resolved();
@@ -43,6 +58,7 @@ describe('readTheme', () => {
           (kind) => [inputs.theme.catalogues[kind], inputs.catalogues[kind]] as const,
         ),
         [inputs.theme.catalogues.paragraph, { ...inputs.catalogues.paragraph, styles: [nameless] }],
+        valueOf(inputs),
       ]),
     );
     expect(codes(refused)).toEqual(['catalogue_malformed']);
@@ -61,12 +77,16 @@ describe('readTheme', () => {
     const swapped = defaultInputs();
     const outcome = readTheme(
       swapped.theme,
-      new Map<string, unknown>(
-        CATALOGUE_KINDS.map((kind) => [
-          swapped.theme.catalogues[kind],
-          kind === 'citation' ? swapped.catalogues.admonition : swapped.catalogues[kind],
-        ]),
-      ),
+      new Map<string, unknown>([
+        ...CATALOGUE_KINDS.map(
+          (kind) =>
+            [
+              swapped.theme.catalogues[kind],
+              kind === 'citation' ? swapped.catalogues.admonition : swapped.catalogues[kind],
+            ] as const,
+        ),
+        valueOf(swapped),
+      ]),
     );
     expect(outcome.ok ? [] : outcome.refusals).toEqual([
       {
@@ -78,14 +98,17 @@ describe('readTheme', () => {
 
   it('binds one catalogue of each kind by artifact version, reading each at the version it names', () => {
     const theme = resolved();
-    expect(theme.catalogues).toEqual(DEFAULT_CATALOGUE_VERSIONS);
+    expect(theme.catalogues).toEqual(FIFTH_DEFAULT_CATALOGUE_VERSIONS);
 
     // Another version of the paragraph catalogue, one that would refuse, stands beside the one named:
     // it is never read, because the theme names a version and not a catalogue.
     const inputs = defaultInputs();
-    const byVersion = new Map<string, unknown>(
-      CATALOGUE_KINDS.map((kind) => [inputs.theme.catalogues[kind], inputs.catalogues[kind]]),
-    );
+    const byVersion = new Map<string, unknown>([
+      ...CATALOGUE_KINDS.map(
+        (kind) => [inputs.theme.catalogues[kind], inputs.catalogues[kind]] as const,
+      ),
+      valueOf(inputs),
+    ]);
     byVersion.set('00000000-0000-4000-8000-000000000000', { kind: 'paragraph', styles: 'none' });
     expect(readTheme(inputs.theme, byVersion).ok).toBe(true);
 
@@ -340,18 +363,22 @@ describe('readTheme', () => {
     const inputs = defaultInputs();
     const outcome = readTheme(
       inputs.theme,
-      new Map<string, unknown>(
-        CATALOGUE_KINDS.map((kind) => [
-          inputs.theme.catalogues[kind],
-          kind === 'table'
-            ? {
-                schemaVersion: 1,
-                kind: 'table',
-                styles: [{ id: 'Table', name: '', appliesTo: [] }],
-              }
-            : inputs.catalogues[kind],
-        ]),
-      ),
+      new Map<string, unknown>([
+        ...CATALOGUE_KINDS.map(
+          (kind) =>
+            [
+              inputs.theme.catalogues[kind],
+              kind === 'table'
+                ? {
+                    schemaVersion: 1,
+                    kind: 'table',
+                    styles: [{ id: 'Table', name: '', appliesTo: [] }],
+                  }
+                : inputs.catalogues[kind],
+            ] as const,
+        ),
+        valueOf(inputs),
+      ]),
     );
     expect(codes(outcome)).toEqual([
       'catalogue_malformed',
@@ -1129,5 +1156,67 @@ describe('readCatalogue', () => {
     ]);
     expect(codes(readTheme(null, new Map()))).toEqual(['theme_malformed']);
     expect(readCatalogue({ kind: 'paragraph' }).ok).toBe(false);
+  });
+
+  it('reads a value catalogue at catalogue/3, and refuses one at catalogue/1 or catalogue/2, which it never existed at', () => {
+    expect(readCatalogue(DEFAULT_CATALOGUES.value)).toEqual({
+      ok: true,
+      catalogue: DEFAULT_CATALOGUES.value,
+    });
+    for (const schemaVersion of [1, 2]) {
+      const outcome = readCatalogue({ ...DEFAULT_CATALOGUES.value, schemaVersion });
+      expect(outcome.ok ? [] : outcome.refusals.map((each) => each.code)).toEqual([
+        'catalogue_malformed',
+      ]);
+    }
+  });
+});
+
+describe('readTheme and the value catalogue', () => {
+  it('answers the value catalogue a theme names, beside the six kinds, and no catalogue where it names none', () => {
+    expect(resolved().valueCatalogue).toEqual(DEFAULT_CATALOGUES.value);
+    expect(Object.keys(resolved().catalogues)).toEqual([...CATALOGUE_KINDS]);
+
+    const before = readTheme(FIFTH_DEFAULT_THEME, FIFTH_DEFAULT_CATALOGUES_BY_VERSION);
+    expect(before.ok && before.theme.valueCatalogue).toBeNull();
+    expect('value' in FIFTH_DEFAULT_THEME.catalogues).toBe(false);
+  });
+
+  it('refuses a value catalogue the theme names and does not find, or that is not a value catalogue', () => {
+    const inputs = defaultInputs();
+    const missing = new Map(DEFAULT_CATALOGUES_BY_VERSION);
+    missing.delete(inputs.theme.catalogues.value!);
+    const outcome = readTheme(inputs.theme, missing);
+    expect(outcome.ok ? [] : outcome.refusals).toEqual([
+      {
+        code: 'catalogue_missing',
+        message: `The theme's value catalogue, version ${DEFAULT_CATALOGUE_VERSIONS.value}, was not found`,
+      },
+    ]);
+
+    const paragraphs = new Map(DEFAULT_CATALOGUES_BY_VERSION);
+    paragraphs.set(inputs.theme.catalogues.value!, inputs.catalogues.paragraph);
+    const wrong = readTheme(inputs.theme, paragraphs);
+    expect(wrong.ok ? [] : wrong.refusals).toEqual([
+      {
+        code: 'catalogue_wrong_kind',
+        message: `The theme names ${DEFAULT_CATALOGUE_VERSIONS.value} as its value catalogue, which is a paragraph catalogue`,
+      },
+    ]);
+
+    // And the value catalogue named in a kind's place.
+    const swapped = new Map(DEFAULT_CATALOGUES_BY_VERSION);
+    swapped.set(inputs.theme.catalogues.citation, inputs.catalogues.value);
+    const named = readTheme(inputs.theme, swapped);
+    expect(named.ok ? [] : named.refusals).toEqual([
+      {
+        code: 'catalogue_wrong_kind',
+        message: `The theme names ${DEFAULT_CATALOGUE_VERSIONS.citation} as its citation catalogue, which is a value catalogue`,
+      },
+    ]);
+
+    const malformed = new Map(DEFAULT_CATALOGUES_BY_VERSION);
+    malformed.set(inputs.theme.catalogues.value!, { ...inputs.catalogues.value, byLanguage: 'de' });
+    expect(codes(readTheme(inputs.theme, malformed))).toEqual(['catalogue_malformed']);
   });
 });

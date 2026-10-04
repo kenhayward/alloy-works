@@ -13,6 +13,7 @@ import {
   drawEquation,
   renderContent,
   TEXT_CLASS,
+  type BindingContext,
   type ReferenceContext,
 } from '@alloy-works/editor';
 import '@alloy-works/editor/style.css';
@@ -27,6 +28,7 @@ import {
 } from 'react';
 
 import { heldSentence } from '../editor/held.js';
+import { bindingContexts, statesByNode, type BindingState } from './bindingContexts.js';
 import { referenceContexts } from './contexts.js';
 import { textOffsetIn } from '../editor/caret.js';
 
@@ -36,6 +38,7 @@ import { nodeName, titleText, type Names } from './tree.js';
 import { innerWidth, useCanvas } from '../theme/Canvas.js';
 import { useStyledImages } from '../theme/images.js';
 import { useUnresolvedMarks } from '../theme/check.js';
+import { usePresentation } from '../theme/presentation.js';
 import { VersionChoice, versionSaid, type Choosing } from './VersionChoice.js';
 
 /** The room the document's column has for its measure, at Fit: its own, inside its padding. */
@@ -57,6 +60,15 @@ export interface Place {
   readonly onDone: () => void;
   /** What the document offers its references, for the occurrence being edited (ruling R11). */
   readonly referenceContext?: ReferenceContext | null;
+  /**
+   * What the document holds for each binding of the occurrence being edited (the B1 plan, B1-D): null
+   * where the page has not read it, or could not.
+   */
+  readonly bindingContext?: BindingContext | null;
+  /** What the bindings view says of each of its bindings, by identifier, for its Value panel. */
+  readonly bindingStates?: ReadonlyMap<string, BindingState>;
+  /** Opens a value's provenance, from the Value panel's **Provenance** (B1-M), given that button. */
+  readonly onProvenance?: (binding: string, opener: HTMLElement) => void;
 }
 
 /**
@@ -126,17 +138,36 @@ function EditableState({ state, openHere }: { state: Editable | undefined; openH
 function RenderedText({
   content,
   context,
+  bindings,
   onOpen,
+  onProvenance,
 }: {
   content: unknown;
   /** What its references print from, where it stands in a document (ruling R12). */
   context: ReferenceContext | null;
+  /** What the document holds for its bindings (the B1 plan, B1-D), or null where it is not known. */
+  bindings: BindingContext | null;
   onOpen?: (openAt: number) => void;
+  /**
+   * Opens a value's provenance (B1-M; DAT-041): a click on a value, or Enter on it - a button, whose
+   * Enter the browser makes a click - never opens the editor.
+   */
+  onProvenance?: (binding: string, opener: HTMLElement) => void;
 }) {
   const place = useRef<HTMLDivElement>(null);
   useStyledImages(place);
   useUnresolvedMarks(place);
-  const rendered = useMemo(() => renderContent(content, document, context), [content, context]);
+  const rendered = useMemo(
+    () => renderContent(content, document, context, bindings),
+    [content, context, bindings],
+  );
+  /** Whether a click was on a value, which then opens its provenance and nothing else. */
+  const onValue = (target: EventTarget): boolean => {
+    const value = (target as Element).closest?.('button[data-binding]');
+    if (!(value instanceof HTMLElement)) return false;
+    onProvenance?.(value.dataset.binding ?? '', value);
+    return true;
+  };
   // The old text swapped for the new in one step, and never emptied first (issue #384): every
   // effect's cleanup in a flush runs before any effect's setup, so a card emptied in its cleanup stays
   // empty while the outline pane's effect measures the page between them - and the browser pulls the
@@ -148,7 +179,15 @@ function RenderedText({
   }, [rendered]);
   if (rendered === null) return <p className={styles['cannot']}>{CANNOT_SHOW}</p>;
   const classes = `${styles['body']} ${TEXT_CLASS}`;
-  if (!onOpen) return <div ref={place} className={classes} />;
+  if (!onOpen) {
+    return (
+      <div
+        ref={place}
+        className={classes}
+        onClick={onProvenance ? (event) => void onValue(event.target) : undefined}
+      />
+    );
+  }
   return (
     <div
       ref={place}
@@ -159,6 +198,7 @@ function RenderedText({
       onClick={(event) => {
         const host = place.current;
         if (!host) return;
+        if (onValue(event.target)) return;
         if ((event.target as Element).closest('a')) event.preventDefault();
         const selection = host.ownerDocument.getSelection();
         if (selection && !selection.isCollapsed && host.contains(selection.anchorNode)) return;
@@ -247,6 +287,8 @@ export function DocumentText({
   marked = null,
   resolved,
   choosing,
+  bindingStates = null,
+  onProvenance,
 }: {
   outline: OutlineView;
   scheme: NumberingScheme | null;
@@ -280,6 +322,13 @@ export function DocumentText({
    * reader who may restructure the document. Without it the label says the version and offers nothing.
    */
   choosing?: Choosing;
+  /**
+   * What the bindings view says of every binding the texts hold (the B1 plan, B1-I), or null where the
+   * page has not read it, or could not: then no value is shown, and no error (B1-N).
+   */
+  bindingStates?: readonly BindingState[] | null;
+  /** Opens a value's provenance, from the text or the editor opened in place (B1-M). */
+  onProvenance?: (node: string, binding: string, opener: HTMLElement | null) => void;
 }) {
   // The whole document is one canvas, the theme's paper (document-view.md, "One scroll"; CNT-072).
   const column = useRef<HTMLElement>(null);
@@ -300,6 +349,17 @@ export function DocumentText({
   const contexts = useMemo(
     () => referenceContexts(outline, scheme, contributions, words),
     [outline, scheme, contributions, words],
+  );
+  // Each occurrence's values, formatted in the theme's formats for the document's language (B1-G).
+  const presentation = usePresentation();
+  const theme = presentation?.state === 'ready' ? presentation.theme : null;
+  const bindingContextsByNode = useMemo(
+    () => (bindingStates === null ? null : bindingContexts(bindingStates, theme, outline.language)),
+    [bindingStates, theme, outline.language],
+  );
+  const bindingStatesByNode = useMemo(
+    () => (bindingStates === null ? null : statesByNode(bindingStates)),
+    [bindingStates],
   );
 
   // The component open in place on this page, whichever occurrence it was opened from.
@@ -401,13 +461,30 @@ export function DocumentText({
                       : { number: numbers.get(node.id)! }),
                     ...(openAt === undefined ? {} : { openAt }),
                     referenceContext: contexts.get(node.id) ?? null,
+                    bindingContext: bindingContextsByNode?.get(node.id) ?? null,
+                    ...(bindingStatesByNode?.has(node.id)
+                      ? { bindingStates: bindingStatesByNode.get(node.id)! }
+                      : {}),
+                    ...(onProvenance
+                      ? {
+                          onProvenance: (binding: string, opener: HTMLElement) =>
+                            onProvenance(node.id, binding, opener),
+                        }
+                      : {}),
                     onDone: () => onEdit?.(null),
                   })
                 : texts?.has(node.id) && (
                     <RenderedText
                       content={texts.get(node.id)}
                       context={contexts.get(node.id) ?? null}
+                      bindings={bindingContextsByNode?.get(node.id) ?? null}
                       {...(onEdit && editor ? { onOpen: open(node.id) } : {})}
+                      {...(onProvenance
+                        ? {
+                            onProvenance: (binding: string, opener: HTMLElement) =>
+                              onProvenance(node.id, binding, opener),
+                          }
+                        : {})}
                     />
                   ))}
           </div>

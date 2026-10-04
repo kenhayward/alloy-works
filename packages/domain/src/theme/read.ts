@@ -11,6 +11,7 @@ import {
   SCRIPT_SCALE,
   STYLED_MARKS,
   THEME_SCHEMA_VERSION,
+  VALUE_CATALOGUE_KIND,
   catalogueSchema,
   catalogueSchema1,
   catalogueSchema2,
@@ -32,6 +33,7 @@ import {
   type StyledMark,
   type TableStyle,
   type Typeface,
+  type ValueCatalogue,
 } from './schema.js';
 
 /**
@@ -161,6 +163,12 @@ export interface ResolvedTheme {
   readonly places: Readonly<Record<Place, string>>;
   /** The paragraph style's identifier each role is set in (TH-E). */
   readonly roles: Readonly<Record<Role, string>>;
+  /**
+   * The value catalogue the theme names, beside the six kinds (B1-F), or null where it names none, as
+   * every theme before the default's 0.6: a value is then formatted by the product's default
+   * (`formatsFor`).
+   */
+  readonly valueCatalogue: ValueCatalogue | null;
 }
 
 export type CatalogueReadOutcome =
@@ -369,32 +377,42 @@ export function readTheme(
   }
 
   // Each catalogue at the version the theme names, of the kind it is named for.
-  const examined: Partial<Record<CatalogueKind, Examined>> = {};
-  for (const kind of CATALOGUE_KINDS) {
-    const version = stated.catalogues[kind];
+  const examineNamed = (
+    kind: CatalogueKind | typeof VALUE_CATALOGUE_KIND,
+    version: string,
+  ): Examined | undefined => {
     if (!catalogues.has(version)) {
       refusals.push({
         code: 'catalogue_missing',
         message: `The theme's ${kind} catalogue, version ${version}, was not found`,
       });
-      continue;
+      return undefined;
     }
     const parsed = parseCatalogue(catalogues.get(version), `The ${kind} catalogue ${version}`);
     if (!parsed.ok) {
       refusals.push(...parsed.refusals);
-      continue;
+      return undefined;
     }
     if (parsed.value.kind !== kind) {
       refusals.push({
         code: 'catalogue_wrong_kind',
         message: `The theme names ${version} as its ${kind} catalogue, which is ${article(parsed.value.kind)} ${parsed.value.kind} catalogue`,
       });
-      continue;
+      return undefined;
     }
     const outcome = examine(parsed.value);
     refusals.push(...outcome.refusals);
-    examined[kind] = outcome;
+    return outcome;
+  };
+  const examined: Partial<Record<CatalogueKind, Examined>> = {};
+  for (const kind of CATALOGUE_KINDS) {
+    const outcome = examineNamed(kind, stated.catalogues[kind]);
+    if (outcome !== undefined) examined[kind] = outcome;
   }
+  // The value catalogue, beside the six (B1-F): read only where the theme names one.
+  const valueVersion = stated.catalogues[VALUE_CATALOGUE_KIND];
+  const value =
+    valueVersion === undefined ? undefined : examineNamed(VALUE_CATALOGUE_KIND, valueVersion);
 
   // Every paragraph style's typeface found. The base's and each style's own are checked where they are
   // stated, so a face missing from the base is refused once rather than once for every style.
@@ -541,6 +559,7 @@ export function readTheme(
         Role,
         string
       >,
+      valueCatalogue: value?.kind === VALUE_CATALOGUE_KIND ? value.catalogue : null,
     },
   };
 }
@@ -564,7 +583,8 @@ type Examined =
     }
   | { kind: 'table'; refusals: ThemeRefusal[]; styles: Map<string, TableStyle> }
   | { kind: 'image'; refusals: ThemeRefusal[]; styles: Map<string, ImageStyle> }
-  | { kind: 'admonition' | 'citation'; refusals: ThemeRefusal[] };
+  | { kind: 'admonition' | 'citation'; refusals: ThemeRefusal[] }
+  | { kind: 'value'; refusals: ThemeRefusal[]; catalogue: ValueCatalogue };
 
 function examine(catalogue: Catalogue): Examined {
   const refusals: ThemeRefusal[] = [];
@@ -630,6 +650,9 @@ function examine(catalogue: Catalogue): Examined {
     case 'admonition':
     case 'citation':
       return { kind: catalogue.kind, refusals };
+    // Its shape is all there is to it: no style, so nothing to be unique or to chain.
+    case 'value':
+      return { kind: 'value', refusals, catalogue };
   }
 }
 
@@ -1010,7 +1033,7 @@ function issues<T>(
   };
 }
 
-function article(kind: CatalogueKind): string {
+function article(kind: CatalogueKind | typeof VALUE_CATALOGUE_KIND): string {
   return kind === 'admonition' || kind === 'image' ? 'an' : 'a';
 }
 

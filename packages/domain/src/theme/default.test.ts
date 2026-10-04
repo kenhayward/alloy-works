@@ -6,6 +6,12 @@ import {
   DEFAULT_CATALOGUE_VERSIONS,
   DEFAULT_THEME,
   DEFAULT_THEME_VERSION,
+  DEFAULT_VALUE_FORMATS,
+  FIFTH_DEFAULT_CATALOGUES,
+  FIFTH_DEFAULT_CATALOGUES_BY_VERSION,
+  FIFTH_DEFAULT_CATALOGUE_VERSIONS,
+  FIFTH_DEFAULT_THEME,
+  FIFTH_DEFAULT_THEME_VERSION,
   FIRST_DEFAULT_CATALOGUES,
   FIRST_DEFAULT_CATALOGUES_BY_VERSION,
   FIRST_DEFAULT_CATALOGUE_VERSIONS,
@@ -44,12 +50,12 @@ const face = (id: string) => {
 };
 
 describe('the default theme', () => {
-  it('names each of its six catalogues by the version the store seeds', () => {
-    for (const kind of CATALOGUE_KINDS) {
+  it('names each of its six catalogues, and its value catalogue, by the version the store seeds', () => {
+    for (const kind of [...CATALOGUE_KINDS, 'value'] as const) {
       expect(DEFAULT_THEME.catalogues[kind], kind).toBe(DEFAULT_CATALOGUE_VERSIONS[kind]);
       expect(DEFAULT_CATALOGUES[kind].kind).toBe(kind);
     }
-    expect(new Set(Object.values(DEFAULT_CATALOGUE_VERSIONS)).size).toBe(6);
+    expect(new Set(Object.values(DEFAULT_CATALOGUE_VERSIONS)).size).toBe(7);
   });
 
   it("sets its text at template 11's sizes", () => {
@@ -250,9 +256,84 @@ describe('the default theme', () => {
   });
 });
 
-describe("the default theme's version 0.5", () => {
-  it('binds new versions of its table and image catalogues, each by a fixed identifier, and the other four as 0.4 did', () => {
+describe("the default theme's version 0.6", () => {
+  it('binds the value catalogue at its 0.1 by a fixed identifier, beside the six 0.5 binds', () => {
     expect(DEFAULT_CATALOGUE_VERSIONS).toEqual({
+      ...FIFTH_DEFAULT_CATALOGUE_VERSIONS,
+      value: '949bad3b-b80b-428d-8746-e34045212429',
+    });
+    expect(Object.keys(FIFTH_DEFAULT_CATALOGUE_VERSIONS)).toEqual([...CATALOGUE_KINDS]);
+    const earlier = [
+      ...Object.values(FIRST_DEFAULT_CATALOGUE_VERSIONS),
+      ...Object.values(SECOND_DEFAULT_CATALOGUE_VERSIONS),
+      ...Object.values(FOURTH_DEFAULT_CATALOGUE_VERSIONS),
+      ...Object.values(FIFTH_DEFAULT_CATALOGUE_VERSIONS),
+      SECOND_DEFAULT_THEME_VERSION,
+      THIRD_DEFAULT_THEME_VERSION,
+      FOURTH_DEFAULT_THEME_VERSION,
+      FIFTH_DEFAULT_THEME_VERSION,
+    ];
+    expect(earlier).not.toContain(DEFAULT_CATALOGUE_VERSIONS.value);
+    for (const kind of CATALOGUE_KINDS) {
+      expect(DEFAULT_CATALOGUES[kind], kind).toBe(FIFTH_DEFAULT_CATALOGUES[kind]);
+    }
+    expect([...DEFAULT_CATALOGUES_BY_VERSION.keys()].sort()).toEqual(
+      Object.values(DEFAULT_CATALOGUE_VERSIONS).sort(),
+    );
+  });
+
+  it('is its 0.5 naming the value catalogue too, with nothing else changed, under a fixed identifier of its own', () => {
+    expect(DEFAULT_THEME).toEqual({
+      ...FIFTH_DEFAULT_THEME,
+      catalogues: DEFAULT_CATALOGUE_VERSIONS,
+    });
+    expect(DEFAULT_THEME_VERSION).toBe('a4d8f4c0-0b17-46d4-9fd5-84bb784eb163');
+    expect([
+      SECOND_DEFAULT_THEME_VERSION,
+      THIRD_DEFAULT_THEME_VERSION,
+      FOURTH_DEFAULT_THEME_VERSION,
+      FIFTH_DEFAULT_THEME_VERSION,
+      ...Object.values(DEFAULT_CATALOGUE_VERSIONS),
+    ]).not.toContain(DEFAULT_THEME_VERSION);
+  });
+
+  it("states bindings.md's default formats: a full stop and commas from four digits, the hyphen-minus, ISO 8601's dates, a colon, and Yes and No", () => {
+    expect(DEFAULT_VALUE_FORMATS).toEqual({
+      number: { decimal: '.', group: ',', groupFrom: 4, minus: 'U+002D' },
+      date: { order: 'ymd', separator: '-', pad: true },
+      time: { separator: ':' },
+      boolean: { true: 'Yes', false: 'No' },
+    });
+    expect(DEFAULT_CATALOGUES.value).toEqual({
+      schemaVersion: 3,
+      kind: 'value',
+      formats: DEFAULT_VALUE_FORMATS,
+      byLanguage: [],
+    });
+  });
+
+  it('freezes the default formats and the value catalogue at every level, since every caller shares them', () => {
+    const frozenThrough = (value: unknown): boolean =>
+      typeof value !== 'object' ||
+      value === null ||
+      (Object.isFrozen(value) && Object.values(value).every(frozenThrough));
+    expect(frozenThrough(DEFAULT_VALUE_FORMATS)).toBe(true);
+    expect(frozenThrough(DEFAULT_CATALOGUES.value)).toBe(true);
+    expect(Object.isFrozen(DEFAULT_VALUE_FORMATS.boolean)).toBe(true);
+  });
+
+  it('reads as its 0.5 does, style for style, with its value catalogue beside', () => {
+    const now = readTheme(DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION);
+    const before = readTheme(FIFTH_DEFAULT_THEME, FIFTH_DEFAULT_CATALOGUES_BY_VERSION);
+    if (!now.ok || !before.ok) throw new Error('The default theme does not read');
+    expect({ ...now.theme, valueCatalogue: null }).toEqual(before.theme);
+    expect(now.theme.valueCatalogue).toEqual(DEFAULT_CATALOGUES.value);
+  });
+});
+
+describe("the default theme's version 0.5, as migration 0043 stored it", () => {
+  it('binds new versions of its table and image catalogues, each by a fixed identifier, and the other four as 0.4 did', () => {
+    expect(FIFTH_DEFAULT_CATALOGUE_VERSIONS).toEqual({
       ...FOURTH_DEFAULT_CATALOGUE_VERSIONS,
       table: 'b5fd3598-cc54-4c58-a546-8b33d795aa15',
       image: 'fda41d97-12ba-4581-b066-060d060c86a0',
@@ -266,33 +347,33 @@ describe("the default theme's version 0.5", () => {
       FOURTH_DEFAULT_THEME_VERSION,
     ];
     for (const kind of ['table', 'image'] as const) {
-      expect(earlier, kind).not.toContain(DEFAULT_CATALOGUE_VERSIONS[kind]);
-      expect(DEFAULT_CATALOGUES[kind].schemaVersion, kind).toBe(3);
+      expect(earlier, kind).not.toContain(FIFTH_DEFAULT_CATALOGUE_VERSIONS[kind]);
+      expect(FIFTH_DEFAULT_CATALOGUES[kind].schemaVersion, kind).toBe(3);
     }
     for (const kind of ['paragraph', 'character', 'admonition', 'citation'] as const) {
-      expect(DEFAULT_CATALOGUES[kind], kind).toBe(FOURTH_DEFAULT_CATALOGUES[kind]);
+      expect(FIFTH_DEFAULT_CATALOGUES[kind], kind).toBe(FOURTH_DEFAULT_CATALOGUES[kind]);
     }
-    expect([...DEFAULT_CATALOGUES_BY_VERSION.keys()].sort()).toEqual(
-      Object.values(DEFAULT_CATALOGUE_VERSIONS).sort(),
+    expect([...FIFTH_DEFAULT_CATALOGUES_BY_VERSION.keys()].sort()).toEqual(
+      Object.values(FIFTH_DEFAULT_CATALOGUE_VERSIONS).sort(),
     );
   });
 
   it('is its 0.4 naming those catalogue versions, with nothing else changed, under a fixed identifier of its own', () => {
-    expect(DEFAULT_THEME).toEqual({
+    expect(FIFTH_DEFAULT_THEME).toEqual({
       ...FOURTH_DEFAULT_THEME,
-      catalogues: DEFAULT_CATALOGUE_VERSIONS,
+      catalogues: FIFTH_DEFAULT_CATALOGUE_VERSIONS,
     });
-    expect(DEFAULT_THEME_VERSION).toBe('072142c4-8d63-42d6-815a-a447abd0a647');
+    expect(FIFTH_DEFAULT_THEME_VERSION).toBe('072142c4-8d63-42d6-815a-a447abd0a647');
     expect([
       SECOND_DEFAULT_THEME_VERSION,
       THIRD_DEFAULT_THEME_VERSION,
       FOURTH_DEFAULT_THEME_VERSION,
-      ...Object.values(DEFAULT_CATALOGUE_VERSIONS),
-    ]).not.toContain(DEFAULT_THEME_VERSION);
+      ...Object.values(FIFTH_DEFAULT_CATALOGUE_VERSIONS),
+    ]).not.toContain(FIFTH_DEFAULT_THEME_VERSION);
   });
 
   it("keeps every style 0.4's table and image catalogues held, each saying where its caption sits where 0.4 set it: a table's above it, a figure's below it", () => {
-    expect(DEFAULT_CATALOGUES.table).toEqual({
+    expect(FIFTH_DEFAULT_CATALOGUES.table).toEqual({
       ...FOURTH_DEFAULT_CATALOGUES.table,
       schemaVersion: 3,
       styles: FOURTH_DEFAULT_CATALOGUES.table.styles.map((style) => ({
@@ -300,7 +381,7 @@ describe("the default theme's version 0.5", () => {
         caption: 'above',
       })),
     });
-    expect(DEFAULT_CATALOGUES.image).toEqual({
+    expect(FIFTH_DEFAULT_CATALOGUES.image).toEqual({
       ...FOURTH_DEFAULT_CATALOGUES.image,
       schemaVersion: 3,
       styles: FOURTH_DEFAULT_CATALOGUES.image.styles.map((style) =>
@@ -310,11 +391,11 @@ describe("the default theme's version 0.5", () => {
   });
 
   it('reads as its 0.4 does, style for style, so a publication made under either is set alike', () => {
-    const now = readTheme(DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION);
+    const now = readTheme(FIFTH_DEFAULT_THEME, FIFTH_DEFAULT_CATALOGUES_BY_VERSION);
     const before = readTheme(FOURTH_DEFAULT_THEME, FOURTH_DEFAULT_CATALOGUES_BY_VERSION);
     if (!now.ok || !before.ok) throw new Error('The default theme does not read');
     expect({ ...now.theme, catalogues: null }).toEqual({ ...before.theme, catalogues: null });
-    expect(now.theme.catalogues).toEqual(DEFAULT_CATALOGUE_VERSIONS);
+    expect(now.theme.catalogues).toEqual(FIFTH_DEFAULT_CATALOGUE_VERSIONS);
   });
 });
 

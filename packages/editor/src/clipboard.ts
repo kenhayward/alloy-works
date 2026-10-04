@@ -23,6 +23,7 @@ export const PRODUCT_CLIPBOARD_TYPE = 'application/vnd.alloy-works.content+json'
 
 const crossReferenceNode = editorSchema.nodes.crossReference!;
 const equationNode = editorSchema.nodes.equation!;
+const bindingNode = editorSchema.nodes.binding!;
 
 /** What a paste event's `clipboardData` offers: the types it holds, and each one's text. */
 export interface ClipboardSource {
@@ -116,6 +117,12 @@ export type PasteOutcome =
  * paste keeps a reference to what was cut, a copy and a paste changes nothing, the original still
  * standing, and every pasted block is still newly named (CNT-132). Identifiers are 128 random bits, so
  * a paste from another component cannot match one by chance. The report counts what was re-pointed.
+ *
+ * **A binding moved keeps its identifier, and one copied does not** (the B1 plan, B1-C): admission
+ * renamed every pasted binding, and each whose original identifier nothing else holds after the paste
+ * is given it back (`bindingsGivenBack`), so the report says how many kept theirs and how many were
+ * copied, each copy to be resolved in a document. A binding stands in a footnote's text as a
+ * reference does.
  */
 export function pasteInto(
   state: EditorState,
@@ -151,7 +158,12 @@ export function pasteInto(
         return;
       }
       block.forEach((child) => {
-        if (!child.isText && child.type !== crossReferenceNode && child.type !== equationNode) {
+        if (
+          !child.isText &&
+          child.type !== crossReferenceNode &&
+          child.type !== equationNode &&
+          child.type !== bindingNode
+        ) {
           refused.add(child.type.name);
         }
       });
@@ -177,6 +189,7 @@ export function pasteInto(
     placed.setSelection(TextSelection.near(placed.doc.resolve(placed.mapping.map(to)), -1));
   }
   const repointed = repointLeftBehind(placed, admitted.renamed);
+  const given = bindingsGivenBack(placed, admitted.bindingsRenamed);
   const transaction = placed
     .scrollIntoView()
     .setMeta('paste', true)
@@ -193,15 +206,69 @@ export function pasteInto(
     report.add('validate', 'refused', 'invalid');
     return { ok: false, report: report.entries };
   }
-  if (repointed === 0) return { ok: true, transaction, report: admitted.report };
-  const report = createReport(admitted.report);
-  report.add('reidentify', 'rewritten', 'crossReferenceRepointed', { count: repointed });
+  if (repointed === 0 && given.kept === 0) {
+    return { ok: true, transaction, report: admitted.report };
+  }
+  // A binding given back its identifier was not copied: admission counted every binding it renamed,
+  // so its count is said again for those that stay renamed, and the rest are said to have kept theirs.
+  const report = createReport(
+    given.kept === 0
+      ? admitted.report
+      : admitted.report.filter((entry) => entry.subject !== 'bindingCopied'),
+  );
+  if (given.kept > 0 && given.copied > 0) {
+    report.add('reidentify', 'rewritten', 'bindingCopied', { count: given.copied });
+  }
+  if (given.kept > 0) report.add('reidentify', 'kept', 'bindingIdentifier', { count: given.kept });
+  if (repointed > 0) {
+    report.add('reidentify', 'rewritten', 'crossReferenceRepointed', { count: repointed });
+  }
   return { ok: true, transaction, report: report.entries };
+}
+
+/**
+ * **A binding moved keeps its identifier** (the B1 plan, B1-C): each binding the paste placed under a
+ * name admission gave it is given back the one it arrived with where, after the paste, no other node of
+ * the component holds that one - a cut and a paste in one component, a paste over the original, or a
+ * paste into another component - so a document's value for it is still its. One whose original still
+ * stands is a copy, and keeps its new name. In the transaction that says `KEEPS_IDENTIFIERS`, so the
+ * identity plugin leaves each as it is. Answers how many were given back, and how many stay copies.
+ */
+function bindingsGivenBack(
+  placed: Transaction,
+  renamed: ReadonlyMap<string, string>,
+): { kept: number; copied: number } {
+  const doc = placed.doc;
+  const held = new Map<string, number>();
+  doc.descendants((node) => {
+    if (typeof node.attrs.id === 'string')
+      held.set(node.attrs.id, (held.get(node.attrs.id) ?? 0) + 1);
+  });
+  const original = new Map<string, string>();
+  for (const [from, to] of renamed) original.set(to, from);
+  let kept = 0;
+  let copied = 0;
+  doc.descendants((node, pos) => {
+    if (node.type !== bindingNode) return true;
+    const from = original.get(node.attrs.id as string);
+    if (from === undefined) return false;
+    if (held.has(from)) {
+      copied += 1;
+      return false;
+    }
+    placed.setNodeAttribute(pos, 'id', from);
+    held.set(from, 1);
+    kept += 1;
+    return false;
+  });
+  return { kept, copied };
 }
 
 /**
  * Points every reference in the placed document whose `block` target it no longer holds at the block
  * admission renamed that target to, where the paste placed one (ruling R8), and answers how many.
+ * `renamed` holds blocks and footnotes alone - admission keeps its bindings apart - so a reference is
+ * never pointed at a binding's copy, whatever its target names.
  * A reference that travelled with its target was pointed at the copy by admission already, and one
  * whose target still stands is left alone. Attribute steps move nothing, so the positions read from
  * the placed document hold for every change.

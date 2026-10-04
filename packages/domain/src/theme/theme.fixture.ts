@@ -5,7 +5,13 @@ import {
   THIRD_DEFAULT_THEME,
 } from './default.js';
 import { readTheme, upgradeCatalogue2, type ResolvedTheme, type ThemeReadOutcome } from './read.js';
-import { CATALOGUE_KINDS, type ImageCatalogue, type TableCatalogue, type Theme } from './schema.js';
+import {
+  CATALOGUE_KINDS,
+  type ImageCatalogue,
+  type TableCatalogue,
+  type Theme,
+  type ValueCatalogue,
+} from './schema.js';
 
 /**
  * The default theme's inputs as a test changes them: a fresh copy each call, so no test sees another's
@@ -18,8 +24,14 @@ export function defaultInputs(): ThemeInputs {
   };
 }
 
-/** A theme and its six catalogues, each as the default's 0.5 rows hold them. */
-export type ThemeInputs = { theme: Theme; catalogues: typeof DEFAULT_CATALOGUES };
+/**
+ * A theme and its six catalogues, each as the default's rows hold them, and the value catalogue where
+ * the theme names one, as its 0.6 does.
+ */
+export type ThemeInputs = {
+  theme: Theme;
+  catalogues: Omit<typeof DEFAULT_CATALOGUES, 'value'> & { value?: ValueCatalogue };
+};
 
 /**
  * The default theme's 0.3, before its 0.4 added styles for an author to choose: each catalogue holding
@@ -46,6 +58,8 @@ export function read(inputs: ThemeInputs): ThemeReadOutcome {
   const byVersion = new Map<string, unknown>(
     CATALOGUE_KINDS.map((kind) => [inputs.theme.catalogues[kind], inputs.catalogues[kind]]),
   );
+  const value = inputs.theme.catalogues.value;
+  if (value !== undefined) byVersion.set(value, inputs.catalogues.value);
   return readTheme(inputs.theme, byVersion);
 }
 

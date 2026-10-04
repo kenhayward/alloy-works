@@ -654,8 +654,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   those you may read linked, and how many more. A sample keeps nothing.
 - **Results kept and checked, through the API.** A component's text can hold a **binding** - a value
   taken from a query definition's result, a column of its one row or of the row a key names, with
-  the values it runs with - placed through the API alone: no screen places, shows or accepts one yet,
-  and the editor opens a component holding one read-only, saying why. **Resolving** a binding in a
+  the values it runs with - placed through the API alone: no screen places or accepts one yet. A
+  component holding one opens for editing, and a binding is deleted, undone, copied, cut and pasted as
+  any atom is: a pasted binding keeps its identifier wherever the receiving component does not
+  already hold it - a cut and paste, or a paste into another component - so its value is kept, and
+  takes a new one, holding no value until a document resolves it, only where its original still
+  stands. **Resolving** a binding in a
   document runs its query against the database now, as the connection's own account, through the
   connector, and keeps the result as a version of a **dataset** - the rows once, under their
   checksum, with what ran, as whom, when and how many rows - which the binding then holds in that
@@ -666,8 +670,22 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   accepting one, need what running the query would - read on the query definition and use of the
   connection it ran on - and accepting needs edit on the document too. The SQL that ran, the
   connection it ran on and the database's own column names are shown only to somebody who may also
-  read the query definition. A dataset can be named. **A document holding a binding cannot be
-  published or previewed yet**: it is refused before anything is queued, naming each binding.
+  read the query definition. A dataset can be named.
+- **Values shown in a document.** In a document's text, and in a component opened in place, each
+  binding shows the one value the document holds, formatted by the document's theme - its digits
+  grouped, its decimals at their declared places, a date, a time or a yes or no as the theme's value
+  formats say for the document's language - where the binding stands in the sentence, with _revision
+  waiting_ beside it where a check found a different result. A binding with no value says why in its
+  place, apart by its words and its border and never by colour alone: never resolved, changed since it
+  was resolved, no rows, how many rows, no row for its key, empty, or its result cannot be read. A
+  value is a button: a click or Enter opens its **provenance** beside the text - the value as the
+  query returned it, the query definition and its version, the connection and the SQL that ran where
+  you may read them, the parameters, whose view, when, the rows and their checksum, the dataset and who
+  resolved it - with **Show the result**, its first 200 rows. Selecting a binding in the editor shows
+  the **Value panel**, whose **Provenance** opens the same. On its own a component shows what each
+  binding asks for - its column and its query definition's title - and never a value. **A document
+  holding a binding cannot be published or previewed yet**: it is refused before anything is queued,
+  naming each binding.
 - **Search.** **Search**, beside Components, Documents and Publications, finds everything you may read
   by its words, and nothing you may not: components, documents and each of their sections,
   publications, templates, images, fields, metadata schemas and component types. Words are found
@@ -1144,9 +1162,10 @@ Named explicitly so nobody has to read the source to find out:
 - No page for component types: a Definitions manager makes and changes them through the API alone,
   and nothing yet changes which one is the environment's default.
 - No way to delete a component or a document, including one made by mistake.
-- A binding is placed, resolved, checked and accepted through the API alone: no screen shows a
-  value bound into a document, what a binding holds or a result waiting, and a document holding a
-  binding cannot be published or previewed. A document's own parameters do not exist, so a binding
+- A binding is placed, resolved, checked and accepted through the API alone: a document shows the
+  values it holds and their provenance, but no screen places, resolves, checks or accepts one, or
+  lists a document's bindings with their states, and a document holding a binding cannot be published
+  or previewed. A document's own parameters do not exist, so a binding
   taking one cannot be resolved. A connection reaches PostgreSQL alone, as its own service account;
   the builder's page builds from one table or view - a join or a nested query is written through the
   API, or as a view at the database - and no page shows or changes the environment's lowered run

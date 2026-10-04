@@ -1,3 +1,4 @@
+import { VALUE_CATALOGUE_KIND } from './schema.js';
 import type {
   AdmonitionCatalogue1,
   CatalogueKind,
@@ -13,6 +14,8 @@ import type {
   TableCatalogue2,
   Theme,
   Typeface,
+  ValueCatalogue,
+  ValueFormats,
 } from './schema.js';
 
 /**
@@ -20,7 +23,7 @@ import type {
  * every publication is set from until TPL lets a template bind another. As data - a `theme/1` and the
  * six catalogue versions it binds - which the store seeds as literals and a test recomputes from here.
  *
- * **Five versions, all stated, because all are stored.** **0.1**, the `FIRST_` constants, is exactly
+ * **Six versions, all stated, because all are stored.** **0.1**, the `FIRST_` constants, is exactly
  * what migration 0024 seeded: six `catalogue/1` versions and the theme naming them. Frozen - the rows
  * are insert-only and the store's test recomputes their hashes from these - so nothing in it may change.
  * **0.2** is themes 2's (ruling R3), seeded by 0025: new versions of the paragraph, table and image
@@ -31,9 +34,11 @@ import type {
  * same six catalogues. **0.4**, the `FOURTH_` constants, is the theme in the editor's (ET-H), seeded
  * by 0034: new versions of the paragraph, table and image catalogues, each 0.2's with styles an author
  * may choose added - Lead, Centred and Small print, Banded, and Half width - and 0.3 naming them.
- * **0.5**, the unprefixed `DEFAULT_` constants, is W14.5's (W-I), seeded by 0043: new versions of the
- * table and image catalogues at `catalogue/3`, each 0.4's with every style saying where its caption
- * sits - a table's above, a figure's below, where they always stood - and 0.4 naming them.
+ * **0.5**, the `FIFTH_` constants, is W14.5's (W-I), seeded by 0043: new versions of the table and
+ * image catalogues at `catalogue/3`, each 0.4's with every style saying where its caption sits - a
+ * table's above, a figure's below, where they always stood - and 0.4 naming them; frozen at six.
+ * **0.6**, the unprefixed `DEFAULT_` constants, is B1's (B1-F), seeded by 0048: the value catalogue's
+ * first version, beside the six kinds rather than a seventh, and 0.5 naming it too.
  *
  * **Its numbers are template 11's wherever template 11 wrote one** - the body at 11pt, headings at 16
  * and 13pt bold, preformatted text at 8.8pt on `luma(240)`, which is `#f0f0f0`, in a 6pt panel, its
@@ -880,16 +885,16 @@ const image: ImageCatalogue = {
 /**
  * The six catalogue versions the theme's 0.5 binds: new, fixed identifiers for the table and image
  * catalogues' fourth versions, which 0043 seeds and the theme's content names, and 0.4's for the
- * other four.
+ * other four. Frozen at six, as the 0.5 row holds them.
  */
-export const DEFAULT_CATALOGUE_VERSIONS: Readonly<Record<CatalogueKind, string>> = {
+export const FIFTH_DEFAULT_CATALOGUE_VERSIONS: Readonly<Record<CatalogueKind, string>> = {
   ...FOURTH_DEFAULT_CATALOGUE_VERSIONS,
   table: 'b5fd3598-cc54-4c58-a546-8b33d795aa15',
   image: 'fda41d97-12ba-4581-b066-060d060c86a0',
 };
 
 /** The six catalogues' contents at 0.5, by kind, each as its row holds it. */
-type DefaultCatalogues = {
+type DefaultCatalogues5 = {
   readonly paragraph: ParagraphCatalogue2;
   readonly character: CharacterCatalogue1;
   readonly table: TableCatalogue;
@@ -899,11 +904,12 @@ type DefaultCatalogues = {
 };
 
 /**
- * **The six catalogues the default theme binds as it stands, 0.5**, by kind, each as its row holds it:
- * the table and image catalogues at `catalogue/3`, 0.4's paragraph catalogue at `catalogue/2`, and 0.1's
- * character, admonition and citation catalogues at `catalogue/1`, which the reader upgrades.
+ * **The six catalogues the default theme's 0.5 binds**, by kind, each as its row holds it: the table
+ * and image catalogues at `catalogue/3`, 0.4's paragraph catalogue at `catalogue/2`, and 0.1's
+ * character, admonition and citation catalogues at `catalogue/1`, which the reader upgrades. Frozen,
+ * as 0043 stored them.
  */
-export const DEFAULT_CATALOGUES: DefaultCatalogues = {
+export const FIFTH_DEFAULT_CATALOGUES: DefaultCatalogues5 = {
   paragraph,
   character,
   table,
@@ -913,21 +919,91 @@ export const DEFAULT_CATALOGUES: DefaultCatalogues = {
 };
 
 /** The same six, by the version identifier the theme's 0.5 names each by. */
+export const FIFTH_DEFAULT_CATALOGUES_BY_VERSION: ReadonlyMap<string, unknown> = new Map(
+  (Object.keys(FIFTH_DEFAULT_CATALOGUE_VERSIONS) as CatalogueKind[]).map((kind) => [
+    FIFTH_DEFAULT_CATALOGUE_VERSIONS[kind],
+    FIFTH_DEFAULT_CATALOGUES[kind],
+  ]),
+);
+
+/** The fixed identifier the store seeds the default theme's 0.5 under, by 0043, as 0.4's is fixed. */
+export const FIFTH_DEFAULT_THEME_VERSION = '072142c4-8d63-42d6-815a-a447abd0a647';
+
+/**
+ * **The default theme's 0.5, as migration 0043 stored it**: 0.4 naming the catalogue versions above,
+ * nothing else changed. Frozen, as 0.4 is.
+ */
+export const FIFTH_DEFAULT_THEME: Theme = {
+  ...FOURTH_DEFAULT_THEME,
+  catalogues: { ...FIFTH_DEFAULT_CATALOGUE_VERSIONS },
+};
+
+// ---------------------------------------------------------------------------------------------------
+// Version 0.6 (B1, B1-F): the value catalogue's first version, beside the six, and the theme naming
+// it. Nothing a publication sets moves: no style changes, and a value is formatted by what it states.
+// ---------------------------------------------------------------------------------------------------
+
+/**
+ * **The product's default value formats** (bindings.md, "Formatting"): a full stop for the decimal,
+ * a comma grouping from four digits, the hyphen-minus, a date `ymd` with `-`, padded (ISO 8601), a
+ * colon in a time, and _Yes_ and _No_. What the value catalogue's 0.1 states, and what a value is
+ * formatted by where a theme names no value catalogue (`formatsFor`). Frozen at every level, since
+ * `formatsFor` hands the one object to every caller.
+ */
+export const DEFAULT_VALUE_FORMATS: ValueFormats = Object.freeze({
+  number: Object.freeze({ decimal: '.', group: ',', groupFrom: 4, minus: 'U+002D' }),
+  date: Object.freeze({ order: 'ymd', separator: '-', pad: true }),
+  time: Object.freeze({ separator: ':' }),
+  boolean: Object.freeze({ true: 'Yes', false: 'No' }),
+} as const);
+
+/**
+ * The value catalogue the theme's 0.6 binds, its first version: the default formats, in every
+ * language. Frozen at every level, as they are.
+ */
+const value: ValueCatalogue = Object.freeze({
+  schemaVersion: 3,
+  kind: VALUE_CATALOGUE_KIND,
+  formats: DEFAULT_VALUE_FORMATS,
+  byLanguage: Object.freeze([]) as unknown as ValueCatalogue['byLanguage'],
+} as const);
+
+/**
+ * The catalogue versions the theme's 0.6 binds: 0.5's six, and a new, fixed identifier for the value
+ * catalogue's first version, which 0048 seeds and the theme's content names.
+ */
+export const DEFAULT_CATALOGUE_VERSIONS: Readonly<
+  Record<CatalogueKind | typeof VALUE_CATALOGUE_KIND, string>
+> = {
+  ...FIFTH_DEFAULT_CATALOGUE_VERSIONS,
+  value: '949bad3b-b80b-428d-8746-e34045212429',
+};
+
+/** The catalogues' contents at 0.6, by kind, each as its row holds it. */
+type DefaultCatalogues = DefaultCatalogues5 & { readonly value: ValueCatalogue };
+
+/**
+ * **The catalogues the default theme binds as it stands, 0.6**, by kind, each as its row holds it:
+ * 0.5's six, and the value catalogue at `catalogue/3`.
+ */
+export const DEFAULT_CATALOGUES: DefaultCatalogues = {
+  ...FIFTH_DEFAULT_CATALOGUES,
+  value,
+};
+
+/** The same seven, by the version identifier the theme's 0.6 names each by. */
 export const DEFAULT_CATALOGUES_BY_VERSION: ReadonlyMap<string, unknown> = new Map(
-  (Object.keys(DEFAULT_CATALOGUE_VERSIONS) as CatalogueKind[]).map((kind) => [
+  (Object.keys(DEFAULT_CATALOGUE_VERSIONS) as (keyof DefaultCatalogues)[]).map((kind) => [
     DEFAULT_CATALOGUE_VERSIONS[kind],
     DEFAULT_CATALOGUES[kind],
   ]),
 );
 
-/** The fixed identifier the store seeds the default theme's 0.5 under, by 0043, as 0.4's is fixed. */
-export const DEFAULT_THEME_VERSION = '072142c4-8d63-42d6-815a-a447abd0a647';
+/** The fixed identifier the store seeds the default theme's 0.6 under, by 0048, as 0.5's is fixed. */
+export const DEFAULT_THEME_VERSION = 'a4d8f4c0-0b17-46d4-9fd5-84bb784eb163';
 
-/**
- * **The default theme as it stands, 0.5**: 0.4 naming the catalogue versions above, nothing else
- * changed.
- */
+/** **The default theme as it stands, 0.6**: 0.5 naming the value catalogue too, nothing else changed. */
 export const DEFAULT_THEME: Theme = {
-  ...FOURTH_DEFAULT_THEME,
+  ...FIFTH_DEFAULT_THEME,
   catalogues: { ...DEFAULT_CATALOGUE_VERSIONS },
 };
