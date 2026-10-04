@@ -611,12 +611,25 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   you may read by title, and how many more - and a connection a query definition still uses cannot be retired: the page names what to retire
   first.
 - **Query definitions.** **Query definitions**, beside Connections, lists the query definitions you may
-  read, by space, each with its connection. Somebody who may edit in a space and holds the new
-  permission **write SQL** on a connection writes one there with **New query definition**, in steps:
-  the connection, a title and a description; the SQL, with a value marked `{{name}}` and a fragment
+  read, by space, each with its connection. Somebody who may edit in a space and use a connection
+  writes one there with **New query definition**, in steps: the connection, a title and a description;
+  the query, **built** without writing any SQL or, where they hold the permission **write SQL** on the
+  connection, written as SQL. **The builder** lists the database's tables and views with **Describe
+  the source** and builds from one: the columns it returns and the names it returns them as, filters
+  comparing a column with a parameter or a fixed value - is, is not, less or greater, at most or at
+  least, is one of, contains, starts with, is empty - under **Match all** or **Match any**, **Group
+  and summarise** with a count, a sum, an average to the places you choose, a minimum and a maximum,
+  and **Return at most** beside a declared order; **The SQL it runs** shows, as you build, the SQL
+  the product writes from it, every value sent apart from it. A query definition stores what was
+  built and never its SQL, which is written again each time it runs. Text is compared, sorted and
+  grouped by code point, so `Ada` and `ada` are never one group. A table or column whose name is not
+  in the composed form a definition holds is listed and not offered, and a definition with joined or
+  nested queries, written through the API, opens to be read with its SQL, saying why. A built query
+  needs only use of the connection, and runs on any connection, since it only ever reads. Or the SQL,
+  with a value marked `{{name}}` and a fragment
   of SQL chosen by a key marked `{{#name}}`, and each parameter's name, type, whether it is required
   or a list, and the values or range it permits, or its fragments; **Describe**, which asks the
-  database what the statement returns without running it and proposes a type for each column, one
+  database what the query returns without running it and proposes a type for each column, one
   it cannot propose left for you to declare; the key, whether the rows must come in the SQL's order
   or may come in any, whether no rows is a valid answer, and the most rows, bytes and seconds a run
   may take; and **Run sample**, which runs it against values you type exactly as a document will,
@@ -627,7 +640,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   parameter is refused by name before anything runs. Text sorts by code point, so a text column the
   rows are ordered by is ordered `COLLATE "C"`, and the page says so when a sample is refused for
   it. SQL runs only on a connection whose latest test found its account read-only, and **write SQL**
-  is held by no starting role, so it is granted on purpose. An administrator of the environment can
+  is held by no starting role, so it is granted on purpose. A source's refusal of a built query - a
+  table or a column it does not have, two types it cannot compare, a table the account may not read -
+  is said in words of the product's own; what the source itself said is shown only to somebody who may
+  write SQL on the connection. An administrator of the environment can
   lower the most rows, bytes and seconds any run may take, through the API. Search finds a query
   definition by its title, its description and its column names; a definition names its connection
   only to somebody who may read the connection. A definition's page shows, under **Used by** and
@@ -1129,8 +1145,9 @@ Named explicitly so nobody has to read the source to find out:
   value bound into a document, what a binding holds or a result waiting, and a document holding a
   binding cannot be published or previewed. A document's own parameters do not exist, so a binding
   taking one cannot be resolved. A connection reaches PostgreSQL alone, as its own service account;
-  a query is written as SQL by hand, with no builder; and no page shows or changes the environment's
-  lowered run limits, which the API alone sets.
+  the builder's page builds from one table or view - a join or a nested query is written through the
+  API, or as a view at the database - and no page shows or changes the environment's lowered run
+  limits, which the API alone sets.
 - No document view that sets a document as it will publish: its page shows the outline you build
   beside the text in reading order, each component opening in place to be edited. No reading view. No reuse or transclusion.
 - No publishing beyond a laid-out PDF of a document's outline, its formatted paragraphs, lists,

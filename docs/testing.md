@@ -234,10 +234,17 @@ parameter too, where the built connector runs `dist/child.js`. A port that is fi
 refused is stood in for by a listener that accepts and never answers, so the five-second connect
 timeout is what it costs on any machine.
 
-**The seed has five relations** since D2: `sample.site`, `sample.reading` and `sample.site_summary`,
+**The seed has six relations** since D4: `sample.site`, `sample.reading` and `sample.site_summary`,
 and `sample.typed` - case 6's three rows in PostgreSQL's own types, whose checksum `checksum.test.ts`
 holds to the domain's in three time zones - and `sample.unordered`, thirty rows with ties, which case
-6's twenty rewrites move without moving a checksum. After changing `deploy/sources/postgres.sql`, stop
+6's twenty rewrites move without moving a checksum; and `sample.tag` (the D4 plan, D4-R), whose
+`name` is a `citext` - the seed creates the extension - holding `Ada`, `ada`, `ADA`, `Grace` and
+`grace`, and whose `colour` is the enum `sample.colour`, declared `red`, `Green`, `blue`, out of
+code-point order: what the builder's code-point keys group apart and order by. `builder.test.ts` runs
+built queries against them and against `sample.site` joined to `sample.reading`, and `hostile.test.ts`
+attempts injection through a built query's every comparison too, in a schema of its own the
+superuser makes with names holding a quote, a `$1`, a comment and a dollar quote, and drops after. A
+development stack's `source-postgres` takes the new table only when its volume is made again. After changing `deploy/sources/postgres.sql`, stop
 the suite's source and start it again, so it is seeded afresh. A run's tests are `run.test.ts` (the
 declaration held, DAT-106, DAT-107, DAT-068, DAT-080), `limits.test.ts` (a limit reached and the
 source cancelled, DAT-051, DAT-109, DAT-110 - the last reading the child's peak resident set through
@@ -690,8 +697,11 @@ with all but one, and requires it to refuse each time, naming every limit that i
 development source through the whole system, sets its password, tests it and lists its tables;
 `query-definitions.test.ts` writes a query definition on it as `reader`, describes it, samples it with
 a value and a fragment and saves it, and has SQL refused on a connection as `writer`, whose test found
-its account able to write (DAT-103). `connector-privilege.test.ts` also reads the connector's memory
-limit, 3 GiB (D2-J).
+its account able to write (DAT-103). `builder.test.ts` writes a built query as Grace, who holds the
+development role **Query builder** - `use_connection` and no `write_sql`, which `pnpm dev:setup` gives
+her on General - samples it, binds it in a component and resolves it in a document, and resolves a
+second version to the SQL its new tree generates, the provenance's SQL pinned whole.
+`connector-privilege.test.ts` also reads the connector's memory limit, 3 GiB (D2-J).
 
 What it does **not** cover, and where that lives instead: refusing another environment's session,
 which is `cross-tenant.test.ts` in the service, because Node's `fetch` will not let a test set the

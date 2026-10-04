@@ -493,7 +493,7 @@ verified on production's own platform before connectors ship.
   description: string,
   connection: string,                                  // a connection's artifact identifier (DAT-009)
   parameters: Parameter[],
-  fetch: BuilderFetch | SqlFetch | HttpFetch | FileFetch,   // SqlFetch alone in D2 (D2-D)
+  fetch: BuilderFetch | SqlFetch | HttpFetch | FileFetch,   // SqlFetch from D2, BuilderFetch from D4
   columns: Column[],
   key: string[],                                       // column names; may be empty
   order: { column: string, direction: 'ascending' | 'descending' }[] | 'multiset',
@@ -506,15 +506,16 @@ verified on production's own platform before connectors ship.
 **Every string a version holds is already NFC, or the write is refused** `definition_invalid`,
 naming the member (D2-F): a version's digest composes its strings (ADR-0024), where the source
 compares two spellings of a SQL text as different, so the edit between them would be answered
-unchanged. A decomposed literal is written with PostgreSQL's `U&'...'` escapes. **A D2 definition's
-fetch is SQL alone** (D2-D); the builder's tree arrives with D4 as an arm, refusing nothing stored, so
-every D2 definition needs `write_sql`.
+unchanged. A decomposed literal is written with PostgreSQL's `U&'...'` escapes. **A definition's
+fetch is SQL or a built query** (the D4 plan, D4-A): the builder's tree arrived with D4 as a second
+arm at `schemaVersion: 1`, refusing nothing stored, with no migration - nothing in the database reads
+a fetch. A SQL fetch needs `write_sql`; a built query needs `use_connection` alone (D4-J).
 
 **Every definition that passes its checks can be run.** Its canonical JSON is at most 512 KiB of
 UTF-8, and the longest SQL it can bind to - its text with each variation marker replaced by its
-longest fragment and each value marker by its placeholder - at most 300,000 characters, the most a
-run reports it ran; either past its bound is refused `definition_invalid`, naming the size, on every
-write and on a sample's draft. A run's request to the connector may be 1 MiB and 64 KiB, the
+longest fragment and each value marker by its placeholder, or a built query's generated text, which is
+one whatever its values - at most 300,000 characters, the most a run reports it ran; either past its
+bound is refused `definition_invalid`, naming the size, on every write and on a sample's draft. A run's request to the connector may be 1 MiB and 64 KiB, the
 service's own body limit and room for the connection and its sealed credential, so a definition at
 its bound always fits with room. The values are not bounded by the definition: a sample's are held by
 the service's body limit, which answers a larger body 413 before anything reaches the connector, and
@@ -557,28 +558,86 @@ value is a typed filter the connector applies to its canonical rows.
 
 ### The fetch
 
-- **`builder`**, for a database: a saved query tree with its own `format: 1`:
+- **`builder`**, for a database: a saved query tree with its own format, `{ kind: 'builder', format:
+1, query }` (the D4 plan, D4-B and D4-C):
 
   ```ts
   Query = {
-    sources: ({ alias: string, table: { schema?: string, name: string } }
-            | { alias: string, query: Query })[],
-    joins: { kind: 'inner' | 'left', source: string, on: Condition }[],
-    select: { name: string, of: ColumnRef | { aggregate: 'count' | 'sum' | 'average' | 'minimum' | 'maximum', of?: ColumnRef } }[],
-    where?: Condition,             // and, or, not over comparisons of a column with a parameter or a literal
-    groupBy: ColumnRef[],             // ColumnRef: a source's alias and a column in it
-    orderBy: { of: ColumnRef, direction: 'ascending' | 'descending' }[],
-    limit?: number,
+    sources: ({ alias: string, table: { schema: string, name: string } }
+            | { alias: string, query: Query })[],                        // 1 to 16
+    joins: { kind: 'inner' | 'left', source: string, on: Condition }[],   // each source after the first, once, in order
+    select: { name: string, of: ColumnRef | Aggregate }[],               // 1 to MAX_COLUMNS
+    where?: Condition,
+    groupBy: ColumnRef[],                                                // at most 32
+    limit?: number,                                                      // the top level's alone
   }
+  ColumnRef = { source: string, column: string }    // a source's alias, and a column of it or a nested query's select name
+  Aggregate = { aggregate: 'count' | 'sum' | 'average' | 'minimum' | 'maximum', of?: ColumnRef, places?: number }
+  Condition =
+    | { and: Condition[] } | { or: Condition[] }     // 2 to 32
+    | { not: Condition }
+    | { column: ColumnRef, is: Comparison, to?: { parameter: string }
+                                              | { literal: CanonicalValue | CanonicalValue[], type: ValueType }
+                                              | { column: ColumnRef } }
+  Comparison = 'equal' | 'notEqual' | 'less' | 'lessOrEqual' | 'greater' | 'greaterOrEqual'
+             | 'in' | 'contains' | 'startsWith' | 'isNull' | 'isNotNull'
   ```
 
-  **The format admits several joined sources and nested queries from the start**, so multi-join
-  queries arrive later with no migration of a saved query (DAT-100). **T2's screens offer one table or
-  view**, its columns, filters on parameters, sort, a limit and the five aggregates, grouped; a join in
-  T2 is written in the SQL fallback, or defined as a view at the source. The connector generates the
-  dialect's SQL from the tree at every run - PostgreSQL's first, then SQL Server's - and provenance
-  keeps the SQL that ran (DAT-099). Product-generated text is what keeps PostgreSQL's asserted identity
-  safe (cases 3 and 5).
+  **A table names its schema always**, never left to a search path. **There is no `orderBy`**: the
+  definition's declared `order` is the top level's ORDER BY, so the order the connector checks (D2-M)
+  and the order the SQL sorts by are one declaration. **A limit is the top level's alone, and only
+  beside a declared order**, never a multiset: a limit over rows in no order, or inside a nested query,
+  would choose its rows arbitrarily. An alias is a parameter name's pattern, unique in its query; every
+  name a source name, 1 to 63 bytes with no control character, and NFC (D2-F). `count` takes a column
+  or none, `count(*)`; `sum`, `minimum` and `maximum` take one; **`average` carries `places`**, 0 to
+  1,000, generated `round(avg(x), places)`, and its column is declared a decimal of scale at least
+  `places`, or an integer at none - an average never rounded is `precision_lost` for nearly every
+  average, and the connector never rounds (DAT-080). A query that groups or aggregates groups by every
+  column it selects. A comparison's `to` is absent exactly for `isNull` and `isNotNull`; **an optional
+  parameter given no value makes its comparison true**, `(($n::type) IS NULL OR ...)`, so a filter
+  applies only when given and the text is one for every value (DAT-018); `in` takes a list parameter or
+  a literal list of 1 to 50; a text value is compared by `equal`, `notEqual`, `in`, `contains` and
+  `startsWith` alone; `less` to `greaterOrEqual` take a number, a date or a time, or a column. A
+  literal is canonical in its type, never null, an integer within 64 bits. **A built query's
+  parameters declare no variation** (D4-M): a tree has no fragment to place; every parameter is used by
+  a comparison, a list one only by `in`. DAT-019's variations stay the SQL fallback's.
+
+  **Depth and breadth are counted before the schema recurses** (D4-L): an iterative walk holds a query
+  to 4 deep (the top and three nested), a condition to 8, and a definition to 256 comparisons, on every
+  path a tree reaches - a write, a sample, a describe, a run's request - so a body nested 100,000 deep
+  is refused by name, never a stack overflow. Each member is widened later by adding a member, never by
+  changing one, so no stored tree migrates.
+
+  **The format admits several joined sources and nested queries from the start**, and D4 checks,
+  generates and runs the whole of it through the API (DAT-100, D4-D). **T2's screens offer one table or
+  view**, its columns, filters on parameters or fixed values under all or any, a limit beside the
+  order and the five aggregates, grouped; a join or a nested query is written through the API, or
+  defined as a view at the source, and a definition the page cannot show opens read-only with its SQL,
+  saying why. **The definition stores the tree and never its SQL**: SQL is generated from the tree by
+  the domain's `generatePostgres`, pure, at every describe and every run - SQL Server's from D5 - and
+  provenance keeps the SQL that ran (DAT-099); the definition's checks generate it on every write too,
+  to hold it to the 300,000 characters a run reports, and the page to show it. Product-generated text is
+  what keeps PostgreSQL's asserted identity safe (cases 3 and 5, D7).
+
+  **What the generator writes** (D4-F): every identifier double-quoted, a quote inside doubled; every
+  relation `"schema"."name"`; **every function, operator and type `pg_catalog`'s by name** -
+  `pg_catalog.count`, `OPERATOR(pg_catalog.=)`, `::pg_catalog.int8` - so nothing an account makes in a
+  schema of its own can stand in for one, without pinning the search path a source's own view may
+  read; **every value, a literal's too, a placeholder** `($n::pg_catalog.type)` the driver binds, a
+  parameter compared twice bound once; and the limit, a whole number, as text. The text is read back
+  by D2's lexer, and nothing is sent unless its placeholders are exactly those written. **Two
+  statements come of one tree** (D4-H): the **shape** - sources, joins, select, where and group by,
+  with no order, no limit, and no code-point key outside a filter - which describe proposes columns
+  from, and a run first describes to admit each column by D2-L, since a cast to text would hide a
+  column's type; then the **run**, with the keys, the declared order (nulls last ascending, first
+  descending) and the limit, described and run by D2's path unchanged.
+
+  A source's refusal of a built query is answered in the product's words by its SQLSTATE (D4-K) -
+  `42P01` a table or view the source does not have, `42703` a column, `42883` and `42804` two types it
+  cannot compare or an aggregate a column's type cannot take, `42501` the account may not read it -
+  since D2-H's rule stands: the source's own message goes only to a caller holding `write_sql`.
+  PostgreSQL checks privileges when a statement executes, so `42501` is met at a sample or a run, never
+  at describe.
 
 - **`sql`**, the fallback: text with named parameters, `{{site}}` for a value and `{{#name}}` for a
   variation's fragment (D2-B), always bound by the driver. A marker is found by a PostgreSQL lexer in
@@ -656,7 +715,11 @@ a run whose columns or rows do not fit, and never adjusts one; a value a source 
 in its declared type is refused by name - `precision_lost`, `precision_not_carried`, `zone_missing`,
 `nonexistent_date`, `cell_error` - never rounded.
 
-**For SQL, describe takes the statement** (D2-G): the connector asks the source to describe it with
+**For a built query, describe takes the tree** (D4-Q): `{ builder: { query, parameters } }`, on
+`use_connection` alone, held to the builder's checks but those that need declared columns, and
+answered as a statement's describe is from its shape statement - each select item a column proposed
+by D1's map (D4-N), every select item declared exactly once, its column's `from.column` the item's
+name. **For SQL, describe takes the statement** (D2-G): the connector asks the source to describe it with
 Parse, Describe and Sync and never runs it (the D2 plan's Q1), each fragment bound by its first key,
 and proposes each column by D1's map; a statement with no columns is `result_mismatch`. A run
 describes the bound statement the same way before running it, and refuses a column its declaration
@@ -684,7 +747,16 @@ definition names, or it is declared decorative (DAT-097's declaration; its failu
   `false` before `true`, **text by code point**, nulls last ascending and first descending as
   PostgreSQL's default - and refuses `result_mismatch`, naming the row, where a pair is out of order
   or two rows share a key. So a text sort key is ordered `COLLATE "C"` in the SQL, and the page says
-  so. A multiset sorts the rows by their canonical text, code point by code point.
+  so. A multiset sorts the rows by their canonical text, code point by code point. **The builder
+  compares text by code point wherever it compares it** (D4-G): a text filter compares
+  `(x)::pg_catalog.text COLLATE "C"` with its value, `contains` and `startsWith` are `strpos` and
+  `starts_with` on that key, and a text-declared column is ordered by it, grouped by itself and it, and
+  its minimum and maximum taken over it - in a nested query too, where a text-declared column reads one
+  of its columns. So a `citext` column or one under a nondeterministic collation never merges `Ada` and
+  `ada` into one group, whose spelling would move the checksum with the rows' physical order, and an
+  enum or a `uuid` is filterable by a text parameter at all. A comparison of two columns is the
+  source's own. The cost: an index under another collation does not serve a text filter; a view or an
+  index `COLLATE "C"` at the source does.
 - **Empty** (DAT-068): whether no rows is a valid answer; a run of no rows against `invalid` fails,
   `empty_result`, exactly as any failure does.
 - **Limits** (DAT-050): rows, bytes and seconds. A tenant setting, `data_policy`, lowers each, and a
@@ -726,13 +798,20 @@ space or the tenant, walked as every permission is:
 | Permission       | Lets the principal                                                                   |
 | ---------------- | ------------------------------------------------------------------------------------ |
 | `use_connection` | Run anything against the connection: a sample run, describe, test, resolve and check |
-| `write_sql`      | Save a query definition whose fetch is SQL against the connection                    |
+| `write_sql`      | Save or run a query definition whose fetch is SQL against the connection             |
 
 Adding them is the code change and the migration access.md names - `use_connection` in D1, and
 `write_sql` in D2 with the check that reads it (DAT-101), since a permission no check reads is a
 promise with nothing behind it: `permissions` in `packages/domain/src/access/permissions.ts`, and
 the check constraints `role_permissions_closed` and `api_token_scopes_closed`. **No starting role
 gains either**, so using a connection is always granted on purpose; the external cap gains both.
+**What a definition needs is decided by its fetch** (the D4 plan, D4-J), each version by its own: a
+built query needs `edit` and `use_connection`, never `write_sql`, and is not refused on a connection
+whose last test found its account able to write, since DAT-101 and DAT-103 are the SQL fallback's and
+the builder writes only a `SELECT` in D2's read-only transaction. A builder version may follow a SQL
+one, by somebody without `write_sql`, and not the other way. A resolve's and a check's DAT-103
+refusal is decided by the fetch of the definition version they run. **New query definition** is
+offered to anybody who may edit a space and use some connection.
 
 | Act                                                     | Needs                                                                                         |
 | ------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
@@ -927,7 +1006,9 @@ the act has them, the binding and the document (DAT-086). A failed act records n
 
 The four before those two were added by the D1 plan (D1-M, D1-Q), and the last two by the D2 plan
 (D2-H), whose `source_refused` is answered with the source's message only to somebody holding
-`write_sql`. D3 keeps that rule for a resolve and a check, which need only `use_connection`: a
+`write_sql`. D4 words a built query's commonest refusals by their SQLSTATE in the product's words, for
+anybody (D4-K, "The fetch"), the source's message after them only for a holder of `write_sql`. D3
+keeps that rule for a resolve and a check, which need only `use_connection`: a
 caller holding `write_sql` at the connection is given the source's SQLSTATE and message, and anybody
 else the SQLSTATE alone, with words that quote nothing the source said. `write_sql` is decided again
 in the transaction that answers, as `use_connection` is (D3-H): revoked while the source answered, the
@@ -952,8 +1033,8 @@ is a pass of its latest version and credential that did not find its account abl
 | `POST /v1/connections/{id}/versions`        | `administer` on the connection                                     | Cuts a version from `openedFrom` and whole settings; retiring is `retired: true`, refused while in use                       |
 | `PUT /v1/connections/{id}/credential`       | `administer` on the connection                                     | Seals the secret through the connector, adds a credential row, tests the connection and answers the test with its dependents |
 | `POST /v1/connections/{id}/test`            | `use_connection`                                                   | The connection test                                                                                                          |
-| `POST /v1/connections/{id}/describe`        | `use_connection`, and `write_sql` for a statement                  | Tables and views, or a draft SQL fetch's result shape                                                                        |
-| `POST /v1/connections/{id}/sample`          | `use_connection`, and `write_sql` for a SQL fetch                  | Runs a draft definition with sample parameters; answers rows and proposed columns; stores nothing                            |
+| `POST /v1/connections/{id}/describe`        | `use_connection`, and `write_sql` for a statement                  | Tables and views, or a draft SQL fetch's or a built query's result shape (`{ sql }` or `{ builder }`)                        |
+| `POST /v1/connections/{id}/sample`          | `use_connection`, and `write_sql` and DAT-103 for a SQL fetch      | Runs a draft definition with sample parameters; answers rows and proposed columns; stores nothing                            |
 | `GET /v1/connections/{id}/uses`             | `read` on the connection                                           | Where it is used                                                                                                             |
 | `POST /v1/spaces/{space}/query-definitions` | `edit` on the space, `use_connection`, `write_sql` for SQL         | Makes a definition at 0.1                                                                                                    |
 | `GET /v1/query-definitions`                 | Signed in                                                          | The definitions the caller may read                                                                                          |
@@ -970,19 +1051,19 @@ is a pass of its latest version and credential that did not find its account abl
 
 ## Where the code lives
 
-| Where                                                          | What                                                                                                                                               |
-| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/connector`                                               | The supervisor, the per-request child, the guard, the drivers (`pg`, `tedious`), the HTTP and S3 clients, the readers, SQL generation per dialect  |
-| `domain: src/data/`                                            | Connection and query definition schemas, the parameter declaration and its checks, the query tree, the column vocabulary, the canonical form       |
-| `domain: src/content/model/inline.ts`                          | The binding inline, widened                                                                                                                        |
-| `domain: src/access/permissions.ts`                            | `use_connection` and `write_sql`                                                                                                                   |
-| `domain: src/search/`                                          | `queryDefinition` as a search kind                                                                                                                 |
-| `db: migrations/tenant/`                                       | One migration per slice: the connection kind and its credential (D1), the query definition kind (D2), the dataset kind, names and resolutions (D3) |
-| `db: src/connections.ts`, `queryDefinitions.ts`, `datasets.ts` | Making, reading and versioning each; the credential rows; resolutions; where used                                                                  |
-| `service: src/data/`                                           | The routes, the connector client and its shared key, the five acts                                                                                 |
-| `worker: src/jobs/ingest.ts`                                   | Admitting a bound image's bytes, as an upload's                                                                                                    |
-| `web: src/data/`                                               | The Connections page and the query definition editor                                                                                               |
-| `deploy/compose.yaml`                                          | The connector, `connector-private` and `connector-egress`, and development's source containers                                                     |
+| Where                                                          | What                                                                                                                                                                                                  |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/connector`                                               | The supervisor, the per-request child, the guard, the drivers (`pg`, `tedious`), the HTTP and S3 clients, the readers                                                                                 |
+| `domain: src/data/`                                            | Connection and query definition schemas, the parameter declaration and its checks, the query tree and its checks, each dialect's binder and SQL generation, the column vocabulary, the canonical form |
+| `domain: src/content/model/inline.ts`                          | The binding inline, widened                                                                                                                                                                           |
+| `domain: src/access/permissions.ts`                            | `use_connection` and `write_sql`                                                                                                                                                                      |
+| `domain: src/search/`                                          | `queryDefinition` as a search kind                                                                                                                                                                    |
+| `db: migrations/tenant/`                                       | One migration per slice: the connection kind and its credential (D1), the query definition kind (D2), the dataset kind, names and resolutions (D3)                                                    |
+| `db: src/connections.ts`, `queryDefinitions.ts`, `datasets.ts` | Making, reading and versioning each; the credential rows; resolutions; where used                                                                                                                     |
+| `service: src/data/`                                           | The routes, the connector client and its shared key, the five acts                                                                                                                                    |
+| `worker: src/jobs/ingest.ts`                                   | Admitting a bound image's bytes, as an upload's                                                                                                                                                       |
+| `web: src/data/`                                               | The Connections page and the query definition editor, its builder among it                                                                                                                            |
+| `deploy/compose.yaml`                                          | The connector, `connector-private` and `connector-egress`, and development's source containers                                                                                                        |
 
 ## Verification
 
@@ -994,7 +1075,8 @@ is a pass of its latest version and credential that did not find its account abl
   fixtures**: one table read from every source and reader gives one checksum, in several time zones
   (case 6). Each limit fails by name and cancels at the source (case 7).
 - `packages/domain`: each schema refusing what its check refuses; the canonical form's rules per type;
-  the query tree's format admitting joins and nested queries.
+  the query tree's format admitting joins and nested queries, and its generated SQL binding every
+  value apart from the text.
 - `packages/db`: each kind made, read and versioned by the one mechanism; credential and resolution
   rows refusing an update; a dataset's identity unique; an object held while named.
 - `apps/service`: every route with its permission; each act succeeding whole or failing by name and
@@ -1065,6 +1147,29 @@ The D3 plan's decisions this design takes as its own; the rest of them are the p
 | D3-L | **Named refusals**: `binding_missing`, `binding_in_title`, `binding_changed`, `access_changed`, `take_invalid` (checked at resolve, against the version resolved to), `definition_retired`, `resolution_precondition`, and `parameter_invalid` for a `{ document }` parameter until a document has a parameter set (TPL-020); each names the definition, the binding, its node and the document. A binding naming a definition the caller may not read is `binding_missing`, word for word as one naming no definition, so a refusal never says whether it exists |
 | D3-R | **A resolution's digest is SHA-256 over the binding's canonical form, `id` and `mode` included**: a binding turned from pinned to checked is a question nobody re-confirmed, and holds nothing until it is resolved again                                                                                                                                                                                                                                                                                                                                         |
 
+### Settled by the D4 plan, approved by Ken on 2026-10-04
+
+The D4 plan's decisions this design takes as its own; the rest of them are the plan's alone. **Ken
+chose to build D4 before designing `bindings.md`**, where DA-V put `bindings.md` after D3: a binding
+names a definition by identifier whatever its fetch, so nothing in D4 depends on it.
+
+| #    | Decision                                                                                                                                                                                     |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D4-A | **No migration and no new schema version**: the builder is a second arm of `fetch` at definition `schemaVersion: 1`, refusing nothing stored                                                 |
+| D4-B | **Format 1, held tight**: a table's schema required; no `orderBy`, the declared order being the ORDER BY; a limit at the top alone, beside a declared order; widened later by adding members |
+| D4-C | **`Condition`**: and and or of 2 to 32, not, and a comparison of a column with a parameter, a literal or a column; an optional parameter given no value makes its comparison true            |
+| D4-D | **The whole format is checked, generated and run through the API in D4**; the page offers one table or view, and opens anything more read-only with its SQL, saying why                      |
+| D4-E | **The generator is the domain's, pure and never stored**, called by the connector at every describe and run, by the definition's checks on every write, and by the page                      |
+| D4-F | **Every name quoted, every function, operator and type `pg_catalog`'s, every value a placeholder**, the text read back before it is sent                                                     |
+| D4-G | **Text compares, sorts and groups by code point wherever the builder compares it**, `(x)::pg_catalog.text COLLATE "C"`: this answers the collation question for the builder on PostgreSQL    |
+| D4-H | **Two statements from one tree**: the shape, described and admitted by D2-L, and the run, with the keys, the order and the limit                                                             |
+| D4-I | **`average` carries `places`**, rounded at the source                                                                                                                                        |
+| D4-J | **A built query needs `edit` and `use_connection`, never `write_sql`**, and is not refused by DAT-103; each version by its own fetch                                                         |
+| D4-K | **A built query's commonest refusals are worded by their SQLSTATE**; the source's message only to a holder of `write_sql`                                                                    |
+| D4-L | **Depth and breadth bounded by an iterative walk** before the schema recurses: queries 4 deep, conditions 8, 16 sources, 32 groupings, 256 comparisons                                       |
+| D4-P | **A name the builder cannot hold is shown and not offered**: a relation or a column whose name is not NFC; a view under a composed name reaches it                                           |
+| D4-Q | **Describe takes a built query**, `{ builder: { query, parameters } }`, on `use_connection` alone                                                                                            |
+
 **Until the publish's binding stage exists, nothing publishes a binding** (the D3 plan, "Added in
 phase B"): a publish or a preview of a document whose resolved content holds one is refused before
 anything is queued, `binding_unresolved`, naming each binding by its node and the document, and
@@ -1091,16 +1196,16 @@ unclaimed: their answer is the binding stage, `bindings.md`'s.
 
 ## Open questions
 
-| Question                                                                                                                                                               | Where it goes                                     |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| Mutual TLS between the service and the connector in production                                                                                                         | Hosting, which is open (system.md)                |
-| The concurrency of a creation's resolves (case 4: 1.4 to 1.8 s for 440 at 8). A check's is answered by D3-I: each distinct question once, two at a time, fifty a check | The `templates.md` additions                      |
-| When a screen asks for a check - on opening a document, or on request                                                                                                  | `bindings.md`                                     |
-| IAM-082's stated bound for data flowing on the person's authority after a sign-out                                                                                     | D7's plan                                         |
-| Checking the account's own privilege at each asserted run, which would let DAT-112 be claimed                                                                          | D7's plan                                         |
-| Comparison and order under each source's collation, where two keys compare equal: answered for PostgreSQL's SQL by D2-M - checked by code point, ordered `COLLATE "C"` | D4 and D5's plans, for the builder and SQL Server |
-| A nested JSON value kept as text: its source text or a canonical form, which decides whether reformatting at the source moves a checksum                               | D6's plan                                         |
-| How a new definition version a floating binding would take, or a changed parameter value, is offered                                                                   | `bindings.md` (DAT-070)                           |
+| Question                                                                                                                                                                                                           | Where it goes                      |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
+| Mutual TLS between the service and the connector in production                                                                                                                                                     | Hosting, which is open (system.md) |
+| The concurrency of a creation's resolves (case 4: 1.4 to 1.8 s for 440 at 8). A check's is answered by D3-I: each distinct question once, two at a time, fifty a check                                             | The `templates.md` additions       |
+| When a screen asks for a check - on opening a document, or on request                                                                                                                                              | `bindings.md`                      |
+| IAM-082's stated bound for data flowing on the person's authority after a sign-out                                                                                                                                 | D7's plan                          |
+| Checking the account's own privilege at each asserted run, which would let DAT-112 be claimed                                                                                                                      | D7's plan                          |
+| Comparison and order under each source's collation, where two keys compare equal: answered for PostgreSQL's SQL by D2-M - checked by code point, ordered `COLLATE "C"` - and for the builder on PostgreSQL by D4-G | D5's plan, for SQL Server          |
+| A nested JSON value kept as text: its source text or a canonical form, which decides whether reformatting at the source moves a checksum                                                                           | D6's plan                          |
+| How a new definition version a floating binding would take, or a changed parameter value, is offered                                                                                                               | `bindings.md` (DAT-070)            |
 
 ## Build order
 
@@ -1111,7 +1216,7 @@ Each slice has a plan of its own, written when its turn comes.
 | **D1** | The connection kind and its sealed credential; `use_connection`; `apps/connector` with a process per request, the guard, PostgreSQL, `test`, `describe` and `seal`; the compose networks; a Connections page                                                                          |
 | **D2** | The query definition kind: parameters, the SQL fallback and `write_sql` with the check that reads it, columns second, the sample run, canonicalising and checksumming in the connector; search. Built by [the D2 plan](../plans/2026-09-30-d2-query-definitions.md)                   |
 | **D3** | Datasets and resolutions: the dataset kind, objects keyed by checksum, provenance, resolve, check and accept; the binding inline widened after the evidence query. Built by [the D3 plan](../plans/2026-10-03-d3-datasets-and-resolutions.md). **`bindings.md` is designed after D3** |
-| **D4** | The builder: the saved query tree, PostgreSQL's SQL generated from it, its screens                                                                                                                                                                                                    |
+| **D4** | The builder: the saved query tree, PostgreSQL's SQL generated from it, its screens. Built by [the D4 plan](../plans/2026-10-03-d4-the-builder.md), before `bindings.md` by Ken's choice                                                                                               |
 | **D5** | SQL Server: `tedious`, its dialect, `NVARCHAR` and `CAST`                                                                                                                                                                                                                             |
 | **D6** | HTTP and S3 connections and the file formats: the product's own XLSX reader, CSV and JSON                                                                                                                                                                                             |
 | **D7** | End-user identity: the delegated token, with the session holding the provider's token, and asserted identity on PostgreSQL and SQL Server; IAM-082, sign-out stopping data flowing on the person's authority                                                                          |
