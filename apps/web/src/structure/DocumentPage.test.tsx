@@ -5510,3 +5510,404 @@ describe("a document's fields and its sections'", () => {
     expect(await screen.findByText('A value does not fit its field.')).toBeInTheDocument();
   });
 });
+
+describe('the values a document holds, in its text (the B1 plan, task 5)', () => {
+  const DEFINITION = 'abcdef01-0000-4000-8000-000000000001';
+  const DATASET = 'ssssssss-0000-4000-8000-000000000001';
+  const DATASET_VERSION = 'ssssssss-0000-4000-8000-000000000002';
+  const WAITING_VERSION = 'ssssssss-0000-4000-8000-000000000003';
+  const OTHER = 'abcdef02-0000-4000-8000-000000000001';
+  const CHECKSUM = '0123456789abcdef'.repeat(4);
+  const decimal = { base: 'decimal', precision: 10, scale: 1 };
+
+  /** A binding as a component holds one: a reading's depth, taken from its only row. */
+  const bound = (id: string, column = 'depth') => ({
+    type: 'binding',
+    id,
+    query: DEFINITION,
+    parameters: { site: { literal: '1' } },
+    mode: 'checked',
+    take: { column },
+  });
+  /** The printer's text: the mean, with a bound value where it stands in the sentence. */
+  const withValue = (...bindings: unknown[]) => ({
+    schemaVersion: 1,
+    title: 'Install the printer',
+    language: 'en-GB',
+    direction: 'ltr',
+    content: [
+      {
+        type: 'paragraph',
+        id: 'p1',
+        style: 'body',
+        content: [
+          { type: 'text', value: 'The mean was ', marks: [] },
+          ...bindings,
+          { type: 'text', value: ' m.', marks: [] },
+        ],
+      },
+    ],
+  });
+  const plain = {
+    schemaVersion: 1,
+    title: 'Another component',
+    language: 'en-GB',
+    direction: 'ltr',
+    content: [
+      {
+        type: 'paragraph',
+        id: 'p1',
+        style: 'body',
+        content: [{ type: 'text', value: 'Nothing bound here.', marks: [] }],
+      },
+    ],
+  };
+  const provenance = (over: Record<string, unknown> = {}) => ({
+    schemaVersion: 1,
+    queryDefinition: { artifact: DEFINITION, version: 'abcdef01-0000-4000-8000-000000000002' },
+    connection: {
+      artifact: 'cccccccc-0000-4000-8000-0000000000aa',
+      version: 'cccccccc-0000-4000-8000-0000000000ab',
+    },
+    parameters: { site: '1' },
+    ran: { sql: 'select depth from sample.reading where site = $1' },
+    identity: { kind: 'service' },
+    at: '2026-10-04T09:30:00.000Z',
+    durationMs: 12,
+    rowCount: 1,
+    columns: [{ name: 'depth', from: { column: 'depth_m' }, type: decimal }],
+    canonical: 1,
+    checksum: CHECKSUM,
+    images: {},
+    ...over,
+  });
+  /** What the bindings view answers for one binding the document holds a value for. */
+  const state = (
+    binding: Record<string, unknown>,
+    taken: unknown,
+    over: {
+      waiting?: unknown;
+      definition?: unknown;
+      connection?: unknown;
+      redacted?: boolean;
+    } = {},
+  ) => ({
+    node: RESULTS,
+    binding,
+    held: {
+      dataset: DATASET,
+      version: DATASET_VERSION,
+      number: '0.1',
+      provenance: over.redacted
+        ? provenance({
+            connection: null,
+            ran: { sql: null },
+            columns: [{ name: 'depth', from: null, type: decimal }],
+          })
+        : provenance(),
+      name: 'Harbour readings',
+      stale: false,
+      taken,
+      act: 'resolve',
+      by: { id: ADA, displayName: 'Ada' },
+      at: '2026-10-04T09:31:00.000Z',
+    },
+    waiting: over.waiting ?? null,
+    definition:
+      over.definition === undefined ? { title: 'Readings', version: '0.2' } : over.definition,
+    connection: over.connection === undefined ? { name: 'Harbour source' } : over.connection,
+  });
+  const value = { value: '1234.5', column: { name: 'depth', type: decimal } };
+
+  /**
+   * The page over one document placing the printer at `RESULTS`, and `plain` at `OTHER` where asked,
+   * answering the bindings view with `bindings` - or `null`, refusing it - and a stored result.
+   */
+  function openWithValues(options: {
+    content: unknown;
+    bindings: unknown[] | null;
+    other?: boolean;
+    rows?: number;
+  }) {
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction', [
+          referenceTo(RESULTS, PRINTER),
+          ...(options.other ? [referenceTo(METHOD, OTHER)] : []),
+        ]),
+      ]),
+    );
+    const asked: string[] = [];
+    const fetching = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const path = new URL(request.url).pathname;
+      asked.push(path);
+      if (path === `/v1/documents/${DOCUMENT}/presentation`) return json(200, DEFAULT_PRESENTATION);
+      if (path === `/v1/documents/${DOCUMENT}/texts`) {
+        return json(200, {
+          document: DOCUMENT,
+          version: { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1' },
+          occurrences: [
+            {
+              node: RESULTS,
+              version: 'vvvvvvvv-0000-4000-8000-000000000001',
+              mayEdit: false,
+              lock: null,
+            },
+            ...(options.other
+              ? [
+                  {
+                    node: METHOD,
+                    version: 'vvvvvvvv-0000-4000-8000-000000000009',
+                    mayEdit: false,
+                    lock: null,
+                  },
+                ]
+              : []),
+          ],
+          versions: [
+            { id: 'vvvvvvvv-0000-4000-8000-000000000001', content: options.content },
+            { id: 'vvvvvvvv-0000-4000-8000-000000000009', content: plain },
+          ],
+        });
+      }
+      if (path === `/v1/documents/${DOCUMENT}/bindings`) {
+        return options.bindings === null
+          ? json(500, { code: 'internal', message: 'x', traceId: 't' })
+          : json(200, { bindings: options.bindings });
+      }
+      if (path === `/v1/documents/${DOCUMENT}/datasets/${DATASET_VERSION}`) {
+        const count = options.rows ?? 1;
+        return json(200, {
+          dataset: DATASET,
+          version: DATASET_VERSION,
+          name: 'Harbour readings',
+          provenance: provenance({ rowCount: count }),
+          result: {
+            columns: [['depth', 'decimal']],
+            rows: Array.from({ length: count }, (_, at) => [`${1234 + at}.5`]),
+          },
+        });
+      }
+      if (path === `/v1/components/${PRINTER}`) {
+        return json(200, {
+          id: PRINTER,
+          space: { id: SPACE, name: 'General' },
+          version: {
+            id: 'vvvvvvvv-0000-4000-8000-000000000001',
+            number: '0.3',
+            author: ADA,
+            createdAt: '2026-09-18T09:00:00.000Z',
+            note: null,
+          },
+          content: options.content,
+          mayEdit: false,
+          lock: null,
+          type: { id: 'type-topic', name: 'Topic' },
+          fields: [],
+          schemas: [],
+          values: {},
+        });
+      }
+      return fake.fetch(request);
+    }) as typeof globalThis.fetch;
+    render(
+      <StrictMode>
+        <DocumentPage client={client(fetching)} id={DOCUMENT} principalId={ADA} />
+      </StrictMode>,
+    );
+    return { asked };
+  }
+
+  /** What an element shows a sighted reader: its text, without the words only a screen reader hears. */
+  const seen = (element: Element) => {
+    const copy = element.cloneNode(true) as Element;
+    copy.querySelectorAll('.aw-binding-hidden').forEach((each) => each.remove());
+    return copy.textContent;
+  };
+  const textRegion = () => screen.findByRole('region', { name: "The document's text" });
+
+  it("DAT-027 shows in a document's text the one value the document holds, formatted by its theme, where the binding stands in the sentence", async () => {
+    const user = userEvent.setup();
+    openWithValues({ content: withValue(bound('b1')), bindings: [state(bound('b1'), value)] });
+    const text = await textRegion();
+    // The text is drawn again as the values arrive, so its paragraph is read afresh each time.
+    const paragraph = () =>
+      within(text)
+        .getByText(/The mean was/)
+        .closest('p')!;
+    await waitFor(() => expect(seen(paragraph())).toBe('The mean was 1,234.5 m.'));
+    expect(within(text).getByRole('button', { name: '1,234.5, bound value' })).toBeInTheDocument();
+
+    // And the editor opened in place shows the same value where the binding stands.
+    await user.click(within(text).getByText(/The mean was/));
+    const surface = await within(text).findByRole('textbox', {
+      name: 'Content of Install the printer',
+    });
+    await waitFor(() => expect(seen(surface.querySelector('p')!)).toBe('The mean was 1,234.5 m.'));
+  });
+
+  it("DAT-047 shows a failed value in place with its reason in the document's text and its open editor, and every other component as before", async () => {
+    const user = userEvent.setup();
+    openWithValues({
+      content: withValue(bound('b1')),
+      bindings: [state(bound('b1'), { failure: 'value_many', count: 3 })],
+      other: true,
+    });
+    const text = await textRegion();
+    const reason = 'No value - the query returned 3 rows';
+    const paragraph = () =>
+      within(text)
+        .getByText(/The mean was/)
+        .closest('p')!;
+    await waitFor(() => expect(seen(paragraph())).toBe(`The mean was ${reason} m.`));
+    const failed = paragraph().querySelector('[data-binding]')!;
+    // Apart by more than colour: its own words, and the class that draws it dashed and underlined.
+    expect(failed).toHaveClass('aw-binding-failed');
+    expect(failed).toHaveTextContent(`${reason}, bound value, failed`);
+    // Every other component as before.
+    expect(within(text).getByText('Nothing bound here.')).toBeInTheDocument();
+
+    await user.click(within(text).getByText(/The mean was/));
+    const surface = await within(text).findByRole('textbox', {
+      name: 'Content of Install the printer',
+    });
+    await waitFor(() =>
+      expect(seen(surface.querySelector('p')!)).toBe(`The mean was ${reason} m.`),
+    );
+    expect(surface.querySelector('[data-binding]')).toHaveClass('aw-binding-failed');
+    expect(within(text).getByText('Nothing bound here.')).toBeInTheDocument();
+  });
+
+  it("DAT-041 opens a value's provenance in one step from the value in the document's text, by a click or by Enter", async () => {
+    const user = userEvent.setup();
+    openWithValues({ content: withValue(bound('b1')), bindings: [state(bound('b1'), value)] });
+    const text = await textRegion();
+    const button = await within(text).findByRole('button', { name: '1,234.5, bound value' });
+
+    // A click opens its provenance, and never the editor.
+    await user.click(button);
+    const panel = await screen.findByRole('region', { name: 'Provenance' });
+    expect(
+      within(text).queryByRole('textbox', { name: 'Content of Install the printer' }),
+    ).toBeNull();
+    expect(within(panel).getByRole('heading', { name: 'Provenance' })).toHaveFocus();
+    const said = panel.textContent!;
+    for (const part of [
+      '1,234.5',
+      'Readings, version 0.2',
+      'Harbour source',
+      'site: 1',
+      'The service account',
+      '4 October 2026',
+      '1 row',
+      CHECKSUM.slice(0, 12),
+      'Harbour readings, version 0.1',
+      'Resolved by Ada',
+      'Checked',
+      'select depth from sample.reading where site = $1',
+    ]) {
+      expect(said, part).toContain(part);
+    }
+    expect(said).not.toContain(CHECKSUM);
+    await user.click(within(panel).getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('region', { name: 'Provenance' })).toBeNull();
+    expect(button).toHaveFocus();
+
+    // Enter on the value, from the keyboard alone, opens it too.
+    await user.keyboard('{Enter}');
+    expect(await screen.findByRole('region', { name: 'Provenance' })).toBeInTheDocument();
+    expect(
+      within(text).queryByRole('textbox', { name: 'Content of Install the printer' }),
+    ).toBeNull();
+  });
+
+  it('returns the focus to the value when the provenance is closed by Escape', async () => {
+    const user = userEvent.setup();
+    openWithValues({ content: withValue(bound('b1')), bindings: [state(bound('b1'), value)] });
+    const button = await within(await textRegion()).findByRole('button', {
+      name: '1,234.5, bound value',
+    });
+    await user.click(button);
+    await screen.findByRole('region', { name: 'Provenance' });
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('region', { name: 'Provenance' })).toBeNull();
+    expect(button).toHaveFocus();
+  });
+
+  it('shows a held value with a newer result waiting, marked always, and the waiting value beside it in the provenance', async () => {
+    const user = userEvent.setup();
+    openWithValues({
+      content: withValue(bound('b1')),
+      bindings: [
+        state(bound('b1'), value, {
+          waiting: {
+            version: WAITING_VERSION,
+            provenance: provenance({ at: '2026-10-05T09:30:00.000Z' }),
+            taken: { value: '1240.5', column: { name: 'depth', type: decimal } },
+          },
+        }),
+      ],
+    });
+    const button = await within(await textRegion()).findByRole('button', {
+      name: /^1,234\.5, bound value,/,
+    });
+    expect(seen(button)).toContain('revision waiting');
+    await user.click(button);
+    const panel = await screen.findByRole('region', { name: 'Provenance' });
+    expect(panel).toHaveTextContent('A newer result is waiting: 1,240.5');
+  });
+
+  it("shows a reader who may not read the definition its value, and none of the definition's SQL or connection", async () => {
+    const user = userEvent.setup();
+    openWithValues({
+      content: withValue(bound('b1')),
+      bindings: [state(bound('b1'), value, { definition: null, connection: null, redacted: true })],
+    });
+    await user.click(
+      await within(await textRegion()).findByRole('button', { name: '1,234.5, bound value' }),
+    );
+    const panel = await screen.findByRole('region', { name: 'Provenance' });
+    expect(panel).toHaveTextContent('a query definition you cannot read');
+    expect(panel.textContent).not.toContain('select');
+    expect(panel.textContent).not.toContain('Harbour source');
+    expect(panel).toHaveTextContent('1,234.5');
+  });
+
+  it('shows the result a value was taken from, its first 200 rows and how many more', async () => {
+    const user = userEvent.setup();
+    openWithValues({
+      content: withValue(bound('b1')),
+      bindings: [state(bound('b1'), value)],
+      rows: 250,
+    });
+    await user.click(
+      await within(await textRegion()).findByRole('button', { name: '1,234.5, bound value' }),
+    );
+    const panel = await screen.findByRole('region', { name: 'Provenance' });
+    await user.click(within(panel).getByRole('button', { name: 'Show the result' }));
+    const table = await within(panel).findByRole('table');
+    // A header row and 200 rows of the 250.
+    expect(within(table).getAllByRole('row')).toHaveLength(201);
+    expect(within(table).getByRole('columnheader', { name: 'depth' })).toBeInTheDocument();
+    expect(panel).toHaveTextContent('and 50 more rows');
+  });
+
+  it('shows no values and no error where the values cannot be read', async () => {
+    openWithValues({ content: withValue(bound('b1')), bindings: null });
+    const text = await textRegion();
+    const paragraph = () =>
+      within(text)
+        .getByText(/The mean was/)
+        .closest('p')!;
+    await waitFor(() => expect(seen(paragraph())).toBe('The mean was Bound value m.'));
+    expect(within(text).queryByRole('button', { name: /bound value/ })).toBeNull();
+    expect(screen.queryByText(/could not/)).toBeNull();
+  });
+
+  it('asks for the values only where a text holds a binding', async () => {
+    const { asked } = openWithValues({ content: plain, bindings: [] });
+    await within(await textRegion()).findByText('Nothing bound here.');
+    expect(asked).not.toContain(`/v1/documents/${DOCUMENT}/bindings`);
+  });
+});

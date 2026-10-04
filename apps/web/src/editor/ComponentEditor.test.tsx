@@ -1,5 +1,10 @@
 import { createApiClient } from '@alloy-works/api-client';
-import { DEFAULT_CATALOGUES, equationAlternative } from '@alloy-works/domain';
+import {
+  bindingDigestInput,
+  DEFAULT_CATALOGUES,
+  equationAlternative,
+  type Binding,
+} from '@alloy-works/domain';
 import {
   fromEditor,
   NodeSelection,
@@ -6641,5 +6646,173 @@ describe('the symbol palette (W14.7)', () => {
     );
     await userEvent.click(button);
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+});
+
+describe('a binding in the editor (the B1 plan, task 5)', () => {
+  const READINGS = 'abcdef01-0000-4000-8000-000000000001';
+  const HIDDEN_DEFINITION = 'abcdef01-0000-4000-8000-000000000009';
+  const decimal = { base: 'decimal', precision: 10, scale: 1 } as const;
+  const bound = (id: string, query = READINGS) => ({
+    type: 'binding',
+    id,
+    query,
+    parameters: { site: { literal: '1' } },
+    mode: 'checked',
+    take: { column: 'depth' },
+  });
+  const holding = (...inlines: unknown[]) => ({
+    ...content('x'),
+    content: [
+      {
+        type: 'paragraph',
+        id: 'p1',
+        style: 'body',
+        content: [{ type: 'text', value: 'The mean was ', marks: [] }, ...inlines],
+      },
+    ],
+  });
+  /** What each binding on the surface shows a sighted reader, in document order. */
+  const shownOn = (view: EditorView) =>
+    [...view.dom.querySelectorAll('[data-binding]')].map((each) => {
+      const copy = each.cloneNode(true) as Element;
+      copy.querySelectorAll('.aw-binding-hidden').forEach((hidden) => hidden.remove());
+      return copy.textContent;
+    });
+  /** The position of the n-th binding in the surface's document. */
+  const bindingAt = (view: EditorView, n = 0) => {
+    const at: number[] = [];
+    view.state.doc.descendants((node, pos) => {
+      if (node.type.name === 'binding') at.push(pos);
+    });
+    return at[n]!;
+  };
+  /** As the document page tells an editor opened in place what it holds for `b1`. */
+  const inDocument = (): Partial<React.ComponentProps<typeof ComponentEditor>> => ({
+    bindingContext: {
+      kind: 'document',
+      node: 'nnnnnnnnnnnnnnnnnnnnnnnnnn',
+      held: new Map([
+        [
+          'b1',
+          {
+            binding: bindingDigestInput(bound('b1') as Binding),
+            shown: { value: '1,234.5', waiting: false },
+          },
+        ],
+      ]),
+    },
+    bindingStates: new Map([
+      [
+        'b1',
+        {
+          node: 'nnnnnnnnnnnnnnnnnnnnnnnnnn',
+          binding: bound('b1') as Binding,
+          held: {
+            dataset: 'd',
+            version: 'v',
+            number: '0.1',
+            provenance: {
+              parameters: { site: '1' },
+              sql: null,
+              identity: 'service',
+              at: '2026-10-04T09:30:00.000Z',
+              rowCount: 1,
+              checksum: '0'.repeat(64),
+            },
+            name: null,
+            stale: false,
+            taken: { value: '1234.5', column: { name: 'depth', type: decimal } },
+            act: 'resolve',
+            by: { id: ADA, displayName: 'Ada' },
+            at: '2026-10-04T09:31:00.000Z',
+          },
+          waiting: null,
+          definition: { title: 'Readings', version: '0.2' },
+          connection: null,
+        },
+      ],
+    ]),
+  });
+
+  it("shows a binding on the component's own page as what it asks for, by its definition's title, and never a value", async () => {
+    const { surface, asked } = open({
+      'GET /v1/components/{id}': () =>
+        json(200, opened({ content: holding(bound('b1'), bound('b2', HIDDEN_DEFINITION)) })),
+      [`GET /v1/query-definitions/${READINGS}`]: () =>
+        json(200, { id: READINGS, definition: { title: 'Readings' } }),
+    });
+    const view = await surface();
+    await waitFor(() => expect(shownOn(view)).toEqual(['depth, Readings', 'a bound value']));
+    // Each definition asked for once, whatever the bindings naming it.
+    expect(
+      asked
+        .filter((each) => each.route.startsWith('GET /v1/query-definitions/'))
+        .map((each) => each.route)
+        .sort(),
+    ).toEqual([
+      `GET /v1/query-definitions/${READINGS}`,
+      `GET /v1/query-definitions/${HIDDEN_DEFINITION}`,
+    ]);
+    expect(asked.some((each) => each.route.includes('/bindings'))).toBe(false);
+  });
+
+  it('shows the Value panel for a binding selected whole, and opens its provenance from it', async () => {
+    const provenance = vi.fn();
+    const { surface } = open(
+      { 'GET /v1/components/{id}': () => json(200, opened({ content: holding(bound('b1')) })) },
+      quick,
+      false,
+      { ...inDocument(), onProvenance: provenance },
+    );
+    const view = await surface();
+    await waitFor(() => expect(shownOn(view)).toEqual(['1,234.5']));
+    expect(screen.queryByRole('region', { name: 'Value' })).toBeNull();
+    act(() =>
+      view.dispatch(
+        view.state.tr.setSelection(NodeSelection.create(view.state.doc, bindingAt(view))),
+      ),
+    );
+    const panel = await screen.findByRole('region', { name: 'Value' });
+    expect(panel).toHaveTextContent('1,234.5');
+    expect(panel).toHaveTextContent('Query definition: Readings, version 0.2');
+    expect(panel).toHaveTextContent('Mode: Checked');
+    expect(panel).toHaveTextContent('Fetched 4 October 2026');
+    await userEvent.click(within(panel).getByRole('button', { name: 'Provenance' }));
+    expect(provenance).toHaveBeenCalledWith('b1');
+  });
+
+  it('pastes a copy of a binding as one never resolved, and says so in the paste report', async () => {
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened({ content: holding(bound('b1')) })),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      },
+      quick,
+      false,
+      inDocument(),
+    );
+    const view = await surface();
+    const at = bindingAt(view);
+    act(() => view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, at))));
+    const written = new Map<string, string>();
+    const copy = new Event('copy', { bubbles: true, cancelable: true });
+    Object.defineProperty(copy, 'clipboardData', {
+      value: {
+        clearData: () => written.clear(),
+        setData: (type: string, value: string) => written.set(type, value),
+      },
+    });
+    view.dom.dispatchEvent(copy);
+    // Another application is given what it shows.
+    expect(written.get('text/plain')).toBe('1,234.5');
+    selectText(view, at + 1, at + 1);
+    view.dom.dispatchEvent(pasteEvent(Object.fromEntries(written)));
+    await waitFor(() => expect(shownOn(view)).toEqual(['1,234.5', 'No value - never resolved']));
+    const report = await screen.findByRole('region', { name: 'Paste report' });
+    expect(report).toHaveTextContent(
+      'Bound values were copied, each to be resolved in a document before it shows a value.',
+    );
   });
 });
