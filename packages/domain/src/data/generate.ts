@@ -136,7 +136,8 @@ export function generatePostgres(
     if (is === 'isNotNull') return `${column} IS NOT NULL`;
     if (to === undefined) throw new Error(`The comparison ${is} compares with nothing`);
     if ('column' in to) {
-      // Two columns compare by the source's own rule, which the page says.
+      // Two columns compare by PostgreSQL's built-in operator for their types, `pg_catalog`'s, not a
+      // type's own: two `citext` columns compare as text, by their collation, not case-blind.
       return `${column} OPERATOR(pg_catalog.${OPERATORS[is]!}) ${columnText(to.column)}`;
     }
     if ('parameter' in to) {

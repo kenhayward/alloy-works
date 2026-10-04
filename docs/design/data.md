@@ -767,8 +767,9 @@ definition names, or it is declared decorative (DAT-097's declaration; its failu
   its minimum and maximum taken over it - in a nested query too, where a text-declared column reads one
   of its columns. So a `citext` column or one under a nondeterministic collation never merges `Ada` and
   `ada` into one group, whose spelling would move the checksum with the rows' physical order, and an
-  enum or a `uuid` is filterable by a text parameter at all. A comparison of two columns is the
-  source's own. The cost: an index under another collation does not serve a text filter; a view or an
+  enum or a `uuid` is filterable by a text parameter at all. Two columns are compared by
+  PostgreSQL's built-in operator for their types, `OPERATOR(pg_catalog.=)` and its kin, so a `citext`
+  pair compares as text under its collation, not by `citext`'s case-blind rule. The cost: an index under another collation does not serve a text filter; a view or an
   index `COLLATE "C"` at the source does.
 - **Empty** (DAT-068): whether no rows is a valid answer; a run of no rows against `invalid` fails,
   `empty_result`, exactly as any failure does.
