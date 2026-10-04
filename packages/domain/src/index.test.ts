@@ -449,6 +449,23 @@ describe('the domain package', () => {
         'generatedLength',
         'sqlTextSchema',
         'treeProblem',
+        // B1: the one rule a value is taken by and its stored outcome, the one function it is
+        // printed by and the formats it picks, the value catalogue beside the six kinds and its
+        // default, and the default theme's 0.5 frozen as 0.6 replaces it (the B1 plan).
+        'TAKE_FAILURES',
+        'takeDigestInput',
+        'takeOutcomeSchema',
+        'takeValue',
+        'formatValue',
+        'formatsFor',
+        'DEFAULT_VALUE_FORMATS',
+        'VALUE_CATALOGUE_KIND',
+        'valueFormatsSchema',
+        'FIFTH_DEFAULT_CATALOGUES',
+        'FIFTH_DEFAULT_CATALOGUES_BY_VERSION',
+        'FIFTH_DEFAULT_CATALOGUE_VERSIONS',
+        'FIFTH_DEFAULT_THEME',
+        'FIFTH_DEFAULT_THEME_VERSION',
       ].sort(),
     );
   });

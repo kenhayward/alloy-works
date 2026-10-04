@@ -127,7 +127,11 @@ export async function writeTheme(
         return made.rows[0].id;
       };
 
-      const bound: Record<CatalogueKind, string> = { ...DEFAULT_CATALOGUE_VERSIONS };
+      // The six kinds, and the default's value catalogue beside them (B1-F), which no theme here
+      // writes its own of.
+      const bound: Record<CatalogueKind, string> & { value?: string } = {
+        ...DEFAULT_CATALOGUE_VERSIONS,
+      };
       for (const kind of OWN_KINDS) {
         const artifactId = artifacts.catalogues[kind];
         const answer = await addCatalogueVersion(trx, {

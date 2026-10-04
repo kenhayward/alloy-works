@@ -68,6 +68,9 @@ export const reportMessages = {
     crossReferenceRepointed:
       'Cross-references to what was cut were pointed at where it was pasted.',
     markIdentifier: 'Marks were given new identifiers.',
+    // A binding re-identified (B1-C): a copy holds no value anywhere until a document resolves it.
+    bindingCopied:
+      'Bound values were copied, each to be resolved in a document before it shows a value.',
     // A reader's: kept, but not as what it was.
     heading: "A heading was kept as a paragraph. A document's headings are its section titles.",
     table: 'A table inside a table cell was kept as its text, one paragraph for each cell.',
@@ -83,6 +86,10 @@ export const reportMessages = {
   kept: {
     crossReferenceUnresolved:
       'Cross-references to something this component does not hold were kept as they stood, and point at nothing until it does.',
+    // The editor's, after admission (B1-C): a binding cut and pasted given its own identifier back.
+    // Worded to promise no value, since one moved here from another component holds none.
+    bindingIdentifier:
+      'Bound values kept their identifiers. One moved from another component shows no value in a document until it is resolved there.',
   },
   refused: {
     oversized: 'Nothing was added, because the content is larger than one addition can hold.',

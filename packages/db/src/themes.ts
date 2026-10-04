@@ -215,6 +215,8 @@ export async function addCatalogueVersion(
 ): Promise<ThemeStoreAnswer> {
   const read = readCatalogue(input.catalogue);
   if (!read.ok) return { answer: 'refused', refusals: read.refusals };
+  // The value catalogue (B1-F) is recorded by B1's task 3, which gives it its own branch.
+  if (read.catalogue.kind === 'value') throw new Error('A value catalogue is not recorded yet');
   if (!UUID.test(input.artifactId)) return { answer: 'artifact.missing' };
 
   await lockArtifact(trx, input.artifactId);
@@ -242,6 +244,9 @@ export async function addCatalogueVersion(
     // store.
     if (!earlier.ok) {
       throw new Error(`The catalogue ${input.artifactId} at ${version.id} does not read`);
+    }
+    if (earlier.catalogue.kind === 'value') {
+      throw new Error('A value catalogue is not recorded yet');
     }
     kind = earlier.catalogue.kind;
     latest = { versionId: version.id, catalogue: earlier.catalogue };

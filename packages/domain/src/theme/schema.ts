@@ -396,6 +396,79 @@ export const imageStyleSchema = z.discriminatedUnion('placement', [
 const version = z.literal(CATALOGUE_SCHEMA_VERSION);
 
 /**
+ * **The value catalogue's kind** (bindings.md, "Formatting"; the B1 plan, B1-F): a catalogue the
+ * theme binds **beside the six kinds, not as a seventh**, so STY-003's six, every map over the kinds
+ * and every loop over them stay as they are. A theme names one optionally (`catalogues.value`), and
+ * one naming none formats a value by the product's default (`DEFAULT_VALUE_FORMATS`).
+ */
+export const VALUE_CATALOGUE_KIND = 'value' as const;
+
+/** A boolean's word: 1 to 40 code points, in NFC, no control character, with no space at either end. */
+const valueWord = z
+  .string()
+  .refine((word) => {
+    const length = [...word].length;
+    return length >= 1 && length <= 40;
+  }, 'is 1 to 40 characters')
+  .refine((word) => word === word.normalize('NFC'), 'is in NFC')
+  .refine((word) => !/\p{Cc}/u.test(word), 'holds no control character')
+  .refine((word) => word === word.trim(), 'has no space at either end');
+
+/**
+ * **How a value is printed** (bindings.md's `ValueFormats`, member for member; stored-shape row 2),
+ * declared, never derived from a locale: every member a closed set, strict at every level. A space
+ * that groups digits is stored as its token, `U+00A0` or `U+202F`, never as the character, and so is
+ * the minus, which a reader could not tell from a hyphen. A group is never the decimal separator, and
+ * a boolean's two words differ.
+ */
+export const valueFormatsSchema = z.strictObject({
+  number: z
+    .strictObject({
+      decimal: z.enum(['.', ',']),
+      group: z.enum(['none', ',', '.', "'", 'U+00A0', 'U+202F']),
+      groupFrom: z.union([z.literal(4), z.literal(5)]),
+      minus: z.enum(['U+002D', 'U+2212']),
+    })
+    .refine((number) => number.group !== number.decimal, {
+      message: 'A number is never grouped by its decimal separator',
+    }),
+  date: z.strictObject({
+    order: z.enum(['ymd', 'dmy', 'mdy']),
+    separator: z.enum(['-', '/', '.']),
+    pad: z.boolean(),
+  }),
+  time: z.strictObject({ separator: z.enum([':', '.']) }),
+  boolean: z
+    .strictObject({ true: valueWord, false: valueWord })
+    .refine((words) => words.true !== words.false, {
+      message: "A boolean's two words differ",
+    }),
+});
+
+/**
+ * The value catalogue, at `catalogue/3` alone (stored-shape rows 2 and 3): the formats, and formats
+ * for at most 32 languages, each a primary language subtag, once. It never existed at version 1 or 2,
+ * so neither frozen parse holds it, and no upgrader gains anything.
+ */
+const valueCatalogueSchema = z.strictObject({
+  schemaVersion: version,
+  kind: z.literal(VALUE_CATALOGUE_KIND),
+  formats: valueFormatsSchema,
+  byLanguage: z
+    .array(
+      z.strictObject({
+        language: z.string().regex(/^[a-z]{2,3}$/, 'a primary language subtag'),
+        formats: valueFormatsSchema,
+      }),
+    )
+    .max(32)
+    .refine(
+      (languages) => new Set(languages.map((each) => each.language)).size === languages.length,
+      'gives each language once',
+    ),
+});
+
+/**
  * Every catalogue version written at `catalogue/3`. Whether its identifiers are unique, its marks each
  * styled once, its chains unbroken, and an image style's units and placement fit what it fixes and
  * applies to is the reader's (`readCatalogue`), which names each failure by code.
@@ -426,6 +499,7 @@ export const catalogueSchema = z
     // Nothing to style yet: no admonition exists, and citations arrive with their processor (TH-C).
     z.strictObject({ schemaVersion: version, kind: z.literal('admonition'), styles: z.tuple([]) }),
     z.strictObject({ schemaVersion: version, kind: z.literal('citation'), styles: z.tuple([]) }),
+    valueCatalogueSchema,
   ])
   .refine(storableEverywhere, 'holds a character that cannot be stored');
 
@@ -569,12 +643,14 @@ export const themeSchema = z
     /** The typeface every equation is set in. */
     maths: typefaceIdSchema,
     /** One catalogue of each kind, by artifact version (STY-024): immutable, so the theme's version says them all. */
-    catalogues: z.strictObject(
-      Object.fromEntries(CATALOGUE_KINDS.map((kind) => [kind, artifactIdentifierSchema])) as Record<
-        CatalogueKind,
-        typeof artifactIdentifierSchema
-      >,
-    ),
+    catalogues: z.strictObject({
+      ...(Object.fromEntries(
+        CATALOGUE_KINDS.map((kind) => [kind, artifactIdentifierSchema]),
+      ) as Record<CatalogueKind, typeof artifactIdentifierSchema>),
+      // The value catalogue, beside the six (B1-F): optional, so every theme before the default's
+      // 0.6 reads as it did, its values in the product's default formats.
+      [VALUE_CATALOGUE_KIND]: artifactIdentifierSchema.optional(),
+    }),
     places: z.strictObject(
       Object.fromEntries(PLACES.map((place) => [place, styleIdSchema])) as Record<
         Place,
@@ -597,6 +673,8 @@ export type TableCatalogue = Extract<Catalogue, { kind: 'table' }>;
 export type ImageCatalogue = Extract<Catalogue, { kind: 'image' }>;
 export type AdmonitionCatalogue = Extract<Catalogue, { kind: 'admonition' }>;
 export type CitationCatalogue = Extract<Catalogue, { kind: 'citation' }>;
+export type ValueCatalogue = Extract<Catalogue, { kind: 'value' }>;
+export type ValueFormats = z.infer<typeof valueFormatsSchema>;
 export type Theme = z.infer<typeof themeSchema>;
 export type Typeface = z.infer<typeof typefaceSchema>;
 export type ParagraphProperties = z.infer<typeof paragraphPropertiesSchema>;

@@ -19,8 +19,8 @@ export type Receiver = {
 };
 
 /**
- * What re-identifying answers: the candidate under its new identifiers, and `renamed` - each block's
- * and footnote's new identifier by the one it arrived with, leaving out any that arrived on more than
+ * What re-identifying answers: the candidate under its new identifiers, and `renamed` - each block's,
+ * footnote's and binding's new identifier by the one it arrived with, leaving out any that arrived on more than
  * one, since no single new one answers it. `admit` hands `renamed` on, so a paste can re-point a
  * reference its receiving component still holds at the block that came back (cross-references 1,
  * R8): what this stage does for the references that travel, the editor then does for the ones left
@@ -48,6 +48,11 @@ class AllocationFailed extends Error {}
  *   move for ever. A cross-reference whose block travelled with it is pointed at the copy - unless the
  *   old identifier arrived on more than one block, in which case which one it meant cannot be known, so
  *   it is left as it stands rather than guessed: failed by name, never guessed.
+ * - **Every binding gets a new identifier** (the B1 plan, B1-C), recorded in `renamed` and counted
+ *   as copied, so a copy pasted into the component it came from never holds an identifier twice. The
+ *   editor gives one back its original where, after the paste, nothing else holds it - a cut and a
+ *   paste. A binding is never a reference's target: a reference naming its old identifier is left
+ *   standing, and the receiver's bindings are not among what a target can name.
  * - **Every mark gets a new identifier**, and fragments of one annotation - the same type and the
  *   same identifier on several runs - get the same new one, so it stays one annotation (CNT-004).
  * - **Comments and suggestions are dropped**, one report entry for each annotation rather than each
@@ -68,6 +73,7 @@ export function reidentify(
     marks: new Map(),
     dropped: new Set(),
     reidentified: 0,
+    bindings: new Set(),
     renamed: new Map(),
     ambiguous: new Set(),
     references: [],
@@ -83,6 +89,9 @@ export function reidentify(
     }
     if (leftStanding > 0) {
       report.add('reidentify', 'kept', 'crossReferenceUnresolved', { count: leftStanding });
+    }
+    if (state.bindings.size > 0) {
+      report.add('reidentify', 'rewritten', 'bindingCopied', { count: state.bindings.size });
     }
     if (state.marks.size > 0) {
       report.add('reidentify', 'rewritten', 'markIdentifier', { count: state.marks.size });
@@ -106,6 +115,8 @@ type State = {
   readonly dropped: Set<string>;
   /** How many blocks, footnotes and cross-references have been given a new identifier so far. */
   reidentified: number;
+  /** Each binding's new identifier: what a reference is never pointed at, and what the report counts. */
+  readonly bindings: Set<string>;
   /** Each block's and footnote's new identifier, by the one it arrived with - unless ambiguous. */
   readonly renamed: Map<string, string>;
   /** Old identifiers that arrived on more than one block or footnote, so no single new one answers. */
@@ -155,7 +166,9 @@ function repoint(
   for (const reference of state.references) {
     const target = asRecord(reference.target);
     if (target?.kind !== 'block' || typeof target.block !== 'string') continue;
-    const block = state.renamed.get(target.block);
+    const renamed = state.renamed.get(target.block);
+    // A binding is never a target (B1-C): a reference naming one's old identifier is left standing.
+    const block = renamed === undefined || state.bindings.has(renamed) ? undefined : renamed;
     if (block === undefined) {
       if (!held.has(target.block)) leftStanding += 1;
       continue;
@@ -189,8 +202,13 @@ function namesIn(value: unknown): { reserved: Set<string>; targetable: Set<strin
     const record = node as Record<string, unknown>;
     if (typeof record.id === 'string') {
       reserved.add(record.id);
-      if (!inMarks && record.type !== 'crossReference') targetable.add(record.id);
+      if (!inMarks && record.type !== 'crossReference' && record.type !== 'binding') {
+        targetable.add(record.id);
+      }
     }
+    // A binding holds nothing beneath it: its parameters and its take are names and values, and a key
+    // column called id is not an identifier (B1-C).
+    if (record.type === 'binding') return;
     if (record.type === 'crossReference') {
       const target = asRecord(record.target);
       if (target?.kind === 'block' && typeof target.block === 'string') reserved.add(target.block);
@@ -292,6 +310,12 @@ function reidentifyInline(value: unknown, state: State): unknown[] {
     state.reidentified += 1;
     state.references.push(out);
     return [out];
+  }
+  if (inline.type === 'binding') {
+    const id = allocate(state);
+    state.bindings.add(id);
+    if (typeof inline.id === 'string') recordRenamed(state, inline.id, id);
+    return [{ ...inline, id }];
   }
   if (inline.type === 'footnote') {
     const id = allocate(state);
