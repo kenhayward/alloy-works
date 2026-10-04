@@ -3,6 +3,20 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.132.2 - 2026-10-04 (PR #380)
+
+### Added
+
+- **How values from your own data will appear in your documents.** Nothing you can use yet. The
+  design says how an author will place a value from a query in a component's text, choosing the
+  query, its parameters and which value to take; how a document shows the value it holds, formatted
+  by its theme, or says plainly why it has none; how one place in a document lists every value with
+  what needs attention - a newer result waiting, a query that changed, a value never fetched - and
+  lets you check, accept or keep each; and how publishing will print each value from what the
+  document holds, never asking the source again, refusing by name rather than printing a blank, and
+  sending with every publication a file saying where each value came from. It also proposes leaving
+  values corrected by hand to the review tranche.
+
 ## 0.132.1 - 2026-10-04 (PR #379)
 
 ### Fixed

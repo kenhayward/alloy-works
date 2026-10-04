@@ -16,7 +16,7 @@ whose cases are cited here by number. A connection, a query definition and a dat
 [access.md](access.md)'s decision, with two permissions this design adds; a result's bytes are
 objects by hash as [assets.md](assets.md)'s are, and a bound image comes through the same door; the
 binding's place in a component is [content-model.md](content-model.md)'s inline, widened here.
-**`bindings.md`**, designed after the third slice below, owns the editor's side of a binding and the
+**[`bindings.md`](bindings.md)**, designed after the fourth slice below, owns the editor's side of a binding and the
 publish's binding stage; **`tables.md`** owns a bound table's presentation.
 
 ## The shape in one paragraph
@@ -1240,16 +1240,16 @@ unclaimed: their answer is the binding stage, `bindings.md`'s.
 
 Each slice has a plan of its own, written when its turn comes.
 
-| Slice  | What                                                                                                                                                                                                                                                                                  |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **D1** | The connection kind and its sealed credential; `use_connection`; `apps/connector` with a process per request, the guard, PostgreSQL, `test`, `describe` and `seal`; the compose networks; a Connections page                                                                          |
-| **D2** | The query definition kind: parameters, the SQL fallback and `write_sql` with the check that reads it, columns second, the sample run, canonicalising and checksumming in the connector; search. Built by [the D2 plan](../plans/2026-09-30-d2-query-definitions.md)                   |
-| **D3** | Datasets and resolutions: the dataset kind, objects keyed by checksum, provenance, resolve, check and accept; the binding inline widened after the evidence query. Built by [the D3 plan](../plans/2026-10-03-d3-datasets-and-resolutions.md). **`bindings.md` is designed after D3** |
-| **D4** | The builder: the saved query tree, PostgreSQL's SQL generated from it, its screens. Built by [the D4 plan](../plans/2026-10-03-d4-the-builder.md), before `bindings.md` by Ken's choice                                                                                               |
-| **D5** | SQL Server: `tedious`, its dialect, `NVARCHAR` and `CAST`                                                                                                                                                                                                                             |
-| **D6** | HTTP and S3 connections and the file formats: the product's own XLSX reader, CSV and JSON                                                                                                                                                                                             |
-| **D7** | End-user identity: the delegated token, with the session holding the provider's token, and asserted identity on PostgreSQL and SQL Server; IAM-082, sign-out stopping data flowing on the person's authority                                                                          |
-| **D8** | Image columns through `ingest`                                                                                                                                                                                                                                                        |
+| Slice  | What                                                                                                                                                                                                                                                                                                 |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **D1** | The connection kind and its sealed credential; `use_connection`; `apps/connector` with a process per request, the guard, PostgreSQL, `test`, `describe` and `seal`; the compose networks; a Connections page                                                                                         |
+| **D2** | The query definition kind: parameters, the SQL fallback and `write_sql` with the check that reads it, columns second, the sample run, canonicalising and checksumming in the connector; search. Built by [the D2 plan](../plans/2026-09-30-d2-query-definitions.md)                                  |
+| **D3** | Datasets and resolutions: the dataset kind, objects keyed by checksum, provenance, resolve, check and accept; the binding inline widened after the evidence query. Built by [the D3 plan](../plans/2026-10-03-d3-datasets-and-resolutions.md). **[`bindings.md`](bindings.md) is designed after D4** |
+| **D4** | The builder: the saved query tree, PostgreSQL's SQL generated from it, its screens. Built by [the D4 plan](../plans/2026-10-03-d4-the-builder.md), before `bindings.md` by Ken's choice                                                                                                              |
+| **D5** | SQL Server: `tedious`, its dialect, `NVARCHAR` and `CAST`                                                                                                                                                                                                                                            |
+| **D6** | HTTP and S3 connections and the file formats: the product's own XLSX reader, CSV and JSON                                                                                                                                                                                                            |
+| **D7** | End-user identity: the delegated token, with the session holding the provider's token, and asserted identity on PostgreSQL and SQL Server; IAM-082, sign-out stopping data flowing on the person's authority                                                                                         |
+| **D8** | Image columns through `ingest`                                                                                                                                                                                                                                                                       |
 
 Then `tables.md`, and the `templates.md` additions: a template's parameters, and a document's
 bindings established when it is made.

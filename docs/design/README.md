@@ -13,27 +13,28 @@ understand the storage layer, rather than something to be thrown away.
 
 ## Documents
 
-| Document                                               | Subsystem                                                                                                     |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| [system.md](system.md)                                 | The whole system: containers, languages, and the data flowing between them                                    |
-| [service-foundations.md](service-foundations.md)       | How a request reaches one tenant, and how an endpoint is written                                              |
-| [storage-and-versioning.md](storage-and-versioning.md) | Iterations, versions, revisions, baselines and derived data                                                   |
-| [content-model.md](content-model.md)                   | The stored shape of a component: nodes, marks, identity, and what may enter the model                         |
-| [word-output.md](word-output.md)                       | The resolved document as a real Word document, and why its pages are Word's                                   |
-| [themes.md](themes.md)                                 | One theme driving the editor, the PDF and Word, and the suite that keeps them in agreement                    |
-| [realtime.md](realtime.md)                             | Presence, locks and notifications on one stream, and model output on its own request                          |
-| [relationships.md](relationships.md)                   | Declared relationships and references, and walking them without revealing what the user may not read          |
-| [search.md](search.md)                                 | Words and meaning searched together, filtered by what the user may read when they ask                         |
-| [metadata.md](metadata.md)                             | Which fields apply to a component, what makes a value valid, and what a version records about its definitions |
-| [component-editor.md](component-editor.md)             | Editing one component: the surface, the lock, continuous saving, cutting a version, and its metadata          |
-| [access.md](access.md)                                 | Spaces, roles and grants, and deciding what a principal may do to an artifact and why                         |
-| [structure.md](structure.md)                           | The document and its outline, and the numbering, references, navigation and links computed over it            |
-| [assets.md](assets.md)                                 | An image arriving: proved to be what its format permits, stored by its hash, read by who may read its space   |
-| [publishing.md](publishing.md)                         | A document version to a kept, reproducible PDF: who may publish, the layout, the pipeline and the record      |
-| [templates.md](templates.md)                           | A template, a document made from one, and what the document keeps of it                                       |
-| [definitions.md](definitions.md)                       | Fields, schemas and component types made and changed, and values written, shown and held at publication       |
-| [document-view.md](document-view.md)                   | A document read and authored on one page: one scroll, boundaries, modes, navigation and versions              |
-| [data.md](data.md)                                     | Connections, query definitions and stored results, and the connector: the one process that reaches a source   |
+| Document                                               | Subsystem                                                                                                              |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| [system.md](system.md)                                 | The whole system: containers, languages, and the data flowing between them                                             |
+| [service-foundations.md](service-foundations.md)       | How a request reaches one tenant, and how an endpoint is written                                                       |
+| [storage-and-versioning.md](storage-and-versioning.md) | Iterations, versions, revisions, baselines and derived data                                                            |
+| [content-model.md](content-model.md)                   | The stored shape of a component: nodes, marks, identity, and what may enter the model                                  |
+| [word-output.md](word-output.md)                       | The resolved document as a real Word document, and why its pages are Word's                                            |
+| [themes.md](themes.md)                                 | One theme driving the editor, the PDF and Word, and the suite that keeps them in agreement                             |
+| [realtime.md](realtime.md)                             | Presence, locks and notifications on one stream, and model output on its own request                                   |
+| [relationships.md](relationships.md)                   | Declared relationships and references, and walking them without revealing what the user may not read                   |
+| [search.md](search.md)                                 | Words and meaning searched together, filtered by what the user may read when they ask                                  |
+| [metadata.md](metadata.md)                             | Which fields apply to a component, what makes a value valid, and what a version records about its definitions          |
+| [component-editor.md](component-editor.md)             | Editing one component: the surface, the lock, continuous saving, cutting a version, and its metadata                   |
+| [access.md](access.md)                                 | Spaces, roles and grants, and deciding what a principal may do to an artifact and why                                  |
+| [structure.md](structure.md)                           | The document and its outline, and the numbering, references, navigation and links computed over it                     |
+| [assets.md](assets.md)                                 | An image arriving: proved to be what its format permits, stored by its hash, read by who may read its space            |
+| [publishing.md](publishing.md)                         | A document version to a kept, reproducible PDF: who may publish, the layout, the pipeline and the record               |
+| [templates.md](templates.md)                           | A template, a document made from one, and what the document keeps of it                                                |
+| [definitions.md](definitions.md)                       | Fields, schemas and component types made and changed, and values written, shown and held at publication                |
+| [document-view.md](document-view.md)                   | A document read and authored on one page: one scroll, boundaries, modes, navigation and versions                       |
+| [data.md](data.md)                                     | Connections, query definitions and stored results, and the connector: the one process that reaches a source            |
+| [bindings.md](bindings.md)                             | A bound value placed and shown in the editor, a document's values and their revisions, and the publish's binding stage |
 
 ## Why these are not one per requirement area
 

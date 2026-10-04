@@ -265,21 +265,21 @@ give, and the whole-system suite's isolation test is the check to run on it.
 
 ## Where each part is designed
 
-| Part                                           | Design                                                                                                                                    |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Versions, baselines, derived data              | [storage-and-versioning.md](storage-and-versioning.md)                                                                                    |
-| Themes and their three projections             | [themes.md](themes.md)                                                                                                                    |
-| Word output                                    | [word-output.md](word-output.md)                                                                                                          |
-| Search                                         | [search.md](search.md)                                                                                                                    |
-| Relationships and traversal                    | [relationships.md](relationships.md)                                                                                                      |
-| Realtime                                       | [realtime.md](realtime.md)                                                                                                                |
-| The content model and the editor               | Not yet designed; T1. The schema draft in `packages/domain/src/content/` is its starting point                                            |
-| Tenancy, identity and access                   | The request path, sessions and roles in [service-foundations.md](service-foundations.md); permissions not yet designed; T1                |
-| Documents, outlines, numbering and links       | [structure.md](structure.md)                                                                                                              |
-| The publishing pipeline - resolve and template | [publishing.md](publishing.md)                                                                                                            |
-| The API surface                                | Conventions in [service-foundations.md](service-foundations.md); the endpoints themselves not yet designed; T1                            |
-| Connections, query definitions and datasets    | [data.md](data.md); the editor's side of a binding and the publish's binding stage in `bindings.md`, designed after data.md's third slice |
-| Collaboration, reuse, AI, interchange          | Later tranches, designed when their tranche arrives                                                                                       |
+| Part                                           | Design                                                                                                                     |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Versions, baselines, derived data              | [storage-and-versioning.md](storage-and-versioning.md)                                                                     |
+| Themes and their three projections             | [themes.md](themes.md)                                                                                                     |
+| Word output                                    | [word-output.md](word-output.md)                                                                                           |
+| Search                                         | [search.md](search.md)                                                                                                     |
+| Relationships and traversal                    | [relationships.md](relationships.md)                                                                                       |
+| Realtime                                       | [realtime.md](realtime.md)                                                                                                 |
+| The content model and the editor               | Not yet designed; T1. The schema draft in `packages/domain/src/content/` is its starting point                             |
+| Tenancy, identity and access                   | The request path, sessions and roles in [service-foundations.md](service-foundations.md); permissions not yet designed; T1 |
+| Documents, outlines, numbering and links       | [structure.md](structure.md)                                                                                               |
+| The publishing pipeline - resolve and template | [publishing.md](publishing.md)                                                                                             |
+| The API surface                                | Conventions in [service-foundations.md](service-foundations.md); the endpoints themselves not yet designed; T1             |
+| Connections, query definitions and datasets    | [data.md](data.md); the editor's side of a binding and the publish's binding stage in [bindings.md](bindings.md)           |
+| Collaboration, reuse, AI, interchange          | Later tranches, designed when their tranche arrives                                                                        |
 
 ## Open questions
 

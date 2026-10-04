@@ -82,6 +82,8 @@ describe('the committed trace.json', () => {
     expect(model.requirements).toHaveLength(1525);
     expect(model.nonRequirements).toHaveLength(118);
     expect(model.questions).toHaveLength(135);
+    // 589, from 569 (2026-10-04): bindings.md, the editor's side of a binding and the publish's binding stage, claims 20 - DAT-022, 024, 027,
+    // 031, 032, 039, 041, 042, 046, 047, 058, 060, 062, 070, 082, 087, 088, 091, 097 and PUB-049; DAT-033, 057, 059, 098, PUB-099 are named gaps.
     // 569, from 507 (2026-09-30): data.md, DAT's T2 design (ADR-0035), claims 62 - 49 of T2's DAT rows, the DAT constraints it meets
     // (DAT-003, 004, 018, 043, 045, 056, 065, 081, 108, 113, 114), VER-057 and SCH-055; DAT-013 and DAT-112 are named gaps, and the
     // editor's and the publish's rows wait for bindings.md.
@@ -232,7 +234,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(569);
+    ).toBe(589);
   });
 });
 
