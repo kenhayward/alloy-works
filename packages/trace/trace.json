@@ -18930,7 +18930,7 @@
     {
       "id": "DAT-047",
       "file": "apps/web/src/editor/bindings.test.ts",
-      "line": 150,
+      "line": 151,
       "kind": "title"
     },
     {
@@ -21486,7 +21486,7 @@
     {
       "id": "CNT-014",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 1220,
+      "line": 1224,
       "kind": "title"
     },
     {
