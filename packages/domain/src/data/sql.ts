@@ -1,5 +1,5 @@
 import type { ValueType } from './columns.js';
-import type { Parameter, QueryDefinition } from './definition.js';
+import type { Parameter } from './definition.js';
 import type { ParameterValues } from './parameters.js';
 
 /**
@@ -268,10 +268,16 @@ export function lexPostgres(text: string): SqlPiece[] | LexProblem {
 }
 
 /** The positional parameters of bound SQL, in order, outside every literal and comment. */
-function placeholdersIn(text: string): number[] | undefined {
+export function placeholdersIn(text: string): number[] | undefined {
   const pieces = scan(text, 'placeholders');
   if (!Array.isArray(pieces)) return undefined;
   return pieces.flatMap((piece) => (piece.kind === 'positional' ? [piece.number] : []));
+}
+
+/** What D2's binder reads of a definition: its parameters and its SQL. */
+export interface SqlDefinition {
+  readonly parameters: readonly Parameter[];
+  readonly fetch: { readonly kind: 'sql'; readonly text: string };
 }
 
 /** PostgreSQL's type for a value of each base (D2-C). */
@@ -340,9 +346,7 @@ export function fragmentProblem(sql: string): string | undefined {
  * placeholder, as `bindPostgres` writes them. Undefined where the SQL does not lex, or a marker names
  * no parameter of its kind, which the definition's checks refuse on their own.
  */
-export function longestBinding(
-  definition: Pick<QueryDefinition, 'parameters' | 'fetch'>,
-): number | undefined {
+export function longestBinding(definition: SqlDefinition): number | undefined {
   const pieces = lexPostgres(definition.fetch.text);
   if (!Array.isArray(pieces)) return undefined;
   const declared = new Map<string, Parameter>(
@@ -399,10 +403,7 @@ const asText = (value: string | boolean) => (typeof value === 'boolean' ? String
  * passed `checkParameterValues`: anything they could not have is thrown, never guessed at; and so is
  * a rewritten text whose placeholders, read again, are not exactly those written.
  */
-export function bindPostgres(
-  definition: Pick<QueryDefinition, 'parameters' | 'fetch'>,
-  values: ParameterValues,
-): BoundStatement {
+export function bindPostgres(definition: SqlDefinition, values: ParameterValues): BoundStatement {
   const pieces = lexPostgres(definition.fetch.text);
   if (!Array.isArray(pieces)) throw new Error(`The SQL does not lex: ${pieces.problem}`);
   const declared = new Map<string, Parameter>(

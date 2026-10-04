@@ -1,7 +1,9 @@
 import {
   SECRET_MAX_BYTES,
+  builderFetchSchema,
   connectionSettingsSchema,
   draftDefinitionSchema,
+  sqlTextSchema,
   parameterSchema,
   valueTypeSchema,
 } from '@alloy-works/domain';
@@ -215,13 +217,25 @@ export type DescribeView = z.infer<typeof DescribeView>;
  * parameters it declares (D2-B, D2-G).
  */
 export const SqlStatementBody = z.strictObject({
-  text: draftDefinitionSchema.shape.fetch.shape.text,
+  text: sqlTextSchema,
+  parameters: z.array(parameterSchema).max(50),
+});
+
+/**
+ * A built query as describe takes it (the D4 plan, D4-Q): its tree, format 1's, and the parameters it
+ * declares. Described by its shape statement, generated from the tree; never SQL.
+ */
+export const BuiltQueryBody = z.strictObject({
+  query: builderFetchSchema.shape.query,
   parameters: z.array(parameterSchema).max(50),
 });
 
 export const DescribeBody = z.strictObject({
   sql: SqlStatementBody.optional().describe(
     "A statement to describe instead of the source's tables and views: its result's columns, never run",
+  ),
+  builder: BuiltQueryBody.optional().describe(
+    "A built query to describe instead of the source's tables and views: the columns its tree returns, from SQL the service generates, never run. Send this or sql, never both",
   ),
 });
 export type DescribeBody = z.infer<typeof DescribeBody>;
@@ -423,8 +437,8 @@ const retiredOrUnset = {
 
 /** SQL refused on a connection that has not been found read-only (DAT-103). */
 const sqlNotPermitted =
-  '`sql_not_permitted`: for a statement, the connection has not been tested clean at its latest version and ' +
-  'credential (`untested`), or its account was found able to write (`not_read_only`)';
+  '`sql_not_permitted`: for SQL, the connection has not been tested clean at its latest version and ' +
+  'credential (`untested`), or its account was found able to write (`not_read_only`). A built query is never refused this way';
 
 /**
  * Connections (data.md, "Routes"): `administer` makes and changes one and sets its credential,
@@ -588,7 +602,7 @@ export const connectionRoutes = {
     method: 'POST',
     path: '/v1/connections/{id}/describe',
     summary:
-      "List the tables and views a connection's account may read, or a SQL statement's result columns",
+      "List the tables and views a connection's account may read, or a statement's or a built query's result columns",
     tenantScoped: true,
     access: { check: 'permission', permission: 'use_connection', target: { artifact: 'id' } },
     params: ConnectionParams,
@@ -599,20 +613,21 @@ export const connectionRoutes = {
     responses: {
       200: {
         description:
-          "The source's tables and views, or, where a statement was sent, its result's columns",
+          "The source's tables and views, or, where a statement or a built query was sent, its result's columns",
         schema: z.union([DescribeView, DescribeSqlView]),
       },
       400: {
         description:
-          '`definition_invalid`: the statement does not lex whole or names a parameter it does not declare; ' +
-          '`source_refused`: the source refused the statement, with what it said; `result_mismatch`: it has no ' +
-          'columns to describe',
+          '`definition_invalid`: the statement does not lex whole or names a parameter it does not declare, or the built query fails ' +
+          "the builder's rules, each problem named, or both were sent; `source_refused`: the source refused the statement, with its " +
+          "SQLSTATE, and what it said only to a caller who may write SQL on the connection; a built query's commonest refusals are " +
+          'worded by their SQLSTATE; `result_mismatch`: it has no columns to describe',
         schema: DataProblemsRefusal,
       },
       401: unauthenticated,
       403: {
         description:
-          'The caller may read the connection but may not use it, or, for a statement, may not write SQL against it',
+          'The caller may read the connection but may not use it, or, for a statement, may not write SQL against it. A built query needs use connection alone',
         schema: ErrorBody,
       },
       404: notFound,
@@ -656,7 +671,7 @@ export const connectionRoutes = {
       401: unauthenticated,
       403: {
         description:
-          'The caller may read the connection but may not use it or write SQL against it',
+          'The caller may read the connection but may not use it, or, for a draft of SQL, may not write SQL against it. A built query needs use connection alone',
         schema: ErrorBody,
       },
       404: notFound,

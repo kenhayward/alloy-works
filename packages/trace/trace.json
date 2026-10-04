@@ -17758,15 +17758,21 @@
   ],
   "citations": [
     {
+      "id": "DAT-100",
+      "file": "apps/connector/src/builder.test.ts",
+      "line": 79,
+      "kind": "title"
+    },
+    {
       "id": "DAT-018",
       "file": "apps/connector/src/hostile.test.ts",
-      "line": 487,
+      "line": 493,
       "kind": "title"
     },
     {
       "id": "DAT-021",
       "file": "apps/connector/src/hostile.test.ts",
-      "line": 413,
+      "line": 419,
       "kind": "title"
     },
     {
@@ -17838,7 +17844,7 @@
     {
       "id": "DAT-005",
       "file": "apps/connector/src/secrets.test.ts",
-      "line": 69,
+      "line": 71,
       "kind": "title"
     },
     {
@@ -18312,43 +18318,43 @@
     {
       "id": "DAT-020",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 406,
+      "line": 426,
       "kind": "rule"
     },
     {
       "id": "DAT-020",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 383,
+      "line": 403,
       "kind": "title"
     },
     {
       "id": "DAT-049",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 464,
+      "line": 484,
       "kind": "title"
     },
     {
       "id": "DAT-050",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 419,
+      "line": 439,
       "kind": "title"
     },
     {
       "id": "DAT-101",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 254,
+      "line": 274,
       "kind": "title"
     },
     {
       "id": "DAT-103",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 336,
+      "line": 356,
       "kind": "rule"
     },
     {
       "id": "DAT-103",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 318,
+      "line": 338,
       "kind": "title"
     },
     {
@@ -18522,19 +18528,19 @@
     {
       "id": "DAT-014",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 352,
+      "line": 420,
       "kind": "title"
     },
     {
       "id": "DAT-016",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 724,
+      "line": 792,
       "kind": "title"
     },
     {
       "id": "DAT-105",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 282,
+      "line": 349,
       "kind": "title"
     },
     {
@@ -20332,6 +20338,12 @@
       "kind": "title"
     },
     {
+      "id": "DAT-100",
+      "file": "packages/domain/src/data/builder.test.ts",
+      "line": 94,
+      "kind": "title"
+    },
+    {
       "id": "DAT-001",
       "file": "packages/domain/src/data/connection.test.ts",
       "line": 53,
@@ -20346,13 +20358,25 @@
     {
       "id": "DAT-010",
       "file": "packages/domain/src/data/definition.test.ts",
-      "line": 84,
+      "line": 89,
       "kind": "title"
     },
     {
       "id": "DAT-049",
       "file": "packages/domain/src/data/failures.test.ts",
       "line": 12,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-018",
+      "file": "packages/domain/src/data/generate.test.ts",
+      "line": 173,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-081",
+      "file": "packages/domain/src/data/generate.test.ts",
+      "line": 101,
       "kind": "title"
     },
     {
@@ -20370,7 +20394,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 442,
+      "line": 456,
       "kind": "title"
     },
     {
@@ -21463,6 +21487,12 @@
       "id": "STY-080",
       "file": "tests/browser/src/styles.test.ts",
       "line": 273,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-099",
+      "file": "tests/e2e/src/builder.test.ts",
+      "line": 108,
       "kind": "title"
     },
     {

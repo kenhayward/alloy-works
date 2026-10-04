@@ -124,7 +124,9 @@ docker compose -f deploy/compose.yaml --profile sources up -d --build --wait
 or with `COMPOSE_PROFILES=sources` in `deploy/.env`. Then, signed in as Ada, **Connections** makes a
 connection in General to host `source-postgres`, port `5432`, database `readings`, account `reader`,
 TLS `require`; setting its password tests it. `pnpm dev:setup` gives Ada a development role,
-**Connection user**, holding `use_connection` on General, since no starting role holds it.
+**Connection user**, holding `use_connection` and `write_sql` on General, since no starting role holds
+either, and gives Grace **Query builder**, holding `use_connection` alone there, so she builds queries
+without writing SQL.
 
 Open **`http://dev.acme.localhost:8088`** once it is up. The page names the environment, offers a
 way in, and the stand-in will sign you in as Ada, Grace or Alice. The same environment also answers

@@ -22,31 +22,40 @@ export async function permitsAt(
   target: string,
   permissions: readonly string[],
 ): Promise<boolean> {
+  const allowed = await allowedAt(client, target);
+  return permissions.every((permission) => allowed.has(permission));
+}
+
+/** The permissions the service says the caller holds at a target; none where it could not say. */
+async function allowedAt(client: Client, target: string): Promise<ReadonlySet<string>> {
   try {
     const { data } = await client.GET('/v1/access', { params: { query: { target } } });
-    if (!isAccessAnswers(data)) return false;
-    return permissions.every(
-      (permission) =>
-        data.permissions.find((each) => each.permission === permission)?.allowed === true,
+    if (!isAccessAnswers(data)) return new Set();
+    return new Set(
+      data.permissions.filter((each) => each.allowed === true).map((each) => each.permission),
     );
   } catch {
-    return false;
+    return new Set();
   }
 }
 
-/**
- * Where the caller may write a query definition (data.md, "Permissions"): the spaces they may edit
- * in, and the connections in service on which they hold `use_connection` and `write_sql` (DAT-101).
- * Null until every answer is in; empty lists where nothing could be read.
- */
-export function useSqlPlaces(client: Client): {
+/** Where the caller may write a query definition, and where SQL among it. */
+export interface DefinitionPlaces {
   readonly spaces: readonly Place[];
+  /** The connections in service the caller may use, for a built query (D4-J). */
   readonly connections: readonly Place[];
-} | null {
-  const [places, setPlaces] = useState<{
-    readonly spaces: readonly Place[];
-    readonly connections: readonly Place[];
-  } | null>(null);
+  /** Those of them on which the caller may write SQL as well (DAT-101). */
+  readonly sql: ReadonlySet<string>;
+}
+
+/**
+ * Where the caller may write a query definition (data.md, "Permissions"; the D4 plan, D4-J): the
+ * spaces they may edit in, the connections in service on which they hold `use_connection`, which a
+ * built query needs, and among them those where they hold `write_sql` as well, which SQL needs
+ * (DAT-101). Null until every answer is in; empty lists where nothing could be read.
+ */
+export function useDefinitionPlaces(client: Client): DefinitionPlaces | null {
+  const [places, setPlaces] = useState<DefinitionPlaces | null>(null);
   useEffect(() => {
     let current = true;
     void (async () => {
@@ -74,24 +83,25 @@ export function useSqlPlaces(client: Client): {
           );
         const readableSpaces = named('items' in spaces ? spaces.items : [], false);
         const liveConnections = named('items' in connections ? connections.items : [], true);
-        const [editable, writable] = await Promise.all([
+        const [editable, atConnections] = await Promise.all([
           Promise.all(
             readableSpaces.map((each) => permitsAt(client, `space:${each.id}`, ['edit'])),
           ),
-          Promise.all(
-            liveConnections.map((each) =>
-              permitsAt(client, `artifact:${each.id}`, ['use_connection', 'write_sql']),
-            ),
-          ),
+          Promise.all(liveConnections.map((each) => allowedAt(client, `artifact:${each.id}`))),
         ]);
+        const usable = atConnections.map((allowed) => allowed.has('use_connection'));
+        const writable = atConnections.map(
+          (allowed) => allowed.has('use_connection') && allowed.has('write_sql'),
+        );
         if (current) {
           setPlaces({
             spaces: readableSpaces.filter((_, at) => editable[at]),
-            connections: liveConnections.filter((_, at) => writable[at]),
+            connections: liveConnections.filter((_, at) => usable[at]),
+            sql: new Set(liveConnections.filter((_, at) => writable[at]).map((each) => each.id)),
           });
         }
       } catch {
-        if (current) setPlaces({ spaces: [], connections: [] });
+        if (current) setPlaces({ spaces: [], connections: [], sql: new Set() });
       }
     })();
     return () => {

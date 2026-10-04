@@ -257,8 +257,8 @@ interface Prepared {
  * one the caller may not read refused as `binding_missing`, as one that is not there is; the version
  * it resolves to - its pin, or the latest - a definition not retired, what it takes checked against
  * that version, its values against its parameters, and at the connection that version names
- * `use_connection`, a connection that can run, SQL permitted there (DAT-103) and a credential to run
- * with. Each refusal names the binding, its node and the document.
+ * `use_connection`, a connection that can run, for SQL a connection SQL is permitted on (DAT-103; a
+ * built query is not refused there, D4-J) and a credential to run with. Each refusal names the binding, its node and the document.
  */
 async function prepare(
   trx: TenantTransaction,
@@ -329,7 +329,7 @@ async function prepare(
         `This needs the use connection permission on the connection the binding ${binding.id} runs on.`,
       );
     }
-    await requireSqlPermitted(trx, connection);
+    await requireSqlPermitted(trx, connection, definition.fetch);
     const { sealed } = await through.usableSealed(trx, connection.id);
     const limits = effectiveLimits(definition.limits, await dataPolicy(trx));
     return {
@@ -536,6 +536,7 @@ function bindingFailure(
   failure: FailureIn | AppError,
   naming: Required<Naming>,
   seesSource = false,
+  built = false,
 ) {
   if (failure instanceof AppError) {
     const said = failure.members.attribution;
@@ -548,7 +549,7 @@ function bindingFailure(
       ...naming,
     };
   }
-  return { ...failureViewFor(failure, seesSource), ...naming };
+  return { ...failureViewFor(failure, seesSource, built), ...naming };
 }
 
 /**
@@ -706,6 +707,7 @@ export async function resolveAct(
               outcome.failure,
               { definition: each.definition.id, binding: binding.id, node, document: id },
               seesSource(each),
+              each.draft.fetch.kind === 'builder',
             ),
           });
           continue;
@@ -858,7 +860,12 @@ export async function checkAct(
             node,
             binding: binding.id,
             outcome: 'failed',
-            failure: bindingFailure(outcome.failure, naming, seesSource(each)),
+            failure: bindingFailure(
+              outcome.failure,
+              naming,
+              seesSource(each),
+              each.draft.fetch.kind === 'builder',
+            ),
           });
           continue;
         }

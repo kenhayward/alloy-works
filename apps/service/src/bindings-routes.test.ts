@@ -1315,6 +1315,73 @@ describe('bindings and datasets through the service', () => {
     expect(answer.json()).toMatchObject({ code: 'binding_in_title' });
   });
 
+  it('resolves and checks a binding of a built query on a connection found able to write, as somebody who may not write SQL, where SQL is refused', async () => {
+    const writable = await h.connection('Writable');
+    const built = await h.definition(writable.id, {
+      title: 'Site built',
+      fetch: {
+        kind: 'builder',
+        format: 1,
+        query: {
+          sources: [{ alias: 's', table: { schema: 'sample', name: 'site' } }],
+          joins: [],
+          select: [
+            { name: 'id', of: { source: 's', column: 'id' } },
+            { name: 'name', of: { source: 's', column: 'name' } },
+          ],
+          where: { column: { source: 's', column: 'id' }, is: 'equal', to: { parameter: 'site' } },
+          groupBy: [],
+        },
+      },
+    });
+    const sql = await h.definition(writable.id);
+    // The connection is tested again, and its account is found able to write.
+    h.connector.mode = 'answer';
+    h.connector.test = { outcome: 'ok', findings: ['account_not_read_only'] };
+    const tested = await h.call('ada', 'POST', `/v1/connections/${writable.id}/test`, {});
+    expect(tested.json()).toMatchObject({ outcome: 'ok', findings: ['account_not_read_only'] });
+    h.connector.test = { outcome: 'ok', findings: [] };
+
+    const { document, node } = await placed(
+      binding('b1', built.id, { parameters: { site: { literal: '4' } } }),
+      binding('b2', sql.id, { parameters: { site: { literal: '4' } } }),
+    );
+    h.connector.run = ranOk([['4', 'Built']]);
+    const refusedSql = await resolve('ada', document.id, [{ node, binding: 'b2' }]);
+    expect(refusedSql.statusCode).toBe(409);
+    expect(refusedSql.json()).toMatchObject({ code: 'sql_not_permitted' });
+
+    // Grace uses the connection and may not write SQL on it: the built query is hers to resolve.
+    const answer = await resolve('grace', document.id, [{ node, binding: 'b1' }]);
+    expect(answer.statusCode, answer.body).toBe(200);
+    expect(answer.json()).toMatchObject({
+      results: [{ binding: 'b1', held: { reused: false } }],
+    });
+    const checked = await check('grace', document.id);
+    expect(checked.statusCode, checked.body).toBe(200);
+    expect(checked.json()).toMatchObject({
+      results: expect.arrayContaining([
+        expect.objectContaining({ binding: 'b1', outcome: 'unchanged' }),
+      ]),
+    });
+
+    // A built query's commonest refusal is worded for her, without what the source said (D4-K).
+    h.connector.run = {
+      outcome: 'failed',
+      failure: {
+        code: 'source_refused',
+        attribution: 'query',
+        source: { sqlstate: '42P01', message: 'relation "sample.hidden_site" does not exist' },
+      },
+    };
+    const failed = await resolve('grace', document.id, [{ node, binding: 'b1' }]);
+    expect(failed.statusCode, failed.body).toBe(200);
+    expect(failed.body).not.toContain('hidden_site');
+    expect(
+      failed.json<{ results: { failure: { message: string } }[] }>().results[0]!.failure.message,
+    ).toBe('The source has no table or view the query names (SQLSTATE 42P01).');
+  });
+
   // Last: it ends Ivy's session.
   it('records nothing where the session ends while the source answers', async () => {
     const { document, node } = await ivyMayResolve('99');

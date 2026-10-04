@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { QueryDefinitionPage } from './QueryDefinitionPage.js';
 import { QueryDefinitions } from './QueryDefinitions.js';
+import { isRecord } from './shapes.js';
 
 const GENERAL = '11111111-1111-4111-8111-111111111111';
 const READINGS = '33333333-3333-4333-8333-333333333333';
@@ -17,6 +18,57 @@ const DOCUMENT = '99999999-9999-4999-8999-999999999999';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+
+/** A name written decomposed: an e and a combining acute accent, which a definition cannot hold. */
+const DECOMPOSED = `Cafe${String.fromCharCode(0x301)}`;
+
+/** The source's tables and views, as a describe lists them (D1). */
+const RELATIONS = {
+  relations: [
+    {
+      schema: 'sample',
+      name: 'site',
+      kind: 'table',
+      columns: [
+        { name: 'id', sourceType: 'bigint', nullable: false, proposed: { base: 'integer' } },
+        { name: 'name', sourceType: 'text', nullable: false, proposed: { base: 'text' } },
+        {
+          name: 'depth',
+          sourceType: 'numeric(8,2)',
+          nullable: true,
+          proposed: { base: 'decimal', precision: 8, scale: 2 },
+        },
+      ],
+    },
+    {
+      schema: 'sample',
+      name: DECOMPOSED,
+      kind: 'view',
+      columns: [
+        { name: 'id', sourceType: 'bigint', nullable: false, proposed: { base: 'integer' } },
+      ],
+    },
+  ],
+  truncated: false,
+  leftOut: { relations: 0, columns: 0 },
+};
+
+/** A built query of one table, as the page writes one: a site's name by its id. */
+const builtFetch = (over: Record<string, unknown> = {}) => ({
+  kind: 'builder',
+  format: 1,
+  query: {
+    sources: [{ alias: 't', table: { schema: 'sample', name: 'site' } }],
+    joins: [],
+    select: [
+      { name: 'id', of: { source: 't', column: 'id' } },
+      { name: 'name', of: { source: 't', column: 'name' } },
+    ],
+    where: { column: { source: 't', column: 'id' }, is: 'equal', to: { parameter: 'site' } },
+    groupBy: [],
+    ...over,
+  },
+});
 
 const stored = (over: Record<string, unknown> = {}) => ({
   schemaVersion: 1,
@@ -70,11 +122,13 @@ interface Asked {
 function service(
   options: {
     sqlWriter?: boolean;
+    /** Whether the person may use the connections; they may unless told. */
+    user?: boolean;
     /** A second connection the person may write SQL against, Warehouse. */
     warehouse?: boolean;
     /** The definition the service holds at first. */
     held?: ReturnType<typeof view>;
-    describe?: () => Response | Promise<Response>;
+    describe?: (body: unknown) => Response | Promise<Response>;
     sample?: () => Response;
     version?: (body: { openedFrom: string; definition: Record<string, unknown> }) => Response;
     /** Where the definition is used (D3-M); used nowhere unless told. */
@@ -132,6 +186,7 @@ function service(
     if (request.method === 'GET' && path === '/v1/access') {
       const target = url.searchParams.get('target') ?? '';
       const sql = options.sqlWriter ?? true;
+      const uses = options.user ?? true;
       return json(200, {
         target,
         permissions: [
@@ -139,7 +194,8 @@ function service(
           { permission: 'edit', allowed: target === `space:${GENERAL}` },
           {
             permission: 'use_connection',
-            allowed: target === `artifact:${READINGS}` || target === `artifact:${WAREHOUSE}`,
+            allowed:
+              uses && (target === `artifact:${READINGS}` || target === `artifact:${WAREHOUSE}`),
           },
           {
             permission: 'write_sql',
@@ -197,8 +253,12 @@ function service(
       (path === `/v1/connections/${READINGS}/describe` ||
         path === `/v1/connections/${WAREHOUSE}/describe`)
     ) {
+      // Sent nothing, a describe lists the source's tables and views (D1).
+      if (isRecord(body) && !('sql' in body) && !('builder' in body)) {
+        return json(200, RELATIONS);
+      }
       return (
-        options.describe?.() ??
+        options.describe?.(body) ??
         json(200, {
           columns: [
             { name: 'id', sourceType: 'integer', proposed: { base: 'integer' } },
@@ -243,7 +303,7 @@ afterEach(() => {
 });
 
 describe('the Query definitions list', () => {
-  it('lists the definitions the person may read, and offers New query definition where they may write SQL', async () => {
+  it('lists the definitions the person may read, and offers New query definition where they may edit a space and use a connection', async () => {
     const user = userEvent.setup();
     const { client } = service();
     render(<QueryDefinitions client={client} />);
@@ -267,8 +327,15 @@ describe('the Query definitions list', () => {
     expect(window.location.hash).toBe('#/query-definitions/new');
   });
 
-  it('offers no New query definition to somebody who writes SQL on no connection', async () => {
-    const { client, asked } = service({ sqlWriter: false });
+  it('offers New query definition to somebody who may use a connection and write no SQL', async () => {
+    const { client } = service({ sqlWriter: false });
+    render(<QueryDefinitions client={client} />);
+    await screen.findByRole('table');
+    expect(await screen.findByRole('button', { name: 'New query definition' })).toBeInTheDocument();
+  });
+
+  it('offers no New query definition to somebody who may use no connection', async () => {
+    const { client, asked } = service({ sqlWriter: false, user: false });
     render(<QueryDefinitions client={client} />);
     await screen.findByRole('table');
     await waitFor(() =>
@@ -293,8 +360,9 @@ describe('the query definition page', () => {
     );
     await user.selectOptions(connection, READINGS);
     await user.type(screen.getByLabelText('Title'), 'Site depths');
+    await user.click(screen.getByRole('radio', { name: 'SQL' }));
     await user.type(
-      screen.getByLabelText('SQL'),
+      screen.getByLabelText('SQL text'),
       'select id, name, depth from sample.site where id = {{{{site}}',
     );
     await user.click(screen.getByRole('button', { name: 'Add parameter' }));
@@ -493,7 +561,7 @@ describe('the query definition page', () => {
     };
 
     // The SQL changed: what it returns may have too, so each column is to be confirmed again.
-    await user.type(screen.getByLabelText('SQL'), ' ');
+    await user.type(screen.getByLabelText('SQL text'), ' ');
     expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
     expect(screen.getByText('Confirm every column to save.')).toBeInTheDocument();
     await confirmAll();
@@ -546,7 +614,7 @@ describe('the query definition page', () => {
       });
     render(<QueryDefinitionPage client={client} id={DEFINITION} />);
     await screen.findByRole('heading', { name: 'Site by id' });
-    const sql = screen.getByLabelText('SQL');
+    const sql = screen.getByLabelText('SQL text');
     await user.type(sql, ' ');
 
     // A confirmation made while a describe is on its way is kept when it arrives.
@@ -610,7 +678,7 @@ describe('the query definition page', () => {
     });
     render(<QueryDefinitionPage client={client} id={DEFINITION} />);
     await screen.findByRole('heading', { name: 'Site by id' });
-    await user.type(screen.getByLabelText('SQL'), ' ');
+    await user.type(screen.getByLabelText('SQL text'), ' ');
     await user.click(screen.getByRole('button', { name: 'Describe' }));
     await screen.findByText('2 columns proposed. Confirm the type of each.');
     const [, , row] = within(screen.getByRole('table', { name: 'Columns' })).getAllByRole('row');
@@ -626,7 +694,7 @@ describe('the query definition page', () => {
     const { client } = service({ warehouse: true });
     render(<QueryDefinitionPage client={client} id={DEFINITION} />);
     await screen.findByRole('heading', { name: 'Site by id' });
-    const sql = screen.getByLabelText('SQL');
+    const sql = screen.getByLabelText('SQL text');
     await user.type(sql, ' x');
     expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
     await user.type(sql, '{Backspace}{Backspace}');
@@ -670,7 +738,7 @@ describe('the query definition page', () => {
       });
       const { unmount } = render(<QueryDefinitionPage client={client} id={DEFINITION} />);
       await screen.findByRole('heading', { name: 'Site by id' });
-      const sql = screen.getByLabelText('SQL');
+      const sql = screen.getByLabelText('SQL text');
       await user.type(sql, ' x');
       await user.click(screen.getByRole('button', { name: 'Describe' }));
       await screen.findByText(
@@ -847,5 +915,341 @@ describe('the query definition page', () => {
         .getAllByRole('link')
         .map((each) => each.textContent),
     ).toEqual(['Site by id']);
+  });
+});
+
+describe('the builder (D4)', () => {
+  /** The SQL a built query runs, as the page shows it. */
+  const shownSql = () => screen.getByRole('figure', { name: 'The SQL it runs' }).textContent ?? '';
+
+  /** A new definition with sample.site chosen: the source described, its table picked. */
+  const begun = async (options: Parameters<typeof service>[0] = {}) => {
+    const user = userEvent.setup();
+    const made = service(options);
+    render(<QueryDefinitionPage client={made.client} id="new" />);
+    const connection = await screen.findByLabelText('Connection');
+    await waitFor(() =>
+      expect(
+        within(connection)
+          .getAllByRole('option')
+          .map((each) => each.textContent),
+      ).toContain('Readings'),
+    );
+    await user.click(screen.getByRole('button', { name: 'Describe the source' }));
+    await user.selectOptions(await screen.findByLabelText('Table or view'), 'sample.site');
+    return { user, ...made };
+  };
+  const pick = async (user: ReturnType<typeof userEvent.setup>, ...names: string[]) => {
+    const columns = screen.getByRole('group', { name: 'Columns to return' });
+    for (const name of names) {
+      await user.click(within(columns).getByRole('checkbox', { name }));
+    }
+  };
+  const addParameter = async (
+    user: ReturnType<typeof userEvent.setup>,
+    name: string,
+    base: string,
+  ) => {
+    await user.click(screen.getByRole('button', { name: 'Add parameter' }));
+    const all = screen.getAllByRole('group', { name: /^Parameter \d+$/ });
+    const parameter = all[all.length - 1]!;
+    await user.type(within(parameter).getByLabelText('Name'), name);
+    await user.selectOptions(within(parameter).getByLabelText('Type'), base);
+    return parameter;
+  };
+
+  it("DAT-105 proposes each column of a built query from the source's metadata and saves none until the author has confirmed every one", async () => {
+    const { user, asked } = await begun({
+      sqlWriter: false,
+      describe: () =>
+        json(200, {
+          columns: [
+            { name: 'id', sourceType: 'bigint', proposed: { base: 'integer' } },
+            { name: 'site_name', sourceType: 'text', proposed: { base: 'text' } },
+          ],
+          parameters: ['bigint'],
+        }),
+    });
+    await user.type(screen.getByLabelText('Title'), 'Site built');
+    await pick(user, 'id', 'name');
+    const named = screen.getByLabelText('Name of name');
+    await user.clear(named);
+    await user.type(named, 'site_name');
+    await addParameter(user, 'site', 'integer');
+    await user.click(screen.getByRole('button', { name: 'Add a filter' }));
+    const filter = screen.getByRole('group', { name: 'Filter 1' });
+    await user.selectOptions(within(filter).getByLabelText('Column'), 'id');
+    await user.selectOptions(within(filter).getByLabelText('Compared with'), 'site');
+    await user.selectOptions(within(filter).getByLabelText('Comparison'), 'equal');
+
+    // Nothing is offered to save before the columns are proposed.
+    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Describe' }));
+    const columns = await screen.findByRole('table', { name: 'Columns' });
+    const query = {
+      sources: [{ alias: 't', table: { schema: 'sample', name: 'site' } }],
+      joins: [],
+      select: [
+        { name: 'id', of: { source: 't', column: 'id' } },
+        { name: 'site_name', of: { source: 't', column: 'name' } },
+      ],
+      where: { column: { source: 't', column: 'id' }, is: 'equal', to: { parameter: 'site' } },
+      groupBy: [],
+    };
+    // The tree is described, never SQL.
+    expect(
+      asked.filter((each) => each.path.endsWith('/describe')).map((each) => each.body),
+    ).toEqual([
+      {},
+      {
+        builder: {
+          query,
+          parameters: [{ name: 'site', type: { base: 'integer' }, required: true, list: false }],
+        },
+      },
+    ]);
+    const [, id, name] = within(columns).getAllByRole('row');
+    expect(within(id!).getByLabelText('Type of id')).toHaveValue('integer');
+    expect(within(name!).getByLabelText('Type of site_name')).toHaveValue('text');
+    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    await user.click(within(id!).getByRole('button', { name: 'Confirm id' }));
+    // One of two confirmed saves nothing.
+    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    expect(screen.getByText('Confirm every column to save.')).toBeInTheDocument();
+    await user.click(within(name!).getByRole('button', { name: 'Confirm site_name' }));
+
+    await user.click(await screen.findByRole('button', { name: 'Save version' }));
+    await waitFor(() => expect(window.location.hash).toBe(`#/query-definitions/${DEFINITION}`));
+    const made = asked.find((each) => each.path.endsWith('/query-definitions'));
+    expect(made?.body).toMatchObject({
+      definition: {
+        title: 'Site built',
+        fetch: { kind: 'builder', format: 1, query },
+        columns: [
+          { name: 'id', from: { column: 'id' }, type: { base: 'integer' } },
+          { name: 'site_name', from: { column: 'site_name' }, type: { base: 'text' } },
+        ],
+      },
+    });
+    expect(JSON.stringify(made?.body)).not.toContain('"text":');
+  });
+
+  it('offers the builder to an author who may not write SQL on the connection, and SQL only to one who may', async () => {
+    const { unmount } = render(
+      <QueryDefinitionPage client={service({ sqlWriter: false }).client} id="new" />,
+    );
+    expect(await screen.findByRole('button', { name: 'Describe the source' })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByLabelText('Connection')).toHaveDisplayValue('Readings'));
+    expect(screen.queryByRole('radio', { name: 'SQL' })).toBeNull();
+    expect(screen.queryByLabelText('SQL text')).toBeNull();
+    unmount();
+
+    render(<QueryDefinitionPage client={service().client} id="new" />);
+    const sql = await screen.findByRole('radio', { name: 'SQL' });
+    expect(screen.getByRole('radio', { name: 'Builder' })).toBeChecked();
+    await userEvent.setup().click(sql);
+    expect(screen.getByLabelText('SQL text')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Describe the source' })).toBeNull();
+  });
+
+  it("offers a filter the comparisons its parameter's type allows", async () => {
+    const { user } = await begun();
+    await pick(user, 'id');
+    const parameter = await addParameter(user, 'site', 'integer');
+    await user.click(screen.getByRole('button', { name: 'Add a filter' }));
+    const filter = screen.getByRole('group', { name: 'Filter 1' });
+    await user.selectOptions(within(filter).getByLabelText('Compared with'), 'site');
+    const offered = () =>
+      within(within(filter).getByLabelText('Comparison'))
+        .getAllByRole('option')
+        .map((each) => each.textContent);
+    expect(offered()).toEqual([
+      'is',
+      'is not',
+      'is less than',
+      'is at most',
+      'is greater than',
+      'is at least',
+      'is empty',
+      'is not empty',
+    ]);
+    await user.selectOptions(within(parameter).getByLabelText('Type'), 'text');
+    expect(offered()).toEqual([
+      'is',
+      'is not',
+      'contains',
+      'starts with',
+      'is empty',
+      'is not empty',
+    ]);
+    await user.click(within(parameter).getByRole('checkbox', { name: 'A list of values' }));
+    expect(offered()).toEqual(['is one of', 'is empty', 'is not empty']);
+    // A fixed value is compared as its column's type, and needs no parameter.
+    await user.selectOptions(within(filter).getByLabelText('Column'), 'depth');
+    await user.selectOptions(within(filter).getByLabelText('Compared with'), 'A fixed value');
+    expect(offered()).toContain('is at least');
+    expect(within(filter).getByLabelText('Value')).toBeInTheDocument();
+  });
+
+  it('groups by the columns returned and summarises each group, each summary named', async () => {
+    const { user, asked } = await begun();
+    await pick(user, 'name');
+    await user.click(screen.getByRole('checkbox', { name: 'Group and summarise' }));
+    await user.click(screen.getByRole('button', { name: 'Add a summary' }));
+    const count = screen.getByRole('group', { name: 'Summary 1' });
+    expect(within(count).getByLabelText('Summary')).toHaveValue('count');
+    expect(within(count).getByLabelText('Of')).toHaveDisplayValue('Every row');
+    await user.click(screen.getByRole('button', { name: 'Add a summary' }));
+    const average = screen.getByRole('group', { name: 'Summary 2' });
+    await user.selectOptions(within(average).getByLabelText('Summary'), 'average');
+    await user.selectOptions(within(average).getByLabelText('Of'), 'depth');
+    await user.clear(within(average).getByLabelText('Name'));
+    await user.type(within(average).getByLabelText('Name'), 'mean_depth');
+    await user.clear(within(average).getByLabelText('Places'));
+    await user.type(within(average).getByLabelText('Places'), '2');
+    expect(shownSql()).toContain(
+      'pg_catalog.round(pg_catalog.avg("t"."depth"), 2) AS "mean_depth"',
+    );
+    expect(shownSql()).toContain('GROUP BY');
+
+    await user.click(screen.getByRole('button', { name: 'Describe' }));
+    await screen.findByRole('table', { name: 'Columns' });
+    expect(asked.filter((each) => each.path.endsWith('/describe')).at(-1)?.body).toMatchObject({
+      builder: {
+        query: {
+          select: [
+            { name: 'name', of: { source: 't', column: 'name' } },
+            { name: 'count', of: { aggregate: 'count' } },
+            {
+              name: 'mean_depth',
+              of: { aggregate: 'average', of: { source: 't', column: 'depth' }, places: 2 },
+            },
+          ],
+          groupBy: [{ source: 't', column: 'name' }],
+        },
+      },
+    });
+  });
+
+  it('offers Return at most only beside a declared order', async () => {
+    const { user } = await begun({
+      describe: () =>
+        json(200, {
+          columns: [
+            { name: 'id', sourceType: 'bigint', proposed: { base: 'integer' } },
+            { name: 'name', sourceType: 'text', proposed: { base: 'text' } },
+          ],
+          parameters: [],
+        }),
+    });
+    await pick(user, 'id', 'name');
+    await user.click(screen.getByRole('button', { name: 'Describe' }));
+    const columns = await screen.findByRole('table', { name: 'Columns' });
+    for (const name of ['id', 'name']) {
+      await user.click(within(columns).getByRole('button', { name: `Confirm ${name}` }));
+    }
+    expect(screen.queryByLabelText('Return at most')).toBeNull();
+    expect(
+      screen.getByText(/Return at most is offered beside a declared order/),
+    ).toBeInTheDocument();
+    await user.click(
+      within(screen.getByRole('group', { name: 'Key' })).getByRole('checkbox', { name: 'id' }),
+    );
+    await user.click(screen.getByRole('radio', { name: 'Return the rows in a declared order' }));
+    await user.type(screen.getByLabelText('Return at most'), '5');
+    expect(shownSql()).toMatch(/ORDER BY "t"\."id" ASC NULLS LAST\s+LIMIT 5$/);
+    // Limiting changes no column, so nothing is to be confirmed again.
+    expect(screen.getByRole('button', { name: 'Save version' })).toBeInTheDocument();
+  });
+
+  it('shows the SQL the tree generates, changing as the tree does', async () => {
+    const { user } = await begun();
+    expect(shownSql()).toContain('Choose a column to return');
+    await pick(user, 'id');
+    expect(shownSql()).toContain('SELECT "t"."id" AS "id"');
+    expect(shownSql()).toContain('FROM (SELECT "id" FROM "sample"."site") AS "t"');
+    await pick(user, 'name');
+    expect(shownSql()).toContain('"t"."name" AS "name"');
+    expect(shownSql()).toContain('FROM (SELECT "id", "name" FROM "sample"."site") AS "t"');
+    await addParameter(user, 'site', 'integer');
+    await user.click(screen.getByRole('button', { name: 'Add a filter' }));
+    const filter = screen.getByRole('group', { name: 'Filter 1' });
+    await user.selectOptions(within(filter).getByLabelText('Compared with'), 'site');
+    expect(shownSql()).toContain('WHERE "t"."id" OPERATOR(pg_catalog.=) ($1::pg_catalog.int8)');
+    // The SQL is shown, never edited.
+    expect(screen.queryByLabelText('SQL text')).toBeNull();
+  });
+
+  it('opens a definition that joins sources read-only, with its SQL and why', async () => {
+    const joined = builtFetch({
+      sources: [
+        { alias: 's', table: { schema: 'sample', name: 'site' } },
+        { alias: 'r', table: { schema: 'sample', name: 'reading' } },
+      ],
+      joins: [
+        {
+          kind: 'inner',
+          source: 'r',
+          on: {
+            column: { source: 'r', column: 'site' },
+            is: 'equal',
+            to: { column: { source: 's', column: 'id' } },
+          },
+        },
+      ],
+      select: [
+        { name: 'id', of: { source: 's', column: 'id' } },
+        { name: 'name', of: { source: 's', column: 'name' } },
+      ],
+      where: { column: { source: 's', column: 'id' }, is: 'equal', to: { parameter: 'site' } },
+    });
+    const { client, asked } = service({ held: view({ fetch: joined }) });
+    const user = userEvent.setup();
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    expect(
+      await screen.findByText(
+        'This query definition can be read here and not changed: it joins more than one source, which this page does not offer yet. Change it through the API.',
+      ),
+    ).toBeInTheDocument();
+    expect(shownSql()).toContain('INNER JOIN (SELECT "site" FROM "sample"."reading") AS "r"');
+    for (const name of ['Save version', 'Describe', 'Describe the source']) {
+      expect(screen.queryByRole('button', { name })).toBeNull();
+    }
+    expect(screen.queryByLabelText('SQL text')).toBeNull();
+    // It can still be sampled as it stands, and retired.
+    const sample = screen.getByRole('region', { name: 'Sample' });
+    await user.type(within(sample).getByLabelText('site'), '1');
+    await user.click(within(sample).getByRole('button', { name: 'Run sample' }));
+    await within(sample).findByRole('table', { name: 'The first rows' });
+    expect(asked.find((each) => each.path.endsWith('/sample'))?.body).toMatchObject({
+      definition: { fetch: joined },
+    });
+    expect(screen.getByRole('button', { name: 'Retire' })).toBeInTheDocument();
+  });
+
+  it('opens a built definition in the builder, never as SQL to edit', async () => {
+    const { client } = service({ held: view({ fetch: builtFetch() }) });
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    expect(await screen.findByRole('radio', { name: 'Builder' })).toBeChecked();
+    expect(screen.queryByLabelText('SQL text')).toBeNull();
+    expect(screen.getByRole('group', { name: 'Filter 1' })).toBeInTheDocument();
+    expect(shownSql()).toContain(' FROM "sample"."site") AS "t"');
+    // Turned to SQL by somebody who may write it, it starts empty: the generated SQL is not its.
+    await userEvent.setup().click(screen.getByRole('radio', { name: 'SQL' }));
+    expect(screen.getByLabelText('SQL text')).toHaveValue('');
+  });
+
+  it('lists a name the builder cannot hold and does not offer it', async () => {
+    await begun();
+    const table = screen.getByLabelText('Table or view');
+    const option = within(table).getByRole('option', {
+      name: new RegExp(`^sample\\.${DECOMPOSED}`),
+    });
+    expect(option).toBeDisabled();
+    expect(
+      screen.getByText(
+        `Not offered, as its name is not in the composed form a query definition holds: sample.${DECOMPOSED}. A view at the source under a composed name reaches it.`,
+      ),
+    ).toBeInTheDocument();
   });
 });

@@ -3,6 +3,35 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.132.0 - 2026-10-04 (PR #375)
+
+### Added
+
+- **Build a query without writing SQL.** On a query definition's page, the query can now be built:
+  **Describe the source** lists your database's tables and views, and you choose one, the columns it
+  returns and the names it returns them as, filters comparing a column with a named value or a fixed
+  one - matching all of them or any - and, with **Group and summarise**, a count, a sum, an average
+  rounded to the places you choose, a minimum and a maximum for each group. **Return at most** limits
+  the rows beside a declared order. **The SQL it runs** shows, as you build, the SQL the product
+  writes for it, with every value sent to the database apart from it. The definition keeps what you
+  built, never its SQL, which is written afresh each time it runs - a sample, a resolve, a check -
+  and the SQL that ran is kept with each result as before. Text is compared, sorted and grouped
+  exactly as written, so `Ada` and `ada` are never one group.
+- **Anybody who may use a connection can build a query on it.** A built query needs edit in the
+  space and use of the connection, not the permission to write SQL, and runs on any connection:
+  what it runs is one SELECT the product writes, inside a read-only transaction, reading each table
+  through a select of exactly the columns the query names of it - a column a table or view does
+  not have is refused by the database, by name, and never read as anything else. **New query definition** is offered to anybody who may edit a space and
+  use a connection; SQL is offered beside the builder only where you may write SQL on the
+  connection. Somebody without it can turn a SQL definition into a built one, but not back.
+- **Words for a built query the database refused.** A table or column it does not have, two types
+  it cannot compare, or a table its account may not read is said in the product's own words; what the
+  database itself said is still shown only to somebody who may write SQL on the connection.
+- **Joined and nested queries through the API.** A built query written through the API may join
+  tables and read nested queries; its page shows it to be read, with its SQL, and says why it cannot
+  be changed there.
+- In the development environment, Grace may now use connections in General without writing SQL.
+
 ## 0.131.2 - 2026-10-04 (PR #378)
 
 ### Fixed

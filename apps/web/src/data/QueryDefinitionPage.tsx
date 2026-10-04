@@ -4,28 +4,36 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import { Notice } from '../states/Notice.js';
 import { documentLink } from '../structure/links.js';
+import { BuilderFields } from './BuilderFields.js';
+import { Choice, Status } from './Choice.js';
 import {
   BASES,
   NEW_PARAMETER,
   definitionOf,
   draftOf,
   everyColumnConfirmed,
+  fitFilters,
+  generatedSql,
   newDraft,
   parametersOf,
   proposedColumns,
+  queryOf,
   statementOf,
   withStatement,
   sampleDefinition,
   sampleValues,
+  sqlOf,
+  unshownReason,
   type ColumnDraft,
   type DefinitionDraft,
   type ParameterDraft,
+  type StatementParts,
   type TypeDraft,
 } from './definitionDraft.js';
 import { connectionLink, queryDefinitionLink } from './links.js';
-import { useSqlPlaces, type Place } from './places.js';
+import { useDefinitionPlaces, type Place } from './places.js';
 import styles from './QueryDefinitionPage.module.css';
-import { isRecord, refusalText } from './shapes.js';
+import { isRecord, isRelations, refusalText, type Described } from './shapes.js';
 import { isUses, UsedList, type Uses } from './uses.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -66,7 +74,8 @@ function isDefinitionView(value: unknown): value is DefinitionView {
     typeof definition.title === 'string' &&
     typeof definition.connection === 'string' &&
     isRecord(statement) &&
-    typeof statement.text === 'string' &&
+    (typeof statement.text === 'string' ||
+      (statement.kind === 'builder' && isRecord(statement.query))) &&
     Array.isArray(definition.parameters) &&
     Array.isArray(definition.columns) &&
     (connection === null ||
@@ -156,37 +165,6 @@ function Step({ title, children }: { readonly title: string; readonly children: 
   );
 }
 
-/**
- * A select or a text area and its label, joined by `for`: a label wrapping one would hold every
- * option's text, or the text first typed, beside its own words, and be read so.
- */
-function Choice({
-  label,
-  children,
-}: {
-  readonly label: string;
-  readonly children: (id: string) => React.ReactNode;
-}) {
-  const id = useId();
-  return (
-    <span className={styles['choice']}>
-      <label htmlFor={id}>{label}</label>
-      {children(id)}
-    </span>
-  );
-}
-
-/** Lines of words, each a paragraph, in a status region, or an empty one. */
-function Status({ lines }: { readonly lines: readonly string[] | null }) {
-  return (
-    <div role="status">
-      {lines?.map((line, at) => (
-        <p key={at}>{line}</p>
-      ))}
-    </div>
-  );
-}
-
 /** A type chosen from the eight bases, with the digits, places or fraction the base needs. */
 function TypeFields({
   type,
@@ -263,11 +241,14 @@ function TypeFields({
 function ParameterFields({
   index,
   parameter,
+  built,
   onChange,
   onRemove,
 }: {
   readonly index: number;
   readonly parameter: ParameterDraft;
+  /** A built query's parameter, which chooses no fragment of SQL (D4-M). */
+  readonly built: boolean;
   readonly onChange: (parameter: ParameterDraft) => void;
   readonly onRemove: () => void;
 }) {
@@ -300,20 +281,22 @@ function ParameterFields({
         />
         A list of values
       </label>
-      <label className={styles['check']}>
-        <input
-          type="checkbox"
-          checked={variation}
-          onChange={(event) =>
-            onChange({
-              ...parameter,
-              variation: event.target.checked ? [{ key: '', sql: '' }] : [],
-              permitted: 'none',
-            })
-          }
-        />
-        Chooses a fragment of SQL, placed at a marker with a hash
-      </label>
+      {!built && (
+        <label className={styles['check']}>
+          <input
+            type="checkbox"
+            checked={variation}
+            onChange={(event) =>
+              onChange({
+                ...parameter,
+                variation: event.target.checked ? [{ key: '', sql: '' }] : [],
+                permitted: 'none',
+              })
+            }
+          />
+          Chooses a fragment of SQL, placed at a marker with a hash
+        </label>
+      )}
       {!variation && (
         <Choice label="Permits">
           {(id) => (
@@ -468,15 +451,30 @@ function ValueField({
   );
 }
 
+/** The SQL a built query runs, shown and never edited (DAT-099), or what it still needs. */
+function GeneratedSql({ shown }: { readonly shown: { sql: string } | { needs: string } }) {
+  const id = useId();
+  return (
+    <figure className={styles['generated']} aria-labelledby={id}>
+      <figcaption id={id}>The SQL it runs</figcaption>
+      <pre className={styles['sql']}>{'sql' in shown ? shown.sql : shown.needs}</pre>
+    </figure>
+  );
+}
+
 /** The SQL of a definition the person may only read, and its declarations, in words. */
 function ReadOnly({ definition }: { readonly definition: QueryDefinition }) {
-  const { fetch: statement } = definition;
   const typeName = (type: ValueType) =>
     BASES.find((each) => each.base === type.base)?.label ?? type.base;
+  const { fetch: statement } = definition;
   return (
     <>
       <p>{definition.description === '' ? 'No description.' : definition.description}</p>
-      <pre className={styles['sql']}>{statement.text}</pre>
+      {statement.kind === 'builder' ? (
+        <GeneratedSql shown={{ sql: sqlOf(definition) }} />
+      ) : (
+        <pre className={styles['sql']}>{sqlOf(definition)}</pre>
+      )}
       <table className={styles['table']}>
         <caption>Columns</caption>
         <thead>
@@ -498,6 +496,15 @@ function ReadOnly({ definition }: { readonly definition: QueryDefinition }) {
   );
 }
 
+/** A stored definition as a sample runs it: the whole of it less its title, description and retired. */
+function storedDraft(definition: QueryDefinition) {
+  const draft: Partial<QueryDefinition> = { ...definition };
+  delete draft.title;
+  delete draft.description;
+  delete draft.retired;
+  return draft;
+}
+
 /** Where a definition is used: the components binding it and the documents holding its results. */
 interface DefinitionUses {
   readonly components: Uses;
@@ -505,12 +512,15 @@ interface DefinitionUses {
 }
 
 /**
- * A query definition (data.md, "What a query definition version holds"; the D2 plan, D2-U), at
- * `#/query-definitions/<id>` or `#/query-definitions/new`, written in five steps: the connection; the
- * SQL and its parameters; **Describe**, which proposes each column from the source's metadata for the
- * author to confirm (DAT-105); **Run sample**, which runs it exactly as a document would and shows the
- * first rows or the one reason it failed (DAT-014); and its key, order, empty and limits. **Save
- * version** is offered once every column is confirmed; **Retire** and **Reinstate** are versions too.
+ * A query definition (data.md, "What a query definition version holds"; the D2 plan, D2-U; the D4
+ * plan, D4-O), at `#/query-definitions/<id>` or `#/query-definitions/new`, written in five steps: the
+ * connection; the **Query**, built from one table or view (D4) or, where the person may write SQL on
+ * the connection, written as SQL, and its parameters; **Describe**, which proposes each column from
+ * the source's metadata for the author to confirm (DAT-105); its key, order, empty and limits; and
+ * **Run sample**, which runs it exactly as a document would and shows the first rows or the one reason
+ * it failed (DAT-014). **Save version** is offered once every column is confirmed; **Retire** and
+ * **Reinstate** are versions too. A built query the page cannot show - joined, nested - opens
+ * read-only with its SQL, saying why (D4-D).
  */
 export function QueryDefinitionPage({
   client,
@@ -520,11 +530,13 @@ export function QueryDefinitionPage({
   readonly id: string;
 }) {
   const isNew = id === 'new';
-  const places = useSqlPlaces(client);
+  const places = useDefinitionPlaces(client);
   const [view, setView] = useState<DefinitionView | 'missing' | 'failed' | null>(null);
   const [draft, setDraft] = useState<DefinitionDraft>(() => newDraft(defaultLimits));
   const [space, setSpace] = useState('');
   const [described, setDescribed] = useState<string[] | null>(null);
+  const [source, setSource] = useState<Described | null>(null);
+  const [sourceLines, setSourceLines] = useState<string[] | null>(null);
   const [typed, setTyped] = useState<Readonly<Record<string, string>>>({});
   const [sampled, setSampled] = useState<Sampled | string[] | null>(null);
   const [saved, setSaved] = useState<string[] | null>(null);
@@ -627,11 +639,26 @@ export function QueryDefinitionPage({
   const shown = view;
   const mayEdit = isNew || (shown !== null && shown.mayEdit);
   const mayRun = isNew || (shown !== null && shown.mayRun);
+  // A built query the builder cannot show opens read-only, saying why (D4-D).
+  const unshown = shown === null ? null : unshownReason(shown.definition);
+  const editable = mayEdit && unshown === null;
+  // SQL is offered where the person may write it on the connection (DAT-101), or to a definition
+  // already written as SQL, which the service let them open to change.
+  const sqlOffered = (places?.sql.has(draft.connection) ?? false) || draft.mode === 'sql';
   const change = (over: Partial<DefinitionDraft>) => setDraft((held) => ({ ...held, ...over }));
-  /** A change to the SQL or its parameters, which may change what it returns: asked again of each column. */
-  const changeStatement = (
-    over: Pick<Partial<DefinitionDraft>, 'connection' | 'sql' | 'parameters'>,
-  ) => setDraft((held) => withStatement(held, over));
+  /**
+   * A change to the query or its parameters, which may change what it returns: asked again of each
+   * column. A change of parameters fits the builder's filters to them.
+   */
+  const changeStatement = (over: StatementParts) =>
+    setDraft((held) =>
+      withStatement(
+        held,
+        over.parameters === undefined
+          ? over
+          : { ...over, builder: fitFilters(over.builder ?? held.builder, over.parameters) },
+      ),
+    );
   const setParameter = (at: number, parameter: ParameterDraft) =>
     changeStatement({
       parameters: draft.parameters.map((held, place) => (place === at ? parameter : held)),
@@ -647,6 +674,30 @@ export function QueryDefinitionPage({
       : []),
   ];
 
+  /** Lists the source's tables and views, which the builder chooses its table or view from (D1). */
+  const describeSource = () =>
+    act('source', async () => {
+      setSourceLines(null);
+      if (draft.connection === '') {
+        setSourceLines(['Choose a connection first.']);
+        return;
+      }
+      try {
+        const { data, error } = await client.POST('/v1/connections/{id}/describe', {
+          params: { path: { id: draft.connection } },
+          body: {},
+        });
+        const answer: unknown = data;
+        if (isRelations(answer)) {
+          setSource(answer);
+          return;
+        }
+        setSourceLines(refusalLines(error, 'The source could not be described. Try again.'));
+      } catch {
+        setSourceLines(['The source could not be described. Try again.']);
+      }
+    });
+
   const describe = () =>
     act('describe', async () => {
       setDescribed(null);
@@ -659,18 +710,31 @@ export function QueryDefinitionPage({
         setDescribed(['Choose a connection first.']);
         return;
       }
+      const built = draft.mode === 'builder';
+      const query = built ? queryOf(draft.builder, draft.order) : null;
+      if (typeof query === 'string') {
+        setDescribed([query]);
+        return;
+      }
       const sent = statementOf(draft);
       try {
         const { data, error } = await client.POST('/v1/connections/{id}/describe', {
           params: { path: { id: draft.connection } },
-          body: { sql: { text: draft.sql, parameters: parameters as never } },
+          body:
+            query === null
+              ? { sql: { text: draft.sql, parameters: parameters as never } }
+              : { builder: { query: query as never, parameters: parameters as never } },
         });
         const answer: unknown = data;
         if (isRecord(answer) && Array.isArray(answer.columns)) {
           // An answer for a statement changed since it was sent describes another one: dropped.
           const now = latest.current;
           if (statementOf(now) !== sent) {
-            setDescribed(['The SQL changed while it was described. Describe it again.']);
+            setDescribed([
+              built
+                ? 'The query changed while it was described. Describe it again.'
+                : 'The SQL changed while it was described. Describe it again.',
+            ]);
             return;
           }
           // Merged into the columns as they are now, keeping a confirmation made meanwhile.
@@ -691,16 +755,20 @@ export function QueryDefinitionPage({
           ]);
           return;
         }
-        setDescribed(refusalLines(error, 'The statement could not be described. Try again.'));
+        setDescribed(refusalLines(error, 'The query could not be described. Try again.'));
       } catch {
-        setDescribed(['The statement could not be described. Try again.']);
+        setDescribed(['The query could not be described. Try again.']);
       }
     });
 
   const sample = () =>
     act('sample', async () => {
       setSampled(null);
-      const definition = sampleDefinition(draft);
+      // A definition the builder cannot show is sampled as it is stored.
+      const definition =
+        unshown !== null && shown !== null
+          ? storedDraft(shown.definition)
+          : sampleDefinition(draft);
       if (typeof definition === 'string') {
         setSampled([definition]);
         return;
@@ -819,8 +887,11 @@ export function QueryDefinitionPage({
         </p>
       )}
 
-      {!mayEdit && shown !== null ? (
+      {!editable && shown !== null ? (
         <>
+          {unshown !== null && (
+            <p>{`This query definition can be read here and not changed: ${unshown}. Change it through the API.`}</p>
+          )}
           <p>
             Runs against{' '}
             {shown.connection === null ? (
@@ -860,7 +931,11 @@ export function QueryDefinitionPage({
                   <select
                     id={id}
                     value={draft.connection}
-                    onChange={(event) => changeStatement({ connection: event.target.value })}
+                    onChange={(event) => {
+                      setSource(null);
+                      setSourceLines(null);
+                      changeStatement({ connection: event.target.value });
+                    }}
                   >
                     {draft.connection === '' && <option value="">Choose a connection</option>}
                     {connections.map((each) => (
@@ -872,8 +947,8 @@ export function QueryDefinitionPage({
                 )}
               </Choice>
               <p className={styles['hint']}>
-                Only connections you may write SQL against are offered, and SQL runs only on one
-                whose latest test found its account read-only.
+                Only connections you may use are offered. SQL is offered only on one you may write
+                SQL against, and runs only on one whose latest test found its account read-only.
               </p>
               <label>
                 Title
@@ -895,28 +970,71 @@ export function QueryDefinitionPage({
             </div>
           </Step>
 
-          <Step title="SQL and parameters">
+          <Step title="Query">
             <div className={styles['form']}>
-              <Choice label="SQL">
-                {(id) => (
-                  <textarea
-                    id={id}
-                    className={styles['code']}
-                    rows={8}
-                    spellCheck={false}
-                    value={draft.sql}
-                    onChange={(event) => changeStatement({ sql: event.target.value })}
-                  />
-                )}
-              </Choice>
-              <p className={styles['hint']}>
-                Write a value as {'{{name}}'} and a fragment as {'{{#name}}'}, each naming a
-                parameter below. A value is always sent apart from the SQL, never placed in it.
-              </p>
+              {sqlOffered ? (
+                <fieldset>
+                  <legend>Write the query with</legend>
+                  <label className={styles['check']}>
+                    <input
+                      type="radio"
+                      name="mode"
+                      checked={draft.mode === 'builder'}
+                      onChange={() => changeStatement({ mode: 'builder' })}
+                    />
+                    Builder
+                  </label>
+                  <label className={styles['check']}>
+                    <input
+                      type="radio"
+                      name="mode"
+                      checked={draft.mode === 'sql'}
+                      onChange={() => changeStatement({ mode: 'sql' })}
+                    />
+                    SQL
+                  </label>
+                </fieldset>
+              ) : (
+                <p className={styles['hint']}>
+                  Built from the source&apos;s tables and views. SQL is offered where you may write
+                  SQL on the connection.
+                </p>
+              )}
+              {draft.mode === 'builder' ? (
+                <BuilderFields
+                  builder={draft.builder}
+                  parameters={draft.parameters}
+                  described={source}
+                  describedLines={sourceLines}
+                  busy={busy !== null}
+                  onDescribe={describeSource}
+                  onChange={(builder) => changeStatement({ builder })}
+                />
+              ) : (
+                <>
+                  <Choice label="SQL text">
+                    {(id) => (
+                      <textarea
+                        id={id}
+                        className={styles['code']}
+                        rows={8}
+                        spellCheck={false}
+                        value={draft.sql}
+                        onChange={(event) => changeStatement({ sql: event.target.value })}
+                      />
+                    )}
+                  </Choice>
+                  <p className={styles['hint']}>
+                    Write a value as {'{{name}}'} and a fragment as {'{{#name}}'}, each naming a
+                    parameter below. A value is always sent apart from the SQL, never placed in it.
+                  </p>
+                </>
+              )}
               {draft.parameters.map((parameter, at) => (
                 <ParameterFields
                   key={at}
                   index={at}
+                  built={draft.mode === 'builder'}
                   parameter={parameter}
                   onChange={(changed) => setParameter(at, changed)}
                   onRemove={() =>
@@ -934,6 +1052,7 @@ export function QueryDefinitionPage({
               >
                 Add parameter
               </button>
+              {draft.mode === 'builder' && <GeneratedSql shown={generatedSql(draft)} />}
             </div>
           </Step>
 
@@ -944,8 +1063,8 @@ export function QueryDefinitionPage({
               </button>
             )}
             <p className={styles['hint']}>
-              Describe asks the source what the statement returns, without running it, and proposes
-              a type for each column. Nothing is saved until you have confirmed every one.
+              Describe asks the source what the query returns, without running it, and proposes a
+              type for each column. Nothing is saved until you have confirmed every one.
             </p>
             <Status lines={described} />
             {draft.columns.length > 0 && (
@@ -1039,7 +1158,9 @@ export function QueryDefinitionPage({
                       })
                     }
                   />
-                  Check the rows are in the order the SQL sorts them
+                  {draft.mode === 'builder'
+                    ? 'Return the rows in a declared order'
+                    : 'Check the rows are in the order the SQL sorts them'}
                 </label>
                 {draft.order !== 'multiset' && (
                   <>
@@ -1110,10 +1231,29 @@ export function QueryDefinitionPage({
                       </button>
                     )}
                     <p className={styles['hint']}>
-                      The order covers the whole key. Text is compared by code point, so order a
-                      text column with COLLATE &quot;C&quot; in the SQL.
+                      {draft.mode === 'builder'
+                        ? 'The order covers the whole key. Text is ordered by code point.'
+                        : 'The order covers the whole key. Text is compared by code point, so order a text column with COLLATE "C" in the SQL.'}
                     </p>
+                    {draft.mode === 'builder' && (
+                      <label>
+                        Return at most
+                        <input
+                          inputMode="numeric"
+                          value={draft.builder.limit}
+                          onChange={(event) =>
+                            change({ builder: { ...draft.builder, limit: event.target.value } })
+                          }
+                        />
+                      </label>
+                    )}
                   </>
+                )}
+                {draft.mode === 'builder' && draft.order === 'multiset' && (
+                  <p className={styles['hint']}>
+                    Return at most is offered beside a declared order: over rows in no order it
+                    would choose them arbitrarily.
+                  </p>
                 )}
               </fieldset>
               <label className={styles['check']}>
@@ -1256,7 +1396,7 @@ export function QueryDefinitionPage({
 
       {mayEdit && (
         <Step title="Save">
-          {everyColumnConfirmed(draft) ? (
+          {unshown !== null ? null : everyColumnConfirmed(draft) ? (
             <button type="button" className="primary" disabled={busy !== null} onClick={save}>
               Save version
             </button>

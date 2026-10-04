@@ -370,12 +370,13 @@ async function seedProcedure(trx: TenantTransaction, space: string, author: stri
 }
 
 /**
- * Development only: somebody who may use a connection and write SQL against one. No starting role holds
- * `use_connection` or `write_sql`, so either is always granted on purpose (data.md, "Permissions"); this
- * makes a role of the environment's own, Connection user, holding `read`, `use_connection` and
- * `write_sql` (D2-T), and allows it to Ada on General, where she may already make a connection as the
- * environment's administrator. Nobody else holds it. Safe to run again, and a role D1's setup made
- * gains `write_sql`.
+ * Development only: somebody who may use a connection and write SQL against one, and somebody who may
+ * use one and write no SQL. No starting role holds `use_connection` or `write_sql`, so either is always
+ * granted on purpose (data.md, "Permissions"); this makes a role of the environment's own, Connection
+ * user, holding `read`, `use_connection` and `write_sql` (D2-T), and allows it to Ada on General, where
+ * she may already make a connection as the environment's administrator; and a second, Query builder,
+ * holding `read` and `use_connection`, allowed to Grace on General, who builds queries without writing
+ * SQL (the D4 plan, D4-J). Safe to run again, and a role D1's setup made gains `write_sql`.
  */
 export async function seedDevelopmentConnectionUse(
   trx: TenantTransaction,
@@ -410,5 +411,23 @@ export async function seedDevelopmentConnectionUse(
   });
   if ('refused' in answer && answer.refused !== 'grant.duplicate') {
     throw new Error(`Connection user on General was refused: ${answer.refused}`);
+  }
+
+  const grace = await person(trx, input.issuer, 'grace', 'Grace');
+  let builder = await findRole(trx, 'Query builder');
+  if (!builder) {
+    const made = await createRole(trx, 'Query builder', ['read', 'use_connection']);
+    if (!('role' in made)) throw new Error(`Query builder was refused: ${made.refused}`);
+    builder = made.role;
+  }
+  const builds = await grant(trx, {
+    roleId: builder.id,
+    subject: { principal: grace },
+    level: { kind: 'space', id: general.id },
+    effect: 'allow',
+    grantedBy: ada,
+  });
+  if ('refused' in builds && builds.refused !== 'grant.duplicate') {
+    throw new Error(`Query builder on General was refused: ${builds.refused}`);
   }
 }

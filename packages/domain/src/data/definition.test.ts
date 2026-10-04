@@ -17,7 +17,12 @@ import { bindPostgres } from './sql.js';
 
 const CONNECTION = '00000000-0000-4000-8000-00000000c0c0';
 
-function definition(over: Partial<QueryDefinition> = {}): QueryDefinition {
+/** A definition whose fetch is SQL, as every definition before the builder's was. */
+type SqlQueryDefinition = QueryDefinition & {
+  fetch: Extract<QueryDefinition['fetch'], { kind: 'sql' }>;
+};
+
+function definition(over: Partial<SqlQueryDefinition> = {}): SqlQueryDefinition {
   return {
     schemaVersion: 1,
     title: 'Readings by site',
@@ -339,8 +344,12 @@ describe('a query definition', () => {
     ]) {
       expect(refusedAt(withParameters([site], text)), text.slice(0, 30)).toContain('fetch.text');
     }
-    expect(refusedAt(definition({ fetch: { kind: 'builder', query: {} } as never }))).toContain(
+    // A fetch is SQL or the builder's format 1 (the D4 plan, D4-A), and nothing else.
+    expect(refusedAt(definition({ fetch: { kind: 'tree', query: {} } as never }))).toContain(
       'fetch.kind',
+    );
+    expect(refusedAt(definition({ fetch: { kind: 'builder', query: {} } as never }))).toContain(
+      'fetch.format',
     );
   });
 

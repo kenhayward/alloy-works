@@ -81,10 +81,47 @@ function mismatch(failure: DataFailure): string {
   return 'The statement returns no columns to declare.';
 }
 
-/** A failure's words: its code's, with the column, the row and what the source said where it has them. */
-export function failureMessage(failure: DataFailure): string {
+/**
+ * The product's words for a built query's commonest refusals, by SQLSTATE alone (the D4 plan, D4-K):
+ * an author who may not see what the source said - who holds no `write_sql` - can still act on them.
+ */
+const BUILT_REFUSALS: Readonly<Record<string, string>> = {
+  '42P01': 'The source has no table or view the query names',
+  // A composite type or an index named as a table: a relation, but none a statement reads.
+  '42809': 'The source has no table or view the query names',
+  '42703': 'The source has no column the query names',
+  '42883':
+    'The source cannot compare two of the types the query compares, or an aggregate cannot take the type of its column',
+  '42804':
+    'The source cannot compare two of the types the query compares, or an aggregate cannot take the type of its column',
+  '42501': 'The connection account may not read a table or view the query names',
+};
+
+/**
+ * A built query's refusal in the product's words, with what the source said where it may be shown.
+ * A column the connector found no table of the query's to have is named: the author wrote it, so
+ * it tells nobody anything of the source they could not already read in their own query.
+ */
+function builtRefusal(
+  source: { readonly sqlstate: string; readonly message?: string },
+  column?: string,
+) {
+  const words = BUILT_REFUSALS[source.sqlstate];
+  if (words === undefined) return undefined;
+  const named = column === undefined ? '' : `: ${column}`;
+  const said = source.message === undefined ? '' : ` The source said: ${source.message}`;
+  return `${words} (SQLSTATE ${source.sqlstate})${named}.${said}`;
+}
+
+/**
+ * A failure's words: its code's, with the column, the row and what the source said where it has them;
+ * for a built query's commonest refusals, the product's words first (D4-K).
+ */
+export function failureMessage(failure: DataFailure, built = false): string {
   if (failure.code === 'result_mismatch') return mismatch(failure);
   if (failure.code === 'source_refused' && failure.source) {
+    const words = built ? builtRefusal(failure.source, failure.column) : undefined;
+    if (words !== undefined) return words;
     return `The source refused the statement (SQLSTATE ${failure.source.sqlstate}): ${failure.source.message}`;
   }
   const words = MESSAGES[failure.code] ?? 'This could not be done.';
@@ -97,19 +134,21 @@ export function failureMessage(failure: DataFailure): string {
  * `source_refused`'s own message goes only to somebody holding `write_sql` at the connection, since it
  * can name a table, a column or a value the statement reached; anybody else is given its SQLSTATE.
  */
-export function failureViewFor(failure: FailureIn, seesSource: boolean) {
-  const view = failureView(failure);
+export function failureViewFor(failure: FailureIn, seesSource: boolean, built = false) {
+  const view = failureView(failure, built);
   if (seesSource || view.source === undefined) return view;
   const { sqlstate } = view.source;
   return {
     ...view,
     source: { sqlstate },
-    message: `The source refused the statement (SQLSTATE ${sqlstate}).`,
+    message:
+      builtRefusal({ sqlstate }, view.column) ??
+      `The source refused the statement (SQLSTATE ${sqlstate}).`,
   };
 }
 
 /** A failure as the API answers it: its code, its attribution, its details and its words (DAT-049). */
-export function failureView(failure: FailureIn | DataFailureCode) {
+export function failureView(failure: FailureIn | DataFailureCode, built = false) {
   // Made again from the code, so the attribution is always the code's own (DAT-049).
   const whole =
     typeof failure === 'string'
@@ -122,6 +161,6 @@ export function failureView(failure: FailureIn | DataFailureCode) {
   return {
     ...whole,
     ...(whole.source === undefined ? {} : { source: { ...whole.source } }),
-    message: failureMessage(whole),
+    message: failureMessage(whole, built),
   };
 }

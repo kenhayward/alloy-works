@@ -93,3 +93,22 @@ insert into sample.unordered
 alter table sample.unordered set (autovacuum_enabled = false);
 
 grant select on sample.typed, sample.unordered to reader, writer;
+
+-- What the builder's code-point keys are tested against (the D4 plan, D4-R): a citext column, whose
+-- own comparison merges spellings that differ only in case, and an enum, whose own order is its
+-- labels' declaration rather than their code points.
+create extension citext;
+create type sample.colour as enum ('red', 'Green', 'blue');
+create table sample.tag (
+  id integer primary key,
+  name citext not null,
+  colour sample.colour not null
+);
+insert into sample.tag values
+  (1, 'Ada', 'red'),
+  (2, 'ada', 'red'),
+  (3, 'ADA', 'Green'),
+  (4, 'Grace', 'blue'),
+  (5, 'grace', 'blue');
+
+grant select on sample.tag to reader, writer;

@@ -251,7 +251,7 @@ describe("the connector's interface", () => {
     expect(await tested.json()).toEqual({ outcome: 'ok', findings: [] });
     const described = await post(url, '/v1/describe', requestFor(settings(), PASSWORDS.reader));
     expect(described.status).toBe(200);
-    expect(((await described.json()) as { relations: unknown[] }).relations).toHaveLength(5);
+    expect(((await described.json()) as { relations: unknown[] }).relations).toHaveLength(6);
     expect(lines).toHaveLength(2);
     for (const line of lines) {
       const parsed = JSON.parse(line) as Record<string, unknown>;

@@ -2873,7 +2873,7 @@ source and stays in the deciding transaction, with the write it answers, bounded
 | `PUT /v1/connections/{id}/credential` | `administer`                  | Seals the secret through the connector, adds the row, and tests the connection with it straight after |
 | `POST /v1/connections/{id}/test`      | `use_connection`              | The test, recorded in `connection_test` against the version tested, ok or failed                      |
 | `POST /v1/connections/{id}/describe`  | `use_connection`              | The tables and views, or the failure by its status: 502, 503 or 504                                   |
-| `POST /v1/connections/{id}/sample`    | `use_connection`, `write_sql` | A draft definition run against sample values; see below                                               |
+| `POST /v1/connections/{id}/sample`    | `use_connection`, `write_sql` | A draft definition run against sample values, `write_sql` for SQL alone; see below                    |
 | `GET /v1/connections/{id}/uses`       | `read`                        | The query definitions naming it, and the documents holding a result run on it; see below              |
 
 A retired connection, or one with no credential, is refused `connection_retired` or
@@ -2912,7 +2912,7 @@ checksummed result or one named failure. **Nothing is stored from a sample**; a 
 **A query definition is an artifact in a space** (`queryDefinition`, migration 0046) whose versions
 hold its title and description, the one connection it names by artifact id, its parameters, its fetch
 
-- `{ kind: 'sql', text }` alone until D4's builder - its columns, key, order, whether empty is valid,
+- `{ kind: 'sql', text }`, or from D4 a built query ([below](#the-builder)) - its columns, key, order, whether empty is valid,
   its limits and whether it is retired (`packages/domain/src/data/definition.ts`). A value is marked
   `{{name}}` and a fragment `{{#name}}` (D2-B), found by `lexPostgres`, a PostgreSQL lexer that
   refuses a marker inside a string, a quoted identifier, a dollar-quoted body or a comment, and a `$1`
@@ -2929,7 +2929,8 @@ hold its title and description, the one connection it names by artifact id, its 
 
 **Who may write SQL is decided at the connection**: `write_sql`, which no starting role holds, and
 `use_connection` there, walked from the connection as every permission is (DAT-101), with `edit` in
-the definition's space to make or change one. **SQL runs only on a connection found read-only**: a
+the definition's space to make or change one; a built query needs `use_connection` alone, decided by
+each version's own fetch in `mayRunFetch` ([below](#the-builder)). **SQL runs only on a connection found read-only**: a
 save, a describe of a statement and a sample are refused `sql_not_permitted` (409, DAT-103) unless
 the connection's latest test is a pass of its latest version and credential that did not find
 `account_not_read_only` (`apps/service/src/data/sql-access.ts`); a version retiring the definition
@@ -2962,23 +2963,23 @@ column, its row and, for `source_refused`, the source's SQLSTATE and message. A 
 statement binds each fragment by its first key, describes it without running it (Q1), and answers its
 columns with a proposal each (DAT-105), a query's failure as 400.
 
-| Route                                       | Needs                                                         | Does                                                                                                                                              |
-| ------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /v1/query-definitions`                 | A session                                                     | The definitions the caller may read, by space and by connection, each connection named where the caller may read it                               |
-| `POST /v1/spaces/{space}/query-definitions` | `edit` in it; `use_connection`, `write_sql` at the connection | Makes one at 0.1                                                                                                                                  |
-| `GET /v1/query-definitions/{id}`            | `read`                                                        | Its latest version; its connection's identity and whether retired, and its name where the caller may read it; `mayEdit` and `mayRun`              |
-| `POST /v1/query-definitions/{id}/versions`  | `edit`; `use_connection`, `write_sql` at the connection       | Its next version from `openedFrom`; retiring and reinstating among them                                                                           |
-| `POST /v1/connections/{id}/sample`          | `use_connection`, `write_sql`                                 | The sample run; nothing is stored and no idempotency record kept                                                                                  |
-| `POST /v1/connections/{id}/describe`        | `use_connection`; and `write_sql` too when sent `sql`         | Sent `sql`, a statement's result columns, never run; a query's failure - the source's refusal, or no columns - is 400, the connector's 502 or 504 |
-| `GET /v1/connections/{id}/uses`             | `read`                                                        | The definitions naming it by their latest versions: those the caller may read by title, the rest counted                                          |
-| `GET` and `PUT /v1/settings/data`           | A session; `administer` at the tenant to change               | The tenant's lowered limits and the ceilings                                                                                                      |
+| Route                                       | Needs                                                 | Does                                                                                                                                                       |
+| ------------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /v1/query-definitions`                 | A session                                             | The definitions the caller may read, by space and by connection, each connection named where the caller may read it                                        |
+| `POST /v1/spaces/{space}/query-definitions` | `edit` in it; `use_connection`, `write_sql` for SQL   | Makes one at 0.1                                                                                                                                           |
+| `GET /v1/query-definitions/{id}`            | `read`                                                | Its latest version; its connection's identity and whether retired, and its name where the caller may read it; `mayEdit` and `mayRun` by its fetch          |
+| `POST /v1/query-definitions/{id}/versions`  | `edit`; `use_connection`, `write_sql` for SQL         | Its next version from `openedFrom`; retiring and reinstating among them                                                                                    |
+| `POST /v1/connections/{id}/sample`          | `use_connection`, `write_sql` for SQL                 | The sample run; nothing is stored and no idempotency record kept                                                                                           |
+| `POST /v1/connections/{id}/describe`        | `use_connection`; and `write_sql` too when sent `sql` | Sent `sql` or `builder`, a query's result columns, never run; a query's failure - the source's refusal, or no columns - is 400, the connector's 502 or 504 |
+| `GET /v1/connections/{id}/uses`             | `read`                                                | The definitions naming it by their latest versions: those the caller may read by title, the rest counted                                                   |
+| `GET` and `PUT /v1/settings/data`           | A session; `administer` at the tenant to change       | The tenant's lowered limits and the ceilings                                                                                                               |
 
 A retiring version of a connection a definition in service names is refused `connection_in_use`,
 naming and counting the definitions the same way, and the credential route's answer carries them as
 `dependents` when its test fails. The renderer's **Query definitions**, beside Connections, lists them
 in layout A with a space facet and offers **New query definition** where the person may edit a space
-and write SQL on some connection; a definition's page (`QueryDefinitionPage.tsx`, its draft held by
-`definitionDraft.ts`) is written in steps - the connection and title, the SQL and its parameters,
+and use some connection; a definition's page (`QueryDefinitionPage.tsx`, its draft held by
+`definitionDraft.ts`) is written in steps - the connection and title, the query - built, or SQL - and its parameters,
 **Describe** with each column confirmed, the key, order, empty and limits, **Run sample** - and saved
 once every column is confirmed. A connection's page shows **Used by**. Compose gives the connector
 `mem_limit: 3g` (D2-J), a backstop for what the byte count does not see: a `Buffer` lives outside the
@@ -2996,6 +2997,68 @@ the other four slots.
 | `service: src/data/`                     | `query-definitions.ts`, the routes; `sql-access.ts`; `failure-words.ts`; the sample in `connections.ts`   |
 | `api-contract: src/query-definitions.ts` | The four definition routes; the sample, uses and data settings beside the connection and editing ones     |
 | `web: src/data/`                         | The Query definitions list, a definition's page, and Used by on a connection's page                       |
+
+## The builder
+
+D4 of [data.md](design/data.md), built by [the D4 plan](plans/2026-10-03-d4-the-builder.md): a query
+definition's fetch may be a built query, `{ kind: 'builder', format: 1, query }`, a second arm at
+definition `schemaVersion: 1` with no migration (D4-A). **The definition stores the tree and never its
+SQL** (DAT-099). The tree (`packages/domain/src/data/builder.ts`) names sources - a table by its schema
+and name, or a nested query - joined inner or left, the columns selected, each a column or one of five
+aggregates (`average` with the places it is rounded to at the source), a condition of and, or, not and
+comparisons, a grouping, and at the top alone a limit beside the declared order; the declared order is
+the ORDER BY (D4-B, D4-C, D4-I). `treeProblem`, an iterative walk inside the schema's `z.preprocess`,
+bounds the tree before zod recurses - queries 4 deep, conditions 8, 16 sources, 32 groupings, 256
+comparisons - on every path a tree reaches, the contract's own validation at the door among them
+(D4-L). `checkTree` holds the tree's own rules, and `checkBuilder` adds the declared columns' and the
+limit's.
+
+**SQL is generated by the domain**, `generatePostgres` in `generate.ts`, pure: the connector at every
+describe and run, the definition's checks on every write (to hold the text to `RAN_MAX_CHARACTERS`),
+and the page to show it (D4-E). Every identifier is quoted, every relation `"schema"."name"`, read
+through a derived table of the bare names of exactly the columns the tree names of it -
+`(SELECT "c1", "c2" FROM "schema"."name") AS "alias"`, or `(SELECT FROM ...)` for none - so a column
+the table does not have is the source's `42703` and never `"s"."f"` read as a call `f(s)` of a function
+found through the search path; every
+function, operator, type and collation `pg_catalog`'s, every value - a literal's too - a placeholder
+`($n::pg_catalog.type)`, and the text is read back and refused unless its placeholders are exactly
+those written (D4-F). Text is compared, ordered and grouped by its code-point key,
+`(x)::pg_catalog.text COLLATE pg_catalog."C"` (D4-G). **One tree, two statements** (D4-H): `bindFetch` (`fetch.ts`)
+binds a SQL fetch by `bindPostgres` and a built query by the generator, as its **shape** - no order,
+no limit, no key outside a filter - or its **run**. The connector's describe of a built query
+describes its shape; a run describes and admits the shape's columns by D2-L first, then describes,
+admits and runs the run statement by D2's path, and reports its text as the SQL that ran
+(`admittedColumns` in `apps/connector/src/run.ts`). A built query's `42703` is given the column it
+names, read from the statement's text at the source's error position (`withRefusedColumn` in
+`apps/connector/src/describe.ts`).
+
+**Permission is decided by the fetch** (D4-J), in `apps/service/src/data/sql-access.ts`'s
+`mayRunFetch`: a built query needs `use_connection` and `edit`, never `write_sql`, and is never refused
+`sql_not_permitted` (`requireSqlPermitted` takes the fetch, and returns at once for a built query);
+each definition version by its own fetch, a sample by its draft's, a resolve and a check by the
+version they run. `mayEdit` and `mayRun` follow. `POST /v1/connections/{id}/describe` takes `{ builder:
+{ query, parameters } }` on `use_connection` alone, checked by `checkTree` before the connector is
+asked (D4-Q). A built query's `source_refused` is worded by its SQLSTATE (`42P01`, `42809`, `42703`,
+`42883`, `42804`, `42501`) in `failure-words.ts`, the source's message after the words only for a
+holder of `write_sql` (D4-K); a column the connector named is named after them, since its author
+wrote it.
+
+**The page's Query step** is written with **Builder** or, where the person may write SQL on the
+connection, **SQL** (D4-O): `BuilderFields.tsx` chooses one table or view from the source's describe,
+listing a name not in NFC unchosen (D4-P), its columns and the names they are returned as, filters on
+parameters or fixed values under all or any, and grouping with the five aggregates; **Return at most**
+sits beside the declared order; and **The SQL it runs** shows the generator's text as the tree changes.
+A built definition the page cannot show - joined, nested, or anything `queryOf` does not write again
+exactly - opens read-only with its SQL, saying why (D4-D). `useDefinitionPlaces` (`places.ts`) answers
+the spaces the person may edit, the connections they may use, and those they may write SQL on.
+
+| Where                         | What                                                                                                                                   |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain: src/data/`           | `builder.ts` (the tree, its walk and checks), `generate.ts` (PostgreSQL's generator), `fetch.ts` (`bindFetch`)                         |
+| `connector: src/`             | `run.ts` and `work.ts`, a built query's shape and run through `bindFetch`; `describe.ts`'s `withRefusedColumn`, a refused column named |
+| `service: src/data/`          | `sql-access.ts`'s `mayRunFetch`; a built describe in `connections.ts`; D4-K's words in `failure-words.ts`                              |
+| `web: src/data/`              | `BuilderFields.tsx`, the builder's half of `definitionDraft.ts`, `Choice.tsx`, `places.ts`                                             |
+| `deploy/sources/postgres.sql` | `citext`, the enum `sample.colour` and `sample.tag`, which the connector's suite groups and orders by                                  |
 
 ## Datasets and resolutions
 

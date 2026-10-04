@@ -357,8 +357,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * List the tables and views a connection's account may read, or a SQL statement's result columns
-         * @description Lists the tables and views the connection account may read, with each column and the type proposed for it. Sent a SQL statement instead, it answers the columns the statement would return, each with the type proposed for it, without running it; that needs write SQL on the connection as well, and a connection whose latest test found its account read-only.
+         * List the tables and views a connection's account may read, or a statement's or a built query's result columns
+         * @description Lists the tables and views the connection account may read, with each column and the type proposed for it. Sent a SQL statement instead, it answers the columns the statement would return, each with the type proposed for it, without running it; that needs write SQL on the connection as well, and a connection whose latest test found its account read-only. Sent a built query instead - its tree and its parameters - it answers the columns the query would return in the same way, from SQL the service generates from the tree; that needs use connection alone, on any connection. A source's refusal of a built query is worded by its SQLSTATE, and what the source said is shown only to a caller who may write SQL on the connection.
          */
         post: operations["describeConnection"];
         delete?: never;
@@ -378,7 +378,7 @@ export interface paths {
         put?: never;
         /**
          * Run a draft query definition against sample values, storing nothing
-         * @description Runs a draft query definition against the sample values given, exactly as a document would run it, and stores nothing. Each value is checked against its declaration before the source is asked. It needs use connection and write SQL on the connection, and a connection whose latest test found its account read-only. A failure is an answer, named and laid at the connector, the query or the product.
+         * @description Runs a draft query definition against the sample values given, exactly as a document would run it, and stores nothing. Each value is checked against its declaration before the source is asked. A draft of SQL needs use connection and write SQL on the connection, and a connection whose latest test found its account read-only; a built query needs use connection alone, on any connection. A failure is an answer, named and laid at the connector, the query or the product; what the source said of a statement it refused is shown only to a caller who may write SQL on the connection.
          */
         post: operations["sampleConnection"];
         delete?: never;
@@ -642,7 +642,7 @@ export interface paths {
         put?: never;
         /**
          * Run the named bindings' queries now and hold their results in this document
-         * @description Runs the named bindings' query definitions through the connector now, as the service account of each connection, and holds each result in this document: the definition version the binding pins, or its latest. Each result is stored once under its checksum and recorded as a version of its dataset, reusing the latest where nothing differs. It needs edit on the document, read on each definition, and use connection on each connection, decided again once the source has answered; a binding that changed meanwhile, or a permission lost, records nothing. Each failed run is answered by name with its definition, binding and document, and records nothing. This route takes no idempotency key.
+         * @description Runs the named bindings' query definitions through the connector now, as the service account of each connection, and holds each result in this document: the definition version the binding pins, or its latest. Each result is stored once under its checksum and recorded as a version of its dataset, reusing the latest where nothing differs. It needs edit on the document, read on each definition, and use connection on each connection, decided again once the source has answered; SQL runs only on a connection found read-only, and a built query on any; a binding that changed meanwhile, or a permission lost, records nothing. Each failed run is answered by name with its definition, binding and document, and records nothing. This route takes no idempotency key.
          */
         post: operations["resolveBindings"];
         delete?: never;
@@ -1238,7 +1238,7 @@ export interface paths {
         put?: never;
         /**
          * Cut a query definition's next version from the one the caller opened; retiring among them
-         * @description Records the next query definition version from the version the caller opened. Retiring and reinstating a definition are versions too; a retiring version is accepted whatever the connection last found.
+         * @description Records the next query definition version from the version the caller opened. What it needs is decided by the version's own query: use connection on its connection, and for SQL write SQL there as well, so somebody who may not write SQL can turn SQL into a built query but not back. Retiring and reinstating a definition are versions too; a retiring version is accepted whatever the connection last found.
          */
         post: operations["recordQueryDefinitionVersion"];
         delete?: never;
@@ -1626,7 +1626,7 @@ export interface paths {
         put?: never;
         /**
          * Make a query definition in this space, at version 0.1
-         * @description Creates a query definition in the named space from a whole definition: SQL with named parameters, the columns it returns, a key, an order, whether no rows is valid, and its limits. It needs edit in the space and use connection and write SQL on the connection it names.
+         * @description Creates a query definition in the named space from a whole definition: its query - SQL with named parameters, or a built query, a tree the service generates SQL from at every run - the columns it returns, a key, an order, whether no rows is valid, and its limits. It needs edit in the space and use connection on the connection it names; SQL needs write SQL there too, and a connection whose latest test found its account read-only.
          */
         post: operations["createQueryDefinition"];
         delete?: never;
@@ -1803,6 +1803,1029 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        describeConnectionBody_schema0: {
+            sources: ({
+                alias: string;
+                table: {
+                    schema: string;
+                    name: string;
+                };
+            } | {
+                alias: string;
+                query: components["schemas"]["describeConnectionBody_schema0"];
+            })[];
+            joins: {
+                /** @enum {string} */
+                kind: "inner" | "left";
+                source: string;
+                on: components["schemas"]["describeConnectionBody_schema1"];
+            }[];
+            select: {
+                name: string;
+                of: {
+                    source: string;
+                    column: string;
+                } | {
+                    /** @enum {string} */
+                    aggregate: "count" | "sum" | "average" | "minimum" | "maximum";
+                    of?: {
+                        source: string;
+                        column: string;
+                    };
+                    places?: number;
+                };
+            }[];
+            where?: components["schemas"]["describeConnectionBody_schema1"];
+            groupBy: {
+                source: string;
+                column: string;
+            }[];
+            limit?: number;
+        };
+        describeConnectionBody_schema1: {
+            and: components["schemas"]["describeConnectionBody_schema1"][];
+        } | {
+            or: components["schemas"]["describeConnectionBody_schema1"][];
+        } | {
+            not: components["schemas"]["describeConnectionBody_schema1"];
+        } | {
+            column: {
+                source: string;
+                column: string;
+            };
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            } | {
+                column: {
+                    source: string;
+                    column: string;
+                };
+            };
+        };
+        sampleConnectionBody_schema0: {
+            sources: ({
+                alias: string;
+                table: {
+                    schema: string;
+                    name: string;
+                };
+            } | {
+                alias: string;
+                query: components["schemas"]["sampleConnectionBody_schema0"];
+            })[];
+            joins: {
+                /** @enum {string} */
+                kind: "inner" | "left";
+                source: string;
+                on: components["schemas"]["sampleConnectionBody_schema1"];
+            }[];
+            select: {
+                name: string;
+                of: {
+                    source: string;
+                    column: string;
+                } | {
+                    /** @enum {string} */
+                    aggregate: "count" | "sum" | "average" | "minimum" | "maximum";
+                    of?: {
+                        source: string;
+                        column: string;
+                    };
+                    places?: number;
+                };
+            }[];
+            where?: components["schemas"]["sampleConnectionBody_schema1"];
+            groupBy: {
+                source: string;
+                column: string;
+            }[];
+            limit?: number;
+        };
+        sampleConnectionBody_schema1: {
+            and: components["schemas"]["sampleConnectionBody_schema1"][];
+        } | {
+            or: components["schemas"]["sampleConnectionBody_schema1"][];
+        } | {
+            not: components["schemas"]["sampleConnectionBody_schema1"];
+        } | {
+            column: {
+                source: string;
+                column: string;
+            };
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            } | {
+                column: {
+                    source: string;
+                    column: string;
+                };
+            };
+        };
+        getQueryDefinition200_schema0: {
+            sources: ({
+                alias: string;
+                table: {
+                    schema: string;
+                    name: string;
+                };
+            } | {
+                alias: string;
+                query: components["schemas"]["getQueryDefinition200_schema0"];
+            })[];
+            joins: {
+                /** @enum {string} */
+                kind: "inner" | "left";
+                source: string;
+                on: components["schemas"]["getQueryDefinition200_schema1"];
+            }[];
+            select: {
+                name: string;
+                of: {
+                    source: string;
+                    column: string;
+                } | {
+                    /** @enum {string} */
+                    aggregate: "count" | "sum" | "average" | "minimum" | "maximum";
+                    of?: {
+                        source: string;
+                        column: string;
+                    };
+                    places?: number;
+                };
+            }[];
+            where?: components["schemas"]["getQueryDefinition200_schema1"];
+            groupBy: {
+                source: string;
+                column: string;
+            }[];
+            limit?: number;
+        };
+        getQueryDefinition200_schema1: {
+            and: components["schemas"]["getQueryDefinition200_schema1"][];
+        } | {
+            or: components["schemas"]["getQueryDefinition200_schema1"][];
+        } | {
+            not: components["schemas"]["getQueryDefinition200_schema1"];
+        } | {
+            column: {
+                source: string;
+                column: string;
+            };
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            } | {
+                column: {
+                    source: string;
+                    column: string;
+                };
+            };
+        };
+        recordQueryDefinitionVersion200_schema0: {
+            sources: ({
+                alias: string;
+                table: {
+                    schema: string;
+                    name: string;
+                };
+            } | {
+                alias: string;
+                query: components["schemas"]["recordQueryDefinitionVersion200_schema0"];
+            })[];
+            joins: {
+                /** @enum {string} */
+                kind: "inner" | "left";
+                source: string;
+                on: components["schemas"]["recordQueryDefinitionVersion200_schema1"];
+            }[];
+            select: {
+                name: string;
+                of: {
+                    source: string;
+                    column: string;
+                } | {
+                    /** @enum {string} */
+                    aggregate: "count" | "sum" | "average" | "minimum" | "maximum";
+                    of?: {
+                        source: string;
+                        column: string;
+                    };
+                    places?: number;
+                };
+            }[];
+            where?: components["schemas"]["recordQueryDefinitionVersion200_schema1"];
+            groupBy: {
+                source: string;
+                column: string;
+            }[];
+            limit?: number;
+        };
+        recordQueryDefinitionVersion200_schema1: {
+            and: components["schemas"]["recordQueryDefinitionVersion200_schema1"][];
+        } | {
+            or: components["schemas"]["recordQueryDefinitionVersion200_schema1"][];
+        } | {
+            not: components["schemas"]["recordQueryDefinitionVersion200_schema1"];
+        } | {
+            column: {
+                source: string;
+                column: string;
+            };
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            } | {
+                column: {
+                    source: string;
+                    column: string;
+                };
+            };
+        };
+        recordQueryDefinitionVersion400_schema0: {
+            sources: ({
+                alias: string;
+                table: {
+                    schema: string;
+                    name: string;
+                };
+            } | {
+                alias: string;
+                query: components["schemas"]["recordQueryDefinitionVersion400_schema0"];
+            })[];
+            joins: {
+                /** @enum {string} */
+                kind: "inner" | "left";
+                source: string;
+                on: components["schemas"]["recordQueryDefinitionVersion400_schema1"];
+            }[];
+            select: {
+                name: string;
+                of: {
+                    source: string;
+                    column: string;
+                } | {
+                    /** @enum {string} */
+                    aggregate: "count" | "sum" | "average" | "minimum" | "maximum";
+                    of?: {
+                        source: string;
+                        column: string;
+                    };
+                    places?: number;
+                };
+            }[];
+            where?: components["schemas"]["recordQueryDefinitionVersion400_schema1"];
+            groupBy: {
+                source: string;
+                column: string;
+            }[];
+            limit?: number;
+        };
+        recordQueryDefinitionVersion400_schema1: {
+            and: components["schemas"]["recordQueryDefinitionVersion400_schema1"][];
+        } | {
+            or: components["schemas"]["recordQueryDefinitionVersion400_schema1"][];
+        } | {
+            not: components["schemas"]["recordQueryDefinitionVersion400_schema1"];
+        } | {
+            column: {
+                source: string;
+                column: string;
+            };
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            } | {
+                column: {
+                    source: string;
+                    column: string;
+                };
+            };
+        };
+        recordQueryDefinitionVersion409_schema0: {
+            sources: ({
+                alias: string;
+                table: {
+                    schema: string;
+                    name: string;
+                };
+            } | {
+                alias: string;
+                query: components["schemas"]["recordQueryDefinitionVersion409_schema0"];
+            })[];
+            joins: {
+                /** @enum {string} */
+                kind: "inner" | "left";
+                source: string;
+                on: components["schemas"]["recordQueryDefinitionVersion409_schema1"];
+            }[];
+            select: {
+                name: string;
+                of: {
+                    source: string;
+                    column: string;
+                } | {
+                    /** @enum {string} */
+                    aggregate: "count" | "sum" | "average" | "minimum" | "maximum";
+                    of?: {
+                        source: string;
+                        column: string;
+                    };
+                    places?: number;
+                };
+            }[];
+            where?: components["schemas"]["recordQueryDefinitionVersion409_schema1"];
+            groupBy: {
+                source: string;
+                column: string;
+            }[];
+            limit?: number;
+        };
+        recordQueryDefinitionVersion409_schema1: {
+            and: components["schemas"]["recordQueryDefinitionVersion409_schema1"][];
+        } | {
+            or: components["schemas"]["recordQueryDefinitionVersion409_schema1"][];
+        } | {
+            not: components["schemas"]["recordQueryDefinitionVersion409_schema1"];
+        } | {
+            column: {
+                source: string;
+                column: string;
+            };
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            } | {
+                column: {
+                    source: string;
+                    column: string;
+                };
+            };
+        };
+        recordQueryDefinitionVersionBody_schema0: {
+            sources: ({
+                alias: string;
+                table: {
+                    schema: string;
+                    name: string;
+                };
+            } | {
+                alias: string;
+                query: components["schemas"]["recordQueryDefinitionVersionBody_schema0"];
+            })[];
+            joins: {
+                /** @enum {string} */
+                kind: "inner" | "left";
+                source: string;
+                on: components["schemas"]["recordQueryDefinitionVersionBody_schema1"];
+            }[];
+            select: {
+                name: string;
+                of: {
+                    source: string;
+                    column: string;
+                } | {
+                    /** @enum {string} */
+                    aggregate: "count" | "sum" | "average" | "minimum" | "maximum";
+                    of?: {
+                        source: string;
+                        column: string;
+                    };
+                    places?: number;
+                };
+            }[];
+            where?: components["schemas"]["recordQueryDefinitionVersionBody_schema1"];
+            groupBy: {
+                source: string;
+                column: string;
+            }[];
+            limit?: number;
+        };
+        recordQueryDefinitionVersionBody_schema1: {
+            and: components["schemas"]["recordQueryDefinitionVersionBody_schema1"][];
+        } | {
+            or: components["schemas"]["recordQueryDefinitionVersionBody_schema1"][];
+        } | {
+            not: components["schemas"]["recordQueryDefinitionVersionBody_schema1"];
+        } | {
+            column: {
+                source: string;
+                column: string;
+            };
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            } | {
+                column: {
+                    source: string;
+                    column: string;
+                };
+            };
+        };
+        createQueryDefinition200_schema0: {
+            sources: ({
+                alias: string;
+                table: {
+                    schema: string;
+                    name: string;
+                };
+            } | {
+                alias: string;
+                query: components["schemas"]["createQueryDefinition200_schema0"];
+            })[];
+            joins: {
+                /** @enum {string} */
+                kind: "inner" | "left";
+                source: string;
+                on: components["schemas"]["createQueryDefinition200_schema1"];
+            }[];
+            select: {
+                name: string;
+                of: {
+                    source: string;
+                    column: string;
+                } | {
+                    /** @enum {string} */
+                    aggregate: "count" | "sum" | "average" | "minimum" | "maximum";
+                    of?: {
+                        source: string;
+                        column: string;
+                    };
+                    places?: number;
+                };
+            }[];
+            where?: components["schemas"]["createQueryDefinition200_schema1"];
+            groupBy: {
+                source: string;
+                column: string;
+            }[];
+            limit?: number;
+        };
+        createQueryDefinition200_schema1: {
+            and: components["schemas"]["createQueryDefinition200_schema1"][];
+        } | {
+            or: components["schemas"]["createQueryDefinition200_schema1"][];
+        } | {
+            not: components["schemas"]["createQueryDefinition200_schema1"];
+        } | {
+            column: {
+                source: string;
+                column: string;
+            };
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            } | {
+                column: {
+                    source: string;
+                    column: string;
+                };
+            };
+        };
+        createQueryDefinition400_schema0: {
+            sources: ({
+                alias: string;
+                table: {
+                    schema: string;
+                    name: string;
+                };
+            } | {
+                alias: string;
+                query: components["schemas"]["createQueryDefinition400_schema0"];
+            })[];
+            joins: {
+                /** @enum {string} */
+                kind: "inner" | "left";
+                source: string;
+                on: components["schemas"]["createQueryDefinition400_schema1"];
+            }[];
+            select: {
+                name: string;
+                of: {
+                    source: string;
+                    column: string;
+                } | {
+                    /** @enum {string} */
+                    aggregate: "count" | "sum" | "average" | "minimum" | "maximum";
+                    of?: {
+                        source: string;
+                        column: string;
+                    };
+                    places?: number;
+                };
+            }[];
+            where?: components["schemas"]["createQueryDefinition400_schema1"];
+            groupBy: {
+                source: string;
+                column: string;
+            }[];
+            limit?: number;
+        };
+        createQueryDefinition400_schema1: {
+            and: components["schemas"]["createQueryDefinition400_schema1"][];
+        } | {
+            or: components["schemas"]["createQueryDefinition400_schema1"][];
+        } | {
+            not: components["schemas"]["createQueryDefinition400_schema1"];
+        } | {
+            column: {
+                source: string;
+                column: string;
+            };
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            } | {
+                column: {
+                    source: string;
+                    column: string;
+                };
+            };
+        };
+        createQueryDefinition409_schema0: {
+            sources: ({
+                alias: string;
+                table: {
+                    schema: string;
+                    name: string;
+                };
+            } | {
+                alias: string;
+                query: components["schemas"]["createQueryDefinition409_schema0"];
+            })[];
+            joins: {
+                /** @enum {string} */
+                kind: "inner" | "left";
+                source: string;
+                on: components["schemas"]["createQueryDefinition409_schema1"];
+            }[];
+            select: {
+                name: string;
+                of: {
+                    source: string;
+                    column: string;
+                } | {
+                    /** @enum {string} */
+                    aggregate: "count" | "sum" | "average" | "minimum" | "maximum";
+                    of?: {
+                        source: string;
+                        column: string;
+                    };
+                    places?: number;
+                };
+            }[];
+            where?: components["schemas"]["createQueryDefinition409_schema1"];
+            groupBy: {
+                source: string;
+                column: string;
+            }[];
+            limit?: number;
+        };
+        createQueryDefinition409_schema1: {
+            and: components["schemas"]["createQueryDefinition409_schema1"][];
+        } | {
+            or: components["schemas"]["createQueryDefinition409_schema1"][];
+        } | {
+            not: components["schemas"]["createQueryDefinition409_schema1"];
+        } | {
+            column: {
+                source: string;
+                column: string;
+            };
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            } | {
+                column: {
+                    source: string;
+                    column: string;
+                };
+            };
+        };
+        createQueryDefinitionBody_schema0: {
+            sources: ({
+                alias: string;
+                table: {
+                    schema: string;
+                    name: string;
+                };
+            } | {
+                alias: string;
+                query: components["schemas"]["createQueryDefinitionBody_schema0"];
+            })[];
+            joins: {
+                /** @enum {string} */
+                kind: "inner" | "left";
+                source: string;
+                on: components["schemas"]["createQueryDefinitionBody_schema1"];
+            }[];
+            select: {
+                name: string;
+                of: {
+                    source: string;
+                    column: string;
+                } | {
+                    /** @enum {string} */
+                    aggregate: "count" | "sum" | "average" | "minimum" | "maximum";
+                    of?: {
+                        source: string;
+                        column: string;
+                    };
+                    places?: number;
+                };
+            }[];
+            where?: components["schemas"]["createQueryDefinitionBody_schema1"];
+            groupBy: {
+                source: string;
+                column: string;
+            }[];
+            limit?: number;
+        };
+        createQueryDefinitionBody_schema1: {
+            and: components["schemas"]["createQueryDefinitionBody_schema1"][];
+        } | {
+            or: components["schemas"]["createQueryDefinitionBody_schema1"][];
+        } | {
+            not: components["schemas"]["createQueryDefinitionBody_schema1"];
+        } | {
+            column: {
+                source: string;
+                column: string;
+            };
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            } | {
+                column: {
+                    source: string;
+                    column: string;
+                };
+            };
+        };
         createTemplateBody_schema0: {
             key: string;
             title: ({
@@ -5616,11 +6639,60 @@ export interface operations {
                             }[];
                         }[];
                     };
+                    /** @description A built query to describe instead of the source's tables and views: the columns its tree returns, from SQL the service generates, never run. Send this or sql, never both */
+                    builder?: {
+                        query: components["schemas"]["describeConnectionBody_schema0"];
+                        parameters: {
+                            name: string;
+                            type: {
+                                /** @constant */
+                                base: "text";
+                            } | {
+                                /** @constant */
+                                base: "integer";
+                            } | {
+                                /** @constant */
+                                base: "decimal";
+                                precision: number;
+                                scale: number;
+                            } | {
+                                /** @constant */
+                                base: "date";
+                            } | {
+                                /** @constant */
+                                base: "time";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "localDateTime";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "instant";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "boolean";
+                            };
+                            required: boolean;
+                            list: boolean;
+                            permitted?: {
+                                values: (string | boolean | null)[];
+                            } | {
+                                minimum?: string | boolean | null;
+                                maximum?: string | boolean | null;
+                            };
+                            variation?: {
+                                key: string;
+                                sql: string;
+                            }[];
+                        }[];
+                    };
                 };
             };
         };
         responses: {
-            /** @description The source's tables and views, or, where a statement was sent, its result's columns */
+            /** @description The source's tables and views, or, where a statement or a built query was sent, its result's columns */
             200: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -5703,7 +6775,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `definition_invalid`: the statement does not lex whole or names a parameter it does not declare; `source_refused`: the source refused the statement, with what it said; `result_mismatch`: it has no columns to describe */
+            /** @description `definition_invalid`: the statement does not lex whole or names a parameter it does not declare, or the built query fails the builder's rules, each problem named, or both were sent; `source_refused`: the source refused the statement, with its SQLSTATE, and what it said only to a caller who may write SQL on the connection; a built query's commonest refusals are worded by their SQLSTATE; `result_mismatch`: it has no columns to describe */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -5767,7 +6839,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may read the connection but may not use it, or, for a statement, may not write SQL against it */
+            /** @description The caller may read the connection but may not use it, or, for a statement, may not write SQL against it. A built query needs use connection alone */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -5807,7 +6879,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, or it was set before credentials were bound to a target, so the password must be set again; `sql_not_permitted`: for a statement, the connection has not been tested clean at its latest version and credential (`untested`), or its account was found able to write (`not_read_only`) */
+            /** @description `connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, or it was set before credentials were bound to a target, so the password must be set again; `sql_not_permitted`: for SQL, the connection has not been tested clean at its latest version and credential (`untested`), or its account was found able to write (`not_read_only`). A built query is never refused this way */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -6057,6 +7129,12 @@ export interface operations {
                             /** @constant */
                             kind: "sql";
                             text: string;
+                        } | {
+                            /** @constant */
+                            kind: "builder";
+                            /** @constant */
+                            format: 1;
+                            query: components["schemas"]["sampleConnectionBody_schema0"];
                         };
                         columns: {
                             name: string;
@@ -6247,7 +7325,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may read the connection but may not use it or write SQL against it */
+            /** @description The caller may read the connection but may not use it, or, for a draft of SQL, may not write SQL against it. A built query needs use connection alone */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -6287,7 +7365,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, or it was set before credentials were bound to a target, so the password must be set again; `sql_not_permitted`: for a statement, the connection has not been tested clean at its latest version and credential (`untested`), or its account was found able to write (`not_read_only`) */
+            /** @description `connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, or it was set before credentials were bound to a target, so the password must be set again; `sql_not_permitted`: for SQL, the connection has not been tested clean at its latest version and credential (`untested`), or its account was found able to write (`not_read_only`). A built query is never refused this way */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -17975,6 +19053,12 @@ export interface operations {
                                 /** @constant */
                                 kind: "sql";
                                 text: string;
+                            } | {
+                                /** @constant */
+                                kind: "builder";
+                                /** @constant */
+                                format: 1;
+                                query: components["schemas"]["getQueryDefinition200_schema0"];
                             };
                             columns: {
                                 name: string;
@@ -18041,9 +19125,9 @@ export interface operations {
                             identity: "service" | "endUser";
                             retired: boolean;
                         } | null;
-                        /** @description Whether the caller may cut its next version: edit on it, and use connection and write SQL on its connection */
+                        /** @description Whether the caller may cut its next version: edit on it and use connection on its connection, and for SQL write SQL there as well */
                         mayEdit: boolean;
-                        /** @description Whether the caller may describe and sample SQL against its connection */
+                        /** @description Whether the caller may describe and sample its query against its connection: use connection there, and for SQL write SQL as well */
                         mayRun: boolean;
                     };
                 };
@@ -18376,6 +19460,12 @@ export interface operations {
                             /** @constant */
                             kind: "sql";
                             text: string;
+                        } | {
+                            /** @constant */
+                            kind: "builder";
+                            /** @constant */
+                            format: 1;
+                            query: components["schemas"]["recordQueryDefinitionVersionBody_schema0"];
                         };
                         columns: {
                             name: string;
@@ -18568,6 +19658,12 @@ export interface operations {
                                 /** @constant */
                                 kind: "sql";
                                 text: string;
+                            } | {
+                                /** @constant */
+                                kind: "builder";
+                                /** @constant */
+                                format: 1;
+                                query: components["schemas"]["recordQueryDefinitionVersion200_schema0"];
                             };
                             columns: {
                                 name: string;
@@ -18634,9 +19730,9 @@ export interface operations {
                             identity: "service" | "endUser";
                             retired: boolean;
                         } | null;
-                        /** @description Whether the caller may cut its next version: edit on it, and use connection and write SQL on its connection */
+                        /** @description Whether the caller may cut its next version: edit on it and use connection on its connection, and for SQL write SQL there as well */
                         mayEdit: boolean;
-                        /** @description Whether the caller may describe and sample SQL against its connection */
+                        /** @description Whether the caller may describe and sample its query against its connection: use connection there, and for SQL write SQL as well */
                         mayRun: boolean;
                     };
                 };
@@ -18747,6 +19843,12 @@ export interface operations {
                                     /** @constant */
                                     kind: "sql";
                                     text: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "builder";
+                                    /** @constant */
+                                    format: 1;
+                                    query: components["schemas"]["recordQueryDefinitionVersion400_schema0"];
                                 };
                                 columns: {
                                     name: string;
@@ -18813,9 +19915,9 @@ export interface operations {
                                 identity: "service" | "endUser";
                                 retired: boolean;
                             } | null;
-                            /** @description Whether the caller may cut its next version: edit on it, and use connection and write SQL on its connection */
+                            /** @description Whether the caller may cut its next version: edit on it and use connection on its connection, and for SQL write SQL there as well */
                             mayEdit: boolean;
-                            /** @description Whether the caller may describe and sample SQL against its connection */
+                            /** @description Whether the caller may describe and sample its query against its connection: use connection there, and for SQL write SQL as well */
                             mayRun: boolean;
                         };
                     };
@@ -18841,7 +19943,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may read the definition but may not edit it, or does not hold use connection and write SQL on the connection */
+            /** @description The caller may read the definition but may not edit it, or does not hold use connection on the connection, or for SQL write SQL there */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -18881,7 +19983,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `version_precondition`: the definition has a newer version than the one named, answered with it; `connection_retired`: the connection it names is retired; `sql_not_permitted`: the connection has not been tested clean at its latest version and credential, or its account was found able to write, and SQL is refused on it */
+            /** @description `version_precondition`: the definition has a newer version than the one named, answered with it; `connection_retired`: the connection it names is retired; `sql_not_permitted`: for SQL, the connection has not been tested clean at its latest version and credential, or its account was found able to write, and SQL is refused on it. A built query is never refused this way */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -18987,6 +20089,12 @@ export interface operations {
                                     /** @constant */
                                     kind: "sql";
                                     text: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "builder";
+                                    /** @constant */
+                                    format: 1;
+                                    query: components["schemas"]["recordQueryDefinitionVersion409_schema0"];
                                 };
                                 columns: {
                                     name: string;
@@ -19053,9 +20161,9 @@ export interface operations {
                                 identity: "service" | "endUser";
                                 retired: boolean;
                             } | null;
-                            /** @description Whether the caller may cut its next version: edit on it, and use connection and write SQL on its connection */
+                            /** @description Whether the caller may cut its next version: edit on it and use connection on its connection, and for SQL write SQL there as well */
                             mayEdit: boolean;
-                            /** @description Whether the caller may describe and sample SQL against its connection */
+                            /** @description Whether the caller may describe and sample its query against its connection: use connection there, and for SQL write SQL as well */
                             mayRun: boolean;
                         };
                     };
@@ -22146,6 +23254,12 @@ export interface operations {
                             /** @constant */
                             kind: "sql";
                             text: string;
+                        } | {
+                            /** @constant */
+                            kind: "builder";
+                            /** @constant */
+                            format: 1;
+                            query: components["schemas"]["createQueryDefinitionBody_schema0"];
                         };
                         columns: {
                             name: string;
@@ -22338,6 +23452,12 @@ export interface operations {
                                 /** @constant */
                                 kind: "sql";
                                 text: string;
+                            } | {
+                                /** @constant */
+                                kind: "builder";
+                                /** @constant */
+                                format: 1;
+                                query: components["schemas"]["createQueryDefinition200_schema0"];
                             };
                             columns: {
                                 name: string;
@@ -22404,9 +23524,9 @@ export interface operations {
                             identity: "service" | "endUser";
                             retired: boolean;
                         } | null;
-                        /** @description Whether the caller may cut its next version: edit on it, and use connection and write SQL on its connection */
+                        /** @description Whether the caller may cut its next version: edit on it and use connection on its connection, and for SQL write SQL there as well */
                         mayEdit: boolean;
-                        /** @description Whether the caller may describe and sample SQL against its connection */
+                        /** @description Whether the caller may describe and sample its query against its connection: use connection there, and for SQL write SQL as well */
                         mayRun: boolean;
                     };
                 };
@@ -22517,6 +23637,12 @@ export interface operations {
                                     /** @constant */
                                     kind: "sql";
                                     text: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "builder";
+                                    /** @constant */
+                                    format: 1;
+                                    query: components["schemas"]["createQueryDefinition400_schema0"];
                                 };
                                 columns: {
                                     name: string;
@@ -22583,9 +23709,9 @@ export interface operations {
                                 identity: "service" | "endUser";
                                 retired: boolean;
                             } | null;
-                            /** @description Whether the caller may cut its next version: edit on it, and use connection and write SQL on its connection */
+                            /** @description Whether the caller may cut its next version: edit on it and use connection on its connection, and for SQL write SQL there as well */
                             mayEdit: boolean;
-                            /** @description Whether the caller may describe and sample SQL against its connection */
+                            /** @description Whether the caller may describe and sample its query against its connection: use connection there, and for SQL write SQL as well */
                             mayRun: boolean;
                         };
                     };
@@ -22611,7 +23737,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not edit in the space, or does not hold use connection and write SQL on the connection */
+            /** @description The caller may not edit in the space, or does not hold use connection on the connection, or for SQL write SQL there */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -22651,7 +23777,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `connection_retired`: the connection it names is retired; `sql_not_permitted`: the connection has not been tested clean at its latest version and credential, or its account was found able to write, and SQL is refused on it */
+            /** @description `connection_retired`: the connection it names is retired; `sql_not_permitted`: for SQL, the connection has not been tested clean at its latest version and credential, or its account was found able to write, and SQL is refused on it. A built query is never refused this way */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -22757,6 +23883,12 @@ export interface operations {
                                     /** @constant */
                                     kind: "sql";
                                     text: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "builder";
+                                    /** @constant */
+                                    format: 1;
+                                    query: components["schemas"]["createQueryDefinition409_schema0"];
                                 };
                                 columns: {
                                     name: string;
@@ -22823,9 +23955,9 @@ export interface operations {
                                 identity: "service" | "endUser";
                                 retired: boolean;
                             } | null;
-                            /** @description Whether the caller may cut its next version: edit on it, and use connection and write SQL on its connection */
+                            /** @description Whether the caller may cut its next version: edit on it and use connection on its connection, and for SQL write SQL there as well */
                             mayEdit: boolean;
-                            /** @description Whether the caller may describe and sample SQL against its connection */
+                            /** @description Whether the caller may describe and sample its query against its connection: use connection there, and for SQL write SQL as well */
                             mayRun: boolean;
                         };
                     };

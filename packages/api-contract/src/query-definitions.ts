@@ -48,11 +48,13 @@ export const QueryDefinitionView = z.object({
   mayEdit: z
     .boolean()
     .describe(
-      'Whether the caller may cut its next version: edit on it, and use connection and write SQL on its connection',
+      'Whether the caller may cut its next version: edit on it and use connection on its connection, and for SQL write SQL there as well',
     ),
   mayRun: z
     .boolean()
-    .describe('Whether the caller may describe and sample SQL against its connection'),
+    .describe(
+      'Whether the caller may describe and sample its query against its connection: use connection there, and for SQL write SQL as well',
+    ),
 });
 export type QueryDefinitionView = z.infer<typeof QueryDefinitionView>;
 
@@ -127,15 +129,15 @@ const definitionRefused = {
 } as const;
 const onTheConnection = {
   description:
-    '`connection_retired`: the connection it names is retired; `sql_not_permitted`: the connection has not been tested clean ' +
-    'at its latest version and credential, or its account was found able to write, and SQL is refused on it',
+    '`connection_retired`: the connection it names is retired; `sql_not_permitted`: for SQL, the connection has not been tested clean ' +
+    'at its latest version and credential, or its account was found able to write, and SQL is refused on it. A built query is never refused this way',
   schema: QueryDefinitionRefusal,
 } as const;
 
 /**
- * Query definitions (data.md, "Routes"; the D2 plan, task 4): `edit` in the space makes and changes
- * one, with `use_connection` and `write_sql` on the connection it names, decided at the connection;
- * `read` shows one.
+ * Query definitions (data.md, "Routes"; the D2 plan, task 4; the D4 plan, D4-J): `edit` in the space
+ * makes and changes one, with `use_connection` on the connection it names and, for SQL, `write_sql`,
+ * decided at the connection by each version's own fetch; `read` shows one.
  */
 export const queryDefinitionRoutes = {
   listQueryDefinitions: {
@@ -170,7 +172,7 @@ export const queryDefinitionRoutes = {
       401: unauthenticated,
       403: {
         description:
-          'The caller may not edit in the space, or does not hold use connection and write SQL on the connection',
+          'The caller may not edit in the space, or does not hold use connection on the connection, or for SQL write SQL there',
         schema: ErrorBody,
       },
       404: {
@@ -218,7 +220,7 @@ export const queryDefinitionRoutes = {
       401: unauthenticated,
       403: {
         description:
-          'The caller may read the definition but may not edit it, or does not hold use connection and write SQL on the connection',
+          'The caller may read the definition but may not edit it, or does not hold use connection on the connection, or for SQL write SQL there',
         schema: ErrorBody,
       },
       404: notFound,

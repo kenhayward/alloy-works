@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import type { ConnectionSettings } from './connection.js';
+import type { Condition, Query } from './builder.js';
 import type { DraftDefinition } from './definition.js';
 import {
   childRequestSchema,
@@ -257,7 +258,7 @@ describe("the connector's protocol", () => {
   });
 });
 
-const draft: DraftDefinition = {
+const draft: DraftDefinition & { fetch: { kind: 'sql'; text: string } } = {
   schemaVersion: 1,
   connection: '0b6a3c4d-1e2f-4a5b-8c7d-9e0f1a2b3c4d',
   parameters: [{ name: 'site', type: { base: 'integer' }, required: true, list: false }],
@@ -396,5 +397,109 @@ describe("the connector's protocol for a run and a SQL describe (the D2 plan)", 
     expect(describing('select {{#site}}')).toBe(false);
     expect(describing('select 1', [...draft.parameters, ...draft.parameters])).toBe(false);
     expect(RUN_REQUEST_MAX_BYTES).toBe(1024 * 1024 + 64 * 1024);
+  });
+});
+
+describe("the connector's protocol for a built query (the D4 plan)", () => {
+  const query: Query = {
+    sources: [{ alias: 's', table: { schema: 'sample', name: 'site' } }],
+    joins: [],
+    select: [
+      { name: 'id', of: { source: 's', column: 'id' } },
+      { name: 'name', of: { source: 's', column: 'name' } },
+    ],
+    where: { column: { source: 's', column: 'id' }, is: 'equal', to: { parameter: 'site' } },
+    groupBy: [],
+  };
+  const built: DraftDefinition = {
+    ...draft,
+    fetch: { kind: 'builder', format: 1, query },
+  };
+
+  it('takes a run of a built query, and a describe of one with the parameters it declares', () => {
+    const run = { ...runRequest, definition: built };
+    expect(runRequestSchema.parse(JSON.parse(JSON.stringify(run)))).toEqual(run);
+    const describing = { ...testRequest, builder: { query, parameters: draft.parameters } };
+    expect(describeSqlRequestSchema.parse(JSON.parse(JSON.stringify(describing)))).toEqual(
+      describing,
+    );
+    const child = {
+      kind: 'describeSql',
+      request: describing,
+      secret: 'invented-password',
+      deny: [],
+      connectTimeoutMs: 5000,
+      failureFloorMs: 5000,
+    };
+    expect(childRequestSchema.parse(child)).toEqual(child);
+  });
+
+  it("refuses a describe of a built query that fails the builder's checks, or of both kinds at once", () => {
+    const describing = (value: object) =>
+      describeSqlRequestSchema.safeParse({ ...testRequest, ...value }).success;
+    expect(describing({ builder: { query, parameters: draft.parameters } })).toBe(true);
+    // A parameter it does not declare, or one declared and unused.
+    expect(describing({ builder: { query, parameters: [] } })).toBe(false);
+    expect(
+      describing({
+        builder: {
+          query: { ...query, where: undefined },
+          parameters: draft.parameters,
+        },
+      }),
+    ).toBe(false);
+    // A source out of scope, a tree too deep, and SQL beside a tree.
+    expect(
+      describing({
+        builder: {
+          query: { ...query, select: [{ name: 'id', of: { source: 'q', column: 'id' } }] },
+          parameters: draft.parameters,
+        },
+      }),
+    ).toBe(false);
+    let where: Condition = query.where!;
+    for (let at = 0; at < 10_000; at += 1) where = { not: where };
+    expect(
+      describing({ builder: { query: { ...query, where }, parameters: draft.parameters } }),
+    ).toBe(false);
+    expect(
+      describing({
+        sql: { text: draft.fetch.text, parameters: draft.parameters },
+        builder: { query, parameters: draft.parameters },
+      }),
+    ).toBe(false);
+    // A run's built definition is held to every check, its columns among them.
+    const run = (definition: object) =>
+      runRequestSchema.safeParse({ ...runRequest, definition }).success;
+    expect(run(built)).toBe(true);
+    expect(
+      run({
+        ...built,
+        columns: [built.columns[0]],
+        key: ['id'],
+        order: [{ column: 'id', direction: 'ascending' }],
+      }),
+    ).toBe(false);
+  });
+
+  it("names the walk's refusal of a built describe, and a describe of a check it fails", () => {
+    let where: Condition = query.where!;
+    for (let at = 0; at < 10_000; at += 1) where = { not: where };
+    const deep = describeSqlRequestSchema.safeParse({
+      ...testRequest,
+      builder: { query: { ...query, where }, parameters: draft.parameters },
+    });
+    expect(deep.success).toBe(false);
+    expect(deep.error!.issues.map((issue) => [issue.path.join('.'), issue.message])).toEqual([
+      ['builder.query', 'A condition nests at most 8 deep'],
+    ]);
+
+    const unused = describeSqlRequestSchema.safeParse({
+      ...testRequest,
+      builder: { query, parameters: [] },
+    });
+    expect(unused.error!.issues.map((issue) => issue.message)).toEqual([
+      "A built query passes the builder's checks, each parameter declared once and used",
+    ]);
   });
 });
