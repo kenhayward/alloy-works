@@ -13,6 +13,17 @@ const bindingNode = editorSchema.nodes.binding!;
 export type BindingFailureShown = TakeFailure | 'unavailable';
 
 /**
+ * A failure as the host tells it: `take_invalid` with the column, taken or key, the version does not
+ * have - the take's outcome names it, so the words never guess which - and `value_many` with its
+ * count.
+ */
+export type BindingFailureHeld = {
+  readonly [K in BindingFailureShown]: K extends 'take_invalid'
+    ? { readonly failure: K; readonly column: string }
+    : { readonly failure: K; readonly count?: number };
+}[BindingFailureShown];
+
+/**
  * What the document holds for one binding, as the host tells the surface (B1-J): the binding the view
  * answered for, as `bindingDigestInput` spells it - compared as a string, with no hash in the browser -
  * and what it shows: the value formatted by the document's theme, whether a newer result waits, or why
@@ -20,9 +31,7 @@ export type BindingFailureShown = TakeFailure | 'unavailable';
  */
 export interface BindingHeld {
   readonly binding: string;
-  readonly shown:
-    | { readonly value: string; readonly waiting: boolean }
-    | { readonly failure: BindingFailureShown; readonly count?: number };
+  readonly shown: { readonly value: string; readonly waiting: boolean } | BindingFailureHeld;
 }
 
 /**
@@ -99,13 +108,13 @@ const keyWords = (key: Readonly<Record<string, string | boolean>>): string =>
 
 /**
  * **The words each failure shows** (B1-J), keyed by the literal union so a code the view gains is a
- * compile error here, not a silent gap: the count, the key and the column read from the binding as
- * the editor holds it.
+ * compile error here, not a silent gap: the count and the missing column as the host tells them, the
+ * key read from the binding as the editor holds it.
  */
 export const BINDING_FAILURE_WORDS = {
-  take_invalid: (binding) => `No value - the definition has no column ${binding.take.column}`,
+  take_invalid: (_binding, held) => `No value - the definition has no column ${held.column}`,
   value_none: () => 'No value - the query returned no rows',
-  value_many: (_binding, count) => `No value - the query returned ${count ?? 'several'} rows`,
+  value_many: (_binding, held) => `No value - the query returned ${held.count ?? 'several'} rows`,
   row_missing: (binding) =>
     'key' in binding.take
       ? `No value - no row where ${keyWords(binding.take.key)}`
@@ -113,7 +122,19 @@ export const BINDING_FAILURE_WORDS = {
   value_null: () => 'No value - empty',
   value_empty: () => 'No value - empty',
   unavailable: () => 'No value - the result cannot be read',
-} satisfies Record<BindingFailureShown, (binding: Binding, count?: number) => string>;
+} satisfies {
+  readonly [K in BindingFailureShown]: (
+    binding: Binding,
+    held: Extract<BindingFailureHeld, { readonly failure: K }>,
+  ) => string;
+};
+
+/** The words for one failure: the record indexed by a union cannot correlate it with its argument. */
+const failureWords = (binding: Binding, held: BindingFailureHeld): string =>
+  (BINDING_FAILURE_WORDS[held.failure] as (binding: Binding, held: BindingFailureHeld) => string)(
+    binding,
+    held,
+  );
 
 /** A binding node's attributes as the component stores the binding. */
 export function storedBinding(node: Node): Binding {
@@ -162,7 +183,7 @@ function shownFor(
   if (held === undefined) return failed(NEVER_RESOLVED);
   if (held.binding !== bindingDigestInput(binding)) return failed(CHANGED_SINCE_RESOLVED);
   if ('failure' in held.shown) {
-    return failed(BINDING_FAILURE_WORDS[held.shown.failure](binding, held.shown.count), true);
+    return failed(failureWords(binding, held.shown), true);
   }
   return held.shown.waiting
     ? {

@@ -77,6 +77,7 @@ export {
   REVISION_WAITING,
   storedBinding,
   type BindingContext,
+  type BindingFailureHeld,
   type BindingFailureShown,
   type BindingHeld,
   type BindingSelected,

@@ -110,20 +110,54 @@ describe('takeValue', () => {
     ).toEqual({ failure: 'row_missing' });
   });
 
-  it("fails a column, or a key column, that the provenance's declared columns do not have, before looking at a row", () => {
-    expect(takeValue({ column: 'width' }, result(), COLUMNS)).toEqual({ failure: 'take_invalid' });
+  it("fails a column, or a key column, that the provenance's declared columns do not have, before looking at a row, naming it", () => {
+    expect(takeValue({ column: 'width' }, result(), COLUMNS)).toEqual({
+      failure: 'take_invalid',
+      column: 'width',
+    });
+    // A missing key column is named, not the column taken, which the version does declare.
     expect(
       takeValue(
         { key: { region: 'north' }, column: 'depth' },
         result(['north', '1', 'a', true]),
         COLUMNS,
       ),
-    ).toEqual({ failure: 'take_invalid' });
+    ).toEqual({ failure: 'take_invalid', column: 'region' });
     // The columns are the provenance's: a column the result holds but the version never declared is
     // not taken.
     expect(
       takeValue({ column: 'flag' }, result(['north', '1', 'a', true]), COLUMNS.slice(0, 3)),
-    ).toEqual({ failure: 'take_invalid' });
+    ).toEqual({ failure: 'take_invalid', column: 'flag' });
+  });
+
+  it("fails a column the version declares but the result's own columns do not hold, rather than read an absent cell", () => {
+    const withoutFlag: CanonicalResult = {
+      columns: [
+        ['site', 'text'],
+        ['depth', 'decimal'],
+        ['note', 'text'],
+      ],
+      rows: [['north', '1', 'a']],
+    };
+    expect(takeValue({ column: 'flag' }, withoutFlag, COLUMNS)).toEqual({
+      failure: 'take_invalid',
+      column: 'flag',
+    });
+    expect(takeValue({ key: { flag: true }, column: 'depth' }, withoutFlag, COLUMNS)).toEqual({
+      failure: 'take_invalid',
+      column: 'flag',
+    });
+  });
+
+  it('answers many rows before a null in the first of them, and a keyed take of no rows as no row the key names', () => {
+    const firstNull = result(['north', null, 'a', true], ['south', '3', 'b', false]);
+    expect(takeValue({ column: 'depth' }, firstNull, COLUMNS)).toEqual({
+      failure: 'value_many',
+      count: 2,
+    });
+    expect(takeValue({ key: { site: 'north' }, column: 'depth' }, result(), COLUMNS)).toEqual({
+      failure: 'row_missing',
+    });
   });
 
   it('reads a text of White_Space alone as empty, U+0085 among them, and one holding U+FEFF or U+200B as a value', () => {
@@ -158,7 +192,13 @@ describe('takeOutcomeSchema', () => {
     expect(parses({ value: '12.5', column: DEPTH })).toBe(true);
     expect(parses({ value: true, column: { name: 'flag', type: { base: 'boolean' } } })).toBe(true);
     expect(parses({ failure: 'value_many', count: 2 })).toBe(true);
-    for (const failure of TAKE_FAILURES.filter((each) => each !== 'value_many')) {
+    expect(parses({ failure: 'take_invalid', column: 'region' })).toBe(true);
+    expect(parses({ value: '42', column: { name: 'n', type: { base: 'integer' } } })).toBe(true);
+    const ZWSP = String.fromCodePoint(0x200b);
+    expect(parses({ value: ZWSP, column: { name: 'note', type: { base: 'text' } } })).toBe(true);
+    for (const failure of TAKE_FAILURES.filter(
+      (each) => each !== 'value_many' && each !== 'take_invalid',
+    )) {
       expect(parses({ failure }), failure).toBe(true);
       expect(parses({ failure, count: 2 }), failure).toBe(false);
     }
@@ -177,6 +217,27 @@ describe('takeOutcomeSchema', () => {
       { value: '1' },
       { value: '1', column: DEPTH, failure: 'value_none' },
       { failure: 'value_none', reason: 'x' },
+      // take_invalid names the column it lacks, and nothing else does.
+      { failure: 'take_invalid' },
+      { failure: 'take_invalid', column: '' },
+      { failure: 'take_invalid', column: 7 },
+      { failure: 'value_none', column: 'depth' },
+      { failure: 'value_many', count: 2, column: 'depth' },
+    ]) {
+      expect(parses(loose), JSON.stringify(loose)).toBe(false);
+    }
+  });
+
+  it('refuses a value takeValue never answers: one not canonical in its declared type, or a text of spaces alone', () => {
+    const NOTE = { name: 'note', type: { base: 'text' } } as const;
+    for (const loose of [
+      { value: '', column: NOTE },
+      { value: ' \t', column: NOTE },
+      { value: String.fromCodePoint(0x85), column: NOTE },
+      { value: true, column: DEPTH },
+      { value: '12.50', column: DEPTH },
+      { value: 'abc', column: { name: 'n', type: { base: 'integer' } } },
+      { value: 'true', column: { name: 'flag', type: { base: 'boolean' } } },
     ]) {
       expect(parses(loose), JSON.stringify(loose)).toBe(false);
     }

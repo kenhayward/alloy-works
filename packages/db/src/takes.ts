@@ -2,7 +2,6 @@ import {
   parseProvenance,
   takeDigestInput,
   takeOutcomeSchema,
-  valueProblem,
   type Binding,
   type TakeOutcome,
 } from '@alloy-works/domain';
@@ -36,9 +35,10 @@ export interface StoredTake {
 /**
  * Records what a take of a dataset version gave (B1-H): **the one writer of `dataset_take`**, called by
  * resolve and check in their recording transactions and by the bindings view on a miss. The outcome is
- * held to `takeOutcomeSchema`, strict; a value to the column its version's provenance declares under
- * that name, with that type, and to that type's canonical spelling (`valueProblem`), so nothing stored
- * says what `takeValue` would not. A row already held for the version and the take is kept: the outcome
+ * held to `takeOutcomeSchema`, strict - a value canonical in its column's type and not a text of
+ * `White_Space` alone, a `take_invalid` naming its column - and a value to the column its version's
+ * provenance declares under that name, with that type, so nothing stored says what `takeValue` would
+ * not. A row already held for the version and the take is kept: the outcome
  * is a function of the two, and a second writer computed the same. Throws on anything else - a version
  * that is not a dataset's, an outcome not of its shape - since every caller took it with `takeValue`.
  */
@@ -64,9 +64,6 @@ export async function recordTake(
       throw new Error(
         `Dataset version ${input.version} declares no column ${outcome.column.name} of that type`,
       );
-    }
-    if (valueProblem(declared.type, outcome.value) !== null) {
-      throw new Error(`A taken value is not written in its column's canonical form`);
     }
   }
   await trx

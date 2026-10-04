@@ -122,8 +122,12 @@ describe('bindingsShown, in a document (B1-J)', () => {
     );
     expect(failing({ failure: 'value_null' })).toEqual(failed('No value - empty'));
     expect(failing({ failure: 'value_empty' })).toEqual(failed('No value - empty'));
-    expect(failing({ failure: 'take_invalid' })).toEqual(
+    expect(failing({ failure: 'take_invalid', column: 'depth' })).toEqual(
       failed('No value - the definition has no column depth'),
+    );
+    // A key column the version lacks is the one named, never the column taken, which it has.
+    expect(failing({ failure: 'take_invalid', column: 'site' })).toEqual(
+      failed('No value - the definition has no column site'),
     );
     expect(failing({ failure: 'unavailable' })).toEqual(
       failed('No value - the result cannot be read'),
@@ -216,7 +220,8 @@ describe('the words a binding shows', () => {
       { failure: 'value_many', count: 2 },
       { failure: 'row_missing' },
       { failure: 'value_null' },
-      { failure: 'take_invalid' },
+      { failure: 'value_empty' },
+      { failure: 'take_invalid', column: 'site' },
       { failure: 'unavailable' },
       { value: 'x', waiting: true },
     ];
@@ -332,7 +337,7 @@ function decorationsOf(state: EditorState): Decoration[] {
 }
 
 describe("a surface's binding context (B1-D)", () => {
-  it('is null unless the state is made with one, and set by a transaction no undo takes back', () => {
+  it('is null unless the state is made with one, and set without changing the document', () => {
     const doc = docOf();
     const view = fakeView(createEditorState({ doc, newIdentifier: counter() }));
     expect(bindingContextOf(view.state)).toBeNull();

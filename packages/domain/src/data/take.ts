@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { canonicalJson } from '../stored/canonical.js';
 import type { Binding } from './binding.js';
-import type { CanonicalResult, CanonicalValue } from './canonical.js';
+import { valueProblem, type CanonicalResult, type CanonicalValue } from './canonical.js';
 import { valueTypeSchema, type ValueType } from './columns.js';
 import type { Column } from './definition.js';
 
@@ -27,39 +27,53 @@ type Take = Binding['take'];
 /**
  * What a take gave: the cell, a string or a boolean in its canonical form, with the column it was
  * declared as - its name and its type, never its source `from`, which only a reader of the definition
- * may see - or the failure, with the count where there were many rows.
+ * may see - or the failure, with the count where there were many rows, and for `take_invalid` the
+ * column, taken or key, the version does not have.
  */
 export type TakeOutcome =
   | {
       readonly value: string | boolean;
       readonly column: { readonly name: string; readonly type: ValueType };
     }
-  | { readonly failure: TakeFailure; readonly count?: number };
+  | { readonly failure: TakeFailure; readonly count?: number; readonly column?: string };
+
+/** Every code point `White_Space` (Q4): `\s` would take U+FEFF and leave U+0085. */
+const SPACES_ALONE = /^\p{White_Space}*$/u;
 
 /**
  * The outcome, strict at every level, as `dataset_take` holds it (stored-shape row 7): a value with
- * exactly its column, or exactly a failure, `count` an integer above 1 present exactly for
- * `value_many`. Whether the value is canonical in its column's type is the writer's (`recordTake`).
+ * exactly its column, canonical in the column's type (`valueProblem`) and, for text, not `White_Space`
+ * alone - nothing `takeValue` would not answer - or exactly a failure, `count` an integer above 1
+ * present exactly for `value_many`, `column` a name present exactly for `take_invalid`. Whether the
+ * column is the version's is the writer's (`recordTake`).
  */
-// Cast only for `exactOptionalPropertyTypes`: zod infers an optional `count` as `number | undefined`,
-// and a strict parse never yields an `undefined` it was not given.
+// Cast only for `exactOptionalPropertyTypes`: zod infers an optional member as `T | undefined`, and a
+// strict parse never yields an `undefined` it was not given.
 export const takeOutcomeSchema = z.union([
-  z.strictObject({
-    value: z.union([z.string(), z.boolean()]),
-    column: z.strictObject({ name: z.string().min(1), type: valueTypeSchema }),
-  }),
+  z
+    .strictObject({
+      value: z.union([z.string(), z.boolean()]),
+      column: z.strictObject({ name: z.string().min(1), type: valueTypeSchema }),
+    })
+    .refine((outcome) => valueProblem(outcome.column.type, outcome.value) === null, {
+      message: "A value is written in its column's canonical form",
+    })
+    .refine((outcome) => typeof outcome.value !== 'string' || !SPACES_ALONE.test(outcome.value), {
+      message: 'A text of White_Space alone is value_empty, never a value',
+    }),
   z
     .strictObject({
       failure: z.enum(TAKE_FAILURES),
       count: z.number().int().min(2).optional(),
+      column: z.string().min(1).optional(),
     })
     .refine((outcome) => (outcome.failure === 'value_many') === (outcome.count !== undefined), {
       message: 'A count is given exactly where there were many rows',
+    })
+    .refine((outcome) => (outcome.failure === 'take_invalid') === (outcome.column !== undefined), {
+      message: 'A column is named exactly where the version does not have it',
     }),
 ]) as unknown as z.ZodType<TakeOutcome>;
-
-/** Every code point `White_Space` (Q4): `\s` would take U+FEFF and leave U+0085. */
-const SPACES_ALONE = /^\p{White_Space}*$/u;
 
 /**
  * **The one rule a value is taken by** (B1-E; DAT-031, DAT-032), pure: the page, the editor and the
@@ -67,7 +81,8 @@ const SPACES_ALONE = /^\p{White_Space}*$/u;
  * version's provenance's - what the result was run as - never the definition's latest, which a
  * floating definition can have changed since.
  *
- * In this order: a column, or a key column, the provenance does not declare is `take_invalid`; a
+ * In this order: a column, or a key column, the provenance does not declare, or the result does not
+ * hold, is `take_invalid`, naming it; a
  * `{ column }` take of no rows is `value_none`, of more than one `value_many` with the count, never the
  * first; a `{ key, column }` take matches each row on every key column by canonical equality - a
  * string to a string, a boolean to a boolean - and finds none `row_missing` or more than one
@@ -83,7 +98,7 @@ export function takeValue(
   const index = new Map(result.columns.map(([name], at) => [name, at]));
   const keyNames = 'key' in take ? Object.keys(take.key) : [];
   for (const name of [take.column, ...keyNames]) {
-    if (!declared.has(name) || !index.has(name)) return { failure: 'take_invalid' };
+    if (!declared.has(name) || !index.has(name)) return { failure: 'take_invalid', column: name };
   }
 
   let rows: readonly (readonly CanonicalValue[])[] = result.rows;

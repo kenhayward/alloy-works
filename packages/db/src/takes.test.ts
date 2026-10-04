@@ -152,9 +152,12 @@ describe('dataset_take', () => {
     const keyed = { key: { site: 'site 1' }, column: 'depth' } as const;
     const value: TakeOutcome = { value: '12.5', column: DEPTH };
     const many: TakeOutcome = { failure: 'value_many', count: 3 };
+    const elsewhere = { key: { region: 'north' }, column: 'depth' } as const;
+    const invalid: TakeOutcome = { failure: 'take_invalid', column: 'region' };
     await tenant(async (trx) => {
       await recordTake(trx, { version: version.id, take: COLUMN, outcome: value });
       await recordTake(trx, { version: version.id, take: keyed, outcome: many });
+      await recordTake(trx, { version: version.id, take: elsewhere, outcome: invalid });
     });
     expect(takeDigest(COLUMN)).toBe(
       createHash('sha256').update(takeDigestInput(COLUMN), 'utf8').digest('hex'),
@@ -164,11 +167,13 @@ describe('dataset_take', () => {
         { version: version.id, takeDigest: takeDigest(COLUMN) },
         { version: version.id, takeDigest: takeDigest(keyed) },
         { version: version.id, takeDigest: takeDigest({ column: 'site' }) },
+        { version: version.id, takeDigest: takeDigest(elsewhere) },
       ]),
     );
     expect(answered).toEqual([
       { version: version.id, takeDigest: takeDigest(COLUMN), outcome: value },
       { version: version.id, takeDigest: takeDigest(keyed), outcome: many },
+      { version: version.id, takeDigest: takeDigest(elsewhere), outcome: invalid },
     ]);
     expect(await tenant((trx) => takesOf(trx, []))).toEqual([]);
   });
@@ -203,6 +208,10 @@ describe('dataset_take', () => {
       { value: '12.5', column: { ...DEPTH, from: { column: 'depth' } } },
       { value: '12.5', column: { name: 'width', type: DEPTH.type } },
       { value: '12.5', column: { name: 'depth', type: { base: 'text' } } },
+      // What takeValue never answers: a text of spaces alone, and take_invalid without its column.
+      { value: ' ', column: { name: 'site', type: { base: 'text' } } },
+      { failure: 'take_invalid' },
+      { failure: 'value_none', column: 'depth' },
     ];
     for (const outcome of refused) {
       await expect(
@@ -253,6 +262,18 @@ describe('dataset_take', () => {
       { failure: 'value_many', count: 2.5 },
       { failure: 'value_many', count: '3' },
       { failure: 'value_null', reason: 'x' },
+      { failure: 'value_many', count: 1e300 },
+      { failure: 'value_many', count: 9007199254740992 },
+      // A column named exactly for take_invalid, by a name of at least one character.
+      { failure: 'take_invalid' },
+      { failure: 'take_invalid', column: '' },
+      { failure: 'take_invalid', column: 7 },
+      { failure: 'value_none', column: 'depth' },
+      // A value's column: a name of at least one character, a type of a base a value can have.
+      { value: '1', column: { name: '', type: DEPTH.type } },
+      { value: '1', column: { name: 'depth', type: {} } },
+      { value: '1', column: { name: 'depth', type: { base: 'image' } } },
+      { value: '1', column: { name: 'depth', type: { base: 7 } } },
       [],
       'value_none',
     ];
@@ -267,6 +288,7 @@ describe('dataset_take', () => {
     );
     // And what the writer would write, the table takes.
     await insert('f'.repeat(64), { failure: 'value_many', count: 2 });
+    await insert('d'.repeat(64), { failure: 'take_invalid', column: 'region' });
     await insert('e'.repeat(64), {
       value: true,
       column: { name: 'open', type: { base: 'boolean' } },

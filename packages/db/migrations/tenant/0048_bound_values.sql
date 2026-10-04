@@ -86,9 +86,12 @@ create table dataset_take (
   kind text not null default 'dataset' check (kind = 'dataset'),
   take_digest text not null
     constraint dataset_take_take_digest check (take_digest ~ '^[0-9a-f]{64}$'),
-  -- Exactly `value` and `column` - the value a string or a boolean, the column exactly its name and
-  -- type - or exactly `failure`, one of the six, with `count`, an integer above 1, exactly for
-  -- `value_many`.
+  -- Exactly `value` and `column` - the value a string or a boolean, the column exactly its name, of at
+  -- least one character, and a type of one of the eight bases a value can have - or exactly `failure`,
+  -- one of the six, with `count`, an integer above 1 and no larger than a JavaScript number holds
+  -- exactly, exactly for `value_many`, and `column`, a name of at least one character, exactly for
+  -- `take_invalid`. The type's other members, and whether the value is canonical in it, are the
+  -- writer's (`takeOutcomeSchema`, `recordTake`): a check holds the shape, not the domain's rules.
   outcome jsonb not null
     constraint dataset_take_outcome check (
       jsonb_typeof(outcome) = 'object'
@@ -101,11 +104,16 @@ create table dataset_take (
           and (outcome -> 'column') ?& array['name', 'type']
           and (outcome -> 'column') - 'name' - 'type' = '{}'::jsonb
           and jsonb_typeof(outcome -> 'column' -> 'name') = 'string'
+          and (outcome -> 'column' ->> 'name') <> ''
           and jsonb_typeof(outcome -> 'column' -> 'type') = 'object'
+          and (outcome -> 'column' -> 'type') ? 'base'
+          and jsonb_typeof(outcome -> 'column' -> 'type' -> 'base') = 'string'
+          and (outcome -> 'column' -> 'type' ->> 'base') in
+            ('text', 'integer', 'decimal', 'date', 'time', 'localDateTime', 'instant', 'boolean')
         )
         or (
           outcome ? 'failure'
-          and outcome - 'failure' - 'count' = '{}'::jsonb
+          and outcome - 'failure' - 'count' - 'column' = '{}'::jsonb
           and jsonb_typeof(outcome -> 'failure') = 'string'
           and outcome ->> 'failure' in
             ('take_invalid', 'value_none', 'value_many', 'row_missing', 'value_null', 'value_empty')
@@ -114,10 +122,15 @@ create table dataset_take (
             not (outcome ? 'count')
             or case
               when jsonb_typeof(outcome -> 'count') = 'number'
-                and (outcome ->> 'count') ~ '^[0-9]+$'
-              then (outcome ->> 'count')::numeric > 1
+                and (outcome ->> 'count') ~ '^[0-9]{1,16}$'
+              then (outcome ->> 'count')::numeric between 2 and 9007199254740991
               else false
             end
+          )
+          and (outcome ->> 'failure' = 'take_invalid') = (outcome ? 'column')
+          and (
+            not (outcome ? 'column')
+            or (jsonb_typeof(outcome -> 'column') = 'string' and (outcome ->> 'column') <> '')
           )
         )
       )
