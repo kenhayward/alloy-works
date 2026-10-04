@@ -30,12 +30,7 @@ const MODES = {
  * A value as the document shows it, or why there is none in the words the text shows: changed since it
  * was resolved where the view answers it stale, and a take's failure by its reason.
  */
-function said(
-  taken: Taken | null,
-  formats: ValueFormats,
-  binding: Binding,
-  stale = false,
-): string {
+function said(taken: Taken | null, formats: ValueFormats, binding: Binding, stale = false): string {
   if (stale) return CHANGED_SINCE_RESOLVED;
   if (taken === null || 'unavailable' in taken) return 'The result cannot be read';
   if ('value' in taken) return shownValue(taken, formats);
