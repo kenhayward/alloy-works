@@ -311,10 +311,26 @@ const builderDescribe = z
     message: "A built query passes the builder's checks, each parameter declared once and used",
   });
 
-export const describeSqlRequestSchema = z.union([
-  testRequestSchema.extend({ sql: sqlDescribe }),
-  testRequestSchema.extend({ builder: builderDescribe }),
-]);
+const sqlDescribeRequest = testRequestSchema.extend({ sql: sqlDescribe });
+const builderDescribeRequest = testRequestSchema.extend({ builder: builderDescribe });
+
+/**
+ * A describe of SQL or of a built query, chosen by its key rather than by trying each: a union that
+ * tried each would answer a refusal of either in its own words, "Invalid input", and never the
+ * walk's or the builder's. A body holding `builder` and no `sql` is a built query's; any other is
+ * SQL's, whose strict shape refuses a `builder` beside it.
+ */
+export const describeSqlRequestSchema = z.unknown().transform((value, context) => {
+  const built =
+    typeof value === 'object' && value !== null && 'builder' in value && !('sql' in value);
+  const parsed = (built ? builderDescribeRequest : sqlDescribeRequest).safeParse(value);
+  if (parsed.success) {
+    return parsed.data as
+      z.infer<typeof sqlDescribeRequest> | z.infer<typeof builderDescribeRequest>;
+  }
+  for (const issue of parsed.error.issues) context.addIssue({ ...issue } as never);
+  return z.NEVER;
+});
 
 /** Whether a built query passes the builder's checks of its tree, and its shape generates whole. */
 function builtDescribable(query: Query, parameters: readonly Parameter[]) {

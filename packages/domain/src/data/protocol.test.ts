@@ -481,4 +481,25 @@ describe("the connector's protocol for a built query (the D4 plan)", () => {
       }),
     ).toBe(false);
   });
+
+  it("names the walk's refusal of a built describe, and a describe of a check it fails", () => {
+    let where: Condition = query.where!;
+    for (let at = 0; at < 10_000; at += 1) where = { not: where };
+    const deep = describeSqlRequestSchema.safeParse({
+      ...testRequest,
+      builder: { query: { ...query, where }, parameters: draft.parameters },
+    });
+    expect(deep.success).toBe(false);
+    expect(deep.error!.issues.map((issue) => [issue.path.join('.'), issue.message])).toEqual([
+      ['builder.query', 'A condition nests at most 8 deep'],
+    ]);
+
+    const unused = describeSqlRequestSchema.safeParse({
+      ...testRequest,
+      builder: { query, parameters: [] },
+    });
+    expect(unused.error!.issues.map((issue) => issue.message)).toEqual([
+      "A built query passes the builder's checks, each parameter declared once and used",
+    ]);
+  });
 });
