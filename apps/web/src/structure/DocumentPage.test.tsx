@@ -5972,6 +5972,38 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     }
   });
 
+  it("says in a failed value's provenance why it has none, in the words the text shows", async () => {
+    const user = userEvent.setup();
+    openWithValues({
+      content: withValue(bound('b1')),
+      bindings: [state(bound('b1'), { failure: 'value_many', count: 3 })],
+    });
+    await user.click(
+      await within(await textRegion()).findByRole('button', { name: /bound value, failed/ }),
+    );
+    const panel = await screen.findByRole('region', { name: 'Provenance' });
+    expect(panel).toHaveTextContent('No value - the query returned 3 rows');
+  });
+
+  it('says in an open provenance that the binding changed since it was resolved, where the values read again answer it stale', async () => {
+    const user = userEvent.setup();
+    const options: Parameters<typeof openWithValues>[0] = {
+      content: withValue(bound('b1')),
+      bindings: [state(bound('b1'), value)],
+    };
+    openWithValues(options);
+    const text = await textRegion();
+    await user.click(await within(text).findByRole('button', { name: '1,234.5, bound value' }));
+    const panel = await screen.findByRole('region', { name: 'Provenance' });
+    const held = state(bound('b1'), value);
+    options.bindings = [{ ...held, held: { ...held.held, stale: true, taken: null } }];
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+    });
+    await waitFor(() => expect(panel).toHaveTextContent('changed since it was resolved'));
+    expect(panel.textContent).not.toContain('cannot be read');
+  });
+
   it("shows no result asked for one value once another value's provenance is open", async () => {
     const user = userEvent.setup();
     let release: () => void = () => undefined;

@@ -69,6 +69,7 @@ export { referenceContextOf, setReferenceContext } from './referenceView.js';
 export {
   A_BOUND_VALUE,
   BINDING_FAILURE_WORDS,
+  bindingFailureWords,
   bindingSelected,
   bindingsShown,
   BOUND_VALUE,

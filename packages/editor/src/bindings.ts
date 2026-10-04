@@ -134,8 +134,11 @@ export const BINDING_FAILURE_WORDS = {
   ) => string;
 };
 
-/** The words for one failure: the record indexed by a union cannot correlate it with its argument. */
-const failureWords = (binding: Binding, held: BindingFailureHeld): string =>
+/**
+ * The words for one failure, in the text and a value's provenance alike: the record indexed by a union
+ * cannot correlate it with its argument.
+ */
+export const bindingFailureWords = (binding: Binding, held: BindingFailureHeld): string =>
   (BINDING_FAILURE_WORDS[held.failure] as (binding: Binding, held: BindingFailureHeld) => string)(
     binding,
     held,
@@ -188,7 +191,7 @@ function shownFor(
   if (held === undefined) return failed(NEVER_RESOLVED);
   if (held.binding !== bindingDigestInput(binding)) return failed(CHANGED_SINCE_RESOLVED);
   if ('failure' in held.shown) {
-    return failed(failureWords(binding, held.shown), held.unread !== true);
+    return failed(bindingFailureWords(binding, held.shown), held.unread !== true);
   }
   return held.shown.waiting
     ? {

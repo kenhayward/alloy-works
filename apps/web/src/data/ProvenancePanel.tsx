@@ -1,8 +1,14 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { formatsFor, type ValueFormats } from '@alloy-works/domain';
+import { formatsFor, type Binding, type ValueFormats } from '@alloy-works/domain';
+import { bindingFailureWords, CHANGED_SINCE_RESOLVED } from '@alloy-works/editor';
 import { useEffect, useId, useRef, useState } from 'react';
 
-import { shownValue, type BindingState, type Taken } from '../structure/bindingContexts.js';
+import {
+  failureHeld,
+  shownValue,
+  type BindingState,
+  type Taken,
+} from '../structure/bindingContexts.js';
 import { usePresentation } from '../theme/presentation.js';
 import { longDate } from './shapes.js';
 import styles from './ProvenancePanel.module.css';
@@ -20,11 +26,20 @@ const MODES = {
   pinned: 'Pinned - never looked for',
 } as const;
 
-/** A value as the document shows it, or why there is none, in the panel's words. */
-function said(taken: Taken | null, formats: ValueFormats): string {
+/**
+ * A value as the document shows it, or why there is none in the words the text shows: changed since it
+ * was resolved where the view answers it stale, and a take's failure by its reason.
+ */
+function said(
+  taken: Taken | null,
+  formats: ValueFormats,
+  binding: Binding,
+  stale = false,
+): string {
+  if (stale) return CHANGED_SINCE_RESOLVED;
   if (taken === null || 'unavailable' in taken) return 'The result cannot be read';
   if ('value' in taken) return shownValue(taken, formats);
-  return 'No value';
+  return bindingFailureWords(binding, failureHeld(taken, binding));
 }
 
 /** What a taken value was, as the query returned it: its canonical form, its column and its type. */
@@ -140,7 +155,7 @@ export function ProvenancePanel({
       </h3>
       <dl className={styles['facts']}>
         <dt>Value</dt>
-        <dd>{said(held.taken, formats)}</dd>
+        <dd>{said(held.taken, formats, binding, held.stale)}</dd>
         {returned(held.taken) !== null && (
           <>
             <dt>As the query returned it</dt>
@@ -150,7 +165,7 @@ export function ProvenancePanel({
         {state.waiting !== null && (
           <>
             <dt>Waiting</dt>
-            <dd>A newer result is waiting: {said(state.waiting.taken, formats)}</dd>
+            <dd>A newer result is waiting: {said(state.waiting.taken, formats, binding)}</dd>
           </>
         )}
         <dt>Query definition</dt>

@@ -221,14 +221,20 @@ function heldOf(state: BindingState, formats: ValueFormats): BindingHeld | null 
       shown: { value: shownValue(taken, formats), waiting: state.waiting !== null },
     };
   }
-  const failure: BindingFailureHeld =
-    taken.failure === 'take_invalid'
-      ? { failure: 'take_invalid', column: taken.column ?? state.binding.take.column }
-      : {
-          failure: taken.failure,
-          ...(taken.count === undefined ? {} : { count: taken.count }),
-        };
-  return { binding, shown: failure };
+  return { binding, shown: failureHeld(taken, state.binding) };
+}
+
+/** A take's failure as the editor's words for it read it: the column from the binding where unsaid. */
+export function failureHeld(
+  taken: Extract<TakeOutcome, { readonly failure: unknown }>,
+  binding: Binding,
+): BindingFailureHeld {
+  return taken.failure === 'take_invalid'
+    ? { failure: 'take_invalid', column: taken.column ?? binding.take.column }
+    : {
+        failure: taken.failure,
+        ...(taken.count === undefined ? {} : { count: taken.count }),
+      };
 }
 
 /**
