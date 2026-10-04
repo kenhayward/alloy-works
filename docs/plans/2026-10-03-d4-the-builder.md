@@ -7,8 +7,8 @@
 > on what [D1](2026-09-30-d1-connections-and-the-connector.md), [D2](2026-09-30-d2-query-definitions.md)
 > and [D3](2026-10-03-d3-datasets-and-resolutions.md) built - and on what each of their "Changed while
 > building" tables found, not on what their plans expected. data.md's decisions DA-A to DA-AF were
-> approved by Ken on 2026-09-30. This plan's own decisions, D4-A to D4-S below, are **proposed, each
-> with a recommendation, for Ken to approve**.
+> approved by Ken on 2026-09-30. This plan's own decisions, D4-A to D4-S below, were approved by Ken
+> on 2026-10-04, every one as recommended.
 
 **Goal:** an author holding `edit` in a space and `use_connection` on a PostgreSQL connection - and
 not `write_sql` - writes a query definition with the builder: one table or view, the columns it
@@ -111,7 +111,8 @@ and the oldest accepted 14, as D2's).
 
 ## Decisions
 
-**Proposed**, each as recommended; the column beside each is what it is chosen over.
+Approved by Ken on 2026-10-04, every one as recommended; the column beside each is what it was chosen
+over.
 
 | #    | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Instead of                                                                                                                                                                                                                   |
 | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -373,7 +374,11 @@ Minor.
 
 ## Questions for Ken before the build
 
-Not yet answered.
+Answered by Ken on 2026-10-04: every one as recommended. On question 1 he asked first for a fuller
+account, given as three options - A, the whole format generated and run through the API with the
+page offering one source; B, one source generated and a join refused at write, which leaves the
+shared parts of the format unproven while single-source trees are stored; C, the whole format
+generated and tested but a join refused at write until a screen offers one - and chose A.
 
 1. **D4-D**: generate and run the whole format - joins, nested queries, grouping - through the API in
    D4, while the page offers one table or view. Recommended: it is the only way to know format 1 is
