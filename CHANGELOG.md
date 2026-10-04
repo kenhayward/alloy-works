@@ -3,6 +3,15 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.131.2 - 2026-10-04 (PR #378)
+
+### Fixed
+
+- **A database test no longer fails when something else on the server waits on a lock.** The
+  test that checks a resolve takes its locks in one order counted the locks of every waiting
+  connection on the server, so a concurrent test could fail it and, with it, an unrelated pull
+  request's checks. It now counts only the connection it is testing.
+
 ## 0.131.1 - 2026-10-03 (PR #374)
 
 ### Added
