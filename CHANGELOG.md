@@ -3,16 +3,6 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.132.4 - 2026-10-04 (PR #382)
-
-### Added
-
-- **The plan for showing values from your own data in a document.** Nothing you can use yet. The
-  plan says how a component holding a value will open for editing, how a document will show the
-  value it holds - formatted by its theme, or saying plainly why it has none - and how one click or
-  Enter on a value will show where it came from. It also says which questions need an answer before
-  the work begins.
-
 ## 0.132.3 - 2026-10-04 (PR #381)
 
 ### Changed

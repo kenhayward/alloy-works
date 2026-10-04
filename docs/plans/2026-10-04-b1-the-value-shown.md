@@ -1,7 +1,9 @@
 # B1: The value shown
 
-> **A sketch**, built in one pull request, test-first, with one final whole-branch review before it
-> opens that is asked for a break of its own against every citation. It builds B1 of
+> **A sketch**, built in one pull request, test-first. Its tier is the full one in
+> [the plans README](README.md) - a migration, stored shapes and a changed contract - so it has a
+> pre-flight review before the build, a review per task, and a final whole-branch review asked for a
+> break of its own against every citation. It builds B1 of
 > [bindings.md](../design/bindings.md)'s build order, under
 > [ADR-0035](../decisions/0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md)
 > and [ADR-0023](../decisions/0023-prosemirror-as-the-editor-and-its-model.md), on what
@@ -22,10 +24,11 @@ to show a value. Nothing places, changes, resolves, checks or accepts a binding 
 those are B2 and B4 - and nothing publishes one: D3's publish and preview guard stands until B3
 replaces it.
 
-| PR   | Holds                                                                                                                                                                                       | Version |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| B1.0 | This plan                                                                                                                                                                                   | Build   |
-| B1.1 | The build: the editor's node and the identity fix, `takeValue` and `formatValue`, the value catalogue and the default theme's 0.6, `dataset_take`, values and failures in place, provenance | Minor   |
+| PR   | Holds                                                                                                                                                                                                                      |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B1.0 | This plan, with a change fragment                                                                                                                                                                                          |
+| B1.1 | The build: the editor's node and the identity fix, `takeValue` and `formatValue`, the value catalogue and the default theme's 0.6, `dataset_take`, values and failures in place, provenance                                |
+| B1.2 | B1's close ([ADR-0037](../decisions/0037-change-fragments-and-versions-at-a-close.md)): the fragments folded into one changelog entry, the Minor bump, `docs/architecture.md`, and the baseline drafted for Ken to declare |
 
 ## What the named questions answered
 
@@ -349,16 +352,23 @@ in Authoring, the component opened, the binding reached by the arrow keys, the V
 same value and theme. Each is watched fail against a stack of the build's own with one break built into
 its image, as D4's were.
 
-## Task 7: Docs and the release
+## Task 7: Docs
 
 `docs/design/bindings.md`: B1-B to B1-H folded in where they differ (the catalogue at catalogue/3, the
 optional theme member, the identity mechanism, `\p{White_Space}`), DAT-024's and STY-082's claims left
 with B1's row as question 2 and 3 decide, and its "Not built" note narrowed. `docs/design/themes.md`:
 the value catalogue as the seventh kind, TH-C's six. `docs/design/component-editor.md`: the binding's
-row - Create no, Edit removal, copy and move. `docs/architecture.md`: the node, the two functions,
-migration 0048, `dataset_take`, the view's members. `docs/features.md` and the README: values shown in a
-document and their provenance; nothing placed or published yet. This plan's row: Built. The changelog:
-the next Minor.
+row - Create no, Edit removal, copy and move. `docs/features.md` and the README: values
+shown in a document and their provenance; nothing placed or published yet. This plan's row: Built. A
+fragment in `changes/`, `### Added`.
+
+## The close
+
+B1.2, after B1.1 merges, by [changes/README.md](../../changes/README.md): the fragments folded into
+one `CHANGELOG.md` entry and the Minor bump; `docs/architecture.md` brought up to date - the node, the
+two functions, migration 0048, `dataset_take`, the view's members; and the baseline for that version
+drafted for Ken to declare, carrying 0.13.0's rows forward and adding what B1's tests verify (DAT-027,
+DAT-031, DAT-032, DAT-041, DAT-047), each checked with `pnpm trace verify` first.
 
 ## Verification
 
