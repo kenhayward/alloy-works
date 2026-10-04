@@ -21,7 +21,7 @@ Every pull request adds one entry at the top, and the topmost version matches `v
   space and use of the connection, not the permission to write SQL, and runs on any connection:
   what it runs is one SELECT the product writes, inside a read-only transaction, over
   columns the database has - a column a table or view does not have is refused by name before
-  anything is sent. **New query definition** is offered to anybody who may edit a space and
+  any of the query is sent. **New query definition** is offered to anybody who may edit a space and
   use a connection; SQL is offered beside the builder only where you may write SQL on the
   connection. Somebody without it can turn a SQL definition into a built one, but not back.
 - **Words for a built query the database refused.** A table or column it does not have, two types
