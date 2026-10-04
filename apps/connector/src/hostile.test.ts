@@ -2,8 +2,12 @@ import {
   checkParameterValues,
   childRequestSchema,
   compareCanonical,
+  DefinitionRefused,
+  parseDraftDefinition,
   type CanonicalValue,
   type ChildRequest,
+  type Comparison,
+  type Condition,
   type Parameter,
   type ParameterValues,
   type RunAnswer,
@@ -12,6 +16,8 @@ import { describe, expect, it } from 'vitest';
 
 import { CONNECT_TIMEOUT_MS } from './supervisor.js';
 import {
+  asSuperuser,
+  built,
   column,
   draft,
   LOADED_TIMEOUT_MS,
@@ -541,3 +547,297 @@ describe('injection through every parameter type', { timeout: LOADED_TIMEOUT_MS 
     ).toThrow();
   });
 });
+
+/**
+ * The built query's probe (the D4 plan): case 5's rows in a table, beside a view reporting the text
+ * the source received, made by the suite's superuser in a schema it drops. Every name holds a quote,
+ * a `$1`, a comment or a dollar quote, so each is selected and filtered whole or not at all.
+ */
+const PROBE_SCHEMA = 'd4 "probe"';
+const PROBE_TABLE = 'item $1 -- /* $q$';
+const PROBE_VIEW = "received'";
+const NAMES = {
+  id: 'id "x"',
+  present: 'present /* */',
+  label: 'label $1',
+  amount: 'amount -- c',
+  day: 'day /* c',
+  at: 'at $q$',
+  active: "active'",
+  region: 'region $$',
+} as const;
+const quoted = (name: string) => `"${name.replaceAll('"', '""')}"`;
+
+async function makeProbe(): Promise<void> {
+  const schema = quoted(PROBE_SCHEMA);
+  const table = `${schema}.${quoted(PROBE_TABLE)}`;
+  const view = `${schema}.${quoted(PROBE_VIEW)}`;
+  const n = (key: keyof typeof NAMES) => quoted(NAMES[key]);
+  await asSuperuser(async (client) => {
+    await client.query(`drop schema if exists ${schema} cascade`);
+    await client.query(`create schema ${schema}`);
+    await client.query(
+      `create table ${table} (${n('id')} integer primary key, ${n('present')} boolean not null default true,
+        ${n('label')} text not null, ${n('amount')} numeric not null, ${n('day')} date not null,
+        ${n('at')} timestamptz not null, ${n('active')} boolean not null, ${n('region')} text not null)`,
+    );
+    for (const row of DATA) {
+      await client.query(
+        `insert into ${table} (${n('id')}, ${n('label')}, ${n('amount')}, ${n('day')}, ${n('at')}, ${n('active')}, ${n('region')})
+          values ($1, $2, $3, $4, $5, $6, $7)`,
+        [row.id, row.label, String(row.amount), row.day, row.at, row.active, row.region],
+      );
+    }
+    await client.query(`create view ${view} as select current_query() as received`);
+    await client.query(`grant usage on schema ${schema} to reader`);
+    await client.query(`grant select on ${table}, ${view} to reader`);
+  });
+}
+
+const dropProbe = () =>
+  asSuperuser((client) => client.query(`drop schema ${quoted(PROBE_SCHEMA)} cascade`));
+
+/**
+ * Each position a value is placed in a built query: the parameter, the column it compares, the
+ * comparison, and what the value read as data returns. Text compares by code point (D4-G).
+ */
+const BUILT_POSITIONS: readonly (readonly [
+  string,
+  string,
+  keyof typeof NAMES,
+  Comparison,
+  (value: never) => string[],
+])[] = [
+  [
+    'equal',
+    'label',
+    'label',
+    'equal',
+    (value: string) => ids(DATA.filter((row) => row.label === value)),
+  ],
+  [
+    'contains',
+    'label',
+    'label',
+    'contains',
+    (value: string) => ids(DATA.filter((row) => row.label.includes(value))),
+  ],
+  [
+    'startsWith',
+    'label',
+    'label',
+    'startsWith',
+    (value: string) => ids(DATA.filter((row) => row.label.startsWith(value))),
+  ],
+  [
+    'gte-int',
+    'min_id',
+    'id',
+    'greaterOrEqual',
+    (value: string) => ids(DATA.filter((row) => BigInt(row.id) >= BigInt(value))),
+  ],
+  [
+    'less-int',
+    'min_id',
+    'id',
+    'less',
+    (value: string) => ids(DATA.filter((row) => BigInt(row.id) < BigInt(value))),
+  ],
+  [
+    'gte-decimal',
+    'min_amount',
+    'amount',
+    'greaterOrEqual',
+    (value: string) => ids(DATA.filter((row) => row.amount >= Number(value))),
+  ],
+  [
+    'gte-date',
+    'from_day',
+    'day',
+    'greaterOrEqual',
+    (value: string) => ids(DATA.filter((row) => row.day >= value)),
+  ],
+  [
+    'gte-instant',
+    'since',
+    'at',
+    'greaterOrEqual',
+    (value: string) => ids(DATA.filter((row) => compareCanonical(INSTANT, row.at, value) >= 0)),
+  ],
+  [
+    'equal-bool',
+    'active',
+    'active',
+    'equal',
+    (value: boolean) => ids(DATA.filter((row) => row.active === value)),
+  ],
+  [
+    'equal-permitted',
+    'region',
+    'region',
+    'equal',
+    (value: string) => ids(DATA.filter((row) => row.region === value)),
+  ],
+  [
+    'in-ints',
+    'ids',
+    'id',
+    'in',
+    (value: string[]) => ids(DATA.filter((row) => value.includes(String(row.id)))),
+  ],
+  [
+    'in-texts',
+    'labels',
+    'label',
+    'in',
+    (value: string[]) => ids(DATA.filter((row) => value.includes(row.label))),
+  ],
+];
+
+/** A built query of the probe beside the text the source received, the probe joined by this condition. */
+function probeQuery(on: Condition) {
+  return built(
+    {
+      sources: [
+        { alias: 'r', table: { schema: PROBE_SCHEMA, name: PROBE_VIEW } },
+        { alias: 's', table: { schema: PROBE_SCHEMA, name: PROBE_TABLE } },
+      ],
+      joins: [{ kind: 'left', source: 's', on }],
+      select: [
+        { name: 'received', of: { source: 'r', column: 'received' } },
+        { name: 'present', of: { source: 's', column: NAMES.present } },
+        { name: 'id', of: { source: 's', column: NAMES.id } },
+      ],
+      groupBy: [],
+    },
+    { present: { base: 'boolean' }, id: { base: 'integer' } },
+    { key: [], order: 'multiset' },
+  );
+}
+
+describe(
+  'injection through every parameter type of a built query',
+  { timeout: LOADED_TIMEOUT_MS },
+  () => {
+    it('DAT-021 attempts injection through every parameter type of a built query and refuses each value by name or binds it inert', async () => {
+      await makeProbe();
+      try {
+        const attempts = [
+          ...BUILT_POSITIONS.flatMap(([position, name, columnKey, is, expected]) =>
+            valuesFor(name).map((value) => ({
+              position,
+              name,
+              columnKey,
+              is,
+              expected,
+              value,
+              literal: false,
+            })),
+          ),
+          // A fixed value, written into the tree: bound as a parameter is, never placed in the text.
+          ...HOSTILE.map((value) => ({
+            position: 'literal',
+            name: '',
+            columnKey: 'label' as const,
+            is: 'equal' as const,
+            expected: (text: string) => ids(DATA.filter((row) => row.label === text)),
+            value,
+            literal: true,
+          })),
+        ];
+        const outcomes = await inTurn(
+          attempts,
+          async ({ position, name, columnKey, is, expected, value, literal }) => {
+            const column = { source: 's', column: NAMES[columnKey] };
+            let definition;
+            let values: ParameterValues = {};
+            if (literal) {
+              definition = probeQuery({
+                column,
+                is,
+                to: { literal: value as CanonicalValue, type: { base: 'text' } },
+              });
+              try {
+                parseDraftDefinition({
+                  ...definition,
+                  connection: '00000000-0000-4000-8000-000000000000',
+                });
+              } catch (error) {
+                // Refused by name before anything runs: the definition's path to the value.
+                if (!(error instanceof DefinitionRefused)) throw error;
+                expect(error.problems[0]!.path, position).toMatch(
+                  /^fetch\.query\.joins\.0\.on\.to\.literal/,
+                );
+                return { position, outcome: 'refused' as const };
+              }
+            } else {
+              const parameter = PARAMETERS[name]!;
+              values = { [name]: value } as ParameterValues;
+              const problems = checkParameterValues([parameter], values);
+              if (problems.length > 0) {
+                expect(problems, position).toEqual([
+                  { parameter: name, rule: expect.any(String), value: expect.any(String) },
+                ]);
+                return { position, outcome: 'refused' as const };
+              }
+              definition = {
+                ...probeQuery({ column, is, to: { parameter: name } }),
+                parameters: [parameter],
+              };
+            }
+            const started = Date.now();
+            const answer = await runHere(
+              runRequest(settings(), PASSWORDS.reader, definition, values),
+            );
+            const rows = answer.outcome === 'ok' ? answer.result.rows : [];
+            const got =
+              answer.outcome === 'ok'
+                ? rows.flatMap((row) => (row[1] === true ? [row[2]] : [])).sort()
+                : answer;
+            const want = expected(value as never).sort();
+            const inert =
+              JSON.stringify(got) === JSON.stringify(want) && Date.now() - started < 2500;
+            return {
+              position,
+              outcome: inert ? ('inert' as const) : ('NOT INERT' as const),
+              ran: answer.outcome === 'ok' ? answer.ran.sql : undefined,
+              received: rows.length > 0 ? String(rows[0]![0]) : undefined,
+              ...(inert ? {} : { value: String(value).slice(0, 60), got, want }),
+            };
+          },
+        );
+        // Every attempt refused by name or bound inert.
+        expect(outcomes.filter((each) => each.outcome === 'NOT INERT')).toEqual([]);
+        // And no value reached the text: each position's values ran as one text, as the generator wrote
+        // it and as the source received it, every hostile name in it whole.
+        const positions = [...BUILT_POSITIONS.map(([position]) => position), 'literal'];
+        for (const position of positions) {
+          const at = outcomes.filter(
+            (each) => each.position === position && 'ran' in each && each.ran !== undefined,
+          ) as { ran: string; received?: string }[];
+          expect(at.length, position).toBeGreaterThan(0);
+          const ran = new Set(at.map((each) => each.ran));
+          expect([...ran].length, position).toBe(1);
+          expect([...new Set(at.map((each) => each.received))], position).toEqual([...ran]);
+          const [text] = [...ran];
+          for (const name of [PROBE_SCHEMA, PROBE_TABLE, PROBE_VIEW, NAMES.id, NAMES.present]) {
+            expect(text, position).toContain(quoted(name));
+          }
+          // Not vacuous: every position took some values and refused others.
+          const all = outcomes.filter((each) => each.position === position);
+          expect(
+            all.some((each) => each.outcome === 'inert'),
+            position,
+          ).toBe(true);
+          expect(
+            all.some((each) => each.outcome === 'refused'),
+            position,
+          ).toBe(true);
+        }
+        expect(outcomes.length).toBeGreaterThan(400);
+      } finally {
+        await dropProbe();
+      }
+    });
+  },
+);

@@ -8,7 +8,9 @@ import { loadConnectorConfig } from './config.js';
 import { createConnectorServer } from './server.js';
 import { childSpawn, runChild, type ChildSpec, type SpawnChild } from './supervisor.js';
 import {
+  built,
   column,
+  describeBuiltRequest,
   describeSqlRequest,
   draft,
   requestFor,
@@ -126,6 +128,14 @@ describe("the connector's secrets", { timeout: LOADED_TIMEOUT_MS }, () => {
     const definition = draft('select id from sample.site order by id', [
       column('id', { base: 'integer' }),
     ]);
+    // And a built query's run and describe (the D4 plan), each failing each way too.
+    const query = {
+      sources: [{ alias: 's', table: { schema: 'sample', name: 'site' } }],
+      joins: [],
+      select: [{ name: 'id', of: { source: 's', column: 'id' } }],
+      groupBy: [],
+    };
+    const builtDefinition = built(query, { id: { base: 'integer' } });
     for (const source of [
       settings(),
       settings({ host: 'no-such-source.invalid' }),
@@ -134,6 +144,12 @@ describe("the connector's secrets", { timeout: LOADED_TIMEOUT_MS }, () => {
       expect((await call(real.url, '/v1/run', runRequest(source, CANARY, definition))).text).toBe(
         failed,
       );
+      expect(
+        (await call(real.url, '/v1/run', runRequest(source, CANARY, builtDefinition))).text,
+      ).toBe(failed);
+      expect(
+        (await call(real.url, '/v1/describe', describeBuiltRequest(source, CANARY, query))).text,
+      ).toBe('{"failure":{"code":"connection_failed","attribution":"connector"}}');
       expect(
         (
           await call(

@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { childSpawn, createSupervisor } from './supervisor.js';
 import {
   asSuperuser,
+  describeBuiltRequest,
   describeSqlRequest,
   PASSWORDS,
   SEALING_KEY,
@@ -25,6 +26,14 @@ const describeSql = async (
   ...args: Parameters<typeof describeSqlRequest>
 ): Promise<DescribeSqlAnswer> => {
   const answer = await supervisor.run('describeSql', describeSqlRequest(...args));
+  if (answer === 'busy') throw new Error('busy');
+  return answer;
+};
+
+const describeBuilt = async (
+  ...args: Parameters<typeof describeBuiltRequest>
+): Promise<DescribeSqlAnswer> => {
+  const answer = await supervisor.run('describeSql', describeBuiltRequest(...args));
   if (answer === 'busy') throw new Error('busy');
   return answer;
 };
@@ -99,5 +108,66 @@ describe('a SQL statement described', { timeout: LOADED_TIMEOUT_MS }, () => {
     expect(
       await describeSql(settings(), PASSWORDS.reader, 'select id from sample.nothing'),
     ).toMatchObject({ failure: { code: 'source_refused', source: { sqlstate: '42P01' } } });
+  });
+
+  it('describes a built query by its shape statement, its values all null, and runs nothing', async () => {
+    // A view that sleeps, made by the suite's superuser in a schema it drops: described at once.
+    await asSuperuser(async (client) => {
+      await client.query('drop schema if exists d4_describe cascade');
+      await client.query('create schema d4_describe');
+      await client.query(
+        'create view d4_describe.slow as select s.id, s.ratio, pg_sleep(20)::text as slept from sample.site s',
+      );
+      await client.query('grant usage on schema d4_describe to reader');
+      await client.query('grant select on d4_describe.slow to reader');
+    });
+    try {
+      const started = Date.now();
+      const answer = await describeBuilt(
+        settings(),
+        PASSWORDS.reader,
+        {
+          sources: [{ alias: 'v', table: { schema: 'd4_describe', name: 'slow' } }],
+          joins: [],
+          select: [
+            { name: 'id', of: { source: 'v', column: 'id' } },
+            // A minimum of a float8: the shape's own type, never the run's text key.
+            { name: 'low', of: { aggregate: 'minimum', of: { source: 'v', column: 'ratio' } } },
+          ],
+          where: {
+            column: { source: 'v', column: 'id' },
+            is: 'greaterOrEqual',
+            to: { parameter: 'from_id' },
+          },
+          groupBy: [{ source: 'v', column: 'id' }],
+        },
+        [{ name: 'from_id', type: { base: 'integer' }, required: false, list: false }],
+      );
+      expect(Date.now() - started).toBeLessThan(10_000);
+      expect(answer).toEqual({
+        columns: [
+          { name: 'id', sourceType: 'integer', proposed: { base: 'integer' } },
+          { name: 'low', sourceType: 'double precision', proposed: null },
+        ],
+        parameters: ['bigint'],
+      });
+    } finally {
+      await asSuperuser((client) => client.query('drop schema d4_describe cascade'));
+    }
+  });
+
+  it("answers a built query's refusal by the source's SQLSTATE: a relation or a column it does not have", async () => {
+    const query = (schema: string, name: string, columnName: string) => ({
+      sources: [{ alias: 't', table: { schema, name } }],
+      joins: [],
+      select: [{ name: 'x', of: { source: 't', column: columnName } }],
+      groupBy: [],
+    });
+    expect(
+      await describeBuilt(settings(), PASSWORDS.reader, query('sample', 'nothing', 'id')),
+    ).toMatchObject({ failure: { code: 'source_refused', source: { sqlstate: '42P01' } } });
+    expect(
+      await describeBuilt(settings(), PASSWORDS.reader, query('sample', 'site', 'nothing')),
+    ).toMatchObject({ failure: { code: 'source_refused', source: { sqlstate: '42703' } } });
   });
 });

@@ -20,9 +20,10 @@ import { SERVER_TEXT, sourceTypes } from './postgres.js';
 import { finishResult } from './result.js';
 
 /**
- * A run in the child (the D2 plan, D2-Q, D2-J): the definition bound by PostgreSQL's binder, in a
- * read-only transaction; described first, so the result's columns and types are held to the
- * declaration before anything is computed; then run a page of 500 rows at a time, so the source
+ * A run in the child (the D2 plan, D2-Q, D2-J): the definition bound by its fetch's kind - SQL by
+ * PostgreSQL's binder, a built query by the generator (the D4 plan, D4-H) - in a read-only
+ * transaction; described first, so the result's columns and types are held to the declaration before
+ * anything is computed, a built query's shape statement before its run statement; then run a page of 500 rows at a time, so the source
  * computes no more than is read, every value the server's text. The bytes read from the source after
  * the statement is sent are counted at the socket, and the rows as they arrive: past a limit, or at the
  * deadline, the socket is destroyed and the statement cancelled at the source by the protocol's
@@ -64,8 +65,12 @@ export async function runStatement(
   const started = Date.now();
   const failed = (failure: DataFailure): RunAnswer => ({ outcome: 'failed', failure });
   let bound: ReturnType<typeof bindFetch>;
+  let shape: ReturnType<typeof bindFetch> | undefined;
   try {
-    bound = bindFetch(definition, values);
+    bound = bindFetch(definition, values, 'run');
+    // A built query's shape: its columns as the source types them, before the run's code-point keys
+    // cast a minimum or a maximum to text (the D4 plan, D4-H).
+    if (definition.fetch.kind === 'builder') shape = bindFetch(definition, values, 'shape');
   } catch (error) {
     // A binding refused is the definition's to fix, and nothing of it is sent.
     if (error instanceof BindingRefused) return failed(dataFailure('definition_unbindable'));
@@ -73,36 +78,13 @@ export async function runStatement(
   }
   try {
     await client.query('begin transaction read only');
-    const description = await describeStatement(client, bound.text);
-    const fields = description.fields ?? [];
-    if (fields.length === 0) return failed(dataFailure('result_mismatch'));
-
-    // Every declared column read from exactly one of the result's columns, of a type its base
-    // admits, and no column of the result left undeclared (DAT-106).
-    const types = await sourceTypes(
-      client,
-      fields.map((field) => ({ oid: field.dataTypeID, typmod: field.dataTypeModifier })),
-    );
-    const places: number[] = [];
-    for (const column of definition.columns) {
-      const matching = fields.flatMap((field, at) =>
-        field.name === column.from.column ? [at] : [],
-      );
-      if (matching.length !== 1 || !admits(column.type.base, types[matching[0]!]!)) {
-        return failed(dataFailure('result_mismatch', { column: column.name }));
-      }
-      places.push(matching[0]!);
+    if (shape !== undefined) {
+      const admitted = await admittedColumns(client, shape.text, definition);
+      if ('failure' in admitted) return failed(admitted.failure);
     }
-    const declared = new Set(definition.columns.map((column) => column.from.column));
-    const extra = fields.find((field) => !declared.has(field.name));
-    if (extra !== undefined) {
-      return failed(
-        dataFailure(
-          'result_mismatch',
-          sourceNameSchema.safeParse(extra.name).success ? { column: extra.name } : {},
-        ),
-      );
-    }
+    const admitted = await admittedColumns(client, bound.text, definition);
+    if ('failure' in admitted) return failed(admitted.failure);
+    const places = admitted.places;
 
     const remaining = Math.max(1, Math.floor(deadline - Date.now()));
     await client.query(`set local statement_timeout = ${remaining}`);
@@ -122,6 +104,44 @@ export async function runStatement(
     if (error instanceof Stopped) return failed(error.failure);
     return failed(sourceFailure(error, deadline));
   }
+}
+
+/**
+ * A statement described and its result held to the declaration (DAT-106, D2-L): every declared
+ * column read from exactly one of the result's columns, of a type its base admits, and no column of
+ * the result left undeclared. Answers where each declared column stands in the result, or the failure.
+ */
+async function admittedColumns(
+  client: pg.Client,
+  text: string,
+  definition: DraftDefinition,
+): Promise<{ readonly places: number[] } | { readonly failure: DataFailure }> {
+  const description = await describeStatement(client, text);
+  const fields = description.fields ?? [];
+  if (fields.length === 0) return { failure: dataFailure('result_mismatch') };
+  const types = await sourceTypes(
+    client,
+    fields.map((field) => ({ oid: field.dataTypeID, typmod: field.dataTypeModifier })),
+  );
+  const places: number[] = [];
+  for (const column of definition.columns) {
+    const matching = fields.flatMap((field, at) => (field.name === column.from.column ? [at] : []));
+    if (matching.length !== 1 || !admits(column.type.base, types[matching[0]!]!)) {
+      return { failure: dataFailure('result_mismatch', { column: column.name }) };
+    }
+    places.push(matching[0]!);
+  }
+  const declared = new Set(definition.columns.map((column) => column.from.column));
+  const extra = fields.find((field) => !declared.has(field.name));
+  if (extra !== undefined) {
+    return {
+      failure: dataFailure(
+        'result_mismatch',
+        sourceNameSchema.safeParse(extra.name).success ? { column: extra.name } : {},
+      ),
+    };
+  }
+  return { places };
 }
 
 /** The client's socket to the source: the TLS socket, once negotiated. */

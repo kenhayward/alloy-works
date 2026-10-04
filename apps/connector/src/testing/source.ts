@@ -11,6 +11,7 @@ import {
   type Limits,
   type Parameter,
   type ParameterValues,
+  type Query,
   type RunRequest,
   type TestRequest,
   type ValueType,
@@ -205,4 +206,33 @@ export function describeSqlRequest(
   parameters: Parameter[] = [],
 ): DescribeSqlRequest {
   return { ...requestFor(source, secret), sql: { text, parameters } };
+}
+
+/**
+ * A draft definition of a built query (the D4 plan): each select item declared as the column of the
+ * type given, text unless said, keyed and ordered by the first unless said.
+ */
+export function built(
+  query: Query,
+  types: Readonly<Record<string, ValueType>> = {},
+  over: Partial<Omit<DraftDefinition, 'connection'>> = {},
+): Omit<DraftDefinition, 'connection'> {
+  const columns = query.select.map((item) =>
+    column(item.name, types[item.name] ?? { base: 'text' }),
+  );
+  return {
+    ...draft('', columns, over),
+    fetch: { kind: 'builder', format: 1, query },
+    ...over,
+  };
+}
+
+/** A describe of a built query and its parameters, sealed as `requestFor`. */
+export function describeBuiltRequest(
+  source: ConnectionSettings,
+  secret: string,
+  query: Query,
+  parameters: Parameter[] = [],
+): DescribeSqlRequest {
+  return { ...requestFor(source, secret), builder: { query, parameters } };
 }

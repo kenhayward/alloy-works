@@ -1,6 +1,6 @@
 import {
   BindingRefused,
-  bindPostgres,
+  bindFetch,
   dataFailure,
   type ChildRequest,
   type DataFailure,
@@ -46,20 +46,24 @@ function failureAnswer(kind: ChildRequest['kind'], failure: DataFailure): Answer
 /**
  * A SQL describe (D2-G): the statement bound as a run would bind it - each variation marker by its
  * first fragment, since a variation changes an order or a unit and not the columns - described by
- * the source and never run.
+ * the source and never run. A built query is described by its shape statement, its values all null
+ * (the D4 plan, D4-H, D4-Q), bound through the same `bindFetch` a run binds through.
  */
 async function describeSql(
   client: pg.Client,
   request: Extract<ChildRequest, { kind: 'describeSql' }>['request'],
 ): Promise<DescribeSqlAnswer> {
-  if (!('sql' in request)) throw new Failed(dataFailure('connector_error'));
-  const { text, parameters } = request.sql;
+  const { parameters } = 'sql' in request ? request.sql : request.builder;
   const values: ParameterValues = Object.fromEntries(
     parameters.map((parameter) => [parameter.name, parameter.variation?.[0]?.key ?? null]),
   );
-  let bound: ReturnType<typeof bindPostgres>;
+  const fetch =
+    'sql' in request
+      ? { kind: 'sql' as const, text: request.sql.text }
+      : { kind: 'builder' as const, format: 1 as const, query: request.builder.query };
+  let bound: ReturnType<typeof bindFetch>;
   try {
-    bound = bindPostgres({ parameters, fetch: { kind: 'sql', text } }, values);
+    bound = bindFetch({ parameters, fetch, columns: [], order: 'multiset' }, values, 'shape');
   } catch (error) {
     if (error instanceof BindingRefused) throw new Failed(dataFailure('definition_unbindable'));
     throw error;

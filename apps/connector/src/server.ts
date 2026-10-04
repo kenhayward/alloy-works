@@ -164,9 +164,9 @@ export function createConnectorServer(options: {
       path === '/v1/describe' &&
       typeof body === 'object' &&
       body !== null &&
-      'sql' in body
+      ('sql' in body || 'builder' in body)
     ) {
-      // A describe taking a statement: its columns, never run (D2-G).
+      // A describe taking a statement, SQL or a built query's: its columns, never run (D2-G, D4-Q).
       const parsed = describeSqlRequestSchema.safeParse(body);
       if (!parsed.success) return send(400, { code: 'request_invalid' });
       answer = await supervisor.run('describeSql', parsed.data);

@@ -17758,15 +17758,21 @@
   ],
   "citations": [
     {
+      "id": "DAT-100",
+      "file": "apps/connector/src/builder.test.ts",
+      "line": 58,
+      "kind": "title"
+    },
+    {
       "id": "DAT-018",
       "file": "apps/connector/src/hostile.test.ts",
-      "line": 487,
+      "line": 493,
       "kind": "title"
     },
     {
       "id": "DAT-021",
       "file": "apps/connector/src/hostile.test.ts",
-      "line": 413,
+      "line": 419,
       "kind": "title"
     },
     {
@@ -17838,7 +17844,7 @@
     {
       "id": "DAT-005",
       "file": "apps/connector/src/secrets.test.ts",
-      "line": 69,
+      "line": 71,
       "kind": "title"
     },
     {
