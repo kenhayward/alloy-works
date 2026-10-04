@@ -209,10 +209,10 @@ describe('values in a document, in Chromium (the B1 plan, task 6)', () => {
       const surface = page.getByRole('textbox', { name: /^Content of / });
       await surface.waitFor();
       const panel = page.getByRole('region', { name: 'Value' });
-      // Opened at the text's start, the caret stands after the binding that begins it: an arrow back
-      // selects it whole.
+      // Opened at the text's start, the caret stands before the binding that begins it: an arrow on
+      // selects it whole (B1-L).
       for (let pressed = 0; pressed < 3 && !(await panel.isVisible()); pressed++) {
-        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('ArrowRight');
         await page.waitForTimeout(100);
       }
       await panel.waitFor();
