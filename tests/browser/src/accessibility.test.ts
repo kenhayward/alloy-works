@@ -809,7 +809,11 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       const title = `Site by id ${Date.now()}`;
       await tabTo(page.getByLabel('Title', { exact: true }));
       await page.keyboard.type(title);
-      await tabTo(page.getByLabel('SQL', { exact: true }));
+      // The builder is offered first; Ada may write SQL on the connection, so SQL is offered too, and
+      // chosen by the arrow keys from the radio button Tab reaches.
+      await tabTo(page.getByRole('radio', { name: 'Builder', exact: true }));
+      await page.keyboard.press('ArrowDown');
+      await tabTo(page.getByLabel('SQL text', { exact: true }));
       await page.keyboard.type('select id, name from sample.site where id = {{site}} order by id');
       await tabTo(page.getByRole('button', { name: 'Add parameter' }));
       await page.keyboard.press('Enter');
@@ -857,6 +861,174 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         shows: [
           page.getByRole('heading', { name: title, level: 1 }),
           page.getByText('Version 0.1'),
+        ],
+      });
+    });
+  });
+  it("passes axe on a built query definition's steps, each worked by keyboard alone", async ({
+    task,
+  }) => {
+    // A connection on the development source as `reader`, made through the API and tested clean.
+    const client = api();
+    const spaces = await client.GET('/v1/spaces', { params: { query: { limit: '100' } } });
+    const general = spaces.data?.items.find((each) => each.name === 'General');
+    if (!general) throw new Error('No General space to make a connection in');
+    const connectionName = `Built ${Date.now()}`;
+    const made = await client.POST('/v1/spaces/{space}/connections', {
+      params: { path: { space: general.id } },
+      body: {
+        settings: {
+          schemaVersion: 1,
+          name: connectionName,
+          description: '',
+          type: 'postgres',
+          source: {
+            host: 'source-postgres',
+            port: 5432,
+            database: 'readings',
+            account: 'reader',
+            tls: 'require',
+          },
+          identity: { kind: 'service' },
+          retired: false,
+        },
+      },
+    });
+    if (!made.data) throw new Error(`The connection was not made: ${made.response.status}`);
+    const set = await client.PUT('/v1/connections/{id}/credential', {
+      params: { path: { id: made.data.id } },
+      body: { secret: 'source-reader-dev-password' },
+    });
+    if (set.data?.test.outcome !== 'ok') {
+      throw new Error(`The connection did not test clean: ${JSON.stringify(set.data)}`);
+    }
+
+    await withPage(async (page) => {
+      const check = async (state: string, arrival: Arrival) => {
+        await arrive(arrival);
+        await checkAxe(page, state, task.meta, arrival);
+      };
+      /** Tab until `target` holds the focus, as a person with no pointer reaches it. */
+      const tabTo = async (target: Locator) => {
+        for (let presses = 0; presses < 160; presses += 1) {
+          if (await target.evaluate((element) => element === document.activeElement)) return;
+          await page.keyboard.press('Tab');
+        }
+        throw new Error(`${String(target)} was never reached by Tab`);
+      };
+      /** Chooses an option of a select by typing its text, then waits until it is chosen. */
+      const choose = async (select: Locator, text: string) => {
+        await tabTo(select);
+        await page.keyboard.type(text);
+        await vi.waitFor(
+          async () => {
+            const chosen = await select.evaluate(
+              (element) => (element as HTMLSelectElement).selectedOptions[0]?.textContent,
+            );
+            if (chosen !== text) throw new Error(`${chosen} is chosen`);
+          },
+          { timeout: 10_000 },
+        );
+      };
+
+      await page.goto(`${SERVICE}/#/query-definitions/new`);
+      const connection = page.getByLabel('Connection', { exact: true });
+      await arrive({
+        shows: [page.getByRole('heading', { name: 'New query definition', level: 1 }), connection],
+      });
+      await choose(connection, connectionName);
+      const title = `Readings by site ${Date.now()}`;
+      await tabTo(page.getByLabel('Title', { exact: true }));
+      await page.keyboard.type(title);
+      await check('a new built query', {
+        shows: [
+          page.getByRole('radio', { name: 'Builder', exact: true }),
+          page.getByRole('button', { name: 'Describe the source' }),
+          page.getByRole('figure', { name: 'The SQL it runs' }),
+        ],
+      });
+
+      // The source's tables and views, and one chosen.
+      await tabTo(page.getByRole('button', { name: 'Describe the source' }));
+      await page.keyboard.press('Enter');
+      const table = page.getByLabel('Table or view', { exact: true });
+      await arrive({ shows: table });
+      await choose(table, 'sample.site');
+      const columns = page.getByRole('group', { name: 'Columns to return' });
+      for (const name of ['id', 'name']) {
+        await tabTo(columns.getByRole('checkbox', { name, exact: true }));
+        await page.keyboard.press('Space');
+      }
+      await check('a table and its columns chosen', {
+        shows: [columns.getByLabel('Name of name', { exact: true })],
+      });
+
+      // A parameter, and a filter on it.
+      await tabTo(page.getByRole('button', { name: 'Add parameter' }));
+      await page.keyboard.press('Enter');
+      const parameter = page.getByRole('group', { name: 'Parameter 1' });
+      await tabTo(parameter.getByLabel('Name', { exact: true }));
+      await page.keyboard.type('site');
+      await tabTo(parameter.getByLabel('Type', { exact: true }));
+      await page.keyboard.type('Integer');
+      await tabTo(page.getByRole('button', { name: 'Add a filter' }));
+      await page.keyboard.press('Enter');
+      const filter = page.getByRole('group', { name: 'Filter 1' });
+      await check('a filter on a parameter', {
+        shows: [
+          filter.getByLabel('Comparison', { exact: true }),
+          page.getByText(/OPERATOR\(pg_catalog\.=\) \(\$1::pg_catalog\.int8\)/),
+        ],
+      });
+
+      // Grouped and counted.
+      await tabTo(page.getByRole('checkbox', { name: 'Group and summarise' }));
+      await page.keyboard.press('Space');
+      await tabTo(page.getByRole('button', { name: 'Add a summary' }));
+      await page.keyboard.press('Enter');
+      await check('grouped, with a summary', {
+        shows: [
+          page.getByRole('group', { name: 'Summary 1' }),
+          page.getByText(/pg_catalog\.count\(\*\) AS "count"/),
+        ],
+      });
+
+      // Described by the source, each column proposed and confirmed.
+      await tabTo(page.getByRole('button', { name: 'Describe', exact: true }));
+      await page.keyboard.press('Enter');
+      const declared = page.getByRole('table', { name: 'Columns' });
+      await check('its columns proposed', {
+        shows: [declared.getByRole('button', { name: 'Confirm count' })],
+      });
+      for (const name of ['id', 'name', 'count']) {
+        await tabTo(declared.getByRole('button', { name: `Confirm ${name}` }));
+        await page.keyboard.press('Enter');
+      }
+      await check('its columns confirmed', {
+        shows: page.getByRole('button', { name: 'Save version' }),
+      });
+
+      // Run against a sample value.
+      const sample = page.getByRole('region', { name: 'Sample' });
+      await tabTo(sample.getByLabel('site', { exact: true }));
+      await page.keyboard.type('1');
+      await tabTo(sample.getByRole('button', { name: 'Run sample' }));
+      await page.keyboard.press('Enter');
+      await check('a built query sampled', {
+        shows: [
+          sample.getByRole('table', { name: 'The first rows' }),
+          sample.getByText(/^Checksum [0-9a-f]{12}\.$/),
+        ],
+      });
+
+      // Saved, and its own page, opened in the builder.
+      await tabTo(page.getByRole('button', { name: 'Save version' }));
+      await page.keyboard.press('Enter');
+      await check('a built query definition', {
+        shows: [
+          page.getByRole('heading', { name: title, level: 1 }),
+          page.getByText('Version 0.1'),
+          page.getByRole('group', { name: 'Filter 1' }),
         ],
       });
     });

@@ -232,7 +232,7 @@ describe('the development content', () => {
     });
   });
 
-  it('lets Ada use connections and write SQL against them in General through a development role of its own, and nobody else, however often it runs', async () => {
+  it('lets Ada use connections and write SQL against them in General, and Grace use them and write no SQL, through development roles of its own, however often it runs', async () => {
     await service.withTenant(tenant, (trx) => seedDevelopmentContent(trx, { issuer: ISSUER }));
     // The role as D1 made it, before it held write_sql: seeding again gives it write_sql (D2-T).
     await service.withTenant(tenant, (trx) =>
@@ -263,18 +263,38 @@ describe('the development content', () => {
         .where('subject', '=', 'ada')
         .executeTakeFirstOrThrow();
       expect(grants).toEqual([{ principal_id: ada.id, space_id: general.id }]);
-      for (const [subject, allowed] of [
-        ['ada', true],
-        ['grace', false],
+      // Grace builds queries (D4): she uses the connections and writes no SQL.
+      const builder = await findRole(trx, 'Query builder');
+      expect(builder?.permissions).toEqual(['read', 'use_connection']);
+      const grace = await trx
+        .selectFrom('principal')
+        .select('id')
+        .where('subject', '=', 'grace')
+        .executeTakeFirstOrThrow();
+      expect(
+        await trx
+          .selectFrom('access_grant')
+          .select(['principal_id', 'space_id'])
+          .where('role_id', '=', builder!.id)
+          .execute(),
+      ).toEqual([{ principal_id: grace.id, space_id: general.id }]);
+      for (const [subject, uses, writes] of [
+        ['ada', true, true],
+        ['grace', true, false],
+        ['alice', false, false],
       ] as const) {
         const principal = await trx
           .selectFrom('principal')
           .select('id')
           .where('subject', '=', subject)
-          .executeTakeFirstOrThrow();
+          .executeTakeFirst();
+        if (principal === undefined) {
+          expect(uses, subject).toBe(false);
+          continue;
+        }
         const facts = await loadFacts(trx, principal.id, { kind: 'space', id: general.id });
-        expect(decide('use_connection', facts!).allowed, subject).toBe(allowed);
-        expect(decide('write_sql', facts!).allowed, subject).toBe(allowed);
+        expect(decide('use_connection', facts!).allowed, subject).toBe(uses);
+        expect(decide('write_sql', facts!).allowed, subject).toBe(writes);
       }
     });
   });
