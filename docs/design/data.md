@@ -643,14 +643,28 @@ value is a typed filter the connector applies to its canonical rows.
   `pg_namespace` by those names alone, its names bound values compared byte for byte, a live column
   (`attnum > 0`, not dropped) of a relation of a kind the describe lists. A column absent is refused
   `source_refused` with `42703`, the failure naming the column, and a relation absent or of no such kind `42P01`,
-  so the author reads D4-K's words for them; nothing of the query reaches the source.
+  so the author reads D4-K's words for them; a system column such as `ctid` is refused `42703` too,
+  its message saying it is a system column a built query does not read. None of the query reaches
+  the source.
+
+  **Every relation the tree names is held before the check, until the query has run.** Otherwise a
+  column renamed between the check and the run would be read as a function after all. The
+  transaction is read committed whatever the account's default, and each relation, once by name in
+  schema-then-name order, is parsed and described as `SELECT FROM ONLY "schema"."name"`, never
+  planned or run: parsing takes its `ACCESS SHARE` lock, which the transaction keeps, so a rename or
+  a drop waits for the query, within the request's deadline, and the check then reads the catalogue
+  as it stands. Not `LOCK TABLE`, which refuses a materialised view and a foreign table, both
+  offered, and wants a table privilege a describe never did; `ONLY`, since the check is of the named
+  relation's own columns. A relation absent, of a schema absent, or of a kind nothing reads is
+  `42P01` in the product's words; one in a schema the account may not use is the source's `42501`,
+  alike whether or not the schema holds it, before the catalogue is read.
 
   A source's refusal of a built query is answered in the product's words by its SQLSTATE (D4-K) -
   `42P01` a table or view the source does not have, `42703` a column, `42883` and `42804` two types it
   cannot compare or an aggregate a column's type cannot take, `42501` the account may not read it -
   since D2-H's rule stands: the source's own message goes only to a caller holding `write_sql`.
-  PostgreSQL checks privileges when a statement executes, so `42501` is met at a sample or a run, never
-  at describe.
+  PostgreSQL checks a table's privileges when a statement executes, so `42501` for a table is met at
+  a sample or a run, never at describe; a schema the account may not use is `42501` at describe too.
 
 - **`sql`**, the fallback: text with named parameters, `{{site}}` for a value and `{{#name}}` for a
   variation's fragment (D2-B), always bound by the driver. A marker is found by a PostgreSQL lexer in

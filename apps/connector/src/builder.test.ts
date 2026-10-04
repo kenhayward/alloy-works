@@ -328,10 +328,14 @@ const PLANTED = {
 const asPlanted = (definition: Omit<DraftDefinition, 'connection'>) =>
   run(settings({ account: PLANTED.account }), PLANTED.password, definition);
 
-/** Leaves the shared source as it found it: the planted schema and the account both dropped. */
+/** A schema of the test's own that the planted account is given no `USAGE` on. */
+const HIDDEN = 'd4_hidden';
+
+/** Leaves the shared source as it found it: the planted schemas and the account all dropped. */
 const unplant = () =>
   asSuperuser(async (client) => {
     await client.query(`drop schema if exists ${PLANTED.schema} cascade`);
+    await client.query(`drop schema if exists ${HIDDEN} cascade`);
     const role = await client.query('select 1 from pg_roles where rolname = $1', [PLANTED.account]);
     if (role.rowCount === 1) {
       await client.query(`drop owned by ${PLANTED.account}`);
@@ -365,6 +369,31 @@ describe(
           `create function ${PLANTED.schema}.leak(sample.site) returns text language plpgsql
              as $$ begin raise exception 'the planted function ran'; end $$`,
         );
+        // A table with a column leak, and a function named "LEAK" its row can be passed to: under the
+        // planted case-blind "C", "l"."LEAK" would match the column and PostgreSQL call the function.
+        await client.query(`create table ${PLANTED.schema}.lit (leak text)`);
+        await client.query(`insert into ${PLANTED.schema}.lit values ('kept')`);
+        await client.query(
+          `create function ${PLANTED.schema}."LEAK"(${PLANTED.schema}.lit) returns text language plpgsql
+             as $$ begin raise exception 'the planted function ran'; end $$`,
+        );
+        // A table whose column f is renamed while a query naming it is checked, and a function f a
+        // row of it can be passed to.
+        await client.query(`create table ${PLANTED.schema}.raced (f text)`);
+        await client.query(`insert into ${PLANTED.schema}.raced values ('kept')`);
+        await client.query(
+          `create function ${PLANTED.schema}.f(${PLANTED.schema}.raced) returns text language plpgsql
+             as $$ begin raise exception 'the planted function ran'; end $$`,
+        );
+        // A sequence and a composite type: relations, of kinds no query is offered.
+        await client.query(`create sequence ${PLANTED.schema}.counter`);
+        await client.query(`create type ${PLANTED.schema}.pair as (x integer)`);
+        await client.query(
+          `grant select on ${PLANTED.schema}.lit, ${PLANTED.schema}.raced, ${PLANTED.schema}.counter to ${PLANTED.account}`,
+        );
+        // A schema the account may not use, holding a table.
+        await client.query(`create schema ${HIDDEN}`);
+        await client.query(`create table ${HIDDEN}.t (id integer)`);
       });
     });
     afterAll(unplant);
@@ -462,6 +491,35 @@ describe(
       expect(await describeBuilt(settings(), PASSWORDS.reader, queryOf(whole))).toEqual({
         failure: absent('s', 'row_to_json'),
       });
+      // A column named in the other case: "LEAK" is not leak under pg_catalog's "C", whatever "C" the
+      // account's search path finds first, so the planted "LEAK" is never called.
+      const shouted = built(
+        {
+          sources: [{ alias: 'l', table: { schema: PLANTED.schema, name: 'lit' } }],
+          joins: [],
+          select: [{ name: 'leaked', of: ref('l', 'LEAK') }],
+          groupBy: [],
+        },
+        {},
+        { key: [], order: 'multiset' },
+      );
+      const noShout = {
+        code: 'source_refused',
+        attribution: 'query',
+        source: {
+          sqlstate: '42703',
+          message: `The table or view "${PLANTED.schema}"."lit", the query's source l, has no column "LEAK"`,
+        },
+        column: 'LEAK',
+      };
+      expect(await asPlanted(shouted)).toEqual({ outcome: 'failed', failure: noShout });
+      expect(
+        await describeBuilt(
+          settings({ account: PLANTED.account }),
+          PLANTED.password,
+          queryOf(shouted),
+        ),
+      ).toEqual({ failure: noShout });
     });
 
     it("checks every place a query names a column of a table, a nested query's tables among them", async () => {
@@ -536,6 +594,168 @@ describe(
           groupBy: [],
         }),
       ).toMatchObject({ failure: { code: 'source_refused', source: { sqlstate: '42P01' } } });
+    });
+
+    it('holds every relation the query names from before its columns are checked until it has run, so a column renamed meanwhile is refused', async () => {
+      const raced: Query = {
+        sources: [{ alias: 'r', table: { schema: PLANTED.schema, name: 'raced' } }],
+        joins: [],
+        select: [{ name: 'value', of: ref('r', 'f') }],
+        groupBy: [],
+      };
+      const definition = built(raced, {}, { key: [], order: 'multiset' });
+      const renamed = {
+        code: 'source_refused',
+        attribution: 'query',
+        source: {
+          sqlstate: '42703',
+          message: `The table or view "${PLANTED.schema}"."raced", the query's source r, has no column "f"`,
+        },
+        column: 'f',
+      };
+      /**
+       * The act started while a second session holds the rename of f to g uncommitted, so the act
+       * waits on the table; the rename committed once it does. Checked before the table is held, f
+       * would pass and then be read as the planted f(r). Named back afterwards.
+       */
+      const duringRename = <T>(act: () => Promise<T>) =>
+        asSuperuser(async (renamer) => {
+          await renamer.query('begin');
+          await renamer.query(`alter table ${PLANTED.schema}.raced rename column f to g`);
+          const settled = act().then(
+            (value) => ({ value }),
+            (error: unknown) => ({ error }),
+          );
+          try {
+            await asSuperuser(async (watcher) => {
+              const until = Date.now() + 60_000;
+              for (;;) {
+                const waiting = await watcher.query(
+                  `select 1 from pg_locks
+                    where relation = '${PLANTED.schema}.raced'::regclass and not granted`,
+                );
+                if (waiting.rowCount !== 0) return;
+                if (Date.now() > until) throw new Error('The act never waited on the table');
+                await new Promise((resolve) => setTimeout(resolve, 25));
+              }
+            });
+          } finally {
+            await renamer.query('commit');
+          }
+          const outcome = await settled;
+          await renamer.query(`alter table ${PLANTED.schema}.raced rename column g to f`);
+          if ('error' in outcome) throw outcome.error;
+          return outcome.value;
+        });
+      expect(await duringRename(() => asPlanted(definition))).toEqual({
+        outcome: 'failed',
+        failure: renamed,
+      });
+      expect(
+        await duringRename(() =>
+          describeBuilt(settings({ account: PLANTED.account }), PLANTED.password, raced),
+        ),
+      ).toEqual({ failure: renamed });
+      // And where the account's transactions default to repeatable read, whose snapshot would be
+      // taken before the wait: the check still reads the catalogue as it stands once the table is held.
+      await asSuperuser((client) =>
+        client.query(
+          `alter role ${PLANTED.account} set default_transaction_isolation = 'repeatable read'`,
+        ),
+      );
+      try {
+        expect(await duringRename(() => asPlanted(definition))).toEqual({
+          outcome: 'failed',
+          failure: renamed,
+        });
+        expect(
+          await duringRename(() =>
+            describeBuilt(settings({ account: PLANTED.account }), PLANTED.password, raced),
+          ),
+        ).toEqual({ failure: renamed });
+      } finally {
+        await asSuperuser((client) =>
+          client.query(`alter role ${PLANTED.account} reset default_transaction_isolation`),
+        );
+      }
+    });
+
+    it('answers a schema the account may not use alike, whether or not it holds the table or the column', async () => {
+      const from = (name: string, columnName: string): Query => ({
+        sources: [{ alias: 'h', table: { schema: HIDDEN, name } }],
+        joins: [],
+        select: [{ name: 'id', of: ref('h', columnName) }],
+        groupBy: [],
+      });
+      const describedAs = (query: Query) =>
+        describeBuilt(settings({ account: PLANTED.account }), PLANTED.password, query);
+      const absentTable = await describedAs(from('nothing', 'id'));
+      expect(absentTable).toMatchObject({
+        failure: { code: 'source_refused', source: { sqlstate: '42501' } },
+      });
+      expect(await describedAs(from('t', 'nope'))).toEqual(absentTable);
+      expect(await describedAs(from('t', 'id'))).toEqual(absentTable);
+      if (!('failure' in absentTable)) throw new Error('Described');
+      expect(await asPlanted(built(from('t', 'nope'), {}, { key: [], order: 'multiset' }))).toEqual(
+        { outcome: 'failed', failure: absentTable.failure },
+      );
+    });
+
+    it("refuses a relation of a kind no query is offered, and a system column, in the product's words", async () => {
+      const notReadable = (name: string, alias: string) => ({
+        failure: {
+          code: 'source_refused',
+          attribution: 'query',
+          source: {
+            sqlstate: '42P01',
+            message: `The source has no table or view "${PLANTED.schema}"."${name}", the query's source ${alias}`,
+          },
+        },
+      });
+      const describedAs = (query: Query) =>
+        describeBuilt(settings({ account: PLANTED.account }), PLANTED.password, query);
+      // A sequence, whose last_value a query could otherwise read.
+      const sequence: Query = {
+        sources: [{ alias: 'q', table: { schema: PLANTED.schema, name: 'counter' } }],
+        joins: [],
+        select: [{ name: 'last', of: ref('q', 'last_value') }],
+        groupBy: [],
+      };
+      expect(await describedAs(sequence)).toEqual(notReadable('counter', 'q'));
+      expect(await asPlanted(built(sequence, {}, { key: [], order: 'multiset' }))).toEqual({
+        outcome: 'failed',
+        ...notReadable('counter', 'q'),
+      });
+      // A composite type.
+      expect(
+        await describedAs({
+          sources: [{ alias: 'c', table: { schema: PLANTED.schema, name: 'pair' } }],
+          joins: [],
+          select: [{ name: 'x', of: ref('c', 'x') }],
+          groupBy: [],
+        }),
+      ).toEqual(notReadable('pair', 'c'));
+      // A system column: the table has it, and a built query does not read it.
+      const system = {
+        code: 'source_refused',
+        attribution: 'query',
+        source: {
+          sqlstate: '42703',
+          message: `The column "ctid" of the table or view "sample"."site", the query's source s, is a system column, which a built query does not read`,
+        },
+        column: 'ctid',
+      };
+      const tid: Query = {
+        sources: [site],
+        joins: [],
+        select: [{ name: 'at', of: ref('s', 'ctid') }],
+        groupBy: [],
+      };
+      expect(await describedAs(tid)).toEqual({ failure: system });
+      expect(await asPlanted(built(tid, {}, { key: [], order: 'multiset' }))).toEqual({
+        outcome: 'failed',
+        failure: system,
+      });
     });
   },
 );

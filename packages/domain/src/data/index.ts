@@ -131,5 +131,5 @@ export type {
   SelectItem,
   Source,
 } from './builder.js';
-export { generatedLength, generatePostgres } from './generate.js';
+export { generatedLength, generatePostgres, quoteIdentifier } from './generate.js';
 export { bindFetch } from './fetch.js';

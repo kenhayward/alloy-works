@@ -436,8 +436,8 @@ describe('the domain package', () => {
         'bindingNodeSchema',
         'provenanceSchema',
         // Data, D4: the builder's format and its checks (the tree's for a describe among them),
-        // PostgreSQL's generator, a fetch bound by its kind, and the SQL fallback's text by itself
-        // (the D4 plan).
+        // PostgreSQL's generator and its quoting of a name, a fetch bound by its kind, and the SQL
+        // fallback's text by itself (the D4 plan).
         'BUILDER_FORMAT',
         'aggregates',
         'bindFetch',
@@ -447,6 +447,7 @@ describe('the domain package', () => {
         'comparisons',
         'generatePostgres',
         'generatedLength',
+        'quoteIdentifier',
         'sqlTextSchema',
         'treeProblem',
       ].sort(),
