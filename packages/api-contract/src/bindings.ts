@@ -1,4 +1,10 @@
-import { bindingNodeSchema, MAX_COLUMNS, provenanceSchema } from '@alloy-works/domain';
+import {
+  bindingNodeSchema,
+  MAX_COLUMNS,
+  provenanceSchema,
+  TAKE_FAILURES,
+  valueTypeSchema,
+} from '@alloy-works/domain';
 import { z } from 'zod';
 import { DataFailureView, DataProblemsRefusal, UsesView } from './connections.js';
 import type { RouteContract } from './contract.js';
@@ -58,6 +64,45 @@ export const ProvenanceView = provenanceSchema.extend({
   }),
 });
 
+/**
+ * What a binding's take gave from a dataset version (B1-H): the value, in its column's canonical form,
+ * with the column it was declared as - its name and type, never the source's column it reads - or why
+ * there is none, by code; or `unavailable` where the stored result could not be read to take it.
+ */
+export const TakeOutcomeView = z
+  .union([
+    z.strictObject({
+      value: z
+        .union([z.string(), z.boolean()])
+        .describe("The value, in its column's canonical form: a string, or a boolean"),
+      column: z.strictObject({
+        name: z.string().describe('The declared column it was taken from'),
+        type: valueTypeSchema,
+      }),
+    }),
+    z.strictObject({
+      failure: z
+        .enum(TAKE_FAILURES)
+        .describe(
+          '`take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone',
+        ),
+      count: z.number().int().min(2).optional().describe('`value_many`: how many rows there were'),
+      column: z
+        .string()
+        .optional()
+        .describe('`take_invalid`: the column, taken or key, the result does not have'),
+    }),
+    z.strictObject({
+      unavailable: z
+        .literal(true)
+        .describe(
+          'The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again',
+        ),
+    }),
+  ])
+  .describe('What the binding takes from this dataset version');
+export type TakeOutcomeView = z.infer<typeof TakeOutcomeView>;
+
 /** What a binding holds in a document: a dataset version, from the latest resolution for it. */
 const HeldView = z.object({
   dataset: z.string(),
@@ -70,8 +115,16 @@ const HeldView = z.object({
     .describe(
       "Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again",
     ),
+  taken: TakeOutcomeView.nullable().describe(
+    'The value the binding takes from the version held, or null where it is stale',
+  ),
   act: z.enum(['resolve', 'accept']).describe('The act that made it what the binding holds'),
-  by: z.string().describe('Who resolved or accepted it'),
+  by: z
+    .object({
+      id: z.string(),
+      displayName: z.string().nullable().describe('Their name, or null where they have none'),
+    })
+    .describe('Who resolved or accepted it'),
   at: z.string().describe('When'),
 });
 
@@ -81,10 +134,29 @@ export const BindingStateView = z.object({
   binding: bindingNodeSchema,
   held: HeldView.nullable().describe('What it holds, or null where it has never been resolved'),
   waiting: z
-    .object({ version: z.string(), provenance: ProvenanceView })
+    .object({
+      version: z.string(),
+      provenance: ProvenanceView,
+      taken: TakeOutcomeView.describe('The value the binding would take from it'),
+    })
     .nullable()
     .describe(
       'A different result a check recorded after the one held, which nothing holds until it is accepted',
+    ),
+  definition: z
+    .object({
+      title: z.string(),
+      version: z.string().describe('`revision.version`, as `0.2`'),
+    })
+    .nullable()
+    .describe(
+      'The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition',
+    ),
+  connection: z
+    .object({ name: z.string() })
+    .nullable()
+    .describe(
+      'The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection',
     ),
 });
 export type BindingStateView = z.infer<typeof BindingStateView>;

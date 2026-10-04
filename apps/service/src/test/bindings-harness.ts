@@ -136,6 +136,8 @@ export interface Harness {
     url: string,
     payload?: unknown,
   ): Promise<LightMyRequestResponse>;
+  /** Calls as `call` does, to a service of the same environment given no object store. */
+  callWithout(): Harness['call'];
   /** Grants a role, allowed, and answers the grant's id. */
   allow(principal: string, role: string, level: Json): Promise<string>;
   /** A connection Ada makes in a space, its credential set and its test passed clean. */
@@ -163,7 +165,12 @@ export interface Harness {
   close(): Promise<void>;
 }
 
-export async function startHarness(): Promise<Harness> {
+export interface HarnessOptions {
+  /** The stores the service is given, made from the real ones: a decorator a test counts through. */
+  readonly objects?: (stores: ObjectStores) => ObjectStores;
+}
+
+export async function startHarness(options: HarnessOptions = {}): Promise<Harness> {
   const db = await freshDatabase();
   const store = await testObjectStore();
   await bootstrapCluster(db.adminUrl, TEST_PASSWORDS);
@@ -188,36 +195,42 @@ export async function startHarness(): Promise<Harness> {
   const tenantDb = createTenantDatabase(db.serviceUrl);
   const connector = fakeConnector();
   const lines: string[] = [];
-  const app = buildApp({
-    db: tenantDb,
-    logLevel: 'info',
-    logStream: new Writable({
-      write(chunk: Buffer, _encoding, done) {
-        lines.push(chunk.toString('utf8'));
-        done();
+  const appWith = (objects: ObjectStores | undefined) =>
+    buildApp({
+      db: tenantDb,
+      logLevel: 'info',
+      logStream: new Writable({
+        write(chunk: Buffer, _encoding, done) {
+          lines.push(chunk.toString('utf8'));
+          done();
+        },
+      }),
+      oidc: createOidcClient({ allowInsecureIssuers: true }),
+      secrets: environmentSecrets({}),
+      sealingKey: TEST_SEALING_KEY,
+      ...(objects === undefined ? {} : { objects }),
+      connector: {
+        url: 'http://connector.test:8090',
+        key: FAKE_CONNECTOR_KEY,
+        fetch: connector.fetch,
       },
-    }),
-    oidc: createOidcClient({ allowInsecureIssuers: true }),
-    secrets: environmentSecrets({}),
-    sealingKey: TEST_SEALING_KEY,
-    objects: stores,
-    connector: {
-      url: 'http://connector.test:8090',
-      key: FAKE_CONNECTOR_KEY,
-      fetch: connector.fetch,
-    },
-  });
+    });
+  const app = appWith(options.objects ? options.objects(stores) : stores);
+  const others: FastifyInstance[] = [];
   const cookies: Record<string, string> = {};
   const ids: Record<string, string> = {};
   const roles: Record<string, string> = {};
 
-  const call: Harness['call'] = (as, method, url, payload) =>
-    app.inject({
-      method,
-      url,
-      headers: { host: HOST, cookie: cookies[as]! },
-      ...(payload === undefined ? {} : { payload: payload as Json }),
-    });
+  const callOn =
+    (on: FastifyInstance): Harness['call'] =>
+    (as, method, url, payload) =>
+      on.inject({
+        method,
+        url,
+        headers: { host: HOST, cookie: cookies[as]! },
+        ...(payload === undefined ? {} : { payload: payload as Json }),
+      });
+  const call = callOn(app);
   const allow: Harness['allow'] = (principal, role, level) =>
     tenantDb.withTenant(tenant, async (trx) => {
       const answer = await grant(trx, {
@@ -282,6 +295,12 @@ export async function startHarness(): Promise<Harness> {
     lines,
     call,
     allow,
+
+    callWithout() {
+      const other = appWith(undefined);
+      others.push(other);
+      return callOn(other);
+    },
 
     async connection(name, space = general) {
       const made = await call('ada', 'POST', `/v1/spaces/${space}/connections`, {
@@ -394,6 +413,7 @@ export async function startHarness(): Promise<Harness> {
     },
 
     async close() {
+      for (const other of others) await other.close();
       await app.close();
       await tenantDb.close();
       await idp.close();

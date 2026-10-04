@@ -10,6 +10,7 @@ import type {
   QueryDefinitionParams,
   ResolveBindingsBody,
   ResolveBindingsView,
+  TakeOutcomeView,
 } from '@alloy-works/api-contract';
 import { SESSION_COOKIE, type ProvenanceView } from '@alloy-works/api-contract';
 import {
@@ -26,8 +27,11 @@ import {
   readVersion,
   recordDatasetVersion,
   recordResolution,
+  recordTake,
   resolutionsOf,
   resolveOccurrences,
+  takeDigest,
+  takesOf,
   type HeldResolution,
   type StoredConnection,
   type Tenant,
@@ -38,6 +42,7 @@ import {
   bindingDigestInput,
   bindingsIn,
   canonicalResultBytes,
+  canonicalResultSchema,
   checkParameterValues,
   checkTake,
   decide,
@@ -48,6 +53,7 @@ import {
   parseQueryDefinition,
   readContent,
   readOutline,
+  takeValue,
   type Binding,
   type DraftDefinition,
   type Limits,
@@ -56,8 +62,9 @@ import {
   type QueryDefinition,
   type RunAnswer,
   type RunRequest,
+  type TakeOutcome,
 } from '@alloy-works/domain';
-import { tenantPrefix, type ObjectStores } from '@alloy-works/objects';
+import { tenantPrefix, type ObjectStores, type TenantStore } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
 import type { z } from 'zod';
 import { authoriseAt, callerOf, notFound, type Authorised, type Caller } from '../access.js';
@@ -112,8 +119,6 @@ function definitionReader(trx: TenantTransaction, caller: Caller) {
     return reads;
   };
 }
-
-type Reads = ReturnType<typeof definitionReader>;
 
 const sha256 = (text: string) => createHash('sha256').update(text, 'utf8').digest('hex');
 
@@ -347,20 +352,56 @@ async function prepare(
   }
 }
 
-/** A run's outcome: its provenance, or the failure that refuses it. */
+/** What a binding takes: a column of the only row, or of the row a key names. */
+type Take = Binding['take'];
+
+/**
+ * A run's outcome: its provenance and what each binding asking its question takes from its rows, by
+ * the take's digest - the rows themselves are not kept, since fifty of up to 25 MiB are too many to
+ * hold until the recording transaction (B1-H) - or the failure that refuses it.
+ */
 type Ran =
-  | { readonly ok: true; readonly provenance: Provenance }
+  | {
+      readonly ok: true;
+      readonly provenance: Provenance;
+      readonly taken: ReadonlyMap<string, TakeOutcome>;
+    }
   | { readonly ok: false; readonly failure: FailureIn };
+
+/** The takes of every binding asking each question, by question. */
+function takesByQuestion(prepared: readonly Prepared[]): Map<string, Take[]> {
+  const takes = new Map<string, Take[]>();
+  for (const each of prepared) {
+    const asking = takes.get(each.question) ?? [];
+    asking.push(each.placed.binding.take);
+    takes.set(each.question, asking);
+  }
+  return takes;
+}
+
+/** Records what a binding took from the version its run recorded or found (B1-H). */
+const recordTaken = (
+  trx: TenantTransaction,
+  version: string,
+  each: Prepared,
+  ran: Extract<Ran, { ok: true }>,
+) => {
+  const take = each.placed.binding.take;
+  return recordTake(trx, { version, take, outcome: ran.taken.get(takeDigest(take))! });
+};
 
 /**
  * Asks the connector for one run, outside any transaction, and holds what it answered to its checksum
  * (D2-K): the rows in their canonical form must hash to what it said, or it is `connector_error`. The
  * bytes are then put in the tenant's store, whose key is their SHA-256, before any row names them
- * (D3-G); a key that is not that checksum's is a store that did not keep what it was given.
+ * (D3-G); a key that is not that checksum's is a store that did not keep what it was given. Each take
+ * asking this question is taken from the rows here, by `takeValue` over the columns the run declares,
+ * and only its outcome is carried on (B1-H).
  */
 async function runOnce(
   tenant: Tenant,
   prepared: Prepared,
+  takes: readonly Take[],
   through: RunsThrough,
   store: () => Promise<{ put(body: Uint8Array, contentType: string): Promise<{ key: string }> }>,
 ): Promise<Ran> {
@@ -385,8 +426,12 @@ async function runOnce(
   if (kept.key !== `${tenantPrefix(tenant)}sha256/${checksum}`) {
     throw new Error('The store kept a result under a key that is not its checksum');
   }
+  const taken = new Map(
+    takes.map((take) => [takeDigest(take), takeValue(take, ran.result, prepared.draft.columns)]),
+  );
   return {
     ok: true,
+    taken,
     provenance: {
       schemaVersion: 1,
       queryDefinition: { artifact: prepared.definition.id, version: prepared.definition.version },
@@ -579,43 +624,220 @@ async function mayTakeResult(
   }
 }
 
-/** The view of one binding as a document holds it now (D3-J, D3-R). */
-async function stateView(
+/** A take asked of a dataset version, with the provenance it is taken by. */
+interface TakeAsked {
+  readonly version: string;
+  readonly take: Take;
+  readonly provenance: Provenance;
+}
+
+const takeKey = (version: string, take: Take) => `${version} ${takeDigest(take)}`;
+
+/**
+ * What each take asked gives (B1-H), by `takeKey`: what `dataset_take` holds, read first; and for a
+ * miss, the stored result read once per version by its checksum, held to it and to the canonical
+ * shape, each take taken by `takeValue` over the version's own declared columns and recorded. A result
+ * that cannot be read - no store, an object gone, or bytes that are not its checksum's or do not parse
+ * - is `unavailable` for every take of it, recorded nowhere and failing nothing, so a later read tries
+ * again.
+ */
+async function takenOf(
   trx: TenantTransaction,
-  reads: Reads,
-  placed: Placed,
-  held: HeldResolution | undefined,
-): Promise<BindingStateView> {
-  if (!held) return { node: placed.node, binding: placed.binding, held: null, waiting: null };
-  const stale = held.digest !== placed.digest;
-  const name = await datasetName(trx, held.held.dataset);
-  const readsDefinition = await reads(held.held.provenance.queryDefinition.artifact);
-  return {
-    node: placed.node,
-    binding: placed.binding,
-    held: {
-      dataset: held.held.dataset,
-      version: held.held.version,
-      number: `${held.held.number.revision}.${held.held.number.version}`,
-      provenance: provenanceView(held.held.provenance, readsDefinition),
-      name: name?.name ?? null,
-      stale,
-      act: held.act,
-      by: held.by,
-      at: held.at.toISOString(),
-    },
-    waiting:
-      !stale && held.waiting
-        ? {
-            version: held.waiting.version,
-            provenance: provenanceView(
-              held.waiting.provenance,
-              await reads(held.waiting.provenance.queryDefinition.artifact),
-            ),
-          }
-        : null,
+  store: (() => Promise<TenantStore>) | undefined,
+  keyFor: (checksum: string) => string,
+  asked: readonly TakeAsked[],
+): Promise<Map<string, TakeOutcomeView>> {
+  const unique = [
+    ...new Map(asked.map((each) => [takeKey(each.version, each.take), each])).values(),
+  ];
+  const taken = new Map<string, TakeOutcomeView>(
+    (
+      await takesOf(
+        trx,
+        unique.map((each) => ({ version: each.version, takeDigest: takeDigest(each.take) })),
+      )
+    ).map((each) => [`${each.version} ${each.takeDigest}`, each.outcome]),
+  );
+  const missed = new Map<string, TakeAsked[]>();
+  for (const each of unique) {
+    if (taken.has(takeKey(each.version, each.take))) continue;
+    missed.set(each.version, [...(missed.get(each.version) ?? []), each]);
+  }
+  for (const [version, misses] of missed) {
+    const { provenance } = misses[0]!;
+    const result = store === undefined ? undefined : await readResult(store, keyFor, provenance);
+    for (const each of misses) {
+      if (result === undefined) {
+        taken.set(takeKey(version, each.take), { unavailable: true });
+        continue;
+      }
+      const outcome = takeValue(each.take, result, provenance.columns);
+      await recordTake(trx, { version, take: each.take, outcome });
+      taken.set(takeKey(version, each.take), outcome);
+    }
+  }
+  return taken;
+}
+
+/** A stored result, held to its checksum and its shape, or undefined where it cannot be read. */
+async function readResult(
+  store: () => Promise<TenantStore>,
+  keyFor: (checksum: string) => string,
+  provenance: Provenance,
+) {
+  try {
+    const bytes = await (await store()).get(keyFor(provenance.checksum));
+    if (createHash('sha256').update(bytes).digest('hex') !== provenance.checksum) return undefined;
+    const parsed = canonicalResultSchema.safeParse(JSON.parse(bytes.toString('utf8')));
+    return parsed.success ? parsed.data : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The takes a binding's view asks: of the version held, unless stale, and of the one waiting. */
+function takesAsked(placed: Placed, held: HeldResolution | undefined): TakeAsked[] {
+  if (!held || held.digest !== placed.digest) return [];
+  const take = placed.binding.take;
+  return [
+    { version: held.held.version, take, provenance: held.held.provenance },
+    ...(held.waiting
+      ? [{ version: held.waiting.version, take, provenance: held.waiting.provenance }]
+      : []),
+  ];
+}
+
+/**
+ * Everything the bindings view answers beside what D3 answered (B1-I), for one request: each
+ * binding's taken values, its definition's title and version and its connection's name where the
+ * caller may read them, and who resolved it by name.
+ */
+function viewer(
+  trx: TenantTransaction,
+  caller: Caller,
+  objects: ObjectStores | undefined,
+  tenant: Tenant,
+) {
+  // `read` on any artifact, each asked once: a definition, and a connection.
+  const reads = definitionReader(trx, caller);
+  let opened: Promise<TenantStore> | undefined;
+  const store = objects && (() => (opened ??= objects.forTenant(trx, tenant)));
+  const keyFor = (checksum: string) => `${tenantPrefix(tenant)}sha256/${checksum}`;
+  const names = new Map<string, Promise<string | null>>();
+  const nameOf = (principal: string) => {
+    let name = names.get(principal);
+    if (!name) {
+      name = trx
+        .selectFrom('principal')
+        .select('display_name')
+        .where('id', '=', principal)
+        .executeTakeFirst()
+        .then((row) => row?.display_name ?? null);
+      names.set(principal, name);
+    }
+    return name;
+  };
+
+  /** The definition the binding holds a result of, or names: its title and number, to its reader. */
+  async function definitionOf(placed: Placed, held: HeldResolution | undefined) {
+    const ran = held?.held.provenance.queryDefinition;
+    const id = ran?.artifact ?? placed.binding.query;
+    if (!(await reads(id))) return null;
+    const pinned = ran?.version ?? placed.binding.version;
+    let version;
+    if (pinned === undefined) {
+      version = (await readQueryDefinition(trx, id))?.version;
+    } else {
+      const found = await readVersion(trx, pinned);
+      version = found?.artifactId === id && found.kind === 'queryDefinition' ? found : undefined;
+    }
+    if (!version) return null;
+    return {
+      title: parseQueryDefinition(version.content).title,
+      version: `${version.revision}.${version.version}`,
+    };
+  }
+
+  /** The connection the held result ran on, by name, to a reader of its definition and of it. */
+  async function connectionOf(held: HeldResolution | undefined) {
+    if (!held) return null;
+    const { queryDefinition, connection } = held.held.provenance;
+    if (!(await reads(queryDefinition.artifact)) || !(await reads(connection.artifact))) {
+      return null;
+    }
+    const version = await readVersion(trx, connection.version);
+    const name = (version?.content as { readonly name?: unknown } | undefined)?.name;
+    return version?.kind === 'connection' && typeof name === 'string' ? { name } : null;
+  }
+
+  /** The view of each binding as a document holds it now (D3-J, D3-R, B1-I), in the order given. */
+  return async function views(
+    each: readonly { readonly placed: Placed; readonly held: HeldResolution | undefined }[],
+  ): Promise<BindingStateView[]> {
+    const taken = await takenOf(
+      trx,
+      store,
+      keyFor,
+      each.flatMap(({ placed, held }) => takesAsked(placed, held)),
+    );
+    const out: BindingStateView[] = [];
+    for (const { placed, held } of each) {
+      const shown = {
+        definition: await definitionOf(placed, held),
+        connection: await connectionOf(held),
+      };
+      if (!held) {
+        out.push({
+          node: placed.node,
+          binding: placed.binding,
+          held: null,
+          waiting: null,
+          ...shown,
+        });
+        continue;
+      }
+      const stale = held.digest !== placed.digest;
+      const name = await datasetName(trx, held.held.dataset);
+      const readsDefinition = await reads(held.held.provenance.queryDefinition.artifact);
+      const take = placed.binding.take;
+      out.push({
+        node: placed.node,
+        binding: placed.binding,
+        held: {
+          dataset: held.held.dataset,
+          version: held.held.version,
+          number: `${held.held.number.revision}.${held.held.number.version}`,
+          provenance: provenanceView(held.held.provenance, readsDefinition),
+          name: name?.name ?? null,
+          stale,
+          taken: stale ? null : taken.get(takeKey(held.held.version, take))!,
+          act: held.act,
+          by: { id: held.by, displayName: await nameOf(held.by) },
+          at: held.at.toISOString(),
+        },
+        waiting:
+          !stale && held.waiting
+            ? {
+                version: held.waiting.version,
+                provenance: provenanceView(
+                  held.waiting.provenance,
+                  await reads(held.waiting.provenance.queryDefinition.artifact),
+                ),
+                taken: taken.get(takeKey(held.waiting.version, take))!,
+              }
+            : null,
+        ...shown,
+      });
+    }
+    return out;
   };
 }
+
+type Views = ReturnType<typeof viewer>;
+
+/** The view of one binding as a document holds it now. */
+const stateView = async (views: Views, placed: Placed, held: HeldResolution | undefined) =>
+  (await views([{ placed, held }]))[0]!;
 
 /** The latest resolution for each node and binding of a document, by both. */
 async function heldBy(
@@ -670,8 +892,9 @@ export async function resolveAct(
     const store = async () =>
       (opened ??= await db.withTenant(tenant, (open) => objects.forTenant(open, tenant)));
     const ran = new Map<string, Ran>();
+    const takes = takesByQuestion(prepared);
     const outcomes = await inTurn(questions, AT_ONCE, (each) =>
-      runOnce(tenant, each, through, store),
+      runOnce(tenant, each, takes.get(each.question)!, through, store),
     );
     questions.forEach((each, at) => ran.set(each.question, outcomes[at]!));
     return db.withTenant(tenant, async (record) => {
@@ -720,6 +943,7 @@ export async function resolveAct(
           });
           versions.set(each.question, recorded);
         }
+        await recordTaken(record, recorded.version.id, each, outcome);
         const before = held.get(key(node, binding.id));
         await recordResolution(record, {
           document: id,
@@ -828,7 +1052,10 @@ export async function checkAct(
     let opened: Awaited<ReturnType<ObjectStores['forTenant']>> | undefined;
     const store = async () =>
       (opened ??= await db.withTenant(tenant, (open) => objects.forTenant(open, tenant)));
-    const outcomes = await inTurn(asking, AT_ONCE, (each) => runOnce(tenant, each, through, store));
+    const takes = takesByQuestion(toRun);
+    const outcomes = await inTurn(asking, AT_ONCE, (each) =>
+      runOnce(tenant, each, takes.get(each.question)!, through, store),
+    );
     const ran = new Map(asking.map((each, at) => [each.question, outcomes[at]!]));
     return db.withTenant(tenant, async (record) => {
       const succeeded = toRun.filter((each) => ran.get(each.question)?.ok === true);
@@ -877,6 +1104,7 @@ export async function checkAct(
           });
           versions.set(each.question, recorded);
         }
+        await recordTaken(record, recorded.version.id, each, outcome);
         const holding = holdingNow.get(key(node, binding.id));
         if (!holding || holding.digest !== each.placed.digest) {
           results.set(key(node, binding.id), {
@@ -910,11 +1138,10 @@ export function bindingHandlers(
       const placed = await bindingsPlaced(trx, id, principalId);
       if (!placed) throw notFound();
       const held = await heldBy(trx, id);
-      const reads = definitionReader(trx, callerOf(request));
-      const bindings: BindingStateView[] = [];
-      for (const each of placed) {
-        bindings.push(await stateView(trx, reads, each, held.get(key(each.node, each.binding.id))));
-      }
+      const views = viewer(trx, callerOf(request), objects, tenantOf(request));
+      const bindings = await views(
+        placed.map((each) => ({ placed: each, held: held.get(key(each.node, each.binding.id)) })),
+      );
       return { bindings };
     },
 
@@ -942,13 +1169,13 @@ export function bindingHandlers(
       // Before what it holds is read, so two accepts, or an accept and a resolve, take turns.
       await lockBindings(trx, id, [{ node: found.node, binding: found.binding.id }]);
       const held = (await heldBy(trx, id)).get(key(body.node, body.binding));
-      const reads = definitionReader(trx, callerOf(request));
+      const views = viewer(trx, callerOf(request), objects, tenantOf(request));
       const precondition = async () =>
         refused(
           409,
           'resolution.precondition',
           'This binding no longer holds what this was accepted from, or that is not a newer result of it.',
-          { current: await stateView(trx, reads, found, held) },
+          { current: await stateView(views, found, held) },
         );
       if (!held || held.digest !== found.digest || held.held.version !== body.replaces) {
         throw await precondition();
@@ -978,12 +1205,7 @@ export function bindingHandlers(
         act: 'accept',
         by: principalId,
       });
-      return stateView(
-        trx,
-        reads,
-        found,
-        (await heldBy(trx, id)).get(key(body.node, body.binding)),
-      );
+      return stateView(views, found, (await heldBy(trx, id)).get(key(body.node, body.binding)));
     },
 
     /**

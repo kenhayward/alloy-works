@@ -130,7 +130,7 @@ describe('bindings and datasets through the service', () => {
         number: '0.1',
         stale: false,
         act: 'resolve',
-        by: h.ids.ada,
+        by: { id: h.ids.ada },
         name: null,
         provenance: {
           schemaVersion: 1,
@@ -524,7 +524,7 @@ describe('bindings and datasets through the service', () => {
     expect(accepted.json<State>().held).toMatchObject({
       version: both.revision,
       act: 'accept',
-      by: h.ids.ivy,
+      by: { id: h.ids.ivy },
     });
   });
 
