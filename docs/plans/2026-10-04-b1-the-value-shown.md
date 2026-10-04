@@ -8,8 +8,8 @@
 > [D3](2026-10-03-d3-datasets-and-resolutions.md) and [D4](2026-10-03-d4-the-builder.md) built - and
 > on what each of their "Changed while building" tables found, not on what their plans expected.
 > bindings.md's decisions BI-A to BI-R were approved by Ken on 2026-10-04, every one as recommended.
-> This plan's own decisions, B1-A to B1-P below, are proposed, each with a recommendation, for Ken to
-> approve before the build.
+> This plan's own decisions, B1-A to B1-P below, were approved by Ken on 2026-10-04, every one as
+> recommended.
 
 **Goal:** a component holding a binding opens for editing, and the binding is an atom in its text that
 an author can select, delete, undo, copy, cut and paste without losing what any document holds for
@@ -80,7 +80,8 @@ does not take; the browser suite's axe test is what holds it).
 
 ## Decisions
 
-Proposed; the column beside each is what it is chosen over.
+Approved by Ken on 2026-10-04, every one as recommended; the column beside each is what it was chosen
+over.
 
 | #    | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Instead of                                                                                                                                                        |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -374,6 +375,8 @@ the next Minor.
   for Ken's look in the real application, is said in the pull request.
 
 ## Questions for Ken before the build
+
+Answered by Ken on 2026-10-04: every one as recommended.
 
 1. **B1-F**: the value catalogue as a new kind at catalogue/3, the version every kind shares, and an
    optional `value` in theme/1 that an older theme omits - where bindings.md says catalogue/1 and says
