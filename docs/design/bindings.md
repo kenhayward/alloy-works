@@ -679,6 +679,8 @@ their words.
 
 ## Decisions
 
+Approved by Ken on 2026-10-04, every one as recommended.
+
 | #    | Decision                                                                                                                                                                                                                                         | Recommended over                                                                                                                                         |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | BI-A | **The binding is an inline atom with no marks**, standing where any inline may but preformatted text, an equation and a title, as a cross-reference does                                                                                         | Marks on the binding now: a content member added for bold numbers, which a later slice can add with a default                                            |
@@ -701,6 +703,9 @@ their words.
 | BI-R | **Six slices, B1 to B6**, each with its own plan; revisions last, bound images after D8                                                                                                                                                          | One slice, which would be the size of D1 and D3 together                                                                                                 |
 
 ## Questions for Ken
+
+Answered by Ken on 2026-10-04: every one as recommended. The corpus changes they need - questions
+1, 2, 3, 4 and 8 - land in a corpus pull request of their own.
 
 1. **Revisions by hand to T3** (DAT-057 to DAT-060, DAT-062, with DAT-061)? **Recommended: yes.**
    The design is whole, so nothing is lost; T2 ships the data spine without a review feature nobody is
