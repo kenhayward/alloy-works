@@ -890,22 +890,50 @@ describe('datasets and resolutions', () => {
     const before = sorted.slice(0, 20).map(String).sort();
     const shuffled = asked.map((each, at) => ({ each, at: (at * 17) % 40 }));
     shuffled.sort((a, b) => a.at - b.at);
-    for (const order of [asked, [...asked].reverse(), shuffled.map(({ each }) => each)]) {
-      const release = await holding(production, (trx) =>
-        lockDatasetQuestions(trx, [asked[hashes.indexOf(middle)]!]),
-      );
-      const act = tenant((trx) => lockDatasetQuestions(trx, order));
-      await whileWaiting();
-      const { rows } = await queryAs(
-        db.adminUrl,
-        `select ((held.classid::bigint << 32) | held.objid::bigint)::text as h
-           from pg_locks held
-          where held.locktype = 'advisory' and held.granted
-            and held.pid in (select pid from pg_locks where locktype = 'advisory' and not granted)`,
-      );
-      await release();
-      await act;
-      expect((rows as { h: string }[]).map((row) => row.h).sort()).toEqual(before);
+    // Another backend holding one advisory lock while it waits on another, as a concurrent test's
+    // act may, holds locks that are not the act's: only the act waiting on the middle question counts.
+    const releaseOther = await holding(production, async (trx) => {
+      await sql`select pg_advisory_xact_lock(377001)`.execute(trx);
+    });
+    const otherWaits = tenant(async (trx) => {
+      await sql`select pg_advisory_xact_lock(377002)`.execute(trx);
+      await sql`select pg_advisory_xact_lock(377001)`.execute(trx);
+    });
+    await whileWaiting();
+    /** The advisory locks granted to whichever backend waits on the middle question. */
+    const heldByTheAct = async () => {
+      for (let tries = 0; tries < 200; tries += 1) {
+        const { rows } = await queryAs(
+          db.adminUrl,
+          `select ((held.classid::bigint << 32) | held.objid::bigint)::text as h
+             from pg_locks held
+             join pg_locks waits on waits.pid = held.pid
+            where held.locktype = 'advisory' and held.granted
+              and held.database = (select oid from pg_database where datname = current_database())
+              and waits.locktype = 'advisory' and not waits.granted
+              and waits.database = held.database
+              and ((waits.classid::bigint << 32) | waits.objid::bigint) = $1::bigint`,
+          [middle.toString()],
+        );
+        if (rows.length > 0) return (rows as { h: string }[]).map((row) => row.h).sort();
+        await new Promise((settle) => setTimeout(settle, 10));
+      }
+      throw new Error('Nothing came to wait on the middle question');
+    };
+    try {
+      for (const order of [asked, [...asked].reverse(), shuffled.map(({ each }) => each)]) {
+        const release = await holding(production, (trx) =>
+          lockDatasetQuestions(trx, [asked[hashes.indexOf(middle)]!]),
+        );
+        const act = tenant((trx) => lockDatasetQuestions(trx, order));
+        const held = await heldByTheAct();
+        await release();
+        await act;
+        expect(held).toEqual(before);
+      }
+    } finally {
+      await releaseOther();
+      await otherWaits;
     }
   });
 
