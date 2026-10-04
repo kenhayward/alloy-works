@@ -65,6 +65,24 @@ export {
   type ReferenceShown,
 } from './referenceText.js';
 export { referenceContextOf, setReferenceContext } from './referenceView.js';
+// What a binding shows, in a document and on its own, and the one it is selected whole (the B1 plan).
+export {
+  A_BOUND_VALUE,
+  BINDING_FAILURE_WORDS,
+  bindingSelected,
+  bindingsShown,
+  BOUND_VALUE,
+  CHANGED_SINCE_RESOLVED,
+  NEVER_RESOLVED,
+  REVISION_WAITING,
+  storedBinding,
+  type BindingContext,
+  type BindingFailureShown,
+  type BindingHeld,
+  type BindingSelected,
+  type BindingShown,
+} from './bindings.js';
+export { bindingContextOf, setBindingContext } from './bindingView.js';
 export { pasteIntoOpenFootnote } from './footnoteView.js';
 export {
   deleteImage,

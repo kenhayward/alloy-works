@@ -18928,6 +18928,12 @@
       "kind": "title"
     },
     {
+      "id": "DAT-047",
+      "file": "apps/web/src/editor/bindings.test.ts",
+      "line": 150,
+      "kind": "title"
+    },
+    {
       "id": "CNT-045",
       "file": "apps/web/src/editor/equationView.test.ts",
       "line": 110,
@@ -18936,7 +18942,7 @@
     {
       "id": "CNT-175",
       "file": "apps/web/src/editor/renderContent.test.ts",
-      "line": 276,
+      "line": 277,
       "kind": "title"
     },
     {
@@ -21480,13 +21486,13 @@
     {
       "id": "CNT-014",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 1101,
+      "line": 1220,
       "kind": "title"
     },
     {
       "id": "CNT-018",
       "file": "packages/editor/src/mapping.test.ts",
-      "line": 741,
+      "line": 740,
       "kind": "title"
     },
     {

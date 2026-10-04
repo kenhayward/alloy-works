@@ -29,6 +29,8 @@ import { identityPlugin } from './identity.js';
 import { tableHeadersAgree } from './tables.js';
 import { imagesUnmarked, marksPastImages } from './images.js';
 import { commandKeymap, spansOf } from './marks.js';
+import type { BindingContext } from './bindings.js';
+import { bindingContextOf, bindingDecorations, bindingsPlugin } from './bindingView.js';
 import type { ReferenceContext } from './referenceText.js';
 import { referenceContextOf, referenceDecorations, referencesPlugin } from './referenceView.js';
 import { placeDecorations } from './places.js';
@@ -377,6 +379,12 @@ export interface EditorStateOptions {
    * carries the one it had across with `referenceContextOf`.
    */
   readonly referenceContext?: ReferenceContext | null;
+  /**
+   * Where the component's bindings are shown (the B1 plan, B1-D): what a document holds for each, or
+   * the definitions' titles on its own. Null, or left out, where the host has said nothing yet; a
+   * host making a fresh state carries the one it had across with `bindingContextOf`.
+   */
+  readonly bindingContext?: BindingContext | null;
 }
 
 /**
@@ -560,6 +568,8 @@ export function createEditorState(options: EditorStateOptions): EditorState {
       // The host's reference context (cross-references 1, ruling R10), which a transaction of its own
       // changes and the history never holds.
       referencesPlugin(options.referenceContext ?? null),
+      // The host's binding context (B1-D), changed and held as the reference context is.
+      bindingsPlugin(options.bindingContext ?? null),
       // The page's check of the theme the surface is set in, and the marks it makes (ET-I, STY-070).
       styleCheckPlugin(),
       // One decorations plugin, holding the spellcheck rule, the empty attribution's placeholder and
@@ -576,6 +586,7 @@ export function createEditorState(options: EditorStateOptions): EditorState {
               // What will not resolve in the theme the surface is set in (themes.md, ET-I).
               ...unresolvedOf(state).find(),
               ...referenceDecorations(state.doc, referenceContextOf(state)).find(),
+              ...bindingDecorations(state.doc, bindingContextOf(state)).find(),
             ]),
         },
       }),

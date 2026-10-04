@@ -12,6 +12,7 @@ import {
 import { AddNodeMarkStep, AttrStep, RemoveNodeMarkStep, StepMap } from 'prosemirror-transform';
 import { DecorationSet, EditorView, type NodeView } from 'prosemirror-view';
 
+import { bindingContextOf, bindingDecorations, bindingView } from './bindingView.js';
 import { equationView } from './equationView.js';
 import { pasteInto, readClipboard, type ClipboardSource, type PasteOutcome } from './clipboard.js';
 import { footnoteAt, openFootnote, recordOpenFootnote } from './footnotes.js';
@@ -162,14 +163,22 @@ export function footnoteView(
         // And an equation as one in the component's is (equations 1, ruling R5); only an inline one
         // stands in a footnote's text (CNT-129).
         equation: (node) => equationView(node, document),
+        // And a binding as one in the component's is (B1-D), from the surface's context.
+        binding: (node, _view, _getPos, decorations) => bindingView(node, document, decorations),
       },
       decorations: (state) => {
         const pos = getPos();
         if (pos === undefined) return null;
-        const references = referenceDecorations(state.doc, referenceContextOf(outer.state), {
+        const shown = referenceDecorations(state.doc, referenceContextOf(outer.state), {
           component: outer.state.doc,
           offset: pos + 1,
         });
+        // What each binding in the footnote's text shows, from the surface's context: its words do
+        // not depend on where it stands, so the footnote's own positions are all it needs.
+        const references = DecorationSet.create(state.doc, [
+          ...shown.find(),
+          ...bindingDecorations(state.doc, bindingContextOf(outer.state)).find(),
+        ]);
         // What will not resolve in the footnote's own text, by the component's check (ET-I): made again
         // only when the footnote's text or the check changes, not on every draw.
         const check = styleCheckOf(outer.state);

@@ -1,6 +1,14 @@
 import { parseContentDocument, type ContentDocument } from '@alloy-works/domain';
 import { DOMSerializer, type Node } from 'prosemirror-model';
 
+import {
+  ALONE_CLASS,
+  bindingsShown,
+  FAILED_CLASS,
+  type BindingContext,
+  type BindingShown,
+} from './bindings.js';
+import { fillBinding } from './bindingView.js';
 import { drawEquation } from './equationView.js';
 import { toEditor } from './mapping.js';
 import { BROKEN_CLASS, referencesShown, type ReferenceContext } from './referenceText.js';
@@ -18,11 +26,15 @@ import { drawPlaces } from './places.js';
  * `context` is the document the component is shown in, as the surface's is (cross-references 1,
  * ruling R12): each reference shows what it will print there, and on its own - no context - what the
  * component alone can say of it.
+ *
+ * `bindings` is where its bindings are shown, as the surface's is (the B1 plan, B1-D): each shows the
+ * value the document holds, or why it has none, or on its own what it asks for (`drawBindings`).
  */
 export function renderContent(
   content: unknown,
   document: Document,
   context: ReferenceContext | null = null,
+  bindings: BindingContext | null = null,
 ): HTMLElement | DocumentFragment | null {
   let parsed: ContentDocument;
   try {
@@ -36,6 +48,7 @@ export function renderContent(
     document,
   });
   drawReferences(rendered, referencesShown(opened.doc, context));
+  drawBindings(rendered, bindingsShown(opened.doc, bindings), bindings);
   drawEquations(rendered, opened.doc);
   drawImages(rendered);
   drawPlaces(rendered, opened.doc);
@@ -101,5 +114,40 @@ export function drawReferences(
     if (span === undefined) return;
     span.textContent = text;
     if (broken) span.classList.add(BROKEN_CLASS);
+  });
+}
+
+/**
+ * Each binding as the surface draws it (the B1 plan, B1-D, B1-L): what it shows, and the words a
+ * screen reader is told after it, by the node view's own `fillBinding`. **One the document holds a
+ * resolution for is a `<button type="button">`** in the tab order, styled as the text it stands in,
+ * carrying `data-binding` - its identifier - and `data-node` - the occurrence, where the context
+ * names it - so the page opens its provenance from a click or Enter (DAT-041). Every other is the
+ * schema's span, filled. The serializer writes the spans in the order `bindingsShown` walks the
+ * document in, a footnote's text included.
+ */
+export function drawBindings(
+  rendered: HTMLElement | DocumentFragment,
+  shown: readonly BindingShown[],
+  context: BindingContext | null,
+): void {
+  const spans = rendered.querySelectorAll<HTMLElement>('span[data-binding]');
+  shown.forEach((each, index) => {
+    const span = spans[index];
+    if (span === undefined) return;
+    let element: HTMLElement = span;
+    if (each.resolved) {
+      element = span.ownerDocument.createElement('button');
+      element.setAttribute('type', 'button');
+      element.className = span.className;
+      if (context?.kind === 'document' && context.node !== undefined) {
+        element.dataset.node = context.node;
+      }
+      span.replaceWith(element);
+    }
+    element.dataset.binding = each.id ?? '';
+    if (each.failed) element.classList.add(FAILED_CLASS);
+    if (context?.kind === 'alone') element.classList.add(ALONE_CLASS);
+    fillBinding(element, each);
   });
 }

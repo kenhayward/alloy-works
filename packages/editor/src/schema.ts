@@ -155,7 +155,7 @@ export const editorSchema = new Schema({
       // paragraph is the one place either stands in a run, wherever the paragraph is - running text, a
       // list, a quotation, a table's cell. A cross-reference and an equation stand here as in every
       // inline home (cross-references 1, ruling R4; equations 1, ruling R3).
-      content: '(text | image | footnote | crossReference | equation)*',
+      content: '(text | image | footnote | crossReference | equation | binding)*',
       marks: '_',
       attrs: { id: { default: null }, style: { default: 'body' } },
       // Typing is read back from the DOM through these rules, so a paragraph the browser makes is
@@ -285,7 +285,7 @@ export const editorSchema = new Schema({
      * is what makes a term inline content rather than a string.
      */
     term: {
-      content: '(text | crossReference | equation)*',
+      content: '(text | crossReference | equation | binding)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'dt' }],
@@ -378,7 +378,7 @@ export const editorSchema = new Schema({
     },
     /** The caption: inline content, typed in place above the table, as a quotation's attribution is. */
     tableCaption: {
-      content: '(text | crossReference | equation)*',
+      content: '(text | crossReference | equation | binding)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'figcaption' }],
@@ -391,7 +391,7 @@ export const editorSchema = new Schema({
      * never reaches into the table above it.
      */
     tableNote: {
-      content: '(text | crossReference | equation)*',
+      content: '(text | crossReference | equation | binding)*',
       marks: '_',
       defining: true,
       isolating: true,
@@ -450,7 +450,7 @@ export const editorSchema = new Schema({
     },
     /** A figure's caption: inline content below the image, typed in place as a table's is. */
     figureCaption: {
-      content: '(text | crossReference | equation)*',
+      content: '(text | crossReference | equation | binding)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'figcaption[data-figure-caption]', priority: 60 }],
@@ -526,7 +526,7 @@ export const editorSchema = new Schema({
      * is the mapping's second spelling of it, as `definitionList` is of a list.
      */
     footnoteParagraph: {
-      content: '(text | crossReference | equation)*',
+      content: '(text | crossReference | equation | binding)*',
       marks: '_',
       attrs: { id: { default: null }, style: { default: 'body' } },
       // Typing in the footnote's own editor is read back through this rule, which wins over a
@@ -573,6 +573,36 @@ export const editorSchema = new Schema({
         { class: 'aw-reference', 'data-reference': '' },
         (node.attrs.target as { kind: string }).kind === 'node' ? kindWord('section') : 'Reference',
       ],
+    },
+    /**
+     * A binding (the B1 plan, B1-B; bindings.md, "The node"): inline, an atom, carrying the stored
+     * binding's members as attributes - `id`, `query`, `version` (null where it floats), `parameters`,
+     * `mode` and `take` - its parameters and take held as the objects they are stored as, which
+     * ProseMirror compares deeply and an undo puts back whole. **No marks** (BI-A), as a cross-reference
+     * has none: a bound value is set in its paragraph's style. It stands in every inline home a
+     * cross-reference does, because each content expression names it, and never in preformatted text
+     * or a section's title, whose schemas do not.
+     *
+     * `toDOM` is what a read-only rendering and a copy see with nothing to say what it shows: _Bound
+     * value_. The surface and the read text draw what it shows from the host's context (B1-D). No
+     * `parseDOM`, for a footnote's reason: a binding enters a component through the product's own
+     * clipboard alone, never guessed from an element.
+     */
+    binding: {
+      inline: true,
+      atom: true,
+      selectable: true,
+      draggable: false,
+      marks: '',
+      attrs: {
+        id: { default: null },
+        query: {},
+        version: { default: null },
+        parameters: {},
+        mode: {},
+        take: {},
+      },
+      toDOM: () => ['span', { class: 'aw-binding', 'data-binding': '' }, 'Bound value'],
     },
     /**
      * An equation in a run of text (equations 1, ruling R3): inline, an atom, with its MathML - the one
@@ -636,7 +666,7 @@ export const editorSchema = new Schema({
     ...tableSpecs,
     /** Outside the block group, as a term is: it belongs to its quotation, not to a sequence. */
     attribution: {
-      content: '(text | crossReference | equation)*',
+      content: '(text | crossReference | equation | binding)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'footer' }],

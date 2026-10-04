@@ -11,12 +11,14 @@ import {
 } from './clipboard.js';
 import { equationView } from './equationView.js';
 import { figureView } from './figureView.js';
+import { bindingsShown, type BindingShown } from './bindings.js';
+import { bindingContextOf, bindingView } from './bindingView.js';
 import { footnoteView } from './footnoteView.js';
 import { imageView } from './imageView.js';
 import { referenceContextOf, referenceView } from './referenceView.js';
 import { newBlockIdentifier } from './identity.js';
 import { referencesShown, type ReferenceShown } from './referenceText.js';
-import { drawReferences } from './render.js';
+import { drawBindings, drawReferences } from './render.js';
 
 export interface MountOptions {
   readonly state: EditorState;
@@ -104,6 +106,9 @@ export function mountEditor(place: HTMLElement, options: MountOptions): EditorVi
         referenceView(node, owner.dom.ownerDocument, decorations),
       // An equation, inline and as a block, drawn as native MathML (equations 1, ruling R5).
       equation: (node, owner) => equationView(node, owner.dom.ownerDocument),
+      // A binding, drawn with what its decoration carries (the B1 plan, B1-D).
+      binding: (node, owner, _getPos, decorations) =>
+        bindingView(node, owner.dom.ownerDocument, decorations),
       equationBlock: (node, owner) => equationView(node, owner.dom.ownerDocument),
     },
     handleDOMEvents: {
@@ -165,10 +170,20 @@ function writeClipboard(view: EditorView, event: ClipboardEvent, remove: boolean
   const shown = copiedReferences(view);
   drawReferences(dom, shown);
   const words = shown.map((each) => each.text);
+  // A binding is copied as what it shows, its words alone (B1-D): the value, or why there is none.
+  const bound = copiedBindings(view);
+  drawBindings(
+    dom,
+    bound.map((each) => ({ ...each, hidden: '', marker: null, resolved: false })),
+    null,
+  );
+  const values = bound.map((each) => each.text);
   const text = slice.content.textBetween(0, slice.content.size, '\n\n', (leaf) =>
     leaf.type.name === 'crossReference'
       ? (words.shift() ?? '')
-      : (leaf.type.spec.leafText?.(leaf) ?? ''),
+      : leaf.type.name === 'binding'
+        ? (values.shift() ?? '')
+        : (leaf.type.spec.leafText?.(leaf) ?? ''),
   );
   data.clearData();
   data.setData('text/html', dom.innerHTML);
@@ -191,6 +206,14 @@ function writeClipboard(view: EditorView, event: ClipboardEvent, remove: boolean
 function copiedReferences(view: EditorView): readonly ReferenceShown[] {
   const { ranges } = view.state.selection;
   return referencesShown(view.state.doc, referenceContextOf(view.state)).filter(({ pos }) =>
+    ranges.some(({ $from, $to }) => pos >= $from.pos && pos < $to.pos),
+  );
+}
+
+/** What each binding the selection copies shows on the surface, in document order, as references. */
+function copiedBindings(view: EditorView): readonly BindingShown[] {
+  const { ranges } = view.state.selection;
+  return bindingsShown(view.state.doc, bindingContextOf(view.state)).filter(({ pos }) =>
     ranges.some(({ $from, $to }) => pos >= $from.pos && pos < $to.pos),
   );
 }

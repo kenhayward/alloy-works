@@ -1,3 +1,4 @@
+import { bindingDigestInput, type Binding } from '@alloy-works/domain';
 import { createEditorState, mountEditor, renderContent, toEditor } from '@alloy-works/editor';
 import { describe, expect, it } from 'vitest';
 
@@ -388,5 +389,80 @@ describe('a component rendered as text', () => {
 
   it('answers null for content it cannot read', () => {
     expect(renderContent({ title: 'Not content' }, document)).toBeNull();
+  });
+
+  it("draws each binding the document holds a resolution for as a button in the read text, in document order, a footnote's included, with their names (B1)", () => {
+    const binding = (id: string) => ({
+      type: 'binding',
+      id,
+      query: '00000000-0000-4000-8000-00000000d001',
+      parameters: {},
+      mode: 'checked',
+      take: { column: 'depth' },
+    });
+    const digest = (id: string) => bindingDigestInput(binding(id) as Binding);
+    const withBindings = {
+      ...content,
+      content: [
+        {
+          type: 'paragraph',
+          id: 'b1',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'The mean was ', marks: [] },
+            binding('k1'),
+            {
+              type: 'footnote',
+              id: 'f1',
+              anchor: { kind: 'span' },
+              content: [{ type: 'paragraph', id: 'fp1', style: 'body', content: [binding('k2')] }],
+            },
+            { type: 'text', value: ' and ', marks: [] },
+            binding('k3'),
+            binding('k4'),
+          ],
+        },
+      ],
+    };
+    const rendered = renderContent(withBindings, document, null, {
+      kind: 'document',
+      node: 'n7',
+      held: new Map([
+        ['k1', { binding: digest('k1'), shown: { value: '1,234.5', waiting: false } }],
+        ['k2', { binding: digest('k2'), shown: { failure: 'value_many', count: 3 } }],
+        ['k3', { binding: digest('k3'), shown: { value: 'Yes', waiting: true } }],
+      ]),
+    });
+    if (rendered === null) throw new Error('Expected markup');
+    const host = document.createElement('div');
+    host.append(rendered);
+    const ICON = String.fromCodePoint(0x21bb);
+    expect(
+      [...host.querySelectorAll('button')].map((each) => ({
+        type: each.getAttribute('type'),
+        binding: each.dataset.binding,
+        node: each.dataset.node,
+        name: each.textContent,
+      })),
+    ).toEqual([
+      { type: 'button', binding: 'k1', node: 'n7', name: '1,234.5, bound value' },
+      {
+        type: 'button',
+        binding: 'k2',
+        node: 'n7',
+        name: 'No value - the query returned 3 rows, bound value, failed',
+      },
+      {
+        type: 'button',
+        binding: 'k3',
+        node: 'n7',
+        name: `Yes, bound value,${ICON} revision waiting`,
+      },
+    ]);
+    // One the document holds nothing for has no provenance to open: it says so, and is no button.
+    const never = host.querySelector('span.aw-binding');
+    expect(never).toHaveTextContent('No value - never resolved, bound value, failed');
+    expect(never).toHaveClass('aw-binding-failed');
+    expect(never).toHaveAttribute('data-binding', 'k4');
   });
 });

@@ -475,10 +475,9 @@ describe('the mapping carries a list, both ways', () => {
     });
   });
 
-  it('opens read-only a component holding a binding, in a paragraph, a cell or a footnote, naming it', () => {
-    // No screen places a binding in D3 (the D3 plan, D3-P): the editor has no node for one, so a
-    // component holding one - placed through the API - opens read-only by name rather than dropping
-    // it on the next save.
+  it('opens for editing a component holding a binding in a paragraph, a cell or a footnote, and stores it as it came', () => {
+    // The editor holds a binding as a node of its own (the B1 plan, B1-B), so a component holding one
+    // - placed through the API - opens for editing and saves it exactly as stored.
     const binding = {
       type: 'binding' as const,
       id: 'k1',
@@ -497,7 +496,7 @@ describe('the mapping carries a list, both ways', () => {
         },
       ]),
     );
-    expect(toEditor(inParagraph)).toEqual({ editable: false, unsupported: ['binding'] });
+    expect(fromEditor(openedDoc(inParagraph))).toEqual(inParagraph);
     const inFootnote = parseContentDocument(
       document([
         {
@@ -516,7 +515,7 @@ describe('the mapping carries a list, both ways', () => {
         },
       ]),
     );
-    expect(toEditor(inFootnote)).toEqual({ editable: false, unsupported: ['binding'] });
+    expect(fromEditor(openedDoc(inFootnote))).toEqual(inFootnote);
     const inCell = parseContentDocument(
       document([
         {
@@ -540,7 +539,7 @@ describe('the mapping carries a list, both ways', () => {
         },
       ]),
     );
-    expect(toEditor(inCell)).toEqual({ editable: false, unsupported: ['binding'] });
+    expect(fromEditor(openedDoc(inCell))).toEqual(inCell);
   });
 
   it('opens read-only for a node it cannot edit that is inside a list item, naming it', () => {
@@ -1094,6 +1093,126 @@ describe('an equation through the mapping (equations 1)', () => {
       editorSchema.nodes.equationBlock!.create({ mathml: SQUARED }),
     ]);
     expect(() => fromEditor(doc)).toThrow('Block 0 has no identifier');
+  });
+});
+
+describe('a binding through the mapping (B1)', () => {
+  type Inline = Extract<BlockNode, { type: 'paragraph' }>['content'][number];
+  const text = (value: string): Inline => ({ type: 'text', value, marks: [] });
+  const QUERY = '00000000-0000-4000-8000-00000000d001';
+  const PINNED = '00000000-0000-4000-8000-00000000d002';
+  /** Floating, a literal and a list; and pinned, keyed, from the document. */
+  const floating = (id: string): Inline => ({
+    type: 'binding',
+    id,
+    query: QUERY,
+    parameters: { site: { literal: 'north' }, depths: { literal: ['1', '2'] } },
+    mode: 'checked',
+    take: { column: 'depth' },
+  });
+  const pinned = (id: string): Inline => ({
+    type: 'binding',
+    id,
+    query: QUERY,
+    version: PINNED,
+    parameters: { region: { document: 'region' } },
+    mode: 'pinned',
+    take: { key: { site: 'north', open: true }, column: 'depth' },
+  });
+  const inlineOf = (content: Inline[], id: string): BlockNode => ({
+    type: 'paragraph',
+    id,
+    style: 'body',
+    content,
+  });
+  /** A stored binding's members but its type, as the editor's node holds them. */
+  const attrsOf = (inline: Inline): Record<string, unknown> =>
+    Object.fromEntries(Object.entries(inline).filter(([name]) => name !== 'type'));
+
+  it('carries one in each of the seven homes a cross-reference has, both ways', () => {
+    const stored = parseContentDocument(
+      document([
+        inlineOf(
+          [
+            text('Mean '),
+            floating('k1'),
+            {
+              type: 'footnote',
+              id: 'f1',
+              anchor: { kind: 'span' },
+              content: [inlineOf([text('Also '), pinned('k2')], 'fp1')],
+            },
+          ],
+          'p0',
+        ),
+        {
+          type: 'list',
+          id: 'd1',
+          kind: 'definition',
+          items: [{ term: [text('Depth '), floating('k3')], content: [paragraph('d2', 'Deep.')] }],
+        },
+        {
+          type: 'blockquote',
+          id: 'q1',
+          content: [paragraph('q2', 'Words.')],
+          attribution: [text('Ada, '), pinned('k4')],
+        },
+        {
+          type: 'table',
+          id: 't1',
+          style: 'table',
+          caption: [text('Readings of '), floating('k5')],
+          headerRows: 0,
+          headerColumns: 0,
+          note: [text('As at '), pinned('k6')],
+          rows: [
+            {
+              cells: [{ content: [inlineOf([floating('k7')], 'c1')], colspan: 1, rowspan: 1 }],
+            },
+          ],
+        },
+        {
+          type: 'figure',
+          id: 'g1',
+          asset: '00000000-0000-4000-8000-00000000a551',
+          imageStyle: 'figure',
+          caption: [text('Visits, '), pinned('k8')],
+          alternative: { kind: 'decorative' },
+        },
+      ]),
+    );
+    expect(fromEditor(openedDoc(stored))).toEqual(stored);
+  });
+
+  it('holds its members as attributes, objects held as objects, and a version absent as null', () => {
+    const doc = openedDoc(document([inlineOf([floating('k1'), pinned('k2')], 'p0')]));
+    const held: Record<string, unknown>[] = [];
+    doc.descendants((node) => {
+      if (node.type.name === 'binding') held.push({ ...node.attrs });
+    });
+    expect(held).toEqual([{ ...attrsOf(floating('k1')), version: null }, attrsOf(pinned('k2'))]);
+    const [back] = fromEditor(doc).content as [Extract<BlockNode, { type: 'paragraph' }>];
+    expect(Object.keys(back.content[0]!)).not.toContain('version');
+  });
+
+  it('never stands in preformatted text, and carries no marks', () => {
+    const binding = editorSchema.nodes.binding!;
+    expect(editorSchema.nodes.preformatted!.contentMatch.matchType(binding)).toBeNull();
+    expect(binding.spec.marks).toBe('');
+    expect(binding.isAtom && binding.isInline).toBe(true);
+    expect(binding.spec.parseDOM).toBeUndefined();
+  });
+
+  it('refuses to store one the editor has not identified, and one the content model refuses', () => {
+    const create = (attrs: Record<string, unknown>) =>
+      editorSchema.node('doc', root, [
+        editorSchema.node('paragraph', { id: 'p1', style: 'body' }, [
+          editorSchema.nodes.binding!.create(attrs),
+        ]),
+      ]);
+    const attrs = attrsOf(floating('k1'));
+    expect(() => fromEditor(create({ ...attrs, id: null }))).toThrow('Block p1 has no identifier');
+    expect(() => fromEditor(create({ ...attrs, mode: 'sometimes' }))).toThrow();
   });
 });
 

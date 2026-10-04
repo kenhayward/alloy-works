@@ -111,7 +111,7 @@ function namesWithNoNode(blocks: readonly BlockNode[], found: Set<string>): void
  *
  * **A cross-reference has one in every inline home** (cross-references 1, ruling R5) - a footnote's
  * paragraphs included, which CNT-129 admits it to - so wherever this walk meets one, it passes. So
- * does an equation (equations 1, ruling R4).
+ * does an equation (equations 1, ruling R4), and a binding (the B1 plan, B1-B).
  */
 function marksWithNoType(
   content: readonly InlineNode[],
@@ -119,7 +119,13 @@ function marksWithNoType(
   inParagraph = false,
 ): void {
   for (const inline of content) {
-    if (inline.type === 'crossReference' || inline.type === 'equation') continue;
+    if (
+      inline.type === 'crossReference' ||
+      inline.type === 'equation' ||
+      inline.type === 'binding'
+    ) {
+      continue;
+    }
     if (inline.type === 'image' && inParagraph) continue;
     if (inline.type === 'footnote' && inParagraph) {
       for (const paragraph of footnoteParagraphs(inline)) marksWithNoType(paragraph.content, found);
@@ -195,6 +201,21 @@ function toRun(inline: InlineNode): Node[] {
         target,
         display,
         withoutPages: withoutPages ?? null,
+      }),
+    ];
+  }
+  if (inline.type === 'binding') {
+    // Every stored member, as stored, objects as objects; a version that is absent - a binding that
+    // floats - is null here, and `runsOf` spells it back as absence (B1-B).
+    const { id, query, version, parameters, mode, take } = inline;
+    return [
+      editorSchema.nodes.binding!.create({
+        id,
+        query,
+        version: version ?? null,
+        parameters,
+        mode,
+        take,
       }),
     ];
   }
@@ -440,6 +461,21 @@ function runsOf(textblock: Node, id: string): unknown[] {
         target: target as object,
         display: display as string,
         ...(withoutPages === null ? {} : { withoutPages }),
+      });
+      return;
+    }
+    if (child.type.name === 'binding') {
+      // Named by the block it stands in where it has no identifier, as a reference is; its version
+      // only where it is pinned. The content model's parse holds it to D3-C on every save.
+      const { query, version, parameters, mode, take } = child.attrs;
+      runs.push({
+        type: 'binding',
+        id: identifierOf(child, id),
+        query: query as string,
+        ...(version === null ? {} : { version }),
+        parameters: parameters as object,
+        mode: mode as string,
+        take: take as object,
       });
       return;
     }
