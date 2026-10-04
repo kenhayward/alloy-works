@@ -461,6 +461,27 @@ describe("PostgreSQL's generator", () => {
     expect(generatePostgres(counted, {}, 'shape').text).toBe(
       ['SELECT pg_catalog.count(*) AS "n"', 'FROM (SELECT FROM "sample"."site") AS "s"'].join('\n'),
     );
+    // A column named only inside an `or` or a `not` is read through the derived table too.
+    const nested = builder(
+      {
+        sources: [site],
+        joins: [],
+        select: [{ name: 'id', of: ref('s', 'id') }],
+        where: {
+          or: [
+            { column: ref('s', 'region'), is: 'isNull' },
+            { not: { column: ref('s', 'active'), is: 'isNull' } },
+          ],
+        },
+        groupBy: [],
+      },
+      {},
+      { key: [], order: 'multiset' },
+    );
+    expect(checkQueryDefinition(nested)).toEqual([]);
+    expect(generatePostgres(nested, {}, 'shape').text).toContain(
+      'FROM (SELECT "id", "region", "active" FROM "sample"."site") AS "s"',
+    );
   });
 
   it('rounds an average to its places', () => {
