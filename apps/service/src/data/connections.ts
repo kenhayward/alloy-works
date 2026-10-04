@@ -34,9 +34,13 @@ import {
   type TenantTransaction,
 } from '@alloy-works/db';
 import {
+  BindingRefused,
   DefinitionRefused,
+  RAN_MAX_CHARACTERS,
+  bindFetch,
   canonicalResultBytes,
   checkParameterValues,
+  checkTree,
   dataFailures,
   decide,
   effectiveLimits,
@@ -48,6 +52,7 @@ import {
   type DefinitionProblem,
   type DraftDefinition,
   type Parameter,
+  type Query,
   type ParameterValues,
   type TestAnswer,
 } from '@alloy-works/domain';
@@ -62,8 +67,14 @@ import type { SessionPrincipal } from '../sessions.js';
 import { refused } from '../wire-codes.js';
 import { checkAct, documentsOnConnection, resolveAct, type RunsThrough } from './bindings.js';
 import { createConnectorClient, type Answered } from './connector.js';
-import { failureView, type FailureIn } from './failure-words.js';
-import { maySqlWith, requireSqlPermitted, sqlForbidden } from './sql-access.js';
+import { failureView, failureViewFor, type FailureIn } from './failure-words.js';
+import {
+  fetchForbidden,
+  mayRunFetch,
+  maySqlWith,
+  requireSqlPermitted,
+  sqlForbidden,
+} from './sql-access.js';
 
 /** Where the connector answers, the key the service presents, and, in a test, a fetch of its own. */
 export interface ConnectorOptions {
@@ -93,10 +104,18 @@ const TEST_FAILURES: readonly ConnectionTestFailure[] = [
 
 /**
  * A data act refused by a data failure: its code, its words, whose failure it is (DAT-049), and the
- * column, the row and what the source said where it names them.
+ * column, the row and what the source said where it names them - the source's message only where the
+ * caller `seesSource`, holding `write_sql` (D2-H), and a built query's refusals in the product's words
+ * (D4-K).
  */
-function dataRefused(status: number, failed: FailureIn | DataFailureCode): AppError {
-  const { code, message, ...members } = failureView(failed);
+function dataRefused(
+  status: number,
+  failed: FailureIn | DataFailureCode,
+  seesSource = true,
+  built = false,
+): AppError {
+  const { code, message, ...members } =
+    typeof failed === 'string' ? failureView(failed) : failureViewFor(failed, seesSource, built);
   return new AppError(status, code, message, undefined, members);
 }
 
@@ -156,6 +175,55 @@ function statementProblems(sql: {
         ),
       );
     }
+  }
+  return problems;
+}
+
+/**
+ * The problems of a built query a describe is sent (D4-Q): each parameter declared once, the
+ * builder's checks of its tree (but those that need its declared columns), and its shape statement
+ * generated whole and within what a run reports it ran. The connector refuses anything else at its
+ * door, which would read as a connector that failed rather than a query that did.
+ */
+function builtProblems(builder: {
+  readonly query: Query;
+  readonly parameters: readonly Parameter[];
+}): DefinitionProblem[] {
+  const problems: DefinitionProblem[] = [];
+  const problem = (path: string, message: string) => {
+    problems.push({
+      rule: 'definition_invalid',
+      path: path
+        .replace(/^fetch\.query/, 'builder.query')
+        .replace(/^parameters/, 'builder.parameters'),
+      message,
+    });
+  };
+  const names = new Set(builder.parameters.map((parameter) => parameter.name));
+  if (names.size !== builder.parameters.length)
+    problem('parameters', 'A parameter is declared once');
+  checkTree(builder.query, builder.parameters, problem);
+  if (problems.length > 0) return problems;
+  try {
+    const shape = bindFetch(
+      {
+        parameters: [...builder.parameters],
+        fetch: { kind: 'builder', format: 1, query: builder.query },
+        columns: [],
+        order: 'multiset',
+      },
+      {},
+      'shape',
+    );
+    if (shape.text.length > RAN_MAX_CHARACTERS) {
+      problem(
+        'fetch.query',
+        `The query generates SQL longer than ${RAN_MAX_CHARACTERS} characters`,
+      );
+    }
+  } catch (error) {
+    if (!(error instanceof BindingRefused)) throw error;
+    problem('fetch.query', 'The query cannot be generated whole');
   }
   return problems;
 }
@@ -520,15 +588,31 @@ export function connectionHandlers(
 
     describeConnection: async (request: FastifyRequest, { trx, facts }: Authorised) => {
       const { id } = request.params as ConnectionParams;
-      const { sql } = request.body as DescribeBody;
+      const { sql, builder } = request.body as DescribeBody;
+      if (sql !== undefined && builder !== undefined) {
+        throw definitionRefused([
+          {
+            rule: 'definition_invalid',
+            path: 'builder',
+            message: 'A describe is sent SQL or a built query, never both',
+          },
+        ]);
+      }
       // A statement is SQL against the connection: write_sql there as well as use_connection (D2-G).
+      // A built query needs use_connection alone, the route's own (D4-J).
       if (sql !== undefined && !maySqlWith(facts)) throw sqlForbidden();
       const connection = await runnable(trx, id);
       if (sql !== undefined) {
         const problems = statementProblems(sql);
         if (problems.length > 0) throw definitionRefused(problems);
-        await requireSqlPermitted(trx, connection);
+        await requireSqlPermitted(trx, connection, { kind: 'sql' });
       }
+      if (builder !== undefined) {
+        const problems = builtProblems(builder);
+        if (problems.length > 0) throw definitionRefused(problems);
+      }
+      // What the source said of a statement it refused only to a holder of write_sql (D2-H).
+      const seesSource = decide('write_sql', facts).allowed;
       const { sealed } = await usableSealed(trx, id);
       const client = connected();
       const tenant = tenantOf(request);
@@ -550,6 +634,20 @@ export function connectionHandlers(
           return described;
         });
       }
+      if (builder !== undefined) {
+        return new AfterCommit(async () => {
+          const described = answered(await client.describeSql({ ...asked, builder }));
+          if ('failure' in described) {
+            throw dataRefused(
+              describedStatus(described.failure),
+              described.failure,
+              seesSource,
+              true,
+            );
+          }
+          return described;
+        });
+      }
       return new AfterCommit(async () => {
         const described = answered(await client.describe(asked));
         if ('failure' in described) {
@@ -562,9 +660,12 @@ export function connectionHandlers(
     sampleConnection: async (request: FastifyRequest, { trx, facts }: Authorised) => {
       const { id } = request.params as ConnectionParams;
       const body = request.body as SampleBody;
-      // use_connection is the route's; a sample runs SQL, so write_sql as well, at the connection
-      // (DAT-101).
-      if (!maySqlWith(facts)) throw sqlForbidden();
+      // use_connection is the route's; a sample of SQL runs SQL, so write_sql as well, at the
+      // connection (DAT-101); a built query needs no more (D4-J). The contract has held the draft's
+      // fetch to its shape, so its kind is known before the draft is checked whole.
+      const asFetched = (body.definition as DraftDefinition).fetch;
+      if (!mayRunFetch(facts, asFetched)) throw fetchForbidden(asFetched);
+      const seesSource = decide('write_sql', facts).allowed;
       const connection = await runnable(trx, id);
       let draft: DraftDefinition;
       try {
@@ -591,7 +692,8 @@ export function connectionHandlers(
           problems,
         });
       }
-      await requireSqlPermitted(trx, connection);
+      await requireSqlPermitted(trx, connection, draft.fetch);
+      const built = draft.fetch.kind === 'builder';
       const { sealed } = await usableSealed(trx, id);
       const client = connected();
       const tenant = tenantOf(request);
@@ -613,8 +715,9 @@ export function connectionHandlers(
             deadlineMs: limits.seconds * 1000,
           }),
         );
-        if (ran.outcome === 'failed')
-          return { outcome: 'failed', failure: failureView(ran.failure) };
+        if (ran.outcome === 'failed') {
+          return { outcome: 'failed', failure: failureViewFor(ran.failure, seesSource, built) };
+        }
         // The checksum is the service's to hold the connector to (D2-K): the rows it answered, in
         // the canonical form, must hash to what it said.
         const checksum = createHash('sha256')

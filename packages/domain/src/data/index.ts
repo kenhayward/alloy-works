@@ -114,6 +114,7 @@ export {
   BUILDER_FORMAT,
   builderFetchSchema,
   checkBuilder,
+  checkTree,
   comparisons,
   treeProblem,
 } from './builder.js';

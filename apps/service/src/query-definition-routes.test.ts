@@ -83,6 +83,24 @@ const definition = (connection: string, over: Json = {}) => ({
   ...over,
 });
 
+/** The same question built rather than written (D4): one table, a filter on the parameter. */
+const builtFetch = {
+  kind: 'builder',
+  format: 1,
+  query: {
+    sources: [{ alias: 's', table: { schema: 'sample', name: 'site' } }],
+    joins: [],
+    select: [
+      { name: 'id', of: { source: 's', column: 'id' } },
+      { name: 'name', of: { source: 's', column: 'name' } },
+    ],
+    where: { column: { source: 's', column: 'id' }, is: 'equal', to: { parameter: 'site' } },
+    groupBy: [],
+  },
+};
+const built = (connection: string, over: Json = {}) =>
+  definition(connection, { title: 'Site built', fetch: builtFetch, ...over });
+
 /** The draft a sample runs: the definition less its title, description and retired. */
 const draft = (connection: string, over: Json = {}) => {
   const whole: Json = definition(connection, over);
@@ -209,7 +227,7 @@ describe('query definitions through the service', () => {
         fetch: connector.fetch,
       },
     });
-    for (const user of ['ada', 'grace', 'alice']) {
+    for (const user of ['ada', 'grace', 'alice', 'ivy']) {
       cookies[user] = await signIn(app, HOST, user, idp.issuer);
       ids[user] = (await call(user, 'GET', '/v1/me')).json<{ id: string }>().id;
     }
@@ -242,6 +260,8 @@ describe('query definitions through the service', () => {
     await allow(ids.ada!, roles['SQL writer']!, { kind: 'space', id: general });
     await allow(ids.grace!, roles.Author!, { kind: 'space', id: general });
     await allow(ids.grace!, roles['Connection user']!, { kind: 'space', id: general });
+    // Ivy authors in General and uses no connection.
+    await allow(ids.ivy!, roles.Author!, { kind: 'space', id: general });
   });
 
   afterAll(async () => {
@@ -839,5 +859,225 @@ describe('query definitions through the service', () => {
     ).toEqual([
       expect.objectContaining({ connection: { id: hidden.id, name: 'Hidden Warehouse Name' } }),
     ]);
+  });
+
+  describe('a built query (D4)', () => {
+    const describeBuilt = (as: string, id: string, query: unknown = builtFetch.query) =>
+      call(as, 'POST', `/v1/connections/${id}/describe`, {
+        builder: {
+          query,
+          parameters: [{ name: 'site', type: { base: 'integer' }, required: true, list: false }],
+        },
+      });
+    const describedColumns = {
+      columns: [
+        { name: 'id', sourceType: 'integer', proposed: { base: 'integer' } },
+        { name: 'name', sourceType: 'text', proposed: { base: 'text' } },
+      ],
+      parameters: ['bigint'],
+    } as const;
+
+    it('is saved, described and sampled by an author holding use_connection alone, where the same as SQL is refused', async () => {
+      const source = await connection('Built by Grace');
+      connector.mode = 'answer';
+      connector.run = ranOk([['1', 'North']]);
+      connector.describeSql = describedColumns as never;
+
+      // Grace uses the connection and writes no SQL against it: SQL is refused, as DAT-101 has it.
+      expect((await create('grace', definition(source.id))).statusCode).toBe(403);
+      expect((await sample('grace', source.id, draft(source.id))).statusCode).toBe(403);
+      expect((await describeSql('grace', source.id)).statusCode).toBe(403);
+
+      // The same question built needs no write_sql.
+      const asked = connector.asked.length;
+      const described = await describeBuilt('grace', source.id);
+      expect(described.statusCode, described.body).toBe(200);
+      expect(described.json()).toMatchObject({ columns: [{ name: 'id' }, { name: 'name' }] });
+      // The connector is sent the tree, never SQL.
+      const sent = connector.asked.slice(asked).find((each) => each.path === '/v1/describe');
+      expect(sent?.body).toMatchObject({ builder: { query: builtFetch.query } });
+      expect(sent?.body).not.toHaveProperty('sql');
+
+      const sampled = await sample('grace', source.id, draft(source.id, { fetch: builtFetch }));
+      expect(sampled.statusCode, sampled.body).toBe(200);
+      expect(sampled.json()).toMatchObject({ outcome: 'ok' });
+
+      const made = await create('grace', built(source.id));
+      expect(made.statusCode, made.body).toBe(200);
+      expect(made.json<DefinitionBody>()).toMatchObject({
+        definition: { fetch: { kind: 'builder' } },
+        mayEdit: true,
+        mayRun: true,
+      });
+
+      // Ivy may edit in the space and uses no connection: a built query is refused her as well.
+      const ivy = await create('ivy', built(source.id));
+      expect(ivy.statusCode).toBe(403);
+      expect(ivy.json<{ message: string }>().message).toContain('use connection');
+      expect(ivy.json<{ message: string }>().message).not.toContain('SQL');
+      const read = await call(
+        'ivy',
+        'GET',
+        `/v1/query-definitions/${made.json<DefinitionBody>().id}`,
+      );
+      expect(read.json()).toMatchObject({ mayEdit: false, mayRun: false });
+    });
+
+    it('runs on a connection whose test found its account able to write, where SQL is refused sql_not_permitted', async () => {
+      const writable = await connection('Writable', 'finding');
+      connector.mode = 'answer';
+      connector.run = ranOk([['1', 'North']]);
+      connector.describeSql = describedColumns as never;
+
+      const sql = await create('ada', definition(writable.id));
+      expect(sql.statusCode).toBe(409);
+      expect(sql.json()).toMatchObject({ code: 'sql_not_permitted', reason: 'not_read_only' });
+
+      expect((await describeBuilt('ada', writable.id)).statusCode).toBe(200);
+      expect(
+        (await sample('ada', writable.id, draft(writable.id, { fetch: builtFetch }))).json(),
+      ).toMatchObject({ outcome: 'ok' });
+      const made = await create('ada', built(writable.id));
+      expect(made.statusCode, made.body).toBe(200);
+      expect(made.json<DefinitionBody>()).toMatchObject({ mayEdit: true, mayRun: true });
+      // A connection never tested takes a built query too: DAT-103 is the SQL fallback's alone.
+      const untested = await connection('Untested', 'none');
+      expect((await create('ada', definition(untested.id))).statusCode).toBe(409);
+      expect((await create('ada', built(untested.id))).statusCode).toBe(200);
+    });
+
+    it('lets somebody without write_sql turn a SQL definition into a built one, and not back', async () => {
+      const source = await connection('Turned');
+      connector.mode = 'answer';
+      const made = await create('ada', definition(source.id));
+      expect(made.statusCode).toBe(200);
+      const { id, version } = made.json<DefinitionBody>();
+      // Grace may not change SQL she may not write.
+      expect((await call('grace', 'GET', `/v1/query-definitions/${id}`)).json()).toMatchObject({
+        mayEdit: false,
+        mayRun: false,
+      });
+      const turned = await call('grace', 'POST', `/v1/query-definitions/${id}/versions`, {
+        openedFrom: version.id,
+        definition: built(source.id),
+      });
+      expect(turned.statusCode, turned.body).toBe(200);
+      const after = turned.json<DefinitionBody>();
+      expect(after).toMatchObject({
+        version: { number: '0.2' },
+        definition: { fetch: { kind: 'builder' } },
+        mayEdit: true,
+        mayRun: true,
+      });
+      // Each version's need is its own fetch's: back to SQL is refused her.
+      const back = await call('grace', 'POST', `/v1/query-definitions/${id}/versions`, {
+        openedFrom: after.version.id,
+        definition: definition(source.id),
+      });
+      expect(back.statusCode).toBe(403);
+    });
+
+    it('refuses a tree nested past its bound by name, at the door, and never fails on it', async () => {
+      const source = await connection('Deep');
+      const depth = 100_000;
+      const leaf = '{"column":{"source":"s","column":"id"},"is":"isNull"}';
+      const where = `${'{"not":'.repeat(depth)}${leaf}${'}'.repeat(depth)}`;
+      const query = JSON.stringify({ ...builtFetch.query, where: 'WHERE' }).replace(
+        '"WHERE"',
+        where,
+      );
+      expect(query.length).toBeLessThan(1_000_000);
+      const body = JSON.stringify({
+        definition: built(source.id, { fetch: { ...builtFetch, query: 'QUERY' } }),
+      }).replace('"QUERY"', query);
+      const answer = await app.inject({
+        method: 'POST',
+        url: `/v1/spaces/${general}/query-definitions`,
+        headers: { host: HOST, cookie: cookies.grace!, 'content-type': 'application/json' },
+        payload: body,
+      });
+      expect(answer.statusCode, answer.body.slice(0, 500)).toBe(400);
+      expect(answer.json<{ message: string }>().message).toContain(
+        'A condition nests at most 8 deep',
+      );
+
+      const described = await app.inject({
+        method: 'POST',
+        url: `/v1/connections/${source.id}/describe`,
+        headers: { host: HOST, cookie: cookies.grace!, 'content-type': 'application/json' },
+        payload: `{"builder":{"query":${query},"parameters":[]}}`,
+      });
+      expect(described.statusCode, described.body.slice(0, 500)).toBe(400);
+      expect(described.json<{ message: string }>().message).toContain(
+        'A condition nests at most 8 deep',
+      );
+    });
+
+    it("refuses a built query failing the builder's checks at describe by name, before the connector is asked", async () => {
+      const source = await connection('Checked built');
+      const asked = connector.asked.length;
+      const unfiltered: Json = { ...builtFetch.query };
+      delete unfiltered.where;
+      const unused = await describeBuilt('grace', source.id, unfiltered);
+      expect(unused.statusCode).toBe(400);
+      expect(unused.json()).toMatchObject({
+        code: 'definition_invalid',
+        problems: [{ path: 'builder.parameters.0' }],
+      });
+      expect(connector.asked.slice(asked).some((each) => each.path === '/v1/describe')).toBe(false);
+    });
+
+    it("words a built query's commonest refusals by their SQLSTATE, and shows the source's message only to a holder of write_sql", async () => {
+      const source = await connection('Worded');
+      connector.mode = 'answer';
+      const words: [string, string][] = [
+        ['42P01', 'The source has no table or view the query names'],
+        ['42703', 'The source has no column the query names'],
+        ['42883', 'The source cannot compare two of the types the query compares'],
+        ['42804', 'The source cannot compare two of the types the query compares'],
+        ['42501', 'The connection account may not read a table or view the query names'],
+      ];
+      for (const [sqlstate, said] of words) {
+        const secret = `relation "hidden_${sqlstate}" says something`;
+        const failure = {
+          code: 'source_refused' as const,
+          attribution: 'query' as const,
+          source: { sqlstate, message: secret },
+        };
+        connector.run = { outcome: 'failed', failure };
+        connector.describeSql = { failure };
+        const grace = await sample('grace', source.id, draft(source.id, { fetch: builtFetch }));
+        const hers = grace.json<{ failure: { message: string; source: Json } }>().failure;
+        expect(hers.message, sqlstate).toContain(said);
+        expect(hers.message, sqlstate).toContain(sqlstate);
+        expect(grace.body, sqlstate).not.toContain('hidden_');
+        expect(hers.source).toEqual({ sqlstate });
+
+        const graceDescribe = await describeBuilt('grace', source.id);
+        expect(graceDescribe.statusCode).toBe(400);
+        expect(graceDescribe.json<{ message: string }>().message, sqlstate).toContain(said);
+        expect(graceDescribe.body, sqlstate).not.toContain('hidden_');
+
+        // Ada holds write_sql here, and is told what the source said beside the product's words.
+        const ada = await sample('ada', source.id, draft(source.id, { fetch: builtFetch }));
+        const adas = ada.json<{ failure: { message: string; source: Json } }>().failure;
+        expect(adas.message, sqlstate).toContain(said);
+        expect(adas.message, sqlstate).toContain(secret);
+        expect(adas.source).toEqual({ sqlstate, message: secret });
+      }
+      // A SQLSTATE without words of its own is named by its code alone.
+      connector.run = {
+        outcome: 'failed',
+        failure: {
+          code: 'source_refused',
+          attribution: 'query',
+          source: { sqlstate: '22012', message: 'division by zero' },
+        },
+      };
+      const other = await sample('grace', source.id, draft(source.id, { fetch: builtFetch }));
+      expect(other.json<{ failure: { message: string } }>().failure.message).toBe(
+        'The source refused the statement (SQLSTATE 22012).',
+      );
+    });
   });
 });

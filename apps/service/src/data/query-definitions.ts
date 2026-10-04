@@ -26,12 +26,12 @@ import { versionView } from '../components.js';
 import { cursorFor, pageAsked } from '../listing.js';
 import type { SessionPrincipal } from '../sessions.js';
 import { refused } from '../wire-codes.js';
-import { connectionFacts, decideSqlAt, maySqlWith, requireSqlPermitted } from './sql-access.js';
+import { connectionFacts, decideFetchAt, mayRunFetch, requireSqlPermitted } from './sql-access.js';
 
 /**
  * The query definition routes (data.md, "Routes"; the D2 plan, task 4). None reaches the connector:
- * making and changing a definition decides at its connection who may write SQL there (DAT-101) and
- * whether SQL may be written there at all (DAT-103), and the database checks what it names on every
+ * making and changing a definition decides at its connection who may run its fetch there - SQL, or a
+ * built query (DAT-101, D4-J) - and whether SQL may be written there at all (DAT-103), and the database checks what it names on every
  * path a version is written by (D2-P).
  */
 
@@ -48,7 +48,8 @@ async function definitionView(
 ): Promise<QueryDefinitionView> {
   const connection = await readConnection(trx, stored.definition.connection);
   const atConnection = await connectionFacts(trx, caller, stored.definition.connection);
-  const mayRun = atConnection !== undefined && maySqlWith(atConnection);
+  // Decided by the latest version's own fetch: a built query needs no write_sql (D4-J).
+  const mayRun = atConnection !== undefined && mayRunFetch(atConnection, stored.definition.fetch);
   const mayReadConnection = atConnection !== undefined && decide('read', atConnection).allowed;
   return {
     id: stored.id,
@@ -70,9 +71,10 @@ async function definitionView(
 }
 
 /**
- * What a definition's writer must hold and find before a version is written: `use_connection` and
- * `write_sql` at the connection it names (DAT-101), a connection that is not retired, and one whose
- * latest test found its account read-only (DAT-103) - unless the version retires the definition,
+ * What a definition's writer must hold and find before a version is written, decided by the version's
+ * own fetch (D4-J): `use_connection` at the connection it names, and `write_sql` for SQL (DAT-101); a
+ * connection that is not retired; and for SQL, one whose latest test found its account read-only
+ * (DAT-103) - unless the version retires the definition,
  * which runs nothing, so a definition on a connection found writable can still be retired, and the
  * connection after it.
  */
@@ -81,7 +83,7 @@ async function connectionFor(
   caller: Caller,
   definition: QueryDefinition,
 ): Promise<StoredConnection> {
-  await decideSqlAt(trx, caller, definition.connection);
+  await decideFetchAt(trx, caller, definition.connection, definition.fetch);
   const connection = await readConnection(trx, definition.connection);
   if (!connection) {
     throw refused(400, 'definition.invalid', 'The query definition is not valid.', {
@@ -97,7 +99,7 @@ async function connectionFor(
   if (connection.settings.retired) {
     throw refused(409, 'connection.retired', 'This connection is retired, so it runs nothing.');
   }
-  if (!definition.retired) await requireSqlPermitted(trx, connection);
+  if (!definition.retired) await requireSqlPermitted(trx, connection, definition.fetch);
   return connection;
 }
 

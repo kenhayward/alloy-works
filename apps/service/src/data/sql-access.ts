@@ -5,7 +5,7 @@ import {
   type StoredConnection,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { decide, type AccessFacts } from '@alloy-works/domain';
+import { decide, type AccessFacts, type QueryDefinition } from '@alloy-works/domain';
 import type { Caller } from '../access.js';
 import { AppError } from '../errors.js';
 import { refused } from '../wire-codes.js';
@@ -22,6 +22,26 @@ export function maySqlWith(facts: AccessFacts): boolean {
   return decide('use_connection', facts).allowed && decide('write_sql', facts).allowed;
 }
 
+/** A definition's fetch, or the kind of one: SQL, or a built query. */
+type FetchOf = Pick<QueryDefinition['fetch'], 'kind'>;
+
+/**
+ * Whether facts at a connection let their principal run a fetch there (the D4 plan, D4-J), the one
+ * place a fetch's needs are decided: a built query needs `use_connection` alone, since it writes only
+ * a `SELECT` the product generates; SQL needs `write_sql` as well (DAT-101).
+ */
+export function mayRunFetch(facts: AccessFacts, fetch: FetchOf): boolean {
+  return fetch.kind === 'builder' ? decide('use_connection', facts).allowed : maySqlWith(facts);
+}
+
+/** The refusal of a caller who may read a connection but may not use it for a built query. */
+export const useForbidden = () =>
+  new AppError(403, 'forbidden', 'This needs the use connection permission on the connection.');
+
+/** The refusal of a caller who may read a connection but may not run this fetch on it. */
+export const fetchForbidden = (fetch: FetchOf) =>
+  fetch.kind === 'builder' ? useForbidden() : sqlForbidden();
+
 /** The refusal of a caller who may read a connection but may not write SQL against it. */
 export const sqlForbidden = () =>
   new AppError(
@@ -31,15 +51,16 @@ export const sqlForbidden = () =>
   );
 
 /**
- * Decides, in the caller's transaction, that they hold `use_connection` and `write_sql` on a
- * connection a definition names (DAT-101): a connection they may not read is named as a problem of
- * the definition's, since the address they called is the definition's or its space's; one they may
- * read without both permissions is forbidden.
+ * Decides, in the caller's transaction, that they hold what a fetch needs on a connection a definition
+ * names (DAT-101, D4-J): `use_connection`, and `write_sql` for SQL. A connection they may not read is
+ * named as a problem of the definition's, since the address they called is the definition's or its
+ * space's; one they may read without what the fetch needs is forbidden.
  */
-export async function decideSqlAt(
+export async function decideFetchAt(
   trx: TenantTransaction,
   caller: Caller,
   connectionId: string,
+  fetch: FetchOf,
 ): Promise<AccessFacts> {
   await decideOnly(trx);
   const facts = await connectionFacts(trx, caller, connectionId);
@@ -54,7 +75,7 @@ export async function decideSqlAt(
       ],
     });
   }
-  if (!maySqlWith(facts)) throw sqlForbidden();
+  if (!mayRunFetch(facts, fetch)) throw fetchForbidden(fetch);
   return facts;
 }
 
@@ -89,11 +110,16 @@ const SQL_REFUSED = {
     'that can only read.',
 } as const;
 
-/** Refuses SQL on a connection that has not been found read-only (DAT-103), before anything runs. */
+/**
+ * Refuses SQL on a connection that has not been found read-only (DAT-103), before anything runs. A
+ * built query is never refused here (D4-J): it writes only a `SELECT`, in D2's read-only transaction.
+ */
 export async function requireSqlPermitted(
   trx: TenantTransaction,
   connection: StoredConnection,
+  fetch: FetchOf,
 ): Promise<void> {
+  if (fetch.kind === 'builder') return;
   const reason = await sqlRefusedOn(trx, connection);
   if (reason !== null) {
     throw refused(409, 'sql.not_permitted', SQL_REFUSED[reason], {

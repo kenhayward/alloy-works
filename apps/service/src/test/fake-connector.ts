@@ -1,7 +1,11 @@
 import { randomBytes } from 'node:crypto';
 import { sealSecret } from '@alloy-works/db';
 import {
+  BindingRefused,
   RUN_REQUEST_MAX_BYTES,
+  bindFetch,
+  type Parameter,
+  type Query,
   type DescribeAnswer,
   type DescribeSqlAnswer,
   type RunAnswer,
@@ -88,6 +92,29 @@ export function fakeConnector(): FakeConnector {
       if (path !== '/v1/seal' && fake.hold) await fake.hold;
       if (path === '/v1/test') return Response.json(fake.test);
       if (path === '/v1/describe') {
+        // A built query is described as SQL is (D4-Q), its shape generated through the one function
+        // the real connector binds by, so a tree it could not generate is answered as the real one does.
+        if ('builder' in body) {
+          const builder = body.builder as { query: Query; parameters: Parameter[] };
+          try {
+            bindFetch(
+              {
+                parameters: builder.parameters,
+                fetch: { kind: 'builder', format: 1, query: builder.query },
+                columns: [],
+                order: 'multiset',
+              },
+              {},
+              'shape',
+            );
+          } catch (error) {
+            if (!(error instanceof BindingRefused)) throw error;
+            return Response.json({
+              failure: { code: 'definition_unbindable', attribution: 'query' },
+            });
+          }
+          return Response.json(fake.describeSql);
+        }
         return Response.json('sql' in body ? fake.describeSql : fake.describe);
       }
       if (path === '/v1/run') {
