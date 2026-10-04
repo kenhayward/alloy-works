@@ -7,6 +7,14 @@ Each plan is written when its turn comes, not all at once, so that it can use wh
 it actually built rather than what they were expected to build. A plan is committed before the work
 it describes begins, and its status here changes when the work lands.
 
+**Plans and reviews scale with risk.**
+
+| The work                                                                                      | Plan                                     | Review                       |
+| --------------------------------------------------------------------------------------------- | ---------------------------------------- | ---------------------------- |
+| Several PRs, a migration or stored shape, a process boundary, auth or tenancy, a new contract | A plan here, with a pre-flight review    | Per task, and a final review |
+| One PR of ordinary feature work                                                               | A few lines in the PR body: tasks, tests | One final review             |
+| Docs, copy, a UI-only or test-only change                                                     | None                                     | None beyond CI               |
+
 Every plan is executed test-first, as [`CLAUDE.md`](../../CLAUDE.md) requires, and every task ends
 in a commit. The whole of a plan lands as one pull request unless the plan says otherwise.
 

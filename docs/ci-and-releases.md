@@ -2,175 +2,85 @@
 
 ## The pipeline
 
-`.github/workflows/ci.yml` runs on every push to `main` and every pull request. A second push to the
-same branch cancels the first, so no minutes go to a commit nobody is waiting on.
+`.github/workflows/ci.yml` runs on every push to `main` and every pull request. A newer push to a
+branch cancels the older run.
 
-| Step      | Command                          | Blocking today?          |
-| --------- | -------------------------------- | ------------------------ |
-| Install   | `pnpm install --frozen-lockfile` | **Yes**                  |
-| Lint      | `pnpm lint`                      | No - `continue-on-error` |
-| Format    | `pnpm format`                    | No - `continue-on-error` |
-| Typecheck | `pnpm typecheck`                 | No - `continue-on-error` |
-| Build     | `pnpm build`                     | No - `continue-on-error` |
-| Test      | `pnpm test`                      | No - `continue-on-error` |
+| Job               | Step              | Command                                             | Blocks?                      |
+| ----------------- | ----------------- | --------------------------------------------------- | ---------------------------- |
+| Checks            | Install           | `pnpm install --frozen-lockfile`                    | **Yes**                      |
+| Checks            | Lint              | `pnpm lint`                                         | **Yes**                      |
+| Checks            | Format            | `pnpm format`                                       | **Yes**                      |
+| Checks            | Typecheck         | `pnpm typecheck`                                    | **Yes**                      |
+| Checks            | Build             | `pnpm build`                                        | **Yes**                      |
+| Checks            | Test              | `pnpm test`                                         | Through the gate (see below) |
+| The whole system  | Chromium          | `pnpm --filter @alloy-works/browser fetch-chromium` | **Yes**                      |
+| The whole system  | End to end        | `pnpm test:e2e`                                     | **Yes**                      |
+| The whole system  | Browser           | `pnpm test:browser`                                 | **Yes**                      |
+| Traceability gate | Traceability gate | `pnpm trace gate`                                   | **Yes**                      |
 
-The whole-system job builds the compose stack and drives it, and a third job reads what both wrote:
+- **Install is frozen.** A loose install can resolve a different tree than the lock file names.
+- **Test keeps `continue-on-error`** so its JSON reports still upload; the gate then refuses a failed
+  run, so a red test still fails the build.
+- **The end-to-end and browser steps** set every address they drive to the job's own stack. Neither
+  suite has a default ([deploy/README.md](../deploy/README.md#running-the-suites-against-a-stack)).
 
-| Job               | Step              | Command                                             | Blocking today? |
-| ----------------- | ----------------- | --------------------------------------------------- | --------------- |
-| The whole system  | Chromium          | `pnpm --filter @alloy-works/browser fetch-chromium` | **Yes**         |
-| The whole system  | End to end        | `pnpm test:e2e`                                     | **Yes**         |
-| The whole system  | Browser           | `pnpm test:browser`                                 | **Yes**         |
-| Traceability gate | Traceability gate | `pnpm trace gate`                                   | **Yes**         |
+### The traceability gate
 
-The end-to-end and browser steps set every address their suite drives, to the stack the job has just
-started: neither suite has a default, and each refuses to run with any of its targets unset, so no
-run can reach a stack it was not pointed at ([deploy/README.md](../deploy/README.md#running-the-suites-against-a-stack)).
+`pnpm trace gate` runs in its own job after the other two, reading every suite's report from
+`.trace-results/` (uploaded as `trace-results-build` and `trace-results-system`). It fails when:
 
-Install is deliberately **not** `continue-on-error`: a lock file that will not install should stop
-the run, because every step after it would be testing a tree nobody agreed to. And it is
-`--frozen-lockfile`, never a loose install - a loose install can resolve a different tree than the
-lock file names, which is the entire reason for committing one.
+- a requirement the newest baseline includes is not verified;
+- the baseline itself is malformed;
+- a report is failed, stale, or missing (`e2e.json` and `browser.json` are checked for explicitly).
 
-### The traceability gate is the first real check in this pipeline
+A baseline is declared at every slice or tranche close ([ADR-0037](decisions/0037-change-fragments-and-versions-at-a-close.md)),
+so the gate grows with what has shipped.
 
-`pnpm trace gate` runs in a job of its own, after the build job and the whole-system job, because it
-reads the JSON reports both write to `.trace-results/`: the build job's `Test`, and the whole-system
-job's end-to-end and browser suites, each uploaded as an artifact (`trace-results-build` and
-`trace-results-system`) and downloaded into one `.trace-results/` before the gate runs. It runs unless
-the run was cancelled, so a failed suite is read and refused rather than skipped, and a whole-system
-job that wrote no report at all - the stack never came up - fails its download rather than passing
-without it. A step before the gate fails unless both `e2e.json` and `browser.json` are there, since
-`pnpm trace gate` itself exempts those two from "no report at all": without it, a run whose browser
-step never ran would pass on the other reports alone. It is **not** `continue-on-error`, and neither is the browser step. That is
-safe precisely because of what the gate checks: `docs/specification/baselines/` declares the
-requirements this release is answerable for, each with its own evidence, so the gate passes on the
-day the baseline lands - it fails only when a later change breaks a requirement the baseline already
-claims, breaks the declaration itself, or when the test run it reads failed outright, since it
-cannot verify anything from a broken run. A check that starts red the day it is added is not a gate,
-it is a chore nobody will get to; this one starts green because the scope it enforces was chosen to
-match what is already true.
+### `test` tasks are uncacheable, on purpose
 
-This is **not** the beginning of the switch-over described below. Lint, format, typecheck and build
-are still advisory, under their own temporary comment, and turning them into gates still follows the
-checklist in "Turning CI into a gate", ending in branch protection on `main`. `Test` is a partial
-exception: the traceability gate reads `Test`'s own JSON reports and refuses to compute anything from
-a run that failed - evidence from a broken run is not evidence - so a red `pnpm test` now fails the
-build too, through the gate, even though the `Test` step itself keeps `continue-on-error`. Beyond
-that, the gate says nothing about lint, format, typecheck or build, and does not shorten that
-checklist.
-
-### Every `test` task is uncacheable, on purpose
-
-Every workspace's `test` task in `turbo.json` carries `cache: false`. This looks like an oversight -
-Turborepo exists to skip work that has not changed - but it is load-bearing, not an accident. Each
-`vitest.config.ts` writes its JSON report to `.trace-results/`, a directory outside the package's own
-output that Turborepo cannot hash or restore. A cached hit would replay a task's old logs without
-running Vitest at all, leaving that package's report missing or stale in `.trace-results/` -
-`packages/trace/src/results.ts`'s coherence check now refuses to compute `Verified` from a stale
-report for exactly this reason, but a cache hit prevents that check from ever running rather than
-tripping it. This is not hypothetical: the generic `test` task and desktop's override were missing
-`cache: false` until this was found, and the cache silently left `packages/domain`'s report stale on
-a warm run. Do not add caching back to a `test` task without giving it its own way to produce a
-`.trace-results` report Turborepo can account for.
+Every `test` task in `turbo.json` has `cache: false`. Each suite writes its report to
+`.trace-results/`, outside what Turborepo hashes, so a cache hit would replay old logs and leave a
+stale report. Do not add caching back to a `test` task.
 
 ### Turborepo's logs are streamed
 
-Both jobs set `TURBO_LOG_ORDER: stream`. Left to itself, Turborepo detects CI and switches to
-`grouped`, holding each task's output until that task ends - so while the worker's suite ran its
-nine minutes, the log showed the other suites finishing and then nothing, which reads as a hang.
-Streamed, every line arrives as it is printed, prefixed with its task, and interleaved with the
-others: read one package's run by filtering the log on its prefix, such as `@alloy-works/worker:test:`.
+`TURBO_LOG_ORDER: stream` prints each line as it happens, prefixed with its task. Filter the log on a
+prefix such as `@alloy-works/worker:test:` to read one package.
 
-## Why the checks are advisory right now
+### What is left of the switch-over
 
-The repo has no baseline. Turning a check into a gate before there is agreement on what it should
-enforce produces one of two bad outcomes: a red main that everyone learns to ignore, or a rule
-nobody chose being enforced by whatever the linter shipped with. So today CI **reports** and does
-not block.
+1. Enable branch protection on `main` requiring **Lint, typecheck, build and test**, **The whole
+   system** and **Traceability gate**, and a pull request to merge.
 
-This is temporary, and it is not permission to ignore a red check. A failing step is information -
-act on it in the PR that caused it.
+A PR that does not go green does not merge. Fix or quarantine a flaky job in its own PR with an
+issue; never rerun until green.
 
-### Turning CI into a gate
+## Branches, issues and pull requests
 
-When the baseline is agreed, in one PR:
+- **Every change lands through a PR.** `git push -u origin <branch>` then `gh pr create`. Never commit
+  to `main` or merge locally.
+- **Every fix starts as an issue** written from the user-visible symptom, and the PR body closes it
+  with `Fixes #<n>` on its own line. Features, chores and docs need no issue. Check the issue closed
+  after the merge.
 
-1. Remove every `continue-on-error: true` from `.github/workflows/ci.yml`.
-2. Confirm the job is green on `main` before, not after.
-3. Enable branch protection on `main` requiring the **Lint, typecheck, build and test**, **The whole
-   system** and **Traceability gate** checks, and requiring a pull request to merge.
-4. Update the table above and delete this section.
+## Versions and the changelog
 
-Once it is a gate: **a PR that does not go green does not merge** - no exceptions, no local merges
-to route around it. If a job is flaky, fix or quarantine it in its own PR with an issue. Never
-rerun until green and merge on the second roll.
+**Major.Minor.Build**; the canonical version is `/version.json`, mirrored by the root `package.json`
+and `apps/desktop/package.json` (electron-builder stamps it into the installer).
 
-## Branches and pull requests
-
-**Every change lands through a pull request.** Do not commit to `main` directly and do not merge
-locally - push the branch and open a PR:
-
-```bash
-git push -u origin <branch>
-gh pr create
-```
-
-Branch protection is not switched on yet, which makes this a convention rather than something the
-server enforces. Treat it as binding anyway; it becomes enforced when CI becomes a gate.
-
-**Every fix starts as a GitHub issue and ends with the PR closing it.** Open the issue first
-(`gh issue create`), written from the **user-visible symptom** - what went wrong, how to reproduce,
-what was expected - not from the fix you are about to write. Then put a closing keyword on its own
-line in the **PR body**:
-
-```
-Fixes #12
-```
-
-Notes:
-
-- **Scope: fixes only.** A feature, chore, refactor or docs-only change does not need an issue
-  unless someone asks for one. If an issue already exists, reuse its number.
-- GitHub only auto-closes from the PR **description** or from a commit on the default branch - not
-  from a PR title and not from a later comment. Check the issue actually closed after the merge.
-- Issues and PRs share one number sequence, so the PR number is usually the issue number + 1 -
-  confirm rather than assume.
-
-## Versioning
-
-The scheme is **Major.Minor.Build**, starting at `0.1.0`. The canonical version is `/version.json`.
-
-- A **functional enhancement** bumps **Minor +1 and resets Build to 0** (`0.1.2` -> `0.2.0`).
-- Any other PR - fix, chore, docs, refactor - bumps **Build +1** (`0.2.0` -> `0.2.1`).
-- **Only bump Major when explicitly asked.**
-
-The mirrors are the root `package.json` and `apps/desktop/package.json`. The desktop package joined
-the list in 0.2.0, when electron-builder started stamping the version into the installer, the
-executable's file properties and the Windows uninstall entry - which is exactly the trigger this
-section described. `apps/desktop/src/version.test.ts` fails when any mirror drifts, and it checks
-the newest changelog entry too.
-
-**The other workspace packages are still not individually versioned** - `apps/web` and
-`packages/domain` are `private: true` at `0.0.0`, because nothing publishes them and a version
-nobody reads is a version that silently drifts. When something does start reading one, add the
-mirror **and extend that test** in the same PR.
-
-## The changelog
-
-**Every PR adds one entry to [`CHANGELOG.md`](../CHANGELOG.md)**, at the top, with the version, the
-date, the PR number, and `Added` / `Changed` / `Fixed` bullets as applicable. Write it for someone
-who wants to know what changed for them, not for someone reading the diff.
-
-The topmost entry's version must equal `version.json`. There is no test enforcing that yet - add
-one when the version starts being read at runtime.
+- **A PR** adds a fragment to [`changes/`](../changes/README.md). It does not touch the version or
+  `CHANGELOG.md`.
+- **A close** (a slice or a tranche) folds the fragments into one `CHANGELOG.md` entry and bumps the
+  version: Minor +1 if any fragment adds something, else Build +1. Major only when Ken asks. The
+  checklist is in [`changes/README.md`](../changes/README.md).
+- `apps/desktop/src/version.test.ts` checks the mirrors, the newest changelog heading and the
+  fragments.
+- `apps/web` and `packages/domain` stay `private` at `0.0.0`. If something starts reading one, add a
+  mirror and extend that test.
 
 ## Releases
 
 **There is no release process yet.** `pnpm --filter @alloy-works/desktop package` builds an
-installer locally - see [development.md](development.md) - but nothing is signed, notarised or
-published, and CI does not build one. Packaging on CI belongs on a **tag**, not on every PR: it is
-slow, it downloads platform toolchains, and a pull request does not need an installer.
-
-Before there is a real release, at minimum: code signing on Windows and notarisation on macOS
-(without them users get a SmartScreen or Gatekeeper warning), and a decision about auto-update.
+installer locally ([development.md](development.md)); nothing is signed, notarised or published.
+Packaging on CI belongs on a tag. Before a real release: Windows signing, macOS notarisation and an
+auto-update decision.
