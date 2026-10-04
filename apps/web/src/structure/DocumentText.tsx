@@ -137,11 +137,14 @@ function RenderedText({
   useStyledImages(place);
   useUnresolvedMarks(place);
   const rendered = useMemo(() => renderContent(content, document, context), [content, context]);
+  // The old text swapped for the new in one step, and never emptied first (issue #384): every
+  // effect's cleanup in a flush runs before any effect's setup, so a card emptied in its cleanup stays
+  // empty while the outline pane's effect measures the page between them - and the browser pulls the
+  // window up to a page that, with every card empty, is short, leaving it there once they refill.
   useEffect(() => {
     const host = place.current;
-    if (!host || rendered === null) return undefined;
+    if (!host || rendered === null) return;
     host.replaceChildren(rendered.cloneNode(true));
-    return () => host.replaceChildren();
   }, [rendered]);
   if (rendered === null) return <p className={styles['cannot']}>{CANNOT_SHOW}</p>;
   const classes = `${styles['body']} ${TEXT_CLASS}`;
