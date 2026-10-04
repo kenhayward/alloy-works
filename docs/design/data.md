@@ -620,7 +620,8 @@ value is a typed filter the connector applies to its canonical rows.
   what keeps PostgreSQL's asserted identity safe (cases 3 and 5, D7).
 
   **What the generator writes** (D4-F): every identifier double-quoted, a quote inside doubled; every
-  relation `"schema"."name"`; **every function, operator, type and collation `pg_catalog`'s by
+  relation `"schema"."name"`, read through a derived table of the columns named of it (below);
+  **every function, operator, type and collation `pg_catalog`'s by
   name** - `pg_catalog.count`, `OPERATOR(pg_catalog.=)`, `::pg_catalog.int8`,
   `COLLATE pg_catalog."C"` - so nothing an account makes in a schema of its own can stand in for
   one, without pinning the search path a source's own view may read; **every value, a literal's
@@ -633,34 +634,34 @@ value is a typed filter the connector applies to its canonical rows.
   column's type; then the **run**, with the keys, the declared order (nulls last ascending, first
   descending) and the limit, described and run by D2's path unchanged.
 
-  **A table's column is the source's before anything is sent.** The generator writes it
-  `"alias"."name"`, and where the table has no such column PostgreSQL reads `t.f` as `f(t)`, a
-  function found through the search path - `"s"."row_to_json"` would answer each row as JSON, and a
-  function an account plants would run - so before a built query is described or run, in the same
-  session and read-only transaction, the connector asks the catalogue for every column the tree names
-  of a table or view, in its select and aggregates, both sides of every condition and its grouping,
-  nested queries' tables too. The check reads `pg_catalog.pg_attribute`, `pg_class` and
-  `pg_namespace` by those names alone, its names bound values compared byte for byte, a live column
-  (`attnum > 0`, not dropped) of a relation of a kind the describe lists. A column absent is refused
-  `source_refused` with `42703`, the failure naming the column, and a relation absent or of no such kind `42P01`,
-  so the author reads D4-K's words for them; a system column such as `ctid` is refused `42703` too,
-  its message saying it is a system column a built query does not read. None of the query reaches
-  the source.
+  **Every table is read through a derived table of exactly the columns the tree names of it**
+  (D4-F, changed at the D4 plan's third review). PostgreSQL reads `t.f` as `f(t)` where `t` has no
+  column `f`, a function found through the search path - `"s"."row_to_json"` would answer each row
+  as JSON, and a function an account plants would run. So a table source is never named by its alias
+  in a column reference directly: it is written `(SELECT "c1", "c2" FROM "schema"."name") AS "alias"`,
+  the bare quoted names of every column the tree names of it - in its select and aggregates, both
+  sides of every condition, the joins' and the where's, and its grouping, each once - or
+  `(SELECT FROM "schema"."name") AS "alias"` where it names none, as a count of its rows. A bare name
+  in a one-table select list is a column or `42703`, never a call, and every `"alias"."name"` outside
+  names a column the derived table has, so the fallback cannot apply, whatever is renamed, dropped
+  or made between one round trip and the next: there is no check to race. The derived table is not
+  `LATERAL`, so nothing in it reads another source, and reads the relation without `ONLY`, so a
+  parent reads its children. Earlier, the connector checked each column against the catalogue and
+  held each relation by its OID first; a schema renamed between the check and the run - which locks
+  none of its relations - moved the name to a table the hold did not hold, and the planted function
+  ran, so the check and the hold were removed with the class of bug.
 
-  **Every relation the tree names is held before the check, until the query has run.** Otherwise a
-  column renamed between the check and the run would be read as a function after all. The
-  transaction is read committed whatever the account's default, and each relation, once by name in
-  schema-then-name order, is parsed and described as `SELECT FROM ONLY "schema"."name"`, never
-  planned or run: parsing takes its `ACCESS SHARE` lock, which the transaction keeps, so a rename or
-  a drop waits for the query, within the request's deadline, and the check then reads the catalogue
-  as it stands. Not `LOCK TABLE`, which refuses a materialised view and a foreign table, both
-  offered, and wants a table privilege a describe never did; `ONLY`, since the check is of the named
-  relation's own columns. A relation absent, of a schema absent, or of a kind nothing reads is
-  `42P01` in the product's words; one in a schema the account may not use is the source's `42501`,
-  alike whether or not the schema holds it, before the catalogue is read.
+  A column absent is the source's `42703`, and the connector names it in the failure, read from the
+  generated text at the error's position, which the source counts in characters; a table absent is
+  `42P01`; a composite type or an index named as a table is `42809`; a schema the account may not use
+  is `42501`, alike whether or not it holds the table or the column. A sequence the account may read
+  is read as PostgreSQL answers it, one row, and reading it advances nothing; the listing never
+  offers one. A system column such as `ctid` is the table's own, read by its bare name, and its type
+  is admitted by no declared column (D2-L), nor is a whole row, which a column named as its table
+  reads.
 
   A source's refusal of a built query is answered in the product's words by its SQLSTATE (D4-K) -
-  `42P01` a table or view the source does not have, `42703` a column, `42883` and `42804` two types it
+  `42P01` and `42809` a table or view the source does not have, `42703` a column, `42883` and `42804` two types it
   cannot compare or an aggregate a column's type cannot take, `42501` the account may not read it -
   since D2-H's rule stands: the source's own message goes only to a caller holding `write_sql`.
   PostgreSQL checks a table's privileges when a statement executes, so `42501` for a table is met at
@@ -1181,22 +1182,22 @@ The D4 plan's decisions this design takes as its own; the rest of them are the p
 chose to build D4 before designing `bindings.md`**, where DA-V put `bindings.md` after D3: a binding
 names a definition by identifier whatever its fetch, so nothing in D4 depends on it.
 
-| #    | Decision                                                                                                                                                                                             |
-| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| D4-A | **No migration and no new schema version**: the builder is a second arm of `fetch` at definition `schemaVersion: 1`, refusing nothing stored                                                         |
-| D4-B | **Format 1, held tight**: a table's schema required; no `orderBy`, the declared order being the ORDER BY; a limit at the top alone, beside a declared order; widened later by adding members         |
-| D4-C | **`Condition`**: and and or of 2 to 32, not, and a comparison of a column with a parameter, a literal or a column; an optional parameter given no value makes its comparison true                    |
-| D4-D | **The whole format is checked, generated and run through the API in D4**; the page offers one table or view, and opens anything more read-only with its SQL, saying why                              |
-| D4-E | **The generator is the domain's, pure and never stored**, called by the connector at every describe and run, by the definition's checks on every write, and by the page                              |
-| D4-F | **Every name quoted, every function, operator, type and collation `pg_catalog`'s, every value a placeholder**, the text read back before it is sent                                                  |
-| D4-G | **Text compares, sorts and groups by code point wherever the builder compares it**, `(x)::pg_catalog.text COLLATE pg_catalog."C"`: this answers the collation question for the builder on PostgreSQL |
-| D4-H | **Two statements from one tree**: the shape, described and admitted by D2-L, and the run, with the keys, the order and the limit                                                                     |
-| D4-I | **`average` carries `places`**, rounded at the source                                                                                                                                                |
-| D4-J | **A built query needs `edit` and `use_connection`, never `write_sql`**, and is not refused by DAT-103; each version by its own fetch                                                                 |
-| D4-K | **A built query's commonest refusals are worded by their SQLSTATE**; the source's message only to a holder of `write_sql`                                                                            |
-| D4-L | **Depth and breadth bounded by an iterative walk** before the schema recurses: queries 4 deep, conditions 8, 16 sources, 32 groupings, 256 comparisons                                               |
-| D4-P | **A name the builder cannot hold is shown and not offered**: a relation or a column whose name is not NFC; a view under a composed name reaches it                                                   |
-| D4-Q | **Describe takes a built query**, `{ builder: { query, parameters } }`, on `use_connection` alone                                                                                                    |
+| #    | Decision                                                                                                                                                                                                                                                                                                         |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D4-A | **No migration and no new schema version**: the builder is a second arm of `fetch` at definition `schemaVersion: 1`, refusing nothing stored                                                                                                                                                                     |
+| D4-B | **Format 1, held tight**: a table's schema required; no `orderBy`, the declared order being the ORDER BY; a limit at the top alone, beside a declared order; widened later by adding members                                                                                                                     |
+| D4-C | **`Condition`**: and and or of 2 to 32, not, and a comparison of a column with a parameter, a literal or a column; an optional parameter given no value makes its comparison true                                                                                                                                |
+| D4-D | **The whole format is checked, generated and run through the API in D4**; the page offers one table or view, and opens anything more read-only with its SQL, saying why                                                                                                                                          |
+| D4-E | **The generator is the domain's, pure and never stored**, called by the connector at every describe and run, by the definition's checks on every write, and by the page                                                                                                                                          |
+| D4-F | **Every name quoted, every function, operator, type and collation `pg_catalog`'s, every value a placeholder**, the text read back before it is sent; **every table read through a derived table of the bare names of the columns named of it**, so no column is read as a function of the row (the third review) |
+| D4-G | **Text compares, sorts and groups by code point wherever the builder compares it**, `(x)::pg_catalog.text COLLATE pg_catalog."C"`: this answers the collation question for the builder on PostgreSQL                                                                                                             |
+| D4-H | **Two statements from one tree**: the shape, described and admitted by D2-L, and the run, with the keys, the order and the limit                                                                                                                                                                                 |
+| D4-I | **`average` carries `places`**, rounded at the source                                                                                                                                                                                                                                                            |
+| D4-J | **A built query needs `edit` and `use_connection`, never `write_sql`**, and is not refused by DAT-103; each version by its own fetch                                                                                                                                                                             |
+| D4-K | **A built query's commonest refusals are worded by their SQLSTATE**; the source's message only to a holder of `write_sql`                                                                                                                                                                                        |
+| D4-L | **Depth and breadth bounded by an iterative walk** before the schema recurses: queries 4 deep, conditions 8, 16 sources, 32 groupings, 256 comparisons                                                                                                                                                           |
+| D4-P | **A name the builder cannot hold is shown and not offered**: a relation or a column whose name is not NFC; a view under a composed name reaches it                                                                                                                                                               |
+| D4-Q | **Describe takes a built query**, `{ builder: { query, parameters } }`, on `use_connection` alone                                                                                                                                                                                                                |
 
 **Until the publish's binding stage exists, nothing publishes a binding** (the D3 plan, "Added in
 phase B"): a publish or a preview of a document whose resolved content holds one is refused before
