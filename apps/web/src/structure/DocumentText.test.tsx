@@ -6,6 +6,7 @@ import {
 } from '@alloy-works/domain';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useEffect } from 'react';
 import { describe, expect, it } from 'vitest';
 
 import { DocumentText } from './DocumentText.js';
@@ -88,6 +89,41 @@ describe("the document's text", () => {
     // Withheld from this reader: named neutrally, marked, and nothing to open.
     expect(within(text).getByText('Not yours to read')).toBeInTheDocument();
     expect(within(text).getAllByRole('link')).toHaveLength(1);
+  });
+
+  it("never leaves a component's text empty while it is drawn again, so nothing measuring the page meanwhile finds it short (issue #384)", () => {
+    // The outline pane's effects run between the text's, in the same flush: it reveals the reader's
+    // node in its pane by measuring, and a page measured with every card emptied is short enough
+    // for the browser to pull the window up to it - away from a linked node, or from wherever the
+    // reader had scrolled. The probe stands where the pane does, before the text, and measures too.
+    const seen: number[] = [];
+    function Probe({ tick }: { tick: number }) {
+      useEffect(() => {
+        const body = document.querySelector(`[data-node="${PRINTER_NODE}"] .aw-text`);
+        if (tick > 0) seen.push(body?.childNodes.length ?? -1);
+      }, [tick]);
+      return null;
+    }
+    const names = new Map([[PRINTER, 'Install the printer']]);
+    const shown = (tick: number, content: unknown) => (
+      <>
+        <Probe tick={tick} />
+        <DocumentText
+          outline={outline}
+          scheme={defaultLayout.scheme}
+          names={names}
+          texts={new Map([[PRINTER_NODE, content]])}
+        />
+      </>
+    );
+    const { rerender } = render(shown(0, printerText));
+    expect(screen.getByText('Unbox the printer.')).toBeInTheDocument();
+
+    // The same text read again, as a returning window or a closed editor reads it: drawn afresh.
+    rerender(shown(1, { ...printerText }));
+
+    expect(seen, 'what the card held while the outline measured').toEqual([1]);
+    expect(screen.getByText('Unbox the printer.')).toBeInTheDocument();
   });
 
   it("shows each component's text in its card, and opens its editor in place when the text is clicked", async () => {
