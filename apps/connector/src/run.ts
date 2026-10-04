@@ -2,7 +2,7 @@ import type { Socket } from 'node:net';
 
 import {
   BindingRefused,
-  bindPostgres,
+  bindFetch,
   dataFailure,
   sourceNameSchema,
   type CanonicalValue,
@@ -63,9 +63,9 @@ export async function runStatement(
 ): Promise<RunAnswer> {
   const started = Date.now();
   const failed = (failure: DataFailure): RunAnswer => ({ outcome: 'failed', failure });
-  let bound: ReturnType<typeof bindPostgres>;
+  let bound: ReturnType<typeof bindFetch>;
   try {
-    bound = bindPostgres(definition, values);
+    bound = bindFetch(definition, values);
   } catch (error) {
     // A binding refused is the definition's to fix, and nothing of it is sent.
     if (error instanceof BindingRefused) return failed(dataFailure('definition_unbindable'));
@@ -134,7 +134,7 @@ const socketOf = (client: pg.Client) =>
  */
 function readRows(
   client: pg.Client,
-  bound: ReturnType<typeof bindPostgres>,
+  bound: ReturnType<typeof bindFetch>,
   definition: DraftDefinition,
   places: readonly number[],
   limits: Limits,

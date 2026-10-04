@@ -2,6 +2,7 @@ import {
   SECRET_MAX_BYTES,
   connectionSettingsSchema,
   draftDefinitionSchema,
+  sqlTextSchema,
   parameterSchema,
   valueTypeSchema,
 } from '@alloy-works/domain';
@@ -215,7 +216,7 @@ export type DescribeView = z.infer<typeof DescribeView>;
  * parameters it declares (D2-B, D2-G).
  */
 export const SqlStatementBody = z.strictObject({
-  text: draftDefinitionSchema.shape.fetch.shape.text,
+  text: sqlTextSchema,
   parameters: z.array(parameterSchema).max(50),
 });
 

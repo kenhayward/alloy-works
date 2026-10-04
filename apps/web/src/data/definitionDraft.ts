@@ -1,4 +1,9 @@
-import type { Parameter, QueryDefinition, ValueType } from '@alloy-works/domain';
+import {
+  generatePostgres,
+  type Parameter,
+  type QueryDefinition,
+  type ValueType,
+} from '@alloy-works/domain';
 
 /**
  * A query definition as its page holds it while it is written (the D2 plan, D2-U): every field as the
@@ -249,15 +254,23 @@ export function definitionOf(draft: DefinitionDraft): QueryDefinition | string {
   } as QueryDefinition;
 }
 
-/** A stored definition as its page holds it: every column already confirmed. */
-export function draftOf(definition: QueryDefinition): DefinitionDraft {
+/**
+ * The SQL a definition runs: its own, or what a built query generates. The builder's own step is the
+ * D4 plan's task 4; until then a built query is shown by its SQL.
+ */
+export function sqlOf(definition: QueryDefinition): string {
   // Read by destructuring: the renderer's API test flags any member named for the network.
   const { fetch: statement } = definition;
+  return statement.kind === 'sql' ? statement.text : generatePostgres(definition, {}, 'run').text;
+}
+
+/** A stored definition as its page holds it: every column already confirmed. */
+export function draftOf(definition: QueryDefinition): DefinitionDraft {
   return {
     title: definition.title,
     description: definition.description,
     connection: definition.connection,
-    sql: statement.text,
+    sql: sqlOf(definition),
     parameters: definition.parameters.map((parameter) => {
       const permitted = parameter.permitted;
       return {

@@ -33,6 +33,7 @@ export {
   parseQueryDefinition,
   parseQueryDefinitionForWrite,
   queryDefinitionSchema,
+  sqlTextSchema,
 } from './definition.js';
 export type {
   Column,
@@ -108,3 +109,26 @@ export {
 } from './provenance.js';
 export type { Provenance } from './provenance.js';
 export { identityKey, parametersDigestInput } from './identity.js';
+export {
+  aggregates,
+  BUILDER_FORMAT,
+  builderFetchSchema,
+  checkBuilder,
+  comparisons,
+  treeProblem,
+} from './builder.js';
+export type {
+  Aggregate,
+  AggregateName,
+  BuilderFetch,
+  ColumnRef,
+  Comparison,
+  Condition,
+  Join,
+  Operand,
+  Query,
+  SelectItem,
+  Source,
+} from './builder.js';
+export { generatedLength, generatePostgres } from './generate.js';
+export { bindFetch } from './fetch.js';

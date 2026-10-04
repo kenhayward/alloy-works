@@ -1,11 +1,22 @@
 import { z } from 'zod';
 
-import { storableText } from '../stored/storable.js';
+import { builderFetchSchema, checkBuilder, type BuilderFetch } from './builder.js';
 import { valueProblem, compareCanonical, type CanonicalValue } from './canonical.js';
 import { valueTypeSchema, type ValueType } from './columns.js';
+import { generatedLength } from './generate.js';
 import { limitCeilings } from './limits.js';
-import { MAX_TEXT_VALUE } from './parameters.js';
 import { MAX_COLUMNS } from './columns.js';
+import {
+  canonicalValueSchema,
+  characters,
+  CONTROL,
+  grouped,
+  PARAMETER_NAME,
+  parameterName,
+  sourceName,
+  storable,
+  utf8Bytes,
+} from './primitives.js';
 import { canonicalJson } from '../stored/canonical.js';
 import {
   BindingRefused,
@@ -14,7 +25,10 @@ import {
   lexPostgres,
   longestBinding,
   RAN_MAX_CHARACTERS,
+  type SqlDefinition,
 } from './sql.js';
+
+export { canonicalValueSchema, PARAMETER_NAME };
 
 /**
  * A query definition version (data.md, "What a query definition version holds"; the D2 plan, task 1):
@@ -24,11 +38,6 @@ import {
  */
 export const QUERY_DEFINITION_SCHEMA_VERSION = 1;
 
-/** A parameter's name and a variation's key: lower case, a letter first, as PostgreSQL's names go. */
-export const PARAMETER_NAME = /^[a-z][a-z0-9_]{0,62}$/;
-
-/** Any control character: C0, DEL and C1. */
-const CONTROL = /\p{Cc}/u;
 /** Any control character but a line feed. */
 const CONTROL_BUT_LINE_FEED = /(?!\n)\p{Cc}/u;
 
@@ -40,17 +49,7 @@ const CONTROL_BUT_LINE_FEED = /(?!\n)\p{Cc}/u;
  */
 export const DEFINITION_MAX_BYTES = 512 * 1024;
 
-const characters = (value: string) => [...value].length;
-/** A whole number with its thousands separated by commas, as the product writes one. */
-const grouped = (value: number) => String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-const utf8Bytes = (value: string) => new TextEncoder().encode(value).length;
-
-const storable = (what: string) =>
-  z.string().refine(storableText, { message: `${what} holds a character that cannot be stored` });
-
-const name = z.string().regex(PARAMETER_NAME, {
-  message: 'A name is a lower-case letter, then up to 62 lower-case letters, digits or underscores',
-});
+const name = parameterName;
 
 const title = storable('A title')
   .refine((value) => characters(value) >= 1 && characters(value) <= 200, {
@@ -66,28 +65,6 @@ const description = storable('A description')
   .refine((value) => !CONTROL_BUT_LINE_FEED.test(value), {
     message: 'A description holds no control character but a line feed',
   });
-
-/** A name as PostgreSQL holds one: 1 to 63 bytes, no control character, nothing unstorable. */
-const sourceName = (what: string) =>
-  storable(what)
-    .refine((value) => utf8Bytes(value) >= 1 && utf8Bytes(value) <= 63, {
-      message: `${what} is 1 to 63 bytes of UTF-8`,
-    })
-    .refine((value) => !CONTROL.test(value), { message: `${what} holds no control character` });
-
-// A permitted value's text is counted in characters, as a parameter's value is (D2-R), never left to
-// how the schema library happens to count a string's length. A binding's literal is held to the same
-// (the D3 plan, D3-C): canonical in its parameter's type is decided where it is resolved.
-export const canonicalValueSchema = z.union([
-  storable('A value')
-    // Published as JSON Schema's maxLength, which counts characters too.
-    .max(MAX_TEXT_VALUE)
-    .refine((value) => characters(value) <= MAX_TEXT_VALUE, {
-      message: 'A value is at most 1,000 characters',
-    }),
-  z.boolean(),
-  z.null(),
-]);
 
 const permitted = z.union([
   z.strictObject({ values: z.array(canonicalValueSchema) }),
@@ -129,13 +106,17 @@ export const columnSchema = z.strictObject({
   type: valueTypeSchema,
 });
 
-const fetchSchema = z.strictObject({
-  // SQL alone in D2; the builder's tree arrives with D4 as an arm, which refuses nothing stored.
-  kind: z.literal('sql'),
-  text: storable('SQL').refine((value) => characters(value) >= 1 && characters(value) <= 100_000, {
-    message: 'SQL is 1 to 100,000 characters',
-  }),
-});
+/** SQL with its markers, as the SQL fallback writes it (D2-B). */
+export const sqlTextSchema = storable('SQL').refine(
+  (value) => characters(value) >= 1 && characters(value) <= 100_000,
+  { message: 'SQL is 1 to 100,000 characters' },
+);
+
+// SQL as D2 wrote it, or the builder's tree (D4-A): a second arm, which refuses nothing stored.
+const fetchSchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('sql'), text: sqlTextSchema }),
+  builderFetchSchema,
+]);
 
 const limit = (ceiling: number) => z.number().int().min(1).max(ceiling);
 
@@ -239,12 +220,15 @@ function* strings(value: unknown, path: string[] = []): Generator<[string, strin
 }
 
 /**
- * The rules beyond the shape (the D2 plan's stored-shape check, rows 5 to 13, and D2-F): names once
- * each; permitted values and ranges canonical in their parameter's type; a variation only on a
- * required text parameter that is neither a list nor permitted, its keys once each and its fragments
- * lexing whole with no marker; the SQL lexing whole with every marker outside a quote or a comment,
- * naming a declared parameter of its kind, and every parameter used; the key and the order over
- * declared columns, an order total over a key that is not empty; and every string already NFC.
+ * The rules beyond the shape (the D2 plan's stored-shape check, rows 5 to 13, and D2-F; the D4 plan's,
+ * rows 2 to 12): names once each; permitted values and ranges canonical in their parameter's type;
+ * the key and the order over declared columns, an order total over a key that is not empty; every
+ * string already NFC; and the definition at most 512 KiB. Then by the fetch's kind: for SQL, a
+ * variation only on a required text parameter that is neither a list nor permitted, its keys once
+ * each and its fragments sound, and the SQL lexing whole with every marker outside a quote or a
+ * comment, naming a declared parameter of its kind, every parameter used and the longest binding
+ * within the bound; for a built query, the builder's rules (`checkBuilder`) and both statements it
+ * generates read back whole and within the bound.
  */
 export function checkQueryDefinition(
   definition: DraftDefinition & { readonly title?: string; readonly description?: string },
@@ -262,12 +246,15 @@ export function checkQueryDefinition(
       `A definition is at most 512 KiB (${grouped(DEFINITION_MAX_BYTES)} bytes); this one is ${grouped(size)}`,
     );
   }
-  const longest = longestBinding(definition);
-  if (longest !== undefined && longest > RAN_MAX_CHARACTERS) {
-    problem(
-      'fetch.text',
-      `The SQL binds to at most ${grouped(RAN_MAX_CHARACTERS)} characters with its longest fragments; this binds to ${grouped(longest)}`,
-    );
+  const { fetch } = definition;
+  if (fetch.kind === 'sql') {
+    const longest = longestBinding({ parameters: definition.parameters, fetch });
+    if (longest !== undefined && longest > RAN_MAX_CHARACTERS) {
+      problem(
+        'fetch.text',
+        `The SQL binds to at most ${grouped(RAN_MAX_CHARACTERS)} characters with its longest fragments; this binds to ${grouped(longest)}`,
+      );
+    }
   }
 
   // Every string, already composed: a digest canonicalises to NFC, and would not tell two spellings of
@@ -287,7 +274,7 @@ export function checkQueryDefinition(
     if (byName.has(parameter.name)) problem(`${path}.name`, 'A parameter is declared once');
     else byName.set(parameter.name, parameter);
     checkPermitted(parameter, path, problem);
-    if (parameter.variation !== undefined) {
+    if (parameter.variation !== undefined && fetch.kind === 'sql') {
       const { type, required, list } = parameter;
       if (type.base !== 'text' || !required || list || parameter.permitted !== undefined) {
         problem(
@@ -305,31 +292,40 @@ export function checkQueryDefinition(
     }
   }
 
-  const lexed = lexPostgres(definition.fetch.text);
-  if (!Array.isArray(lexed)) {
-    problem('fetch.text', `${lexed.problem} (line ${lexed.line})`);
-  } else {
-    const used = new Set<string>();
-    for (const piece of lexed) {
-      if (piece.kind === 'text') continue;
-      const parameter = byName.get(piece.name);
-      const marker = piece.kind === 'value' ? `{{${piece.name}}}` : `{{#${piece.name}}}`;
-      if (!parameter) problem('fetch.text', `The marker ${marker} names no declared parameter`);
-      else if ((piece.kind === 'variation') !== (parameter.variation !== undefined)) {
-        problem(
-          'fetch.text',
-          piece.kind === 'variation'
-            ? `The marker ${marker} names a parameter that declares no variation`
-            : `The marker ${marker} names a variation, which is placed with {{#${piece.name}}}`,
-        );
-      } else used.add(piece.name);
-    }
-    for (const [at, parameter] of definition.parameters.entries()) {
-      if (!used.has(parameter.name) && byName.get(parameter.name) === parameter) {
-        problem(`parameters.${at}`, `No marker uses the parameter ${parameter.name}`);
+  if (fetch.kind === 'sql') {
+    const lexed = lexPostgres(fetch.text);
+    if (!Array.isArray(lexed)) {
+      problem('fetch.text', `${lexed.problem} (line ${lexed.line})`);
+    } else {
+      const used = new Set<string>();
+      for (const piece of lexed) {
+        if (piece.kind === 'text') continue;
+        const parameter = byName.get(piece.name);
+        const marker = piece.kind === 'value' ? `{{${piece.name}}}` : `{{#${piece.name}}}`;
+        if (!parameter) problem('fetch.text', `The marker ${marker} names no declared parameter`);
+        else if ((piece.kind === 'variation') !== (parameter.variation !== undefined)) {
+          problem(
+            'fetch.text',
+            piece.kind === 'variation'
+              ? `The marker ${marker} names a parameter that declares no variation`
+              : `The marker ${marker} names a variation, which is placed with {{#${piece.name}}}`,
+          );
+        } else used.add(piece.name);
+      }
+      for (const [at, parameter] of definition.parameters.entries()) {
+        if (!used.has(parameter.name) && byName.get(parameter.name) === parameter) {
+          problem(`parameters.${at}`, `No marker uses the parameter ${parameter.name}`);
+        }
+      }
+      if (problems.length === 0) {
+        checkBindings({ parameters: definition.parameters, fetch }, problem);
       }
     }
-    if (problems.length === 0) checkBindings(definition, problem);
+  } else {
+    // A built query: the builder's rules, then both statements it generates, once the tree is sound.
+    const before = problems.length;
+    checkBuilder({ ...definition, fetch }, problem);
+    if (problems.length === before) checkGenerated({ ...definition, fetch }, problem);
   }
 
   const columns = new Set<string>();
@@ -366,13 +362,40 @@ export function checkQueryDefinition(
 }
 
 /**
+ * Both statements a built query generates, read back whole and within the bound a run reports as
+ * what ran (the D4 plan, D4-L, row 12): a tree has no variation, so each is generated exactly.
+ */
+function checkGenerated(
+  definition: Pick<DraftDefinition, 'parameters' | 'columns' | 'order'> & {
+    readonly fetch: BuilderFetch;
+  },
+  problem: (path: string, message: string) => void,
+): void {
+  let lengths: { shape: number; run: number };
+  try {
+    lengths = generatedLength(definition);
+  } catch (error) {
+    if (!(error instanceof BindingRefused)) throw error;
+    problem('fetch.query', 'The query does not generate SQL that holds its placeholders');
+    return;
+  }
+  const longest = Math.max(lengths.shape, lengths.run);
+  if (longest > RAN_MAX_CHARACTERS) {
+    problem(
+      'fetch.query',
+      `The query generates at most ${grouped(RAN_MAX_CHARACTERS)} characters of SQL; this one generates ${grouped(longest)}`,
+    );
+  }
+}
+
+/**
  * Binds the SQL once, each variation at its first key, and reads it back as the binder does: a check
  * that the binding holds its placeholders. Every fragment is set apart where it is placed and sound on
  * its own (`fragmentProblem`), so the other keys bind as this one does; this costs one binding, in
  * time linear in the definition's size.
  */
 function checkBindings(
-  definition: Pick<DraftDefinition, 'parameters' | 'fetch'>,
+  definition: SqlDefinition,
   problem: (path: string, message: string) => void,
 ): void {
   const firsts = Object.fromEntries(

@@ -3,12 +3,15 @@ import { z } from 'zod';
 import { storableText } from '../stored/storable.js';
 import { columnTypeSchema, MAX_COLUMNS, valueTypeSchema } from './columns.js';
 import { connectionSettingsSchema } from './connection.js';
+import { builderQuerySchema, checkTree, type Query } from './builder.js';
 import {
   checkQueryDefinition,
   draftDefinitionSchema,
   parameterSchema,
+  sqlTextSchema,
   type Parameter,
 } from './definition.js';
+import { generatePostgres } from './generate.js';
 import { dataFailureSchema } from './failures.js';
 import { limitCeilings } from './limits.js';
 import { checkParameterValues, type ParameterValues } from './parameters.js';
@@ -285,19 +288,60 @@ export const runAnswerSchema = z.discriminatedUnion('outcome', [
 export type RunAnswer = z.infer<typeof runAnswerSchema>;
 
 /**
- * A SQL statement described without being run (D2-G; Q1): its text with its markers, and the
- * parameters it declares, so the connector can bind it as a run would.
+ * A statement described without being run (D2-G; Q1): SQL with its markers, or a built query's tree
+ * (the D4 plan, D4-Q), and the parameters it declares, so the connector can bind it as a run would. A
+ * built query is described by its shape statement (D4-H), and held to the builder's rules but those
+ * that need its declared columns.
  */
-export const describeSqlRequestSchema = testRequestSchema.extend({
-  sql: z
-    .strictObject({
-      text: draftDefinitionSchema.shape.fetch.shape.text,
-      parameters: z.array(parameterSchema).max(50),
-    })
-    .refine(describable, {
-      message: 'A statement lexes whole, each marker naming a declared parameter of its kind',
-    }),
-});
+const sqlDescribe = z
+  .strictObject({
+    text: sqlTextSchema,
+    parameters: z.array(parameterSchema).max(50),
+  })
+  .refine(describable, {
+    message: 'A statement lexes whole, each marker naming a declared parameter of its kind',
+  });
+
+const builderDescribe = z
+  .strictObject({
+    query: builderQuerySchema(),
+    parameters: z.array(parameterSchema).max(50),
+  })
+  .refine((builder) => builtDescribable(builder.query, builder.parameters), {
+    message: "A built query passes the builder's checks, each parameter declared once and used",
+  });
+
+export const describeSqlRequestSchema = z.union([
+  testRequestSchema.extend({ sql: sqlDescribe }),
+  testRequestSchema.extend({ builder: builderDescribe }),
+]);
+
+/** Whether a built query passes the builder's checks of its tree, and its shape generates whole. */
+function builtDescribable(query: Query, parameters: readonly Parameter[]) {
+  if (new Set(parameters.map((parameter) => parameter.name)).size !== parameters.length) {
+    return false;
+  }
+  let sound = true;
+  checkTree(query, parameters, () => {
+    sound = false;
+  });
+  if (!sound) return false;
+  try {
+    const shape = generatePostgres(
+      {
+        parameters: [...parameters],
+        fetch: { kind: 'builder', format: 1, query },
+        columns: [],
+        order: 'multiset',
+      },
+      {},
+      'shape',
+    );
+    return shape.text.length <= RAN_MAX_CHARACTERS;
+  } catch {
+    return false;
+  }
+}
 
 /** Whether SQL lexes whole, each parameter declared once and each marker naming one of its kind. */
 function describable(sql: { readonly text: string; readonly parameters: readonly Parameter[] }) {

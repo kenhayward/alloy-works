@@ -17,6 +17,7 @@ import {
   withStatement,
   sampleDefinition,
   sampleValues,
+  sqlOf,
   type ColumnDraft,
   type DefinitionDraft,
   type ParameterDraft,
@@ -470,13 +471,12 @@ function ValueField({
 
 /** The SQL of a definition the person may only read, and its declarations, in words. */
 function ReadOnly({ definition }: { readonly definition: QueryDefinition }) {
-  const { fetch: statement } = definition;
   const typeName = (type: ValueType) =>
     BASES.find((each) => each.base === type.base)?.label ?? type.base;
   return (
     <>
       <p>{definition.description === '' ? 'No description.' : definition.description}</p>
-      <pre className={styles['sql']}>{statement.text}</pre>
+      <pre className={styles['sql']}>{sqlOf(definition)}</pre>
       <table className={styles['table']}>
         <caption>Columns</caption>
         <thead>

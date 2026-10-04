@@ -52,6 +52,7 @@ async function describeSql(
   client: pg.Client,
   request: Extract<ChildRequest, { kind: 'describeSql' }>['request'],
 ): Promise<DescribeSqlAnswer> {
+  if (!('sql' in request)) throw new Failed(dataFailure('connector_error'));
   const { text, parameters } = request.sql;
   const values: ParameterValues = Object.fromEntries(
     parameters.map((parameter) => [parameter.name, parameter.variation?.[0]?.key ?? null]),

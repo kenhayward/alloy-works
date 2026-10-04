@@ -1803,6 +1803,936 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        sampleConnectionBody_schema0: {
+            sources: ({
+                alias: string;
+                table: {
+                    schema: string;
+                    name: string;
+                };
+            } | {
+                alias: string;
+                query: components["schemas"]["sampleConnectionBody_schema0"];
+            })[];
+            joins: {
+                /** @enum {string} */
+                kind: "inner" | "left";
+                source: string;
+                on: components["schemas"]["sampleConnectionBody_schema1"];
+            }[];
+            select: {
+                name: string;
+                of: {
+                    source: string;
+                    column: string;
+                } | {
+                    /** @enum {string} */
+                    aggregate: "count" | "sum" | "average" | "minimum" | "maximum";
+                    of?: {
+                        source: string;
+                        column: string;
+                    };
+                    places?: number;
+                };
+            }[];
+            where?: components["schemas"]["sampleConnectionBody_schema1"];
+            groupBy: {
+                source: string;
+                column: string;
+            }[];
+            limit?: number;
+        };
+        sampleConnectionBody_schema1: {
+            and: components["schemas"]["sampleConnectionBody_schema1"][];
+        } | {
+            or: components["schemas"]["sampleConnectionBody_schema1"][];
+        } | {
+            not: components["schemas"]["sampleConnectionBody_schema1"];
+        } | {
+            column: {
+                source: string;
+                column: string;
+            };
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            } | {
+                column: {
+                    source: string;
+                    column: string;
+                };
+            };
+        };
+        getQueryDefinition200_schema0: {
+            sources: ({
+                alias: string;
+                table: {
+                    schema: string;
+                    name: string;
+                };
+            } | {
+                alias: string;
+                query: components["schemas"]["getQueryDefinition200_schema0"];
+            })[];
+            joins: {
+                /** @enum {string} */
+                kind: "inner" | "left";
+                source: string;
+                on: components["schemas"]["getQueryDefinition200_schema1"];
+            }[];
+            select: {
+                name: string;
+                of: {
+                    source: string;
+                    column: string;
+                } | {
+                    /** @enum {string} */
+                    aggregate: "count" | "sum" | "average" | "minimum" | "maximum";
+                    of?: {
+                        source: string;
+                        column: string;
+                    };
+                    places?: number;
+                };
+            }[];
+            where?: components["schemas"]["getQueryDefinition200_schema1"];
+            groupBy: {
+                source: string;
+                column: string;
+            }[];
+            limit?: number;
+        };
+        getQueryDefinition200_schema1: {
+            and: components["schemas"]["getQueryDefinition200_schema1"][];
+        } | {
+            or: components["schemas"]["getQueryDefinition200_schema1"][];
+        } | {
+            not: components["schemas"]["getQueryDefinition200_schema1"];
+        } | {
+            column: {
+                source: string;
+                column: string;
+            };
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            } | {
+                column: {
+                    source: string;
+                    column: string;
+                };
+            };
+        };
+        recordQueryDefinitionVersion200_schema0: {
+            sources: ({
+                alias: string;
+                table: {
+                    schema: string;
+                    name: string;
+                };
+            } | {
+                alias: string;
+                query: components["schemas"]["recordQueryDefinitionVersion200_schema0"];
+            })[];
+            joins: {
+                /** @enum {string} */
+                kind: "inner" | "left";
+                source: string;
+                on: components["schemas"]["recordQueryDefinitionVersion200_schema1"];
+            }[];
+            select: {
+                name: string;
+                of: {
+                    source: string;
+                    column: string;
+                } | {
+                    /** @enum {string} */
+                    aggregate: "count" | "sum" | "average" | "minimum" | "maximum";
+                    of?: {
+                        source: string;
+                        column: string;
+                    };
+                    places?: number;
+                };
+            }[];
+            where?: components["schemas"]["recordQueryDefinitionVersion200_schema1"];
+            groupBy: {
+                source: string;
+                column: string;
+            }[];
+            limit?: number;
+        };
+        recordQueryDefinitionVersion200_schema1: {
+            and: components["schemas"]["recordQueryDefinitionVersion200_schema1"][];
+        } | {
+            or: components["schemas"]["recordQueryDefinitionVersion200_schema1"][];
+        } | {
+            not: components["schemas"]["recordQueryDefinitionVersion200_schema1"];
+        } | {
+            column: {
+                source: string;
+                column: string;
+            };
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            } | {
+                column: {
+                    source: string;
+                    column: string;
+                };
+            };
+        };
+        recordQueryDefinitionVersion400_schema0: {
+            sources: ({
+                alias: string;
+                table: {
+                    schema: string;
+                    name: string;
+                };
+            } | {
+                alias: string;
+                query: components["schemas"]["recordQueryDefinitionVersion400_schema0"];
+            })[];
+            joins: {
+                /** @enum {string} */
+                kind: "inner" | "left";
+                source: string;
+                on: components["schemas"]["recordQueryDefinitionVersion400_schema1"];
+            }[];
+            select: {
+                name: string;
+                of: {
+                    source: string;
+                    column: string;
+                } | {
+                    /** @enum {string} */
+                    aggregate: "count" | "sum" | "average" | "minimum" | "maximum";
+                    of?: {
+                        source: string;
+                        column: string;
+                    };
+                    places?: number;
+                };
+            }[];
+            where?: components["schemas"]["recordQueryDefinitionVersion400_schema1"];
+            groupBy: {
+                source: string;
+                column: string;
+            }[];
+            limit?: number;
+        };
+        recordQueryDefinitionVersion400_schema1: {
+            and: components["schemas"]["recordQueryDefinitionVersion400_schema1"][];
+        } | {
+            or: components["schemas"]["recordQueryDefinitionVersion400_schema1"][];
+        } | {
+            not: components["schemas"]["recordQueryDefinitionVersion400_schema1"];
+        } | {
+            column: {
+                source: string;
+                column: string;
+            };
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            } | {
+                column: {
+                    source: string;
+                    column: string;
+                };
+            };
+        };
+        recordQueryDefinitionVersion409_schema0: {
+            sources: ({
+                alias: string;
+                table: {
+                    schema: string;
+                    name: string;
+                };
+            } | {
+                alias: string;
+                query: components["schemas"]["recordQueryDefinitionVersion409_schema0"];
+            })[];
+            joins: {
+                /** @enum {string} */
+                kind: "inner" | "left";
+                source: string;
+                on: components["schemas"]["recordQueryDefinitionVersion409_schema1"];
+            }[];
+            select: {
+                name: string;
+                of: {
+                    source: string;
+                    column: string;
+                } | {
+                    /** @enum {string} */
+                    aggregate: "count" | "sum" | "average" | "minimum" | "maximum";
+                    of?: {
+                        source: string;
+                        column: string;
+                    };
+                    places?: number;
+                };
+            }[];
+            where?: components["schemas"]["recordQueryDefinitionVersion409_schema1"];
+            groupBy: {
+                source: string;
+                column: string;
+            }[];
+            limit?: number;
+        };
+        recordQueryDefinitionVersion409_schema1: {
+            and: components["schemas"]["recordQueryDefinitionVersion409_schema1"][];
+        } | {
+            or: components["schemas"]["recordQueryDefinitionVersion409_schema1"][];
+        } | {
+            not: components["schemas"]["recordQueryDefinitionVersion409_schema1"];
+        } | {
+            column: {
+                source: string;
+                column: string;
+            };
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            } | {
+                column: {
+                    source: string;
+                    column: string;
+                };
+            };
+        };
+        recordQueryDefinitionVersionBody_schema0: {
+            sources: ({
+                alias: string;
+                table: {
+                    schema: string;
+                    name: string;
+                };
+            } | {
+                alias: string;
+                query: components["schemas"]["recordQueryDefinitionVersionBody_schema0"];
+            })[];
+            joins: {
+                /** @enum {string} */
+                kind: "inner" | "left";
+                source: string;
+                on: components["schemas"]["recordQueryDefinitionVersionBody_schema1"];
+            }[];
+            select: {
+                name: string;
+                of: {
+                    source: string;
+                    column: string;
+                } | {
+                    /** @enum {string} */
+                    aggregate: "count" | "sum" | "average" | "minimum" | "maximum";
+                    of?: {
+                        source: string;
+                        column: string;
+                    };
+                    places?: number;
+                };
+            }[];
+            where?: components["schemas"]["recordQueryDefinitionVersionBody_schema1"];
+            groupBy: {
+                source: string;
+                column: string;
+            }[];
+            limit?: number;
+        };
+        recordQueryDefinitionVersionBody_schema1: {
+            and: components["schemas"]["recordQueryDefinitionVersionBody_schema1"][];
+        } | {
+            or: components["schemas"]["recordQueryDefinitionVersionBody_schema1"][];
+        } | {
+            not: components["schemas"]["recordQueryDefinitionVersionBody_schema1"];
+        } | {
+            column: {
+                source: string;
+                column: string;
+            };
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            } | {
+                column: {
+                    source: string;
+                    column: string;
+                };
+            };
+        };
+        createQueryDefinition200_schema0: {
+            sources: ({
+                alias: string;
+                table: {
+                    schema: string;
+                    name: string;
+                };
+            } | {
+                alias: string;
+                query: components["schemas"]["createQueryDefinition200_schema0"];
+            })[];
+            joins: {
+                /** @enum {string} */
+                kind: "inner" | "left";
+                source: string;
+                on: components["schemas"]["createQueryDefinition200_schema1"];
+            }[];
+            select: {
+                name: string;
+                of: {
+                    source: string;
+                    column: string;
+                } | {
+                    /** @enum {string} */
+                    aggregate: "count" | "sum" | "average" | "minimum" | "maximum";
+                    of?: {
+                        source: string;
+                        column: string;
+                    };
+                    places?: number;
+                };
+            }[];
+            where?: components["schemas"]["createQueryDefinition200_schema1"];
+            groupBy: {
+                source: string;
+                column: string;
+            }[];
+            limit?: number;
+        };
+        createQueryDefinition200_schema1: {
+            and: components["schemas"]["createQueryDefinition200_schema1"][];
+        } | {
+            or: components["schemas"]["createQueryDefinition200_schema1"][];
+        } | {
+            not: components["schemas"]["createQueryDefinition200_schema1"];
+        } | {
+            column: {
+                source: string;
+                column: string;
+            };
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            } | {
+                column: {
+                    source: string;
+                    column: string;
+                };
+            };
+        };
+        createQueryDefinition400_schema0: {
+            sources: ({
+                alias: string;
+                table: {
+                    schema: string;
+                    name: string;
+                };
+            } | {
+                alias: string;
+                query: components["schemas"]["createQueryDefinition400_schema0"];
+            })[];
+            joins: {
+                /** @enum {string} */
+                kind: "inner" | "left";
+                source: string;
+                on: components["schemas"]["createQueryDefinition400_schema1"];
+            }[];
+            select: {
+                name: string;
+                of: {
+                    source: string;
+                    column: string;
+                } | {
+                    /** @enum {string} */
+                    aggregate: "count" | "sum" | "average" | "minimum" | "maximum";
+                    of?: {
+                        source: string;
+                        column: string;
+                    };
+                    places?: number;
+                };
+            }[];
+            where?: components["schemas"]["createQueryDefinition400_schema1"];
+            groupBy: {
+                source: string;
+                column: string;
+            }[];
+            limit?: number;
+        };
+        createQueryDefinition400_schema1: {
+            and: components["schemas"]["createQueryDefinition400_schema1"][];
+        } | {
+            or: components["schemas"]["createQueryDefinition400_schema1"][];
+        } | {
+            not: components["schemas"]["createQueryDefinition400_schema1"];
+        } | {
+            column: {
+                source: string;
+                column: string;
+            };
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            } | {
+                column: {
+                    source: string;
+                    column: string;
+                };
+            };
+        };
+        createQueryDefinition409_schema0: {
+            sources: ({
+                alias: string;
+                table: {
+                    schema: string;
+                    name: string;
+                };
+            } | {
+                alias: string;
+                query: components["schemas"]["createQueryDefinition409_schema0"];
+            })[];
+            joins: {
+                /** @enum {string} */
+                kind: "inner" | "left";
+                source: string;
+                on: components["schemas"]["createQueryDefinition409_schema1"];
+            }[];
+            select: {
+                name: string;
+                of: {
+                    source: string;
+                    column: string;
+                } | {
+                    /** @enum {string} */
+                    aggregate: "count" | "sum" | "average" | "minimum" | "maximum";
+                    of?: {
+                        source: string;
+                        column: string;
+                    };
+                    places?: number;
+                };
+            }[];
+            where?: components["schemas"]["createQueryDefinition409_schema1"];
+            groupBy: {
+                source: string;
+                column: string;
+            }[];
+            limit?: number;
+        };
+        createQueryDefinition409_schema1: {
+            and: components["schemas"]["createQueryDefinition409_schema1"][];
+        } | {
+            or: components["schemas"]["createQueryDefinition409_schema1"][];
+        } | {
+            not: components["schemas"]["createQueryDefinition409_schema1"];
+        } | {
+            column: {
+                source: string;
+                column: string;
+            };
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            } | {
+                column: {
+                    source: string;
+                    column: string;
+                };
+            };
+        };
+        createQueryDefinitionBody_schema0: {
+            sources: ({
+                alias: string;
+                table: {
+                    schema: string;
+                    name: string;
+                };
+            } | {
+                alias: string;
+                query: components["schemas"]["createQueryDefinitionBody_schema0"];
+            })[];
+            joins: {
+                /** @enum {string} */
+                kind: "inner" | "left";
+                source: string;
+                on: components["schemas"]["createQueryDefinitionBody_schema1"];
+            }[];
+            select: {
+                name: string;
+                of: {
+                    source: string;
+                    column: string;
+                } | {
+                    /** @enum {string} */
+                    aggregate: "count" | "sum" | "average" | "minimum" | "maximum";
+                    of?: {
+                        source: string;
+                        column: string;
+                    };
+                    places?: number;
+                };
+            }[];
+            where?: components["schemas"]["createQueryDefinitionBody_schema1"];
+            groupBy: {
+                source: string;
+                column: string;
+            }[];
+            limit?: number;
+        };
+        createQueryDefinitionBody_schema1: {
+            and: components["schemas"]["createQueryDefinitionBody_schema1"][];
+        } | {
+            or: components["schemas"]["createQueryDefinitionBody_schema1"][];
+        } | {
+            not: components["schemas"]["createQueryDefinitionBody_schema1"];
+        } | {
+            column: {
+                source: string;
+                column: string;
+            };
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            } | {
+                column: {
+                    source: string;
+                    column: string;
+                };
+            };
+        };
         createTemplateBody_schema0: {
             key: string;
             title: ({
@@ -6057,6 +6987,12 @@ export interface operations {
                             /** @constant */
                             kind: "sql";
                             text: string;
+                        } | {
+                            /** @constant */
+                            kind: "builder";
+                            /** @constant */
+                            format: 1;
+                            query: components["schemas"]["sampleConnectionBody_schema0"];
                         };
                         columns: {
                             name: string;
@@ -17975,6 +18911,12 @@ export interface operations {
                                 /** @constant */
                                 kind: "sql";
                                 text: string;
+                            } | {
+                                /** @constant */
+                                kind: "builder";
+                                /** @constant */
+                                format: 1;
+                                query: components["schemas"]["getQueryDefinition200_schema0"];
                             };
                             columns: {
                                 name: string;
@@ -18376,6 +19318,12 @@ export interface operations {
                             /** @constant */
                             kind: "sql";
                             text: string;
+                        } | {
+                            /** @constant */
+                            kind: "builder";
+                            /** @constant */
+                            format: 1;
+                            query: components["schemas"]["recordQueryDefinitionVersionBody_schema0"];
                         };
                         columns: {
                             name: string;
@@ -18568,6 +19516,12 @@ export interface operations {
                                 /** @constant */
                                 kind: "sql";
                                 text: string;
+                            } | {
+                                /** @constant */
+                                kind: "builder";
+                                /** @constant */
+                                format: 1;
+                                query: components["schemas"]["recordQueryDefinitionVersion200_schema0"];
                             };
                             columns: {
                                 name: string;
@@ -18747,6 +19701,12 @@ export interface operations {
                                     /** @constant */
                                     kind: "sql";
                                     text: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "builder";
+                                    /** @constant */
+                                    format: 1;
+                                    query: components["schemas"]["recordQueryDefinitionVersion400_schema0"];
                                 };
                                 columns: {
                                     name: string;
@@ -18987,6 +19947,12 @@ export interface operations {
                                     /** @constant */
                                     kind: "sql";
                                     text: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "builder";
+                                    /** @constant */
+                                    format: 1;
+                                    query: components["schemas"]["recordQueryDefinitionVersion409_schema0"];
                                 };
                                 columns: {
                                     name: string;
@@ -22146,6 +23112,12 @@ export interface operations {
                             /** @constant */
                             kind: "sql";
                             text: string;
+                        } | {
+                            /** @constant */
+                            kind: "builder";
+                            /** @constant */
+                            format: 1;
+                            query: components["schemas"]["createQueryDefinitionBody_schema0"];
                         };
                         columns: {
                             name: string;
@@ -22338,6 +23310,12 @@ export interface operations {
                                 /** @constant */
                                 kind: "sql";
                                 text: string;
+                            } | {
+                                /** @constant */
+                                kind: "builder";
+                                /** @constant */
+                                format: 1;
+                                query: components["schemas"]["createQueryDefinition200_schema0"];
                             };
                             columns: {
                                 name: string;
@@ -22517,6 +23495,12 @@ export interface operations {
                                     /** @constant */
                                     kind: "sql";
                                     text: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "builder";
+                                    /** @constant */
+                                    format: 1;
+                                    query: components["schemas"]["createQueryDefinition400_schema0"];
                                 };
                                 columns: {
                                     name: string;
@@ -22757,6 +23741,12 @@ export interface operations {
                                     /** @constant */
                                     kind: "sql";
                                     text: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "builder";
+                                    /** @constant */
+                                    format: 1;
+                                    query: components["schemas"]["createQueryDefinition409_schema0"];
                                 };
                                 columns: {
                                     name: string;
