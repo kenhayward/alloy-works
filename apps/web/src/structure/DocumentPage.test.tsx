@@ -6,6 +6,7 @@ import {
   canonicaliseOutline,
   DEFAULT_CATALOGUES_BY_VERSION,
   DEFAULT_THEME,
+  DEFAULT_CATALOGUE_VERSIONS,
   defaultLayout,
   OUTLINE_SCHEMA_VERSION,
   outlineOperationSchema,
@@ -5628,6 +5629,9 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     bindings: unknown[] | null;
     other?: boolean;
     rows?: number;
+    presentation?: unknown;
+    /** Where given, the stored result is answered only once it settles. */
+    datasetGate?: Promise<void>;
   }) {
     const fake = service(
       outline([
@@ -5642,7 +5646,9 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
       const request = input instanceof Request ? input : new Request(String(input), init);
       const path = new URL(request.url).pathname;
       asked.push(path);
-      if (path === `/v1/documents/${DOCUMENT}/presentation`) return json(200, DEFAULT_PRESENTATION);
+      if (path === `/v1/documents/${DOCUMENT}/presentation`) {
+        return json(200, options.presentation ?? DEFAULT_PRESENTATION);
+      }
       if (path === `/v1/documents/${DOCUMENT}/texts`) {
         return json(200, {
           document: DOCUMENT,
@@ -5677,6 +5683,7 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
           : json(200, { bindings: options.bindings });
       }
       if (path === `/v1/documents/${DOCUMENT}/datasets/${DATASET_VERSION}`) {
+        if (options.datasetGate) await options.datasetGate;
         const count = options.rows ?? 1;
         return json(200, {
           dataset: DATASET,
@@ -5727,24 +5734,63 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
   };
   const textRegion = () => screen.findByRole('region', { name: "The document's text" });
 
+  /**
+   * The default theme with a value catalogue of its own: a comma for the decimal and a full stop to
+   * group by, and for English a full stop for the decimal and no grouping - so a value printed by the default formats,
+   * by the catalogue's own or by another language's reads differently from one printed for this
+   * document, whose language is English.
+   */
+  const formattedPresentation = {
+    ...DEFAULT_PRESENTATION,
+    theme: {
+      ...DEFAULT_PRESENTATION.theme,
+      catalogues: DEFAULT_PRESENTATION.theme.catalogues.map(({ versionId, content }) => {
+        if (versionId !== DEFAULT_CATALOGUE_VERSIONS.value) return { versionId, content };
+        const formats = {
+          number: { decimal: ',', group: '.', groupFrom: 4, minus: 'U+2212' },
+          date: { order: 'dmy', separator: '.', pad: true },
+          time: { separator: ':' },
+          boolean: { true: 'Ja', false: 'Nein' },
+        };
+        return {
+          versionId,
+          content: {
+            ...(content as object),
+            formats,
+            byLanguage: [
+              {
+                language: 'en',
+                formats: { ...formats, number: { ...formats.number, decimal: '.', group: 'none' } },
+              },
+            ],
+          },
+        };
+      }),
+    },
+  };
+
   it("DAT-027 shows in a document's text the one value the document holds, formatted by its theme, where the binding stands in the sentence", async () => {
     const user = userEvent.setup();
-    openWithValues({ content: withValue(bound('b1')), bindings: [state(bound('b1'), value)] });
+    openWithValues({
+      content: withValue(bound('b1')),
+      bindings: [state(bound('b1'), value)],
+      presentation: formattedPresentation,
+    });
     const text = await textRegion();
     // The text is drawn again as the values arrive, so its paragraph is read afresh each time.
     const paragraph = () =>
       within(text)
         .getByText(/The mean was/)
         .closest('p')!;
-    await waitFor(() => expect(seen(paragraph())).toBe('The mean was 1,234.5 m.'));
-    expect(within(text).getByRole('button', { name: '1,234.5, bound value' })).toBeInTheDocument();
+    await waitFor(() => expect(seen(paragraph())).toBe('The mean was 1234.5 m.'));
+    expect(within(text).getByRole('button', { name: '1234.5, bound value' })).toBeInTheDocument();
 
     // And the editor opened in place shows the same value where the binding stands.
     await user.click(within(text).getByText(/The mean was/));
     const surface = await within(text).findByRole('textbox', {
       name: 'Content of Install the printer',
     });
-    await waitFor(() => expect(seen(surface.querySelector('p')!)).toBe('The mean was 1,234.5 m.'));
+    await waitFor(() => expect(seen(surface.querySelector('p')!)).toBe('The mean was 1234.5 m.'));
   });
 
   it("DAT-047 shows a failed value in place with its reason in the document's text and its open editor, and every other component as before", async () => {
@@ -5891,6 +5937,83 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     expect(within(table).getAllByRole('row')).toHaveLength(201);
     expect(within(table).getByRole('columnheader', { name: 'depth' })).toBeInTheDocument();
     expect(panel).toHaveTextContent('and 50 more rows');
+  });
+
+  it("keeps a value's provenance open, and the focus in it, where the values read again no longer answer it or cannot be read", async () => {
+    const user = userEvent.setup();
+    const options: Parameters<typeof openWithValues>[0] = {
+      content: withValue(bound('b1')),
+      bindings: [state(bound('b1'), value)],
+    };
+    openWithValues(options);
+    const text = await textRegion();
+    await user.click(await within(text).findByRole('button', { name: '1,234.5, bound value' }));
+    const panel = await screen.findByRole('region', { name: 'Provenance' });
+    const heading = within(panel).getByRole('heading', { name: 'Provenance' });
+    expect(heading).toHaveFocus();
+    const paragraph = () =>
+      within(text)
+        .getByText(/The mean was/)
+        .closest('p')!;
+    // Returning to the window reads the text, and so the values, again: now answering for another
+    // binding and not this one,
+    // and then failing.
+    for (const [answer, shown] of [
+      [[state(bound('b9'), value)], 'The mean was No value - never resolved m.'],
+      [null, 'The mean was Bound value m.'],
+    ] as const) {
+      options.bindings = answer === null ? null : [...answer];
+      act(() => {
+        window.dispatchEvent(new Event('focus'));
+      });
+      await waitFor(() => expect(seen(paragraph())).toBe(shown));
+      expect(screen.getByRole('region', { name: 'Provenance' })).toHaveTextContent('1,234.5');
+      expect(heading).toHaveFocus();
+    }
+  });
+
+  it("shows no result asked for one value once another value's provenance is open", async () => {
+    const user = userEvent.setup();
+    let release: () => void = () => undefined;
+    openWithValues({
+      content: withValue(bound('b1'), bound('b2')),
+      bindings: [
+        state(bound('b1'), value),
+        state(bound('b2'), { value: '1240.5', column: { name: 'depth', type: decimal } }),
+      ],
+      datasetGate: new Promise<void>((resolve) => {
+        release = resolve;
+      }),
+    });
+    const text = await textRegion();
+    await user.click(await within(text).findByRole('button', { name: '1,234.5, bound value' }));
+    const panel = await screen.findByRole('region', { name: 'Provenance' });
+    await user.click(within(panel).getByRole('button', { name: 'Show the result' }));
+    await user.click(within(text).getByRole('button', { name: '1,240.5, bound value' }));
+    await waitFor(() => expect(panel).toHaveTextContent('1,240.5'));
+    await act(async () => {
+      release();
+      await new Promise((settle) => setTimeout(settle, 20));
+    });
+    expect(within(panel).queryByRole('table')).toBeNull();
+    expect(within(panel).getByRole('button', { name: 'Show the result' })).toBeInTheDocument();
+  });
+
+  it('shows a value whose answer cannot be read as unavailable, never as never resolved', async () => {
+    openWithValues({
+      content: withValue(bound('b1')),
+      bindings: [{ ...state(bound('b1'), value), held: { dataset: 'not a resolution' } }],
+    });
+    const text = await textRegion();
+    const paragraph = () =>
+      within(text)
+        .getByText(/The mean was/)
+        .closest('p')!;
+    await waitFor(() =>
+      expect(seen(paragraph())).toBe('The mean was No value - the result cannot be read m.'),
+    );
+    // With no provenance to open.
+    expect(within(text).queryByRole('button', { name: /bound value/ })).toBeNull();
   });
 
   it('shows no values and no error where the values cannot be read', async () => {

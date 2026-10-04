@@ -53,6 +53,11 @@ export interface BindingState {
   } | null;
   readonly definition: { readonly title: string; readonly version: string } | null;
   readonly connection: { readonly name: string } | null;
+  /**
+   * Where what the view answered of what it holds, or of what waits, does not read: it is shown
+   * unavailable, with no provenance to open, never as one never resolved.
+   */
+  readonly unread?: true;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -125,8 +130,9 @@ function waitingIn(value: unknown): BindingState['waiting'] | undefined {
 }
 
 /**
- * The bindings a `DocumentBindingsView` holds, each read member by member; one that does not read is
- * left out, and shows what it would with no value known. `undefined` is a body that is not the view.
+ * The bindings a `DocumentBindingsView` holds, each read member by member: one whose node or binding
+ * does not read is left out, and shows what it would with no value known; one whose `held` or `waiting`
+ * does not read is `unread`, and shows its value unavailable. `undefined` is a body that is not the view.
  */
 export function bindingStatesIn(data: unknown): readonly BindingState[] | undefined {
   if (!isRecord(data) || !Array.isArray(data.bindings)) return undefined;
@@ -135,7 +141,7 @@ export function bindingStatesIn(data: unknown): readonly BindingState[] | undefi
     const binding = bindingNodeSchema.safeParse(each.binding);
     const held = heldIn(each.held);
     const waiting = waitingIn(each.waiting);
-    if (!binding.success || held === undefined || waiting === undefined) return [];
+    if (!binding.success) return [];
     const definition =
       isRecord(each.definition) &&
       typeof each.definition.title === 'string' &&
@@ -146,6 +152,19 @@ export function bindingStatesIn(data: unknown): readonly BindingState[] | undefi
       isRecord(each.connection) && typeof each.connection.name === 'string'
         ? { name: each.connection.name }
         : null;
+    if (held === undefined || waiting === undefined) {
+      return [
+        {
+          node: each.node,
+          binding: binding.data,
+          held: null,
+          waiting: null,
+          definition,
+          connection,
+          unread: true,
+        },
+      ];
+    }
     return [{ node: each.node, binding: binding.data, held, waiting, definition, connection }];
   });
 }
@@ -182,6 +201,13 @@ const CHANGED = '';
 /** What one binding shows, from what the document holds for it. */
 function heldOf(state: BindingState, formats: ValueFormats): BindingHeld | null {
   const { held } = state;
+  if (state.unread) {
+    return {
+      binding: bindingDigestInput(state.binding),
+      shown: { failure: 'unavailable' },
+      unread: true,
+    };
+  }
   if (held === null) return null;
   if (held.stale) return { binding: CHANGED, shown: { failure: 'unavailable' } };
   const binding = bindingDigestInput(state.binding);

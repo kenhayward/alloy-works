@@ -6738,13 +6738,20 @@ describe('a binding in the editor (the B1 plan, task 5)', () => {
   it("shows a binding on the component's own page as what it asks for, by its definition's title, and never a value", async () => {
     const { surface, asked } = open({
       'GET /v1/components/{id}': () =>
-        json(200, opened({ content: holding(bound('b1'), bound('b2', HIDDEN_DEFINITION)) })),
+        json(
+          200,
+          opened({
+            content: holding(bound('b1'), bound('b3'), bound('b2', HIDDEN_DEFINITION)),
+          }),
+        ),
       [`GET /v1/query-definitions/${READINGS}`]: () =>
         json(200, { id: READINGS, definition: { title: 'Readings' } }),
     });
     const view = await surface();
-    await waitFor(() => expect(shownOn(view)).toEqual(['depth, Readings', 'a bound value']));
-    // Each definition asked for once, whatever the bindings naming it.
+    await waitFor(() =>
+      expect(shownOn(view)).toEqual(['depth, Readings', 'depth, Readings', 'a bound value']),
+    );
+    // Each definition asked for once, whatever the bindings naming it: two name Readings.
     expect(
       asked
         .filter((each) => each.route.startsWith('GET /v1/query-definitions/'))
@@ -6778,8 +6785,34 @@ describe('a binding in the editor (the B1 plan, task 5)', () => {
     expect(panel).toHaveTextContent('Query definition: Readings, version 0.2');
     expect(panel).toHaveTextContent('Mode: Checked');
     expect(panel).toHaveTextContent('Fetched 4 October 2026');
-    await userEvent.click(within(panel).getByRole('button', { name: 'Provenance' }));
-    expect(provenance).toHaveBeenCalledWith('b1');
+    const button = within(panel).getByRole('button', { name: 'Provenance' });
+    await userEvent.click(button);
+    expect(provenance).toHaveBeenCalledWith('b1', button);
+    // The button is what opened it, wherever the focus was: the page gives the focus back to it.
+    act(() => (document.activeElement as HTMLElement | null)?.blur());
+    fireEvent.click(button);
+    expect(provenance).toHaveBeenLastCalledWith('b1', button);
+  });
+
+  it("says nothing of a binding's definition on its own page while its title is still being asked for", async () => {
+    let answer: (response: Response) => void = () => undefined;
+    const { surface } = open({
+      'GET /v1/components/{id}': () => json(200, opened({ content: holding(bound('b1')) })),
+      [`GET /v1/query-definitions/${READINGS}`]: () =>
+        new Promise<Response>((resolve) => {
+          answer = resolve;
+        }),
+    });
+    const view = await surface();
+    act(() =>
+      view.dispatch(
+        view.state.tr.setSelection(NodeSelection.create(view.state.doc, bindingAt(view))),
+      ),
+    );
+    const panel = await screen.findByRole('region', { name: 'Value' });
+    expect(panel).not.toHaveTextContent('Query definition');
+    answer(json(200, { id: READINGS, definition: { title: 'Readings' } }));
+    await waitFor(() => expect(panel).toHaveTextContent('Query definition: Readings'));
   });
 
   it('pastes a copy of a binding as one never resolved, and says so in the paste report', async () => {

@@ -67,8 +67,8 @@ export interface Place {
   readonly bindingContext?: BindingContext | null;
   /** What the bindings view says of each of its bindings, by identifier, for its Value panel. */
   readonly bindingStates?: ReadonlyMap<string, BindingState>;
-  /** Opens a value's provenance, from the Value panel's **Provenance** (B1-M). */
-  readonly onProvenance?: (binding: string) => void;
+  /** Opens a value's provenance, from the Value panel's **Provenance** (B1-M), given that button. */
+  readonly onProvenance?: (binding: string, opener: HTMLElement) => void;
 }
 
 /**
@@ -464,8 +464,8 @@ export function DocumentText({
                       : {}),
                     ...(onProvenance
                       ? {
-                          onProvenance: (binding: string) =>
-                            onProvenance(node.id, binding, document.activeElement as HTMLElement),
+                          onProvenance: (binding: string, opener: HTMLElement) =>
+                            onProvenance(node.id, binding, opener),
                         }
                       : {}),
                     onDone: () => onEdit?.(null),

@@ -548,10 +548,13 @@ export function DocumentPage({
     };
   }, [client, id, texts, holdsBindings]);
   // The value whose provenance is open beside the text, and what opened it, to be given the focus back.
+  // `last` is the view of it last read, kept while a re-read answers nothing for it or fails, so the
+  // panel, and the focus in it, stay where they are.
   const [provenance, setProvenance] = useState<{
     readonly node: string;
     readonly binding: string;
     readonly opener: HTMLElement | null;
+    readonly last?: BindingState;
   } | null>(null);
   const closeProvenance = () => {
     const opened = provenance;
@@ -566,12 +569,24 @@ export function DocumentPage({
           );
     back?.focus();
   };
-  const provenanceState =
+  const provenanceFound =
     provenance === null
       ? undefined
       : bindingStates?.find(
           (each) => each.node === provenance.node && each.binding.id === provenance.binding,
         );
+  const provenanceState = provenanceFound?.held ? provenanceFound : provenance?.last;
+  useEffect(() => {
+    if (!provenanceFound?.held) return;
+    setProvenance((open) =>
+      open !== null &&
+      open.last !== provenanceFound &&
+      open.node === provenanceFound.node &&
+      open.binding === provenanceFound.binding.id
+        ? { ...open, last: provenanceFound }
+        : open,
+    );
+  }, [provenanceFound]);
   // Who holds what changes while the page is in another window's shadow: returning to it hears it.
   useEffect(() => {
     const again = () => setTextsAttempt((attempt) => attempt + 1);

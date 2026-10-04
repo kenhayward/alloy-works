@@ -31,6 +31,11 @@ export type BindingFailureHeld = {
  */
 export interface BindingHeld {
   readonly binding: string;
+  /**
+   * Where the host could not read what the document holds for it: its failure is shown, and it has no
+   * provenance to open.
+   */
+  readonly unread?: true;
   readonly shown: { readonly value: string; readonly waiting: boolean } | BindingFailureHeld;
 }
 
@@ -183,7 +188,7 @@ function shownFor(
   if (held === undefined) return failed(NEVER_RESOLVED);
   if (held.binding !== bindingDigestInput(binding)) return failed(CHANGED_SINCE_RESOLVED);
   if ('failure' in held.shown) {
-    return failed(failureWords(binding, held.shown), true);
+    return failed(failureWords(binding, held.shown), held.unread !== true);
   }
   return held.shown.waiting
     ? {

@@ -13,15 +13,20 @@ type Doc = EditorView['state']['doc'];
  * what a reference prints into its span - _Table 1.1_ - but in the editor's document a reference is
  * an atom holding no text, as an inline image is, so `positionAtTextOffset` counts nothing for it.
  * Counted here, every click after a reference would land the length of its words too far along, into
- * a later block even. A click inside a reference's words lands just before it.
+ * a later block even. A click inside a reference's words lands just before it. **So do a value's**
+ * (the B1 plan, B1-D, B1-L): what a binding shows, and the words after it a screen reader is told, are
+ * drawn into an atom too; and an equation's alternative, which its element carries as text.
  */
+/** Each element drawing words for an atom the editor's document holds as no text. */
+const ATOMS = '[data-reference], [data-binding], [data-equation], [data-equation-block]';
+
 export function textOffsetIn(root: Node, node: Node, offset: number): number | null {
   if (!root.contains(node)) return null;
   // A point between children counts every character in the children before it.
   const [stop, extra] =
     node.nodeType === Node.TEXT_NODE ? [node, offset] : [node.childNodes[offset] ?? null, 0];
   const walker = root.ownerDocument!.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  const drawn = (text: Node) => text.parentElement?.closest('[data-reference]') != null;
+  const drawn = (text: Node) => text.parentElement?.closest(ATOMS) != null;
   let count = 0;
   for (let text = walker.nextNode(); text !== null; text = walker.nextNode()) {
     if (text === stop) return drawn(text) ? count : count + extra;
@@ -40,9 +45,23 @@ export function textOffsetIn(root: Node, node: Node, offset: number): number | n
 /**
  * The document position after `offset` characters of the document's text, ending a text run rather
  * than starting the next where the two meet, so a click at the end of a paragraph stays in it. Past
- * the end of the text, the end of the last run.
+ * the end of the text, the end of the last run. **None at all is the start of the first textblock**,
+ * before an atom it begins with - a value, a reference, an image, an equation - which the first text
+ * run would start after, so the atom is reached by ArrowRight (the B1 plan, B1-L).
  */
 export function positionAtTextOffset(doc: Doc, offset: number): number {
+  if (offset <= 0) {
+    let start: number | null = null;
+    doc.descendants((node, pos) => {
+      if (start !== null) return false;
+      if (node.isTextblock) {
+        start = pos + 1;
+        return false;
+      }
+      return true;
+    });
+    if (start !== null) return start;
+  }
   let left = offset;
   let found: number | null = null;
   let last = 1;

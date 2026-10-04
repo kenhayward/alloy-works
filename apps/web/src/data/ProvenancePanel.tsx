@@ -77,26 +77,32 @@ export function ProvenancePanel({
   const formats = formatsFor(theme?.valueCatalogue ?? null, language);
   const [whole, setWhole] = useState(false);
   const [result, setResult] = useState<Result>({ state: 'hidden' });
+  // Each result asked for, counted: one answered after another value, or another version of it, has
+  // opened here is dropped, rather than shown for what is open now.
+  const asking = useRef(0);
   const { held, binding } = state;
 
   useEffect(() => {
     headingRef.current?.focus();
   }, [state.node, binding.id]);
   useEffect(() => {
+    asking.current += 1;
     setResult({ state: 'hidden' });
     setWhole(false);
-  }, [held?.version]);
+  }, [state.node, binding.id, held?.version]);
 
   if (held === null) return null;
   const { provenance } = held;
   const parameters = Object.entries(provenance.parameters);
 
   const showResult = async () => {
+    const mine = (asking.current += 1);
     setResult({ state: 'reading' });
     try {
       const { data } = await client.GET('/v1/documents/{id}/datasets/{version}', {
         params: { path: { id: document, version: held.version } },
       });
+      if (asking.current !== mine) return;
       const body: unknown = data;
       const read =
         typeof body === 'object' && body !== null && 'result' in body
@@ -114,7 +120,7 @@ export function ProvenancePanel({
         rows: read.rows as (string | boolean | null)[][],
       });
     } catch {
-      setResult({ state: 'failed' });
+      if (asking.current === mine) setResult({ state: 'failed' });
     }
   };
 

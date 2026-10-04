@@ -185,8 +185,11 @@ export interface ComponentEditorProps {
   readonly bindingContext?: BindingContext | null;
   /** What the bindings view says of each binding, by identifier, in a document: the Value panel's. */
   readonly bindingStates?: ReadonlyMap<string, BindingState>;
-  /** Opens a value's provenance beside the text, from the Value panel's **Provenance** (B1-M). */
-  readonly onProvenance?: (binding: string) => void;
+  /**
+   * Opens a value's provenance beside the text, from the Value panel's **Provenance** (B1-M), given the
+   * button, which the focus returns to as it closes.
+   */
+  readonly onProvenance?: (binding: string, opener: HTMLElement) => void;
   /**
    * The seam to whatever hosts the page, told the component's base language while it is open, for the
    * spelling checker (CNT-178); the host's own otherwise. Given in tests.
@@ -1850,9 +1853,13 @@ export function ComponentEditor({
                 shown={selectedShown.text}
                 resolved={selectedShown.resolved}
                 state={bindingStates?.get(selectedBinding.binding.id)}
-                {...(alone ? { title: titles.get(selectedBinding.binding.query) ?? null } : {})}
+                // Undefined until the title is answered, so the panel says nothing of it yet.
+                {...(alone ? { title: titles.get(selectedBinding.binding.query) } : {})}
                 {...(onProvenance
-                  ? { onProvenance: () => onProvenance(selectedBinding.binding.id) }
+                  ? {
+                      onProvenance: (opener: HTMLElement) =>
+                        onProvenance(selectedBinding.binding.id, opener),
+                    }
                   : {})}
               />
             )}

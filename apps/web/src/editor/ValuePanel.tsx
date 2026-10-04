@@ -22,10 +22,16 @@ export interface ValuePanelProps {
   readonly resolved: boolean;
   /** What the bindings view says of it, in a document; absent on its own, or before the page heard. */
   readonly state?: BindingState | undefined;
-  /** Its definition's title on its own page, null where the reader may not read it. */
+  /**
+   * Its definition's title on its own page, null where the reader may not read it, and undefined until
+   * it is answered.
+   */
   readonly title?: string | null | undefined;
-  /** Opens its provenance, offered where the document holds a result for it as it stands. */
-  readonly onProvenance?: (() => void) | undefined;
+  /**
+   * Opens its provenance, offered where the document holds a result for it as it stands, given the
+   * button: what opened it, whatever holds the focus as it is pressed.
+   */
+  readonly onProvenance?: ((opener: HTMLElement) => void) | undefined;
   /** The panel's own element: a region `F6` moves between while a binding is selected (CNT-077). */
   readonly ref?: Ref<HTMLElement>;
 }
@@ -63,7 +69,7 @@ export function ValuePanel({
       <span>Mode: {MODES[binding.mode]}</span>
       {resolved && held !== null && <span>Fetched {longDate(held.provenance.at)}</span>}
       {onProvenance && resolved && held !== null && (
-        <button type="button" onClick={onProvenance}>
+        <button type="button" onClick={(event) => onProvenance(event.currentTarget)}>
           Provenance
         </button>
       )}
