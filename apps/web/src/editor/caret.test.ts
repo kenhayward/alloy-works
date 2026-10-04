@@ -229,4 +229,36 @@ describe('the caret carried from the rendered text into the editor', () => {
     // The value stands after the caret, so ArrowRight reaches it (B1-L).
     expect(opened.resolve(at).nodeAfter?.type.name).toBe('binding');
   });
+
+  it('opens at the start of the first text, never in an empty caption before it', () => {
+    const opened = (
+      toEditor(
+        parseContentDocument({
+          schemaVersion: 1,
+          title: 'Site visits',
+          language: 'en-GB',
+          direction: 'ltr',
+          content: [
+            {
+              type: 'figure',
+              id: 'f1',
+              asset: '00000000-0000-4000-8000-00000000a551',
+              imageStyle: 'figure',
+              caption: [],
+              alternative: { kind: 'decorative' },
+            },
+            {
+              type: 'paragraph',
+              id: 'b1',
+              style: 'body',
+              content: [{ type: 'text', value: 'Visit sites.', marks: [] }],
+            },
+          ],
+        }),
+      ) as { doc: EditorView['state']['doc'] }
+    ).doc;
+    const at = positionAtTextOffset(opened, 0);
+    expect(opened.resolve(at).parent.type.name).toBe('paragraph');
+    expect(opened.resolve(at).nodeAfter?.text).toBe('Visit sites.');
+  });
 });

@@ -45,9 +45,11 @@ export function textOffsetIn(root: Node, node: Node, offset: number): number | n
 /**
  * The document position after `offset` characters of the document's text, ending a text run rather
  * than starting the next where the two meet, so a click at the end of a paragraph stays in it. Past
- * the end of the text, the end of the last run. **None at all is the start of the first textblock**,
- * before an atom it begins with - a value, a reference, an image, an equation - which the first text
- * run would start after, so the atom is reached by ArrowRight (the B1 plan, B1-L).
+ * the end of the text, the end of the last run. **None at all is the start of the first textblock
+ * holding anything**, before an atom it begins with - a value, a reference, an image, an equation -
+ * which the first text run would start after, so the atom is reached by ArrowRight (the B1 plan,
+ * B1-L); an empty textblock before it, a figure's caption not yet written, is passed over, as it was
+ * when the caret went to the first text run.
  */
 export function positionAtTextOffset(doc: Doc, offset: number): number {
   if (offset <= 0) {
@@ -55,7 +57,7 @@ export function positionAtTextOffset(doc: Doc, offset: number): number {
     doc.descendants((node, pos) => {
       if (start !== null) return false;
       if (node.isTextblock) {
-        start = pos + 1;
+        if (node.childCount > 0) start = pos + 1;
         return false;
       }
       return true;
