@@ -144,28 +144,53 @@ export function cancelBackend(
   });
 }
 
+/*
+ * Every catalogue query the connector writes itself names each relation, function, operator and type
+ * in it as `pg_catalog`'s: `pg_catalog.pg_type`, `pg_catalog.format_type`,
+ * `OPERATOR(pg_catalog.=)`, `::pg_catalog.oid[]`. Left bare, a name resolves through the connection
+ * account's search path, where a schema placed ahead of `pg_catalog` could answer in its place and
+ * change what types the product believes a column has, or whether the account may write (#376). The
+ * builder's generated SQL holds to the same rule (D4-F). So no `in (...)`, `like`, `nullif` or simple
+ * `case x when`, each of which compares by an operator the search path resolves.
+ */
+
+const SERVER_VERSION = `select pg_catalog.current_setting('server_version_num') as version`;
+
 /** The source's version, as `server_version_num`. */
 export async function serverVersion(client: pg.Client): Promise<number> {
-  const result = await client.query<{ version: string }>(
-    `select current_setting('server_version_num') as version`,
-  );
+  const result = await client.query<{ version: string }>(SERVER_VERSION);
   return Number(result.rows[0]?.version);
 }
 
+/**
+ * A schema of the account's own, outside the catalogues: not `pg_catalog`, `information_schema` or
+ * any `pg_` schema.
+ */
+const OUTSIDE_CATALOGUES = `not (n.nspname OPERATOR(pg_catalog.=) ANY
+                (ARRAY['pg_catalog', 'information_schema']::pg_catalog.name[]))
+         and n.nspname OPERATOR(pg_catalog.!~~) 'pg\\_%'`;
+
+/** The relation kinds a describe lists: tables, partitioned tables, views, materialized views and foreign tables. */
+const LISTED_KINDS = `c.relkind OPERATOR(pg_catalog.=) ANY
+         (ARRAY['r', 'p', 'v', 'm', 'f']::pg_catalog."char"[])`;
+
 const MAY_WRITE = `
 select r.rolsuper or r.rolcreatedb or r.rolcreaterole or r.rolreplication or r.rolbypassrls
-    or pg_has_role(current_user, 'pg_write_all_data', 'USAGE')
-    or has_database_privilege(current_database(), 'CREATE')
-    or exists (select 1 from pg_namespace n
-               where n.nspname not in ('pg_catalog', 'information_schema') and n.nspname not like 'pg\\_%'
-                 and has_schema_privilege(n.oid, 'CREATE'))
-    or exists (select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace
-               where c.relkind in ('r', 'p', 'v', 'm', 'f')
-                 and n.nspname not in ('pg_catalog', 'information_schema') and n.nspname not like 'pg\\_%'
-                 and (has_table_privilege(c.oid, 'INSERT') or has_table_privilege(c.oid, 'UPDATE')
-                      or has_table_privilege(c.oid, 'DELETE') or has_table_privilege(c.oid, 'TRUNCATE')))
+    or pg_catalog.pg_has_role(current_user, 'pg_write_all_data', 'USAGE')
+    or pg_catalog.has_database_privilege(pg_catalog.current_database(), 'CREATE')
+    or exists (select 1 from pg_catalog.pg_namespace n
+               where ${OUTSIDE_CATALOGUES}
+                 and pg_catalog.has_schema_privilege(n.oid, 'CREATE'))
+    or exists (select 1 from pg_catalog.pg_class c
+                 join pg_catalog.pg_namespace n on n.oid OPERATOR(pg_catalog.=) c.relnamespace
+               where ${LISTED_KINDS}
+                 and ${OUTSIDE_CATALOGUES}
+                 and (pg_catalog.has_table_privilege(c.oid, 'INSERT')
+                      or pg_catalog.has_table_privilege(c.oid, 'UPDATE')
+                      or pg_catalog.has_table_privilege(c.oid, 'DELETE')
+                      or pg_catalog.has_table_privilege(c.oid, 'TRUNCATE')))
        as may_write
-from pg_roles r where r.rolname = current_user`;
+from pg_catalog.pg_roles r where r.rolname OPERATOR(pg_catalog.=) current_user`;
 
 /** What the authenticated account was found to be (D1-M): read-only or not, by the catalogue. */
 export async function readOnlyFindings(client: pg.Client): Promise<TestFinding[]> {
@@ -200,14 +225,65 @@ interface TypeRow {
  * enum is text wherever it is, by its kind; a domain is followed to its base.
  */
 const TYPES_BY_OID = `
-select t.oid::int as oid,
-       case when t.typnamespace = 'pg_catalog'::regnamespace then t.typname
-            when t.typname = 'citext' and p.proname = 'citextin'
-                 and p.pronamespace = t.typnamespace then 'citext'
+select t.oid::pg_catalog.int4 as oid,
+       case when t.typnamespace OPERATOR(pg_catalog.=) 'pg_catalog'::pg_catalog.regnamespace
+                 then t.typname
+            when t.typname OPERATOR(pg_catalog.=) 'citext'
+                 and p.proname OPERATOR(pg_catalog.=) 'citextin'
+                 and p.pronamespace OPERATOR(pg_catalog.=) t.typnamespace then 'citext'
             else '' end as typname,
-       t.typtype::text as typtype, t.typbasetype::int as typbasetype, t.typtypmod
-  from pg_type t left join pg_proc p on p.oid = t.typinput
- where t.oid = any($1::oid[])`;
+       t.typtype::pg_catalog.text as typtype, t.typbasetype::pg_catalog.int4 as typbasetype,
+       t.typtypmod
+  from pg_catalog.pg_type t
+  left join pg_catalog.pg_proc p on p.oid OPERATOR(pg_catalog.=) t.typinput
+ where t.oid OPERATOR(pg_catalog.=) ANY ($1::pg_catalog.oid[])`;
+
+/** The relations the account may read outside the catalogues, at most `$1` of them. */
+const RELATIONS = `
+select c.oid::pg_catalog.int4 as oid, n.nspname as schema, c.relname as name,
+       c.relkind::pg_catalog.text as kind
+  from pg_catalog.pg_class c
+  join pg_catalog.pg_namespace n on n.oid OPERATOR(pg_catalog.=) c.relnamespace
+ where ${LISTED_KINDS}
+   and ${OUTSIDE_CATALOGUES}
+   and pg_catalog.has_schema_privilege(n.oid, 'USAGE')
+   and pg_catalog.has_table_privilege(c.oid, 'SELECT')
+ order by n.nspname, c.relname
+ limit $1`;
+
+/** The columns of the relations `$1` names, in order, each with its type as `format_type` names it. */
+const COLUMNS = `
+select a.attrelid::pg_catalog.int4 as relation, a.attname as name,
+       a.atttypid::pg_catalog.int4 as type, a.atttypmod as typmod,
+       not a.attnotnull as nullable,
+       pg_catalog.format_type(a.atttypid, a.atttypmod) as source_type
+  from pg_catalog.pg_attribute a
+ where a.attrelid OPERATOR(pg_catalog.=) ANY ($1::pg_catalog.oid[])
+   and a.attnum OPERATOR(pg_catalog.>) 0 and not a.attisdropped
+ order by a.attrelid, a.attnum`;
+
+/**
+ * Each type of `$1` with its modifier in `$2`, as `format_type` names it, in order. ROWS FROM rather
+ * than unnest's two-array form, which PostgreSQL expands only for a bare `unnest` the search path
+ * resolves; and a case rather than nullif, whose equality the search path would resolve too.
+ */
+const FORMATTED = `
+select u.at::pg_catalog.int4 as at,
+       pg_catalog.format_type(u.oid, case when u.typmod OPERATOR(pg_catalog.=) -1 then null
+                                          else u.typmod end) as text
+  from rows from (pg_catalog.unnest($1::pg_catalog.oid[]),
+                  pg_catalog.unnest($2::pg_catalog.int4[])) with ordinality as u (oid, typmod, at)
+ order by u.at`;
+
+/** Every statement the connector writes itself, for the test that holds each to `pg_catalog`'s names. */
+export const CATALOGUE_QUERIES: Readonly<Record<string, string>> = {
+  SERVER_VERSION,
+  MAY_WRITE,
+  TYPES_BY_OID,
+  RELATIONS,
+  COLUMNS,
+  FORMATTED,
+};
 
 /** A numeric's precision and scale from its type modifier, as PostgreSQL packs them. */
 function numericModifier(typmod: number): { precision: number; scale: number } {
@@ -282,13 +358,7 @@ export async function describeRelations(
 ): Promise<Described> {
   const budgetBytes = options.budgetBytes ?? DESCRIBE_BUDGET_BYTES;
   const relations = await client.query<{ oid: number; schema: string; name: string; kind: string }>(
-    `select c.oid::int as oid, n.nspname as schema, c.relname as name, c.relkind::text as kind
-       from pg_class c join pg_namespace n on n.oid = c.relnamespace
-      where c.relkind in ('r', 'p', 'v', 'm', 'f')
-        and n.nspname not in ('pg_catalog', 'information_schema') and n.nspname not like 'pg\\_%'
-        and has_schema_privilege(n.oid, 'USAGE') and has_table_privilege(c.oid, 'SELECT')
-      order by n.nspname, c.relname
-      limit $1`,
+    RELATIONS,
     [MAX_RELATIONS + 1],
   );
   const truncated = relations.rows.length > MAX_RELATIONS;
@@ -307,15 +377,7 @@ export async function describeRelations(
     typmod: number;
     nullable: boolean;
     source_type: string;
-  }>(
-    `select a.attrelid::int as relation, a.attname as name, a.atttypid::int as type,
-            a.atttypmod as typmod, not a.attnotnull as nullable,
-            format_type(a.atttypid, a.atttypmod) as source_type
-       from pg_attribute a
-      where a.attrelid = any($1::oid[]) and a.attnum > 0 and not a.attisdropped
-      order by a.attrelid, a.attnum`,
-    [listed.map((each) => each.oid)],
-  );
+  }>(COLUMNS, [listed.map((each) => each.oid)]);
   // Every type the columns name, and every domain's base, followed to a type that is not a domain.
   const types = new Map<number, TypeRow>();
   let wanted = [...new Set(columns.rows.map((each) => each.type))];
@@ -421,12 +483,10 @@ export async function sourceTypes(
   types: readonly { readonly oid: number; readonly typmod: number }[],
 ): Promise<SourceType[]> {
   if (types.length === 0) return [];
-  const formatted = await client.query<{ at: number; text: string }>(
-    `select u.at::int as at, format_type(u.oid, nullif(u.typmod, -1)) as text
-       from unnest($1::oid[], $2::int[]) with ordinality as u (oid, typmod, at)
-      order by u.at`,
-    [types.map((each) => each.oid), types.map((each) => each.typmod)],
-  );
+  const formatted = await client.query<{ at: number; text: string }>(FORMATTED, [
+    types.map((each) => each.oid),
+    types.map((each) => each.typmod),
+  ]);
   const rows = new Map<number, TypeRow>();
   let wanted = [...new Set(types.map((each) => each.oid))];
   while (wanted.length > 0) {
