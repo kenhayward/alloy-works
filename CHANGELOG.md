@@ -3,6 +3,25 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.132.3 - 2026-10-04 (PR #381)
+
+### Changed
+
+- **Revising a bound value by hand now arrives in T3, not T2.** A hand-entered value exists to be
+  reviewed, and the reviewer's queue and the gate before issue arrive in T3; the requirements for
+  revising a value move there together, already designed. T2 still ships every value a source
+  supplies, its provenance and the binding stage of a publish.
+- **A revised value is marked in a publication's provenance, not on its printed page.** The editor,
+  review and a document's list of its values always mark it; the published PDF and Word need not.
+- **Accepting a source's new result or revising a value changes the document, not the component.**
+  One component serves many documents, so each of those acts is checked against what that document
+  holds, while changing the binding itself stays an edit to the component.
+- **A theme declares how a bound value is printed** - its separators, date order and the words for
+  yes and no - the same in every output, with no locale data until localisation arrives.
+- **The publish's order is tested one stage at a time as each arrives**: bindings in T2, and
+  transclusion, conditions and variables in T4. A value with no row, a null or empty text is now
+  stated plainly as no value, which fails rather than printing nothing.
+
 ## 0.132.0 - 2026-10-04 (PR #375)
 
 ### Added
