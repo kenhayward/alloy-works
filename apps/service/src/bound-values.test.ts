@@ -2,7 +2,13 @@ import { takeDigest } from '@alloy-works/db';
 import { queryAs } from '@alloy-works/db/testing';
 import { tenantPrefix, type ObjectStores, type TenantStore } from '@alloy-works/objects';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { binding, ranOk, startHarness, type Harness } from './test/bindings-harness.js';
+import {
+  binding,
+  definitionBody,
+  ranOk,
+  startHarness,
+  type Harness,
+} from './test/bindings-harness.js';
 
 /**
  * The value each binding holds, as the bindings view answers it (the B1 plan, task 4; B1-H, B1-I):
@@ -44,9 +50,21 @@ function counting() {
   const decorator = {
     read,
     alter: false,
+    /** Whether opening a tenant's store fails with SQL in the caller's transaction, as a bad read would. */
+    failSql: false,
     wrap(stores: ObjectStores): ObjectStores {
       return {
         async forTenant(trx, tenant) {
+          if (decorator.failSql) {
+            await (
+              trx as unknown as {
+                selectFrom(table: string): { selectAll(): { execute(): Promise<unknown> } };
+              }
+            )
+              .selectFrom('no_such_table')
+              .selectAll()
+              .execute();
+          }
           const store = await stores.forTenant(trx, tenant);
           const wrapped: TenantStore = {
             put: (body, contentType) => store.put(body, contentType),
@@ -85,6 +103,7 @@ describe('the value each binding holds, through the bindings view', () => {
 
   beforeEach(() => {
     store.alter = false;
+    store.failSql = false;
     store.read.length = 0;
     h.connector.mode = 'answer';
   });
@@ -140,7 +159,7 @@ describe('the value each binding holds, through the bindings view', () => {
     ]);
     expect(held.taken).toEqual({ value: 'North', column: name });
     expect(store.read).toEqual([]);
-    expect(held.by).toEqual({ id: h.ids.ada, displayName: expect.any(String) });
+    expect(held.by).toEqual({ id: h.ids.ada, displayName: 'Ada' });
   });
 
   it("records a check's waiting version's take, and answers it beside the held one", async () => {
@@ -289,7 +308,8 @@ describe('the value each binding holds, through the bindings view', () => {
       [null, null],
     ]);
 
-    // Alice reads neither definition: no title, connection, SQL or source column, and the same value.
+    // Alice reads the definition in General as Grace does, and neither connection nor the one in
+    // Quality: no title, connection, SQL or source column for it, and the same value.
     const alice = await viewOf('alice', document.id);
     expect(alice.map((each) => [each.definition, each.connection])).toEqual([
       [{ title: 'Sites in General', version: '0.1' }, null],
@@ -316,5 +336,135 @@ describe('the value each binding holds, through the bindings view', () => {
       { value: 'Kept', column: name },
     ]);
     expect(await viewOf('alice', document.id)).toEqual([]);
+  });
+
+  it('answers a value unavailable where its cell is not canonical in its declared type, recording nothing and failing no act', async () => {
+    const definition = await h.definition(connection.id);
+    const { document, node } = await placed(
+      binding('b1', definition.id, { parameters: { site: { literal: '11' } } }),
+      binding('b2', definition.id, {
+        parameters: { site: { literal: '11' } },
+        take: { column: 'id' },
+      }),
+    );
+    // `true` in a text column and `01` in an integer one: held to its checksum and to the canonical
+    // shape, which does not hold a cell to its column's declared type.
+    h.connector.run = ranOk([['01', true]]);
+    const resolved = await h.call('ada', 'POST', `/v1/documents/${document.id}/bindings/resolve`, {
+      bindings: [
+        { node, binding: 'b1' },
+        { node, binding: 'b2' },
+      ],
+    });
+    expect(resolved.statusCode, resolved.body).toBe(200);
+    const version = resolved.json<{ results: { held: { version: string } }[] }>().results[0]!.held
+      .version;
+    expect(await takesFor(version)).toEqual([]);
+
+    // The view reads the stored object on the miss, and takes nothing from it either.
+    store.read.length = 0;
+    const view = await viewOf('ada', document.id);
+    expect(view.map((each) => each.held!.taken)).toEqual([
+      { unavailable: true },
+      { unavailable: true },
+    ]);
+    expect(store.read).toHaveLength(1);
+    expect(await takesFor(version)).toEqual([]);
+
+    // A check whose answer differs and is no more canonical: a revision, recording no take.
+    h.connector.run = ranOk([['01', false]]);
+    const checked = await check(document.id);
+    expect(checked.statusCode, checked.body).toBe(200);
+    const revision = checked.json<{ results: { outcome: string; version: string }[] }>()
+      .results[0]!;
+    expect(revision.outcome).toBe('revision');
+    expect(await takesFor(revision.version)).toEqual([]);
+    expect((await stateOf('ada', document.id)).waiting!.taken).toEqual({ unavailable: true });
+  });
+
+  it('answers the view whole where opening the store fails with SQL in its transaction', async () => {
+    const definition = await h.definition(connection.id);
+    const { document, node } = await placed(
+      binding('b1', definition.id, { parameters: { site: { literal: '12' } } }),
+    );
+    h.connector.run = ranOk([['12', 'Pier']]);
+    await resolve(document.id, node);
+    await forget();
+    store.failSql = true;
+    const state = await stateOf('ada', document.id);
+    expect(state.held!.taken).toEqual({ unavailable: true });
+    expect(state.definition).toEqual({ title: 'Site by id', version: '0.1' });
+    expect(state.held!.by).toEqual({ id: h.ids.ada, displayName: 'Ada' });
+  });
+
+  it('names the version a binding holding nothing pins, or the latest, and no connection', async () => {
+    const definition = await h.definition(connection.id, {}, h.quality);
+    await h.nextDefinition(
+      definition.id,
+      definition.version,
+      definitionBody(connection.id, { title: 'Site by id, again' }),
+    );
+    const { document } = await placed(
+      binding('b1', definition.id),
+      binding('b2', definition.id, { version: definition.version }),
+    );
+    const view = await viewOf('ada', document.id);
+    expect(view.map((each) => [each.held, each.definition, each.connection])).toEqual([
+      [null, { title: 'Site by id, again', version: '0.2' }, null],
+      [null, { title: 'Site by id', version: '0.1' }, null],
+    ]);
+    // Alice may not read a definition in Quality, and is told neither.
+    expect((await viewOf('alice', document.id)).map((each) => each.definition)).toEqual([
+      null,
+      null,
+    ]);
+  });
+
+  it("records a miss's take when a reader who may not read the definition reads the view", async () => {
+    const definition = await h.definition(connection.id, {}, h.quality);
+    const { document, node } = await placed(
+      binding('b1', definition.id, { parameters: { site: { literal: '13' } } }),
+    );
+    h.connector.run = ranOk([['13', 'Jetty']]);
+    await resolve(document.id, node);
+    const version = (await stateOf('ada', document.id)).held!.version;
+    await forget();
+    const alice = await stateOf('alice', document.id);
+    expect(alice.definition).toBeNull();
+    expect(alice.held!.taken).toEqual({ value: 'Jetty', column: name });
+    expect(await takesFor(version)).toEqual([
+      expect.objectContaining({ outcome: { value: 'Jetty', column: name } }),
+    ]);
+  });
+
+  it('answers what an accepted version took, recording it on a miss', async () => {
+    const definition = await h.definition(connection.id);
+    const { document, node } = await placed(
+      binding('b1', definition.id, { parameters: { site: { literal: '14' } } }),
+    );
+    h.connector.run = ranOk([['14', 'Dock']]);
+    await resolve(document.id, node);
+    h.connector.run = ranOk([['14', 'Dock again']]);
+    const checked = await check(document.id);
+    const revision = checked.json<{ results: { version: string }[] }>().results[0]!.version;
+    const replaces = (await stateOf('ada', document.id)).held!.version;
+    await forget();
+    store.read.length = 0;
+    const accepted = await h.call('ada', 'POST', `/v1/documents/${document.id}/bindings/accept`, {
+      node,
+      binding: 'b1',
+      version: revision,
+      replaces,
+    });
+    expect(accepted.statusCode, accepted.body).toBe(200);
+    const state = accepted.json<State>();
+    expect(state.held).toMatchObject({
+      version: revision,
+      taken: { value: 'Dock again', column: name },
+    });
+    expect(store.read).toHaveLength(1);
+    expect(await takesFor(revision)).toEqual([
+      expect.objectContaining({ outcome: { value: 'Dock again', column: name } }),
+    ]);
   });
 });

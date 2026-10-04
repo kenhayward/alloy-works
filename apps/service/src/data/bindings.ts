@@ -19,6 +19,7 @@ import {
   datasetName,
   documentsResolving,
   findApiToken,
+  inSavepoint,
   lockBindings,
   lockDatasetQuestions,
   nameDataset,
@@ -53,8 +54,11 @@ import {
   parseQueryDefinition,
   readContent,
   readOutline,
+  takeOutcomeSchema,
   takeValue,
   type Binding,
+  type CanonicalResult,
+  type Column,
   type DraftDefinition,
   type Limits,
   type ParameterValues,
@@ -364,7 +368,8 @@ type Ran =
   | {
       readonly ok: true;
       readonly provenance: Provenance;
-      readonly taken: ReadonlyMap<string, TakeOutcome>;
+      /** Each take's outcome by its digest, or undefined where the cell was not its column's. */
+      readonly taken: ReadonlyMap<string, TakeOutcome | undefined>;
     }
   | { readonly ok: false; readonly failure: FailureIn };
 
@@ -379,15 +384,33 @@ function takesByQuestion(prepared: readonly Prepared[]): Map<string, Take[]> {
   return takes;
 }
 
-/** Records what a binding took from the version its run recorded or found (B1-H). */
-const recordTaken = (
+/**
+ * A take by `takeValue`, held to `takeOutcomeSchema` before it is an outcome (B1-H), or undefined. A
+ * result is held to its checksum and to the canonical shape, and neither holds a cell to its column's
+ * declared type, so a connector, or a stored object, can give `true` in a text column or `01` in an
+ * integer one; `takeValue` is the one rule the page, the editor and the publish share, and takes the
+ * cell as it stands, so the service, which alone records, holds it here. What is not an outcome is
+ * `unavailable` to the view and recorded nowhere, failing no act, as a result that cannot be read is.
+ */
+function takeHeld(
+  take: Take,
+  result: CanonicalResult,
+  columns: readonly Column[],
+): TakeOutcome | undefined {
+  const outcome = takeOutcomeSchema.safeParse(takeValue(take, result, columns));
+  return outcome.success ? outcome.data : undefined;
+}
+
+/** Records what a binding took from the version its run recorded or found (B1-H), where it took one. */
+const recordTaken = async (
   trx: TenantTransaction,
   version: string,
   each: Prepared,
   ran: Extract<Ran, { ok: true }>,
 ) => {
   const take = each.placed.binding.take;
-  return recordTake(trx, { version, take, outcome: ran.taken.get(takeDigest(take))! });
+  const outcome = ran.taken.get(takeDigest(take));
+  if (outcome !== undefined) await recordTake(trx, { version, take, outcome });
 };
 
 /**
@@ -427,7 +450,7 @@ async function runOnce(
     throw new Error('The store kept a result under a key that is not its checksum');
   }
   const taken = new Map(
-    takes.map((take) => [takeDigest(take), takeValue(take, ran.result, prepared.draft.columns)]),
+    takes.map((take) => [takeDigest(take), takeHeld(take, ran.result, prepared.draft.columns)]),
   );
   return {
     ok: true,
@@ -671,7 +694,11 @@ async function takenOf(
         taken.set(takeKey(version, each.take), { unavailable: true });
         continue;
       }
-      const outcome = takeValue(each.take, result, provenance.columns);
+      const outcome = takeHeld(each.take, result, provenance.columns);
+      if (outcome === undefined) {
+        taken.set(takeKey(version, each.take), { unavailable: true });
+        continue;
+      }
       await recordTake(trx, { version, take: each.take, outcome });
       taken.set(takeKey(version, each.take), outcome);
     }
@@ -721,7 +748,10 @@ function viewer(
   // `read` on any artifact, each asked once: a definition, and a connection.
   const reads = definitionReader(trx, caller);
   let opened: Promise<TenantStore> | undefined;
-  const store = objects && (() => (opened ??= objects.forTenant(trx, tenant)));
+  // Opened in a savepoint of its own: opening a store reads its credential in this transaction, and
+  // a failure there, caught as `unavailable`, must not leave the rest of the view an aborted one.
+  const store =
+    objects && (() => (opened ??= inSavepoint(trx, () => objects.forTenant(trx, tenant))));
   const keyFor = (checksum: string) => `${tenantPrefix(tenant)}sha256/${checksum}`;
   const names = new Map<string, Promise<string | null>>();
   const nameOf = (principal: string) => {

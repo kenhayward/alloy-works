@@ -4,6 +4,7 @@ export {
   prepareDatabase,
   type LoginPasswords,
 } from './bootstrap.js';
+export { inSavepoint } from './savepoint.js';
 export { migrate, type MigrateOptions, type MigrationReport } from './migrate.js';
 export { tenantNames, type TenantNames } from './names.js';
 export {
