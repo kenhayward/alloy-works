@@ -205,7 +205,7 @@ describe("PostgreSQL's generator", () => {
     expect(given.text).toBe(
       [
         'SELECT "s"."id" AS "id"',
-        'FROM "sample"."site" AS "s"',
+        'FROM (SELECT "id", "name" FROM "sample"."site") AS "s"',
         'WHERE ((($1::pg_catalog.int8) IS NULL OR "s"."id" OPERATOR(pg_catalog.>=) ($1::pg_catalog.int8)) AND (($2::pg_catalog.text[]) IS NULL OR ("s"."name")::pg_catalog.text COLLATE pg_catalog."C" OPERATOR(pg_catalog.=) ANY (($2::pg_catalog.text[]))) AND (($3::pg_catalog.text) IS NULL OR pg_catalog.strpos(("s"."name")::pg_catalog.text COLLATE pg_catalog."C", ($3::pg_catalog.text)) OPERATOR(pg_catalog.>) 0))',
         'ORDER BY "s"."id" ASC NULLS LAST',
       ].join('\n'),
@@ -251,7 +251,7 @@ describe("PostgreSQL's generator", () => {
       expect(text).toBe(
         [
           `SELECT "t".${quoted} AS ${quoted}`,
-          `FROM ${quoted}.${quoted} AS "t"`,
+          `FROM (SELECT ${quoted} FROM ${quoted}.${quoted}) AS "t"`,
           `WHERE "t".${quoted} OPERATOR(pg_catalog.=) ($1::pg_catalog.int8)`,
           `ORDER BY "t".${quoted} ASC NULLS LAST`,
         ].join('\n'),
@@ -349,7 +349,7 @@ describe("PostgreSQL's generator", () => {
     expect(generatePostgres(definition, {}, 'run').text).toBe(
       [
         `SELECT "s"."name" AS "name", "s"."id" AS "id", pg_catalog.min(("s"."code")::${C}) AS "low", pg_catalog.min("s"."opened") AS "first", pg_catalog.max(("s"."code")::${C}) AS "high"`,
-        'FROM "sample"."site" AS "s"',
+        'FROM (SELECT "name", "id", "code", "opened" FROM "sample"."site") AS "s"',
         `GROUP BY "s"."name", ("s"."name")::${C}, "s"."id"`,
         `ORDER BY ("s"."name")::${C} DESC NULLS FIRST, (pg_catalog.max(("s"."code")::${C}))::${C} ASC NULLS LAST, "s"."id" ASC NULLS LAST`,
       ].join('\n'),
@@ -367,7 +367,7 @@ describe("PostgreSQL's generator", () => {
     ).toBe(
       [
         'SELECT "s"."name" AS "name", "s"."id" AS "id", pg_catalog.min("s"."code") AS "low", pg_catalog.min("s"."opened") AS "first", pg_catalog.max("s"."code") AS "high"',
-        'FROM "sample"."site" AS "s"',
+        'FROM (SELECT "name", "id", "code", "opened" FROM "sample"."site") AS "s"',
         'GROUP BY "s"."name", "s"."id"',
       ].join('\n'),
     );
@@ -402,10 +402,64 @@ describe("PostgreSQL's generator", () => {
     expect(generatePostgres(definition, {}, 'run').text).toBe(
       [
         `SELECT "n"."name" AS "name", "n"."deepest" AS "deepest"`,
-        `FROM (SELECT "s"."name" AS "name", "s"."code" AS "code", pg_catalog.max("s"."depth") AS "deepest" FROM "sample"."site" AS "s" GROUP BY "s"."name", ("s"."name")::${C}, "s"."code") AS "n"`,
+        `FROM (SELECT "s"."name" AS "name", "s"."code" AS "code", pg_catalog.max("s"."depth") AS "deepest" FROM (SELECT "name", "code", "depth" FROM "sample"."site") AS "s" GROUP BY "s"."name", ("s"."name")::${C}, "s"."code") AS "n"`,
         `ORDER BY ("n"."name")::${C} ASC NULLS LAST`,
         'LIMIT 10',
       ].join('\n'),
+    );
+  });
+
+  it('reads every table through a derived table of the bare names of exactly the columns the tree names of it', () => {
+    // A column named by a qualified reference to a table that lacks it would be read by PostgreSQL as
+    // a function of the row, `"s"."f"` as f(s); a bare name in a one-table select list never is.
+    const reading = { alias: 'r', table: { schema: 'sample', name: 'reading' } };
+    const other = { alias: 'o', table: { schema: 'sample', name: 'site' } };
+    const definition = builder(
+      {
+        sources: [site, reading, other],
+        joins: [
+          {
+            kind: 'inner',
+            source: 'r',
+            on: { column: ref('r', 'site'), is: 'equal', to: { column: ref('s', 'id') } },
+          },
+          { kind: 'left', source: 'o', on: { column: ref('o', 'id'), is: 'isNotNull' } },
+        ],
+        select: [
+          { name: 'id', of: ref('s', 'id') },
+          { name: 'n', of: { aggregate: 'count' } },
+          { name: 'again', of: { aggregate: 'count', of: ref('s', 'id') } },
+        ],
+        where: { column: ref('s', 'active'), is: 'isNotNull' },
+        groupBy: [ref('s', 'id'), ref('s', 'region')],
+      },
+      {},
+      { key: [], order: 'multiset' },
+    );
+    expect(checkQueryDefinition(definition)).toEqual([]);
+    expect(generatePostgres(definition, {}, 'run').text).toBe(
+      [
+        'SELECT "s"."id" AS "id", pg_catalog.count(*) AS "n", pg_catalog.count("s"."id") AS "again"',
+        'FROM (SELECT "id", "active", "region" FROM "sample"."site") AS "s"',
+        'INNER JOIN (SELECT "site" FROM "sample"."reading") AS "r" ON "r"."site" OPERATOR(pg_catalog.=) "s"."id"',
+        'LEFT JOIN (SELECT "id" FROM "sample"."site") AS "o" ON "o"."id" IS NOT NULL',
+        'WHERE "s"."active" IS NOT NULL',
+        'GROUP BY "s"."id", "s"."region"',
+      ].join('\n'),
+    );
+    // A table no column is named of - a count of its rows - is read through a select of no columns.
+    const counted = builder(
+      {
+        sources: [site],
+        joins: [],
+        select: [{ name: 'n', of: { aggregate: 'count' } }],
+        groupBy: [],
+      },
+      {},
+      { key: [], order: 'multiset' },
+    );
+    expect(generatePostgres(counted, {}, 'shape').text).toBe(
+      ['SELECT pg_catalog.count(*) AS "n"', 'FROM (SELECT FROM "sample"."site") AS "s"'].join('\n'),
     );
   });
 

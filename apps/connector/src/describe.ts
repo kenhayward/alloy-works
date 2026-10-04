@@ -134,6 +134,29 @@ export function sourceRefused(error: unknown): DataFailure | undefined {
   return dataFailure('source_refused', { source: { sqlstate, message } });
 }
 
+/** PostgreSQL's code for a column a statement names that its relation does not have. */
+const UNDEFINED_COLUMN = '42703';
+
+/**
+ * A built query's refusal of a column, `42703`, naming the column (D4-K): the generator writes each
+ * table's columns as quoted bare names in a derived table (D4-F), and the source's error points at
+ * the one it does not have - its position, in characters from 1 - so the name is read from the text
+ * sent rather than from the source's message, whose words follow its locale. The author wrote the
+ * name, so naming it tells nobody anything of the source. Any other failure is answered as it is.
+ */
+export function withRefusedColumn(failure: DataFailure, error: unknown, text: string): DataFailure {
+  if (failure.source?.sqlstate !== UNDEFINED_COLUMN) return failure;
+  const position = Number((error as { position?: unknown }).position);
+  if (!Number.isInteger(position) || position < 1) return failure;
+  const after = Array.from(text)
+    .slice(position - 1)
+    .join('');
+  const quoted = /^"((?:[^"]|"")*)"/.exec(after);
+  if (quoted === null) return failure;
+  const column = quoted[1]!.replaceAll('""', '"');
+  return sourceNameSchema.safeParse(column).success ? { ...failure, column } : failure;
+}
+
 /**
  * A SQL describe's answer (D2-G): each column's name, the source's type and the proposal D1's map
  * makes of it, and each parameter's type as the source reads it. A statement that returns no columns,

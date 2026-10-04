@@ -1167,9 +1167,10 @@ describe('the builder (D4)', () => {
     expect(shownSql()).toContain('Choose a column to return');
     await pick(user, 'id');
     expect(shownSql()).toContain('SELECT "t"."id" AS "id"');
-    expect(shownSql()).toContain('FROM "sample"."site" AS "t"');
+    expect(shownSql()).toContain('FROM (SELECT "id" FROM "sample"."site") AS "t"');
     await pick(user, 'name');
     expect(shownSql()).toContain('"t"."name" AS "name"');
+    expect(shownSql()).toContain('FROM (SELECT "id", "name" FROM "sample"."site") AS "t"');
     await addParameter(user, 'site', 'integer');
     await user.click(screen.getByRole('button', { name: 'Add a filter' }));
     const filter = screen.getByRole('group', { name: 'Filter 1' });
@@ -1210,7 +1211,7 @@ describe('the builder (D4)', () => {
         'This query definition can be read here and not changed: it joins more than one source, which this page does not offer yet. Change it through the API.',
       ),
     ).toBeInTheDocument();
-    expect(shownSql()).toContain('INNER JOIN "sample"."reading" AS "r"');
+    expect(shownSql()).toContain('INNER JOIN (SELECT "site" FROM "sample"."reading") AS "r"');
     for (const name of ['Save version', 'Describe', 'Describe the source']) {
       expect(screen.queryByRole('button', { name })).toBeNull();
     }
@@ -1232,7 +1233,7 @@ describe('the builder (D4)', () => {
     expect(await screen.findByRole('radio', { name: 'Builder' })).toBeChecked();
     expect(screen.queryByLabelText('SQL text')).toBeNull();
     expect(screen.getByRole('group', { name: 'Filter 1' })).toBeInTheDocument();
-    expect(shownSql()).toContain('FROM "sample"."site" AS "t"');
+    expect(shownSql()).toContain(' FROM "sample"."site") AS "t"');
     // Turned to SQL by somebody who may write it, it starts empty: the generated SQL is not its.
     await userEvent.setup().click(screen.getByRole('radio', { name: 'SQL' }));
     expect(screen.getByLabelText('SQL text')).toHaveValue('');

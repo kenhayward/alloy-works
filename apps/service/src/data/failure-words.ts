@@ -87,6 +87,8 @@ function mismatch(failure: DataFailure): string {
  */
 const BUILT_REFUSALS: Readonly<Record<string, string>> = {
   '42P01': 'The source has no table or view the query names',
+  // A composite type or an index named as a table: a relation, but none a statement reads.
+  '42809': 'The source has no table or view the query names',
   '42703': 'The source has no column the query names',
   '42883':
     'The source cannot compare two of the types the query compares, or an aggregate cannot take the type of its column',

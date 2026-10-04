@@ -447,7 +447,6 @@ describe('the domain package', () => {
         'comparisons',
         'generatePostgres',
         'generatedLength',
-        'quoteIdentifier',
         'sqlTextSchema',
         'treeProblem',
       ].sort(),

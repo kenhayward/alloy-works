@@ -19,7 +19,7 @@ type Json = Record<string, unknown>;
 const ranSql = (operator: '=' | '<>') =>
   [
     'SELECT "r"."site" AS "site", pg_catalog.count(*) AS "readings", pg_catalog.round(pg_catalog.avg("r"."value"), 2) AS "mean_value"',
-    'FROM "sample"."reading" AS "r"',
+    'FROM (SELECT "site", "value" FROM "sample"."reading") AS "r"',
     `WHERE "r"."site" OPERATOR(pg_catalog.${operator}) ($1::pg_catalog.int8)`,
     'GROUP BY "r"."site"',
     'ORDER BY "r"."site" ASC NULLS LAST',

@@ -13,9 +13,14 @@ import {
 } from '@alloy-works/domain';
 import type pg from 'pg';
 
-import { describedColumns, describeStatement, QUERY_CANCELED, sourceRefused } from './describe.js';
+import {
+  describedColumns,
+  describeStatement,
+  QUERY_CANCELED,
+  sourceRefused,
+  withRefusedColumn,
+} from './describe.js';
 import { guardedAddress, type Lookup } from './guard.js';
-import { absentColumn } from './named-columns.js';
 import {
   cancelBackend,
   connectPostgres,
@@ -71,20 +76,14 @@ async function describeSql(
   }
   let description;
   try {
-    if (fetch.kind === 'builder') {
-      // A built query's columns are checked against the catalogue first, in the read-only
-      // transaction it is then described in, as a run checks them (`named-columns.ts`), read
-      // committed whatever the account's default.
-      await client.query('begin transaction isolation level read committed, read only');
-      const absent = await absentColumn(client, fetch.query);
-      if (absent !== undefined) throw new Failed(absent);
-    }
     description = await describeStatement(client, bound.text);
   } catch (error) {
     const refused = sourceRefused(error);
     if (refused === undefined) throw error;
+    if (refused.source?.sqlstate === QUERY_CANCELED) throw new Failed(dataFailure('timeout'));
+    // A built query's column the source does not have is named, as a run names it.
     throw new Failed(
-      refused.source?.sqlstate === QUERY_CANCELED ? dataFailure('timeout') : refused,
+      fetch.kind === 'builder' ? withRefusedColumn(refused, error, bound.text) : refused,
     );
   }
   return describedColumns(client, description);

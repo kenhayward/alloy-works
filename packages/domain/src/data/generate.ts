@@ -10,7 +10,11 @@ import { BindingRefused, placeholdersIn, type BoundStatement, type BoundValue } 
  * write, and the page to show the SQL.
  *
  * What it writes (D4-F; DAT-081, DAT-018): every identifier double-quoted, a quote inside doubled, and
- * every relation `"schema"."name"`; every function, operator and type `pg_catalog`'s by name, so
+ * every relation `"schema"."name"`, read through a derived table of the bare names of exactly the
+ * columns the query names of it, `(SELECT "c1", "c2" FROM "schema"."name") AS "alias"`, so no
+ * `"alias"."name"` is ever read as a function of the row (`f(alias)`, found through the search path,
+ * where the relation has no such column): a bare name in a one-table select list is a column or
+ * `42703`; every function, operator and type `pg_catalog`'s by name, so
  * nothing an account makes in a schema of its own can stand in for one; every value, a literal's
  * included, a placeholder `($n::pg_catalog.type)` the driver binds, a parameter used twice bound once;
  * and the limit, a whole number the schema holds, as text. The text is read back as the source will
@@ -180,8 +184,40 @@ export function generatePostgres(
     }
   };
 
+  /**
+   * Each table source's columns the query names of it - in its select, its aggregates, its joins'
+   * conditions, its where and its grouping, in that order - each once, by alias. A nested query's own
+   * columns are its select names, which the builder's checks hold it to.
+   */
+  const namedColumns = (node: Query): Map<string, string[]> => {
+    const named = new Map<string, string[]>();
+    for (const source of node.sources) if ('table' in source) named.set(source.alias, []);
+    const name = (ref: ColumnRef) => {
+      const columns = named.get(ref.source);
+      if (columns !== undefined && !columns.includes(ref.column)) columns.push(ref.column);
+    };
+    const visit = (each: Condition): void => {
+      if ('and' in each) each.and.forEach(visit);
+      else if ('or' in each) each.or.forEach(visit);
+      else if ('not' in each) visit(each.not);
+      else {
+        name(each.column);
+        if (each.to !== undefined && 'column' in each.to) name(each.to.column);
+      }
+    };
+    for (const item of node.select) {
+      if (!('aggregate' in item.of)) name(item.of);
+      else if (item.of.of !== undefined) name(item.of.of);
+    }
+    for (const join of node.joins) visit(join.on);
+    if (node.where !== undefined) visit(node.where);
+    node.groupBy.forEach(name);
+    return named;
+  };
+
   /** A query's clauses, in the order its text is read, so its values are numbered in that order. */
   const query = (node: Query, textual: ReadonlySet<string>, top: boolean): string[] => {
+    const tableColumns = namedColumns(node);
     // A nested query's column is textual where a textual column of this one reads it.
     const nested = new Map<string, Set<string>>();
     for (const item of node.select) {
@@ -195,7 +231,13 @@ export function generatePostgres(
       const each = node.sources[at]!;
       const alias = quoteIdentifier(each.alias);
       if ('table' in each) {
-        return `${quoteIdentifier(each.table.schema)}.${quoteIdentifier(each.table.name)} AS ${alias}`;
+        // A table is read through a derived table of the bare names of exactly the columns the query
+        // names of it (D4-F): a bare name in a one-table select list is a column or `42703`, never a
+        // function of the row, and every `"alias"."name"` outside then names a column the derived
+        // table has. Not LATERAL, so nothing in it can read another source.
+        const relation = `${quoteIdentifier(each.table.schema)}.${quoteIdentifier(each.table.name)}`;
+        const columns = (tableColumns.get(each.alias) ?? []).map(quoteIdentifier).join(', ');
+        return `(SELECT ${columns === '' ? '' : `${columns} `}FROM ${relation}) AS ${alias}`;
       }
       const inner = query(each.query, nested.get(each.alias) ?? new Set(), false);
       return `(${inner.join(' ')}) AS ${alias}`;

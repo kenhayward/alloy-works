@@ -1032,6 +1032,8 @@ describe('query definitions through the service', () => {
       connector.mode = 'answer';
       const words: [string, string][] = [
         ['42P01', 'The source has no table or view the query names'],
+        // A composite type or an index named as a source: a relation, but none a statement reads.
+        ['42809', 'The source has no table or view the query names'],
         ['42703', 'The source has no column the query names'],
         ['42883', 'The source cannot compare two of the types the query compares'],
         ['42804', 'The source cannot compare two of the types the query compares'],
@@ -1083,15 +1085,12 @@ describe('query definitions through the service', () => {
     it('refuses Grace a column her table does not have at describe and at sample, naming the column she wrote', async () => {
       const source = await connection('Absent column');
       connector.mode = 'answer';
-      // The connector's refusal of a table's column the catalogue does not have (named-columns.ts).
+      // The connector's refusal of a table's column the source does not have: the source's own
+      // message, and the column read from the generated text at the error's position (describe.ts).
       const failure = {
         code: 'source_refused' as const,
         attribution: 'query' as const,
-        source: {
-          sqlstate: '42703',
-          message:
-            'The table or view "sample"."site", the query\'s source s, has no column "row_to_json"',
-        },
+        source: { sqlstate: '42703', message: 'column "row_to_json" does not exist' },
         column: 'row_to_json',
       };
       connector.run = { outcome: 'failed', failure };
@@ -1105,7 +1104,7 @@ describe('query definitions through the service', () => {
       const described = await describeBuilt('grace', source.id, query);
       expect(described.statusCode).toBe(400);
       expect(described.json<{ message: string }>().message).toBe(said);
-      expect(described.body).not.toContain('"sample"."site"');
+      expect(described.body).not.toContain('does not exist');
 
       const sampled = await sample(
         'grace',
@@ -1119,7 +1118,7 @@ describe('query definitions through the service', () => {
       );
       const hers = sampled.json<{ failure: { message: string; column: string } }>().failure;
       expect(hers).toMatchObject({ message: said, column: 'row_to_json' });
-      expect(sampled.body).not.toContain('"sample"."site"');
+      expect(sampled.body).not.toContain('does not exist');
     });
   });
 });
