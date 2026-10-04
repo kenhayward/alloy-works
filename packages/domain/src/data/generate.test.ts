@@ -206,7 +206,7 @@ describe("PostgreSQL's generator", () => {
       [
         'SELECT "s"."id" AS "id"',
         'FROM "sample"."site" AS "s"',
-        'WHERE ((($1::pg_catalog.int8) IS NULL OR "s"."id" OPERATOR(pg_catalog.>=) ($1::pg_catalog.int8)) AND (($2::pg_catalog.text[]) IS NULL OR ("s"."name")::pg_catalog.text COLLATE "C" OPERATOR(pg_catalog.=) ANY (($2::pg_catalog.text[]))) AND (($3::pg_catalog.text) IS NULL OR pg_catalog.strpos(("s"."name")::pg_catalog.text COLLATE "C", ($3::pg_catalog.text)) OPERATOR(pg_catalog.>) 0))',
+        'WHERE ((($1::pg_catalog.int8) IS NULL OR "s"."id" OPERATOR(pg_catalog.>=) ($1::pg_catalog.int8)) AND (($2::pg_catalog.text[]) IS NULL OR ("s"."name")::pg_catalog.text COLLATE pg_catalog."C" OPERATOR(pg_catalog.=) ANY (($2::pg_catalog.text[]))) AND (($3::pg_catalog.text) IS NULL OR pg_catalog.strpos(("s"."name")::pg_catalog.text COLLATE pg_catalog."C", ($3::pg_catalog.text)) OPERATOR(pg_catalog.>) 0))',
         'ORDER BY "s"."id" ASC NULLS LAST',
       ].join('\n'),
     );
@@ -345,7 +345,7 @@ describe("PostgreSQL's generator", () => {
       },
     );
     expect(checkQueryDefinition(definition)).toEqual([]);
-    const C = 'pg_catalog.text COLLATE "C"';
+    const C = 'pg_catalog.text COLLATE pg_catalog."C"';
     expect(generatePostgres(definition, {}, 'run').text).toBe(
       [
         `SELECT "s"."name" AS "name", "s"."id" AS "id", pg_catalog.min(("s"."code")::${C}) AS "low", pg_catalog.min("s"."opened") AS "first", pg_catalog.max(("s"."code")::${C}) AS "high"`,
@@ -398,7 +398,7 @@ describe("PostgreSQL's generator", () => {
       { name: { base: 'text' }, deepest: { base: 'decimal', precision: 8, scale: 2 } },
     );
     expect(checkQueryDefinition(definition)).toEqual([]);
-    const C = 'pg_catalog.text COLLATE "C"';
+    const C = 'pg_catalog.text COLLATE pg_catalog."C"';
     expect(generatePostgres(definition, {}, 'run').text).toBe(
       [
         `SELECT "n"."name" AS "name", "n"."deepest" AS "deepest"`,

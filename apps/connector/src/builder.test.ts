@@ -8,10 +8,11 @@ import {
   type Query,
   type RunAnswer,
 } from '@alloy-works/domain';
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { childSpawn, createSupervisor } from './supervisor.js';
 import {
+  asSuperuser,
   built,
   column,
   draft,
@@ -300,3 +301,93 @@ describe('a built query run against the source', { timeout: LOADED_TIMEOUT_MS },
     expect(answer.ran.sql).toMatch(/LIMIT 1$/);
   });
 });
+
+/** An account of the test's own, whose search path finds a schema it plants before pg_catalog. */
+const PLANTED = {
+  account: 'd4_planted_reader',
+  password: 'd4-planted-reader-dev-password',
+  schema: 'd4_planted',
+} as const;
+
+const asPlanted = (definition: Omit<DraftDefinition, 'connection'>) =>
+  run(settings({ account: PLANTED.account }), PLANTED.password, definition);
+
+/** Leaves the shared source as it found it: the planted schema and the account both dropped. */
+const unplant = () =>
+  asSuperuser(async (client) => {
+    await client.query(`drop schema if exists ${PLANTED.schema} cascade`);
+    const role = await client.query('select 1 from pg_roles where rolname = $1', [PLANTED.account]);
+    if (role.rowCount === 1) {
+      await client.query(`drop owned by ${PLANTED.account}`);
+      await client.query(`drop role ${PLANTED.account}`);
+    }
+  });
+
+describe(
+  "a built query as an account whose search path finds a schema of its own before pg_catalog's",
+  { timeout: LOADED_TIMEOUT_MS },
+  () => {
+    beforeAll(async () => {
+      await unplant();
+      await asSuperuser(async (client) => {
+        await client.query(`create role ${PLANTED.account} login password '${PLANTED.password}'`);
+        await client.query(`create schema ${PLANTED.schema}`);
+        await client.query(`grant usage on schema ${PLANTED.schema}, sample to ${PLANTED.account}`);
+        await client.query(`grant select on sample.site, sample.tag to ${PLANTED.account}`);
+        // A collation named "C" that is neither byte order nor deterministic: case is ignored.
+        await client.query(
+          `create collation ${PLANTED.schema}."C" (provider = icu, locale = 'und-u-ks-level2', deterministic = false)`,
+        );
+        await client.query(
+          `alter role ${PLANTED.account} set search_path = ${PLANTED.schema}, pg_catalog, public`,
+        );
+      });
+    });
+    afterAll(unplant);
+
+    it('compares, groups and orders text by pg_catalog\'s "C", whatever "C" the search path finds first', async () => {
+      const grouped = ok(
+        await asPlanted(
+          built(
+            {
+              sources: [tag],
+              joins: [],
+              select: [
+                { name: 'name', of: ref('t', 'name') },
+                { name: 'n', of: { aggregate: 'count' } },
+              ],
+              groupBy: [ref('t', 'name')],
+            },
+            { n: { base: 'integer' } },
+          ),
+        ),
+      );
+      expect(grouped.result.rows).toEqual([
+        ['ADA', '1'],
+        ['Ada', '1'],
+        ['Grace', '1'],
+        ['ada', '1'],
+        ['grace', '1'],
+      ]);
+      const filtered = ok(
+        await asPlanted(
+          built(
+            {
+              sources: [tag],
+              joins: [],
+              select: [{ name: 'id', of: ref('t', 'id') }],
+              where: {
+                column: ref('t', 'name'),
+                is: 'equal',
+                to: { literal: 'ada', type: { base: 'text' } },
+              },
+              groupBy: [],
+            },
+            { id: { base: 'integer' } },
+          ),
+        ),
+      );
+      expect(filtered.result.rows).toEqual([['2']]);
+    });
+  },
+);

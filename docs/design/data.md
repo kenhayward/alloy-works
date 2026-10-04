@@ -620,11 +620,12 @@ value is a typed filter the connector applies to its canonical rows.
   what keeps PostgreSQL's asserted identity safe (cases 3 and 5, D7).
 
   **What the generator writes** (D4-F): every identifier double-quoted, a quote inside doubled; every
-  relation `"schema"."name"`; **every function, operator and type `pg_catalog`'s by name** -
-  `pg_catalog.count`, `OPERATOR(pg_catalog.=)`, `::pg_catalog.int8` - so nothing an account makes in a
-  schema of its own can stand in for one, without pinning the search path a source's own view may
-  read; **every value, a literal's too, a placeholder** `($n::pg_catalog.type)` the driver binds, a
-  parameter compared twice bound once; and the limit, a whole number, as text. The text is read back
+  relation `"schema"."name"`; **every function, operator, type and collation `pg_catalog`'s by
+  name** - `pg_catalog.count`, `OPERATOR(pg_catalog.=)`, `::pg_catalog.int8`,
+  `COLLATE pg_catalog."C"` - so nothing an account makes in a schema of its own can stand in for
+  one, without pinning the search path a source's own view may read; **every value, a literal's
+  too, a placeholder** `($n::pg_catalog.type)` the driver binds, a parameter compared twice bound
+  once; and the limit, a whole number, as text. The text is read back
   by D2's lexer, and nothing is sent unless its placeholders are exactly those written. **Two
   statements come of one tree** (D4-H): the **shape** - sources, joins, select, where and group by,
   with no order, no limit, and no code-point key outside a filter - which describe proposes columns
@@ -749,7 +750,7 @@ definition names, or it is declared decorative (DAT-097's declaration; its failu
   or two rows share a key. So a text sort key is ordered `COLLATE "C"` in the SQL, and the page says
   so. A multiset sorts the rows by their canonical text, code point by code point. **The builder
   compares text by code point wherever it compares it** (D4-G): a text filter compares
-  `(x)::pg_catalog.text COLLATE "C"` with its value, `contains` and `startsWith` are `strpos` and
+  `(x)::pg_catalog.text COLLATE pg_catalog."C"` with its value, `contains` and `startsWith` are `strpos` and
   `starts_with` on that key, and a text-declared column is ordered by it, grouped by itself and it, and
   its minimum and maximum taken over it - in a nested query too, where a text-declared column reads one
   of its columns. So a `citext` column or one under a nondeterministic collation never merges `Ada` and
@@ -1153,22 +1154,22 @@ The D4 plan's decisions this design takes as its own; the rest of them are the p
 chose to build D4 before designing `bindings.md`**, where DA-V put `bindings.md` after D3: a binding
 names a definition by identifier whatever its fetch, so nothing in D4 depends on it.
 
-| #    | Decision                                                                                                                                                                                     |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| D4-A | **No migration and no new schema version**: the builder is a second arm of `fetch` at definition `schemaVersion: 1`, refusing nothing stored                                                 |
-| D4-B | **Format 1, held tight**: a table's schema required; no `orderBy`, the declared order being the ORDER BY; a limit at the top alone, beside a declared order; widened later by adding members |
-| D4-C | **`Condition`**: and and or of 2 to 32, not, and a comparison of a column with a parameter, a literal or a column; an optional parameter given no value makes its comparison true            |
-| D4-D | **The whole format is checked, generated and run through the API in D4**; the page offers one table or view, and opens anything more read-only with its SQL, saying why                      |
-| D4-E | **The generator is the domain's, pure and never stored**, called by the connector at every describe and run, by the definition's checks on every write, and by the page                      |
-| D4-F | **Every name quoted, every function, operator and type `pg_catalog`'s, every value a placeholder**, the text read back before it is sent                                                     |
-| D4-G | **Text compares, sorts and groups by code point wherever the builder compares it**, `(x)::pg_catalog.text COLLATE "C"`: this answers the collation question for the builder on PostgreSQL    |
-| D4-H | **Two statements from one tree**: the shape, described and admitted by D2-L, and the run, with the keys, the order and the limit                                                             |
-| D4-I | **`average` carries `places`**, rounded at the source                                                                                                                                        |
-| D4-J | **A built query needs `edit` and `use_connection`, never `write_sql`**, and is not refused by DAT-103; each version by its own fetch                                                         |
-| D4-K | **A built query's commonest refusals are worded by their SQLSTATE**; the source's message only to a holder of `write_sql`                                                                    |
-| D4-L | **Depth and breadth bounded by an iterative walk** before the schema recurses: queries 4 deep, conditions 8, 16 sources, 32 groupings, 256 comparisons                                       |
-| D4-P | **A name the builder cannot hold is shown and not offered**: a relation or a column whose name is not NFC; a view under a composed name reaches it                                           |
-| D4-Q | **Describe takes a built query**, `{ builder: { query, parameters } }`, on `use_connection` alone                                                                                            |
+| #    | Decision                                                                                                                                                                                             |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D4-A | **No migration and no new schema version**: the builder is a second arm of `fetch` at definition `schemaVersion: 1`, refusing nothing stored                                                         |
+| D4-B | **Format 1, held tight**: a table's schema required; no `orderBy`, the declared order being the ORDER BY; a limit at the top alone, beside a declared order; widened later by adding members         |
+| D4-C | **`Condition`**: and and or of 2 to 32, not, and a comparison of a column with a parameter, a literal or a column; an optional parameter given no value makes its comparison true                    |
+| D4-D | **The whole format is checked, generated and run through the API in D4**; the page offers one table or view, and opens anything more read-only with its SQL, saying why                              |
+| D4-E | **The generator is the domain's, pure and never stored**, called by the connector at every describe and run, by the definition's checks on every write, and by the page                              |
+| D4-F | **Every name quoted, every function, operator, type and collation `pg_catalog`'s, every value a placeholder**, the text read back before it is sent                                                  |
+| D4-G | **Text compares, sorts and groups by code point wherever the builder compares it**, `(x)::pg_catalog.text COLLATE pg_catalog."C"`: this answers the collation question for the builder on PostgreSQL |
+| D4-H | **Two statements from one tree**: the shape, described and admitted by D2-L, and the run, with the keys, the order and the limit                                                                     |
+| D4-I | **`average` carries `places`**, rounded at the source                                                                                                                                                |
+| D4-J | **A built query needs `edit` and `use_connection`, never `write_sql`**, and is not refused by DAT-103; each version by its own fetch                                                                 |
+| D4-K | **A built query's commonest refusals are worded by their SQLSTATE**; the source's message only to a holder of `write_sql`                                                                            |
+| D4-L | **Depth and breadth bounded by an iterative walk** before the schema recurses: queries 4 deep, conditions 8, 16 sources, 32 groupings, 256 comparisons                                               |
+| D4-P | **A name the builder cannot hold is shown and not offered**: a relation or a column whose name is not NFC; a view under a composed name reaches it                                                   |
+| D4-Q | **Describe takes a built query**, `{ builder: { query, parameters } }`, on `use_connection` alone                                                                                                    |
 
 **Until the publish's binding stage exists, nothing publishes a binding** (the D3 plan, "Added in
 phase B"): a publish or a preview of a document whose resolved content holds one is refused before

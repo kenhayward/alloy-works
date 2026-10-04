@@ -17,9 +17,11 @@ import { BindingRefused, placeholdersIn, type BoundStatement, type BoundValue } 
  * read it, and nothing is answered unless its placeholders are exactly those written.
  *
  * Text compares by code point wherever the builder compares it (D4-G): a text filter compares
- * `(x)::pg_catalog.text COLLATE "C"`, and a text-declared column is ordered by that key, grouped by
- * itself and it, and its minimum and maximum taken over it - in a nested query too, where a
- * text-declared column reads one of its columns.
+ * `(x)::pg_catalog.text COLLATE pg_catalog."C"`, and a text-declared column is ordered by that key,
+ * grouped by itself and it, and its minimum and maximum taken over it - in a nested query too, where
+ * a text-declared column reads one of its columns. The collation is named by its schema as a function
+ * is: an unqualified one is found through the search path, where an account can plant a nondeterministic
+ * "C" of its own before `pg_catalog`.
  *
  * Two statements come of one tree (D4-H): the **shape** - sources, joins, select, where and group by,
  * with no key in its select, its grouping or an order, and no order or limit - which a describe
@@ -52,7 +54,8 @@ const OPERATORS: Partial<Record<Comparison, string>> = {
 export const quoteIdentifier = (name: string) => `"${name.replaceAll('"', '""')}"`;
 
 /** The code-point key of an expression: its text, compared byte by byte (D4-G). */
-const codePointKey = (expression: string) => `(${expression})::pg_catalog.text COLLATE "C"`;
+const codePointKey = (expression: string) =>
+  `(${expression})::pg_catalog.text COLLATE pg_catalog."C"`;
 
 const columnText = (ref: ColumnRef) =>
   `${quoteIdentifier(ref.source)}.${quoteIdentifier(ref.column)}`;

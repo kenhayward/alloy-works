@@ -167,7 +167,7 @@ describe("The builder's format", () => {
         'INNER JOIN (SELECT "r"."site" AS "site", pg_catalog.count(*) AS "readings", pg_catalog.round(pg_catalog.avg("r"."value"), 2) AS "mean" FROM "sample"."reading" AS "r" GROUP BY "r"."site") AS "p" ON "p"."site" OPERATOR(pg_catalog.=) "s"."id"',
         'LEFT JOIN "sample"."reading" AS "x" ON "x"."site" OPERATOR(pg_catalog.=) "s"."id"',
         'WHERE "s"."active" OPERATOR(pg_catalog.=) ($1::pg_catalog.bool)',
-        'GROUP BY "s"."id", "s"."name", ("s"."name")::pg_catalog.text COLLATE "C", "p"."readings", "p"."mean"',
+        'GROUP BY "s"."id", "s"."name", ("s"."name")::pg_catalog.text COLLATE pg_catalog."C", "p"."readings", "p"."mean"',
         'ORDER BY "s"."id" ASC NULLS LAST',
       ].join('\n'),
     );
