@@ -1840,6 +1840,61 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
     expect(formatsFor(declared.theme.valueCatalogue, 'en-GB')).toEqual(DEFAULT_VALUE_FORMATS);
   });
 
+  /** As the cluster's owner: a change no role of the product's could make, to stand for one made by hand. */
+  const byHand = (tenant: Tenant, statement: string) =>
+    queryAs(db.adminUrl, statement.replaceAll('$schema', `"${tenant.schema}"`));
+
+  /** The theme's chain past 0.4, by identifier, after migrating to the end. */
+  const migratedPastFourth = async (tenant: Tenant) => {
+    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual(['0048_bound_values']);
+    return (await chainOf(tenant, DEFAULT_THEME_ID)).slice(4).map((each) => each.id);
+  };
+
+  it("gives no 0.6 over a 0.5 whose content is not the product's, though its identifier is", async () => {
+    const { tenant } = await atFifthTheme('0.5 changed by hand');
+    await byHand(
+      tenant,
+      `update $schema.artifact_version set content_hash = '${'0'.repeat(64)}'
+        where id = '${FIFTH_DEFAULT_THEME_VERSION}'`,
+    );
+    expect(await migratedPastFourth(tenant)).toEqual([FIFTH_DEFAULT_THEME_VERSION]);
+    // The value catalogue goes in all the same: it is named by nothing until a theme names it.
+    expect((await chainOf(tenant, DEFAULT_VALUE_CATALOGUE_ID)).map((each) => each.id)).toEqual([
+      DEFAULT_CATALOGUE_VERSIONS.value,
+    ]);
+  });
+
+  it('gives no 0.6 over a 0.5 with an author, which the product never wrote', async () => {
+    const { tenant, ada } = await atFifthTheme('0.5 with an author');
+    await byHand(
+      tenant,
+      `update $schema.artifact_version set author_id = '${ada}'
+        where id = '${FIFTH_DEFAULT_THEME_VERSION}'`,
+    );
+    expect(await migratedPastFourth(tenant)).toEqual([FIFTH_DEFAULT_THEME_VERSION]);
+  });
+
+  it('gives no 0.6 where the value catalogue already had a version, so its 0.1 did not go in', async () => {
+    const { tenant } = await atFifthTheme('Value catalogue before 0048');
+    // A version of the value catalogue's artifact, under another identifier: 0048 inserts its 0.1
+    // only where the catalogue has none, and the theme's 0.6 must not name a version not there.
+    await byHand(
+      tenant,
+      `insert into $schema.artifact (id, kind, space_id)
+         values ('${DEFAULT_VALUE_CATALOGUE_ID}', 'catalogue', null);
+       insert into $schema.artifact_version (
+         id, artifact_id, kind, revision_no, version_no, author_id, note, schema_version, content,
+         content_hash, metadata_values, not_carried, component_type_version_id, version_digest)
+       select gen_random_uuid(), '${DEFAULT_VALUE_CATALOGUE_ID}', kind, 0, 1, author_id, note,
+         schema_version, content, content_hash, metadata_values, not_carried,
+         component_type_version_id, version_digest
+       from $schema.artifact_version where id = '${FIFTH_DEFAULT_CATALOGUE_VERSIONS.table}'`,
+    );
+    expect(await migratedPastFourth(tenant)).toEqual([FIFTH_DEFAULT_THEME_VERSION]);
+    const value = await chainOf(tenant, DEFAULT_VALUE_CATALOGUE_ID);
+    expect(value.map((each) => each.id)).not.toContain(DEFAULT_CATALOGUE_VERSIONS.value);
+  });
+
   it('leaves an environment upgraded to it alike a fresh one: the theme, the value catalogue and dataset_take', async () => {
     const { tenant: upgraded } = await atFifthTheme('Upgraded');
     await migrate(db.migratorUrl);
