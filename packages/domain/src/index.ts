@@ -36,8 +36,8 @@ export * from './access/index.js';
 export * from './structure/index.js';
 export * from './template/index.js';
 
-// Scaffolding. This is NOT the content model - see docs/design/content-model.md for that, and
-// CLAUDE.md for why this exists. `apps/web` still uses it; retiring it is that app's change.
+// Scaffolding. This is NOT the content model - see docs/design/content-model.md for that.
+// `apps/web` still uses it; retiring it is that app's change.
 export {
   componentSchema,
   componentTypes,

@@ -1,7 +1,7 @@
 # Changelog
 
-Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
-[docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
+One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
+topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
 ## 0.132.3 - 2026-10-04 (PR #381)
 
