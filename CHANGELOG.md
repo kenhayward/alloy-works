@@ -3,6 +3,17 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.131.1 - 2026-10-03 (PR #374)
+
+### Added
+
+- **The plan for building queries without writing SQL.** Nothing you can use yet. It says how
+  somebody allowed to use a connection, without being allowed to write SQL on it, will build a query
+  on the query definition page - a table or view, its columns, filters on named values, grouping with
+  counts, sums, averages, minimums and maximums, a sort and a limit - and how the product keeps the
+  query's structure rather than its SQL, writes the SQL afresh each time it runs, passes every value
+  to the database separately from it, and compares text the same way on every database.
+
 ## 0.131.0 - 2026-10-03 (PR #373)
 
 ### Added
