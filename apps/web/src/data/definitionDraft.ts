@@ -1,7 +1,14 @@
 import {
+  checkTree,
   generatePostgres,
+  type AggregateName,
+  type CanonicalValue,
+  type Comparison,
+  type Condition,
   type Parameter,
+  type Query,
   type QueryDefinition,
+  type SelectItem,
   type ValueType,
 } from '@alloy-works/domain';
 
@@ -59,10 +66,68 @@ export interface ColumnDraft {
   readonly confirmed: boolean;
 }
 
+/** A column of the table or view the builder reads, returned under a name of the author's. */
+export interface PickedColumn {
+  /** The source's column. */
+  readonly column: string;
+  /** The name it is returned as. */
+  readonly name: string;
+}
+
+/** One filter: a column compared with a parameter, or with a fixed value of a type (D4-C). */
+export interface FilterDraft {
+  readonly column: string;
+  readonly is: Comparison;
+  /** A parameter by name, or a fixed value as typed, compared as its type. */
+  readonly to:
+    { readonly parameter: string } | { readonly value: string; readonly type: ValueType };
+}
+
+/** One summary of a group (D4-I): an aggregate of a column, or a count of every row. */
+export interface SummaryDraft {
+  readonly aggregate: AggregateName;
+  /** The source's column, or empty for a count of every row. */
+  readonly column: string;
+  readonly name: string;
+  /** An average's places, as typed. */
+  readonly places: string;
+}
+
+/**
+ * A built query as its page holds it (the D4 plan, D4-O): one table or view, the columns it returns,
+ * filters joined by all or any, whether it groups by the columns returned and summarises each group,
+ * and how many rows it returns at most beside a declared order.
+ */
+export interface BuilderDraft {
+  readonly alias: string;
+  readonly table: { readonly schema: string; readonly name: string } | null;
+  readonly columns: readonly PickedColumn[];
+  readonly filters: readonly FilterDraft[];
+  readonly match: 'all' | 'any';
+  readonly grouped: boolean;
+  readonly summaries: readonly SummaryDraft[];
+  /** Return at most this many rows, as typed: empty for every row. */
+  readonly limit: string;
+}
+
+export const NEW_BUILDER: BuilderDraft = {
+  alias: 't',
+  table: null,
+  columns: [],
+  filters: [],
+  match: 'all',
+  grouped: false,
+  summaries: [],
+  limit: '',
+};
+
 export interface DefinitionDraft {
   readonly title: string;
   readonly description: string;
   readonly connection: string;
+  /** Whether the query is built (D4) or written as SQL, which needs write_sql. */
+  readonly mode: 'builder' | 'sql';
+  readonly builder: BuilderDraft;
   readonly sql: string;
   readonly parameters: readonly ParameterDraft[];
   readonly columns: readonly ColumnDraft[];
@@ -109,6 +174,8 @@ export function newDraft(limits: {
     title: '',
     description: '',
     connection: '',
+    mode: 'builder',
+    builder: NEW_BUILDER,
     sql: '',
     parameters: [],
     columns: [],
@@ -160,7 +227,7 @@ export function valueTypeOf(type: TypeDraft): ValueType | string {
 }
 
 /** A permitted value or a bound as the service takes it: a yes or no as a boolean, anything else as typed. */
-function canonical(base: Base | '', text: string): string | boolean {
+export function canonical(base: Base | '', text: string): string | boolean {
   if (base === 'boolean' && (text === 'true' || text === 'false')) return text === 'true';
   return text;
 }
@@ -202,6 +269,286 @@ export function parametersOf(draft: Pick<DefinitionDraft, 'parameters'>): Parame
   return parameters;
 }
 
+const ORDERED: readonly Base[] = ['integer', 'decimal', 'date', 'time', 'localDateTime', 'instant'];
+
+/** The words for each comparison, as a filter offers it. */
+export const COMPARISON_WORDS: Readonly<Record<Comparison, string>> = {
+  equal: 'is',
+  notEqual: 'is not',
+  less: 'is less than',
+  lessOrEqual: 'is at most',
+  greater: 'is greater than',
+  greaterOrEqual: 'is at least',
+  in: 'is one of',
+  contains: 'contains',
+  startsWith: 'starts with',
+  isNull: 'is empty',
+  isNotNull: 'is not empty',
+};
+
+/**
+ * The comparisons a filter offers against a value of this type (D4-C, D4-G, D4-M): a list by in
+ * alone, text by equal, not equal, contains and starts with, a number or a time by equal to at least,
+ * a yes or no by equal and not equal - and is empty and is not empty whatever it compares with.
+ */
+export function comparisonsFor(type: ValueType | null, list: boolean): Comparison[] {
+  const nulls: Comparison[] = ['isNull', 'isNotNull'];
+  if (type === null) return nulls;
+  if (list) return ['in', ...nulls];
+  if (type.base === 'text') return ['equal', 'notEqual', 'contains', 'startsWith', ...nulls];
+  if (ORDERED.includes(type.base)) {
+    return ['equal', 'notEqual', 'less', 'lessOrEqual', 'greater', 'greaterOrEqual', ...nulls];
+  }
+  return ['equal', 'notEqual', ...nulls];
+}
+
+/** What a filter compares with: its parameter's type and whether it is a list, or its value's type. */
+export function operandOf(
+  filter: FilterDraft,
+  parameters: readonly ParameterDraft[],
+): { readonly type: ValueType | null; readonly list: boolean } {
+  if ('value' in filter.to) return { type: filter.to.type, list: false };
+  const name = filter.to.parameter;
+  const parameter = parameters.find((each) => each.name === name);
+  if (parameter === undefined) return { type: null, list: false };
+  const type = valueTypeOf(parameter.type);
+  return { type: typeof type === 'string' ? null : type, list: parameter.list };
+}
+
+/**
+ * A filter fitted to what it compares with: one naming a parameter no longer declared compares with
+ * the first that is, or with a fixed value where none is; and one whose comparison its operand no
+ * longer allows takes the first it does.
+ */
+export function fitFilter(filter: FilterDraft, parameters: readonly ParameterDraft[]): FilterDraft {
+  let fitted = filter;
+  if ('parameter' in filter.to) {
+    const name = filter.to.parameter;
+    if (!parameters.some((each) => each.name === name)) {
+      const first = parameters[0];
+      fitted = {
+        ...fitted,
+        to: first === undefined ? { value: '', type: { base: 'text' } } : { parameter: first.name },
+      };
+    }
+  }
+  const { type, list } = operandOf(fitted, parameters);
+  const allowed = comparisonsFor(type, list);
+  return allowed.includes(fitted.is) ? fitted : { ...fitted, is: allowed[0]! };
+}
+
+/** A builder draft's filters fitted to the parameters declared now. */
+export function fitFilters(
+  builder: BuilderDraft,
+  parameters: readonly ParameterDraft[],
+): BuilderDraft {
+  return { ...builder, filters: builder.filters.map((filter) => fitFilter(filter, parameters)) };
+}
+
+/** A filter as the tree holds it. */
+function conditionOf(filter: FilterDraft, alias: string): Condition {
+  const column = { source: alias, column: filter.column };
+  if (filter.is === 'isNull' || filter.is === 'isNotNull') return { column, is: filter.is };
+  if ('parameter' in filter.to) {
+    return { column, is: filter.is, to: { parameter: filter.to.parameter } };
+  }
+  const { type, value } = filter.to;
+  const literal: CanonicalValue = canonical(type.base, type.base === 'text' ? value : value.trim());
+  return { column, is: filter.is, to: { literal, type } };
+}
+
+const PLACES = /^(0|[1-9][0-9]{0,3})$/;
+
+/**
+ * A builder draft's tree, or the first reason it cannot be one yet. A limit is the tree's only beside
+ * a declared order (D4-B), so over rows in no order it is left out, whatever is typed.
+ */
+export function queryOf(builder: BuilderDraft, order: DefinitionDraft['order']): Query | string {
+  if (builder.table === null) return 'Choose a table or view.';
+  if (builder.columns.length === 0 && builder.summaries.length === 0) {
+    return 'Choose a column to return.';
+  }
+  const { alias } = builder;
+  const select: SelectItem[] = builder.columns.map((each) => ({
+    name: each.name,
+    of: { source: alias, column: each.column },
+  }));
+  if (builder.grouped) {
+    for (const summary of builder.summaries) {
+      if (summary.aggregate === 'average' && !PLACES.test(summary.places.trim())) {
+        return `The average ${summary.name}: round it to a whole number of places, 0 to 1000.`;
+      }
+      select.push({
+        name: summary.name,
+        of: {
+          aggregate: summary.aggregate,
+          ...(summary.column === '' ? {} : { of: { source: alias, column: summary.column } }),
+          ...(summary.aggregate === 'average' ? { places: Number(summary.places.trim()) } : {}),
+        },
+      });
+    }
+  }
+  const conditions = builder.filters.map((filter) => conditionOf(filter, alias));
+  const where: Condition | undefined =
+    conditions.length === 0
+      ? undefined
+      : conditions.length === 1
+        ? conditions[0]
+        : builder.match === 'all'
+          ? { and: conditions }
+          : { or: conditions };
+  const limit = builder.limit.trim();
+  if (order !== 'multiset' && limit !== '' && !WHOLE.test(limit)) {
+    return 'Return at most a whole number of rows.';
+  }
+  return {
+    sources: [{ alias, table: { schema: builder.table.schema, name: builder.table.name } }],
+    joins: [],
+    select,
+    ...(where === undefined ? {} : { where }),
+    groupBy: builder.grouped
+      ? builder.columns.map((each) => ({ source: alias, column: each.column }))
+      : [],
+    ...(order !== 'multiset' && limit !== '' ? { limit: Number(limit) } : {}),
+  };
+}
+
+/**
+ * Why the page cannot show a built query in the builder, or the builder's draft of it (the D4 plan,
+ * D4-D): the page offers one table or view, its columns, filters one level deep, grouping by the
+ * columns returned, and the five aggregates; anything else the API wrote opens read-only. A tree is
+ * offered only where the draft writes it again exactly, so nothing shown differs from what is stored.
+ */
+export function builderDraftOf(
+  query: Query,
+  order: DefinitionDraft['order'],
+): BuilderDraft | { readonly reason: string } {
+  if (query.sources.length !== 1 || query.joins.length > 0) {
+    return { reason: 'it joins more than one source, which this page does not offer yet' };
+  }
+  const [source] = query.sources;
+  if (source === undefined || !('table' in source)) {
+    return { reason: 'it reads a nested query, which this page does not offer yet' };
+  }
+  const comparisonsIn = (where: Condition | undefined): Condition[] | 'nested' => {
+    if (where === undefined) return [];
+    if ('and' in where || 'or' in where) {
+      const each = 'and' in where ? where.and : where.or;
+      return each.every((one) => 'column' in one) ? each : 'nested';
+    }
+    return 'not' in where ? 'nested' : [where];
+  };
+  const found = comparisonsIn(query.where);
+  if (found === 'nested') {
+    return { reason: 'its filters are nested, which this page does not offer yet' };
+  }
+  const filters: FilterDraft[] = [];
+  for (const condition of found) {
+    if (!('column' in condition)) continue;
+    const { to } = condition;
+    if (to !== undefined && 'column' in to) {
+      return { reason: 'it compares two columns, which this page does not offer yet' };
+    }
+    if (to !== undefined && 'literal' in to && Array.isArray(to.literal)) {
+      return {
+        reason: 'it compares with a list of fixed values, which this page does not offer yet',
+      };
+    }
+    filters.push({
+      column: condition.column.column,
+      is: condition.is,
+      to:
+        to === undefined
+          ? { value: '', type: { base: 'text' } }
+          : 'parameter' in to
+            ? { parameter: to.parameter }
+            : {
+                value: to.literal === null ? '' : String(to.literal as string | boolean),
+                type: to.type,
+              },
+    });
+  }
+  const columns: PickedColumn[] = [];
+  const summaries: SummaryDraft[] = [];
+  for (const item of query.select) {
+    if ('aggregate' in item.of) {
+      summaries.push({
+        aggregate: item.of.aggregate,
+        column: item.of.of?.column ?? '',
+        name: item.name,
+        places: item.of.places === undefined ? '' : String(item.of.places),
+      });
+    } else columns.push({ column: item.of.column, name: item.name });
+  }
+  const draft: BuilderDraft = {
+    alias: source.alias,
+    table: { schema: source.table.schema, name: source.table.name },
+    columns,
+    filters,
+    match: query.where !== undefined && 'or' in query.where ? 'any' : 'all',
+    grouped: query.groupBy.length > 0 || summaries.length > 0,
+    summaries,
+    limit: query.limit === undefined ? '' : String(query.limit),
+  };
+  const again = queryOf(draft, order);
+  if (typeof again === 'string' || JSON.stringify(again) !== JSON.stringify(query)) {
+    return { reason: 'it was written through the API in a form this page does not offer' };
+  }
+  return draft;
+}
+
+/** Why a stored definition opens read-only for want of a builder that can show it, or null. */
+export function unshownReason(definition: QueryDefinition): string | null {
+  // Read by destructuring: the renderer's API test flags any member named for the network.
+  const { fetch: statement } = definition;
+  if (statement.kind !== 'builder') return null;
+  const draft = builderDraftOf(statement.query, definition.order);
+  return 'reason' in draft ? draft.reason : null;
+}
+
+/**
+ * The SQL a built draft runs, as the generator writes it (D4-E), or what it still needs: the tree's
+ * own checks first, so an unfinished tree says what is missing rather than generating half a query.
+ */
+export function generatedSql(draft: DefinitionDraft): { sql: string } | { needs: string } {
+  const parameters = parametersOf(draft);
+  if (typeof parameters === 'string') return { needs: parameters };
+  const query = queryOf(draft.builder, draft.order);
+  if (typeof query === 'string') return { needs: query };
+  let problem: string | undefined;
+  checkTree(query, parameters, (_path, message) => {
+    problem ??= message;
+  });
+  if (problem !== undefined) return { needs: `${problem}.` };
+  const columns = draft.columns.flatMap((column) => {
+    const type = valueTypeOf(column.type);
+    return typeof type === 'string'
+      ? []
+      : [{ name: column.name, from: { column: column.name }, type }];
+  });
+  const declared = new Set(columns.map((column) => column.name));
+  const order =
+    draft.order === 'multiset'
+      ? ('multiset' as const)
+      : draft.order.filter((each) => declared.has(each.column)).map((each) => ({ ...each }));
+  try {
+    return {
+      sql: generatePostgres(
+        {
+          parameters,
+          fetch: { kind: 'builder', format: 1, query },
+          columns,
+          order: order === 'multiset' || order.length > 0 ? order : 'multiset',
+        },
+        {},
+        'run',
+      ).text,
+    };
+  } catch {
+    return { needs: 'Describe the query, and confirm its columns, to see the order it runs in.' };
+  }
+}
+
 /** One draft's parameters, columns and the rest as the service takes them, or the first reason not. */
 function parts(draft: DefinitionDraft) {
   const parameters = parametersOf(draft);
@@ -212,7 +559,13 @@ function parts(draft: DefinitionDraft) {
     if (typeof type === 'string') return `The column ${column.name}: ${type}`;
     columns.push({ name: column.name, from: { column: column.name }, type });
   }
-  if (columns.length === 0) return 'Describe the statement to propose its columns first.';
+  if (columns.length === 0) {
+    return draft.mode === 'builder'
+      ? 'Describe the query to propose its columns first.'
+      : 'Describe the statement to propose its columns first.';
+  }
+  const query = draft.mode === 'builder' ? queryOf(draft.builder, draft.order) : null;
+  if (typeof query === 'string') return query;
   const limits = {
     rows: Number(draft.limits.rows),
     bytes: Number(draft.limits.bytes),
@@ -227,7 +580,10 @@ function parts(draft: DefinitionDraft) {
     schemaVersion: 1 as const,
     connection: draft.connection,
     parameters,
-    fetch: { kind: 'sql' as const, text: draft.sql },
+    fetch:
+      query === null
+        ? { kind: 'sql' as const, text: draft.sql }
+        : { kind: 'builder' as const, format: 1 as const, query },
     columns,
     key: [...draft.key],
     order:
@@ -255,8 +611,8 @@ export function definitionOf(draft: DefinitionDraft): QueryDefinition | string {
 }
 
 /**
- * The SQL a definition runs: its own, or what a built query generates. The builder's own step is the
- * D4 plan's task 4; until then a built query is shown by its SQL.
+ * The SQL a definition runs, as its reader is shown it: its own, or what a built query generates from
+ * its tree, read-only (DAT-099).
  */
 export function sqlOf(definition: QueryDefinition): string {
   // Read by destructuring: the renderer's API test flags any member named for the network.
@@ -264,13 +620,21 @@ export function sqlOf(definition: QueryDefinition): string {
   return statement.kind === 'sql' ? statement.text : generatePostgres(definition, {}, 'run').text;
 }
 
-/** A stored definition as its page holds it: every column already confirmed. */
+/**
+ * A stored definition as its page holds it: every column already confirmed. A built query is held as
+ * the builder's draft, and its SQL is never offered as SQL to edit: turned to SQL, it starts empty.
+ */
 export function draftOf(definition: QueryDefinition): DefinitionDraft {
+  const { fetch: statement } = definition;
+  const built =
+    statement.kind === 'builder' ? builderDraftOf(statement.query, definition.order) : null;
   return {
     title: definition.title,
     description: definition.description,
     connection: definition.connection,
-    sql: sqlOf(definition),
+    mode: statement.kind === 'builder' ? 'builder' : 'sql',
+    builder: built === null || 'reason' in built ? NEW_BUILDER : built,
+    sql: statement.kind === 'sql' ? statement.text : '',
     parameters: definition.parameters.map((parameter) => {
       const permitted = parameter.permitted;
       return {
@@ -329,10 +693,26 @@ export function unconfirmed(columns: readonly ColumnDraft[]): ColumnDraft[] {
   return columns.map((column) => (column.confirmed ? { ...column, confirmed: false } : column));
 }
 
-/** What the columns are confirmed for: the connection, the SQL and its parameters, exactly. */
-export function statementOf(draft: Pick<DefinitionDraft, 'connection' | 'sql' | 'parameters'>) {
-  return JSON.stringify([draft.connection, draft.sql, draft.parameters]);
+/**
+ * What the columns are confirmed for: the connection, the SQL or the built query, and its parameters,
+ * exactly. A built query's limit is left out: it changes how many rows, never which columns.
+ */
+export function statementOf(
+  draft: Pick<DefinitionDraft, 'connection' | 'mode' | 'builder' | 'sql' | 'parameters'>,
+) {
+  return JSON.stringify([
+    draft.connection,
+    draft.mode,
+    draft.mode === 'sql' ? draft.sql : { ...draft.builder, limit: '' },
+    draft.parameters,
+  ]);
 }
+
+/** The parts of a draft its columns are confirmed for (DAT-105). */
+export type StatementParts = Pick<
+  Partial<DefinitionDraft>,
+  'connection' | 'mode' | 'builder' | 'sql' | 'parameters'
+>;
 
 /**
  * The draft with its connection, SQL or parameters changed. A change withdraws every column's
@@ -340,10 +720,7 @@ export function statementOf(draft: Pick<DefinitionDraft, 'connection' | 'sql' | 
  * were last confirmed for gives back the confirmations, where the columns are still exactly those -
  * their names, their order and their declared types.
  */
-export function withStatement(
-  held: DefinitionDraft,
-  over: Pick<Partial<DefinitionDraft>, 'connection' | 'sql' | 'parameters'>,
-): DefinitionDraft {
+export function withStatement(held: DefinitionDraft, over: StatementParts): DefinitionDraft {
   const next = { ...held, ...over };
   const before = statementOf(held);
   const after = statementOf(next);

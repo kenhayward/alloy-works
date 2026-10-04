@@ -9,7 +9,7 @@ import { Empty } from '../states/Empty.js';
 import { Notice } from '../states/Notice.js';
 import styles from '../structure/DocumentList.module.css';
 import { connectionLink, NEW_QUERY_DEFINITION, queryDefinitionLink } from './links.js';
-import { useSqlPlaces } from './places.js';
+import { useDefinitionPlaces } from './places.js';
 import { isRecord } from './shapes.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -58,12 +58,12 @@ function asItems(items: readonly unknown[]): Item[] {
  * The query definitions the signed-in person may read (data.md, "Routes"; the D2 plan, D2-U), in
  * layout A beside Connections: each one's title, space and connection, a page at a time, sorted and
  * filtered by space on the service. **New query definition** is offered where the person may edit a
- * space and holds `write_sql` on some connection.
+ * space and use some connection (D4-J): a built query needs no `write_sql`.
  */
 export function QueryDefinitions({ client }: { readonly client: Client }) {
   const [sort, setSort] = useState<SortOption>(SORTS[0]!);
   const [spaces, setSpaces] = useState<readonly string[]>([]);
-  const places = useSqlPlaces(client);
+  const places = useDefinitionPlaces(client);
   const fetchPage = useCallback(
     (cursor: string | null) =>
       client.GET('/v1/query-definitions', {

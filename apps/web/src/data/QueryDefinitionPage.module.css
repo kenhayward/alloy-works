@@ -127,3 +127,9 @@
   display: grid;
   gap: var(--space-4);
 }
+
+.generated {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+}
