@@ -625,7 +625,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   grouped by code point, so `Ada` and `ada` are never one group. A table or column whose name is not
   in the composed form a definition holds is listed and not offered, and a definition with joined or
   nested queries, written through the API, opens to be read with its SQL, saying why. A built query
-  needs only use of the connection, and runs on any connection, since it only ever reads. Or the SQL,
+  needs only use of the connection, and runs on any connection: it runs one SELECT the product
+  writes, inside a read-only transaction, over columns the database has, a column a table or view
+  does not have refused by name before anything is sent. Or the SQL,
   with a value marked `{{name}}` and a fragment
   of SQL chosen by a key marked `{{#name}}`, and each parameter's name, type, whether it is required
   or a list, and the values or range it permits, or its fragments; **Describe**, which asks the
