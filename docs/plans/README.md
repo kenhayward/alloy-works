@@ -589,6 +589,18 @@ built in the eight slices its build order names, each planned when its turn come
 | D3  | [Datasets and resolutions](2026-10-03-d3-datasets-and-resolutions.md)           | The binding widened in a component's content, the dataset kind with provenance and names, results stored by checksum, resolve, check and accept, and where a definition and a connection are used                                                                                                 | Built  |
 | D4  | [The builder](2026-10-03-d4-the-builder.md)                                     | The builder's saved query tree, format 1, holding joins, nested queries, grouping and aggregates; PostgreSQL's SQL generated from it at each describe and run, every value bound; a definition built with `use_connection` alone; and the builder on the query definition page, one table or view | Built  |
 
+## Bindings
+
+A value from a tenant's own data standing in a component's text, designed in
+[bindings.md](../design/bindings.md) under
+[ADR-0035](../decisions/0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md):
+the editor's side of a binding and the publish's binding stage, built in the six slices its build
+order names, each planned when its turn comes.
+
+| #   | Plan                                                | Builds                                                                                                                                                                                                                                                                                                             | Status  |
+| --- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
+| B1  | [The value shown](2026-10-04-b1-the-value-shown.md) | The binding as an editor node, opened for editing, its identifier kept on a cut and paste and renewed on a copy; `takeValue` and `formatValue`, the theme's value catalogue and the default theme's 0.6; taken values held as derived data; values and failures shown in place in a document; the provenance panel | Planned |
+
 ## Publishing
 
 A document version to a PDF somebody can download, cite and keep, designed in

@@ -1,0 +1,344 @@
+# B1: The value shown
+
+> **A sketch**, one pull request, test-first, at [the plans README](README.md)'s full tier (a
+> migration, stored shapes, a changed contract): a pre-flight review, a review per task, and a final
+> whole-branch review against every citation. It builds B1 of [bindings.md](../design/bindings.md)
+> under [ADR-0035](../decisions/0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md)
+> and [ADR-0023](../decisions/0023-prosemirror-as-the-editor-and-its-model.md), on what
+> [D3](2026-10-03-d3-datasets-and-resolutions.md) and [D4](2026-10-03-d4-the-builder.md) built and
+> found. BI-A to BI-R and B1-A to B1-P: approved by Ken on 2026-10-04, every one as recommended.
+
+**Goal:** a component holding a binding opens for editing, the binding an atom an author can select,
+delete, undo, copy, cut and paste without losing what a document holds for it. In a document - read
+text and an editor opened in place - each binding shows the one value the document holds, taken by
+`takeValue` and formatted by `formatValue` from the theme's value catalogue, or says in place why it
+has none; on its own it shows what it asks for, never a value. A value opens its provenance in one
+step. The service keeps each take's outcome as derived data, `dataset_take`. Nothing places,
+resolves or accepts a binding from a screen (B2, B4), and nothing publishes one (B3).
+
+| PR   | Holds                                                                                                                                                                                                                      |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B1.0 | This plan, with a change fragment                                                                                                                                                                                          |
+| B1.1 | The build: the editor's node and the identity fix, `takeValue` and `formatValue`, the value catalogue and the default theme's 0.6, `dataset_take`, values and failures in place, provenance                                |
+| B1.2 | B1's close ([ADR-0037](../decisions/0037-change-fragments-and-versions-at-a-close.md)): the fragments folded into one changelog entry, the Minor bump, `docs/architecture.md`, and the baseline drafted for Ken to declare |
+
+## What the named questions answered
+
+**Q1: a value catalogue at catalogue/1, named without a theme/2? No.** Every kind shares
+`CATALOGUE_SCHEMA_VERSION = 3`, the catalogue/1 and /2 upgraders hold the six kinds, and
+`themeSchema.catalogues` requires one key per kind with no reader filling one in. So B1-F.
+
+**Q2: what does the read text draw for a binding? Nothing.** `renderContent` goes through `toEditor`,
+which refuses it (`marksWithNoType`): "This component holds content this editor cannot show yet." So
+the read text needs the node too (B1-D).
+
+**Q3: what does paste do with one? Refuses it, and admission would keep its identifier.**
+`reidentifyInline` returns it as it came (a copy into its own component would repeat an identifier),
+`namesIn` counts it `targetable`, and a footnote's paste refuses it. So B1-C.
+
+**Q4 (spiked in the editor's ProseMirror): object attributes, and "spaces alone"?** They round-trip,
+compare deeply and undo whole. `\s` and `White_Space` disagree: U+0085 is `White_Space` only, U+FEFF
+`\s` only, U+200B neither. So object attributes (B1-B) and `\p{White_Space}` (B1-E).
+
+## Decisions
+
+Approved by Ken on 2026-10-04, every one as recommended; amended by the pre-flight review (below).
+
+| #    | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Instead of                                                                                                                                                         |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| B1-A | **One tenant migration, `0048_bound_values.sql`**: the value catalogue's artifact and its 0.1, the default theme's 0.6 naming it under 0043's guard, and `dataset_take`. bindings.md's "one migration per slice"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | A migration for the theme and another for derived data                                                                                                             |
+| B1-B | **The editor's `binding`** is an inline atom, `marks: ''`, no `parseDOM`, attributes `id`, `query`, `version`, `parameters`, `mode` and `take` - objects held as objects (Q4) - named in every content expression that admits a cross-reference: a paragraph, a term, an attribution, a table's caption and note, a figure's caption and a footnote's paragraph, and so a list item and a cell. Never in preformatted text or the title schema. `toEditor` and `fromEditor` map it losslessly; `fromEditor`'s parse is the content model's, so the editor is held to D3-C on every save                                                                                                                                                                                                                                                                                                                                                                                                        | -                                                                                                                                                                  |
+| B1-C | **Identity (BI-D)**: `reidentifyInline` gives a binding a new identifier and records it in `renamed`; `pasteInto` gives back each pasted binding's original where, after the paste, no other node of the receiving component holds it - a cut and a paste in one component, a paste over the original, or a paste into another component - in the transaction that already says `keepsIdentifiers`. A binding is not a target: `namesIn` leaves it out of `targetable`. A footnote's paste admits one. The paste report counts bindings **copied**, "each to be resolved in a document", and bindings that **kept their identifier**, worded to promise no value: one cut from a component and pasted into another keeps it and holds no value there                                                                                                                                                                                                                                           | Carrying the source component in the clipboard: harmless either way, since a document holds a value by node                                                        |
+| B1-D | **What a binding shows is drawn by a node view from a decoration** (cross-references 1, R10): `bindingsPlugin` holds the host's `BindingContext`, set by `setBindingContext` in a transaction the history never holds; its decorations are merged into the surface's one decorations plugin and into a footnote's nested view, offset as `referenceDecorations` is; `renderContent` takes the same context and draws each binding as `drawReferences` draws references. The words come from one pure function, `bindingsShown(doc, context)`, which the surface, the footnote, the read text and the copy all call                                                                                                                                                                                                                                                                                                                                                                             | -                                                                                                                                                                  |
+| B1-E | **`takeValue(take, result, columns)`** in `packages/domain/src/data/take.ts`, pure, in this order: a column, or a key column, that the provenance's declared columns do not have is `take_invalid`; `{ column }` of no rows `value_none`, of more than one `value_many` with the count; `{ key, column }` matched on every key column by canonical string equality, none `row_missing`, more than one `value_many` (D2-M makes a key unique; the code does not trust it); then a null cell `value_null`, and a text cell whose every code point is `\p{White_Space}` (Q4) `value_empty`. The columns are the dataset version's provenance's, never the definition's latest                                                                                                                                                                                                                                                                                                                     | Taking a first row; or the definition's current columns, which a floating definition can change after the result ran                                               |
+| B1-F | **The value catalogue** is `{ schemaVersion: 3, kind: 'value', formats, byLanguage }` (Q1), bindings.md's `ValueFormats` member for member, held tight (stored-shape rows 2 and 3). It stands **beside the six kinds, not as a seventh**: `VALUE_CATALOGUE_KIND = 'value'` outside `CATALOGUE_KINDS` and `CatalogueKind`, so STY-003's six, every `Record<CatalogueKind, ...>` and every loop over the kinds stay as they are. Its own arm of `catalogueSchema` at catalogue/3; `readCatalogue` refuses one at catalogue/1 or /2, which never existed, and `upgradeCatalogue1`/`2` gain nothing. `catalogues.value` is an optional member of theme/1, which a theme before 0.6 omits. `readTheme` answers `valueCatalogue: ValueCatalogue \| null` on `ResolvedTheme`, and `formatsFor(catalogue, language)` picks the formats, `DEFAULT_VALUE_FORMATS` (bindings.md's 0.6 values) where it is null. `addCatalogueVersion` gains a value branch, where STY-005's `style_reused` does not apply | A theme/2 whose reader names a catalogue no older environment holds; bindings.md's catalogue/1, which the shared version cannot hold; or a seventh `CatalogueKind` |
+| B1-G | **`formatValue(value, type, formats)`** and **`formatsFor(catalogue, language)`** in `packages/domain/src/data/format.ts`, no `Intl`: an integer grouped in threes once it has `groupFrom` digits; a decimal at exactly its scale, its trailing zeros put back; the minus as declared; a date in its order and separator, day and month padded by `pad`, the year always four digits; a time `HH`, `MM`, `SS` by its separator, its fraction to the column's declared digits after the decimal separator; a local date-time the date, a space and the time; an instant the same in UTC followed by a space and `UTC`; a boolean in its words; text with each line break (CR LF, LF, CR, U+0085, U+2028, U+2029) and tab one space. The language is the document's outline's `language`, its primary subtag lowercased                                                                                                                                                                          | Separators chosen per output, which would let the editor and the PDF disagree; or `Intl`, whose ICU differs between Chromium, Electron and Node                    |
+| B1-H | **`dataset_take`** as bindings.md has it, `outcome` holding `{ value, column: { name, type } }` - the declared column, never its source `from` - or `{ failure, count? }`; written by `recordTake` alone, `on conflict do nothing`. Resolve and check compute each binding's `takeValue` right after its run, outside any transaction, and carry only the outcomes to `recordTake` in their recording transactions, for every version they record or find (held and waiting) - `runOnce` answers provenance alone today, and 50 results of up to 25 MiB are too much to hold. The bindings view writes on a miss, reading the object once by its checksum, held to its SHA-256; an object unreadable (not its checksum), missing, or no store gives that binding `{ unavailable: true }`, a `TakeOutcomeView` arm never stored, records nothing and never fails the route. Insert and delete granted, update revoked. **Nothing in `apps/worker` imports it** (BI-G)                           | Writing only at resolve, which would leave every result D3 already stored showing nothing until resolved again                                                     |
+| B1-I | **The bindings view gains**, per binding: `held.taken` and `waiting.taken` (the outcome, `{ unavailable: true }` (B1-H), or null where the held resolution is stale); `definition: { title, version } \| null`, null unless the caller may `read` the definition; `connection: { name } \| null`, null unless they may `read` the definition **and** the connection, as `provenanceView` hides the connection from anyone who may not read the definition; and `held.by` as `{ id, displayName: string \| null }`, as a publication names its publisher. Redaction is D3's, unchanged                                                                                                                                                                                                                                                                                                                                                                                                          | A route per binding for its provenance, which the page would call once a value                                                                                     |
+| B1-J | **What is shown, in a document**: the formatted value where the binding as the editor holds it equals the binding the view answered (`bindingDigestInput`, compared as strings, no hash in the browser) and its held resolution is not stale; otherwise a marker in place - _No value - never resolved_, _No value - the binding changed since it was resolved_, _No value - the query returned no rows_, _No value - the query returned 3 rows_, _No value - no row where site is north_, _No value - empty_ (null or empty), _No value - the definition has no column depth_, _No value - the result cannot be read_. A held value with a newer result waiting carries _revision waiting_, always shown, an icon and words                                                                                                                                                                                                                                                                   | Showing the view's value for a binding the author has changed in the open editor, which is not the binding the document holds it for                               |
+| B1-K | **On its own** a binding shows its column and its definition's title - _depth, Readings_, or _depth where site is north, Readings_, a key's values as stored - in the application's chip, the title read by `GET /v1/query-definitions/{id}` once per definition, and _a bound value_ where the reader may not read it. Never a value (BI-B)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | -                                                                                                                                                                  |
+| B1-L | **Accessible name and keyboard**: the editor's atom is reached by the arrow keys as a node selection, and holds its kind in visually hidden words after what it shows - _1,234.5, bound value_, _No value - empty, bound value, failed_, _depth, Readings, bound value, a value in each document_ - never `aria-label` on a `span`, which ARIA prohibits on a generic element. In the read text a value is a `<button type="button">` in the tab order, styled as the text it stands in with the focus ring the theme's links take, holding the same words                                                                                                                                                                                                                                                                                                                                                                                                                                     | `aria-label` on the atom's `span` (`aria-prohibited-attr`); or a value reachable by the pointer alone                                                              |
+| B1-M | **Provenance (DAT-041)**: `ProvenancePanel` in `apps/web/src/data/`, in the document page's side column, opened by a value's button in the read text (click or Enter) and by **Provenance** on the **Value panel**, which `ComponentEditor` shows beside its Figure and Table panels when a binding is selected whole, with the provenance in brief and no **Change** (B2). The panel holds bindings.md's five parts, the waiting value beside the held one, and **Show the result**, the rows from `GET .../datasets/{version}` in a table of the first 200 rows with the count of the rest. Focus moves to its heading; **Close** and Escape return it to what opened it                                                                                                                                                                                                                                                                                                                     | A modal dialog, which would hide the text the value stands in; or the Data tab, which is B4's                                                                      |
+| B1-N | **The context is read when the page opens and again whenever it re-reads the texts** (after an editor's Done, a version cut, an outline act), and only when a text holds a binding. A failed read shows no values and no error. No live event is added: nothing on a screen changes a resolution until B2 and B4                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | -                                                                                                                                                                  |
+| B1-O | **The publish and preview guard is unchanged.** `refuseBindings` (`apps/service/src/publishing.ts`) and `assemble`'s `binding_unresolved` stay as D3 left them; B3 replaces both. A page showing values still answers **Publish** and **Preview** with "cannot be published yet. Remove the binding to publish it."                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Loosening the guard before the stage that would print a value exists                                                                                               |
+| B1-P | **Citations**: DAT-031 and DAT-032 by `takeValue`'s tests; DAT-027, DAT-047 and DAT-041 by the editor's and the page's tests named below. **Not cited**: DAT-024 and STY-082 (questions below); DAT-022, B2's; DAT-039 and DAT-082, B4's                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Citing a requirement for the half B1 can show                                                                                                                      |
+
+## Global constraints
+
+[CLAUDE.md](../../CLAUDE.md) and [the plans README](README.md) hold the rest. Specific to B1:
+
+- U+00A0 or U+202F in a test is `String.fromCodePoint`, never an escape a tool might decode; the
+  catalogue stores tokens (`'U+00A0'`), never the character.
+- **Web tests wait for the surface's own content**, not the header: ProseMirror mounts after it.
+- **Schema-keyed maps are keyed by literals**: failure codes and their words are each a `Record` over
+  a literal union with `satisfies`, each key listed by hand in a test.
+- **Security, from D3**: without `read` on a definition, no SQL, connection or source column name -
+  in the view, the panel or `dataset_take`; a value goes to whoever may read the document (DAT-090);
+  no resolve or check failure, so no source message, reaches a page; the worker reads no derived row.
+- **Never the development stack** (5432, 8333): every run sets each `ALLOY_TEST_*`, `ALLOY_E2E_*` and
+  `ALLOY_BROWSER_*` target to the build's own.
+
+## The stored-shape check
+
+**Write paths.** Content: the content model's parse, unchanged since D3, now also reached through
+`fromEditor` and `admit`. A catalogue or theme version: migration 0048, and `addCatalogueVersion` and
+`addThemeVersion`, called only by tests. `dataset_take`: `recordTake` alone (resolve, check, the
+view). A trigger or function reads a table by `tg_table_schema`. **Canonical forms**: a take's digest
+is SHA-256 over `canonicalJson(take)`, no set rule (a key's values are never arrays); a catalogue is
+the migration's canonical literal, its digests recomputed by `default-theme.test.ts`.
+
+| #   | Member                         | Validated on every write path by                                                                                                                                                                                                        | Loose or tight                                    | Points at, and who checks                                                                                   |
+| --- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 1   | The editor's `binding`         | `fromEditor` parses with `bindingNodeSchema` (D3-C), unchanged; a binding with no `id` is named by the identity plugin before any save                                                                                                  | Tight, as D3                                      | As D3: its definition and take at resolve                                                                   |
+| 2   | Value catalogue `formats`      | bindings.md's `ValueFormats`, strict at every level, held as B1-F says; `number.group` never the decimal; `true` and `false` 1 to 40 code points, NFC, no control, trimmed, different                                                   | Tight                                             | Nothing                                                                                                     |
+| 3   | Value catalogue `byLanguage`   | At most 32; each `language` `^[a-z]{2,3}$`, once; `formats` as row 2                                                                                                                                                                    | Tight                                             | Nothing                                                                                                     |
+| 4   | Theme `catalogues.value`       | Optional at theme/1; an artifact version identifier; `readTheme` refuses one missing or not a value catalogue (`catalogue_missing`, `catalogue_wrong_kind`)                                                                             | Tight; absent reads as the product's default      | A catalogue version, by `readTheme`                                                                         |
+| 5   | `dataset_take.dataset_version` | Not null; with `artifact_id` and `kind` default `'dataset'`, a foreign key to `artifact_version (id, artifact_id, kind)`, `on delete cascade`                                                                                           | Tight                                             | A dataset version, by the foreign key                                                                       |
+| 6   | `dataset_take.take_digest`     | `^[0-9a-f]{64}$`, by a check constraint and `recordTake`                                                                                                                                                                                | Tight                                             | A take, which only the binding holds                                                                        |
+| 7   | `dataset_take.outcome`         | `takeOutcomeSchema`, strict, in `recordTake`; and a check constraint: exactly `value` and `column`, the value a string or a boolean, or exactly `failure` among the six codes, with `count` an integer above 1 exactly for `value_many` | Tight; the value's canonical form is the writer's | The column, by `recordTake` checking the value with `valueProblem` against the column's type before writing |
+
+**Derived, held by a test**: deleting every `dataset_take` row and reading the view again answers the
+same values, recomputed and written back.
+
+## Task 1: The domain
+
+`packages/domain/src/` (paths below are under it), exported from the package; zod and no platform.
+
+```ts
+// take.ts (B1-E). TAKE_FAILURES: B1-E's six codes, as const, in its order.
+type Take = Binding['take'];
+export type TakeOutcome =
+  | { readonly value: string | boolean; readonly column: { name: string; type: ValueType } }
+  | { readonly failure: (typeof TAKE_FAILURES)[number]; readonly count?: number };
+export const takeOutcomeSchema: z.ZodType<TakeOutcome>;
+export function takeValue(take: Take, result: CanonicalResult, columns: Column[]): TakeOutcome;
+export function takeDigestInput(take: Take): string; // canonicalJson, hashed by the caller
+// format.ts (B1-G)
+export function formatValue(value: string | boolean, type: ValueType, f: ValueFormats): string;
+export function formatsFor(catalogue: ValueCatalogue | null, language: string | null): ValueFormats;
+```
+
+`theme/schema.ts`: `VALUE_CATALOGUE_KIND`, `valueFormatsSchema`, the value arm at catalogue/3 and an
+optional `catalogues.value` (B1-F); `CATALOGUE_KINDS` and its comment unchanged. `theme/read.ts`:
+`readCatalogue` refuses a value catalogue below catalogue/3; `readTheme` answers `valueCatalogue`, its
+loops over the kinds (~373, ~530) still over the six. `theme/default.ts`: `DEFAULT_VALUE_FORMATS`;
+0.5's constants renamed `FIFTH_` and frozen at six like `FIRST_`, `SECOND_` and `FOURTH_`;
+`DEFAULT_CATALOGUE_VERSIONS`, `DEFAULT_CATALOGUES` and `DEFAULT_CATALOGUES_BY_VERSION` gain the value
+catalogue's 0.1; `DEFAULT_THEME_VERSION` a new identifier for 0.6. Theme readers to cope:
+`apps/worker/src/testing/theme.ts:18`, `packages/conformance/src/themes.ts`,
+`tests/browser/src/testing/store.ts:130`. `content/admission/reidentify.ts`: B1-C's rename, `renamed`
+and `targetable`; `report.ts`: `rewritten.bindingCopied` and `kept.bindingIdentifier`, no dash.
+`index.test.ts` pins `takeValue`, `takeDigestInput`, `takeOutcomeSchema`, `TAKE_FAILURES`,
+`formatValue`, `formatsFor`, `DEFAULT_VALUE_FORMATS`, `VALUE_CATALOGUE_KIND`, `valueFormatsSchema`
+and any other new export.
+
+**Tests:** `take.test.ts`: `DAT-031 fails a take of one column from more than one row by name, naming
+the count, and never takes the first` (red under a first-row take); `DAT-032 fails a take that finds
+no row, a null or text of no characters by name, and never answers an empty string` (red under an
+empty string); uncited, each row of bindings.md's table, a missing column or key column
+`take_invalid` against the provenance's columns, a key matched on every key column, U+0085 empty and
+U+FEFF not, a digest input with a key named `marks`. `format.test.ts`, uncited: each base type under
+each declaration, `1.5` at scale 3 `1.500`, U+2212, an instant at fraction 3 with `UTC`, CR LF one
+space, `de-CH` choosing `byLanguage` and `fr` missing it, `formatsFor(null, ...)` the default, and no
+`Intl` or `toLocale` in `format.ts`. `schema.test.ts` and `read.test.ts`, uncited: each stored-shape
+row refused by its rule; a value catalogue at /1 or /2 refused; a theme/1 without `value` read as
+`valueCatalogue: null`; a paragraph catalogue as `value` refused `catalogue_wrong_kind`; STY-003's
+test unchanged at six. `reidentify.test.ts`, uncited: a pasted binding renamed and recorded (red
+against today's `return [inline]`); never a reference's target.
+
+## Task 2: The editor
+
+`packages/editor/src/`:
+
+| File              | Holds                                                                                                                                                                                                                                |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `schema.ts`       | `binding` (B1-B), in each of the seven content expressions; `toDOM` a `span.aw-binding[data-binding]` reading _Bound value_                                                                                                          |
+| `mapping.ts`      | `marksWithNoType` passes a binding in every home; `toRun` and `runsOf` map it, `id` through `identifierOf`                                                                                                                           |
+| `bindings.ts`     | `bindingSelected(state): BindingSelected \| null` (a node selection alone; not `BindingAt`, which domain's `data/binding.ts:29` names), as `referenceAt`; and `bindingsShown(doc, context): BindingShown[]`, B1-J's and B1-K's words |
+| `bindingView.ts`  | `bindingsKey`, `bindingsPlugin`, `setBindingContext(view, context)`, `bindingDecorations(doc, context, within?)` - flat primitives in the spec, compared with `===` - and `bindingView`, drawing the text and hidden words (B1-L)    |
+| `footnoteView.ts` | The nested view's `nodeViews.binding` and its decorations, with the `{ component, offset }` that `referenceDecorations` takes there                                                                                                  |
+| `render.ts`       | `renderContent(content, document, references?, bindings?)`; `drawBindings` turns each `span[data-binding]` into B1-L's button, carrying `data-node` and `data-binding` for the page                                                  |
+| `state.ts`        | `createEditorState` takes `bindingContext?`, installs the plugin, merges its decorations                                                                                                                                             |
+| `view.ts`         | `nodeViews.binding`; the copy writes the shown words into the clipboard's text and HTML as `copiedReferences` does                                                                                                                   |
+| `clipboard.ts`    | B1-C: the original identifier given back, the report's two counts, a footnote's paste admitting a binding                                                                                                                            |
+
+```ts
+export type BindingContext =
+  | { readonly kind: 'document'; readonly held: ReadonlyMap<string, BindingHeld> } // by binding id, one occurrence
+  | { readonly kind: 'alone'; readonly titles: ReadonlyMap<string, string | null> }; // by definition id
+export interface BindingHeld {
+  readonly binding: string; // bindingDigestInput of the binding the view answered
+  readonly shown:
+    { readonly value: string; readonly waiting: boolean } | { readonly failure: string };
+}
+```
+
+**Tests** (jsdom): `mapping.test.ts`: the read-only test becomes `opens for editing a component
+holding a binding in a paragraph, a cell or a footnote, and stores it as it came` (red before the
+schema); each of the seven homes round-trips. `bindings.test.ts`: `DAT-047 shows a binding whose
+value fails in place with its reason, apart by more than colour, and draws the rest of the component
+as before` - a held value, a failed one, a value and a failure in a footnote, a reference, an
+equation and an image; the failure's words and `aw-binding-failed` class, every other node as without
+a binding (red under a node view that throws, and one drawing the failure as colour alone);
+uncited, B1-J's precedence (an edited binding _changed since it was resolved_ though the view holds a
+value), decorations redrawn when the context changes and only then, on its own the title or _a bound
+value_, and B1-J's and B1-K's words free of em and en dashes (`apps/web/src/dashes.test.ts` does not
+read this package). `identity.test.ts` and `clipboard.test.ts`, uncited: a copy into its own
+component renamed and counted copied; a cut and paste keeping the identifier (red against today's
+`reidentify`); a paste over the original, and one into another component, keeping it, worded with no
+value; a second paste of one cut renamed; an undo of a deletion keeping it; a paste into a footnote.
+`apps/web/src/editor/renderContent.test.ts`, uncited: the read text's buttons in document order, a
+footnote's included, with their names.
+
+## Task 3: The migration and the database
+
+**`0048_bound_values.sql`** (B1-A): the value catalogue's artifact, `space_id` null, its 0.1 with the
+domain's fixed identifier and digests, `where not exists`, as 0024 seeded; the theme's 0.6 binding
+0.5's six and the value catalogue's 0.1, only where 0.5 stands under its identifier and content hash
+with nothing newer, authored by nobody (0043's guard, one version on); and `dataset_take
+(dataset_version, artifact_id, kind default 'dataset', take_digest, outcome, primary key
+(dataset_version, take_digest))` with rows 5 to 7's constraints, `select`, `insert` and `delete`
+granted, `update` and `truncate` revoked. `packages/db/src/themes.ts`: the value catalogue's
+identifier beside `DEFAULT_CATALOGUE_IDS` (still `Record<CatalogueKind, ...>`), and
+`addCatalogueVersion`'s value branch (B1-F), reading no `.styles`. `packages/db/src/takes.ts`:
+`recordTake(trx, { version, take, outcome })`, `takesOf(trx, { version, takeDigest }[])`.
+
+**Tests**: `default-theme.test.ts`: STY-024's test at 0.6, one catalogue version of each of the six
+kinds and the value catalogue's, citation unchanged; the digests recomputed. `theme-migration.test.ts`:
+`migration 0048` - an environment at 0.5 given 0.6, reading style for style as 0.5 did, with the
+default formats; a request waiting under 0.5 keeps it; a theme recorded after 0.5 kept, with the
+default formats; fresh against upgraded alike. `themes.test.ts`: a value catalogue's next version
+recorded, another kind's refused. The eight migration tests (`connection-`, `dataset-`, `document-`,
+`layout-`, `output-`, `query-definition-`, `sign-in-`, `theme-migration`) pin the applied list ending
+`'0047_datasets'`; each gains `'0048_bound_values'`. `takes.test.ts`, uncited: each loose outcome
+refused by the constraint on a direct insert, an update refused, a repeat write a no-op, a row
+deleted with its dataset version.
+
+## Task 4: The service and the contract
+
+`apps/service/src/data/bindings.ts`:
+
+- **Resolve and check** take each binding's value right after its run, outside the transaction, and
+  record only the outcomes with `recordTake` in their recording transactions, for each held and
+  waiting version (B1-H), so a failure records neither.
+- **The view** (`stateView`) answers B1-I's members: `takesOf` first; on a miss, the result object
+  read once per version, held to its checksum, parsed with `canonicalResultSchema`, taken and
+  recorded. An object not its checksum's (`getDocumentDataset` throws a plain `Error` there today), a
+  missing one, or `objects` undefined gives `{ unavailable: true }`, recording nothing. Title and
+  version only where `definitionReader` allows; the connection's name only where it and the
+  connection's `read` allow; `held.by` with the principal's display name.
+- `packages/api-contract/src/bindings.ts`: `TakeOutcomeView`, the widened `HeldView` and waiting,
+  `BindingStateView`'s `definition` and `connection`; `documentation.ts` says what is taken, when it
+  is null or unavailable, and what is redacted. `openapi.json` and the client regenerated;
+  `exampleFor` gains what an outcome needs, never a loosened test.
+
+**Tests** (the fake connector), uncited - the view's values are DAT-090's, and the page's tests cite
+what a person sees: a resolve recording its take; a check's waiting version taken; a value,
+`value_many` with its count, null for a stale resolution; a miss read and recorded, and a second
+read not reading the object (a hand-written counting decorator over `ObjectStores`: the harness uses
+the real store, `bindings-harness.ts:187`); every `dataset_take` row deleted and the same answer
+recomputed; an altered object, a deleted one and no store each `unavailable`, recording nothing, the
+route 200; Alice, who may read the document and not the definition, given no title, connection, SQL
+or source column, and the same value; Grace, who may read the definition and not the connection,
+given the title and no connection name; a binding in a component Alice may not read answered
+nothing, as D3's is. The publish and preview tests of `binding_unresolved` unchanged (B1-O).
+
+## Task 5: The page
+
+`apps/web/src/`:
+
+| File                           | Holds                                                                                                                                                                                                                                           |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `structure/bindingContexts.ts` | `bindingContexts(view, theme, language): ReadonlyMap<string, BindingContext>` by occurrence node, pure, as `referenceContexts` is: each taken value formatted by `formatValue` with `formatsFor(theme.valueCatalogue, outline.language)`        |
+| `structure/DocumentPage.tsx`   | Reads `GET .../bindings` with the texts, only when a text holds a binding, a failure showing no values and no error (B1-N); passes each occurrence's context to `DocumentText` and the editor's `Place`; holds which value's provenance is open |
+| `structure/DocumentText.tsx`   | `RenderedText` passes the binding context to `renderContent`; a click or Enter on a value's button opens its provenance and never the editor                                                                                                    |
+| `editor/ComponentEditor.tsx`   | Takes `bindingContext` and `onProvenance` on `Place`, pushed by `setBindingContext`; shows `ValuePanel` where `bindingSelected` answers; on its own page, reads each definition's title for B1-K                                                |
+| `editor/ValuePanel.tsx`        | What the value is, its definition, its mode and when it was fetched, and **Provenance**                                                                                                                                                         |
+| `data/ProvenancePanel.tsx`     | B1-M                                                                                                                                                                                                                                            |
+| `editor/pasteReport` words     | The two counts of B1-C                                                                                                                                                                                                                          |
+
+**Tests** (a fake client; the bindings route added to `DocumentPage.test.tsx`'s fakes only where a
+text holds a binding, since its fake answers an unlisted route 500 and some tests count requests):
+`DAT-027 shows in a document's text the one value the document holds, formatted by its theme, where
+the binding stands in the sentence` (_The mean was 1,234.5 m._ in the read text and the editor opened
+in place; red with _Bound value_ drawn); `DAT-047 shows a failed value in place with its reason in the
+document's text and its open editor, and every other component as before`; `DAT-041 opens a value's
+provenance in one step from the value in the document's text, by a click or by Enter` (definition and
+version, parameters, whose view, when, rows, checksum, dataset and version, who resolved it, and the
+SQL for Ada; red with the click opening the editor). Uncited: the Value panel's **Provenance**;
+_revision waiting_; Alice's panel with no SQL, no connection and _a query definition you cannot
+read_; **Show the result** at 200 rows; the component's own page with the title or _a bound value_
+and no value; a failed bindings read showing no values and no error; the paste report's words;
+Escape returning focus to the value.
+
+## Task 6: The whole system and the browser
+
+`tests/e2e/src/bindings.test.ts`, uncited: D3's document read through the view after resolve, the
+value taken; a reader without the definition given it redacted, and one with the definition and not
+the connection given no connection name; `dataset_take` one row per version and take.
+`tests/browser`, `--profile sources`, uncited: a value and a failed one placed and resolved by the API
+on `source-postgres`; the page passing axe-core's WCAG 2.2 AA rules in Reading and Authoring with
+the provenance panel open, as CNT-176's test does; **by keyboard alone**, Tab to a value, Enter, the
+panel's heading focused, Escape back, and in Authoring the binding reached by the arrow keys and the
+Value panel's **Provenance** by Tab; and a value's text in Chromium equal to `formatValue`'s in Node.
+Each watched fail against a stack of the build's own with one break built into its image, as D4's.
+
+## Task 7: Docs
+
+`docs/design/bindings.md`: B1-B to B1-H folded in where they differ (catalogue/3 beside the kinds,
+the optional theme member, the identity mechanism, `\p{White_Space}`), its "Not built" note
+narrowed. `docs/design/themes.md`: the value catalogue beside the six kinds, not a seventh, so TH-C
+and STY-024 hold. `docs/design/component-editor.md`: the binding's row - Create no, Edit removal,
+copy and move. `docs/features.md` and the README: values and provenance shown; nothing placed or
+published. This plan's row: Built. A fragment in `changes/`, `### Added`.
+
+## The close
+
+B1.2, after B1.1 merges, by [changes/README.md](../../changes/README.md): one `CHANGELOG.md` entry
+and the Minor bump; `docs/architecture.md` (the node, the two functions, 0048, `dataset_take`, the
+view's members); the baseline drafted for Ken, carrying 0.13.0's rows and adding DAT-027, DAT-031,
+DAT-032, DAT-041 and DAT-047, each checked with `pnpm trace verify` first.
+
+## Verification
+
+- **Suites**, each alone while building, targets the build's own: `packages/domain`,
+  `packages/editor`, `packages/db`, `apps/service`, `packages/api-contract`, `apps/web`, `apps/worker`
+  (after `pnpm --filter @alloy-works/worker fetch-typst` in the build's worktree),
+  `packages/conformance`, `apps/desktop`; `pnpm typecheck`, `tests/browser`'s included; then
+  `pnpm test`, and `pnpm test:e2e` and `pnpm test:browser` on a compose project of its own with
+  `--profile sources`. CI's whole-system and browser jobs run task 6; the gate reads every suite.
+- **By hand, before the pull request**, on that project: a binding placed and resolved through
+  `/docs` on `source-postgres`; the value in the read text, its provenance by keyboard, the
+  component opened in place, the binding cut and pasted in its paragraph and the value still shown
+  after **Done**, a copy showing _No value - never resolved_, and **Publish** still refused. The pull
+  request says which the tests prove and which stand in for Ken's look.
+
+## Questions for Ken
+
+All six answered on 2026-10-04 as recommended. Two defer a citation:
+
+- **DAT-024 in D7**: results differing by user cannot arise while every connection runs as the
+  service account. B1 builds the panel's **Whose view** line.
+- **STY-082 in B3**: "the same in every output" shows once the PDF and Word print a value, by B3's
+  worker test beside B1's Chromium-and-Node test.
+
+## Pre-flight review (2026-10-04)
+
+- B1-I, tasks 4, 6: a connection's name needs `read` on the definition too, as `provenanceView` has.
+- B1-F, tasks 1, 3, 7: the value catalogue beside `CATALOGUE_KINDS`, not in it; a seventh kind broke
+  every `Record<CatalogueKind, ...>`, the frozen constants and STY-024.
+- B1-F, task 5: `readTheme` answers `valueCatalogue`; `formatsFor` picks the formats.
+- B1-H, task 4: take outside the transaction, carrying outcomes alone; `runOnce` holds no rows.
+- B1-H, B1-J, task 4: an unreadable, missing or unstored object is `unavailable`, never a failed
+  route; `result_unreadable` was cited but never existed.
+- B1-D, task 2: a footnote's nested view draws bindings too.
+- B1-C: the report says "kept its identifier", promising no value.
+- Verification: the worker, the conformance kit, `tests/browser`'s typecheck; task 3: eight pins.
+- Minor: a counting store decorator; the view read only when needed, failing silently;
+  `BindingSelected`; `displayName` nullable; the export pins; a missing key column `take_invalid`;
+  the fragment `### Changed`.
+
+## Changed while building
+
+| Found | Change |
+| ----- | ------ |
