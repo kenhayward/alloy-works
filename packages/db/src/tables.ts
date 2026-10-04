@@ -486,6 +486,15 @@ export interface BindingResolutionTable {
   resolved_at: ColumnType<Date, never, never>;
 }
 
+/** A take's outcome on a dataset version, as derived data (0048; the B1 plan, B1-H). */
+export interface DatasetTakeTable {
+  dataset_version: ColumnType<string, string, never>;
+  artifact_id: ColumnType<string, string, never>;
+  kind: ColumnType<'dataset', 'dataset' | undefined, never>;
+  take_digest: ColumnType<string, string, never>;
+  outcome: ColumnType<unknown, string, never>;
+}
+
 export interface TenantTables {
   component_lock: ComponentLockTable;
   iteration: IterationTable;
@@ -536,6 +545,7 @@ export interface TenantTables {
   dataset: DatasetTable;
   dataset_name: DatasetNameTable;
   binding_resolution: BindingResolutionTable;
+  dataset_take: DatasetTakeTable;
 }
 
 /** A transaction inside withTenant: what every read and write of tenant data is given. */

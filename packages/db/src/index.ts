@@ -26,6 +26,7 @@ export {
   addThemeVersion,
   DEFAULT_CATALOGUE_IDS,
   DEFAULT_THEME_ID,
+  DEFAULT_VALUE_CATALOGUE_ID,
   defaultTheme,
   themeLatest,
   themeAt,
@@ -391,6 +392,7 @@ export {
   type StoredResolution,
   type Uses,
 } from './datasets.js';
+export { recordTake, takeDigest, takesOf, type StoredTake } from './takes.js';
 export { numberingInputs, type NumberingInputs, type OccurrenceResolution } from './numbering.js';
 export {
   createComponent,

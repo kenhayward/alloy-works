@@ -1,6 +1,7 @@
 import {
   readCatalogue,
   readTheme,
+  VALUE_CATALOGUE_KIND,
   type Catalogue,
   type Catalogue1,
   type Catalogue2,
@@ -43,6 +44,13 @@ export const DEFAULT_CATALOGUE_IDS: Readonly<Record<CatalogueKind, string>> = {
   admonition: 'd4e8b3fe-5d6e-4866-8cd9-b2d7aac3c853',
   citation: '1ec1fdfa-590b-4487-84a0-7960d9982be3',
 };
+
+/**
+ * The artifact the default theme's value catalogue is a version of (the B1 plan, B1-F), in no space,
+ * seeded by 0048 beside the six above rather than among them: its first version's identifier is the
+ * domain's `DEFAULT_CATALOGUE_VERSIONS.value`, which the theme's 0.6 names.
+ */
+export const DEFAULT_VALUE_CATALOGUE_ID = 'a377e4be-f3b1-4874-9bcd-b915827c3912';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -120,8 +128,16 @@ async function readStoredTheme(
   return readTheme(content, await cataloguesNamedBy(trx, content));
 }
 
+/**
+ * A catalogue's styles, by identifier: none in a value catalogue (B1-F), which declares formats and no
+ * style, so STY-005's rule has nothing to hold it to.
+ */
+function stylesOf(catalogue: Catalogue): readonly { readonly id: string }[] {
+  return catalogue.kind === VALUE_CATALOGUE_KIND ? [] : catalogue.styles;
+}
+
 /** `an` before the two kinds that begin with a vowel, as the reader's own messages say it. */
-function article(kind: CatalogueKind): string {
+function article(kind: CatalogueKind | typeof VALUE_CATALOGUE_KIND): string {
   return kind === 'admonition' || kind === 'image' ? 'an' : 'a';
 }
 
@@ -215,8 +231,6 @@ export async function addCatalogueVersion(
 ): Promise<ThemeStoreAnswer> {
   const read = readCatalogue(input.catalogue);
   if (!read.ok) return { answer: 'refused', refusals: read.refusals };
-  // The value catalogue (B1-F) is recorded by B1's task 3, which gives it its own branch.
-  if (read.catalogue.kind === 'value') throw new Error('A value catalogue is not recorded yet');
   if (!UUID.test(input.artifactId)) return { answer: 'artifact.missing' };
 
   await lockArtifact(trx, input.artifactId);
@@ -236,7 +250,7 @@ export async function addCatalogueVersion(
   // Every identifier some version held and a later one did not: each one dropped, never to return.
   const seen = new Set<string>();
   const dropped = new Set<string>();
-  let kind: CatalogueKind | undefined;
+  let kind: CatalogueKind | typeof VALUE_CATALOGUE_KIND | undefined;
   let latest: { readonly versionId: string; readonly catalogue: Catalogue } | undefined;
   for (const version of history) {
     const earlier = readCatalogue(version.content);
@@ -245,12 +259,9 @@ export async function addCatalogueVersion(
     if (!earlier.ok) {
       throw new Error(`The catalogue ${input.artifactId} at ${version.id} does not read`);
     }
-    if (earlier.catalogue.kind === 'value') {
-      throw new Error('A value catalogue is not recorded yet');
-    }
     kind = earlier.catalogue.kind;
     latest = { versionId: version.id, catalogue: earlier.catalogue };
-    const held = new Set(earlier.catalogue.styles.map((style) => style.id));
+    const held = new Set(stylesOf(earlier.catalogue).map((style) => style.id));
     for (const id of seen) if (!held.has(id)) dropped.add(id);
     for (const id of held) seen.add(id);
   }
@@ -262,7 +273,7 @@ export async function addCatalogueVersion(
       message: `The catalogue ${input.artifactId} is ${article(kind!)} ${kind} catalogue, and a version of it cannot be ${article(read.catalogue.kind)} ${read.catalogue.kind} catalogue`,
     });
   }
-  for (const style of read.catalogue.styles) {
+  for (const style of stylesOf(read.catalogue)) {
     if (dropped.has(style.id)) {
       refusals.push({
         code: 'style_reused',

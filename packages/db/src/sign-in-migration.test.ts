@@ -57,6 +57,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0045_connection_credential_target',
       '0046_query_definitions',
       '0047_datasets',
+      '0048_bound_values',
     ]);
 
     const read = async () =>

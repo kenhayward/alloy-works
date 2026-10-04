@@ -144,9 +144,16 @@ describe('migration 0044, over an environment made before it', () => {
       '0045_connection_credential_target',
       '0046_query_definitions',
       '0047_datasets',
+      '0048_bound_values',
     ]);
     // Every row still there: each rewritten constraint was checked against them as it was added.
-    expect(await countRows(upgraded.schema)).toEqual(counts);
+    // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
+    // default theme's 0.6 (B1).
+    expect(await countRows(upgraded.schema)).toEqual({
+      ...counts,
+      artifact: counts.artifact! + 1,
+      artifact_version: counts.artifact_version! + 2,
+    });
 
     fresh = await createTenant(db.adminUrl, db.migratorUrl, {
       organisation: { id: 'acme', name: 'Acme' },

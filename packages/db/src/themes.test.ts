@@ -20,6 +20,7 @@ import {
   addThemeVersion,
   DEFAULT_CATALOGUE_IDS,
   DEFAULT_THEME_ID,
+  DEFAULT_VALUE_CATALOGUE_ID,
   defaultTheme,
   type ThemeStoreAnswer,
 } from './themes.js';
@@ -89,6 +90,68 @@ describe("the theme's store", () => {
       .where('artifact_id', '=', artifactId)
       .execute()
       .then((rows) => rows.length);
+
+  it("records a value catalogue's next version, where no style can be reused, and refuses another kind's as one, or one as another kind", async () => {
+    const tenant = await environment();
+    await service.withTenant(tenant, async (trx) => {
+      const author = await ada(trx);
+      const value = DEFAULT_CATALOGUES.value;
+      // Saved as it stands, it is the same catalogue, and records nothing.
+      expect(
+        await addCatalogueVersion(trx, {
+          artifactId: DEFAULT_VALUE_CATALOGUE_ID,
+          openedFrom: DEFAULT_CATALOGUE_VERSIONS.value,
+          author,
+          catalogue: value,
+        }),
+      ).toMatchObject({
+        answer: 'version.unchanged',
+        current: { id: DEFAULT_CATALOGUE_VERSIONS.value },
+      });
+      // Swiss formats for German: a change, recorded as the next version.
+      const swiss = recorded(
+        await addCatalogueVersion(trx, {
+          artifactId: DEFAULT_VALUE_CATALOGUE_ID,
+          openedFrom: DEFAULT_CATALOGUE_VERSIONS.value,
+          author,
+          catalogue: {
+            ...value,
+            byLanguage: [
+              {
+                language: 'de',
+                formats: { ...value.formats, number: { ...value.formats.number, group: "'" } },
+              },
+            ],
+          },
+        }),
+      );
+      expect(swiss).toMatchObject({ version: 2, schemaVersion: 3 });
+
+      // A paragraph catalogue as a version of the value catalogue, and the value catalogue as a
+      // version of the paragraph catalogue: each is another kind, and refused by name.
+      const asValue = await addCatalogueVersion(trx, {
+        artifactId: DEFAULT_VALUE_CATALOGUE_ID,
+        openedFrom: swiss.id,
+        author,
+        catalogue: DEFAULT_CATALOGUES.paragraph,
+      });
+      expect(asValue.answer === 'refused' && asValue.refusals.map((each) => each.code)).toEqual([
+        'catalogue_wrong_kind',
+      ]);
+      const asParagraph = await addCatalogueVersion(trx, {
+        artifactId: PARAGRAPHS,
+        openedFrom: DEFAULT_CATALOGUE_VERSIONS.paragraph,
+        author,
+        catalogue: value,
+      });
+      expect(
+        asParagraph.answer === 'refused' && asParagraph.refusals.map((each) => each.message),
+      ).toEqual([
+        `The catalogue ${PARAGRAPHS} is a paragraph catalogue, and a version of it cannot be a value catalogue`,
+      ]);
+      expect(await versionsOf(trx, DEFAULT_VALUE_CATALOGUE_ID)).toBe(2);
+    });
+  });
 
   it('STY-005 refuses a catalogue version bringing back a style identifier an earlier version dropped', async () => {
     const tenant = await environment();
@@ -387,12 +450,12 @@ describe("the theme's store", () => {
       expect(version).toMatchObject({
         kind: 'theme',
         revision: 0,
-        version: 6,
+        version: 7,
         author,
         content: next,
       });
       const now = await defaultTheme(trx);
-      expect(now).toMatchObject({ versionId: version.id, number: '0.6', content: next });
+      expect(now).toMatchObject({ versionId: version.id, number: '0.7', content: next });
       expect(now.theme.name).toBe('Italic captions');
       expect(now.theme.catalogues.paragraph).toBe(captions.id);
       expect(now.theme.paragraphStyles.get('caption')!.properties.italic).toBe(true);
@@ -449,7 +512,7 @@ describe("the theme's store", () => {
       });
 
       // Neither was saved: the environment is set from the theme it was.
-      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(5);
+      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(6);
       expect((await latestVersion(trx, DEFAULT_THEME_ID))!.id).toBe(declared.versionId);
     });
   });
@@ -478,7 +541,7 @@ describe("the theme's store", () => {
           },
         ],
       });
-      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(5);
+      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(6);
     });
   });
 });
