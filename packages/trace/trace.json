@@ -15618,7 +15618,7 @@
         },
         {
           "id": "DAT-041",
-          "howItIsMet": "Activating a value - a click, or Enter on the value's button in the read text, or selecting it in an open editor - opens its provenance panel in one step: the definition and its version, the connection, the parameters, whose view, when, the rows, the checksum, the dataset version, who accepted it, and the SQL where the reader may read the definition"
+          "howItIsMet": "Activating a value in the read text - a click, or Enter on the value's button - opens its provenance panel in one step (in an open editor, selecting it opens the Value panel, whose **Provenance** opens the same panel): the definition and its version, the connection, the parameters, whose view, when, the rows, the checksum, the dataset version, who accepted it, and the SQL where the reader may read the definition"
         },
         {
           "id": "DAT-039",
@@ -18702,49 +18702,49 @@
     {
       "id": "AST-015",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3824,
+      "line": 3831,
       "kind": "title"
     },
     {
       "id": "AST-039",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3742,
+      "line": 3749,
       "kind": "title"
     },
     {
       "id": "CNT-018",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3309,
+      "line": 3316,
       "kind": "title"
     },
     {
       "id": "CNT-036",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4224,
+      "line": 4231,
       "kind": "title"
     },
     {
       "id": "CNT-038",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4343,
+      "line": 4350,
       "kind": "title"
     },
     {
       "id": "CNT-044",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5185,
+      "line": 5192,
       "kind": "title"
     },
     {
       "id": "CNT-048",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5213,
+      "line": 5220,
       "kind": "title"
     },
     {
       "id": "CNT-057",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 6399,
+      "line": 6406,
       "kind": "title"
     },
     {
@@ -18756,79 +18756,79 @@
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3121,
+      "line": 3128,
       "kind": "title"
     },
     {
       "id": "CNT-080",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5258,
+      "line": 5265,
       "kind": "title"
     },
     {
       "id": "CNT-082",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5725,
+      "line": 5732,
       "kind": "title"
     },
     {
       "id": "CNT-087",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 4080,
+      "line": 4087,
       "kind": "title"
     },
     {
       "id": "CNT-094",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 6176,
+      "line": 6183,
       "kind": "title"
     },
     {
       "id": "CNT-097",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5714,
+      "line": 5721,
       "kind": "title"
     },
     {
       "id": "CNT-098",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2238,
+      "line": 2245,
       "kind": "title"
     },
     {
       "id": "CNT-115",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5742,
+      "line": 5749,
       "kind": "title"
     },
     {
       "id": "CNT-121",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3669,
+      "line": 3676,
       "kind": "title"
     },
     {
       "id": "CNT-122",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5760,
+      "line": 5767,
       "kind": "title"
     },
     {
       "id": "CNT-147",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2248,
+      "line": 2255,
       "kind": "title"
     },
     {
       "id": "CNT-152",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 2639,
+      "line": 2646,
       "kind": "title"
     },
     {
       "id": "CNT-169",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 1413,
+      "line": 1420,
       "kind": "title"
     },
     {
@@ -18840,31 +18840,31 @@
     {
       "id": "CNT-178",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 6291,
+      "line": 6298,
       "kind": "title"
     },
     {
       "id": "SCH-057",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5602,
+      "line": 5609,
       "kind": "title"
     },
     {
       "id": "STR-071",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 3540,
+      "line": 3547,
       "kind": "title"
     },
     {
       "id": "STY-070",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5970,
+      "line": 5977,
       "kind": "title"
     },
     {
       "id": "STY-079",
       "file": "apps/web/src/editor/ComponentEditor.test.tsx",
-      "line": 5860,
+      "line": 5867,
       "kind": "title"
     },
     {
