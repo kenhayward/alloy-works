@@ -232,9 +232,10 @@ function unqualified(sql: string): string[] {
     if (/\bas\s+$/i.test(text.slice(0, match.index))) continue;
     found.push(`function ${schema ?? ''}${name}`);
   }
-  // An operator named as pg_catalog's may take a negative number: `OPERATOR(pg_catalog.=) -1`.
+  // An operator named as pg_catalog's may take a negative number: `OPERATOR(pg_catalog.=) -1`. A
+  // minus before anything else is unary minus, which the search path resolves.
   const operators = text
-    .replace(/OPERATOR\(pg_catalog\.[^)\s]+\)\s*-?/g, ' ')
+    .replace(/OPERATOR\(pg_catalog\.[^)\s]+\)(?:\s*-\d+\b)?/g, ' ')
     .replace(/::|\$\d+/g, ' ');
   for (const [operator] of operators.matchAll(/[-+*/<>=~!@#%^&|`?]+/g)) found.push(operator);
   for (const [word] of text.matchAll(
@@ -246,18 +247,43 @@ function unqualified(sql: string): string[] {
   return found;
 }
 
-/** Every literal in the connector's own source, comments aside, that begins as a query does. */
+/**
+ * Every literal in the connector's own source, its subdirectories' included and comments aside, that
+ * begins as a query does: in backticks, single quotes or double quotes.
+ */
 function queriesInSource(): { file: string; text: string }[] {
   const directory = new URL('./', import.meta.url);
-  const files = readdirSync(directory).filter(
-    (file) => file.endsWith('.ts') && !file.endsWith('.test.ts'),
-  );
-  const query = /`(\s*(?:select|with)\s[^`]*)`|'(\s*(?:select|with)\s[^'\n]*)'/gi;
+  const files = readdirSync(directory, { recursive: true, encoding: 'utf8' })
+    .map((file) => file.replaceAll('\\', '/'))
+    .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'));
+  const query =
+    /`(\s*(?:select|with)\s[^`]*)`|'(\s*(?:select|with)\s[^'\n]*)'|"(\s*(?:select|with)\s[^"\n]*)"/gi;
   return files.flatMap((file) => {
     const source = readFileSync(new URL(file, directory), 'utf8')
       .replace(/\/\*[\s\S]*?\*\//g, '')
       .replace(/^\s*\/\/.*$/gm, '');
-    return [...source.matchAll(query)].map((match) => ({ file, text: match[1] ?? match[2]! }));
+    return [...source.matchAll(query)].map((match) => ({
+      file,
+      text: match[1] ?? match[2] ?? match[3]!,
+    }));
+  });
+}
+
+/**
+ * Whether a query's text, as written, is one of `CATALOGUE_QUERIES`: each piece between its `${...}`
+ * substitutions found in a registered statement, in order, the substitutions being its fragments.
+ */
+function registered(text: string): string | undefined {
+  const pieces = text.split(/\$\{[^}]*\}/);
+  return Object.keys(CATALOGUE_QUERIES).find((name) => {
+    const sql = CATALOGUE_QUERIES[name]!;
+    let from = 0;
+    for (const piece of pieces) {
+      const at = sql.indexOf(piece, from);
+      if (at < 0) return false;
+      from = at + piece.length;
+    }
+    return true;
   });
 }
 
@@ -286,12 +312,19 @@ describe("the connector's catalogue queries, read", () => {
       'function unnest',
       'case x when',
     ]);
+    // A negative number after pg_catalog's operator is a literal; a minus on anything else is unary
+    // minus, an operator the search path resolves.
+    expect(unqualified('select 1 where a OPERATOR(pg_catalog.=) -1')).toEqual([]);
+    expect(unqualified('select 1 where a OPERATOR(pg_catalog.=) -u.typmod')).toEqual(['-']);
   });
 
   it('holds every query the connector writes itself', () => {
     const found = queriesInSource();
-    expect(found.map((each) => each.file)).toEqual(
-      Object.keys(CATALOGUE_QUERIES).map(() => 'postgres.ts'),
+    const unregistered = found.filter((each) => registered(each.text) === undefined);
+    expect(unregistered).toEqual([]);
+    // And every registered statement is one the source writes.
+    expect(found.map((each) => registered(each.text)).sort()).toEqual(
+      Object.keys(CATALOGUE_QUERIES).sort(),
     );
   });
 });
