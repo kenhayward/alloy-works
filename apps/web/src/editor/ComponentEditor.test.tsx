@@ -1182,25 +1182,32 @@ describe('the component editor', () => {
   });
 
   it('warns before an unmount while a change is unsaved, and stops once it is not (fix round 1 finding 4)', async () => {
+    // The save is held unanswered until the test lets it go (issue #386). Answered at once, the whole
+    // cycle - dirty, claimed, sent, saved - can finish inside one task on a slow runner, before React
+    // has committed any of it, and then the guard, which follows what was committed, never goes on at
+    // all: a wait for it waits for something that is never coming.
+    let answerSave: (response: Response) => void = () => undefined;
+    const save = new Promise<Response>((resolve) => (answerSave = resolve));
     const { surface } = open({
       'GET /v1/components/{id}': () => json(200, opened()),
       'POST /v1/components/{id}/lock': () => json(200, { lock }),
-      'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      'PUT /v1/components/{id}/iterations/{session}/1': () => save,
     });
     const view = await surface();
-    const addSpy = vi.spyOn(window, 'addEventListener');
-    const removeSpy = vi.spyOn(window, 'removeEventListener');
-    view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
-    await waitFor(() => expect(addSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function)));
-    const handler = addSpy.mock.calls.find(([name]) => name === 'beforeunload')![1] as (
-      event: Event,
-    ) => void;
-    const event = new Event('beforeunload', { cancelable: true });
-    handler(event);
-    expect(event.defaultPrevented).toBe(true);
+    const closing = () => {
+      const event = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    expect(closing()).toBe(false);
 
-    await waitFor(() => expect(screen.getByTitle(/^Saved at/)));
-    await waitFor(() => expect(removeSpy).toHaveBeenCalledWith('beforeunload', handler));
+    view.dispatch(view.state.tr.insertText(' Keep the box.', 19));
+    // A real close, not a captured handler: the guard must be registered with `window` now.
+    await waitFor(() => expect(closing()).toBe(true));
+
+    answerSave(json(200, { sequence: 1, lock }));
+    await screen.findByTitle(/^Saved at/);
+    await waitFor(() => expect(closing()).toBe(false));
   });
 
   it('warns before an unmount while kept text exists, even with nothing dirty or saving (fix round 2 minor)', async () => {
