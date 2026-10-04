@@ -3,6 +3,21 @@
 Every pull request adds one entry at the top, and the topmost version matches `version.json`. See
 [docs/ci-and-releases.md](docs/ci-and-releases.md) for the bump rule.
 
+## 0.132.1 - 2026-10-04 (PR #379)
+
+### Fixed
+
+- **A connection's account can no longer change what the product reads of its database.** Testing
+  a connection, describing a source and describing or running a query each read your database's own
+  catalogue, to find a column's type, the tables you may read and whether the account may write. An
+  account whose search path put a schema of its own ahead of PostgreSQL's could answer those reads
+  with objects of the same names, so a column could be shown, proposed and admitted as a type it is
+  not, or an account that may write found read-only. Every one of those reads now names
+  PostgreSQL's own catalogue, so the types the product reads and uses, and whether it finds the
+  account may write, no longer depend on the account's search path. A column's type as displayed
+  can still be written with its schema, such as `pg_catalog.oid`, where the account has a type of
+  the same name of its own.
+
 ## 0.132.0 - 2026-10-04 (PR #375)
 
 ### Added
