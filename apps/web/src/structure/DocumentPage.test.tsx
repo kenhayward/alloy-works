@@ -32,7 +32,7 @@ import {
   type EditorView,
   TEXT_CLASS,
 } from '@alloy-works/editor';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -5591,6 +5591,7 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
       definition?: unknown;
       connection?: unknown;
       redacted?: boolean;
+      facts?: Record<string, unknown>;
     } = {},
   ) => ({
     node: RESULTS,
@@ -5617,8 +5618,15 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     definition:
       over.definition === undefined ? { title: 'Readings', version: '0.2' } : over.definition,
     connection: over.connection === undefined ? { name: 'Harbour source' } : over.connection,
+    definitionChanged: false,
+    sincePublished: null,
+    mayCheck: false,
+    mayResolve: true,
+    ...over.facts,
   });
   const value = { value: '1234.5', column: { name: 'depth', type: decimal } };
+  /** A reader who may check: what the check on opening asks of the view (B4-F). */
+  const checks = { mayCheck: true };
 
   /**
    * The page over one document placing the printer at `RESULTS`, and `plain` at `OTHER` where asked,
@@ -5632,6 +5640,10 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     presentation?: unknown;
     /** Where given, the stored result is answered only once it settles. */
     datasetGate?: Promise<void>;
+    /** What a check answers, and what it changes first. */
+    check?: { results: unknown[]; then?: () => void };
+    /** What an accept changes before it answers. */
+    accepted?: () => void;
   }) {
     const fake = service(
       outline([
@@ -5676,6 +5688,14 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
             { id: 'vvvvvvvv-0000-4000-8000-000000000009', content: plain },
           ],
         });
+      }
+      if (path === `/v1/documents/${DOCUMENT}/bindings/check`) {
+        options.check?.then?.();
+        return json(200, { results: options.check?.results ?? [] });
+      }
+      if (path === `/v1/documents/${DOCUMENT}/bindings/accept`) {
+        options.accepted?.();
+        return json(200, {});
       }
       if (path === `/v1/documents/${DOCUMENT}/bindings`) {
         return options.bindings === null
@@ -6058,6 +6078,102 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     await waitFor(() => expect(seen(paragraph())).toBe('The mean was Bound value m.'));
     expect(within(text).queryByRole('button', { name: /bound value/ })).toBeNull();
     expect(screen.queryByText(/could not/)).toBeNull();
+  });
+
+  it('DAT-082 checks once on opening for a reader who may check, shows the revision beside the value held in the Data tab, and moves nothing until it is accepted', async () => {
+    const user = userEvent.setup();
+    const revised = { value: '1240.5', column: { name: 'depth', type: decimal } };
+    const waiting = {
+      version: 'abcdef09-0000-4000-8000-000000000009',
+      provenance: provenance(),
+      taken: revised,
+    };
+    const options: Parameters<typeof openWithValues>[0] = {
+      content: withValue(bound('b1')),
+      bindings: [state(bound('b1'), value, { facts: checks })],
+      check: {
+        results: [{ node: RESULTS, binding: 'b1', outcome: 'revision', version: waiting.version }],
+        then: () => {
+          options.bindings = [state(bound('b1'), value, { waiting, facts: checks })];
+        },
+      },
+      accepted: () => {
+        options.bindings = [state(bound('b1'), revised, { facts: checks })];
+      },
+    };
+    const { asked } = openWithValues(options);
+    const text = await textRegion();
+    await user.click(await screen.findByRole('tab', { name: 'Data' }));
+    const panel = screen.getByRole('tabpanel', { name: 'Data' });
+    // The revision is shown beside the value held, which the text still shows.
+    await within(panel).findByText('Waiting: 1,240.5');
+    expect(within(panel).getByText('1,234.5')).toBeInTheDocument();
+    expect(
+      within(text).getByRole('button', { name: /^1,234\.5, bound value/ }),
+    ).toBeInTheDocument();
+    expect(asked.filter((path) => path.endsWith('/bindings/check'))).toHaveLength(1);
+
+    await user.click(within(panel).getByRole('button', { name: 'Accept' }));
+    await waitFor(() =>
+      expect(
+        within(text).getByRole('button', { name: '1,240.5, bound value' }),
+      ).toBeInTheDocument(),
+    );
+    // Read again after the accept, never checked again.
+    expect(asked.filter((path) => path.endsWith('/bindings/check'))).toHaveLength(1);
+  });
+
+  it('DAT-082 never checks on opening where no binding may be checked by this reader, or every one is pinned', async () => {
+    for (const binding of [
+      state(bound('b1'), value, { facts: { mayCheck: false } }),
+      state({ ...bound('b1'), mode: 'pinned' }, value, { facts: checks }),
+    ]) {
+      const { asked } = openWithValues({ content: withValue(bound('b1')), bindings: [binding] });
+      await screen.findByRole('tab', { name: 'Data' });
+      await act(async () => {
+        await new Promise((settle) => setTimeout(settle, 50));
+      });
+      expect(asked).toContain(`/v1/documents/${DOCUMENT}/bindings`);
+      expect(asked).not.toContain(`/v1/documents/${DOCUMENT}/bindings/check`);
+      cleanup();
+    }
+  });
+
+  it("lists a value the check on opening failed for as failed in the Data tab, in the check's words", async () => {
+    const user = userEvent.setup();
+    openWithValues({
+      content: withValue(bound('b1')),
+      bindings: [state(bound('b1'), value, { facts: checks })],
+      check: {
+        results: [
+          {
+            node: RESULTS,
+            binding: 'b1',
+            outcome: 'failed',
+            failure: {
+              code: 'source_unreachable',
+              message: 'The source could not be reached.',
+              attribution: 'source',
+              definition: DEFINITION,
+              binding: 'b1',
+              node: RESULTS,
+              document: DOCUMENT,
+            },
+          },
+        ],
+      },
+    });
+    await user.click(await screen.findByRole('tab', { name: 'Data' }));
+    const panel = screen.getByRole('tabpanel', { name: 'Data' });
+    await within(panel).findByText('The source could not be reached.');
+    expect(within(panel).getByText('Failed', { selector: 'span' })).toBeInTheDocument();
+    expect(screen.getByText('A value could not be checked. See the Data tab.')).toBeInTheDocument();
+  });
+
+  it('offers the Data tab only where the document holds a binding', async () => {
+    openWithValues({ content: plain, bindings: [] });
+    await within(await textRegion()).findByText('Nothing bound here.');
+    expect(screen.queryByRole('tab', { name: 'Data' })).toBeNull();
   });
 
   it('asks for the values only where a text holds a binding', async () => {

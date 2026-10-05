@@ -11,10 +11,19 @@ export interface OutlineTab {
   readonly icon: string;
 }
 
-/** The pane's tabs. One today; the strip is a real tablist so a second is a row here, not a rework. */
+/** The pane's tabs: Contents, and Data where the document holds a binding (BI-H). */
 export const OUTLINE_TABS: readonly OutlineTab[] = [
   { key: 'contents', label: 'Contents', icon: 'Contents' },
+  { key: 'data', label: 'Data', icon: 'Value' },
 ];
+
+/** The tabs offered: Data only where the document holds a binding. */
+export const offeredTabs = (holdsBinding: boolean): readonly OutlineTab[] =>
+  holdsBinding ? OUTLINE_TABS : OUTLINE_TABS.filter((tab) => tab.key !== 'data');
+
+/** The tab shown: the one chosen where it is offered, Contents where it is not. */
+export const shownTab = (chosen: string, offered: readonly OutlineTab[]): string =>
+  offered.some((tab) => tab.key === chosen) ? chosen : OUTLINE_TABS[0]!.key;
 
 /** The ids that tie a tab to its panel, so the panel is named by the tab that shows it. */
 export const tabIds = (key: string) => ({
@@ -44,15 +53,17 @@ export function OutlineTabs({
   pane,
   chosen,
   onChoose,
+  tabs: offered = OUTLINE_TABS,
 }: {
   pane: Pane;
   chosen: string;
   onChoose: (key: string) => void;
+  tabs?: readonly OutlineTab[];
 }) {
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const from = OUTLINE_TABS.findIndex((tab) => tab.key === chosen);
-    const count = OUTLINE_TABS.length;
+    const from = offered.findIndex((tab) => tab.key === chosen);
+    const count = offered.length;
     const to =
       event.key === 'ArrowRight'
         ? (from + 1) % count
@@ -65,7 +76,7 @@ export function OutlineTabs({
               : null;
     if (to === null) return;
     event.preventDefault();
-    onChoose(OUTLINE_TABS[to]!.key);
+    onChoose(offered[to]!.key);
     tabs.current[to]?.focus();
   };
   return (
@@ -84,7 +95,7 @@ export function OutlineTabs({
         aria-label="Outline pane"
         onKeyDown={onKeyDown}
       >
-        {OUTLINE_TABS.map((tab, index) => (
+        {offered.map((tab, index) => (
           <button
             key={tab.key}
             ref={(element) => {
@@ -111,16 +122,24 @@ export function OutlineTabs({
 }
 
 /** The pane hidden to a rail: the toggle, and each tab's name on its side, the chosen one marked. */
-export function OutlineRail({ pane, chosen }: { pane: Pane; chosen: string }) {
+export function OutlineRail({
+  pane,
+  chosen,
+  tabs: offered = OUTLINE_TABS,
+}: {
+  pane: Pane;
+  chosen: string;
+  tabs?: readonly OutlineTab[];
+}) {
   return (
     <div className={styles['rail']} data-rail>
       <PaneToggle label="outline pane" pane={pane} />
-      {OUTLINE_TABS.map((tab) => (
+      {offered.map((tab) => (
         <span
           key={tab.key}
           className={styles['railLabel']}
           // Marked only where there is a choice to mark: one tab's name is just its name.
-          data-chosen={OUTLINE_TABS.length > 1 && tab.key === chosen}
+          data-chosen={offered.length > 1 && tab.key === chosen}
           aria-hidden="true"
         >
           {tab.label}

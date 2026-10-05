@@ -32,7 +32,15 @@ import { settleBinding, type SettleAct } from './settleBinding.js';
 import { DocumentText, type Editable, type Place } from './DocumentText.js';
 import { GeneratedLists, type Known } from './GeneratedLists.js';
 import { documentAccessLink, nodeLink } from './links.js';
-import { OutlineRail, OutlineTabs, tabIds, useOutlineTab } from './OutlineTabs.js';
+import { DataTab } from './DataTab.js';
+import {
+  OutlineRail,
+  OutlineTabs,
+  offeredTabs,
+  shownTab,
+  tabIds,
+  useOutlineTab,
+} from './OutlineTabs.js';
 import {
   OutlinePanel,
   type Answered,
@@ -557,6 +565,47 @@ export function DocumentPage({
       current = false;
     };
   }, [client, id, texts, holdsBindings, bindingSession, bindingsRead]);
+  // The check this page makes (B4-F; BI-I): once, after the view first answers, where some binding is
+  // checked and this reader may check it, and again on Check now; each binding it failed for kept, in
+  // the product's words, for the page's life, since a failed check records nothing (DAT-086).
+  const [checkFailures, setCheckFailures] = useState<ReadonlyMap<string, string>>(new Map());
+  const [checking, setChecking] = useState(false);
+  const checkedOnOpen = useRef(false);
+  const checkNow = useCallback(() => {
+    setChecking(true);
+    void client
+      .POST('/v1/documents/{id}/bindings/check', { params: { path: { id } }, body: {} })
+      .then(({ data }) => {
+        if (!data) return;
+        const failed = new Map<string, string>();
+        for (const each of data.results) {
+          if (each.outcome !== 'failed') continue;
+          const said = (each.failure as { message?: unknown }).message;
+          failed.set(
+            `${each.node} ${each.binding}`,
+            typeof said === 'string' ? said : 'The value could not be checked.',
+          );
+        }
+        setCheckFailures(failed);
+        if (failed.size > 0) {
+          setNotice(
+            failed.size === 1
+              ? 'A value could not be checked. See the Data tab.'
+              : `${failed.size} values could not be checked. See the Data tab.`,
+          );
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        setChecking(false);
+        setBindingsRead((count) => count + 1);
+      });
+  }, [client, id]);
+  useEffect(() => {
+    if (bindingStates === null || checkedOnOpen.current) return;
+    checkedOnOpen.current = true;
+    if (bindingStates.some((each) => each.binding.mode === 'checked' && each.mayCheck)) checkNow();
+  }, [bindingStates, checkNow]);
   /**
    * A binding the editor in place placed, changed, or asked to keep or resolve (B2-C, B2-H): resolved
    * or kept from its session, said where it was left holding nothing, and the view read again.
@@ -1140,7 +1189,9 @@ export function DocumentPage({
   // (CNT-105): derived from the decisions the page is told, so a mode they cannot have is never shown.
   const mayAuthor = document.mayEdit || [...editable.values()].some((each) => each.mayEdit);
   const authoring = mayAuthor && chosenMode === 'authoring';
-  const ids = tabIds(tab);
+  const tabs = offeredTabs(holdsBindings);
+  const shown = shownTab(tab, tabs);
+  const ids = tabIds(shown);
   return (
     // Set in the theme and layout this document publishes under, its own and its components' text alike
     // (themes.md, "The theme in the editor", ET-A).
@@ -1194,16 +1245,44 @@ export function DocumentPage({
           data-previewing={preview.pane !== null}
           style={{ '--outline-width': `${outlinePane.width}px` } as React.CSSProperties}
         >
-          {outlinePane.collapsed && <OutlineRail pane={outlinePane} chosen={tab} />}
+          {outlinePane.collapsed && <OutlineRail pane={outlinePane} chosen={shown} tabs={tabs} />}
           <OutlinePanel
             outline={document.outline}
             head={
               // Hidden to the rail, the pane keeps its tree in the page but not a second toggle.
               outlinePane.collapsed ? null : (
-                <OutlineTabs pane={outlinePane} chosen={tab} onChoose={chooseTab} />
+                <OutlineTabs pane={outlinePane} chosen={shown} onChoose={chooseTab} tabs={tabs} />
               )
             }
             tab={ids}
+            {...(shown === 'data'
+              ? {
+                  instead: (
+                    <DataTab
+                      client={client}
+                      document={document.id}
+                      states={bindingStates ?? []}
+                      checkFailures={checkFailures}
+                      headingOf={(node) =>
+                        placeInOutline(document.outline, node, names, document.scheme)
+                      }
+                      language={document.outline.language}
+                      checking={checking}
+                      onChanged={() => setBindingsRead((count) => count + 1)}
+                      onCheckNow={checkNow}
+                      onGoTo={(node, binding) => {
+                        // The value in the text, scrolled to and given the focus where it is a button.
+                        const found = textColumn.current?.querySelector<HTMLElement>(
+                          `[data-node="${node}"] [data-binding="${binding}"]`,
+                        );
+                        found?.scrollIntoView?.({ block: 'center' });
+                        found?.focus();
+                      }}
+                      onNotice={setNotice}
+                    />
+                  ),
+                }
+              : {})}
             root={
               // The document itself, as the tree's root: its title - the page's heading - and its
               // version number. The space is said in the status bar.
