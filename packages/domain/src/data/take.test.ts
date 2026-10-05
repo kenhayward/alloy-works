@@ -130,6 +130,21 @@ describe('takeValue', () => {
     ).toEqual({ failure: 'take_invalid', column: 'flag' });
   });
 
+  it('fails a take of an image column as take_invalid, naming it: placing an image is the figure binding (D8-H)', () => {
+    const photo = column('photo', { base: 'image', encoding: 'binary', description: 'decorative' });
+    const withPhoto: CanonicalResult = {
+      columns: [
+        ['site', 'text'],
+        ['photo', 'image'],
+      ],
+      rows: [['north', 'ab'.repeat(32)]],
+    };
+    expect(takeValue({ column: 'photo' }, withPhoto, [column('site'), photo])).toEqual({
+      failure: 'take_invalid',
+      column: 'photo',
+    });
+  });
+
   it("fails a column the version declares but the result's own columns do not hold, rather than read an absent cell", () => {
     const withoutFlag: CanonicalResult = {
       columns: [

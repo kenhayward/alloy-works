@@ -138,6 +138,19 @@ describe("a result's canonical form, version 1 (ADR-0035)", () => {
       ],
       [{ base: 'boolean' }, [true, false], ['true', 'false', 1, 0, null]],
       [{ base: 'text' }, ['', 'x', composed, decomposed], [1, true, null, ['x']]],
+      // An image is its SHA-256, in lowercase hexadecimal, and never its bytes.
+      [
+        { base: 'image', encoding: 'binary', description: 'decorative' },
+        ['0'.repeat(64), 'ab'.repeat(32)],
+        [
+          'AB'.repeat(32),
+          'ab'.repeat(31),
+          'ab'.repeat(33),
+          String.raw`\x89504e47`,
+          'iVBORw0KGgo=',
+          true,
+        ],
+      ],
     ];
     for (const [type, taken, refused] of cases) {
       for (const value of taken)

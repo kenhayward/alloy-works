@@ -378,20 +378,6 @@ describe('a query definition', () => {
         definition({ columns: [id, taken, { ...value, type: { base: 'float' } as never }] }),
       ),
     ).toContain('columns.2.type.base');
-    expect(
-      refusedAt(
-        definition({
-          columns: [
-            id,
-            taken,
-            {
-              ...value,
-              type: { base: 'image', encoding: 'binary', description: 'decorative' } as never,
-            },
-          ],
-        }),
-      ),
-    ).toContain('columns.2.type.base');
     expect(refusedAt(definition({ columns: [id, taken, { ...value, name: 'id' }] }))).toContain(
       'columns.2.name',
     );
@@ -406,6 +392,51 @@ describe('a query definition', () => {
         definition({ columns: [id, taken, { ...value, from: { pointer: '/a' } } as never] }),
       ),
     ).toContain('columns.2.from');
+  });
+
+  it('declares an image column by its encoding, its description a declared text column or decorative (D8-A)', () => {
+    const [id, taken] = definition().columns as [
+      QueryDefinition['columns'][number],
+      QueryDefinition['columns'][number],
+    ];
+    const caption = {
+      name: 'caption',
+      from: { column: 'caption' },
+      type: { base: 'text' },
+    } as const;
+    const photo = (type: object) => ({ name: 'photo', from: { column: 'photo' }, type }) as never;
+    const columns = (...more: never[]) => definition({ columns: [id, taken, caption, ...more] });
+    expect(
+      refusedAt(columns(photo({ base: 'image', encoding: 'binary', description: 'decorative' }))),
+    ).toEqual([]);
+    expect(
+      refusedAt(
+        columns(photo({ base: 'image', encoding: 'base64', description: { column: 'caption' } })),
+      ),
+    ).toEqual([]);
+    // A description from a column not declared, or one that is not text.
+    expect(
+      refusedAt(
+        columns(photo({ base: 'image', encoding: 'binary', description: { column: 'note' } })),
+      ),
+    ).toEqual(['columns.3.type.description']);
+    expect(
+      refusedAt(
+        columns(photo({ base: 'image', encoding: 'binary', description: { column: 'taken' } })),
+      ),
+    ).toEqual(['columns.3.type.description']);
+    expect(
+      refusedAt(
+        columns(photo({ base: 'image', encoding: 'binary', description: { column: 'photo' } })),
+      ),
+    ).toEqual(['columns.3.type.description']);
+    // Neither, or an encoding it does not know.
+    expect(refusedAt(columns(photo({ base: 'image', encoding: 'binary' })))).toContain(
+      'columns.3.type.description',
+    );
+    expect(
+      refusedAt(columns(photo({ base: 'image', encoding: 'hex', description: 'decorative' }))),
+    ).toContain('columns.3.type.encoding');
   });
 
   it('states a total order over a key, or is a multiset', () => {

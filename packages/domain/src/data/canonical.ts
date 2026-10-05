@@ -29,6 +29,8 @@ const INTEGER = /^(?:0|-?[1-9][0-9]*)$/;
 const DECIMAL = /^-?(0|[1-9][0-9]*)(?:\.([0-9]*[1-9]))?$/;
 const DATE = /^([0-9]{4})-([0-9]{2})-([0-9]{2})$/;
 const TIME = /^([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]*[1-9]))?$/;
+/** An image's SHA-256, in lowercase hexadecimal (D8-B). */
+const HASH = /^[0-9a-f]{64}$/;
 /** Anything a zone could be written as after a time: `Z`, or an offset. */
 const ZONED = /(?:Z|[+-][0-9]{2}(?::?[0-9]{2})?)$/;
 
@@ -62,8 +64,8 @@ function dateTimeProblem(text: string, fraction: number): ValueProblem | null {
  * integer base 10 with no leading zero or `-0`; a decimal the same with no exponent and no trailing
  * fractional zero, within its precision and scale; a date `YYYY-MM-DD` from year 1 to 9999; a time and
  * a local date-time with no zone, a fraction with no trailing zero, within the declared fraction; an
- * instant the same ending in `Z`; a boolean a JSON boolean; text any string. An image is never a value
- * of a D2 definition, and has no spelling here.
+ * an instant the same ending in `Z`; a boolean a JSON boolean; text any string; an image its SHA-256 in
+ * lowercase hexadecimal, never its bytes.
  */
 export function valueProblem(type: ColumnType, value: unknown): ValueProblem | null {
   switch (type.base) {
@@ -101,7 +103,7 @@ export function valueProblem(type: ColumnType, value: unknown): ValueProblem | n
       return dateTimeProblem(bare, 6) === 'type' ? 'type' : 'zone';
     }
     case 'image':
-      return 'type';
+      return typeof value === 'string' && HASH.test(value) ? null : 'type';
   }
 }
 

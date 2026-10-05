@@ -6924,7 +6924,7 @@ export interface operations {
                             name: string;
                             /** @description The source's own name for the column's type */
                             sourceType: string;
-                            /** @description The column type proposed for it, or null where the author must declare one */
+                            /** @description The column type proposed for it, or null where the author must declare one. A binary column is proposed as an image, its description the author's to declare */
                             proposed: ({
                                 /** @constant */
                                 base: "text";
@@ -6954,6 +6954,11 @@ export interface operations {
                             } | {
                                 /** @constant */
                                 base: "boolean";
+                            } | {
+                                /** @constant */
+                                base: "image";
+                                /** @constant */
+                                encoding: "binary";
                             }) | null;
                         }[];
                         /** @description Each parameter's type as the source reads it, in the order they are bound */
@@ -7356,6 +7361,14 @@ export interface operations {
                             } | {
                                 /** @constant */
                                 base: "boolean";
+                            } | {
+                                /** @constant */
+                                base: "image";
+                                /** @enum {string} */
+                                encoding: "base64" | "binary";
+                                description: {
+                                    column: string;
+                                } | "decorative";
                             };
                         }[];
                         key: string[];
@@ -10064,6 +10077,14 @@ export interface operations {
                                         } | {
                                             /** @constant */
                                             base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
                                         };
                                     }[];
                                     /** @constant */
@@ -10211,6 +10232,14 @@ export interface operations {
                                         } | {
                                             /** @constant */
                                             base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
                                         };
                                     }[];
                                     /** @constant */
@@ -10653,6 +10682,14 @@ export interface operations {
                                     } | {
                                         /** @constant */
                                         base: "boolean";
+                                    } | {
+                                        /** @constant */
+                                        base: "image";
+                                        /** @enum {string} */
+                                        encoding: "base64" | "binary";
+                                        description: {
+                                            column: string;
+                                        } | "decorative";
                                     };
                                 }[];
                                 /** @constant */
@@ -10800,6 +10837,14 @@ export interface operations {
                                     } | {
                                         /** @constant */
                                         base: "boolean";
+                                    } | {
+                                        /** @constant */
+                                        base: "image";
+                                        /** @enum {string} */
+                                        encoding: "base64" | "binary";
+                                        description: {
+                                            column: string;
+                                        } | "decorative";
                                     };
                                 }[];
                                 /** @constant */
@@ -11027,6 +11072,14 @@ export interface operations {
                                         } | {
                                             /** @constant */
                                             base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
                                         };
                                     }[];
                                     /** @constant */
@@ -11174,6 +11227,14 @@ export interface operations {
                                         } | {
                                             /** @constant */
                                             base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
                                         };
                                     }[];
                                     /** @constant */
@@ -11462,6 +11523,14 @@ export interface operations {
                                         } | {
                                             /** @constant */
                                             base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
                                         };
                                     }[];
                                     /** @constant */
@@ -11609,6 +11678,14 @@ export interface operations {
                                         } | {
                                             /** @constant */
                                             base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
                                         };
                                     }[];
                                     /** @constant */
@@ -12009,6 +12086,14 @@ export interface operations {
                                         } | {
                                             /** @constant */
                                             base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
                                         };
                                     }[];
                                     /** @constant */
@@ -12156,6 +12241,14 @@ export interface operations {
                                         } | {
                                             /** @constant */
                                             base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
                                         };
                                     }[];
                                     /** @constant */
@@ -12384,6 +12477,14 @@ export interface operations {
                                         } | {
                                             /** @constant */
                                             base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
                                         };
                                     }[];
                                     /** @constant */
@@ -12531,6 +12632,14 @@ export interface operations {
                                         } | {
                                             /** @constant */
                                             base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
                                         };
                                     }[];
                                     /** @constant */
@@ -12915,6 +13024,14 @@ export interface operations {
                                     } | {
                                         /** @constant */
                                         base: "boolean";
+                                    } | {
+                                        /** @constant */
+                                        base: "image";
+                                        /** @enum {string} */
+                                        encoding: "base64" | "binary";
+                                        description: {
+                                            column: string;
+                                        } | "decorative";
                                     };
                                 }[];
                                 /** @constant */
@@ -13062,6 +13179,14 @@ export interface operations {
                                     } | {
                                         /** @constant */
                                         base: "boolean";
+                                    } | {
+                                        /** @constant */
+                                        base: "image";
+                                        /** @enum {string} */
+                                        encoding: "base64" | "binary";
+                                        description: {
+                                            column: string;
+                                        } | "decorative";
                                     };
                                 }[];
                                 /** @constant */
@@ -13289,6 +13414,14 @@ export interface operations {
                                         } | {
                                             /** @constant */
                                             base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
                                         };
                                     }[];
                                     /** @constant */
@@ -13436,6 +13569,14 @@ export interface operations {
                                         } | {
                                             /** @constant */
                                             base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
                                         };
                                     }[];
                                     /** @constant */
@@ -13724,6 +13865,14 @@ export interface operations {
                                         } | {
                                             /** @constant */
                                             base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
                                         };
                                     }[];
                                     /** @constant */
@@ -13871,6 +14020,14 @@ export interface operations {
                                         } | {
                                             /** @constant */
                                             base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
                                         };
                                     }[];
                                     /** @constant */
@@ -14221,6 +14378,14 @@ export interface operations {
                                         } | {
                                             /** @constant */
                                             base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
                                         };
                                     }[];
                                     /** @constant */
@@ -14368,6 +14533,14 @@ export interface operations {
                                         } | {
                                             /** @constant */
                                             base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
                                         };
                                     }[];
                                     /** @constant */
@@ -14616,6 +14789,14 @@ export interface operations {
                                         } | {
                                             /** @constant */
                                             base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
                                         };
                                     }[];
                                     /** @constant */
@@ -14763,6 +14944,14 @@ export interface operations {
                                         } | {
                                             /** @constant */
                                             base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
                                         };
                                     }[];
                                     /** @constant */
@@ -15011,6 +15200,14 @@ export interface operations {
                                         } | {
                                             /** @constant */
                                             base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
                                         };
                                     }[];
                                     /** @constant */
@@ -15158,6 +15355,14 @@ export interface operations {
                                         } | {
                                             /** @constant */
                                             base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
                                         };
                                     }[];
                                     /** @constant */
@@ -15386,6 +15591,14 @@ export interface operations {
                                         } | {
                                             /** @constant */
                                             base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
                                         };
                                     }[];
                                     /** @constant */
@@ -15533,6 +15746,14 @@ export interface operations {
                                         } | {
                                             /** @constant */
                                             base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
                                         };
                                     }[];
                                     /** @constant */
@@ -15915,6 +16136,14 @@ export interface operations {
                                 } | {
                                     /** @constant */
                                     base: "boolean";
+                                } | {
+                                    /** @constant */
+                                    base: "image";
+                                    /** @enum {string} */
+                                    encoding: "base64" | "binary";
+                                    description: {
+                                        column: string;
+                                    } | "decorative";
                                 };
                             }[];
                             /** @constant */
@@ -22202,6 +22431,14 @@ export interface operations {
                                 } | {
                                     /** @constant */
                                     base: "boolean";
+                                } | {
+                                    /** @constant */
+                                    base: "image";
+                                    /** @enum {string} */
+                                    encoding: "base64" | "binary";
+                                    description: {
+                                        column: string;
+                                    } | "decorative";
                                 };
                             }[];
                             key: string[];
@@ -22611,6 +22848,14 @@ export interface operations {
                             } | {
                                 /** @constant */
                                 base: "boolean";
+                            } | {
+                                /** @constant */
+                                base: "image";
+                                /** @enum {string} */
+                                encoding: "base64" | "binary";
+                                description: {
+                                    column: string;
+                                } | "decorative";
                             };
                         }[];
                         key: string[];
@@ -22810,6 +23055,14 @@ export interface operations {
                                 } | {
                                     /** @constant */
                                     base: "boolean";
+                                } | {
+                                    /** @constant */
+                                    base: "image";
+                                    /** @enum {string} */
+                                    encoding: "base64" | "binary";
+                                    description: {
+                                        column: string;
+                                    } | "decorative";
                                 };
                             }[];
                             key: string[];
@@ -22997,6 +23250,14 @@ export interface operations {
                                     } | {
                                         /** @constant */
                                         base: "boolean";
+                                    } | {
+                                        /** @constant */
+                                        base: "image";
+                                        /** @enum {string} */
+                                        encoding: "base64" | "binary";
+                                        description: {
+                                            column: string;
+                                        } | "decorative";
                                     };
                                 }[];
                                 key: string[];
@@ -23245,6 +23506,14 @@ export interface operations {
                                     } | {
                                         /** @constant */
                                         base: "boolean";
+                                    } | {
+                                        /** @constant */
+                                        base: "image";
+                                        /** @enum {string} */
+                                        encoding: "base64" | "binary";
+                                        description: {
+                                            column: string;
+                                        } | "decorative";
                                     };
                                 }[];
                                 key: string[];
@@ -26412,6 +26681,14 @@ export interface operations {
                             } | {
                                 /** @constant */
                                 base: "boolean";
+                            } | {
+                                /** @constant */
+                                base: "image";
+                                /** @enum {string} */
+                                encoding: "base64" | "binary";
+                                description: {
+                                    column: string;
+                                } | "decorative";
                             };
                         }[];
                         key: string[];
@@ -26611,6 +26888,14 @@ export interface operations {
                                 } | {
                                     /** @constant */
                                     base: "boolean";
+                                } | {
+                                    /** @constant */
+                                    base: "image";
+                                    /** @enum {string} */
+                                    encoding: "base64" | "binary";
+                                    description: {
+                                        column: string;
+                                    } | "decorative";
                                 };
                             }[];
                             key: string[];
@@ -26798,6 +27083,14 @@ export interface operations {
                                     } | {
                                         /** @constant */
                                         base: "boolean";
+                                    } | {
+                                        /** @constant */
+                                        base: "image";
+                                        /** @enum {string} */
+                                        encoding: "base64" | "binary";
+                                        description: {
+                                            column: string;
+                                        } | "decorative";
                                     };
                                 }[];
                                 key: string[];
@@ -27046,6 +27339,14 @@ export interface operations {
                                     } | {
                                         /** @constant */
                                         base: "boolean";
+                                    } | {
+                                        /** @constant */
+                                        base: "image";
+                                        /** @enum {string} */
+                                        encoding: "base64" | "binary";
+                                        description: {
+                                            column: string;
+                                        } | "decorative";
                                     };
                                 }[];
                                 key: string[];

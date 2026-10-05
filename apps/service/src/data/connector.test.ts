@@ -170,6 +170,6 @@ describe("the service's connector client", () => {
     // It stopped reading at the cap, rather than holding all of it first.
     expect(pulled).toBeLessThan(256 * 1024);
     // And the cap by default is the connector's own for a child's answer.
-    expect(CONNECTOR_ANSWER_MAX_BYTES).toBe(32 * 1024 * 1024);
+    expect(CONNECTOR_ANSWER_MAX_BYTES).toBe(40 * 1024 * 1024);
   });
 });

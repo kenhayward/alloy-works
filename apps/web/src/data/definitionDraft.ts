@@ -3,9 +3,11 @@ import {
   generatePostgres,
   type AggregateName,
   type CanonicalValue,
+  type ColumnType,
   type Comparison,
   type Condition,
   type Parameter,
+  type ProposedType,
   type Query,
   type QueryDefinition,
   type SelectItem,
@@ -191,8 +193,12 @@ export function newDraft(limits: {
   };
 }
 
-/** A type as typed, from a declared one. */
-export function typeDraftOf(type: ValueType): TypeDraft {
+/**
+ * A type as typed, from a declared one. An image is offered by the screen from D8.3; until then one is
+ * held as no type, to be chosen again, never saved as something else.
+ */
+export function typeDraftOf(type: ColumnType | ProposedType): TypeDraft {
+  if (type.base === 'image') return { base: '', precision: '', scale: '', fraction: '' };
   return {
     base: type.base,
     precision: type.base === 'decimal' ? String(type.precision) : '',
@@ -762,7 +768,7 @@ export function proposedColumns(
   described: readonly {
     readonly name: string;
     readonly sourceType: string;
-    readonly proposed: ValueType | null;
+    readonly proposed: ProposedType | null;
   }[],
   held: readonly ColumnDraft[],
 ): ColumnDraft[] {

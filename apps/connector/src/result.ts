@@ -21,13 +21,15 @@ export interface Finished {
 /**
  * The rows a run read, held to the declaration (D2-M, DAT-106, DAT-107, DAT-068, DAT-110): in the
  * declared order - checked, never imposed - with no key null or repeated, or sorted as a multiset by
- * their canonical text; empty only where empty is valid; and no more canonical bytes than the byte
- * limit. The checksum is the SHA-256 of those bytes, in hexadecimal.
+ * their canonical text; empty only where empty is valid; and no more canonical bytes, with the bytes of
+ * the images it holds (D8-C), than the byte limit. The checksum is the SHA-256 of the canonical bytes,
+ * in hexadecimal.
  */
 export function finishResult(
   rows: readonly (readonly CanonicalValue[])[],
   definition: Pick<DraftDefinition, 'columns' | 'key' | 'order' | 'empty'>,
   limits: Limits,
+  imageBytes = 0,
 ): Finished | { readonly failure: DataFailure } {
   const result: CanonicalResult = {
     columns: definition.columns.map((column) => [column.name, column.type.base]),
@@ -46,7 +48,7 @@ export function finishResult(
     return { failure: dataFailure('empty_result') };
   }
   const bytes = canonicalResultBytes(ordered);
-  if (Buffer.byteLength(bytes, 'utf8') > limits.bytes)
+  if (Buffer.byteLength(bytes, 'utf8') + imageBytes > limits.bytes)
     return { failure: dataFailure('byte_limit') };
   return {
     result: ordered,

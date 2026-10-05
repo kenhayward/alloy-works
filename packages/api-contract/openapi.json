@@ -17099,6 +17099,23 @@
                                         "required": [
                                           "base"
                                         ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "base": {
+                                            "type": "string",
+                                            "const": "image"
+                                          },
+                                          "encoding": {
+                                            "type": "string",
+                                            "const": "binary"
+                                          }
+                                        },
+                                        "required": [
+                                          "base",
+                                          "encoding"
+                                        ]
                                       }
                                     ]
                                   },
@@ -17106,7 +17123,7 @@
                                     "type": "null"
                                   }
                                 ],
-                                "description": "The column type proposed for it, or null where the author must declare one"
+                                "description": "The column type proposed for it, or null where the author must declare one. A binary column is proposed as an image, its description the author's to declare"
                               }
                             },
                             "required": [
@@ -18266,6 +18283,49 @@
                                   },
                                   "required": [
                                     "base"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "base": {
+                                      "type": "string",
+                                      "const": "image"
+                                    },
+                                    "encoding": {
+                                      "type": "string",
+                                      "enum": [
+                                        "base64",
+                                        "binary"
+                                      ]
+                                    },
+                                    "description": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "column": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            }
+                                          },
+                                          "required": [
+                                            "column"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "string",
+                                          "const": "decorative"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "base",
+                                    "encoding",
+                                    "description"
                                   ],
                                   "additionalProperties": false
                                 }
@@ -25618,6 +25678,47 @@
                                                   "required": [
                                                     "base"
                                                   ]
+                                                },
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "base": {
+                                                      "type": "string",
+                                                      "const": "image"
+                                                    },
+                                                    "encoding": {
+                                                      "type": "string",
+                                                      "enum": [
+                                                        "base64",
+                                                        "binary"
+                                                      ]
+                                                    },
+                                                    "description": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "column": {
+                                                              "type": "string",
+                                                              "minLength": 1
+                                                            }
+                                                          },
+                                                          "required": [
+                                                            "column"
+                                                          ]
+                                                        },
+                                                        {
+                                                          "type": "string",
+                                                          "const": "decorative"
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "base",
+                                                    "encoding",
+                                                    "description"
+                                                  ]
                                                 }
                                               ]
                                             }
@@ -26246,6 +26347,47 @@
                                                   },
                                                   "required": [
                                                     "base"
+                                                  ]
+                                                },
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "base": {
+                                                      "type": "string",
+                                                      "const": "image"
+                                                    },
+                                                    "encoding": {
+                                                      "type": "string",
+                                                      "enum": [
+                                                        "base64",
+                                                        "binary"
+                                                      ]
+                                                    },
+                                                    "description": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "column": {
+                                                              "type": "string",
+                                                              "minLength": 1
+                                                            }
+                                                          },
+                                                          "required": [
+                                                            "column"
+                                                          ]
+                                                        },
+                                                        {
+                                                          "type": "string",
+                                                          "const": "decorative"
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "base",
+                                                    "encoding",
+                                                    "description"
                                                   ]
                                                 }
                                               ]
@@ -27387,6 +27529,47 @@
                                             "required": [
                                               "base"
                                             ]
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "base": {
+                                                "type": "string",
+                                                "const": "image"
+                                              },
+                                              "encoding": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "base64",
+                                                  "binary"
+                                                ]
+                                              },
+                                              "description": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "column": {
+                                                        "type": "string",
+                                                        "minLength": 1
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "column"
+                                                    ]
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "const": "decorative"
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "base",
+                                              "encoding",
+                                              "description"
+                                            ]
                                           }
                                         ]
                                       }
@@ -28015,6 +28198,47 @@
                                             },
                                             "required": [
                                               "base"
+                                            ]
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "base": {
+                                                "type": "string",
+                                                "const": "image"
+                                              },
+                                              "encoding": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "base64",
+                                                  "binary"
+                                                ]
+                                              },
+                                              "description": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "column": {
+                                                        "type": "string",
+                                                        "minLength": 1
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "column"
+                                                    ]
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "const": "decorative"
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "base",
+                                              "encoding",
+                                              "description"
                                             ]
                                           }
                                         ]
@@ -29127,6 +29351,47 @@
                                                 "required": [
                                                   "base"
                                                 ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "image"
+                                                  },
+                                                  "encoding": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "base64",
+                                                      "binary"
+                                                    ]
+                                                  },
+                                                  "description": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "column": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "column"
+                                                        ]
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "const": "decorative"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "encoding",
+                                                  "description"
+                                                ]
                                               }
                                             ]
                                           }
@@ -29755,6 +30020,47 @@
                                                 },
                                                 "required": [
                                                   "base"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "image"
+                                                  },
+                                                  "encoding": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "base64",
+                                                      "binary"
+                                                    ]
+                                                  },
+                                                  "description": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "column": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "column"
+                                                        ]
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "const": "decorative"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "encoding",
+                                                  "description"
                                                 ]
                                               }
                                             ]
@@ -30859,6 +31165,47 @@
                                                 "required": [
                                                   "base"
                                                 ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "image"
+                                                  },
+                                                  "encoding": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "base64",
+                                                      "binary"
+                                                    ]
+                                                  },
+                                                  "description": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "column": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "column"
+                                                        ]
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "const": "decorative"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "encoding",
+                                                  "description"
+                                                ]
                                               }
                                             ]
                                           }
@@ -31487,6 +31834,47 @@
                                                 },
                                                 "required": [
                                                   "base"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "image"
+                                                  },
+                                                  "encoding": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "base64",
+                                                      "binary"
+                                                    ]
+                                                  },
+                                                  "description": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "column": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "column"
+                                                        ]
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "const": "decorative"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "encoding",
+                                                  "description"
                                                 ]
                                               }
                                             ]
@@ -32894,6 +33282,47 @@
                                                 "required": [
                                                   "base"
                                                 ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "image"
+                                                  },
+                                                  "encoding": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "base64",
+                                                      "binary"
+                                                    ]
+                                                  },
+                                                  "description": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "column": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "column"
+                                                        ]
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "const": "decorative"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "encoding",
+                                                  "description"
+                                                ]
                                               }
                                             ]
                                           }
@@ -33522,6 +33951,47 @@
                                                 },
                                                 "required": [
                                                   "base"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "image"
+                                                  },
+                                                  "encoding": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "base64",
+                                                      "binary"
+                                                    ]
+                                                  },
+                                                  "description": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "column": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "column"
+                                                        ]
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "const": "decorative"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "encoding",
+                                                  "description"
                                                 ]
                                               }
                                             ]
@@ -34503,6 +34973,47 @@
                                                 "required": [
                                                   "base"
                                                 ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "image"
+                                                  },
+                                                  "encoding": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "base64",
+                                                      "binary"
+                                                    ]
+                                                  },
+                                                  "description": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "column": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "column"
+                                                        ]
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "const": "decorative"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "encoding",
+                                                  "description"
+                                                ]
                                               }
                                             ]
                                           }
@@ -35131,6 +35642,47 @@
                                                 },
                                                 "required": [
                                                   "base"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "image"
+                                                  },
+                                                  "encoding": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "base64",
+                                                      "binary"
+                                                    ]
+                                                  },
+                                                  "description": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "column": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "column"
+                                                        ]
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "const": "decorative"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "encoding",
+                                                  "description"
                                                 ]
                                               }
                                             ]
@@ -36148,6 +36700,47 @@
                                             "required": [
                                               "base"
                                             ]
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "base": {
+                                                "type": "string",
+                                                "const": "image"
+                                              },
+                                              "encoding": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "base64",
+                                                  "binary"
+                                                ]
+                                              },
+                                              "description": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "column": {
+                                                        "type": "string",
+                                                        "minLength": 1
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "column"
+                                                    ]
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "const": "decorative"
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "base",
+                                              "encoding",
+                                              "description"
+                                            ]
                                           }
                                         ]
                                       }
@@ -36776,6 +37369,47 @@
                                             },
                                             "required": [
                                               "base"
+                                            ]
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "base": {
+                                                "type": "string",
+                                                "const": "image"
+                                              },
+                                              "encoding": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "base64",
+                                                  "binary"
+                                                ]
+                                              },
+                                              "description": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "column": {
+                                                        "type": "string",
+                                                        "minLength": 1
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "column"
+                                                    ]
+                                                  },
+                                                  {
+                                                    "type": "string",
+                                                    "const": "decorative"
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "base",
+                                              "encoding",
+                                              "description"
                                             ]
                                           }
                                         ]
@@ -37888,6 +38522,47 @@
                                                 "required": [
                                                   "base"
                                                 ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "image"
+                                                  },
+                                                  "encoding": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "base64",
+                                                      "binary"
+                                                    ]
+                                                  },
+                                                  "description": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "column": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "column"
+                                                        ]
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "const": "decorative"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "encoding",
+                                                  "description"
+                                                ]
                                               }
                                             ]
                                           }
@@ -38516,6 +39191,47 @@
                                                 },
                                                 "required": [
                                                   "base"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "image"
+                                                  },
+                                                  "encoding": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "base64",
+                                                      "binary"
+                                                    ]
+                                                  },
+                                                  "description": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "column": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "column"
+                                                        ]
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "const": "decorative"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "encoding",
+                                                  "description"
                                                 ]
                                               }
                                             ]
@@ -39620,6 +40336,47 @@
                                                 "required": [
                                                   "base"
                                                 ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "image"
+                                                  },
+                                                  "encoding": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "base64",
+                                                      "binary"
+                                                    ]
+                                                  },
+                                                  "description": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "column": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "column"
+                                                        ]
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "const": "decorative"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "encoding",
+                                                  "description"
+                                                ]
                                               }
                                             ]
                                           }
@@ -40248,6 +41005,47 @@
                                                 },
                                                 "required": [
                                                   "base"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "image"
+                                                  },
+                                                  "encoding": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "base64",
+                                                      "binary"
+                                                    ]
+                                                  },
+                                                  "description": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "column": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "column"
+                                                        ]
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "const": "decorative"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "encoding",
+                                                  "description"
                                                 ]
                                               }
                                             ]
@@ -41548,6 +42346,47 @@
                                                 "required": [
                                                   "base"
                                                 ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "image"
+                                                  },
+                                                  "encoding": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "base64",
+                                                      "binary"
+                                                    ]
+                                                  },
+                                                  "description": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "column": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "column"
+                                                        ]
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "const": "decorative"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "encoding",
+                                                  "description"
+                                                ]
                                               }
                                             ]
                                           }
@@ -42176,6 +43015,47 @@
                                                 },
                                                 "required": [
                                                   "base"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "image"
+                                                  },
+                                                  "encoding": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "base64",
+                                                      "binary"
+                                                    ]
+                                                  },
+                                                  "description": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "column": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "column"
+                                                        ]
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "const": "decorative"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "encoding",
+                                                  "description"
                                                 ]
                                               }
                                             ]
@@ -43198,6 +44078,47 @@
                                                 "required": [
                                                   "base"
                                                 ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "image"
+                                                  },
+                                                  "encoding": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "base64",
+                                                      "binary"
+                                                    ]
+                                                  },
+                                                  "description": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "column": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "column"
+                                                        ]
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "const": "decorative"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "encoding",
+                                                  "description"
+                                                ]
                                               }
                                             ]
                                           }
@@ -43826,6 +44747,47 @@
                                                 },
                                                 "required": [
                                                   "base"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "image"
+                                                  },
+                                                  "encoding": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "base64",
+                                                      "binary"
+                                                    ]
+                                                  },
+                                                  "description": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "column": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "column"
+                                                        ]
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "const": "decorative"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "encoding",
+                                                  "description"
                                                 ]
                                               }
                                             ]
@@ -44848,6 +45810,47 @@
                                                 "required": [
                                                   "base"
                                                 ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "image"
+                                                  },
+                                                  "encoding": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "base64",
+                                                      "binary"
+                                                    ]
+                                                  },
+                                                  "description": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "column": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "column"
+                                                        ]
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "const": "decorative"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "encoding",
+                                                  "description"
+                                                ]
                                               }
                                             ]
                                           }
@@ -45476,6 +46479,47 @@
                                                 },
                                                 "required": [
                                                   "base"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "image"
+                                                  },
+                                                  "encoding": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "base64",
+                                                      "binary"
+                                                    ]
+                                                  },
+                                                  "description": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "column": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "column"
+                                                        ]
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "const": "decorative"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "encoding",
+                                                  "description"
                                                 ]
                                               }
                                             ]
@@ -46457,6 +47501,47 @@
                                                 "required": [
                                                   "base"
                                                 ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "image"
+                                                  },
+                                                  "encoding": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "base64",
+                                                      "binary"
+                                                    ]
+                                                  },
+                                                  "description": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "column": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "column"
+                                                        ]
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "const": "decorative"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "encoding",
+                                                  "description"
+                                                ]
                                               }
                                             ]
                                           }
@@ -47085,6 +48170,47 @@
                                                 },
                                                 "required": [
                                                   "base"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "image"
+                                                  },
+                                                  "encoding": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "base64",
+                                                      "binary"
+                                                    ]
+                                                  },
+                                                  "description": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "column": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "column"
+                                                        ]
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "const": "decorative"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "encoding",
+                                                  "description"
                                                 ]
                                               }
                                             ]
@@ -48218,6 +49344,47 @@
                                     },
                                     "required": [
                                       "base"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "base": {
+                                        "type": "string",
+                                        "const": "image"
+                                      },
+                                      "encoding": {
+                                        "type": "string",
+                                        "enum": [
+                                          "base64",
+                                          "binary"
+                                        ]
+                                      },
+                                      "description": {
+                                        "anyOf": [
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "column": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              }
+                                            },
+                                            "required": [
+                                              "column"
+                                            ]
+                                          },
+                                          {
+                                            "type": "string",
+                                            "const": "decorative"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "base",
+                                      "encoding",
+                                      "description"
                                     ]
                                   }
                                 ]
@@ -65768,6 +66935,47 @@
                                     "required": [
                                       "base"
                                     ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "base": {
+                                        "type": "string",
+                                        "const": "image"
+                                      },
+                                      "encoding": {
+                                        "type": "string",
+                                        "enum": [
+                                          "base64",
+                                          "binary"
+                                        ]
+                                      },
+                                      "description": {
+                                        "anyOf": [
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "column": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              }
+                                            },
+                                            "required": [
+                                              "column"
+                                            ]
+                                          },
+                                          {
+                                            "type": "string",
+                                            "const": "decorative"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "base",
+                                      "encoding",
+                                      "description"
+                                    ]
                                   }
                                 ]
                               }
@@ -67022,6 +68230,49 @@
                                     "base"
                                   ],
                                   "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "base": {
+                                      "type": "string",
+                                      "const": "image"
+                                    },
+                                    "encoding": {
+                                      "type": "string",
+                                      "enum": [
+                                        "base64",
+                                        "binary"
+                                      ]
+                                    },
+                                    "description": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "column": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            }
+                                          },
+                                          "required": [
+                                            "column"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "string",
+                                          "const": "decorative"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "base",
+                                    "encoding",
+                                    "description"
+                                  ],
+                                  "additionalProperties": false
                                 }
                               ]
                             }
@@ -67676,6 +68927,47 @@
                                     },
                                     "required": [
                                       "base"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "base": {
+                                        "type": "string",
+                                        "const": "image"
+                                      },
+                                      "encoding": {
+                                        "type": "string",
+                                        "enum": [
+                                          "base64",
+                                          "binary"
+                                        ]
+                                      },
+                                      "description": {
+                                        "anyOf": [
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "column": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              }
+                                            },
+                                            "required": [
+                                              "column"
+                                            ]
+                                          },
+                                          {
+                                            "type": "string",
+                                            "const": "decorative"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "base",
+                                      "encoding",
+                                      "description"
                                     ]
                                   }
                                 ]
@@ -68503,6 +69795,47 @@
                                         },
                                         "required": [
                                           "base"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "base": {
+                                            "type": "string",
+                                            "const": "image"
+                                          },
+                                          "encoding": {
+                                            "type": "string",
+                                            "enum": [
+                                              "base64",
+                                              "binary"
+                                            ]
+                                          },
+                                          "description": {
+                                            "anyOf": [
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "column": {
+                                                    "type": "string",
+                                                    "minLength": 1
+                                                  }
+                                                },
+                                                "required": [
+                                                  "column"
+                                                ]
+                                              },
+                                              {
+                                                "type": "string",
+                                                "const": "decorative"
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "base",
+                                          "encoding",
+                                          "description"
                                         ]
                                       }
                                     ]
@@ -69397,6 +70730,47 @@
                                         },
                                         "required": [
                                           "base"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "base": {
+                                            "type": "string",
+                                            "const": "image"
+                                          },
+                                          "encoding": {
+                                            "type": "string",
+                                            "enum": [
+                                              "base64",
+                                              "binary"
+                                            ]
+                                          },
+                                          "description": {
+                                            "anyOf": [
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "column": {
+                                                    "type": "string",
+                                                    "minLength": 1
+                                                  }
+                                                },
+                                                "required": [
+                                                  "column"
+                                                ]
+                                              },
+                                              {
+                                                "type": "string",
+                                                "const": "decorative"
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "base",
+                                          "encoding",
+                                          "description"
                                         ]
                                       }
                                     ]
@@ -77525,6 +78899,49 @@
                                     "base"
                                   ],
                                   "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "base": {
+                                      "type": "string",
+                                      "const": "image"
+                                    },
+                                    "encoding": {
+                                      "type": "string",
+                                      "enum": [
+                                        "base64",
+                                        "binary"
+                                      ]
+                                    },
+                                    "description": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "column": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            }
+                                          },
+                                          "required": [
+                                            "column"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "string",
+                                          "const": "decorative"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "base",
+                                    "encoding",
+                                    "description"
+                                  ],
+                                  "additionalProperties": false
                                 }
                               ]
                             }
@@ -78177,6 +79594,47 @@
                                     },
                                     "required": [
                                       "base"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "base": {
+                                        "type": "string",
+                                        "const": "image"
+                                      },
+                                      "encoding": {
+                                        "type": "string",
+                                        "enum": [
+                                          "base64",
+                                          "binary"
+                                        ]
+                                      },
+                                      "description": {
+                                        "anyOf": [
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "column": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              }
+                                            },
+                                            "required": [
+                                              "column"
+                                            ]
+                                          },
+                                          {
+                                            "type": "string",
+                                            "const": "decorative"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "base",
+                                      "encoding",
+                                      "description"
                                     ]
                                   }
                                 ]
@@ -79004,6 +80462,47 @@
                                         },
                                         "required": [
                                           "base"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "base": {
+                                            "type": "string",
+                                            "const": "image"
+                                          },
+                                          "encoding": {
+                                            "type": "string",
+                                            "enum": [
+                                              "base64",
+                                              "binary"
+                                            ]
+                                          },
+                                          "description": {
+                                            "anyOf": [
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "column": {
+                                                    "type": "string",
+                                                    "minLength": 1
+                                                  }
+                                                },
+                                                "required": [
+                                                  "column"
+                                                ]
+                                              },
+                                              {
+                                                "type": "string",
+                                                "const": "decorative"
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "base",
+                                          "encoding",
+                                          "description"
                                         ]
                                       }
                                     ]
@@ -79898,6 +81397,47 @@
                                         },
                                         "required": [
                                           "base"
+                                        ]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "base": {
+                                            "type": "string",
+                                            "const": "image"
+                                          },
+                                          "encoding": {
+                                            "type": "string",
+                                            "enum": [
+                                              "base64",
+                                              "binary"
+                                            ]
+                                          },
+                                          "description": {
+                                            "anyOf": [
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "column": {
+                                                    "type": "string",
+                                                    "minLength": 1
+                                                  }
+                                                },
+                                                "required": [
+                                                  "column"
+                                                ]
+                                              },
+                                              {
+                                                "type": "string",
+                                                "const": "decorative"
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "base",
+                                          "encoding",
+                                          "description"
                                         ]
                                       }
                                     ]

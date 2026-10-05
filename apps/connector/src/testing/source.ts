@@ -14,6 +14,7 @@ import {
   type Query,
   type RunRequest,
   type TestRequest,
+  type ColumnType,
   type ValueType,
 } from '@alloy-works/domain';
 import { sealSecret } from '@alloy-works/sealing';
@@ -154,7 +155,7 @@ export async function asAccount<T>(
 }
 
 /** A declared column, read from the source's column of the same name unless said. */
-export const column = (name: string, type: ValueType, from = name): Column => ({
+export const column = (name: string, type: ColumnType, from = name): Column => ({
   name,
   from: { column: from },
   type,

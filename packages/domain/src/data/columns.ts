@@ -26,9 +26,9 @@ const instant = z.strictObject({ base: z.literal('instant'), fraction });
 const boolean = z.strictObject({ base: z.literal('boolean') });
 
 /**
- * A column's type (data.md, "The columns, a second step"; DAT-080): the eight bases and `image`. A
- * describe's proposal is never an image, and neither is a D2 definition's column or parameter, which
- * take `valueTypeSchema`; an image column arrives with D8.
+ * A column's type (data.md, "The columns, a second step"; DAT-080): the eight bases and `image`, read
+ * from base64 text or a binary column, its description a declared text column or `decorative` (D8-A).
+ * A parameter is never an image, and takes `valueTypeSchema`.
  */
 export const columnTypeSchema = z.discriminatedUnion('base', [
   text,
@@ -61,6 +61,24 @@ export const valueTypeSchema = z.discriminatedUnion('base', [
 ]);
 
 export type ValueType = z.infer<typeof valueTypeSchema>;
+
+/**
+ * What a describe proposes for a source column (D8-A): one of the eight, or an image for a binary
+ * column, its description left for the author to declare.
+ */
+export const proposedTypeSchema = z.discriminatedUnion('base', [
+  text,
+  integer,
+  decimal,
+  date,
+  time,
+  localDateTime,
+  instant,
+  boolean,
+  z.strictObject({ base: z.literal('image'), encoding: z.literal('binary') }),
+]);
+
+export type ProposedType = z.infer<typeof proposedTypeSchema>;
 
 /** A column type's base, as a canonical result names each column's type (ADR-0035). */
 export type ColumnBase = ColumnType['base'];

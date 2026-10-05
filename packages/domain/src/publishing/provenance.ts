@@ -1,5 +1,5 @@
 import type { Binding } from '../data/binding.js';
-import type { ValueType } from '../data/columns.js';
+import type { ColumnType, ValueType } from '../data/columns.js';
 import type { ParameterValues } from '../data/parameters.js';
 import type { Provenance } from '../data/provenance.js';
 import { canonicalJson } from '../stored/canonical.js';
@@ -46,7 +46,7 @@ export interface PublishedProvenance {
       readonly at: string;
       readonly durationMs: number;
       readonly rowCount: number;
-      readonly columns: readonly { readonly name: string; readonly type: ValueType }[];
+      readonly columns: readonly { readonly name: string; readonly type: ColumnType }[];
       readonly canonical: number;
       readonly checksum: string;
     };

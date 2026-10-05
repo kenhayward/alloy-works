@@ -19,8 +19,8 @@ export {
   sourceMessage,
 } from './failures.js';
 export type { Attribution, DataFailure, DataFailureCode, SourceRefusal } from './failures.js';
-export { columnTypeSchema, valueTypeSchema } from './columns.js';
-export type { ColumnBase, ColumnType, ValueType } from './columns.js';
+export { columnTypeSchema, proposedTypeSchema, valueTypeSchema } from './columns.js';
+export type { ColumnBase, ColumnType, ProposedType, ValueType } from './columns.js';
 export {
   DEFINITION_MAX_BYTES,
   DefinitionRefused,
@@ -66,6 +66,7 @@ export {
   SECRET_MAX_BYTES,
   SOURCE_TYPE_MAX_BYTES,
   RUN_REQUEST_MAX_BYTES,
+  isPaddedBase64,
   canonicalResultSchema,
   childRequestSchema,
   describeAnswerSchema,

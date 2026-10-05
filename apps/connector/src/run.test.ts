@@ -329,11 +329,9 @@ describe('a run', { timeout: LOADED_TIMEOUT_MS }, () => {
       });
     }
     // The declared types are one closed list, the same for every source: a run declaring any other
-    // type, or an image before D8, is no run, and the connector refuses it at its door.
-    for (const type of [
-      { base: 'float' },
-      { base: 'image', encoding: 'binary', description: 'decorative' },
-    ]) {
+    // type, or an image with no description declared, is no run, and the connector refuses it at its
+    // door.
+    for (const type of [{ base: 'float' }, { base: 'image', encoding: 'binary' }]) {
       const request = runRequest(
         settings(),
         PASSWORDS.reader,

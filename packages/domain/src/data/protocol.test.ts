@@ -6,8 +6,12 @@ import { describe, expect, it } from 'vitest';
 import type { ConnectionSettings } from './connection.js';
 import type { Condition, Query } from './builder.js';
 import type { DraftDefinition } from './definition.js';
+import { limitCeilings } from './limits.js';
+import { RAN_MAX_CHARACTERS } from './sql.js';
 import {
   childRequestSchema,
+  CONNECTOR_ANSWER_MAX_BYTES,
+  DESCRIBE_BUDGET_BYTES,
   describeAnswerSchema,
   describeRequestSchema,
   describeSqlAnswerSchema,
@@ -329,6 +333,15 @@ describe("the connector's protocol for a run and a SQL describe (the D2 plan)", 
           parameters: ['bigint'],
         },
       ],
+      [
+        describeSqlAnswerSchema,
+        {
+          columns: [
+            { name: 'photo', sourceType: 'bytea', proposed: { base: 'image', encoding: 'binary' } },
+          ],
+          parameters: [],
+        },
+      ],
       [describeSqlAnswerSchema, { failure: { code: 'result_mismatch', attribution: 'query' } }],
       [
         childRequestSchema,
@@ -375,6 +388,52 @@ describe("the connector's protocol for a run and a SQL describe (the D2 plan)", 
     expect(takes({ ...ok, rowCount: 2 })).toBe(false);
     expect(takes({ ...ok, checksum: 'A'.repeat(64) })).toBe(false);
     expect(takes({ ...ok, durationMs: -1 })).toBe(false);
+  });
+
+  it("carries each image of a run's answer once, by its hash, and every image cell's hash among them (D8-B)", () => {
+    const hash = 'ab'.repeat(32);
+    const other = 'cd'.repeat(32);
+    const ok = {
+      outcome: 'ok',
+      result: {
+        columns: [
+          ['id', 'integer'],
+          ['photo', 'image'],
+        ],
+        rows: [
+          ['1', hash],
+          ['2', null],
+          ['3', hash],
+        ],
+      },
+      checksum,
+      rowCount: 3,
+      ran: { sql: 'select 1' },
+      durationMs: 4,
+      images: { [hash]: 'iVBORw0KGgo=' },
+    };
+    const takes = (value: unknown) => runAnswerSchema.safeParse(value).success;
+    expect(runAnswerSchema.parse(JSON.parse(JSON.stringify(ok)))).toEqual(ok);
+    // An image cell whose hash is not carried, and an image carried that no cell holds.
+    expect(takes({ ...ok, images: {} })).toBe(false);
+    expect(takes({ ...ok, images: { ...ok.images, [other]: 'AAAA' } })).toBe(false);
+    // A hash that is not one, and bytes that are not base64.
+    expect(takes({ ...ok, images: { [hash.toUpperCase()]: 'AAAA' } })).toBe(false);
+    expect(takes({ ...ok, images: { [hash]: 'AA A' } })).toBe(false);
+    expect(takes({ ...ok, images: { [hash]: 'AAA' } })).toBe(false);
+    expect(takes({ ...ok, images: { [hash]: '' } })).toBe(false);
+    // An image cell that is not a hash.
+    expect(
+      takes({ ...ok, result: { ...ok.result, rows: [['1', 'iVBORw0KGgo=']] }, rowCount: 1 }),
+    ).toBe(false);
+  });
+
+  it("holds the most a run's answer can be, its images as base64 beside its canonical bytes at the byte ceiling, under the answer cap (D8-C)", () => {
+    const images = Math.ceil(limitCeilings.bytes / 3) * 4;
+    // What ran, each character escaped at its longest, and room for the rest of the answer.
+    expect(CONNECTOR_ANSWER_MAX_BYTES).toBeGreaterThan(images + 6 * RAN_MAX_CHARACTERS + 64 * 1024);
+    // A describe's budget stays what it was.
+    expect(DESCRIBE_BUDGET_BYTES).toBe(16 * 1024 * 1024);
   });
 
   it("refuses a run whose definition, values or limits are not a run's, a deadline past the time ceiling, and a SQL describe of what does not lex or names nothing", () => {

@@ -12,6 +12,7 @@ import {
   type ResolvedTheme,
   type ValueCatalogue,
   type ValueFormats,
+  type ValueType,
 } from '@alloy-works/domain';
 
 import { defaultTheme } from './theme.js';
@@ -228,7 +229,7 @@ export const VALUES: readonly {
 }[] = BOUND.map((each) => {
   const at = COLUMNS.findIndex((column) => column.name === each.column);
   const value = RESULT.rows[0]![at]! as string | boolean;
-  const type = COLUMNS[at]!.type;
+  const type = COLUMNS[at]!.type as ValueType;
   return {
     binding: each.id,
     place: each.place,
