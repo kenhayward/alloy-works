@@ -2,26 +2,32 @@
 
 ## The pipeline
 
-`.github/workflows/ci.yml` runs on every push to `main` and every pull request. A newer push to a
-branch cancels the older run.
+`.github/workflows/ci.yml` runs at two speeds ([ADR-0039](decisions/0039-ci-at-two-speeds-and-fewer-prs.md)).
+A newer push to a branch cancels the older run.
 
-| Job                 | Step              | Command                                                              | Blocks?                      |
-| ------------------- | ----------------- | -------------------------------------------------------------------- | ---------------------------- |
-| Checks              | Install           | `pnpm install --frozen-lockfile`                                     | **Yes**                      |
-| Checks              | Lint              | `pnpm lint`                                                          | **Yes**                      |
-| Checks              | Format            | `pnpm format`                                                        | **Yes**                      |
-| Checks              | Typecheck         | `pnpm typecheck`                                                     | **Yes**                      |
-| Checks              | Build             | `pnpm build`                                                         | **Yes**                      |
-| Checks              | Test              | `pnpm test`, but three suites                                        | Through the gate (see below) |
-| The `<suite>` suite | Test              | the connector's, the service's and the database's suites, a job each | **Yes**                      |
-| The whole system    | Chromium          | `pnpm --filter @alloy-works/browser fetch-chromium`                  | **Yes**                      |
-| The whole system    | End to end        | `pnpm test:e2e`                                                      | **Yes**                      |
-| The whole system    | Browser           | `pnpm test:browser`, but `budgets.test.ts`                           | **Yes**                      |
-| Traceability gate   | Traceability gate | `pnpm trace gate`                                                    | **Yes**                      |
+| Path | When                                                                                     | Runs                                                                                                             |
+| ---- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Docs | A PR touching only `docs/`, `changes/`, Markdown and `trace.json`                        | Format, the trace and desktop suites, `pnpm trace check`                                                         |
+| Fast | Any other PR                                                                             | Lint, format, typecheck, build, `pnpm trace check`, and `turbo run test --affected`: the changed packages' tests |
+| Full | A close (`version.json` changed), a PR changing `.github/` or `deploy/`, `main`, nightly | Everything below                                                                                                 |
 
+| Job (full run)      | Runs                                                                                   |
+| ------------------- | -------------------------------------------------------------------------------------- |
+| Lint, typecheck...  | The fast path's checks, every suite but three, and the images built and started        |
+| The `<suite>` suite | The connector's, the service's and the database's suites, a job each                   |
+| The whole system    | The stack in containers, `pnpm test:e2e` and `pnpm test:browser` but `budgets.test.ts` |
+| Traceability gate   | `pnpm trace gate` over every job's reports                                             |
+
+- **`Checks` is the one required check**: every job passed or was not asked for. On `main` a red
+  full run opens an issue, `main is red`, or comments on the open one; a close runs the full run, so
+  it cannot pass while `main` is red.
+- **A failed test is retried once** (`-- --retry=1`). One that passes on the retry does not block:
+  `pnpm trace flakes` finds it in the reports and `.github/scripts/flakes.sh` lists it in the run's
+  summary and opens an issue, `Flaky test: <file> > <name>`, or comments on the open one.
 - **Install is frozen.** A loose install can resolve a different tree than the lock file names.
-- **Test keeps `continue-on-error`** so its JSON reports still upload; the gate then refuses a failed
-  run, so a red test still fails the build.
+- **The full run's Test keeps `continue-on-error`** so its JSON reports still upload; the gate then
+  refuses a failed run, so a red test still fails the build. The fast path has no gate, and its test
+  step blocks.
 - **The end-to-end and browser steps** set every address they drive to the job's own stack. Neither
   suite has a default ([deploy/README.md](../deploy/README.md#running-the-suites-against-a-stack)).
 - **Three suites have a job each**, beside the build job: the connector's runs one file at a time,
@@ -54,10 +60,9 @@ stale report. Do not add caching back to a `test` task.
 `TURBO_LOG_ORDER: stream` prints each line as it happens, prefixed with its task. Filter the log on a
 prefix such as `@alloy-works/worker:test:` to read one package.
 
-### What is left of the switch-over
+### Branch protection
 
-1. Enable branch protection on `main` requiring **Lint, typecheck, build and test**, **The whole
-   system** and **Traceability gate**, and a pull request to merge.
+`main` requires a pull request and **Checks**.
 
 A PR that does not go green does not merge. Fix or quarantine a flaky job in its own PR with an
 issue; never rerun until green.
