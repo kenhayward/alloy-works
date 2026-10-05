@@ -755,6 +755,10 @@ describe('routes that check a permission', () => {
     }),
     listPublications: () => ({ url: `/v1/documents/${report}/publications`, status: 404 }),
     getPublication: () => ({ url: `/v1/publications/${reportPublication}`, status: 404 }),
+    getPublicationBindings: () => ({
+      url: `/v1/publications/${reportPublication}/bindings`,
+      status: 404,
+    }),
     createTemplate: () => ({
       url: `/v1/spaces/${clinical}/templates`,
       status: 404,

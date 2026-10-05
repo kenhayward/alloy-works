@@ -110,7 +110,7 @@ const provenanceView = (provenance: Provenance, readsDefinition: boolean) =>
       }) as unknown as z.infer<typeof ProvenanceView>;
 
 /** Whether the caller may read a query definition, each asked once a request. */
-function definitionReader(trx: TenantTransaction, caller: Caller) {
+export function definitionReader(trx: TenantTransaction, caller: Caller) {
   const known = new Map<string, Promise<boolean>>();
   return (definition: string) => {
     let reads = known.get(definition);

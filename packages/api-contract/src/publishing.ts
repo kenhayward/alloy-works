@@ -73,13 +73,23 @@ export const PublicationRefusal = ErrorBody.extend({
   attribution: z
     .enum(['product'])
     .optional()
-    .describe("binding_unresolved: the product's, since nothing publishes a binding yet"),
+    .describe(
+      "binding_unresolved: the product's: a value is resolved in the document, not the source",
+    ),
   document: z.string().optional().describe('binding_unresolved: the document holding the bindings'),
   bindings: z
-    .array(z.object({ node: z.string(), binding: z.string() }))
+    .array(
+      z.object({
+        node: z.string(),
+        binding: z.string(),
+        reason: z
+          .enum(['never', 'changed'])
+          .describe('`never`: never resolved in this document; `changed`: edited since it was'),
+      }),
+    )
     .optional()
     .describe(
-      "binding_unresolved: each binding the publish would meet, by the outline node whose component holds it and the binding's identifier",
+      "binding_unresolved: each binding with no result to print, by the outline node whose component holds it, the binding's identifier and why",
     ),
 });
 export type PublicationRefusal = z.infer<typeof PublicationRefusal>;
@@ -256,6 +266,19 @@ const DocxOutputView = z.object({
   view: z.null().describe('None: a browser saves a Word document rather than showing it'),
 });
 
+/** `provenance.json`: where each value a publication printed came from (DAT-042, PUB-049). */
+const ProvenanceOutputView = z.object({
+  format: z.literal('provenance'),
+  bytes: z.number().int(),
+  sha256: z.string(),
+  standard: z.null(),
+  producer: z.literal('pipeline'),
+  producerVersion: z.string().describe("The publishing pipeline's version"),
+  report: z.tuple([]),
+  download,
+  view: z.null(),
+});
+
 export const PublicationView = PublicationSummary.extend({
   engine: z
     .object({ name: z.literal('typst'), version: z.string() })
@@ -267,10 +290,60 @@ export const PublicationView = PublicationSummary.extend({
     .describe("The PDF's template; none where the publication has no PDF"),
   pipeline: z.string(),
   outputs: z
-    .array(z.discriminatedUnion('format', [PdfOutputView, DocxOutputView]))
-    .describe('One per format, the PDF first'),
+    .array(z.discriminatedUnion('format', [PdfOutputView, DocxOutputView, ProvenanceOutputView]))
+    .describe(
+      'One per format, the PDF first, and `provenance.json` last wherever the publication prints a value',
+    ),
 });
 export type PublicationView = z.infer<typeof PublicationView>;
+
+/** A versioned artifact as a provenance record names one. */
+const Versioned = z.object({ artifact: z.string(), version: z.string() });
+
+/**
+ * One value a publication printed, and the stored result it was taken from (DAT-042): the SQL that
+ * ran, the connection and each column's source only to a reader of the query definition.
+ */
+export const PublicationBindingView = z.object({
+  node: z.string().describe('The outline node whose component holds the binding'),
+  binding: z.string().describe("The binding's identifier in that component"),
+  dataset: z.object({
+    id: z.string(),
+    name: z.string().nullable(),
+    version: z.string().describe('The dataset version the value was taken from'),
+    number: z.string(),
+  }),
+  result: z.object({
+    queryDefinition: Versioned,
+    parameters: z.record(z.string(), z.unknown()),
+    at: z.string().describe('When the query ran, in UTC'),
+    durationMs: z.number().int(),
+    rowCount: z.number().int(),
+    checksum: z.string(),
+    columns: z.array(
+      z.object({
+        name: z.string(),
+        type: z.record(z.string(), z.unknown()),
+        from: z
+          .object({ column: z.string() })
+          .optional()
+          .describe("The source's column: to a reader of the query definition alone"),
+      }),
+    ),
+    ran: z
+      .object({ sql: z.string() })
+      .optional()
+      .describe('The SQL that ran: to a reader of the query definition alone'),
+    connection: Versioned.optional().describe(
+      'The connection it ran on: to a reader of the query definition alone',
+    ),
+  }),
+});
+export type PublicationBindingView = z.infer<typeof PublicationBindingView>;
+
+/** A publication's bindings, every one: bounded by the document, so never paged. */
+export const PublicationBindingList = z.object({ bindings: z.array(PublicationBindingView) });
+export type PublicationBindingList = z.infer<typeof PublicationBindingList>;
 
 const unauthenticated = {
   description: 'No session, or not one this environment issued',
@@ -296,7 +369,7 @@ export const publishingRoutes = {
       },
       400: {
         description:
-          "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a component it places holds a value bound to a query, which nothing publishes yet",
+          "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was",
         schema: PublicationRefusal,
       },
       401: unauthenticated,
@@ -333,7 +406,7 @@ export const publishingRoutes = {
       },
       400: {
         description:
-          "`format_unsupported`: the layout makes no PDF; `layout_language`: the document is not in its layout's language; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a component it places holds a value bound to a query, which nothing publishes yet",
+          "`format_unsupported`: the layout makes no PDF; `layout_language`: the document is not in its layout's language; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was",
         schema: PublicationRefusal,
       },
       401: unauthenticated,
@@ -436,6 +509,30 @@ export const publishingRoutes = {
       },
       503: {
         description: 'This environment has nowhere to keep documents yet',
+        schema: ErrorBody,
+      },
+    },
+  },
+  getPublicationBindings: {
+    operationId: 'getPublicationBindings',
+    method: 'GET',
+    path: '/v1/publications/{id}/bindings',
+    summary: 'The values a publication printed, and the results they were taken from',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    params: PublicationParams,
+    responses: {
+      200: {
+        description: "The publication's bindings, in node order",
+        schema: PublicationBindingList,
+      },
+      401: unauthenticated,
+      403: {
+        description: 'Never answered: a publication the caller may read is one they may open',
+        schema: ErrorBody,
+      },
+      404: {
+        description: 'No such publication in this environment, or none the caller may read',
         schema: ErrorBody,
       },
     },

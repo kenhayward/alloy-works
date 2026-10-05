@@ -650,18 +650,41 @@ describe('publishing from the document page', () => {
     expect(why).not.toHaveTextContent('Word');
   });
 
-  it('names a value bound to a query as one nothing publishes yet, never as one to publish again (D3)', async () => {
-    // The service refuses such a document at the door; a request built past it fails in the worker.
-    const fake = failing([
-      { stage: 'compose', code: 'binding_unresolved', node: 'n7', block: 'p1', detail: 'b1' },
-    ]);
+  it('names each value a publish could not take, and why (B3)', async () => {
+    const failed = (code: string) => ({
+      stage: 'bind' as const,
+      code: code as 'value_none',
+      node: 'n7',
+      block: 'p1',
+      detail: 'b1',
+    });
+    const fake = failing(
+      [
+        'binding_unresolved',
+        'value_none',
+        'value_many',
+        'row_missing',
+        'value_null',
+        'value_empty',
+        'take_invalid',
+        'result_unreadable',
+      ].map(failed),
+    );
     open(fake.fetch);
     await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
     const why = await screen.findByRole('list', { name: 'Why it could not be published' });
-    expect(why).toHaveTextContent(
-      'This holds a value bound to a query, and nothing publishes or previews one yet. Remove the binding to publish or preview this document.',
-    );
-    expect(why).not.toHaveTextContent('Publish again');
+    for (const words of [
+      'This value has no result in this document. Resolve it, then publish again.',
+      "This value's result has no row. Change the value, or resolve it again.",
+      "This value's result has more than one row, and a value is taken from one. Change the value, or resolve it again.",
+      "This value's result has no row with the key it names. Change the value, or resolve it again.",
+      "This value's cell in its result is empty. Change the value, or resolve it again.",
+      "This value's cell in its result holds only spaces. Change the value, or resolve it again.",
+      'This value names a column its result does not have. Change the value, or resolve it again.',
+      "This value's stored result could not be read. Resolve it again, then publish again.",
+    ]) {
+      expect(why).toHaveTextContent(words);
+    }
   });
 
   it('names a cross-reference Word would not print as the PDF does, and why, pointing at the PDF', async () => {

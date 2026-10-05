@@ -2,6 +2,7 @@ import type {
   DocumentParams,
   PublicationList,
   PublicationListQuery,
+  PublicationBindingList,
   PublicationParams,
   PublicationRequestParams,
   PublicationRequestView,
@@ -14,12 +15,11 @@ import { cursorFor, pageAsked } from './listing.js';
 import {
   listPublications,
   listReadablePublications,
+  publicationBindings,
   readDocument,
   readPublication,
   readPublicationRequest,
-  readVersion,
   requestPublication,
-  resolveOccurrences,
   type PublicationRequestAnswer,
   type PublicationSummary,
   type StoredPublicationRequest,
@@ -27,11 +27,12 @@ import {
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { bindingsIn, readContent, readOutline, walkOutline } from '@alloy-works/domain';
+import { readOutline, walkOutline } from '@alloy-works/domain';
 import type { ObjectStores, TenantStore } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
 import { authoriseAt, callerOf, notFound, type Authorised } from './access.js';
 import { versionView } from './components.js';
+import { definitionReader } from './data/bindings.js';
 import { storageUnavailable } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
 import { refused } from './wire-codes.js';
@@ -211,7 +212,7 @@ async function answered(
       throw refused(
         400,
         'binding.unresolved',
-        `This document holds ${said.length === 1 ? 'a value' : 'values'} with no result to print: ${said.join(', ')}. Resolve ${said.length === 1 ? 'it' : 'them'} in the document to publish it.`,
+        `This document holds ${said.length === 1 ? 'a value' : 'values'} with no result to print: ${said.join(', ')}. Resolve ${said.length === 1 ? 'it' : 'them'} in this document first.`,
         { attribution: 'product', document: id, bindings: answer.bindings },
       );
     }
@@ -221,72 +222,6 @@ async function answered(
       return requestView(made, noStore);
     }
   }
-}
-
-/** A binding a publish would meet: the outline node whose component holds it, and its identifier. */
-interface HeldBinding {
-  readonly node: string;
-  readonly binding: string;
-}
-
-/**
- * Every binding in the components a publish of the document's latest version would read, resolved as
- * the publisher, in the outline's order: none where the version named is not the latest, which the
- * request refuses as stale before anything else (the D3 plan, "Added in phase B"). A component the
- * publisher may not read is not read here either; the request fails it as unreadable.
- */
-async function bindingsMet(
-  trx: TenantTransaction,
-  documentId: string,
-  version: string,
-  principalId: string,
-): Promise<HeldBinding[]> {
-  const document = await readDocument(trx, documentId);
-  if (!document || document.version.id !== version) return [];
-  const read = readOutline(document.version.content, { artifact: documentId, version });
-  if (!read.ok) return [];
-  const found: HeldBinding[] = [];
-  for (const occurrence of await resolveOccurrences(trx, read.outline, principalId)) {
-    if (occurrence.outcome !== 'resolved') continue;
-    const stored = await readVersion(trx, occurrence.version);
-    if (!stored) continue;
-    const content = readContent(stored.content, {
-      artifact: occurrence.component,
-      version: occurrence.version,
-    });
-    if (!content.ok) continue;
-    for (const { binding } of bindingsIn(content.document)) {
-      found.push({ node: occurrence.node, binding: binding.id });
-    }
-  }
-  return found;
-}
-
-/**
- * **A publish never prints a document with a value silently missing** (DAT-046, DAT-087, whose whole
- * answer is the publish's binding stage, `bindings.md`'s). Until that stage exists nothing publishes a
- * binding, so a publish or a preview of a document holding one is refused here, before a request or a
- * job is recorded, naming each binding by its node and the document; the worker's `assemble` refuses
- * one too, should a request ever reach it.
- */
-async function refuseBindings(
-  trx: TenantTransaction,
-  documentId: string,
-  version: string,
-  principalId: string,
-  asked: 'publish' | 'preview',
-): Promise<void> {
-  const met = await bindingsMet(trx, documentId, version, principalId);
-  if (met.length === 0) return;
-  const named = [...new Set(met.map((each) => each.binding))].join(', ');
-  throw refused(
-    400,
-    'binding.unresolved',
-    asked === 'publish'
-      ? `This document holds a value bound to a query (${named}), and a document holding one cannot be published yet. Remove the binding to publish it.`
-      : `This document holds a value bound to a query (${named}), and a document holding one cannot be previewed yet. Remove the binding to preview it.`,
-    { attribution: 'product', document: documentId, bindings: met },
-  );
 }
 
 export function publishingHandlers(
@@ -310,7 +245,6 @@ export function publishingHandlers(
     ): Promise<PublicationRequestView> => {
       const { id } = request.params as DocumentParams;
       const body = request.body as RequestPublicationBody;
-      await refuseBindings(trx, id, body.version, principalId, 'publish');
       const answer = await requestPublication(trx, {
         documentId: id,
         version: body.version,
@@ -331,7 +265,6 @@ export function publishingHandlers(
     ): Promise<PublicationRequestView> => {
       const { id } = request.params as DocumentParams;
       const body = request.body as RequestPreviewBody;
-      await refuseBindings(trx, id, body.version, principalId, 'preview');
       const answer = await requestPublication(trx, {
         documentId: id,
         version: body.version,
@@ -510,17 +443,76 @@ export function publishingHandlers(
                         ? ('gave_up' as const)
                         : ('pending' as const),
                 }
-              : {
-                  ...common,
-                  format: 'docx' as const,
-                  standard: null,
-                  producer: 'word' as const,
-                  report: output.report.map((entry) => ({ ...entry })),
-                  view: null,
-                };
+              : output.format === 'docx'
+                ? {
+                    ...common,
+                    format: 'docx' as const,
+                    standard: null,
+                    producer: 'word' as const,
+                    report: output.report.map((entry) => ({ ...entry })),
+                    view: null,
+                  }
+                : {
+                    ...common,
+                    // `provenance.json` (B3-G), saved as such: redacted for every reader.
+                    download: await store.signedLink(
+                      output.key,
+                      DOWNLOAD_SECONDS,
+                      `${publication.id}-provenance.json`,
+                    ),
+                    format: 'provenance' as const,
+                    standard: null,
+                    producer: 'pipeline' as const,
+                    report: [] as [],
+                    view: null,
+                  };
           }),
         ),
       };
+    },
+
+    /**
+     * The values a publication printed (B3; DAT-042): `read` was decided on the publication, as for
+     * the publication itself, and each binding's SQL, connection and column sources are given only
+     * where the caller may read its query definition, decided here in the same transaction.
+     */
+    getPublicationBindings: async (
+      request: FastifyRequest,
+      { trx }: Authorised,
+    ): Promise<PublicationBindingList> => {
+      const { id } = request.params as PublicationParams;
+      if (!(await readPublication(trx, id))) throw notFound();
+      const reads = definitionReader(trx, callerOf(request));
+      const bindings: PublicationBindingList['bindings'] = [];
+      for (const each of await publicationBindings(trx, id)) {
+        const p = each.dataset.provenance;
+        const disclosed = await reads(p.queryDefinition.artifact);
+        bindings.push({
+          node: each.node,
+          binding: each.binding,
+          dataset: {
+            id: each.dataset.id,
+            name: each.dataset.name,
+            version: each.datasetVersion,
+            number: each.dataset.number,
+          },
+          result: {
+            queryDefinition: { ...p.queryDefinition },
+            parameters: { ...p.parameters },
+            at: p.at,
+            durationMs: p.durationMs,
+            rowCount: p.rowCount,
+            checksum: p.checksum,
+            columns: p.columns.map((column) => ({
+              name: column.name,
+              type: { ...column.type },
+              ...(disclosed ? { from: { ...column.from } } : {}),
+            })),
+            ...(disclosed ? { ran: { ...p.ran }, connection: { ...p.connection } } : {}),
+          },
+        });
+      }
+      return { bindings };
     },
   };
 }
