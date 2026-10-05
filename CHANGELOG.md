@@ -3,6 +3,33 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.135.0 - 2026-10-05 (PR #403)
+
+### Added
+
+- **Values in a publication.** A document holding values publishes and previews, each value printed
+  in the PDF and Word as the page shows it, with `provenance.json` beside them saying where each came
+  from.
+- **The Data tab.** Beside Contents in a document holding values: every value with its state,
+  filtered by state, checked once on opening and by **Check now**, with **Accept**, **Resolve**,
+  **Keep** and **Go to**.
+- **A definition moved on is flagged.** A value floating on a definition that has a newer version
+  says so, and a check of it waits to be accepted even where its rows are the same.
+- **Changed since published.** Each value says how it differs from the document's latest
+  publication.
+
+### Changed
+
+- **The Word check holds bound values.** A fixture of values in a paragraph, a table and a footnote,
+  printed in formats unlike the default, is checked in Word and in both PDFs.
+
+### Fixed
+
+- **A value pinned to a definition version is offered only that version's results.** It was offered,
+  and could accept, a result of another version of the definition (#396).
+- **A bindings test no longer fails on a slow run** when the sign-in session is refreshed
+  mid-request.
+
 ## 0.134.0 - 2026-10-05 (PR #394)
 
 ### Added
