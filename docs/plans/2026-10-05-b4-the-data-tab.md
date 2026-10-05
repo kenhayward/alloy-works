@@ -107,6 +107,8 @@ check` and `pins` after `generate`, which runs after prettier.
 
 ## Questions for Ken
 
+Answered by Ken on 2026-10-05, with the decisions: every one as recommended. B4-B's bug is issue #396, closed by B4.1.
+
 1. DAT-091's warning: defer it to D7 with the person's identity it needs (B4-E)? **Recommended: yes.**
 2. B4-B changes what Accept takes today; fix it in B4.1 rather than its own issue and PR first?
    **Recommended: in B4.1**, since B4-A rewrites the same lines; the issue is opened for the record.
