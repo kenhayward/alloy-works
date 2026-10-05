@@ -35,6 +35,7 @@ import {
   type NamedReport,
   type TestOutcome,
   checkCoherence,
+  flakesIn,
   parseResults,
   reduceRun,
   reportsForEvidence,
@@ -92,6 +93,8 @@ const USAGE = `pnpm trace <command>
                      draft a row from the command line - no gh required. Prints only; never
                      writes - paste the row yourself and put \`Fixes #<issue>\` in the pull
                      request body
+  flakes [dir]       the tests in the JSON reports in dir (default .trace-results) that passed only
+                     on a retry, one per line as file > name, for CI to report (ADR-0039)
   verify [dir]       states, with Verified computed from the JSON reports in dir
                      (default .trace-results)
   baseline [name]    a committed baseline: name, date, included count, exclusions and
@@ -682,6 +685,15 @@ function main(argv: string[]): number {
 
         const baseline = parseBaseline(file, readFileSync(path, 'utf8'));
         console.log(formatBaseline(baseline));
+        return 0;
+      }
+      case 'flakes': {
+        const dir = join(REPO_ROOT, argument ?? DEFAULT_RESULTS_DIR);
+        if (!existsSync(dir)) return 0;
+        const reports = readdirSync(dir)
+          .filter((name) => name.endsWith('.json'))
+          .map((name) => JSON.parse(readFileSync(join(dir, name), 'utf8')) as unknown);
+        for (const each of flakesIn(reports)) console.log(`${each.file} > ${each.test}`);
         return 0;
       }
       case 'verify': {

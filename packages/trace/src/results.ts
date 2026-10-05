@@ -268,3 +268,40 @@ export function readRecordedRun(text: string):
     },
   };
 }
+
+const Retried = z.object({
+  testResults: z.array(
+    z.object({
+      name: z.string(),
+      assertionResults: z.array(
+        z.object({
+          fullName: z.string(),
+          status: z.string(),
+          failureMessages: z.array(z.string()).optional(),
+        }),
+      ),
+    }),
+  ),
+});
+
+/** A test that passed only on a retry: its file, from the workspace's top, and its full name. */
+export interface Flake {
+  readonly file: string;
+  readonly test: string;
+}
+
+/**
+ * The tests that passed after failing first, which CI's one retry lets through (ADR-0039): Vitest
+ * keeps the first attempt's failure in a passed test's `failureMessages`.
+ */
+export function flakesIn(reports: readonly unknown[]): Flake[] {
+  return reports.flatMap((each) =>
+    Retried.parse(each).testResults.flatMap((file) => {
+      const path = file.name.split(String.fromCharCode(92)).join('/');
+      const relative = /(?:^|\/)((?:apps|packages|tests)\/.*)$/.exec(path)?.[1] ?? path;
+      return file.assertionResults
+        .filter((test) => test.status === 'passed' && (test.failureMessages?.length ?? 0) > 0)
+        .map((test) => ({ file: relative, test: test.fullName }));
+    }),
+  );
+}

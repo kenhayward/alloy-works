@@ -580,7 +580,8 @@ T2, the data spine ([ADR-0033](../decisions/0033-t2-is-the-data-spine.md)): conn
 own sources, query definitions, stored results and the connector, designed in
 [data.md](../design/data.md) under
 [ADR-0035](../decisions/0035-bindings-hold-stored-results-and-a-publish-never-queries-a-source.md) and
-built in the eight slices its build order names, each planned when its turn comes.
+built in the eight slices its build order names, each planned when its turn comes. D5, SQL Server,
+is deferred past the first release ([ADR-0038](../decisions/0038-sql-server-is-deferred-past-the-first-release.md)).
 
 | #   | Plan                                                                            | Builds                                                                                                                                                                                                                                                                                                  | Status  |
 | --- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
