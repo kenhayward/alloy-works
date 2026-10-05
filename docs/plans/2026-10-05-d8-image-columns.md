@@ -90,6 +90,8 @@ refused`), `failure`, `created_at`; a finished one is deleted in the transaction
 
 ## Questions for Ken
 
+Answered by Ken on 2026-10-05: every one as recommended.
+
 1. D8-D/E: a result with new images finishes asynchronously, the page checking back, as the design
    says? **Recommended: yes.**
 2. D8-C: images count against the result's byte limit, so a few photographs need the limit raised
