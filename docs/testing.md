@@ -419,10 +419,10 @@ includes veraPDF's first start, and the last sample's is warm. Both must pass PD
 checks are passed over unchecked, since a check of 311 pages takes several seconds and each would tell
 no more than the last. W14.2 measured 23.6 seconds for the first and 6.2 warm.
 
-It is part of the ordinary worker suite, since it takes about fifty seconds, and needs nothing the
-suite does not. **It binds where `CI` is not `true`, and records only on CI's runner**, as STR-063's
-navigation budget does (`apps/service/src/test/budget.ts`): a shared runner's speed is not the declared
-reference configuration, and a green CI run does not show the budget met. Either way the
+It is part of the ordinary worker suite, since it needs nothing the suite does not. **It runs and binds
+only where `CI` is not `true`**: a shared runner's speed is not the declared reference configuration,
+so `apps/worker/vitest.config.ts` leaves it out on CI, as the browser suite does its navigation
+budgets. Either way the
 configuration it ran on - CPU, operating system, memory, Node, Typst and PostgreSQL - the document's
 pages and parts, the p50, p95, maximum and each sample's request and job times, and the two reports'
 times after recording are written into the test's `meta`, which the JSON reporter carries into
