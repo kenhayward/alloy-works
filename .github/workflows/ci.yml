@@ -91,9 +91,9 @@ jobs:
       - name: Build
         run: pnpm build
 
-      # Every suite but the connector's, which runs one file at a time and has a job of its own.
+      # Every suite but the connector's, the service's and the database's, which have jobs of their own.
       - name: Test
-        run: pnpm exec turbo run test --continue --filter='!@alloy-works/connector'
+        run: pnpm exec turbo run test --continue --filter='!@alloy-works/connector' --filter='!@alloy-works/service' --filter='!@alloy-works/db'
         continue-on-error: true
 
       # What every suite above wrote, for the traceability gate's own job, which reads it beside the
@@ -147,13 +147,30 @@ jobs:
           # And the per-request child it spawns is beside its entry point.
           docker run --rm --entrypoint test alloy-works-connector -f dist/child.js
 
-  # The connector's suite (the D1 plan, D1-K), beside the job above: it runs one file at a time, and
-  # was the longest suite there.
-  connector:
-    name: The connector
+  # The three longest suites, each beside the job above on a runner of its own: the connector's runs
+  # one file at a time, and the service's and the database's took a CPU each from one another there.
+  suites:
+    name: The ${{ matrix.suite }} suite
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [connector, service, db]
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 30
     env:
       TURBO_LOG_ORDER: stream
+      ALLOY_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres
       ALLOY_TEST_SOURCE_PORT: '5434'
     steps:
       - uses: actions/checkout@v5
@@ -168,19 +185,31 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      # Its own source: the pinned PostgreSQL and the seed the compose file's `source-postgres` uses,
-      # on 127.0.0.1:5434.
+      - name: Object store
+        if: ${{ matrix.suite == 'service' }}
+        run: |
+          docker run -d --name seaweedfs -p 8333:8333             -e AWS_ACCESS_KEY_ID=alloy-store-admin             -e AWS_SECRET_ACCESS_KEY=alloy-store-admin-dev-secret             chrislusf/seaweedfs:4.46 server -dir=/data -s3 -s3.port=8333 -s3.iam.readOnly=false
+          for attempt in $(seq 1 60); do
+            curl -fs http://127.0.0.1:8333/healthz > /dev/null && exit 0
+            sleep 1
+          done
+          docker logs seaweedfs
+          exit 1
+
+      # The connector's own source: the pinned PostgreSQL and the seed the compose file's
+      # `source-postgres` uses, on 127.0.0.1:5434.
       - name: Connector source
+        if: ${{ matrix.suite == 'connector' }}
         run: pnpm --filter @alloy-works/connector source
 
       - name: Test
-        run: pnpm exec turbo run test --filter=@alloy-works/connector
+        run: pnpm exec turbo run test --filter=@alloy-works/${{ matrix.suite }}
 
       - name: Test reports
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: trace-results-connector
+          name: trace-results-${{ matrix.suite }}
           path: .trace-results
           include-hidden-files: true
           if-no-files-found: error
@@ -307,7 +336,7 @@ jobs:
           if-no-files-found: error
 
   # The traceability gate, in a job of its own so it reads every suite's report: the build job's, the
-  # connector's and the whole-system job's, the browser suite's among them (the W13 plan's B-G). It runs unless the run
+  # three suites' and the whole-system job's, the browser suite's among them (the W13 plan's B-G). It runs unless the run
   # was cancelled, so a failed suite is read and refused rather than skipped.
   #
   # NOT continue-on-error. The baseline declares what this release is answerable for, so the gate
@@ -316,7 +345,7 @@ jobs:
   # and does not begin the switch-over in docs/ci-and-releases.md.
   gate:
     name: Traceability gate
-    needs: [build, connector, end-to-end]
+    needs: [build, suites, end-to-end]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
@@ -332,23 +361,13 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: The build job's reports
+      # Every job's reports: the build job's, each suite's and the whole system's.
+      - name: The reports
         uses: actions/download-artifact@v5
         with:
-          name: trace-results-build
+          pattern: trace-results-*
           path: .trace-results
-
-      - name: The whole system's reports
-        uses: actions/download-artifact@v5
-        with:
-          name: trace-results-system
-          path: .trace-results
-
-      - name: The connector's report
-        uses: actions/download-artifact@v5
-        with:
-          name: trace-results-connector
-          path: .trace-results
+          merge-multiple: true
 
       # Both suites that drive the stack must have reported. `pnpm trace gate` exempts their reports
       # from "no report at all", since `pnpm test` never writes them, so without this a run whose
