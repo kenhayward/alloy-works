@@ -11,7 +11,11 @@ export type SettleAct = 'placed' | 'changed' | 'keep' | 'resolve';
 const WHY = {
   forbidden: 'This value holds nothing until somebody who may use its connection resolves it.',
   failed: 'The value could not be fetched. Resolve it again from the Value panel.',
-} as const satisfies Record<'forbidden' | 'failed', string>;
+  moved: 'The value changed meanwhile. Look at it again in the Value panel.',
+} as const satisfies Record<'forbidden' | 'failed' | 'moved', string>;
+
+/** The act settling each binding now, by document, node and binding, which the next one waits for. */
+const settling = new Map<string, Promise<unknown>>();
 
 /**
  * What a document does with a binding its editor placed, changed, or asked to keep or resolve (the
@@ -20,7 +24,30 @@ const WHY = {
  * is resolved - the one query placing makes; one changed with its question unchanged, or kept, keeps
  * the result it holds, `confirm`, querying nothing. Answers what the author should be told, or null.
  */
-export async function settleBinding(
+export function settleBinding(
+  client: Client,
+  document: string,
+  node: string,
+  binding: string,
+  session: string | null,
+  act: SettleAct,
+): Promise<string | null> {
+  // One act at a time for one binding: a Keep asked while a Change settles reads what it left.
+  const key = `//`;
+  const before = settling.get(key) ?? Promise.resolve();
+  const settled = before
+    .catch(() => undefined)
+    .then(() => settleNow(client, document, node, binding, session, act));
+  settling.set(key, settled);
+  void settled
+    .catch(() => undefined)
+    .finally(() => {
+      if (settling.get(key) === settled) settling.delete(key);
+    });
+  return settled;
+}
+
+async function settleNow(
   client: Client,
   document: string,
   node: string,
@@ -51,5 +78,6 @@ export async function settleBinding(
           body: { bindings: [{ node, binding, ...from }], ...named },
         });
   if (response.status === 403) return WHY.forbidden;
+  if (response.status === 409) return WHY.moved;
   return response.ok ? null : WHY.failed;
 }

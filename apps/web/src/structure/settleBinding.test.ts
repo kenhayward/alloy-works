@@ -103,6 +103,47 @@ describe("a binding placed or changed in a document's editor (the B2 plan, B2-C,
     ).toEqual([`/v1/documents/${DOCUMENT}/bindings/resolve`]);
   });
 
+  it('settles one binding an act at a time, so a Keep asked while a Change settles reads what that left', async () => {
+    const order: string[] = [];
+    let release = () => {};
+    const held = new Promise<void>((resolve) => (release = resolve));
+    let first = true;
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const path = new URL(request.url).pathname;
+      order.push(`${request.method} ${path.split('/').at(-1)}`);
+      if (path.endsWith('/bindings')) {
+        if (first) {
+          first = false;
+          await held;
+        }
+        return json(200, { bindings: [state(true)] });
+      }
+      return json(200, state(false));
+    }) as unknown as typeof fetch;
+    const client = createApiClient({ baseUrl: 'http://settle.test', fetch: fetching });
+    const change = settleBinding(client, DOCUMENT, NODE, 'b1', SESSION, 'changed');
+    const keep = settleBinding(client, DOCUMENT, NODE, 'b1', SESSION, 'keep');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(order).toEqual(['GET bindings']);
+    release();
+    await Promise.all([change, keep]);
+    expect(order).toEqual(['GET bindings', 'POST confirm', 'GET bindings', 'POST confirm']);
+  });
+
+  it('says the value changed meanwhile where the service answers that it moved on', async () => {
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      return new URL(request.url).pathname.endsWith('/bindings')
+        ? json(200, { bindings: [state(true)] })
+        : json(409, { code: 'resolution_precondition', message: 'No.' });
+    }) as unknown as typeof fetch;
+    const client = createApiClient({ baseUrl: 'http://settle.test', fetch: fetching });
+    expect(await settleBinding(client, DOCUMENT, NODE, 'b1', null, 'keep')).toBe(
+      'The value changed meanwhile. Look at it again in the Value panel.',
+    );
+  });
+
   it('reads the binding from the version where the page holds no session of its own, and says who may resolve one it may not', async () => {
     const { client, asked } = serviceWith(true, 403);
     await settleBinding(client, DOCUMENT, NODE, 'b1', null, 'keep');

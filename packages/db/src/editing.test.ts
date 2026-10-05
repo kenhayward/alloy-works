@@ -18,6 +18,7 @@ import {
   readLock,
   readLocks,
   saveIteration,
+  sessionContent,
 } from './editing.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
@@ -296,6 +297,32 @@ describe('editing a component: its lock and its iterations', () => {
         );
       return { ...component, session, save };
     };
+
+    it("reads a session's content only while that session holds the lock: not from another window of the author's, nor once it lapses, nor while another principal holds it", async () => {
+      const component = await held();
+      expect(await component.save(1, 'Unbox the printer.')).toMatchObject({ answer: 'accepted' });
+      const read = () =>
+        service.withTenant(production, (trx) =>
+          sessionContent(trx, {
+            artifactId: component.id,
+            principal: ada,
+            session: component.session,
+          }),
+        );
+      const claim = (principal: string, session: string) =>
+        service.withTenant(production, (trx) =>
+          claimLock(trx, { artifactId: component.id, principal, session, move: true }),
+        );
+      expect(await read()).toMatchObject({ openedFrom: component.openedFrom });
+      await claim(ada, randomUUID());
+      expect(await read()).toBeUndefined();
+      await claim(ada, component.session);
+      expect(await read()).toBeDefined();
+      await expireLock(component.id);
+      expect(await read()).toBeUndefined();
+      await claim(grace, randomUUID());
+      expect(await read()).toBeUndefined();
+    });
 
     it('VER-001 keeps an iteration as its editor wrote it, timestamped, and the runtime role cannot change it, nor remove it before its window', async () => {
       const component = await held();

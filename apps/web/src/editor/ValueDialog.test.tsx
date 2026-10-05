@@ -25,13 +25,20 @@ const summary = (id: string, title: string, identity: string, retired = false) =
   changedAt: '2026-10-05T09:00:00.000Z',
 });
 
-const view = (mayUse = true) => ({
-  id: SITES,
+const FAR = '44444444-4444-4444-8444-444444444444';
+const OLDER = '55555555-5555-4555-8555-555555555550';
+const VISITS_LATEST = '55555555-5555-4555-8555-555555555552';
+
+const view = (mayUse = true, id = SITES, title = 'Site by id', version = LATEST) => ({
+  id,
   space: { id: '11111111-1111-4111-8111-111111111111', name: 'General' },
-  version: { id: LATEST, number: '0.3', author: null, createdAt: '', note: null },
+  version: { id: version, number: '0.3', author: null, createdAt: '', note: null },
   definition: {
-    title: 'Site by id',
-    parameters: [{ name: 'site', type: { base: 'integer' }, required: true, list: false }],
+    title,
+    parameters:
+      id === VISITS
+        ? []
+        : [{ name: 'site', type: { base: 'integer' }, required: true, list: false }],
     columns: [
       { name: 'id', from: { column: 'id' }, type: { base: 'integer' } },
       { name: 'name', from: { column: 'name' }, type: { base: 'text' } },
@@ -64,6 +71,13 @@ function dialog(
       });
     }
     if (path === `/v1/query-definitions/${SITES}`) return json(200, view(answers.mayUse));
+    if (path === `/v1/query-definitions/${VISITS}`) {
+      return json(200, view(true, VISITS, 'Visits by person', VISITS_LATEST));
+    }
+    // Readable by its identifier, beyond the first page of the listing.
+    if (path === `/v1/query-definitions/${FAR}`) {
+      return json(200, view(true, FAR, 'Far sites'));
+    }
     if (path.endsWith('/holders')) {
       return json(200, answers.holders ?? { documents: { readable: [], others: 0 } });
     }
@@ -71,16 +85,21 @@ function dialog(
   }) as unknown as typeof fetch;
   const onDone = vi.fn(() => null);
   const onCancel = vi.fn();
+  // A control either side of the dialog, which a Tab must never reach while it is open.
   render(
-    <ValueDialog
-      client={createApiClient({ baseUrl: 'http://value.test', fetch: fetching })}
-      componentId={COMPONENT}
-      current={null}
-      inDocument={{ pinned: false }}
-      onDone={onDone}
-      onCancel={onCancel}
-      {...over}
-    />,
+    <>
+      <button type="button">Before</button>
+      <ValueDialog
+        client={createApiClient({ baseUrl: 'http://value.test', fetch: fetching })}
+        componentId={COMPONENT}
+        current={null}
+        inDocument={{ pinned: false }}
+        onDone={onDone}
+        onCancel={onCancel}
+        {...over}
+      />
+      <button type="button">After</button>
+    </>,
   );
   return { onDone, onCancel };
 }
@@ -166,6 +185,71 @@ describe('the Value dialog (the B2 plan, task 4)', () => {
         '3 documents will hold no value for it until resolved again: Site report and 2 you cannot read.',
       ),
     ).toBeInTheDocument();
+  });
+
+  it('changes to another definition at its latest, carrying no pin from the definition it leaves', async () => {
+    const user = userEvent.setup();
+    const { onDone } = dialog({ current: { ...bound, version: OLDER } });
+    expect(await screen.findByRole('radio', { name: 'The version it pins now' })).toBeChecked();
+    await user.click(screen.getByRole('radio', { name: /Visits by person/ }));
+    expect(await screen.findByRole('radio', { name: 'Always the latest' })).toBeChecked();
+    expect(screen.queryByRole('radio', { name: 'The version it pins now' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Change' }));
+    expect(onDone).toHaveBeenCalledWith({
+      query: VISITS,
+      parameters: {},
+      mode: 'checked',
+      take: { column: 'name' },
+    });
+    // Back to the definition it binds: the version it pins is its own again.
+    await user.click(screen.getByRole('radio', { name: /Site by id/ }));
+    expect(await screen.findByRole('radio', { name: 'The version it pins now' })).toBeChecked();
+  });
+
+  it('moves the focus from the search to the list and on to Cancel before a definition is chosen, never leaving the dialog', async () => {
+    const user = userEvent.setup();
+    dialog();
+    await screen.findByRole('radio', { name: /Site by id/ });
+    const search = screen.getByLabelText('Find a query definition by title');
+    expect(search).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('radio', { name: /Site by id/ })).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus();
+    await user.tab();
+    expect(search).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus();
+  });
+
+  it('opens on a definition beyond the first page of the listing by its title, not as one it cannot read', async () => {
+    dialog({ current: { ...bound, query: FAR } });
+    expect(await screen.findByRole('radio', { name: /Far sites/ })).toBeChecked();
+    expect(screen.queryByText('a query definition you cannot read')).toBeNull();
+    expect(screen.queryByText(/You may not read this query definition/)).toBeNull();
+  });
+
+  it('places nothing while a value does not fit its parameter', async () => {
+    const user = userEvent.setup();
+    const { onDone } = dialog();
+    await user.click(await screen.findByRole('radio', { name: /Site by id/ }));
+    await user.type(await screen.findByLabelText('site'), 'north{Enter}');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'A value does not fit its parameter.',
+    );
+    expect(onDone).not.toHaveBeenCalled();
+  });
+
+  it('places the binding in the mode chosen', async () => {
+    const user = userEvent.setup();
+    const { onDone } = dialog();
+    await user.click(await screen.findByRole('radio', { name: /Site by id/ }));
+    await user.type(await screen.findByLabelText('site'), '7');
+    await user.click(screen.getByRole('radio', { name: /Pinned/ }));
+    await user.click(screen.getByRole('button', { name: 'Insert' }));
+    expect(onDone).toHaveBeenCalledWith(expect.objectContaining({ mode: 'pinned' }));
   });
 
   it('says who may resolve a value an author may not resolve themselves', async () => {

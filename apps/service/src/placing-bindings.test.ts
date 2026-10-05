@@ -275,6 +275,29 @@ describe('placing and changing a binding through the service', () => {
     });
   });
 
+  it('refuses to keep a result a binding already holds unchanged, recording nothing', async () => {
+    const definition = await h.definition(connection.id);
+    const { document, node, held } = await resolved(definition.id);
+    const refused = await confirm(document.id, node, held.version);
+    expect(refused.statusCode, refused.body).toBe(409);
+    expect(refused.json()).toMatchObject({ code: 'confirm_not_possible' });
+    expect((await stateOf(document.id))!.held).toMatchObject({ act: 'resolve', stale: false });
+  });
+
+  it('refuses Keep to an editor of the document who may not read the definition, as a binding naming none', async () => {
+    const definition = await h.definition(connection.id, {}, h.quality);
+    const { component, document, node, held } = await resolved(definition.id);
+    await h.place(component, text, binding('b1', definition.id, { mode: 'pinned' }));
+    expect((await stateOf(document.id))!.held).toMatchObject({ keepable: true });
+    const refused = await h.call('grace', 'POST', `/v1/documents/${document.id}/bindings/confirm`, {
+      node,
+      binding: 'b1',
+      replaces: held.version,
+    });
+    expect(refused.statusCode, refused.body).toBe(400);
+    expect(refused.json()).toMatchObject({ code: 'binding_missing', definition: definition.id });
+  });
+
   it('refuses to keep a result the binding no longer holds, once an accept moved it on', async () => {
     const definition = await h.definition(connection.id);
     const { component, document, node, held } = await resolved(definition.id);

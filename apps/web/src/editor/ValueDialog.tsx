@@ -159,6 +159,13 @@ export function ValueDialog({
   const [chosenId, setChosenId] = useState<string | null>(current?.query ?? null);
   const [chosen, setChosen] = useState<Chosen | 'unreadable' | null>(null);
   const [pin, setPin] = useState<string>(current?.version ?? 'latest');
+  // Another definition is chosen at its latest: a pin is a version of the definition it binds only.
+  const choose = (definition: string) => {
+    setChosenId(definition);
+    setPin(definition === current?.query ? (current.version ?? 'latest') : 'latest');
+  };
+  // The definition it binds, as read by its identifier, for one beyond the listing's first page.
+  const [currentRead, setCurrentRead] = useState<Listed | 'unreadable' | null>(null);
   const [typed, setTyped] = useState<Record<string, string>>(() => typedOf(current));
   const [column, setColumn] = useState(current?.take.column ?? '');
   const [row, setRow] = useState<'only' | 'key'>(
@@ -218,7 +225,16 @@ export function ValueDialog({
         const definition = isRecord(data) && isRecord(data.definition) ? data.definition : null;
         if (definition === null || !isRecord(data) || !isRecord(data.version)) {
           setChosen('unreadable');
+          if (chosenId === current?.query) setCurrentRead('unreadable');
           return;
+        }
+        if (chosenId === current?.query) {
+          setCurrentRead({
+            id: chosenId,
+            title: String(definition.title),
+            space: isRecord(data.space) ? String(data.space.name) : '',
+            identity: identityOf(data.connection),
+          });
         }
         const columns = (definition.columns ?? []) as Column[];
         setChosen({
@@ -234,11 +250,15 @@ export function ValueDialog({
           columns.some((each) => each.name === now) ? now : (columns[0]?.name ?? ''),
         );
       })
-      .catch(() => live && setChosen('unreadable'));
+      .catch(() => {
+        if (!live) return;
+        setChosen('unreadable');
+        if (chosenId === current?.query) setCurrentRead('unreadable');
+      });
     return () => {
       live = false;
     };
-  }, [client, chosenId]);
+  }, [client, chosenId, current?.query]);
 
   useEffect(() => {
     if (current === null) return undefined;
@@ -335,9 +355,18 @@ export function ValueDialog({
   const shown = (listed ?? []).filter((each) =>
     each.title.toLowerCase().includes(filter.trim().toLowerCase()),
   );
-  const unreadableCurrent =
-    current !== null && listed !== null && !listed.some((each) => each.id === current.query);
+  // The definition it binds, where the listing's first page does not hold it: by its title where it
+  // reads, and as one it cannot read only once it is known not to.
+  const outsideCurrent =
+    current !== null && listed !== null && !listed.some((each) => each.id === current.query)
+      ? currentRead
+      : null;
+  const unreadableCurrent = outsideCurrent === 'unreadable';
+  const shownWithCurrent =
+    outsideCurrent !== null && outsideCurrent !== 'unreadable' ? [outsideCurrent, ...shown] : shown;
 
+  // Tab moves as the browser moves it, through the radio groups as it takes them, and is turned
+  // back only at either end of the dialog, or from outside it.
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
       event.preventDefault();
@@ -347,13 +376,14 @@ export function ValueDialog({
     if (event.key !== 'Tab') return;
     const stops = [
       ...(dialog.current?.querySelectorAll<HTMLElement>(
-        'input:not([type="radio"]):not(:disabled), input[type="radio"]:checked, select, textarea, button',
+        'input:not([type="radio"]):not(:disabled), select, textarea, button',
       ) ?? []),
     ];
     if (stops.length === 0) return;
-    const at = stops.indexOf(document.activeElement as HTMLElement);
-    const next = event.shiftKey ? at - 1 : at + 1;
-    if (at >= 0 && next >= 0 && next < stops.length) return;
+    const active = document.activeElement as HTMLElement | null;
+    const inside = active !== null && dialog.current?.contains(active) === true;
+    const end = event.shiftKey ? stops[0] : stops.at(-1);
+    if (inside && active !== end) return;
     event.preventDefault();
     stops[event.shiftKey ? stops.length - 1 : 0]?.focus();
   };
@@ -410,20 +440,20 @@ export function ValueDialog({
             <legend>Query definition</legend>
             <div className={own['targets']}>
               {listed === null && <p className={styles['note']}>Finding query definitions.</p>}
-              {listed !== null && shown.length === 0 && !unreadableCurrent && (
+              {listed !== null && shownWithCurrent.length === 0 && !unreadableCurrent && (
                 <p className={styles['note']}>No query definition you may read has that title.</p>
               )}
-              {unreadableCurrent && (
+              {unreadableCurrent && current !== null && (
                 <label className={own['choice']}>
                   {radio('definition', current.query, chosenId === current.query, () =>
-                    setChosenId(current.query),
+                    choose(current.query),
                   )}
                   a query definition you cannot read
                 </label>
               )}
-              {shown.map((each) => (
+              {shownWithCurrent.map((each) => (
                 <label key={each.id} className={own['choice']}>
-                  {radio('definition', each.id, chosenId === each.id, () => setChosenId(each.id))}
+                  {radio('definition', each.id, chosenId === each.id, () => choose(each.id))}
                   {each.title}
                   <span className={styles['hint']}>
                     {' '}

@@ -1362,6 +1362,16 @@ export function bindingHandlers(
       }
       const latest = await readQueryDefinition(trx, found.binding.query);
       const { provenance } = held.held;
+      // Only a stale binding is kept, as `keepable` decides: one holding its value unchanged has
+      // nothing to keep, and a second row would record a Keep nobody needed.
+      if (held.digest === found.digest) {
+        throw refused(
+          409,
+          'confirm.not_possible',
+          `The binding ${found.binding.id} already holds this result: there is nothing to keep.`,
+          { ...naming, definition: found.binding.query },
+        );
+      }
       if (!latest || !questionUnchanged(found.binding, provenance, latest.version.id)) {
         throw refused(
           409,
