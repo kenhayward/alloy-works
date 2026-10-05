@@ -44,6 +44,8 @@ const MESSAGES: Partial<Record<DataFailureCode, string>> = {
     'This source is older than PostgreSQL 14, which the connector cannot check. Use a newer one.',
   connector_unavailable: 'No connector is available to reach the source. Try again later.',
   connector_busy: 'The connector is busy. Try again in a moment.',
+  image_refused:
+    'The image is not a complete PNG or JPEG image the product admits, or is too large. Nothing was kept.',
 };
 
 /** Where a failure names a column or a row, the words for it, as the start of a sentence. */

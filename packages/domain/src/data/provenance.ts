@@ -8,8 +8,8 @@ import { RAN_MAX_CHARACTERS } from './sql.js';
 
 /**
  * A dataset version's content: its provenance record (data.md, "Storage of results and provenance";
- * DAT-085), in the arms D3 writes. The request form of `ran` arrives with D6, an end user's identity
- * with D7 and images with D8 - each an arm added, refusing nothing stored. The result itself is an
+ * DAT-085), in the arms D3 writes, and D8's images. The request form of `ran` arrives with D6 and an
+ * end user's identity with D7 - each an arm added, refusing nothing stored. The result itself is an
  * object in the tenant's store under `checksum`, never in the record.
  */
 export const PROVENANCE_SCHEMA_VERSION = 1;
@@ -57,7 +57,8 @@ export const provenanceSchema = z.strictObject({
   columns: z.array(columnSchema).min(1).max(MAX_COLUMNS),
   canonical: z.literal(1),
   checksum: z.string().regex(/^[0-9a-f]{64}$/),
-  images: z.strictObject({}),
+  // Each image hash the result's cells hold, to the asset version admitted for it (D8-D).
+  images: z.record(z.string().regex(/^[0-9a-f]{64}$/), artifactIdentifierSchema),
 });
 
 /** A dataset version's provenance, as D3 records it. */
@@ -74,7 +75,7 @@ export type Provenance = {
   readonly columns: readonly Column[];
   readonly canonical: 1;
   readonly checksum: string;
-  readonly images: Record<string, never>;
+  readonly images: Readonly<Record<string, string>>;
 };
 
 /** The shape alone: what a stored version is read back by. Throws on a record that is not one. */

@@ -8957,7 +8957,7 @@
       "get": {
         "operationId": "getAssetVersion",
         "summary": "An asset version's recorded properties",
-        "description": "Reads the recorded properties of an asset version that the caller may access.",
+        "description": "Reads the recorded properties of an asset version that the caller may access. An image a dataset holds is read only by a caller who may also read a document holding it, and is otherwise not found.",
         "tags": [
           "Assets"
         ],
@@ -9279,7 +9279,7 @@
       "get": {
         "operationId": "getAssetVersionContent",
         "summary": "An asset version's image, as it was uploaded",
-        "description": "Returns the stored image bytes of a readable asset version. Use the response media type as supplied.",
+        "description": "Returns the stored image bytes of a readable asset version. Use the response media type as supplied. An image a dataset holds is read only by a caller who may also read a document holding it, and is otherwise not found.",
         "tags": [
           "Assets"
         ],
@@ -22177,6 +22177,591 @@
         }
       }
     },
+    "/v1/datasets/pending/{id}": {
+      "get": {
+        "operationId": "getPendingResult",
+        "summary": "A result waiting on its images, finished once every image is admitted",
+        "description": "Follows a pending result, which a resolve or a check answers with status 202 for a binding whose run holds an image no asset in the definition's space holds yet. Each such image is stored and admitted as an asset, as an upload is. Asked while any image is still being admitted, it answers pending. Once every one is admitted, it records the dataset version, and for a resolve the binding's resolution, exactly as the act would have, deciding again the act's permissions, that the binding has not changed (`binding_changed`), and that it still holds what it held when the act ran (`resolution_precondition`, so an older result never replaces a newer one), and answers the act's own result for the binding; the pending result is then gone. Where an image is refused, nothing is recorded and the result is refused `image_refused`, naming its row and column. Only the person whose act ran it may follow it; anybody else is told there is no such pending result.",
+        "tags": [
+          "Bindings and datasets"
+        ],
+        "x-alloy-token-enabled": true,
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pending, or done with the act's own result for its binding",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "act": {
+                      "type": "string",
+                      "enum": [
+                        "resolve",
+                        "session",
+                        "check"
+                      ],
+                      "description": "The act that ran it: a resolve, a resolve from an editing session, or a check"
+                    },
+                    "document": {
+                      "type": "string"
+                    },
+                    "node": {
+                      "type": "string"
+                    },
+                    "binding": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "done"
+                      ],
+                      "description": "`pending`: an image is still being admitted; `done`: recorded, or refused, as `result` says"
+                    },
+                    "result": {
+                      "anyOf": [
+                        {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "node": {
+                                  "type": "string"
+                                },
+                                "binding": {
+                                  "type": "string"
+                                },
+                                "outcome": {
+                                  "type": "string",
+                                  "const": "unchanged"
+                                }
+                              },
+                              "required": [
+                                "node",
+                                "binding",
+                                "outcome"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "node": {
+                                  "type": "string"
+                                },
+                                "binding": {
+                                  "type": "string"
+                                },
+                                "outcome": {
+                                  "type": "string",
+                                  "const": "revision"
+                                },
+                                "version": {
+                                  "type": "string",
+                                  "description": "The different result, recorded and waiting to be accepted"
+                                }
+                              },
+                              "required": [
+                                "node",
+                                "binding",
+                                "outcome",
+                                "version"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "node": {
+                                  "type": "string"
+                                },
+                                "binding": {
+                                  "type": "string"
+                                },
+                                "outcome": {
+                                  "type": "string",
+                                  "const": "unchecked"
+                                },
+                                "reason": {
+                                  "type": "string",
+                                  "enum": [
+                                    "limit",
+                                    "permission",
+                                    "unresolved"
+                                  ],
+                                  "description": "`limit`: past the 50 distinct runs a check makes; `permission`: the caller may not use its connection; `unresolved`: it holds nothing to compare, or has changed since it was resolved"
+                                }
+                              },
+                              "required": [
+                                "node",
+                                "binding",
+                                "outcome",
+                                "reason"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "node": {
+                                  "type": "string"
+                                },
+                                "binding": {
+                                  "type": "string"
+                                },
+                                "outcome": {
+                                  "type": "string",
+                                  "const": "failed"
+                                },
+                                "failure": {
+                                  "type": "object",
+                                  "properties": {
+                                    "code": {
+                                      "type": "string",
+                                      "description": "Stable and machine-readable"
+                                    },
+                                    "attribution": {
+                                      "type": "string",
+                                      "enum": [
+                                        "connector",
+                                        "query",
+                                        "product"
+                                      ],
+                                      "description": "Whose failure it is: the source's side, the query's author, or the product"
+                                    },
+                                    "message": {
+                                      "type": "string"
+                                    },
+                                    "source": {
+                                      "type": "object",
+                                      "properties": {
+                                        "sqlstate": {
+                                          "type": "string",
+                                          "description": "The source's five-character SQLSTATE"
+                                        },
+                                        "message": {
+                                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "sqlstate"
+                                      ],
+                                      "description": "What the source said, where it refused the statement: `source_refused` alone"
+                                    },
+                                    "column": {
+                                      "description": "The column the failure names, where it names one",
+                                      "type": "string"
+                                    },
+                                    "row": {
+                                      "description": "The row the failure names, counted from 1",
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "definition": {
+                                      "type": "string",
+                                      "description": "The query definition the binding names"
+                                    },
+                                    "binding": {
+                                      "type": "string"
+                                    },
+                                    "node": {
+                                      "type": "string"
+                                    },
+                                    "document": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "code",
+                                    "attribution",
+                                    "message",
+                                    "definition",
+                                    "binding",
+                                    "node",
+                                    "document"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "node",
+                                "binding",
+                                "outcome",
+                                "failure"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "node": {
+                                  "type": "string"
+                                },
+                                "binding": {
+                                  "type": "string"
+                                },
+                                "held": {
+                                  "type": "object",
+                                  "properties": {
+                                    "dataset": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "type": "string",
+                                      "description": "The dataset version it now holds"
+                                    },
+                                    "reused": {
+                                      "type": "boolean",
+                                      "description": "Whether the run found what the latest version already records, so no version was made"
+                                    }
+                                  },
+                                  "required": [
+                                    "dataset",
+                                    "version",
+                                    "reused"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "node",
+                                "binding",
+                                "held"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "node": {
+                                  "type": "string"
+                                },
+                                "binding": {
+                                  "type": "string"
+                                },
+                                "failure": {
+                                  "type": "object",
+                                  "properties": {
+                                    "code": {
+                                      "type": "string",
+                                      "description": "Stable and machine-readable"
+                                    },
+                                    "attribution": {
+                                      "type": "string",
+                                      "enum": [
+                                        "connector",
+                                        "query",
+                                        "product"
+                                      ],
+                                      "description": "Whose failure it is: the source's side, the query's author, or the product"
+                                    },
+                                    "message": {
+                                      "type": "string"
+                                    },
+                                    "source": {
+                                      "type": "object",
+                                      "properties": {
+                                        "sqlstate": {
+                                          "type": "string",
+                                          "description": "The source's five-character SQLSTATE"
+                                        },
+                                        "message": {
+                                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "sqlstate"
+                                      ],
+                                      "description": "What the source said, where it refused the statement: `source_refused` alone"
+                                    },
+                                    "column": {
+                                      "description": "The column the failure names, where it names one",
+                                      "type": "string"
+                                    },
+                                    "row": {
+                                      "description": "The row the failure names, counted from 1",
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "definition": {
+                                      "type": "string",
+                                      "description": "The query definition the binding names"
+                                    },
+                                    "binding": {
+                                      "type": "string"
+                                    },
+                                    "node": {
+                                      "type": "string"
+                                    },
+                                    "document": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "code",
+                                    "attribution",
+                                    "message",
+                                    "definition",
+                                    "binding",
+                                    "node",
+                                    "document"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "node",
+                                "binding",
+                                "failure"
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Null while pending. Done, the act's own result for the binding: for a resolve, the version it now holds or the failure; for a check, its outcome. `image_refused` names the row and column of an image that is not one the product admits"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "act",
+                    "document",
+                    "node",
+                    "binding",
+                    "state",
+                    "result"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "act": "resolve",
+                  "document": "example",
+                  "node": "example",
+                  "binding": "example",
+                  "state": "pending",
+                  "result": {
+                    "node": "example",
+                    "binding": "example",
+                    "outcome": "unchanged"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such pending result, one somebody else asked for, or one already done and recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`storage_unavailable`: the environment has nowhere results are kept",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/definitions": {
       "get": {
         "operationId": "listDefinitions",
@@ -25741,7 +26326,14 @@
                                       },
                                       "images": {
                                         "type": "object",
-                                        "properties": {}
+                                        "propertyNames": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-f]{64}$"
+                                        },
+                                        "additionalProperties": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                        }
                                       }
                                     },
                                     "required": [
@@ -26411,7 +27003,14 @@
                                       },
                                       "images": {
                                         "type": "object",
-                                        "properties": {}
+                                        "propertyNames": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-f]{64}$"
+                                        },
+                                        "additionalProperties": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                        }
                                       }
                                     },
                                     "required": [
@@ -27592,7 +28191,14 @@
                                 },
                                 "images": {
                                   "type": "object",
-                                  "properties": {}
+                                  "propertyNames": {
+                                    "type": "string",
+                                    "pattern": "^[0-9a-f]{64}$"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "string",
+                                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                  }
                                 }
                               },
                               "required": [
@@ -28262,7 +28868,14 @@
                                 },
                                 "images": {
                                   "type": "object",
-                                  "properties": {}
+                                  "propertyNames": {
+                                    "type": "string",
+                                    "pattern": "^[0-9a-f]{64}$"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "string",
+                                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                  }
                                 }
                               },
                               "required": [
@@ -29414,7 +30027,14 @@
                                     },
                                     "images": {
                                       "type": "object",
-                                      "properties": {}
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{64}$"
+                                      },
+                                      "additionalProperties": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
                                     }
                                   },
                                   "required": [
@@ -30084,7 +30704,14 @@
                                     },
                                     "images": {
                                       "type": "object",
-                                      "properties": {}
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{64}$"
+                                      },
+                                      "additionalProperties": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
                                     }
                                   },
                                   "required": [
@@ -31228,7 +31855,14 @@
                                     },
                                     "images": {
                                       "type": "object",
-                                      "properties": {}
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{64}$"
+                                      },
+                                      "additionalProperties": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
                                     }
                                   },
                                   "required": [
@@ -31898,7 +32532,14 @@
                                     },
                                     "images": {
                                       "type": "object",
-                                      "properties": {}
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{64}$"
+                                      },
+                                      "additionalProperties": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
                                     }
                                   },
                                   "required": [
@@ -32531,6 +33172,255 @@
                               "binding",
                               "outcome",
                               "failure"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "node": {
+                                "type": "string"
+                              },
+                              "binding": {
+                                "type": "string"
+                              },
+                              "outcome": {
+                                "type": "string",
+                                "const": "pending"
+                              },
+                              "pending": {
+                                "type": "string",
+                                "description": "A pending result: the run holds images not yet admitted as assets. Ask `GET /v1/datasets/pending/{id}` until it is done"
+                              }
+                            },
+                            "required": [
+                              "node",
+                              "binding",
+                              "outcome",
+                              "pending"
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "results"
+                  ]
+                },
+                "example": {
+                  "results": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "As 200, where a different result holds images not yet admitted as assets: each such binding is answered with a pending result, recorded only once every image is admitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "node": {
+                                "type": "string"
+                              },
+                              "binding": {
+                                "type": "string"
+                              },
+                              "outcome": {
+                                "type": "string",
+                                "const": "unchanged"
+                              }
+                            },
+                            "required": [
+                              "node",
+                              "binding",
+                              "outcome"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "node": {
+                                "type": "string"
+                              },
+                              "binding": {
+                                "type": "string"
+                              },
+                              "outcome": {
+                                "type": "string",
+                                "const": "revision"
+                              },
+                              "version": {
+                                "type": "string",
+                                "description": "The different result, recorded and waiting to be accepted"
+                              }
+                            },
+                            "required": [
+                              "node",
+                              "binding",
+                              "outcome",
+                              "version"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "node": {
+                                "type": "string"
+                              },
+                              "binding": {
+                                "type": "string"
+                              },
+                              "outcome": {
+                                "type": "string",
+                                "const": "unchecked"
+                              },
+                              "reason": {
+                                "type": "string",
+                                "enum": [
+                                  "limit",
+                                  "permission",
+                                  "unresolved"
+                                ],
+                                "description": "`limit`: past the 50 distinct runs a check makes; `permission`: the caller may not use its connection; `unresolved`: it holds nothing to compare, or has changed since it was resolved"
+                              }
+                            },
+                            "required": [
+                              "node",
+                              "binding",
+                              "outcome",
+                              "reason"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "node": {
+                                "type": "string"
+                              },
+                              "binding": {
+                                "type": "string"
+                              },
+                              "outcome": {
+                                "type": "string",
+                                "const": "failed"
+                              },
+                              "failure": {
+                                "type": "object",
+                                "properties": {
+                                  "code": {
+                                    "type": "string",
+                                    "description": "Stable and machine-readable"
+                                  },
+                                  "attribution": {
+                                    "type": "string",
+                                    "enum": [
+                                      "connector",
+                                      "query",
+                                      "product"
+                                    ],
+                                    "description": "Whose failure it is: the source's side, the query's author, or the product"
+                                  },
+                                  "message": {
+                                    "type": "string"
+                                  },
+                                  "source": {
+                                    "type": "object",
+                                    "properties": {
+                                      "sqlstate": {
+                                        "type": "string",
+                                        "description": "The source's five-character SQLSTATE"
+                                      },
+                                      "message": {
+                                        "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "sqlstate"
+                                    ],
+                                    "description": "What the source said, where it refused the statement: `source_refused` alone"
+                                  },
+                                  "column": {
+                                    "description": "The column the failure names, where it names one",
+                                    "type": "string"
+                                  },
+                                  "row": {
+                                    "description": "The row the failure names, counted from 1",
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "definition": {
+                                    "type": "string",
+                                    "description": "The query definition the binding names"
+                                  },
+                                  "binding": {
+                                    "type": "string"
+                                  },
+                                  "node": {
+                                    "type": "string"
+                                  },
+                                  "document": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "code",
+                                  "attribution",
+                                  "message",
+                                  "definition",
+                                  "binding",
+                                  "node",
+                                  "document"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "node",
+                              "binding",
+                              "outcome",
+                              "failure"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "node": {
+                                "type": "string"
+                              },
+                              "binding": {
+                                "type": "string"
+                              },
+                              "outcome": {
+                                "type": "string",
+                                "const": "pending"
+                              },
+                              "pending": {
+                                "type": "string",
+                                "description": "A pending result: the run holds images not yet admitted as assets. Ask `GET /v1/datasets/pending/{id}` until it is done"
+                              }
+                            },
+                            "required": [
+                              "node",
+                              "binding",
+                              "outcome",
+                              "pending"
                             ]
                           }
                         ]
@@ -33345,7 +34235,14 @@
                                     },
                                     "images": {
                                       "type": "object",
-                                      "properties": {}
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{64}$"
+                                      },
+                                      "additionalProperties": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
                                     }
                                   },
                                   "required": [
@@ -34015,7 +34912,14 @@
                                     },
                                     "images": {
                                       "type": "object",
-                                      "properties": {}
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{64}$"
+                                      },
+                                      "additionalProperties": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
                                     }
                                   },
                                   "required": [
@@ -35036,7 +35940,14 @@
                                     },
                                     "images": {
                                       "type": "object",
-                                      "properties": {}
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{64}$"
+                                      },
+                                      "additionalProperties": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
                                     }
                                   },
                                   "required": [
@@ -35706,7 +36617,14 @@
                                     },
                                     "images": {
                                       "type": "object",
-                                      "properties": {}
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{64}$"
+                                      },
+                                      "additionalProperties": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
                                     }
                                   },
                                   "required": [
@@ -36763,7 +37681,14 @@
                                 },
                                 "images": {
                                   "type": "object",
-                                  "properties": {}
+                                  "propertyNames": {
+                                    "type": "string",
+                                    "pattern": "^[0-9a-f]{64}$"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "string",
+                                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                  }
                                 }
                               },
                               "required": [
@@ -37433,7 +38358,14 @@
                                 },
                                 "images": {
                                   "type": "object",
-                                  "properties": {}
+                                  "propertyNames": {
+                                    "type": "string",
+                                    "pattern": "^[0-9a-f]{64}$"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "string",
+                                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                  }
                                 }
                               },
                               "required": [
@@ -38585,7 +39517,14 @@
                                     },
                                     "images": {
                                       "type": "object",
-                                      "properties": {}
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{64}$"
+                                      },
+                                      "additionalProperties": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
                                     }
                                   },
                                   "required": [
@@ -39255,7 +40194,14 @@
                                     },
                                     "images": {
                                       "type": "object",
-                                      "properties": {}
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{64}$"
+                                      },
+                                      "additionalProperties": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
                                     }
                                   },
                                   "required": [
@@ -40399,7 +41345,14 @@
                                     },
                                     "images": {
                                       "type": "object",
-                                      "properties": {}
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{64}$"
+                                      },
+                                      "additionalProperties": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
                                     }
                                   },
                                   "required": [
@@ -41069,7 +42022,14 @@
                                     },
                                     "images": {
                                       "type": "object",
-                                      "properties": {}
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{64}$"
+                                      },
+                                      "additionalProperties": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
                                     }
                                   },
                                   "required": [
@@ -41718,6 +42678,202 @@
                               "node",
                               "binding",
                               "failure"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "node": {
+                                "type": "string"
+                              },
+                              "binding": {
+                                "type": "string"
+                              },
+                              "pending": {
+                                "type": "string",
+                                "description": "A pending result: the run holds images not yet admitted as assets. Ask `GET /v1/datasets/pending/{id}` until it is done"
+                              }
+                            },
+                            "required": [
+                              "node",
+                              "binding",
+                              "pending"
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "results"
+                  ]
+                },
+                "example": {
+                  "results": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "As 200, where a run holds images not yet admitted as assets: each such binding is answered with a pending result, recorded only once every image is admitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "node": {
+                                "type": "string"
+                              },
+                              "binding": {
+                                "type": "string"
+                              },
+                              "held": {
+                                "type": "object",
+                                "properties": {
+                                  "dataset": {
+                                    "type": "string"
+                                  },
+                                  "version": {
+                                    "type": "string",
+                                    "description": "The dataset version it now holds"
+                                  },
+                                  "reused": {
+                                    "type": "boolean",
+                                    "description": "Whether the run found what the latest version already records, so no version was made"
+                                  }
+                                },
+                                "required": [
+                                  "dataset",
+                                  "version",
+                                  "reused"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "node",
+                              "binding",
+                              "held"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "node": {
+                                "type": "string"
+                              },
+                              "binding": {
+                                "type": "string"
+                              },
+                              "failure": {
+                                "type": "object",
+                                "properties": {
+                                  "code": {
+                                    "type": "string",
+                                    "description": "Stable and machine-readable"
+                                  },
+                                  "attribution": {
+                                    "type": "string",
+                                    "enum": [
+                                      "connector",
+                                      "query",
+                                      "product"
+                                    ],
+                                    "description": "Whose failure it is: the source's side, the query's author, or the product"
+                                  },
+                                  "message": {
+                                    "type": "string"
+                                  },
+                                  "source": {
+                                    "type": "object",
+                                    "properties": {
+                                      "sqlstate": {
+                                        "type": "string",
+                                        "description": "The source's five-character SQLSTATE"
+                                      },
+                                      "message": {
+                                        "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "sqlstate"
+                                    ],
+                                    "description": "What the source said, where it refused the statement: `source_refused` alone"
+                                  },
+                                  "column": {
+                                    "description": "The column the failure names, where it names one",
+                                    "type": "string"
+                                  },
+                                  "row": {
+                                    "description": "The row the failure names, counted from 1",
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "definition": {
+                                    "type": "string",
+                                    "description": "The query definition the binding names"
+                                  },
+                                  "binding": {
+                                    "type": "string"
+                                  },
+                                  "node": {
+                                    "type": "string"
+                                  },
+                                  "document": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "code",
+                                  "attribution",
+                                  "message",
+                                  "definition",
+                                  "binding",
+                                  "node",
+                                  "document"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "node",
+                              "binding",
+                              "failure"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "node": {
+                                "type": "string"
+                              },
+                              "binding": {
+                                "type": "string"
+                              },
+                              "pending": {
+                                "type": "string",
+                                "description": "A pending result: the run holds images not yet admitted as assets. Ask `GET /v1/datasets/pending/{id}` until it is done"
+                              }
+                            },
+                            "required": [
+                              "node",
+                              "binding",
+                              "pending"
                             ]
                           }
                         ]
@@ -42409,7 +43565,14 @@
                                     },
                                     "images": {
                                       "type": "object",
-                                      "properties": {}
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{64}$"
+                                      },
+                                      "additionalProperties": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
                                     }
                                   },
                                   "required": [
@@ -43079,7 +44242,14 @@
                                     },
                                     "images": {
                                       "type": "object",
-                                      "properties": {}
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{64}$"
+                                      },
+                                      "additionalProperties": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
                                     }
                                   },
                                   "required": [
@@ -44141,7 +45311,14 @@
                                     },
                                     "images": {
                                       "type": "object",
-                                      "properties": {}
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{64}$"
+                                      },
+                                      "additionalProperties": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
                                     }
                                   },
                                   "required": [
@@ -44811,7 +45988,14 @@
                                     },
                                     "images": {
                                       "type": "object",
-                                      "properties": {}
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{64}$"
+                                      },
+                                      "additionalProperties": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
                                     }
                                   },
                                   "required": [
@@ -45873,7 +47057,14 @@
                                     },
                                     "images": {
                                       "type": "object",
-                                      "properties": {}
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{64}$"
+                                      },
+                                      "additionalProperties": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
                                     }
                                   },
                                   "required": [
@@ -46543,7 +47734,14 @@
                                     },
                                     "images": {
                                       "type": "object",
-                                      "properties": {}
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{64}$"
+                                      },
+                                      "additionalProperties": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
                                     }
                                   },
                                   "required": [
@@ -47564,7 +48762,14 @@
                                     },
                                     "images": {
                                       "type": "object",
-                                      "properties": {}
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{64}$"
+                                      },
+                                      "additionalProperties": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
                                     }
                                   },
                                   "required": [
@@ -48234,7 +49439,14 @@
                                     },
                                     "images": {
                                       "type": "object",
-                                      "properties": {}
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{64}$"
+                                      },
+                                      "additionalProperties": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
                                     }
                                   },
                                   "required": [
@@ -49408,7 +50620,14 @@
                         },
                         "images": {
                           "type": "object",
-                          "properties": {}
+                          "propertyNames": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{64}$"
+                          },
+                          "additionalProperties": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                          }
                         }
                       },
                       "required": [

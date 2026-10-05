@@ -33,6 +33,8 @@ export interface FakeConnector {
   describeSql: DescribeSqlAnswer;
   /** A run (D2-I). */
   run: RunAnswer;
+  /** Where set, a run's answer by what it was sent, in place of `run`. */
+  runFor?: ((body: { readonly values: Record<string, unknown> }) => RunAnswer) | undefined;
   /** Where set, a test and a describe wait for it before answering: a source that is slow. */
   hold?: Promise<void> | undefined;
   /** Where set, each run takes this long to answer: how many it answers at once is counted. */
@@ -124,7 +126,9 @@ export function fakeConnector(): FakeConnector {
           if (fake.runMs !== undefined) {
             await new Promise((settle) => setTimeout(settle, fake.runMs));
           }
-          return Response.json(fake.run);
+          return Response.json(
+            fake.runFor ? fake.runFor(body as { values: Record<string, unknown> }) : fake.run,
+          );
         } finally {
           running -= 1;
         }

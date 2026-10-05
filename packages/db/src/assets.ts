@@ -9,6 +9,7 @@ import {
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { enqueueJob } from './queue.js';
+import { indexVersion } from './search.js';
 import type { TenantTransaction } from './tables.js';
 import { createArtifact, readVersion, type StoredVersion } from './versions.js';
 
@@ -30,6 +31,8 @@ export interface StoredAssetUpload {
   readonly spaceId: string;
   readonly uploader: string;
   readonly alternative: AssetAlternative | null;
+  /** A person's upload, or an image a dataset's result holds (D8-D). */
+  readonly origin: 'upload' | 'dataset';
   readonly state: AssetUploadState;
   readonly objectKey: string | null;
   readonly format: AssetFormat | null;
@@ -56,6 +59,7 @@ type UploadRow = {
   space_id: string;
   uploader: string;
   alternative: unknown;
+  origin: 'upload' | 'dataset';
   state: AssetUploadState;
   object_key: string | null;
   format: AssetFormat | null;
@@ -71,6 +75,7 @@ const uploadOf = (row: UploadRow): StoredAssetUpload => ({
   spaceId: row.space_id,
   uploader: row.uploader,
   alternative: row.alternative === null ? null : assetAlternativeSchema.parse(row.alternative),
+  origin: row.origin,
   state: row.state,
   objectKey: row.object_key,
   format: row.format,
@@ -156,6 +161,53 @@ export async function receiveAssetBytes(
 }
 
 /**
+ * The upload admitting an image a dataset's result holds into a space (the D8 plan, D8-D): the one
+ * already checking those bytes there, shared, or one made for it - `origin: 'dataset'`, no
+ * description, by the person whose act ran the result - moved to `checking` with the bytes already
+ * stored under their hash and read, and its `ingest` queued. The caller holds the bytes' hash
+ * (`holdObject`) from before it stored them, so two acts on one image share one upload, and no refusal
+ * removes the bytes in between.
+ */
+export async function uploadForDatasetImage(
+  trx: TenantTransaction,
+  input: {
+    readonly spaceId: string;
+    readonly uploader: string;
+    readonly key: string;
+    readonly format: AssetFormat;
+    readonly bytes: number;
+  },
+): Promise<{ readonly upload: StoredAssetUpload; readonly shared: boolean }> {
+  const checking = await trx
+    .selectFrom('asset_upload')
+    .selectAll()
+    .where('space_id', '=', input.spaceId)
+    .where('object_key', '=', input.key)
+    .where('state', '=', 'checking')
+    .orderBy('created_at')
+    .limit(1)
+    .executeTakeFirst();
+  if (checking) return { upload: uploadOf(checking), shared: true };
+  const made = await trx
+    .insertInto('asset_upload')
+    .values({
+      space_id: input.spaceId,
+      uploader: input.uploader,
+      alternative: null,
+      origin: 'dataset',
+    })
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  const received = await receiveAssetBytes(trx, made.id, {
+    key: input.key,
+    format: input.format,
+    bytes: input.bytes,
+  });
+  if (!received) throw new Error(`Upload ${made.id} was filled before it was made`);
+  return { upload: received, shared: false };
+}
+
+/**
  * The `ingest` job's success: the asset, in the upload's space, at version 0.1 by its uploader, with
  * what the check read and the description the uploader gave; and the upload `ready`, naming it. One
  * transaction, so an upload is never ready without its asset or the other way round.
@@ -199,6 +251,8 @@ export async function recordAsset(
     })
     .where('id', '=', id)
     .execute();
+  // Indexed as it was written, before the upload named it; a dataset's image is never found (D8-I).
+  if (upload.origin === 'dataset') await indexVersion(trx, version);
   return version;
 }
 

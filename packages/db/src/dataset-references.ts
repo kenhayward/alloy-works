@@ -1,4 +1,5 @@
 import type { Provenance } from '@alloy-works/domain';
+import { sql } from 'kysely';
 import type { TenantTransaction } from './tables.js';
 
 /**
@@ -37,5 +38,22 @@ export async function checkProvenanceNames(
     throw new Error(
       `A dataset version's provenance names connection ${provenance.connection.artifact}, and its query definition version names another`,
     );
+  }
+  for (const [hash, version] of Object.entries(provenance.images)) {
+    const held = await trx
+      .selectFrom('artifact_version as v')
+      .innerJoin('artifact as a', 'a.id', 'v.artifact_id')
+      .innerJoin('artifact as d', 'd.space_id', 'a.space_id')
+      .select('v.id')
+      .where('v.id', '=', version)
+      .where('v.kind', '=', 'asset')
+      .where('d.id', '=', provenance.queryDefinition.artifact)
+      .where(sql<boolean>`v.content ->> 'object' like ${`%/sha256/${hash}`}`)
+      .executeTakeFirst();
+    if (!held) {
+      throw new Error(
+        `A dataset version's provenance names asset version ${version} for image ${hash}, which is no asset version holding it in its definition's space`,
+      );
+    }
   }
 }

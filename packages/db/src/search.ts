@@ -55,6 +55,19 @@ async function projected(trx: TenantTransaction): Promise<boolean> {
   return rows[0]?.present === true;
 }
 
+/**
+ * Whether this tenant's uploads say where they came from yet (0051): an asset written before then -
+ * which only a test migrated to an earlier point writes - is a person's upload.
+ */
+async function hasUploadOrigin(trx: TenantTransaction): Promise<boolean> {
+  const { rows } = await sql<{ present: boolean }>`
+    select exists (
+      select 1 from pg_attribute
+       where attrelid = to_regclass('asset_upload') and attname = 'origin' and not attisdropped
+    ) as present`.execute(trx);
+  return rows[0]?.present === true;
+}
+
 /** Each artifact's latest content, by id, in one query: the names a version's words are said with. */
 async function latestContents(
   trx: TenantTransaction,
@@ -240,7 +253,17 @@ async function write(
  */
 export async function indexVersion(trx: TenantTransaction, version: StoredVersion): Promise<void> {
   if (!versioned.has(version.kind) || !(await projected(trx))) return;
-  const source = sourceOf(version);
+  // An asset a dataset's image made is never found (D8-I): read only through a document holding it.
+  const hidden =
+    version.kind === 'asset' &&
+    (await hasUploadOrigin(trx)) &&
+    (await trx
+      .selectFrom('asset_upload')
+      .select('id')
+      .where('asset_id', '=', version.artifactId)
+      .where('origin', '=', 'dataset')
+      .executeTakeFirst()) !== undefined;
+  const source = hidden ? undefined : sourceOf(version);
   const artifact = await trx
     .selectFrom('artifact')
     .select('space_id')

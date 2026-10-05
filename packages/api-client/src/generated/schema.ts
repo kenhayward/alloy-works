@@ -108,7 +108,7 @@ export interface paths {
         };
         /**
          * An asset version's recorded properties
-         * @description Reads the recorded properties of an asset version that the caller may access.
+         * @description Reads the recorded properties of an asset version that the caller may access. An image a dataset holds is read only by a caller who may also read a document holding it, and is otherwise not found.
          */
         get: operations["getAssetVersion"];
         put?: never;
@@ -128,7 +128,7 @@ export interface paths {
         };
         /**
          * An asset version's image, as it was uploaded
-         * @description Returns the stored image bytes of a readable asset version. Use the response media type as supplied.
+         * @description Returns the stored image bytes of a readable asset version. Use the response media type as supplied. An image a dataset holds is read only by a caller who may also read a document holding it, and is otherwise not found.
          */
         get: operations["getAssetVersionContent"];
         put?: never;
@@ -480,6 +480,26 @@ export interface paths {
          * @description Names a dataset. The name is kept beside every earlier one, and the latest is the name. It needs edit on the dataset, which sits in the space of its query definition.
          */
         put: operations["nameDataset"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/datasets/pending/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A result waiting on its images, finished once every image is admitted
+         * @description Follows a pending result, which a resolve or a check answers with status 202 for a binding whose run holds an image no asset in the definition's space holds yet. Each such image is stored and admitted as an asset, as an upload is. Asked while any image is still being admitted, it answers pending. Once every one is admitted, it records the dataset version, and for a resolve the binding's resolution, exactly as the act would have, deciding again the act's permissions, that the binding has not changed (`binding_changed`), and that it still holds what it held when the act ran (`resolution_precondition`, so an older result never replaces a newer one), and answers the act's own result for the binding; the pending result is then gone. Where an image is refused, nothing is recorded and the result is refused `image_refused`, naming its row and column. Only the person whose act ran it may follow it; anybody else is told there is no such pending result.
+         */
+        get: operations["getPendingResult"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -8784,6 +8804,237 @@ export interface operations {
             };
         };
     };
+    getPendingResult: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pending, or done with the act's own result for its binding */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "act": "resolve",
+                     *       "document": "example",
+                     *       "node": "example",
+                     *       "binding": "example",
+                     *       "state": "pending",
+                     *       "result": {
+                     *         "node": "example",
+                     *         "binding": "example",
+                     *         "outcome": "unchanged"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        /**
+                         * @description The act that ran it: a resolve, a resolve from an editing session, or a check
+                         * @enum {string}
+                         */
+                        act: "resolve" | "session" | "check";
+                        document: string;
+                        node: string;
+                        binding: string;
+                        /**
+                         * @description `pending`: an image is still being admitted; `done`: recorded, or refused, as `result` says
+                         * @enum {string}
+                         */
+                        state: "pending" | "done";
+                        /** @description Null while pending. Done, the act's own result for the binding: for a resolve, the version it now holds or the failure; for a check, its outcome. `image_refused` names the row and column of an image that is not one the product admits */
+                        result: ({
+                            node: string;
+                            binding: string;
+                            /** @constant */
+                            outcome: "unchanged";
+                        } | {
+                            node: string;
+                            binding: string;
+                            /** @constant */
+                            outcome: "revision";
+                            /** @description The different result, recorded and waiting to be accepted */
+                            version: string;
+                        } | {
+                            node: string;
+                            binding: string;
+                            /** @constant */
+                            outcome: "unchecked";
+                            /**
+                             * @description `limit`: past the 50 distinct runs a check makes; `permission`: the caller may not use its connection; `unresolved`: it holds nothing to compare, or has changed since it was resolved
+                             * @enum {string}
+                             */
+                            reason: "limit" | "permission" | "unresolved";
+                        } | {
+                            node: string;
+                            binding: string;
+                            /** @constant */
+                            outcome: "failed";
+                            failure: {
+                                /** @description Stable and machine-readable */
+                                code: string;
+                                /**
+                                 * @description Whose failure it is: the source's side, the query's author, or the product
+                                 * @enum {string}
+                                 */
+                                attribution: "connector" | "query" | "product";
+                                message: string;
+                                /** @description What the source said, where it refused the statement: `source_refused` alone */
+                                source?: {
+                                    /** @description The source's five-character SQLSTATE */
+                                    sqlstate: string;
+                                    /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                                    message?: string;
+                                };
+                                /** @description The column the failure names, where it names one */
+                                column?: string;
+                                /** @description The row the failure names, counted from 1 */
+                                row?: number;
+                                /** @description The query definition the binding names */
+                                definition: string;
+                                binding: string;
+                                node: string;
+                                document: string;
+                            };
+                        } | {
+                            node: string;
+                            binding: string;
+                            held: {
+                                dataset: string;
+                                /** @description The dataset version it now holds */
+                                version: string;
+                                /** @description Whether the run found what the latest version already records, so no version was made */
+                                reused: boolean;
+                            };
+                        } | {
+                            node: string;
+                            binding: string;
+                            failure: {
+                                /** @description Stable and machine-readable */
+                                code: string;
+                                /**
+                                 * @description Whose failure it is: the source's side, the query's author, or the product
+                                 * @enum {string}
+                                 */
+                                attribution: "connector" | "query" | "product";
+                                message: string;
+                                /** @description What the source said, where it refused the statement: `source_refused` alone */
+                                source?: {
+                                    /** @description The source's five-character SQLSTATE */
+                                    sqlstate: string;
+                                    /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                                    message?: string;
+                                };
+                                /** @description The column the failure names, where it names one */
+                                column?: string;
+                                /** @description The row the failure names, counted from 1 */
+                                row?: number;
+                                /** @description The query definition the binding names */
+                                definition: string;
+                                binding: string;
+                                node: string;
+                                document: string;
+                            };
+                        }) | null;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such pending result, one somebody else asked for, or one already done and recorded */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `storage_unavailable`: the environment has nowhere results are kept */
+            503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     listDefinitions: {
         parameters: {
             query?: {
@@ -10090,7 +10341,9 @@ export interface operations {
                                     /** @constant */
                                     canonical: 1;
                                     checksum: string;
-                                    images: Record<string, never>;
+                                    images: {
+                                        [key: string]: string;
+                                    };
                                 };
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
@@ -10245,7 +10498,9 @@ export interface operations {
                                     /** @constant */
                                     canonical: 1;
                                     checksum: string;
-                                    images: Record<string, never>;
+                                    images: {
+                                        [key: string]: string;
+                                    };
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -10695,7 +10950,9 @@ export interface operations {
                                 /** @constant */
                                 canonical: 1;
                                 checksum: string;
-                                images: Record<string, never>;
+                                images: {
+                                    [key: string]: string;
+                                };
                             };
                             /** @description The dataset's name, or null where nobody has named it */
                             name: string | null;
@@ -10850,7 +11107,9 @@ export interface operations {
                                 /** @constant */
                                 canonical: 1;
                                 checksum: string;
-                                images: Record<string, never>;
+                                images: {
+                                    [key: string]: string;
+                                };
                             };
                             /** @description The value the binding would take from it */
                             taken: {
@@ -11085,7 +11344,9 @@ export interface operations {
                                     /** @constant */
                                     canonical: 1;
                                     checksum: string;
-                                    images: Record<string, never>;
+                                    images: {
+                                        [key: string]: string;
+                                    };
                                 };
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
@@ -11240,7 +11501,9 @@ export interface operations {
                                     /** @constant */
                                     canonical: 1;
                                     checksum: string;
-                                    images: Record<string, never>;
+                                    images: {
+                                        [key: string]: string;
+                                    };
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -11536,7 +11799,9 @@ export interface operations {
                                     /** @constant */
                                     canonical: 1;
                                     checksum: string;
-                                    images: Record<string, never>;
+                                    images: {
+                                        [key: string]: string;
+                                    };
                                 };
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
@@ -11691,7 +11956,9 @@ export interface operations {
                                     /** @constant */
                                     canonical: 1;
                                     checksum: string;
-                                    images: Record<string, never>;
+                                    images: {
+                                        [key: string]: string;
+                                    };
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -11879,6 +12146,91 @@ export interface operations {
                                 node: string;
                                 document: string;
                             };
+                        } | {
+                            node: string;
+                            binding: string;
+                            /** @constant */
+                            outcome: "pending";
+                            /** @description A pending result: the run holds images not yet admitted as assets. Ask `GET /v1/datasets/pending/{id}` until it is done */
+                            pending: string;
+                        })[];
+                    };
+                };
+            };
+            /** @description As 200, where a different result holds images not yet admitted as assets: each such binding is answered with a pending result, recorded only once every image is admitted */
+            202: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": []
+                     *     }
+                     */
+                    "application/json": {
+                        results: ({
+                            node: string;
+                            binding: string;
+                            /** @constant */
+                            outcome: "unchanged";
+                        } | {
+                            node: string;
+                            binding: string;
+                            /** @constant */
+                            outcome: "revision";
+                            /** @description The different result, recorded and waiting to be accepted */
+                            version: string;
+                        } | {
+                            node: string;
+                            binding: string;
+                            /** @constant */
+                            outcome: "unchecked";
+                            /**
+                             * @description `limit`: past the 50 distinct runs a check makes; `permission`: the caller may not use its connection; `unresolved`: it holds nothing to compare, or has changed since it was resolved
+                             * @enum {string}
+                             */
+                            reason: "limit" | "permission" | "unresolved";
+                        } | {
+                            node: string;
+                            binding: string;
+                            /** @constant */
+                            outcome: "failed";
+                            failure: {
+                                /** @description Stable and machine-readable */
+                                code: string;
+                                /**
+                                 * @description Whose failure it is: the source's side, the query's author, or the product
+                                 * @enum {string}
+                                 */
+                                attribution: "connector" | "query" | "product";
+                                message: string;
+                                /** @description What the source said, where it refused the statement: `source_refused` alone */
+                                source?: {
+                                    /** @description The source's five-character SQLSTATE */
+                                    sqlstate: string;
+                                    /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                                    message?: string;
+                                };
+                                /** @description The column the failure names, where it names one */
+                                column?: string;
+                                /** @description The row the failure names, counted from 1 */
+                                row?: number;
+                                /** @description The query definition the binding names */
+                                definition: string;
+                                binding: string;
+                                node: string;
+                                document: string;
+                            };
+                        } | {
+                            node: string;
+                            binding: string;
+                            /** @constant */
+                            outcome: "pending";
+                            /** @description A pending result: the run holds images not yet admitted as assets. Ask `GET /v1/datasets/pending/{id}` until it is done */
+                            pending: string;
                         })[];
                     };
                 };
@@ -12099,7 +12451,9 @@ export interface operations {
                                     /** @constant */
                                     canonical: 1;
                                     checksum: string;
-                                    images: Record<string, never>;
+                                    images: {
+                                        [key: string]: string;
+                                    };
                                 };
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
@@ -12254,7 +12608,9 @@ export interface operations {
                                     /** @constant */
                                     canonical: 1;
                                     checksum: string;
-                                    images: Record<string, never>;
+                                    images: {
+                                        [key: string]: string;
+                                    };
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -12490,7 +12846,9 @@ export interface operations {
                                     /** @constant */
                                     canonical: 1;
                                     checksum: string;
-                                    images: Record<string, never>;
+                                    images: {
+                                        [key: string]: string;
+                                    };
                                 };
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
@@ -12645,7 +13003,9 @@ export interface operations {
                                     /** @constant */
                                     canonical: 1;
                                     checksum: string;
-                                    images: Record<string, never>;
+                                    images: {
+                                        [key: string]: string;
+                                    };
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -13037,7 +13397,9 @@ export interface operations {
                                 /** @constant */
                                 canonical: 1;
                                 checksum: string;
-                                images: Record<string, never>;
+                                images: {
+                                    [key: string]: string;
+                                };
                             };
                             /** @description The dataset's name, or null where nobody has named it */
                             name: string | null;
@@ -13192,7 +13554,9 @@ export interface operations {
                                 /** @constant */
                                 canonical: 1;
                                 checksum: string;
-                                images: Record<string, never>;
+                                images: {
+                                    [key: string]: string;
+                                };
                             };
                             /** @description The value the binding would take from it */
                             taken: {
@@ -13427,7 +13791,9 @@ export interface operations {
                                     /** @constant */
                                     canonical: 1;
                                     checksum: string;
-                                    images: Record<string, never>;
+                                    images: {
+                                        [key: string]: string;
+                                    };
                                 };
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
@@ -13582,7 +13948,9 @@ export interface operations {
                                     /** @constant */
                                     canonical: 1;
                                     checksum: string;
-                                    images: Record<string, never>;
+                                    images: {
+                                        [key: string]: string;
+                                    };
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -13878,7 +14246,9 @@ export interface operations {
                                     /** @constant */
                                     canonical: 1;
                                     checksum: string;
-                                    images: Record<string, never>;
+                                    images: {
+                                        [key: string]: string;
+                                    };
                                 };
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
@@ -14033,7 +14403,9 @@ export interface operations {
                                     /** @constant */
                                     canonical: 1;
                                     checksum: string;
-                                    images: Record<string, never>;
+                                    images: {
+                                        [key: string]: string;
+                                    };
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -14231,6 +14603,73 @@ export interface operations {
                                 node: string;
                                 document: string;
                             };
+                        } | {
+                            node: string;
+                            binding: string;
+                            /** @description A pending result: the run holds images not yet admitted as assets. Ask `GET /v1/datasets/pending/{id}` until it is done */
+                            pending: string;
+                        })[];
+                    };
+                };
+            };
+            /** @description As 200, where a run holds images not yet admitted as assets: each such binding is answered with a pending result, recorded only once every image is admitted */
+            202: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "results": []
+                     *     }
+                     */
+                    "application/json": {
+                        results: ({
+                            node: string;
+                            binding: string;
+                            held: {
+                                dataset: string;
+                                /** @description The dataset version it now holds */
+                                version: string;
+                                /** @description Whether the run found what the latest version already records, so no version was made */
+                                reused: boolean;
+                            };
+                        } | {
+                            node: string;
+                            binding: string;
+                            failure: {
+                                /** @description Stable and machine-readable */
+                                code: string;
+                                /**
+                                 * @description Whose failure it is: the source's side, the query's author, or the product
+                                 * @enum {string}
+                                 */
+                                attribution: "connector" | "query" | "product";
+                                message: string;
+                                /** @description What the source said, where it refused the statement: `source_refused` alone */
+                                source?: {
+                                    /** @description The source's five-character SQLSTATE */
+                                    sqlstate: string;
+                                    /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                                    message?: string;
+                                };
+                                /** @description The column the failure names, where it names one */
+                                column?: string;
+                                /** @description The row the failure names, counted from 1 */
+                                row?: number;
+                                /** @description The query definition the binding names */
+                                definition: string;
+                                binding: string;
+                                node: string;
+                                document: string;
+                            };
+                        } | {
+                            node: string;
+                            binding: string;
+                            /** @description A pending result: the run holds images not yet admitted as assets. Ask `GET /v1/datasets/pending/{id}` until it is done */
+                            pending: string;
                         })[];
                     };
                 };
@@ -14391,7 +14830,9 @@ export interface operations {
                                     /** @constant */
                                     canonical: 1;
                                     checksum: string;
-                                    images: Record<string, never>;
+                                    images: {
+                                        [key: string]: string;
+                                    };
                                 };
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
@@ -14546,7 +14987,9 @@ export interface operations {
                                     /** @constant */
                                     canonical: 1;
                                     checksum: string;
-                                    images: Record<string, never>;
+                                    images: {
+                                        [key: string]: string;
+                                    };
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -14802,7 +15245,9 @@ export interface operations {
                                     /** @constant */
                                     canonical: 1;
                                     checksum: string;
-                                    images: Record<string, never>;
+                                    images: {
+                                        [key: string]: string;
+                                    };
                                 };
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
@@ -14957,7 +15402,9 @@ export interface operations {
                                     /** @constant */
                                     canonical: 1;
                                     checksum: string;
-                                    images: Record<string, never>;
+                                    images: {
+                                        [key: string]: string;
+                                    };
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -15213,7 +15660,9 @@ export interface operations {
                                     /** @constant */
                                     canonical: 1;
                                     checksum: string;
-                                    images: Record<string, never>;
+                                    images: {
+                                        [key: string]: string;
+                                    };
                                 };
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
@@ -15368,7 +15817,9 @@ export interface operations {
                                     /** @constant */
                                     canonical: 1;
                                     checksum: string;
-                                    images: Record<string, never>;
+                                    images: {
+                                        [key: string]: string;
+                                    };
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -15604,7 +16055,9 @@ export interface operations {
                                     /** @constant */
                                     canonical: 1;
                                     checksum: string;
-                                    images: Record<string, never>;
+                                    images: {
+                                        [key: string]: string;
+                                    };
                                 };
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
@@ -15759,7 +16212,9 @@ export interface operations {
                                     /** @constant */
                                     canonical: 1;
                                     checksum: string;
-                                    images: Record<string, never>;
+                                    images: {
+                                        [key: string]: string;
+                                    };
                                 };
                                 /** @description The value the binding would take from it */
                                 taken: {
@@ -16149,7 +16604,9 @@ export interface operations {
                             /** @constant */
                             canonical: 1;
                             checksum: string;
-                            images: Record<string, never>;
+                            images: {
+                                [key: string]: string;
+                            };
                         };
                         result: {
                             /** @description Each column's name and its type's base */

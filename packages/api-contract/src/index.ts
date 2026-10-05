@@ -170,6 +170,8 @@ export {
   DocumentBindingsView,
   DocumentDatasetParams,
   DocumentDatasetView,
+  PendingResultParams,
+  PendingResultView,
   ProvenanceView,
   QueryDefinitionUsesView,
   ResolveBindingsBody,
