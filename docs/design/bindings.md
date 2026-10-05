@@ -25,14 +25,16 @@ nearest thing the editor already has to a binding; the one scroll, its modes and
 [themes.md](themes.md)'s. A bound table's presentation is `tables.md`'s, not designed; a template's
 parameters feeding a binding are the `templates.md` additions'.
 
-> **B1 and B3 built; B2 and B4 to B6 not built.** D3 built the binding's stored shape, datasets,
-> resolutions and the resolve, check and accept routes. [B1](../plans/2026-10-04-b1-the-value-shown.md)
-> built the editor's node - a component holding a binding opens for editing - `takeValue`,
-> `formatValue` and the value catalogue, `dataset_take`, the bindings view's values, and each value,
-> its failure and its provenance shown in a document. [B3](../plans/2026-10-05-b3-the-publish-stage.md)
-> built the publish's binding stage: a request refused for a binding with no result, the worker reading
-> each result from the store, values in the PDF, Word and a preview, `publication_binding`, and
-> `provenance.json` with its route. No screen places, resolves or accepts a binding yet (B2, B4).
+> **B1 to B3 built; B4 to B6 not built.** D3 built the binding's stored shape, datasets, resolutions
+> and the resolve, check and accept routes. [B1](../plans/2026-10-04-b1-the-value-shown.md) built the
+> editor's node - a component holding a binding opens for editing - `takeValue`, `formatValue` and the
+> value catalogue, `dataset_take`, the bindings view's values, and each value, its failure and its
+> provenance shown in a document. [B2](../plans/2026-10-05-b2-placing-and-changing.md) built the Value
+> dialog, placing and changing a binding, the session read, Keep (`confirm`, 0049) and the holders
+> route. [B3](../plans/2026-10-05-b3-the-publish-stage.md) built the publish's binding stage: a request
+> refused for a binding with no result, the worker reading each result from the store, values in the
+> PDF, Word and a preview, `publication_binding`, and `provenance.json` with its route (0050). No Data
+> tab resolves or accepts a binding yet (B4).
 
 ## The shape in one paragraph
 
@@ -135,7 +137,7 @@ it was made.
 | Resolve reads a binding from the component version the node resolves to (D3-E)                                                                                                                          | B2: it may also read it from the caller's own editing session's latest iteration, where the node floats at latest, so a binding just placed shows a value without a version being cut (BI-C)                                                                |
 | `resolutionsOf` answers a newer dataset version as waiting only where its checksum differs (D3, "Changed while building")                                                                               | B4: also where it ran a newer version of a floating binding's definition, so a definition moved on with the same rows is offered (BI-K)                                                                                                                     |
 | `binding_resolution.act` is `resolve` or `accept` (0047)                                                                                                                                                | B2: gains `confirm`, a held result kept across a binding change that leaves its question unchanged (BI-J)                                                                                                                                                   |
-| A publish and a preview of a document holding any binding are refused, `binding_unresolved` (`apps/service/src/publishing.ts`, `refuseBindings`); `assemble` refuses one too (`publishing/assemble.ts`) | B3: the request refuses only a binding holding no matching resolution, and records the rest; `assemble`'s refusal becomes the stage's own check (BI-L)                                                                                                      |
+| A publish and a preview of a document holding any binding are refused, `binding_unresolved` (`apps/service/src/publishing.ts`, `refuseBindings`); `assemble` refuses one too (`publishing/assemble.ts`) | B3, built: the request refuses only a binding holding no matching resolution, and records the rest; `assemble`'s refusal becomes the stage's own check (BI-L)                                                                                               |
 | `packages/domain/src/content/binding.ts`, `resolveBoundTable` over string rows, and `cases/case-03-bound-table-footnote.test.ts`: the scaffolding's bound table, which nothing outside its test imports | Left to `tables.md`, which replaces it; it is not the rule this design takes a value by. It cites no requirement, so the trace is unchanged by its removal                                                                                                  |
 | The theme has paragraph, character, table and image styles, and nothing for a value's format                                                                                                            | B1, built: a value catalogue beside the six kinds, not a seventh, at catalogue/3, and the default theme's 0.6 naming it as an optional `catalogues.value` (BI-F, B1-F)                                                                                      |
 | [component-editor.md](component-editor.md)'s table says of a binding "Create: No; Edit: Removal only; DAT, T2"                                                                                          | B1 and B2 make it true otherwise; that row is updated by the slice that changes it, as the editor's rows always have been                                                                                                                                   |

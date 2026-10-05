@@ -62,7 +62,7 @@ export interface PublicationRequestAssetTable {
   asset_kind: ColumnType<'asset', never, never>;
 }
 
-/** A binding a request holds, as its latest resolution (0049; B3-C): insert and read alone. */
+/** A binding a request holds, as its latest resolution (0050; B3-C): insert and read alone. */
 export interface PublicationRequestBindingTable {
   request_id: ColumnType<string, string, never>;
   node: ColumnType<string, string, never>;
@@ -74,7 +74,7 @@ export interface PublicationRequestBindingTable {
   dataset_kind: ColumnType<'dataset', never, never>;
 }
 
-/** A binding a publication printed from: exactly its request's (0049), insert and read alone. */
+/** A binding a publication printed from: exactly its request's (0050), insert and read alone. */
 export interface PublicationBindingTable {
   publication_id: ColumnType<string, string, never>;
   node: ColumnType<string, string, never>;

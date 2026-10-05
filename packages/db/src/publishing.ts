@@ -1225,7 +1225,7 @@ async function insertPublication(
       })),
     )
     .execute();
-  // Exactly the bindings the request recorded (B3-C), which 0049's check holds at commit.
+  // Exactly the bindings the request recorded (B3-C), which 0050's check holds at commit.
   if (bound) {
     await sql`insert into publication_binding
                 (publication_id, node, binding, resolution, dataset_version, dataset_id)

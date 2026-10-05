@@ -1,6 +1,6 @@
 import { bindingDigestInput, type Binding, type TakeFailure } from '@alloy-works/domain';
 import type { Node } from 'prosemirror-model';
-import { NodeSelection, type EditorState } from 'prosemirror-state';
+import { NodeSelection, type Command, type EditorState } from 'prosemirror-state';
 
 import { editorSchema } from './schema.js';
 
@@ -234,3 +234,69 @@ export function bindingSelected(state: EditorState): BindingSelected | null {
   if (!(selection instanceof NodeSelection) || selection.node.type !== bindingNode) return null;
   return { pos: selection.from, binding: storedBinding(selection.node) };
 }
+
+/** What the Value dialog chooses for a binding: everything it stores but its kind and identifier. */
+export type BindingChoice = Omit<Binding, 'type' | 'id'>;
+
+const attrsOf = (choice: BindingChoice) => ({
+  query: choice.query,
+  version: choice.version ?? null,
+  parameters: choice.parameters,
+  mode: choice.mode,
+  take: choice.take,
+});
+
+/**
+ * Whether a binding could be placed at the selection's end (the B2 plan, task 1): wherever a content
+ * expression of the component's schema admits one there - each of the seven inline homes, a
+ * footnote's own editor among them - and so never in preformatted text, beside a block selected
+ * whole, or in a section's title, whose schema is another.
+ */
+export const bindingPlaceable = (state: EditorState): boolean => {
+  const { $to } = state.selection;
+  const index = $to.index();
+  return (
+    $to.parent.type.schema === editorSchema &&
+    $to.parent.inlineContent &&
+    $to.parent.canReplaceWith(index, index, bindingNode)
+  );
+};
+
+/**
+ * Places a binding at the end of the selection and selects it whole, as a reference is placed. It
+ * carries no identifier: the identity plugin gives it a fresh one, as it names a block.
+ */
+export function insertBinding(choice: BindingChoice): Command {
+  return (state, dispatch) => {
+    if (!bindingPlaceable(state)) return false;
+    if (dispatch) {
+      const { $to } = state.selection;
+      const tr = state.tr.insert($to.pos, bindingNode.create({ id: null, ...attrsOf(choice) }));
+      dispatch(tr.setSelection(NodeSelection.create(tr.doc, $to.pos)).scrollIntoView());
+    }
+    return true;
+  };
+}
+
+/**
+ * Changes the binding at `pos`, keeping its identifier - the same binding, changed, so each document's
+ * resolutions still name it - and keeping it selected whole. False where no binding stands there.
+ */
+export function changeBinding(pos: number, choice: BindingChoice): Command {
+  return (state, dispatch) => {
+    const node = state.doc.nodeAt(pos);
+    if (node?.type !== bindingNode) return false;
+    if (dispatch) {
+      const tr = state.tr.setNodeMarkup(pos, undefined, { id: node.attrs.id, ...attrsOf(choice) });
+      dispatch(tr.setSelection(NodeSelection.create(tr.doc, pos)));
+    }
+    return true;
+  };
+}
+
+/**
+ * **Value** as a registry command (B2-A): whether one could be placed, or one is selected whole to
+ * change. What it binds is the author's to choose in the renderer's dialog, so it places nothing.
+ */
+export const canPlaceBinding: Command = (state) =>
+  bindingPlaceable(state) || bindingSelected(state) !== null;

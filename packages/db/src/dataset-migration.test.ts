@@ -156,7 +156,8 @@ describe('migration 0047, over an environment made before it', () => {
     expect((await migrate(db.migratorUrl)).tenants[upgraded.id]).toEqual([
       '0047_datasets',
       '0048_bound_values',
-      '0049_publication_bindings',
+      '0049_binding_confirm',
+      '0050_publication_bindings',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1).

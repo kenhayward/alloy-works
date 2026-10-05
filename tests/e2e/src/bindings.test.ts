@@ -344,6 +344,154 @@ describe('a binding over the whole system', () => {
     await vi.waitFor(() => atTheSource('select 1;'), { timeout: 60_000, interval: 500 });
   }, 180_000);
 
+  it('resolves a binding from an editing session, keeps it across a changed take, and names its holders, over the whole system', async () => {
+    const connection = ok(
+      await call('POST', `/v1/spaces/${general}/connections`, {
+        settings: {
+          schemaVersion: 1,
+          name: `Readings for placing ${Date.now()}`,
+          description: 'The development source.',
+          type: 'postgres',
+          source: {
+            host: 'source-postgres',
+            port: 5432,
+            database: 'readings',
+            account: READER.account,
+            tls: 'require',
+          },
+          identity: { kind: 'service' },
+          retired: false,
+        },
+      }),
+    )['id'] as string;
+    ok(await call('PUT', `/v1/connections/${connection}/credential`, { secret: READER.password }));
+    const definition = ok(
+      await call('POST', `/v1/spaces/${general}/query-definitions`, {
+        definition: {
+          schemaVersion: 1,
+          title: `Site placed ${Date.now()}`,
+          description: 'One site, by its id.',
+          connection,
+          parameters: [{ name: 'site', type: { base: 'integer' }, required: true, list: false }],
+          fetch: {
+            kind: 'sql',
+            text: `select id, name from ${table} where id = {{site}} order by id`,
+          },
+          columns: [
+            { name: 'id', from: { column: 'id' }, type: { base: 'integer' } },
+            { name: 'name', from: { column: 'name' }, type: { base: 'text' } },
+          ],
+          key: ['id'],
+          order: [{ column: 'id', direction: 'ascending' }],
+          empty: 'valid',
+          limits: { rows: 100, bytes: 65_536, seconds: 10 },
+          retired: false,
+        },
+      }),
+    )['id'] as string;
+    const component = ok(
+      await call('POST', `/v1/spaces/${general}/components`, {
+        title: 'Placed site',
+        language: 'en-GB',
+        direction: 'ltr',
+      }),
+    ) as { id: string; version: { id: string } };
+    const made = ok(
+      await call('POST', `/v1/spaces/${general}/documents`, {
+        title: `Placed report ${Date.now()}`,
+        language: 'en-GB',
+        direction: 'ltr',
+      }),
+    ) as { id: string; version: { id: string } };
+    const node = (
+      ok(
+        await call('POST', `/v1/documents/${made.id}/outline`, {
+          openedFrom: made.version.id,
+          operation: {
+            operation: 'insert',
+            parent: null,
+            position: 0,
+            node: { type: 'reference', component: component.id, mode: { kind: 'latest' } },
+          },
+        }),
+      ) as { outline: { nodes: { id: string }[] } }
+    ).outline.nodes[0]!.id;
+
+    // Placed in an editing session, never cut: resolved from the session.
+    const session = randomUUID();
+    ok(await call('POST', `/v1/components/${component.id}/lock`, { session }));
+    const save = (sequence: number, take: Json) =>
+      call('PUT', `/v1/components/${component.id}/iterations/${session}/${sequence}`, {
+        openedFrom: component.version.id,
+        content: {
+          schemaVersion: 1,
+          title: 'Placed site',
+          language: 'en-GB',
+          direction: 'ltr',
+          content: [
+            {
+              type: 'paragraph',
+              id: 'p1',
+              style: 'body',
+              content: [
+                { type: 'text', value: 'The second site is ', marks: [] },
+                {
+                  type: 'binding',
+                  id: 'placed',
+                  query: definition,
+                  parameters: { site: { literal: '2' } },
+                  mode: 'checked',
+                  take,
+                },
+              ],
+            },
+          ],
+        },
+      });
+    ok(await save(1, { column: 'name' }));
+    ok(
+      await call('POST', `/v1/documents/${made.id}/bindings/resolve`, {
+        bindings: [{ node, binding: 'placed', from: 'session' }],
+        session,
+      }),
+    );
+    const stateOf = async (query = '') =>
+      (
+        ok(await call('GET', `/v1/documents/${made.id}/bindings${query}`)) as {
+          bindings: { held: { version: string; keepable: boolean; act: string; taken: Json } }[];
+        }
+      ).bindings[0]!;
+    const held = (await stateOf(`?session=${session}`)).held;
+    expect(held.taken).toMatchObject({ value: 'South quay' });
+
+    // The take changed: kept, querying nothing.
+    ok(await save(2, { column: 'id' }));
+    expect((await stateOf(`?session=${session}`)).held).toMatchObject({ keepable: true });
+    expect(
+      ok(
+        await call('POST', `/v1/documents/${made.id}/bindings/confirm`, {
+          node,
+          binding: 'placed',
+          replaces: held.version,
+          from: 'session',
+          session,
+        }),
+      ),
+    ).toMatchObject({ held: { version: held.version, act: 'confirm', taken: { value: '2' } } });
+
+    // Its holders, and once cut, the version holds it kept.
+    expect(
+      ok(await call('GET', `/v1/components/${component.id}/bindings/placed/holders`)),
+    ).toMatchObject({ documents: { readable: [{ id: made.id }], others: 0 } });
+    ok(
+      await call(
+        'DELETE',
+        `/v1/components/${component.id}/lock?session=${session}&openedFrom=${component.version.id}`,
+      ),
+    );
+    expect((await stateOf()).held).toMatchObject({ act: 'confirm', taken: { value: '2' } });
+  });
+
   it('answers the value each binding takes through the bindings view, its provenance redacted to a reader as the definition and the connection allow, over the whole system', async () => {
     const graceCookie = await signIn('grace');
     const asGrace = async (path: string) => {
