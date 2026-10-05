@@ -29,10 +29,22 @@ jobs:
     outputs:
       full: ${{ steps.decide.outputs.full }}
       docs: ${{ steps.decide.outputs.docs }}
+      suites: ${{ steps.reach.outputs.suites }}
+      rest: ${{ steps.reach.outputs.rest }}
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
 
       - id: decide
         run: |
@@ -45,6 +57,16 @@ jobs:
           if echo "$files" | grep -qvE '^(docs/|changes/|packages/trace/trace\.json$|[^/]+\.md$)'; then docs=false; else docs=true; fi
           echo "full=$full" >> "$GITHUB_OUTPUT"
           echo "docs=$docs" >> "$GITHUB_OUTPUT"
+
+      # The five longest suites run a job each, on the fast path as on the full run; every other
+      # package's tests run in the build job. On the fast path, only what the change reaches: the
+      # packages it changes and every package that depends on them (`turbo ls --affected`).
+      - id: reach
+        env:
+          FULL: ${{ steps.decide.outputs.full }}
+          DOCS: ${{ steps.decide.outputs.docs }}
+        run: |
+          node .github/scripts/reach.mjs >> "$GITHUB_OUTPUT"
 
   build:
     name: Lint, typecheck, build and test
@@ -107,22 +129,6 @@ jobs:
           docker logs seaweedfs
           exit 1
 
-      # The pinned Typst, checked against its hash: the same version the tests, CI and the image use.
-      - name: Typst
-        if: env.DOCS != 'true'
-        run: pnpm --filter @alloy-works/worker fetch-typst
-
-      # The pinned veraPDF, by digest: the checker the regression corpus answers to (PUB-087).
-      - name: veraPDF
-        if: env.DOCS != 'true'
-        run: pnpm --filter @alloy-works/worker fetch-verapdf
-
-      # The Word validator, built from digest-pinned .NET images and a locked Open XML SDK: the check
-      # every .docx a worker test makes answers to.
-      - name: Word validator
-        if: env.DOCS != 'true'
-        run: pnpm --filter @alloy-works/worker fetch-ooxml-check
-
       # Lint, format, typecheck and build block (docs/ci-and-releases.md). Test keeps continue-on-error:
       # the traceability gate already fails the run on a failed test report, after the reports upload.
       - name: Lint
@@ -140,16 +146,12 @@ jobs:
         if: env.DOCS != 'true'
         run: pnpm build
 
-      # The connector's own source, should the change reach its suite on the fast path.
-      - name: Connector source
-        if: env.FULL != 'true' && env.DOCS != 'true'
-        run: pnpm --filter @alloy-works/connector source
-
-      # A test that fails is tried once more (ADR-0039); one that then passes does not block, and the
-      # Flakes step below reports it.
+      # Every package's tests but the five suites' (`rest`), or on the fast path those of them the
+      # change reaches. A test that fails is tried once more (ADR-0039); one that then passes does not
+      # block, and the Flakes step below reports it.
       - name: Test the changed packages
-        if: env.FULL != 'true' && env.DOCS != 'true'
-        run: pnpm exec turbo run test --continue --affected -- --retry=1
+        if: env.FULL != 'true' && env.DOCS != 'true' && needs.changes.outputs.rest != ''
+        run: pnpm exec turbo run test --continue ${{ needs.changes.outputs.rest }} -- --retry=1
 
       - name: The docs' own checks
         if: env.DOCS == 'true'
@@ -159,10 +161,10 @@ jobs:
         if: env.FULL != 'true'
         run: pnpm trace check
 
-      # Every suite but the connector's, the service's and the database's, which have jobs of their own.
+      # Every suite but the five, which have jobs of their own.
       - name: Test
         if: env.FULL == 'true'
-        run: pnpm exec turbo run test --continue --filter='!@alloy-works/connector' --filter='!@alloy-works/service' --filter='!@alloy-works/db' -- --retry=1
+        run: pnpm exec turbo run test --continue ${{ needs.changes.outputs.rest }} -- --retry=1
         continue-on-error: true
 
       - name: Flakes
@@ -225,17 +227,17 @@ jobs:
           # And the per-request child it spawns is beside its entry point.
           docker run --rm --entrypoint test alloy-works-connector -f dist/child.js
 
-  # The three longest suites, each beside the job above on a runner of its own: the connector's runs
-  # one file at a time, and the service's and the database's took a CPU each from one another there.
+  # The five longest suites, each beside the job above on a runner of its own, on either path: run on
+  # one runner, a change to a package they all depend on took nine minutes (ADR-0039).
   suites:
     name: The ${{ matrix.suite }} suite
     needs: changes
-    if: needs.changes.outputs.full == 'true'
+    if: needs.changes.outputs.suites != '[]'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        suite: [connector, service, db]
+        suite: ${{ fromJSON(needs.changes.outputs.suites) }}
     services:
       postgres:
         image: pgvector/pgvector:pg17
@@ -266,7 +268,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Object store
-        if: ${{ matrix.suite == 'service' }}
+        if: ${{ matrix.suite == 'service' || matrix.suite == 'worker' }}
         run: |
           docker run -d --name seaweedfs -p 8333:8333             -e AWS_ACCESS_KEY_ID=alloy-store-admin             -e AWS_SECRET_ACCESS_KEY=alloy-store-admin-dev-secret             chrislusf/seaweedfs:4.46 server -dir=/data -s3 -s3.port=8333 -s3.iam.readOnly=false
           for attempt in $(seq 1 60); do
@@ -282,6 +284,16 @@ jobs:
         if: ${{ matrix.suite == 'connector' }}
         run: pnpm --filter @alloy-works/connector source
 
+      # The worker's own tools: the pinned Typst, checked against its hash; veraPDF by digest, the
+      # checker the regression corpus answers to (PUB-087); and the Word validator every .docx a
+      # worker test makes answers to.
+      - name: The worker's tools
+        if: ${{ matrix.suite == 'worker' }}
+        run: |
+          pnpm --filter @alloy-works/worker fetch-typst
+          pnpm --filter @alloy-works/worker fetch-verapdf
+          pnpm --filter @alloy-works/worker fetch-ooxml-check
+
       - name: Test
         run: pnpm exec turbo run test --filter=@alloy-works/${{ matrix.suite }} -- --retry=1
 
@@ -292,7 +304,7 @@ jobs:
         run: .github/scripts/flakes.sh
 
       - name: Test reports
-        if: always()
+        if: always() && needs.changes.outputs.full == 'true'
         uses: actions/upload-artifact@v5
         with:
           name: trace-results-${{ matrix.suite }}

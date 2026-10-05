@@ -5,18 +5,19 @@
 `.github/workflows/ci.yml` runs at two speeds ([ADR-0039](decisions/0039-ci-at-two-speeds-and-fewer-prs.md)).
 A newer push to a branch cancels the older run.
 
-| Path | When                                                                                     | Runs                                                                                                             |
-| ---- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Docs | A PR touching only `docs/`, `changes/`, Markdown and `trace.json`                        | Format, the trace and desktop suites, `pnpm trace check`                                                         |
-| Fast | Any other PR                                                                             | Lint, format, typecheck, build, `pnpm trace check`, and `turbo run test --affected`: the changed packages' tests |
-| Full | A close (`version.json` changed), a PR changing `.github/` or `deploy/`, `main`, nightly | Everything below                                                                                                 |
+| Path | When                                                                                     | Runs                                                                                                 |
+| ---- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Docs | A PR touching only `docs/`, `changes/`, Markdown and `trace.json`                        | Format, the trace and desktop suites, `pnpm trace check`                                             |
+| Fast | Any other PR                                                                             | Lint, format, typecheck, build, `pnpm trace check`, and the tests of the packages the change reaches |
+| Full | A close (`version.json` changed), a PR changing `.github/` or `deploy/`, `main`, nightly | Every suite, the whole system and the gate                                                           |
 
-| Job (full run)      | Runs                                                                                   |
-| ------------------- | -------------------------------------------------------------------------------------- |
-| Lint, typecheck...  | The fast path's checks, every suite but three, and the images built and started        |
-| The `<suite>` suite | The connector's, the service's and the database's suites, a job each                   |
-| The whole system    | The stack in containers, `pnpm test:e2e` and `pnpm test:browser` but `budgets.test.ts` |
-| Traceability gate   | `pnpm trace gate` over every job's reports                                             |
+| Job                 | Runs                                                                                                                                     |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| What changed        | The path, and what the change reaches: `.github/scripts/reach.mjs` over `turbo ls --affected`, the changed packages and their dependents |
+| Lint, typecheck...  | The checks, every package's tests but the five suites', and on the full run the images built and started                                 |
+| The `<suite>` suite | The connector's, service's, database's, web's and worker's suites, a job each, on either path, each only if reached                      |
+| The whole system    | Full run: the stack in containers, `pnpm test:e2e` and `pnpm test:browser` but `budgets.test.ts`                                         |
+| Traceability gate   | Full run: `pnpm trace gate` over every job's reports                                                                                     |
 
 - **`Checks` is the one required check**: every job passed or was not asked for. On `main` a red
   full run opens an issue, `main is red`, or comments on the open one; a close runs the full run, so
@@ -30,8 +31,10 @@ A newer push to a branch cancels the older run.
   step blocks.
 - **The end-to-end and browser steps** set every address they drive to the job's own stack. Neither
   suite has a default ([deploy/README.md](../deploy/README.md#running-the-suites-against-a-stack)).
-- **Three suites have a job each**, beside the build job: the connector's runs one file at a time,
-  and the service's and the database's took a CPU each from one another on one runner. The stack's
+- **Five suites have a job each**, beside the build job, on the fast path as on the full run: on one
+  runner, a change to a package they all depend on took nine minutes. The service's and database's
+  suites run one file at a time without isolation, so a file reuses the modules the one
+  before it loaded. The stack's
   images are built with layers from the Actions cache, one scope a target, written by the
   whole-system job; a pull request reads `main`'s cache, never another branch's.
 - **The navigation budgets run only off CI.** They bind only on the reference machine (B-P), so
