@@ -69,6 +69,11 @@ export const QueryDefinitionSummary = z.object({
         .string()
         .nullable()
         .describe('Its latest name, or null where the caller may not read the connection'),
+      identity: z
+        .enum(['service', 'endUser'])
+        .describe(
+          'Whose identity the connection runs a query as, told to every reader of the definition',
+        ),
     })
     .nullable()
     .describe('The connection it names'),

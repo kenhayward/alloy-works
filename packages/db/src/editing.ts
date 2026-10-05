@@ -240,6 +240,33 @@ export async function latestSequence(
   return (await latestAccepted(trx, session))?.sequence ?? null;
 }
 
+/**
+ * What one editing session holds of a component now, for a binding read from it (the B2 plan, B2-C):
+ * the content of its latest iteration, only where that session, of that principal, holds the lock now
+ * and the iteration was opened from the component's latest version - otherwise undefined, as for any
+ * other session, a lapsed lock or an iteration opened before the latest cut.
+ */
+export async function sessionContent(
+  trx: TenantTransaction,
+  session: EditingSession,
+): Promise<{ readonly content: unknown; readonly openedFrom: string } | undefined> {
+  if (!UUID.test(session.artifactId) || !UUID.test(session.session)) return undefined;
+  const lock = await holding(trx, session);
+  if (isRefusal(lock)) return undefined;
+  const latest = await trx
+    .selectFrom('iteration')
+    .select(['content', 'opened_from'])
+    .where('artifact_id', '=', session.artifactId)
+    .where('principal_id', '=', session.principal)
+    .where('session_id', '=', session.session)
+    .orderBy('sequence', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+  const current = await latestVersion(trx, session.artifactId);
+  if (!latest || !current || latest.opened_from !== current.id) return undefined;
+  return { content: latest.content, openedFrom: latest.opened_from };
+}
+
 /** SHA-256 over an iteration's canonical content and values, in the version digest's own rules. */
 export function iterationDigest(content: ContentDocument, values: MetadataValues): string {
   return sha256Hex(`{"content":${canonicalise(content)},"values":${canonicaliseValues(values)}}`);
