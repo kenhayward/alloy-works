@@ -101,7 +101,13 @@ describe('publishing a document holding a value', () => {
     over: ObjectStores = stores,
     conditionContent?: (node: string, content: ContentDocument) => ContentDocument,
   ) => {
-    const publish = publishJob({ db: worker, stores: over, typst, fonts, conditionContent });
+    const publish = publishJob({
+      db: worker,
+      stores: over,
+      typst,
+      fonts,
+      ...(conditionContent ? { conditionContent } : {}),
+    });
     return processNextBesideChecks(
       {
         queue,
