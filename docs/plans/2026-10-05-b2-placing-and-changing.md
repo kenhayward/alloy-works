@@ -133,5 +133,15 @@ Answered by Ken on 2026-10-05, with the decisions: every one as recommended.
 
 ## Changed while building
 
-| Found | Change |
-| ----- | ------ |
+| Found                                                                                                        | Change                                                                                                                                                                  |
+| ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Task 2: the listing reads each connection's latest name in one query of `listReadableQueryDefinitions`       | B2-B's `identity` is read there beside the name, in `packages/db`, and the service passes it on                                                                         |
+| Task 2: the session read needs the lock, the latest iteration and the version it opened from in one place    | `sessionContent` in `packages/db/src/editing.ts`; `bindingsPlaced` uses it only for a node floating at `latest`                                                         |
+| Task 3: a binding placed in a session is in no version, so the bindings view could not show its value (B2-H) | `GET .../bindings` takes `?session=`, read as a resolve's session item but falling back to the version; the page reads it so while its editor has placed or changed one |
+| Task 3: `mayRun` also asks `write_sql` for SQL, and resolving needs `use_connection` alone                   | The definition view gains `mayUse`, which the dialog's who-may-resolve note reads                                                                                       |
+| Task 3: `checkTake` needs the definition's key as well as the held version's columns                         | Keep checks the take against the definition version the held result ran                                                                                                 |
+| Task 4: no route lists a definition's versions                                                               | The Version step offers Always the latest, the latest pinned, or the pin the binding already has                                                                        |
+| Task 4: a binding just placed is in no save until the pause, and the first change is still claiming          | The session gains `saveNow`, which waits for the claim and saves at once; the editor calls it before telling the page                                                   |
+| Task 4: resolving or keeping after Insert, Change, Keep and Resolve is one act of the page's                 | `settleBinding` in `apps/web/src/structure`, tested with a fake client; a Change re-reads the view with the session and keeps where `keepable`                          |
+| Task 4: the dialog has no held result to compare a change with                                               | Its warning asks `questionUnchanged` with the binding it changes standing in for the held result                                                                        |
+| Task 4: a resolve refused for the connection after Insert left nothing said                                  | The page says in its status bar that somebody who may use the connection resolves it                                                                                    |
