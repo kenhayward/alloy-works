@@ -98,3 +98,19 @@ Answered by Ken on 2026-10-05: every one as recommended.
 2. D8-C: images count against the result's byte limit, so a few photographs need the limit raised
    towards its 25 MiB ceiling? **Recommended: yes.**
 3. D8-H: the figure's binding member (DAT-098) moves to B6? **Recommended: yes.**
+
+## Changed while building
+
+| PR   | Found                                                                                               | Change                                                                                                                                     |
+| ---- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| D8.1 | A run's answer at the 25 MiB ceiling, its images base64, comes to about 34 MiB, past the 32 MiB cap | The connector's answer cap raised from 32 to 40 MiB                                                                                        |
+| D8.1 | A describe cannot name an image's description, which is the author's                                | `proposedTypeSchema`: the eight, or `{base: 'image', encoding: 'binary'}` with no description                                              |
+| D8.1 | PostgreSQL sends `bytea` as hex, two characters a byte, counted against the byte limit as sent      | An image is in effect capped near half the result's byte limit; named, not changed                                                         |
+| D8.2 | Finishing needed more than the plan's `dataset_pending` columns                                     | The pending row holds the whole provenance and, for a resolve, the held resolution; one pending row per binding                            |
+| D8.2 | Access or the binding could move while images were admitted                                         | The finish decides the act's permissions again and refuses `access_changed` or `binding_changed`; a finished row is deleted                |
+| D8.2 | An older pending result could finish after a newer resolution (final review)                        | The pending row records what the binding held; the finish is refused `resolution_precondition` once that has moved                         |
+| D8.2 | Two acts sharing images across questions could each hold a lock the other waits for (review)        | An act takes every image lock it needs in one sorted pass before admitting any; the review's other findings fixed in the same PR           |
+| D8.2 | Not in the plan: who may read a dataset's image                                                     | D8-I, Ken's: read only through a document holding it, never in search                                                                      |
+| D8.3 | D8-G needs each image's header on the screen, and a sample answered only hashes                     | The sample answer gains `images`, each image in the rows shown by its format, size and pixels, checked against its hash as a resolve's are |
+| D8.3 | The seed's images are admitted once per stack, so a rerun of the e2e test would find them kept      | The e2e test makes a photograph of its own each run for the ingest path, and reads `sample.site_photo` twice for the reuse                 |
+| D8.4 | ADR-0039: a slice's close rides in its last build PR                                                | D8's close is in D8.3's PR                                                                                                                 |

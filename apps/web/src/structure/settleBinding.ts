@@ -1,6 +1,7 @@
 import type { createApiClient } from '@alloy-works/api-client';
 
 import { bindingStatesIn } from './bindingContexts.js';
+import { followPending, WAITING_ON_IMAGES } from './pendingResult.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -14,6 +15,12 @@ const WHY = {
   moved: 'The value changed meanwhile. Look at it again in the Value panel.',
 } as const satisfies Record<'forbidden' | 'failed' | 'moved', string>;
 
+/** How a settle that waits on a result's images says so, and pauses between asks (a test's). */
+export interface SettleOptions {
+  readonly onWaiting?: (words: string) => void;
+  readonly wait?: (ms: number) => Promise<void>;
+}
+
 /** The act settling each binding now, by document, node and binding, which the next one waits for. */
 const settling = new Map<string, Promise<unknown>>();
 
@@ -22,7 +29,9 @@ const settling = new Map<string, Promise<unknown>>();
  * B2 plan, B2-C, B2-H; BI-C, BI-J): read from the author's own editing `session` where the page has
  * one, or from the version where it has none. A binding placed, or changed so its question changed,
  * is resolved - the one query placing makes; one changed with its question unchanged, or kept, keeps
- * the result it holds, `confirm`, querying nothing. Answers what the author should be told, or null.
+ * the result it holds, `confirm`, querying nothing. A result waiting on its images is followed until
+ * it is recorded (the D8 plan, D8-F), saying so meanwhile. Answers what the author should be told, or
+ * null.
  */
 export function settleBinding(
   client: Client,
@@ -31,13 +40,14 @@ export function settleBinding(
   binding: string,
   session: string | null,
   act: SettleAct,
+  options: SettleOptions = {},
 ): Promise<string | null> {
   // One act at a time for one binding: a Keep asked while a Change settles reads what it left.
   const key = `//`;
   const before = settling.get(key) ?? Promise.resolve();
   const settled = before
     .catch(() => undefined)
-    .then(() => settleNow(client, document, node, binding, session, act));
+    .then(() => settleNow(client, document, node, binding, session, act, options));
   settling.set(key, settled);
   void settled
     .catch(() => undefined)
@@ -54,6 +64,7 @@ async function settleNow(
   binding: string,
   session: string | null,
   act: SettleAct,
+  options: SettleOptions,
 ): Promise<string | null> {
   const from = session === null ? {} : { from: 'session' as const };
   const named = session === null ? {} : { session };
@@ -67,7 +78,7 @@ async function settleNow(
     )?.held;
     if (held?.keepable === true) replaces = held.version;
   }
-  const { response } =
+  const { data, response } =
     replaces !== null
       ? await client.POST('/v1/documents/{id}/bindings/confirm', {
           params: { path: { id: document } },
@@ -79,5 +90,19 @@ async function settleNow(
         });
   if (response.status === 403) return WHY.forbidden;
   if (response.status === 409) return WHY.moved;
-  return response.ok ? null : WHY.failed;
+  if (!response.ok) return WHY.failed;
+  // Its images are being admitted: followed, as an upload is, then said as the resolve's own result.
+  const results = (data as { results?: unknown } | undefined)?.results;
+  const pending = Array.isArray(results)
+    ? (results as { node?: unknown; binding?: unknown; pending?: unknown }[]).find(
+        (each) => each.node === node && each.binding === binding,
+      )?.pending
+    : undefined;
+  if (typeof pending !== 'string') return null;
+  options.onWaiting?.(WAITING_ON_IMAGES);
+  const followed = await followPending(client, pending, options.wait);
+  if ('sentence' in followed) return followed.sentence;
+  const failure = followed.done.failure as { message?: unknown } | undefined;
+  if (failure === undefined) return null;
+  return typeof failure.message === 'string' ? failure.message : WHY.failed;
 }

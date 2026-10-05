@@ -3,6 +3,44 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.136.0 - 2026-10-05 (PR #416)
+
+### Added
+
+- **Image columns.** A query definition can declare an image column, read from a PostgreSQL binary
+  column or base64 text; each image must be a PNG or a JPEG, and the result holds its hash.
+- **Images in a result become assets.** Each image a resolved or checked result holds is admitted as
+  an asset in the definition's space, as an upload is, and reused where an asset there already holds
+  it; a result waiting on its images is recorded only once every one is admitted, and one image
+  refused refuses the result, naming its row and column. Such an image is read only through a
+  document holding it, and is never found in search.
+- **Image columns on the definition page.** A binary column is proposed as an image; its encoding
+  and the text column describing it, or decorative, are declared on the page. A sample shows each
+  image as its format, size and pixels, and Resolve, Check now and the check on opening wait while a
+  result's images are checked, saying so.
+
+### Changed
+
+- **CI at two speeds.** A pull request checks only what it changes, in a few minutes; the whole
+  system runs on a close, after each merge and nightly, and a test that passes on a retry no longer
+  blocks.
+- **Faster CI.** The connector's, the service's and the database's suites run in jobs of their own,
+  the five longest suites run side by side on every pull request, each only when the change reaches
+  it, the stack's images reuse cached layers, and the navigation and publishing budgets run only off
+  CI, where they bind.
+- **Navigation budgets at the 90th percentile.** Opening a large document, each outline act and each
+  jump are now held at p90 over ten samples, where they were p95 over twenty.
+- **Faster web tests.** The two largest editor and document test files are split so they run in
+  parallel.
+- **SQL Server waits.** PostgreSQL is the database connection the product supports; SQL Server is
+  deferred past the first release.
+- **Plan D8.** How a query reads images from a PostgreSQL column and admits each one as an asset
+  before its result is kept.
+
+### Fixed
+
+- **A flaky equation test.** The equation dialog's focus is waited for, not read once.
+
 ## 0.135.0 - 2026-10-05 (PR #403)
 
 ### Added

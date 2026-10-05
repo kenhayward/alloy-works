@@ -28,6 +28,7 @@ import styles from './DocumentPage.module.css';
 import { ComponentEditor } from '../editor/ComponentEditor.js';
 import { ProvenancePanel } from '../data/ProvenancePanel.js';
 import { bindingStatesIn, holdsBinding, type BindingState } from './bindingContexts.js';
+import { followPending, WAITING_ON_IMAGES } from './pendingResult.js';
 import { settleBinding, type SettleAct } from './settleBinding.js';
 import { DocumentText, type Editable, type Place } from './DocumentText.js';
 import { GeneratedLists, type Known } from './GeneratedLists.js';
@@ -575,10 +576,28 @@ export function DocumentPage({
     setChecking(true);
     void client
       .POST('/v1/documents/{id}/bindings/check', { params: { path: { id } }, body: {} })
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         if (!data) return;
         const failed = new Map<string, string>();
-        for (const each of data.results) {
+        // A different result holding images is recorded once every one is admitted (the D8 plan,
+        // D8-F): each followed, as an upload is, and taken as the check's own result for it.
+        const results: { node: string; binding: string; outcome: string; failure?: unknown }[] = [
+          ...data.results,
+        ];
+        const pending = data.results.filter((each) => each.outcome === 'pending');
+        if (pending.length > 0) setNotice(WAITING_ON_IMAGES);
+        for (const each of pending) {
+          const followed = await followPending(client, each.pending);
+          const at = results.indexOf(each);
+          results[at] =
+            'sentence' in followed
+              ? { ...each, outcome: 'failed', failure: { message: followed.sentence } }
+              : (followed.done as (typeof results)[number]);
+        }
+        if (pending.length > 0) {
+          setNotice((held) => (held === WAITING_ON_IMAGES ? null : held));
+        }
+        for (const each of results) {
           if (each.outcome !== 'failed') continue;
           const said = (each.failure as { message?: unknown }).message;
           failed.set(
@@ -617,10 +636,9 @@ export function DocumentPage({
     act: SettleAct,
   ) => {
     if (session !== null) setBindingSession(session);
-    void settleBinding(client, id, node, binding, session, act)
-      .then((said) => {
-        if (said !== null) setNotice(said);
-      })
+    void settleBinding(client, id, node, binding, session, act, { onWaiting: setNotice })
+      // What it says replaces the waiting it said meanwhile, which goes once nothing is to be said.
+      .then((said) => setNotice((held) => said ?? (held === WAITING_ON_IMAGES ? null : held)))
       .catch(() => undefined)
       .finally(() => setBindingsRead((count) => count + 1));
   };

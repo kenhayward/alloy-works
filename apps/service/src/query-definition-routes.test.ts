@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { crc32, deflateSync } from 'node:zlib';
 import {
   bootstrapCluster,
   createRole,
@@ -127,6 +128,30 @@ const ranOk = (rows: (string | boolean | null)[][]) => {
     ran: { sql: 'select id, name from sample.site where id = $1::int8 order by id' },
     durationMs: 12,
   };
+};
+
+const chunk = (type: string, data: Buffer) => {
+  const body = Buffer.concat([Buffer.from(type, 'latin1'), data]);
+  const length = Buffer.alloc(4);
+  length.writeUInt32BE(data.length);
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(body));
+  return Buffer.concat([length, body, crc]);
+};
+
+/** An invented PNG, `width` by 2 pixels, every pixel one shade. */
+const png = (width: number) => {
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(width, 0);
+  header.writeUInt32BE(2, 4);
+  header.set([8, 2, 0, 0, 0], 8);
+  const row = Buffer.concat([Buffer.from([0]), Buffer.alloc(width * 3, 90)]);
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', header),
+    chunk('IDAT', deflateSync(Buffer.concat([row, row]))),
+    chunk('IEND', Buffer.alloc(0)),
+  ]);
 };
 
 describe('query definitions through the service', () => {
@@ -606,6 +631,70 @@ describe('query definitions through the service', () => {
         .execute(),
     );
     expect(after.length).toBe(before);
+  });
+
+  it("answers a sample's image cells with each image's format, size and pixels from its header, and refuses an image that is not what its hash says", async () => {
+    const source = await connection('Photographed');
+    connector.mode = 'answer';
+    const [north, south] = [png(3), png(5)];
+    const hashOf = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');
+    const result = {
+      columns: [
+        ['id', 'integer'],
+        ['photo', 'image'],
+      ] as [string, 'integer' | 'image'][],
+      rows: [
+        ['1', hashOf(north)],
+        ['2', hashOf(south)],
+        ['3', null],
+      ],
+    };
+    const ran = {
+      outcome: 'ok' as const,
+      result,
+      checksum: createHash('sha256').update(canonicalResultBytes(result), 'utf8').digest('hex'),
+      rowCount: 3,
+      ran: { sql: 'select id, photo from sample.site_photo order by id' },
+      durationMs: 12,
+      images: {
+        [hashOf(north)]: north.toString('base64'),
+        [hashOf(south)]: south.toString('base64'),
+      },
+    };
+    connector.run = ran;
+    const photo = draft(source.id, {
+      parameters: [],
+      fetch: { kind: 'sql', text: 'select id, photo from sample.site_photo order by id' },
+      columns: [
+        { name: 'id', from: { column: 'id' }, type: { base: 'integer' } },
+        {
+          name: 'photo',
+          from: { column: 'photo' },
+          type: { base: 'image', encoding: 'binary', description: 'decorative' },
+        },
+      ],
+    });
+    const answer = (await sample('ada', source.id, photo, {})).json<Json>();
+    expect(answer).toMatchObject({ outcome: 'ok', rowCount: 3 });
+    expect(answer.images).toEqual({
+      [hashOf(north)]: { format: 'png', bytes: north.length, width: 3, height: 2 },
+      [hashOf(south)]: { format: 'png', bytes: south.length, width: 5, height: 2 },
+    });
+    // Nothing of an image a sample ran is stored, and no upload is made for one.
+    const uploads = await tenantDb.withTenant(tenant, (trx) =>
+      trx.selectFrom('asset_upload').select('id').execute(),
+    );
+    expect(uploads).toEqual([]);
+
+    // An image whose bytes are not what its hash says is the connector's error.
+    connector.run = {
+      ...ran,
+      images: { ...ran.images, [hashOf(north)]: png(4).toString('base64') },
+    };
+    expect((await sample('ada', source.id, photo, {})).json()).toMatchObject({
+      outcome: 'failed',
+      failure: { code: 'connector_error', attribution: 'connector' },
+    });
   });
 
   it("refuses a sample of a definition for another connection, a draft that fails its checks, and a statement that describes by the source's failure", async () => {

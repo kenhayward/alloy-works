@@ -918,6 +918,231 @@ describe('the query definition page', () => {
   });
 });
 
+describe('an image column (the D8 plan, D8-A and D8-G)', () => {
+  /** A site's photographs: its id, a caption, and the photograph. */
+  const PHOTO_SQL = 'select id, caption, photo from sample.site_photo order by id';
+  const photoColumns = [
+    { name: 'id', from: { column: 'id' }, type: { base: 'integer' } },
+    { name: 'caption', from: { column: 'caption' }, type: { base: 'text' } },
+    {
+      name: 'photo',
+      from: { column: 'photo' },
+      type: { base: 'image', encoding: 'base64', description: 'decorative' },
+    },
+  ];
+  const HASH = 'ab'.repeat(32);
+
+  it('proposes a binary column as an image and saves it only with its description column or decorative', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service({
+      describe: () =>
+        json(200, {
+          columns: [
+            { name: 'id', sourceType: 'integer', proposed: { base: 'integer' } },
+            { name: 'caption', sourceType: 'text', proposed: { base: 'text' } },
+            {
+              name: 'photo',
+              sourceType: 'bytea',
+              proposed: { base: 'image', encoding: 'binary' },
+            },
+          ],
+          parameters: [],
+        }),
+    });
+    render(<QueryDefinitionPage client={client} id="new" />);
+    const connection = await screen.findByLabelText('Connection');
+    await waitFor(() =>
+      expect(
+        within(connection)
+          .getAllByRole('option')
+          .map((each) => each.textContent),
+      ).toContain('Readings'),
+    );
+    await user.selectOptions(connection, READINGS);
+    await user.type(screen.getByLabelText('Title'), 'Site photographs');
+    await user.click(screen.getByRole('radio', { name: 'SQL' }));
+    await user.type(screen.getByLabelText('SQL text'), PHOTO_SQL);
+    await user.click(screen.getByRole('button', { name: 'Describe' }));
+    const columns = await screen.findByRole('table', { name: 'Columns' });
+    const photo = within(columns).getAllByRole('row')[3]!;
+    expect(within(photo).getByLabelText('Type of photo')).toHaveValue('image');
+    expect(within(photo).getByLabelText('Encoding of photo')).toHaveValue('binary');
+    // Its description is one of the definition's text columns, or none: decorative.
+    const description = within(photo).getByLabelText('Description of photo');
+    expect(
+      within(description)
+        .getAllByRole('option')
+        .map((each) => each.textContent),
+    ).toEqual(['Choose its description', 'caption', 'Decorative, with no description']);
+
+    for (const name of ['id', 'caption', 'photo']) {
+      await user.click(within(columns).getByRole('button', { name: `Confirm ${name}` }));
+    }
+    await user.click(await screen.findByRole('button', { name: 'Save version' }));
+    expect(
+      await screen.findByText(
+        'The column photo: Choose the text column that describes it, or mark it decorative.',
+      ),
+    ).toBeInTheDocument();
+    expect(asked.some((each) => each.path.endsWith('/query-definitions'))).toBe(false);
+
+    // Choosing withdraws the confirmation, as any change of type does.
+    await user.selectOptions(description, 'column:caption');
+    await user.click(within(columns).getByRole('button', { name: 'Confirm photo' }));
+    await user.click(screen.getByRole('button', { name: 'Save version' }));
+    await waitFor(() => expect(window.location.hash).toBe(`#/query-definitions/${DEFINITION}`));
+    expect(asked.find((each) => each.path.endsWith('/query-definitions'))?.body).toMatchObject({
+      definition: {
+        columns: [
+          { name: 'id', type: { base: 'integer' } },
+          { name: 'caption', type: { base: 'text' } },
+          {
+            name: 'photo',
+            from: { column: 'photo' },
+            type: { base: 'image', encoding: 'binary', description: { column: 'caption' } },
+          },
+        ],
+      },
+    });
+  });
+
+  it('declares a text column an image held as base64, which the source never proposes, and never a parameter', async () => {
+    const user = userEvent.setup();
+    const { client } = service({
+      held: view({
+        parameters: [],
+        fetch: { kind: 'sql', text: PHOTO_SQL },
+        columns: photoColumns.slice(0, 2),
+        key: ['id'],
+      }),
+    });
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    const columns = await screen.findByRole('table', { name: 'Columns' });
+    const caption = within(columns).getAllByRole('row')[2]!;
+    await user.selectOptions(within(caption).getByLabelText('Type of caption'), 'image');
+    const encoding = within(caption).getByLabelText('Encoding of caption');
+    expect(encoding).toHaveValue('');
+    expect(
+      within(encoding)
+        .getAllByRole('option')
+        .map((each) => each.textContent),
+    ).toEqual(['Choose how the source holds it', 'Binary', 'Base64 text']);
+    await user.selectOptions(encoding, 'base64');
+    await user.selectOptions(
+      within(caption).getByLabelText('Description of caption'),
+      'decorative',
+    );
+    expect(within(caption).getByLabelText('Encoding of caption')).toHaveValue('base64');
+    expect(within(caption).getByLabelText('Description of caption')).toHaveValue('decorative');
+    // A parameter is never an image (DAT-010).
+    await user.click(screen.getByRole('button', { name: 'Add parameter' }));
+    const parameter = screen.getByRole('group', { name: 'Parameter 1' });
+    expect(
+      within(within(parameter).getByLabelText('Type'))
+        .getAllByRole('option')
+        .map((each) => each.textContent),
+    ).not.toContain('Image');
+  });
+
+  it('opens a stored image column as declared, and shows one in words to somebody who may only read it', async () => {
+    const stored = view({
+      parameters: [],
+      fetch: { kind: 'sql', text: PHOTO_SQL },
+      columns: photoColumns,
+    });
+    const { client } = service({ held: stored });
+    const { unmount } = render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    const columns = await screen.findByRole('table', { name: 'Columns' });
+    const photo = within(columns).getAllByRole('row')[3]!;
+    expect(within(photo).getByLabelText('Type of photo')).toHaveValue('image');
+    expect(within(photo).getByLabelText('Encoding of photo')).toHaveValue('base64');
+    expect(within(photo).getByLabelText('Description of photo')).toHaveValue('decorative');
+    expect(within(photo).getByText('Confirmed')).toBeInTheDocument();
+    unmount();
+
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      if (new URL(request.url).pathname === `/v1/query-definitions/${DEFINITION}`) {
+        return json(200, {
+          ...stored,
+          mayEdit: false,
+          mayRun: false,
+          definition: {
+            ...stored.definition,
+            columns: [
+              ...photoColumns.slice(0, 2),
+              {
+                name: 'photo',
+                from: { column: 'photo' },
+                type: { base: 'image', encoding: 'binary', description: { column: 'caption' } },
+              },
+            ],
+          },
+        });
+      }
+      return json(200, { items: [], next: null, total: 0, facets: { spaces: [] } });
+    }) as unknown as typeof fetch;
+    render(
+      <QueryDefinitionPage
+        client={createApiClient({ baseUrl: 'http://definitions.test', fetch: fetching })}
+        id={DEFINITION}
+      />,
+    );
+    const shown = await screen.findByRole('table', { name: 'Columns' });
+    expect(
+      within(shown)
+        .getAllByRole('row')
+        .map((each) => each.textContent),
+    ).toEqual(['NameType', 'idInteger', 'captionText', 'photoImage, binary, described by caption']);
+  });
+
+  it("shows a sample's image cells as the image, its format, size and pixels, from its header", async () => {
+    const user = userEvent.setup();
+    const { client } = service({
+      held: view({
+        parameters: [],
+        fetch: { kind: 'sql', text: PHOTO_SQL },
+        columns: photoColumns,
+      }),
+      sample: () =>
+        json(200, {
+          outcome: 'ok',
+          columns: [
+            ['id', 'integer'],
+            ['caption', 'text'],
+            ['photo', 'image'],
+          ],
+          rows: [
+            ['1', 'North quay', HASH],
+            ['2', 'South quay', null],
+          ],
+          rowCount: 2,
+          checksum: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+          ran: { sql: PHOTO_SQL },
+          durationMs: 12,
+          images: { [HASH]: { format: 'png', bytes: 1536, width: 640, height: 480 } },
+        }),
+    });
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    const sample = await screen.findByRole('region', { name: 'Sample' });
+    await user.click(within(sample).getByRole('button', { name: 'Run sample' }));
+    const rows = await within(sample).findByRole('table', { name: 'The first rows' });
+    expect(
+      within(rows)
+        .getAllByRole('row')
+        .slice(1)
+        .map((each) =>
+          within(each)
+            .getAllByRole('cell')
+            .map((cell) => cell.textContent),
+        ),
+    ).toEqual([
+      ['1', 'North quay', 'Image: PNG, 1.5 KB, 640 by 480 pixels'],
+      ['2', 'South quay', 'Empty'],
+    ]);
+  });
+});
+
 describe('the builder (D4)', () => {
   /** The SQL a built query runs, as the page shows it. */
   const shownSql = () => screen.getByRole('figure', { name: 'The SQL it runs' }).textContent ?? '';

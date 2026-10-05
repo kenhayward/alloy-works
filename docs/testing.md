@@ -234,13 +234,14 @@ parameter too, where the built connector runs `dist/child.js`. A port that is fi
 refused is stood in for by a listener that accepts and never answers, so the five-second connect
 timeout is what it costs on any machine.
 
-**The seed has six relations** since D4: `sample.site`, `sample.reading` and `sample.site_summary`,
+**The seed has seven relations** since D8: `sample.site`, `sample.reading` and `sample.site_summary`,
 and `sample.typed` - case 6's three rows in PostgreSQL's own types, whose checksum `checksum.test.ts`
 holds to the domain's in three time zones - and `sample.unordered`, thirty rows with ties, which case
 6's twenty rewrites move without moving a checksum; and `sample.tag` (the D4 plan, D4-R), whose
 `name` is a `citext` - the seed creates the extension - holding `Ada`, `ada`, `ADA`, `Grace` and
 `grace`, and whose `colour` is the enum `sample.colour`, declared `red`, `Green`, `blue`, out of
-code-point order: what the builder's code-point keys group apart and order by. `builder.test.ts` runs
+code-point order: what the builder's code-point keys group apart and order by; and
+`sample.site_photo` (the D8 plan), two invented PNGs as `bytea` with a caption each. `builder.test.ts` runs
 built queries against them and against `sample.site` joined to `sample.reading`, and `hostile.test.ts`
 attempts injection through a built query's every comparison too, in a schema of its own the
 superuser makes with names holding a quote, a `$1`, a comment and a dollar quote, and drops after. A

@@ -8,6 +8,8 @@ import { BuilderFields } from './BuilderFields.js';
 import { Choice, Status } from './Choice.js';
 import {
   BASES,
+  COLUMN_BASES,
+  ENCODINGS,
   NEW_PARAMETER,
   definitionOf,
   draftOf,
@@ -100,8 +102,39 @@ type Sampled =
       readonly rowCount: number;
       readonly checksum: string;
       readonly ran: { readonly sql: string };
+      /** Each image in the rows, by its hash, as its header says (D8-G); none before D8. */
+      readonly images?: Readonly<Record<string, SampledImage>>;
     }
   | { readonly outcome: 'failed'; readonly failure: Failure };
+
+/** An image a sample ran, as its header says: never stored, never drawn (the D8 plan, D8-G). */
+interface SampledImage {
+  readonly format: 'png' | 'jpeg';
+  readonly bytes: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+const FORMAT_WORDS = { png: 'PNG', jpeg: 'JPEG' } as const;
+
+/** A size in bytes, in words: bytes, then KB and MB of 1,024, to one place. */
+function sizeWords(bytes: number): string {
+  if (bytes < 1024) return `${bytes} ${bytes === 1 ? 'byte' : 'bytes'}`;
+  const [size, unit] = bytes < 1024 * 1024 ? [bytes / 1024, 'KB'] : [bytes / 1024 / 1024, 'MB'];
+  return `${Number(size.toFixed(1))} ${unit}`;
+}
+
+/** A sample's cell in words: an image by its header, an empty cell, or the value as it is. */
+function cellWords(
+  value: string | boolean | null,
+  base: string | undefined,
+  images: Readonly<Record<string, SampledImage>> | undefined,
+): string {
+  if (value === null) return 'Empty';
+  const image = base === 'image' && typeof value === 'string' ? images?.[value] : undefined;
+  if (image === undefined) return String(value);
+  return `Image: ${FORMAT_WORDS[image.format]}, ${sizeWords(image.bytes)}, ${image.width} by ${image.height} pixels`;
+}
 
 function isSampled(value: unknown): value is Sampled {
   if (!isRecord(value)) return false;
@@ -165,20 +198,28 @@ function Step({ title, children }: { readonly title: string; readonly children: 
   );
 }
 
-/** A type chosen from the eight bases, with the digits, places or fraction the base needs. */
+/**
+ * A type chosen from the eight bases, with the digits, places or fraction the base needs; or, for a
+ * column, an image, with how the source holds it and the text column describing it or decorative
+ * (the D8 plan, D8-A).
+ */
 function TypeFields({
   type,
   onChange,
   name,
   disabled,
+  textColumns,
 }: {
   readonly type: TypeDraft;
   readonly onChange: (type: TypeDraft) => void;
   /** What each field's label names, as "Type of depth"; the parameter's own fields say "Type". */
   readonly name?: string;
   readonly disabled?: boolean;
+  /** A column's: the definition's text columns, any of which may describe an image. */
+  readonly textColumns?: readonly string[];
 }) {
   const of = (label: string) => (name === undefined ? label : `${label} of ${name}`);
+  const bases = textColumns === undefined ? BASES : COLUMN_BASES;
   return (
     <span className={styles['type']}>
       <Choice label={of('Type')}>
@@ -192,7 +233,7 @@ function TypeFields({
             }
           >
             {type.base === '' && <option value="">Choose a type</option>}
-            {BASES.map((each) => (
+            {bases.map((each) => (
               <option key={each.base} value={each.base}>
                 {each.label}
               </option>
@@ -232,6 +273,71 @@ function TypeFields({
             onChange={(event) => onChange({ ...type, fraction: event.target.value })}
           />
         </label>
+      )}
+      {type.base === 'image' && textColumns !== undefined && (
+        <>
+          <Choice label={of('Encoding')}>
+            {(id) => (
+              <select
+                id={id}
+                value={type.encoding}
+                disabled={disabled}
+                onChange={(event) =>
+                  onChange({ ...type, encoding: event.target.value as TypeDraft['encoding'] })
+                }
+              >
+                {type.encoding === '' && <option value="">Choose how the source holds it</option>}
+                {ENCODINGS.map((each) => (
+                  <option key={each.encoding} value={each.encoding}>
+                    {each.label}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Choice>
+          <Choice label={of('Description')}>
+            {(id) => (
+              <select
+                id={id}
+                value={
+                  type.description === null
+                    ? ''
+                    : type.description === 'decorative'
+                      ? 'decorative'
+                      : `column:${type.description.column}`
+                }
+                disabled={disabled}
+                onChange={(event) => {
+                  const chosen = event.target.value;
+                  onChange({
+                    ...type,
+                    description:
+                      chosen === 'decorative'
+                        ? 'decorative'
+                        : chosen === ''
+                          ? null
+                          : { column: chosen.slice('column:'.length) },
+                  });
+                }}
+              >
+                {type.description === null && <option value="">Choose its description</option>}
+                {type.description !== null &&
+                  type.description !== 'decorative' &&
+                  !textColumns.includes(type.description.column) && (
+                    <option value={`column:${type.description.column}`}>
+                      {`${type.description.column}, not a text column`}
+                    </option>
+                  )}
+                {textColumns.map((column) => (
+                  <option key={column} value={`column:${column}`}>
+                    {column}
+                  </option>
+                ))}
+                <option value="decorative">Decorative, with no description</option>
+              </select>
+            )}
+          </Choice>
+        </>
       )}
     </span>
   );
@@ -464,8 +570,14 @@ function GeneratedSql({ shown }: { readonly shown: { sql: string } | { needs: st
 
 /** The SQL of a definition the person may only read, and its declarations, in words. */
 function ReadOnly({ definition }: { readonly definition: QueryDefinition }) {
-  const typeName = (type: ColumnType) =>
-    BASES.find((each) => each.base === type.base)?.label ?? type.base;
+  const typeName = (type: ColumnType) => {
+    const label = COLUMN_BASES.find((each) => each.base === type.base)?.label ?? type.base;
+    if (type.base !== 'image') return label;
+    const held = type.encoding === 'binary' ? 'binary' : 'base64 text';
+    const described =
+      type.description === 'decorative' ? 'decorative' : `described by ${type.description.column}`;
+    return `${label}, ${held}, ${described}`;
+  };
   const { fetch: statement } = definition;
   return (
     <>
@@ -872,6 +984,9 @@ export function QueryDefinitionPage({
 
   const retired = shown?.definition.retired === true;
   const columnNames = draft.columns.map((column) => column.name);
+  const textColumns = draft.columns
+    .filter((column) => column.type.base === 'text')
+    .map((column) => column.name);
 
   return (
     <article className={styles['page']}>
@@ -1086,6 +1201,7 @@ export function QueryDefinitionPage({
                       <td>
                         <TypeFields
                           name={column.name}
+                          textColumns={textColumns}
                           type={column.type}
                           onChange={(type) => setColumn(at, { ...column, type, confirmed: false })}
                         />
@@ -1345,7 +1461,9 @@ export function QueryDefinitionPage({
                   {sampled.rows.map((row, at) => (
                     <tr key={at}>
                       {row.map((value, place) => (
-                        <td key={place}>{value === null ? 'Empty' : String(value)}</td>
+                        <td key={place}>
+                          {cellWords(value, sampled.columns[place]?.[1], sampled.images)}
+                        </td>
                       ))}
                     </tr>
                   ))}

@@ -10,6 +10,7 @@ import { DataTab } from './DataTab.js';
 const DOCUMENT = '99999999-9999-4999-8999-999999999999';
 const FIRST = 'a'.repeat(26);
 const SECOND = 'b'.repeat(26);
+const PENDING = '33333333-3333-4333-8333-333333333333';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -72,13 +73,25 @@ const states = (...views: unknown[]): readonly BindingState[] =>
 
 function drawn(
   shown: readonly BindingState[],
-  options: { failures?: ReadonlyMap<string, string>; answer?: number } = {},
+  options: {
+    failures?: ReadonlyMap<string, string>;
+    answer?: number;
+    /** A resolve answered as pending, and what following it answers (the D8 plan, D8-F). */
+    pending?: unknown;
+  } = {},
 ) {
   const asked: { path: string; body: unknown }[] = [];
   const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const body = request.method === 'GET' ? null : JSON.parse(await request.text());
-    asked.push({ path: new URL(request.url).pathname, body });
+    const path = new URL(request.url).pathname;
+    asked.push({ path, body });
+    if (options.pending !== undefined && path.endsWith('/resolve')) {
+      return json(202, { results: [{ node: SECOND, binding: 'never', pending: PENDING }] });
+    }
+    if (options.pending !== undefined && path === `/v1/datasets/pending/${PENDING}`) {
+      return json(200, options.pending);
+    }
     return json(options.answer ?? 200, options.answer === 409 ? { code: 'x' } : {});
   }) as unknown as typeof fetch;
   const onChanged = vi.fn();
@@ -205,6 +218,32 @@ describe('the Data tab (the B4 plan, task 3)', () => {
     expect(screen.getByText('Values were not checked for you.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Check now' })).toBeNull();
     expect(within(rowOf('never')).queryByRole('button', { name: 'Resolve' })).toBeNull();
+  });
+
+  it("says it waits while a resolved value's images are checked, and stops saying so once it is held", async () => {
+    const user = userEvent.setup();
+    const { asked, onNotice, onChanged } = drawn(states(view(SECOND, 'never', null)), {
+      pending: {
+        id: PENDING,
+        act: 'resolve',
+        document: DOCUMENT,
+        node: SECOND,
+        binding: 'never',
+        state: 'done',
+        result: {
+          node: SECOND,
+          binding: 'never',
+          held: { dataset: '55555555-5555-4555-8555-555555555555', version: 'v', reused: false },
+        },
+      },
+    });
+    await user.click(within(rowOf('never')).getByRole('button', { name: 'Resolve' }));
+    await waitFor(() => expect(onChanged).toHaveBeenCalled());
+    expect(asked.map((each) => each.path)).toContain(`/v1/datasets/pending/${PENDING}`);
+    expect(onNotice.mock.calls).toEqual([
+      ['The value holds images, which are being checked. It is shown once every one is.'],
+      [null],
+    ]);
   });
 
   it('offers Check now and Go to', async () => {

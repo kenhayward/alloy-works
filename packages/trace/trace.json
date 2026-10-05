@@ -18550,43 +18550,43 @@
     {
       "id": "DAT-020",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 426,
+      "line": 451,
       "kind": "rule"
     },
     {
       "id": "DAT-020",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 403,
+      "line": 428,
       "kind": "title"
     },
     {
       "id": "DAT-049",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 484,
+      "line": 509,
       "kind": "title"
     },
     {
       "id": "DAT-050",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 439,
+      "line": 464,
       "kind": "title"
     },
     {
       "id": "DAT-101",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 274,
+      "line": 299,
       "kind": "title"
     },
     {
       "id": "DAT-103",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 356,
+      "line": 381,
       "kind": "rule"
     },
     {
       "id": "DAT-103",
       "file": "apps/service/src/query-definition-routes.test.ts",
-      "line": 338,
+      "line": 363,
       "kind": "title"
     },
     {
@@ -19066,13 +19066,13 @@
     {
       "id": "DAT-039",
       "file": "apps/web/src/structure/DataTab.test.tsx",
-      "line": 112,
+      "line": 125,
       "kind": "title"
     },
     {
       "id": "DAT-070",
       "file": "apps/web/src/structure/DataTab.test.tsx",
-      "line": 149,
+      "line": 162,
       "kind": "title"
     },
     {
@@ -19192,25 +19192,25 @@
     {
       "id": "DAT-027",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 971,
+      "line": 976,
       "kind": "title"
     },
     {
       "id": "DAT-041",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1029,
+      "line": 1034,
       "kind": "title"
     },
     {
       "id": "DAT-047",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 996,
+      "line": 1001,
       "kind": "title"
     },
     {
       "id": "DAT-082",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1276,
+      "line": 1281,
       "kind": "title"
     },
     {

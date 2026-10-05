@@ -295,6 +295,19 @@ export const SampleView = z.discriminatedUnion('outcome', [
       .describe('The SHA-256 of the whole result in canonical form, in hexadecimal'),
     ran: z.object({ sql: z.string().describe('The SQL that ran, each value a bound parameter') }),
     durationMs: z.number().int(),
+    images: z
+      .record(
+        z.string(),
+        z.object({
+          format: z.enum(['png', 'jpeg']),
+          bytes: z.number().int().describe('Its size in bytes'),
+          width: z.number().int().describe('Its width in pixels, as displayed'),
+          height: z.number().int().describe('Its height in pixels, as displayed'),
+        }),
+      )
+      .describe(
+        'Each image in the first rows, by the hash its cell holds: its format, size and pixels, read from its header. A sample stores no image and makes no asset of one',
+      ),
   }),
   z.object({ outcome: z.literal('failed'), failure: DataFailureView }),
 ]);
