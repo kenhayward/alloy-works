@@ -1,9 +1,12 @@
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { strFromU8, unzipSync } from 'fflate';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
+import { readPdf, spoken } from './pdf.js';
 import { SERVICE, signIn, untilReady } from './session.js';
+import { followSignedLink } from './signed-link.js';
 import { e2eTargets } from './targets.js';
 
 /**
@@ -19,8 +22,8 @@ const READER = { account: 'reader', password: 'source-reader-dev-password' };
 
 type Json = Record<string, unknown>;
 
-/** Runs SQL at the development source as its superuser, in its own container of this project. */
-function atTheSource(sql: string): void {
+/** The development source's one container in this project. */
+function sourceContainer(): string {
   const ids = execFileSync(
     'docker',
     [
@@ -36,9 +39,25 @@ function atTheSource(sql: string): void {
     .split(/\s+/)
     .filter(Boolean);
   if (ids.length !== 1) throw new Error(`${PROJECT} runs ${ids.length} source containers`);
+  return ids[0]!;
+}
+
+/** Runs SQL at the development source as its superuser, in its own container of this project. */
+function atTheSource(sql: string): void {
   execFileSync(
     'docker',
-    ['exec', '-i', ids[0]!, 'psql', '-U', 'postgres', '-d', 'readings', '-v', 'ON_ERROR_STOP=1'],
+    [
+      'exec',
+      '-i',
+      sourceContainer(),
+      'psql',
+      '-U',
+      'postgres',
+      '-d',
+      'readings',
+      '-v',
+      'ON_ERROR_STOP=1',
+    ],
     { input: sql, encoding: 'utf8', timeout: 60_000 },
   );
 }
@@ -268,17 +287,61 @@ describe('a binding over the whole system', () => {
     ]);
     expect((await read(second.id, held.version)).result.rows).toEqual([['1', 'North weir']]);
 
-    // Nothing publishes a binding yet: refused at the door, naming it, and nothing is queued.
-    const published = await call('POST', `/v1/documents/${first.id}/publications`, {
-      version: first.version,
-      formats: ['pdf'],
+    // Published to the PDF and Word with the table gone from the source: the worker reads the stored
+    // result, and never the source. Renamed away rather than the source stopped, which the suite's
+    // other files, running beside this one, still reach.
+    const away = `${table.split('.')[1]}_away`;
+    atTheSource(`alter table ${table} rename to ${away};`);
+    let publication = '';
+    try {
+      const asked = ok(
+        await call('POST', `/v1/documents/${first.id}/publications`, {
+          version: first.version,
+          formats: ['pdf', 'docx'],
+        }),
+      ) as { id: string };
+      await vi.waitFor(
+        async () => {
+          const request = ok(await call('GET', `/v1/publication-requests/${asked.id}`));
+          expect(request).toMatchObject({ state: 'done', failures: [] });
+          publication = request['publication'] as string;
+        },
+        { timeout: 60_000, interval: 250 },
+      );
+    } finally {
+      atTheSource(`alter table sample.${away} rename to ${table.split('.')[1]};`);
+    }
+    const kept = ok(await call('GET', `/v1/publications/${publication}`)) as {
+      outputs: { format: string; download: string }[];
+    };
+    expect(kept.outputs.map((each) => each.format)).toEqual(['pdf', 'docx', 'provenance']);
+    const bytesOf = async (format: string) =>
+      (
+        await followSignedLink(
+          new URL(kept.outputs.find((each) => each.format === format)!.download),
+        )
+      ).body;
+    const printed = 'The first site is North weir and quay';
+    expect(spoken((await readPdf(await bytesOf('pdf'))).taggedText.flat())).toContain(printed);
+    const word = strFromU8(unzipSync(new Uint8Array(await bytesOf('docx')))['word/document.xml']!);
+    expect(
+      [...word.matchAll(/<w:t(?: [^>]*)?>([^<]*)<\/w:t>/g)].map((match) => match[1]).join(''),
+    ).toContain(printed);
+    // provenance.json, as Grace downloads it: what was printed, and no SQL, connection or source column.
+    cookie = await signIn('grace');
+    const regraced = ok(await call('GET', `/v1/publications/${publication}`)) as typeof kept;
+    const provenance = (
+      await followSignedLink(
+        new URL(regraced.outputs.find((each) => each.format === 'provenance')!.download),
+      )
+    ).body.toString('utf8');
+    expect(JSON.parse(provenance)).toMatchObject({
+      values: [{ node: first.node, binding: 'site-name', printed: 'North weir and quay' }],
     });
-    expect(published.status, JSON.stringify(published.body)).toBe(400);
-    expect(published.body).toMatchObject({
-      code: 'binding_unresolved',
-      document: first.id,
-      bindings: [{ node: first.node, binding: 'site-name' }],
-    });
+    for (const secret of [table, 'select', connection, '"from"']) {
+      expect(provenance).not.toContain(secret);
+    }
+    cookie = await signIn('ada');
   }, 180_000);
 
   it('resolves a binding from an editing session, keeps it across a changed take, and names its holders, over the whole system', async () => {

@@ -1,3 +1,4 @@
+import { unbound } from '../publishing/bind.js';
 import { describe, expect, it } from 'vitest';
 
 import { parseContentDocument } from '../content/model/document.js';
@@ -138,7 +139,7 @@ describe('numbering an outline', () => {
       ],
     });
     const numbered = table([section('one', [reference('dosing')])], {
-      dosing: contributionsOf(content),
+      dosing: contributionsOf(unbound(content)),
     });
     const captions = numbered.entries.filter((entry) => entry.block !== null);
     expect(captions.map((entry) => [entry.block, entry.label])).toEqual([
@@ -191,7 +192,7 @@ describe('numbering an outline', () => {
         figure('f4'),
       ],
     });
-    const contributions = contributionsOf(content);
+    const contributions = contributionsOf(unbound(content));
     expect(contributions.filter((each) => each.sequence !== 'footnote')).toEqual([
       { block: 't1', sequence: 'table', numbered: true, caption: 'Caption of t1' },
       { block: 't2', sequence: 'table', numbered: false, caption: 'Caption of t2' },
@@ -227,7 +228,7 @@ describe('numbering an outline', () => {
         { type: 'equation', id: 'e3', mathml: MATHML, numbered: true },
       ],
     });
-    const numbered = table([reference('maths')], { maths: contributionsOf(content) });
+    const numbered = table([reference('maths')], { maths: contributionsOf(unbound(content)) });
     expect(numbered.entries.filter((entry) => entry.sequence === 'equation')).toMatchObject([
       { block: 'e1', label: 'Equation 1' },
       { block: 'e3', label: 'Equation 2' },
