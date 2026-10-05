@@ -3,6 +3,35 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.133.0 - 2026-10-05 (PR #390)
+
+### Added
+
+- **Values from your own data, shown in a document.** Each bound value shows the value the document
+  holds, in its theme's formats, and says _revision waiting_ where a newer result waits.
+- **Why a value is missing, said in its place.** A value with none says why where it stands, set
+  apart by its words and its border, not by colour alone.
+- **A value's provenance in one step.** Click a value in a document's text, or press Enter on it, to
+  see where it came from, with **Show the result**; in the editor, the **Value panel** opens the same.
+- **Components holding bound values open for editing.** A bound value is deleted, undone, copied, cut
+  and pasted as any other; on its own a component shows what each value asks for, never a value.
+
+### Changed
+
+- **Versions and the changelog move at a slice or tranche close**, not on every pull request. Each
+  pull request records its change in `changes/`.
+- **Lint, format, typecheck and build now block a merge in CI.**
+- **A baseline is declared at every slice or tranche close**, so the traceability gate covers what
+  has shipped, not only 0.13.0.
+- **CLAUDE.md and the process docs are shorter**, and plans and reviews scale with risk.
+
+### Fixed
+
+- **A link to a part of a document now always lands on it.** Now and then the page went to the
+  linked part and then jumped back near the top, as the components' text was drawn again.
+- **A test of the warning before leaving with unsaved changes no longer fails at random.** It holds
+  the save open while it checks the warning.
+
 ## 0.132.3 - 2026-10-04 (PR #381)
 
 ### Changed
