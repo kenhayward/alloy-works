@@ -396,17 +396,34 @@ export function failureWords(failure: Failure, wordOffered = false): string {
     // asked for at all, which a preview and a layout with no Word page cannot.
     case 'heading_too_deep':
       return `This heading is nested more than six levels deep, which a PDF cannot tag as a heading. Move it up a level${wordOffered ? ', or publish this document to Word alone' : ''}.`;
-    // D3 (the plan's "Added in phase B"): nothing publishes a binding until the publish's binding
-    // stage, and the service refuses a document holding one at the door, so this is met only by a
-    // request built past it. Publishing again would meet it again.
+    // The binding stage (B3): a value with no result recorded for this document, which the service
+    // refuses at the door, so this is met only by a request built past it; a take that holds no value;
+    // and a stored result the worker could not read whole. `detail` is the binding, never a value.
     case 'binding_unresolved':
-      return 'This holds a value bound to a query, and nothing publishes or previews one yet. Remove the binding to publish or preview this document.';
+      return 'This value has no result in this document. Resolve it, then publish again.';
+    case 'value_none':
+      return `This value's result has no row. ${CHANGE_THE_VALUE}`;
+    case 'value_many':
+      return `This value's result has more than one row, and a value is taken from one. ${CHANGE_THE_VALUE}`;
+    case 'row_missing':
+      return `This value's result has no row with the key it names. ${CHANGE_THE_VALUE}`;
+    case 'value_null':
+      return `This value's cell in its result is empty. ${CHANGE_THE_VALUE}`;
+    case 'value_empty':
+      return `This value's cell in its result holds only spaces. ${CHANGE_THE_VALUE}`;
+    case 'take_invalid':
+      return `This value names a column its result does not have. ${CHANGE_THE_VALUE}`;
+    case 'result_unreadable':
+      return "This value's stored result could not be read. Resolve it again, then publish again.";
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:
       return 'The publication could not be made. Publish again.';
   }
 }
+
+/** What an author does about a value taken from a result that holds none (B3). */
+const CHANGE_THE_VALUE = 'Change the value, or resolve it again.';
 
 /**
  * Whether every failure is the product's own - the engine's or the store's, a face changed under the

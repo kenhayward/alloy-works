@@ -589,7 +589,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
       engine_version: '0.15.1',
       template: 'publication',
       template_version: 15,
-      pipeline_version: '15',
+      pipeline_version: '16',
       layout_version_id: (await requestRow(request)).layout_version_id,
     });
     expect(row!.layout_version_id).not.toBeNull();
@@ -1044,7 +1044,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
       engine_version: null,
       template: null,
       template_version: null,
-      pipeline_version: '15',
+      pipeline_version: '16',
       format: 'docx',
       standard: null,
       producer: 'word',
@@ -1078,7 +1078,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
       engine_version: '0.15.1',
       template: 'publication',
       template_version: 15,
-      pipeline_version: '15',
+      pipeline_version: '16',
       format: 'pdf',
       standard: 'ua-1',
       producer: 'typst',

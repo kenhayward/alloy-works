@@ -52400,6 +52400,7 @@
                             "type": "string",
                             "enum": [
                               "resolve",
+                              "bind",
                               "compose",
                               "engine",
                               "store"
@@ -52452,6 +52453,13 @@
                               "preview_words_missing",
                               "heading_too_deep",
                               "binding_unresolved",
+                              "value_none",
+                              "value_many",
+                              "row_missing",
+                              "value_null",
+                              "value_empty",
+                              "take_invalid",
+                              "result_unreadable",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -52569,7 +52577,7 @@
             }
           },
           "400": {
-            "description": "`format_unsupported`: the layout makes no PDF; `layout_language`: the document is not in its layout's language; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a component it places holds a value bound to a query, which nothing publishes yet",
+            "description": "`format_unsupported`: the layout makes no PDF; `layout_language`: the document is not in its layout's language; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was",
             "content": {
               "application/json": {
                 "schema": {
@@ -52699,7 +52707,7 @@
                       }
                     },
                     "attribution": {
-                      "description": "binding_unresolved: the product's, since nothing publishes a binding yet",
+                      "description": "binding_unresolved: the product's: a value is resolved in the document, not the source",
                       "type": "string",
                       "enum": [
                         "product"
@@ -52710,7 +52718,7 @@
                       "type": "string"
                     },
                     "bindings": {
-                      "description": "binding_unresolved: each binding the publish would meet, by the outline node whose component holds it and the binding's identifier",
+                      "description": "binding_unresolved: each binding with no result to print, by the outline node whose component holds it, the binding's identifier and why",
                       "type": "array",
                       "items": {
                         "type": "object",
@@ -52720,11 +52728,20 @@
                           },
                           "binding": {
                             "type": "string"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "enum": [
+                              "never",
+                              "changed"
+                            ],
+                            "description": "`never`: never resolved in this document; `changed`: edited since it was"
                           }
                         },
                         "required": [
                           "node",
-                          "binding"
+                          "binding",
+                          "reason"
                         ]
                       }
                     }
@@ -53000,7 +53017,7 @@
                       }
                     },
                     "attribution": {
-                      "description": "binding_unresolved: the product's, since nothing publishes a binding yet",
+                      "description": "binding_unresolved: the product's: a value is resolved in the document, not the source",
                       "type": "string",
                       "enum": [
                         "product"
@@ -53011,7 +53028,7 @@
                       "type": "string"
                     },
                     "bindings": {
-                      "description": "binding_unresolved: each binding the publish would meet, by the outline node whose component holds it and the binding's identifier",
+                      "description": "binding_unresolved: each binding with no result to print, by the outline node whose component holds it, the binding's identifier and why",
                       "type": "array",
                       "items": {
                         "type": "object",
@@ -53021,11 +53038,20 @@
                           },
                           "binding": {
                             "type": "string"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "enum": [
+                              "never",
+                              "changed"
+                            ],
+                            "description": "`never`: never resolved in this document; `changed`: edited since it was"
                           }
                         },
                         "required": [
                           "node",
-                          "binding"
+                          "binding",
+                          "reason"
                         ]
                       }
                     }
@@ -53731,6 +53757,7 @@
                             "type": "string",
                             "enum": [
                               "resolve",
+                              "bind",
                               "compose",
                               "engine",
                               "store"
@@ -53783,6 +53810,13 @@
                               "preview_words_missing",
                               "heading_too_deep",
                               "binding_unresolved",
+                              "value_none",
+                              "value_many",
+                              "row_missing",
+                              "value_null",
+                              "value_empty",
+                              "take_invalid",
+                              "result_unreadable",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -53900,7 +53934,7 @@
             }
           },
           "400": {
-            "description": "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a component it places holds a value bound to a query, which nothing publishes yet",
+            "description": "`format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was",
             "content": {
               "application/json": {
                 "schema": {
@@ -54030,7 +54064,7 @@
                       }
                     },
                     "attribution": {
-                      "description": "binding_unresolved: the product's, since nothing publishes a binding yet",
+                      "description": "binding_unresolved: the product's: a value is resolved in the document, not the source",
                       "type": "string",
                       "enum": [
                         "product"
@@ -54041,7 +54075,7 @@
                       "type": "string"
                     },
                     "bindings": {
-                      "description": "binding_unresolved: each binding the publish would meet, by the outline node whose component holds it and the binding's identifier",
+                      "description": "binding_unresolved: each binding with no result to print, by the outline node whose component holds it, the binding's identifier and why",
                       "type": "array",
                       "items": {
                         "type": "object",
@@ -54051,11 +54085,20 @@
                           },
                           "binding": {
                             "type": "string"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "enum": [
+                              "never",
+                              "changed"
+                            ],
+                            "description": "`never`: never resolved in this document; `changed`: edited since it was"
                           }
                         },
                         "required": [
                           "node",
-                          "binding"
+                          "binding",
+                          "reason"
                         ]
                       }
                     }
@@ -54331,7 +54374,7 @@
                       }
                     },
                     "attribution": {
-                      "description": "binding_unresolved: the product's, since nothing publishes a binding yet",
+                      "description": "binding_unresolved: the product's: a value is resolved in the document, not the source",
                       "type": "string",
                       "enum": [
                         "product"
@@ -54342,7 +54385,7 @@
                       "type": "string"
                     },
                     "bindings": {
-                      "description": "binding_unresolved: each binding the publish would meet, by the outline node whose component holds it and the binding's identifier",
+                      "description": "binding_unresolved: each binding with no result to print, by the outline node whose component holds it, the binding's identifier and why",
                       "type": "array",
                       "items": {
                         "type": "object",
@@ -54352,11 +54395,20 @@
                           },
                           "binding": {
                             "type": "string"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "enum": [
+                              "never",
+                              "changed"
+                            ],
+                            "description": "`never`: never resolved in this document; `changed`: edited since it was"
                           }
                         },
                         "required": [
                           "node",
-                          "binding"
+                          "binding",
+                          "reason"
                         ]
                       }
                     }
@@ -61926,6 +61978,7 @@
                             "type": "string",
                             "enum": [
                               "resolve",
+                              "bind",
                               "compose",
                               "engine",
                               "store"
@@ -61978,6 +62031,13 @@
                               "preview_words_missing",
                               "heading_too_deep",
                               "binding_unresolved",
+                              "value_none",
+                              "value_many",
+                              "row_missing",
+                              "value_null",
+                              "value_empty",
+                              "take_invalid",
+                              "result_unreadable",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -63454,10 +63514,62 @@
                               "download",
                               "view"
                             ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "format": {
+                                "type": "string",
+                                "const": "provenance"
+                              },
+                              "bytes": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "sha256": {
+                                "type": "string"
+                              },
+                              "standard": {
+                                "type": "null"
+                              },
+                              "producer": {
+                                "type": "string",
+                                "const": "pipeline"
+                              },
+                              "producerVersion": {
+                                "type": "string",
+                                "description": "The publishing pipeline's version"
+                              },
+                              "report": {
+                                "type": "array",
+                                "prefixItems": [],
+                                "items": false,
+                                "maxItems": 0
+                              },
+                              "download": {
+                                "type": "string",
+                                "description": "A link to the bytes, valid for five minutes, named by the publication id and format"
+                              },
+                              "view": {
+                                "type": "null"
+                              }
+                            },
+                            "required": [
+                              "format",
+                              "bytes",
+                              "sha256",
+                              "standard",
+                              "producer",
+                              "producerVersion",
+                              "report",
+                              "download",
+                              "view"
+                            ]
                           }
                         ]
                       },
-                      "description": "One per format, the PDF first"
+                      "description": "One per format, the PDF first, and `provenance.json` last wherever the publication prints a value"
                     }
                   },
                   "required": [
@@ -63637,6 +63749,410 @@
           },
           "503": {
             "description": "This environment has nowhere to keep documents yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/publications/{id}/bindings": {
+      "get": {
+        "operationId": "getPublicationBindings",
+        "summary": "The values a publication printed, and the results they were taken from",
+        "description": "Returns each value a publication printed, by node and binding, with the dataset version and stored result it was taken from. Needs read on the publication. The SQL that ran, the connection and each column’s source column are included only where the caller may read the query definition; provenance.json, the publication’s own output, never holds them.",
+        "tags": [
+          "Publications"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The publication's bindings, in node order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "bindings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "node": {
+                            "type": "string",
+                            "description": "The outline node whose component holds the binding"
+                          },
+                          "binding": {
+                            "type": "string",
+                            "description": "The binding's identifier in that component"
+                          },
+                          "dataset": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "version": {
+                                "type": "string",
+                                "description": "The dataset version the value was taken from"
+                              },
+                              "number": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "version",
+                              "number"
+                            ]
+                          },
+                          "result": {
+                            "type": "object",
+                            "properties": {
+                              "queryDefinition": {
+                                "type": "object",
+                                "properties": {
+                                  "artifact": {
+                                    "type": "string"
+                                  },
+                                  "version": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "artifact",
+                                  "version"
+                                ]
+                              },
+                              "parameters": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {}
+                              },
+                              "at": {
+                                "type": "string",
+                                "description": "When the query ran, in UTC"
+                              },
+                              "durationMs": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "rowCount": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "checksum": {
+                                "type": "string"
+                              },
+                              "columns": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "type": "object",
+                                      "propertyNames": {
+                                        "type": "string"
+                                      },
+                                      "additionalProperties": {}
+                                    },
+                                    "from": {
+                                      "description": "The source's column: to a reader of the query definition alone",
+                                      "type": "object",
+                                      "properties": {
+                                        "column": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "column"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "name",
+                                    "type"
+                                  ]
+                                }
+                              },
+                              "ran": {
+                                "description": "The SQL that ran: to a reader of the query definition alone",
+                                "type": "object",
+                                "properties": {
+                                  "sql": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "sql"
+                                ]
+                              },
+                              "connection": {
+                                "description": "The connection it ran on: to a reader of the query definition alone",
+                                "type": "object",
+                                "properties": {
+                                  "artifact": {
+                                    "type": "string"
+                                  },
+                                  "version": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "artifact",
+                                  "version"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "queryDefinition",
+                              "parameters",
+                              "at",
+                              "durationMs",
+                              "rowCount",
+                              "checksum",
+                              "columns"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "node",
+                          "binding",
+                          "dataset",
+                          "result"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "bindings"
+                  ]
+                },
+                "example": {
+                  "bindings": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Never answered: a publication the caller may read is one they may open",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such publication in this environment, or none the caller may read",
             "content": {
               "application/json": {
                 "schema": {

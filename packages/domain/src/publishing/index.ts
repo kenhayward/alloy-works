@@ -12,6 +12,11 @@ export type {
   WordImage,
   WordInput,
 } from './assemble.js';
+// The binding stage and what a publication records of it (the B3 plan, B3-D, B3-G).
+export { bind, unbound } from './bind.js';
+export type { Bound, PrintedValue, Held } from './bind.js';
+export { provenanceBytes, publishedProvenance } from './provenance.js';
+export type { HeldDataset, PublishedProvenance } from './provenance.js';
 export { publishFailureCodes } from './failures.js';
 export type { PublishFailure, PublishFailureCode, PublishStage } from './failures.js';
 // The question the worker's pinned fonts answer, asked of one family at a time (editor 5), by the

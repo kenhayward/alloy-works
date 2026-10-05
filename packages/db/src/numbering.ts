@@ -1,6 +1,7 @@
 import {
   contributionsOf,
   readContent,
+  unbound,
   walkOutline,
   type Contribution,
   type OutlineDocument,
@@ -130,7 +131,8 @@ export async function numberingInputs(
   const project = (row: VersionRow) => {
     if (!projected.has(row.id)) {
       const read = readContent(row.content, { artifact: row.artifact_id, version: row.id });
-      projected.set(row.id, read.ok ? contributionsOf(read.document) : null);
+      // The page counts without values (B3-D): no contribution reads one, so its numbers are a publish's.
+      projected.set(row.id, read.ok ? contributionsOf(unbound(read.document)) : null);
     }
     return projected.get(row.id) ?? null;
   };

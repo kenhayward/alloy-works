@@ -62,6 +62,29 @@ export interface PublicationRequestAssetTable {
   asset_kind: ColumnType<'asset', never, never>;
 }
 
+/** A binding a request holds, as its latest resolution (0050; B3-C): insert and read alone. */
+export interface PublicationRequestBindingTable {
+  request_id: ColumnType<string, string, never>;
+  node: ColumnType<string, string, never>;
+  binding: ColumnType<string, string, never>;
+  digest: ColumnType<string, string, never>;
+  resolution: ColumnType<string, string, never>;
+  dataset_version: ColumnType<string, string, never>;
+  dataset_id: ColumnType<string, string, never>;
+  dataset_kind: ColumnType<'dataset', never, never>;
+}
+
+/** A binding a publication printed from: exactly its request's (0050), insert and read alone. */
+export interface PublicationBindingTable {
+  publication_id: ColumnType<string, string, never>;
+  node: ColumnType<string, string, never>;
+  binding: ColumnType<string, string, never>;
+  resolution: ColumnType<string, string, never>;
+  dataset_version: ColumnType<string, string, never>;
+  dataset_id: ColumnType<string, string, never>;
+  dataset_kind: ColumnType<'dataset', never, never>;
+}
+
 /** An image a publication printed: exactly its request's, insert and read and nothing else. */
 export interface PublicationAssetTable {
   publication_id: ColumnType<string, string, never>;
@@ -113,14 +136,14 @@ export interface PublicationInputTable {
 /** One per format its publication names (0027), each saying what made it and what it could not carry. */
 export interface PublicationOutputTable {
   publication_id: ColumnType<string, string, never>;
-  format: ColumnType<PublishingFormat, PublishingFormat, never>;
+  format: ColumnType<PublishingFormat | 'provenance', PublishingFormat | 'provenance', never>;
   object_key: ColumnType<string, string, never>;
   sha256: ColumnType<string, string, never>;
   bytes: ColumnType<number, number, never>;
   /** A PDF's is PDF/UA-1; a Word document claims none. */
   standard: ColumnType<'ua-1' | null, 'ua-1' | null, never>;
   /** Typst for a PDF, at its publication's template version; the Word writer, at `word/N`, for Word. */
-  producer: ColumnType<'typst' | 'word', 'typst' | 'word', never>;
+  producer: ColumnType<'typst' | 'word' | 'pipeline', 'typst' | 'word' | 'pipeline', never>;
   producer_version: ColumnType<string, string, never>;
   /** An `OutputReport`, JSONB in as the text of a JSON document: a PDF's is empty. */
   report: ColumnType<unknown, string, never>;

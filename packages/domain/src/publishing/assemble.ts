@@ -9,6 +9,7 @@ import type {
   InlineNode,
 } from '../content/model/inline.js';
 import type { Mark } from '../content/model/marks.js';
+import { formatsFor } from '../data/format.js';
 import { hasText } from '../content/model/text.js';
 import { contributionsOf, type Contribution } from '../structure/contributions.js';
 import { contents, listOf } from '../structure/lists.js';
@@ -43,6 +44,7 @@ import { projectTypst } from '../theme/typst.js';
 import { listsNotInWord } from '../word/lists.js';
 import { numberingNotInWord } from '../word/numbering.js';
 
+import { bind, type Bound, type PrintedValue, type Held } from './bind.js';
 import type { PublishFailure } from './failures.js';
 import { characterProblems, codePointName, type Covers, type Setting } from './glyphs.js';
 import {
@@ -109,6 +111,12 @@ export interface AssembleInput {
    * text - so a figure a condition takes out takes no number and is in no list (issue #253).
    */
   readonly conditionContent?: (node: string, content: ContentDocument) => ContentDocument;
+  /**
+   * The binding stage's input (the B3 plan, B3-D): each binding's result the request recorded, read and
+   * held to its checksum by the worker, by node and then binding. A binding with none is
+   * `binding_unresolved` (DAT-087); omitted, every binding is.
+   */
+  readonly bindings?: ReadonlyMap<string, ReadonlyMap<string, Held>>;
   readonly refused: readonly PublishFailure[];
   /**
    * The layout, whose scheme numbers the document (STR-013). **Null for a request made before
@@ -148,6 +156,11 @@ export interface AssembleInput {
    */
   readonly status?: 'draft' | 'preview';
 }
+
+/** `assemble`'s input once through the binding stage: every occurrence's content `Bound`. */
+type BoundInput = Omit<AssembleInput, 'occurrences'> & {
+  readonly occurrences: ReadonlyMap<string, Bound>;
+};
 
 /** What `assemble` reads of an asset version: where its bytes are, what they are, and its default. */
 export type PublishingAsset = Pick<
@@ -280,6 +293,8 @@ export type Assembled<
       readonly document: Document;
       readonly numbering: NumberingTable;
       readonly word: WordInput | null;
+      /** Every value the binding stage set, in document order: what `provenance.json` records. */
+      readonly values: readonly PrintedValue[];
     }
   | { readonly ok: false; readonly failures: readonly PublishFailure[] };
 
@@ -367,14 +382,28 @@ export function assemble(
 ): Assembled<PublishedDocument1>;
 export function assemble(input: AssembleInput): Assembled;
 export function assemble(given: AssembleInput): Assembled {
-  // Conditions first, over each occurrence's content, and nothing downstream reads the content as it
-  // was stored: `input` is the conditioned document from here on (issue #253).
+  // Conditions first, over each occurrence's content, then the binding stage over what survives them
+  // (B3-D), and nothing downstream reads the content as it was stored: `input` is the conditioned,
+  // bound document from here on (issue #253).
   const condition =
     given.conditionContent ?? ((_node: string, content: ContentDocument) => content);
-  const input: AssembleInput = {
+  const valueFormats = formatsFor(given.theme?.valueCatalogue ?? null, given.outline.language);
+  const values: PrintedValue[] = [];
+  const bindFailures: PublishFailure[] = [];
+  const input: BoundInput = {
     ...given,
     occurrences: new Map(
-      [...given.occurrences].map(([node, content]) => [node, condition(node, content)] as const),
+      [...given.occurrences].map(([node, content]) => {
+        const stage = bind(
+          node,
+          condition(node, content),
+          given.bindings?.get(node) ?? new Map(),
+          valueFormats,
+        );
+        values.push(...stage.values);
+        bindFailures.push(...stage.failures);
+        return [node, stage.bound] as const;
+      }),
     ),
   };
   const { layout, theme } = input;
@@ -391,7 +420,7 @@ export function assemble(given: AssembleInput): Assembled {
   }
   const pdf = input.formats.includes('pdf');
   const docx = input.formats.includes('docx');
-  const failures: PublishFailure[] = [...input.refused];
+  const failures: PublishFailure[] = [...input.refused, ...bindFailures];
   /**
    * **The failures that are the PDF engine's own** (Word 1, ruling R2): what the pinned Typst and the
    * PDF's page cannot do - a line or an image wider than the PDF's measure, a caption too long for its
@@ -798,13 +827,8 @@ export function assemble(given: AssembleInput): Assembled {
         if (equation !== null) runs.push({ equation });
         continue;
       }
-      // Nothing publishes a binding until the publish's binding stage (bindings.md), and the service
-      // refuses one at the door (the D3 plan, "Added in phase B"): one reaching here is named, by
-      // its identifier, so the run is never printed without its value.
-      if (inline.type === 'binding') {
-        failures.push(failure('compose', 'binding_unresolved', node, block, inline.id));
-        continue;
-      }
+      // A binding still here is one the binding stage failed by name (B3-D): nothing is printed.
+      if (inline.type === 'binding') continue;
       if (inline.type !== 'text') {
         failures.push(failure('compose', 'inline_not_publishable', node, block, inline.type));
         continue;
@@ -1851,6 +1875,7 @@ export function assemble(given: AssembleInput): Assembled {
     return {
       ok: true,
       numbering,
+      values,
       word: null,
       document: {
         schema: PUBLISHING_SCHEMA_1,
@@ -1906,6 +1931,7 @@ export function assemble(given: AssembleInput): Assembled {
   return {
     ok: true,
     numbering,
+    values,
     word:
       docx && docxFormat !== undefined
         ? {
@@ -2184,7 +2210,7 @@ interface Found {
  * wrote, "See  for more".
  */
 function resolveReferences(
-  input: AssembleInput,
+  input: BoundInput,
   numbering: NumberingTable,
   above: string | undefined,
   below: string | undefined,

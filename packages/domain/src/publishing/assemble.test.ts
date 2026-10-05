@@ -6604,9 +6604,8 @@ describe('a preview, assembled (W10.1)', () => {
   });
 });
 
-// The D3 plan, "Added in phase B": nothing publishes a binding until the publish's binding stage
-// (bindings.md), and the service refuses one at the door. Should a request ever reach the worker
-// holding one, it fails by name wherever the binding stands, and never prints the run without it.
+// The binding stage (B3-D): a binding the request recorded no result for fails by name wherever it
+// stands, and the run is never printed without it.
 describe('a binding met by assemble', () => {
   const binding = (name: string) => ({
     type: 'binding',
@@ -6659,7 +6658,7 @@ describe('a binding met by assemble', () => {
           .map((each) => [each.stage, each.node, each.detail])
           .sort(),
         formats.join(),
-      ).toEqual(['b1', 'b2', 'b3', 'b4', 'b5', 'b6'].map((name) => ['compose', id('calib'), name]));
+      ).toEqual(['b1', 'b2', 'b3', 'b4', 'b5', 'b6'].map((name) => ['bind', id('calib'), name]));
       // Named as a binding, never as an inline the product cannot publish yet.
       expect(
         failures.filter((each) => each.detail === 'binding'),

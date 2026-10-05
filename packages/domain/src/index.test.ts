@@ -170,6 +170,11 @@ describe('the domain package', () => {
         // The forms a target is offered in, so the Reference dialog offers no title form of a section
         // whose title holds an equation, which the publish refuses (equations 3's final review, L2).
         'targetForms',
+        // The binding stage and provenance.json (the B3 plan, B3-D, B3-G).
+        'bind',
+        'unbound',
+        'publishedProvenance',
+        'provenanceBytes',
         // Publishing: the published document, its failures and assemble (publishing.md).
         'DRAFT_NOTICE',
         'PUBLISHING_SCHEMA',

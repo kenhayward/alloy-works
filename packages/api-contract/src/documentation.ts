@@ -161,7 +161,12 @@ const operationTags = {
   ],
   Previews: ['requestPreview'],
   'Publication requests': ['requestPublication', 'getPublicationRequest'],
-  Publications: ['listPublications', 'listPublicationsEverywhere', 'getPublication'],
+  Publications: [
+    'listPublications',
+    'listPublicationsEverywhere',
+    'getPublication',
+    'getPublicationBindings',
+  ],
   'Presentation and numbering': ['getNumbering', 'getDocumentPresentation', 'getPresentation'],
   Tokens: [
     'listTokens',
@@ -318,6 +323,8 @@ const descriptions: Readonly<Record<string, string>> = {
   listPublicationsEverywhere:
     'Lists all publications the caller may read across documents and spaces.',
   getPublication: 'Returns a completed publication’s immutable record and links to its outputs.',
+  getPublicationBindings:
+    'Returns each value a publication printed, by node and binding, with the dataset version and stored result it was taken from. Needs read on the publication. The SQL that ran, the connection and each column’s source column are included only where the caller may read the query definition; provenance.json, the publication’s own output, never holds them.',
   listTokens:
     'Lists the caller’s own personal tokens and their expiry and last use. Token secrets are never returned by a listing.',
   createToken:
