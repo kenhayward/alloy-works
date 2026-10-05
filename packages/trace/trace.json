@@ -17954,6 +17954,18 @@
       "kind": "title"
     },
     {
+      "id": "DAT-080",
+      "file": "apps/connector/src/image.test.ts",
+      "line": 105,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-096",
+      "file": "apps/connector/src/image.test.ts",
+      "line": 71,
+      "kind": "title"
+    },
+    {
       "id": "DAT-051",
       "file": "apps/connector/src/limits.test.ts",
       "line": 65,
@@ -20716,7 +20728,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 480,
+      "line": 484,
       "kind": "title"
     },
     {
@@ -21100,13 +21112,13 @@
     {
       "id": "DAT-046",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 173,
+      "line": 174,
       "kind": "title"
     },
     {
       "id": "DAT-087",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 148,
+      "line": 149,
       "kind": "title"
     },
     {

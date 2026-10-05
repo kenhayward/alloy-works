@@ -321,18 +321,14 @@ describe('the connector against a PostgreSQL source', () => {
       base: 'time',
       fraction: 0,
     });
-    for (const name of [
-      'float4',
-      'float8',
-      'money',
-      'bytea',
-      'interval',
-      'timetz',
-      '_int4',
-      'int4range',
-    ]) {
+    for (const name of ['float4', 'float8', 'money', 'interval', 'timetz', '_int4', 'int4range']) {
       expect(proposedType({ name, kind: 'b', typmod: -1 }), name).toBeNull();
     }
+    // A binary column is proposed as an image, its description the author's to declare (D8-A).
+    expect(proposedType({ name: 'bytea', kind: 'b', typmod: -1 })).toEqual({
+      base: 'image',
+      encoding: 'binary',
+    });
   });
 
   it(`reaches the suite's own source on 127.0.0.1:${SOURCE_PORT}`, async () => {

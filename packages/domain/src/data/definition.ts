@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { builderFetchSchema, checkBuilder, type BuilderFetch } from './builder.js';
 import { valueProblem, compareCanonical, type CanonicalValue } from './canonical.js';
-import { valueTypeSchema, type ValueType } from './columns.js';
+import { columnTypeSchema, valueTypeSchema, type ValueType } from './columns.js';
 import { generatedLength } from './generate.js';
 import { limitCeilings } from './limits.js';
 import { MAX_COLUMNS } from './columns.js';
@@ -102,8 +102,8 @@ export const columnSchema = z.strictObject({
   name: sourceName('A column name'),
   // A source's column by name; a pointer, a header and a letter arrive with D6's sources.
   from: z.strictObject({ column: sourceName('A source column') }),
-  // Any type but image, which arrives with D8.
-  type: valueTypeSchema,
+  // Any of the nine; an image's description is checked against the columns (`checkQueryDefinition`).
+  type: columnTypeSchema,
 });
 
 /** SQL with its markers, as the SQL fallback writes it (D2-B). */
@@ -332,6 +332,18 @@ export function checkQueryDefinition(
   for (const [at, column] of definition.columns.entries()) {
     if (columns.has(column.name)) problem(`columns.${at}.name`, 'A column is declared once');
     columns.add(column.name);
+  }
+  // An image takes its description from a declared text column, or is decorative (D8-A, DAT-097).
+  for (const [at, column] of definition.columns.entries()) {
+    const { type } = column;
+    if (type.base !== 'image' || type.description === 'decorative') continue;
+    const named = type.description.column;
+    if (!definition.columns.some((each) => each.name === named && each.type.base === 'text')) {
+      problem(
+        `columns.${at}.type.description`,
+        `An image's description is a declared text column, and ${named} is not one`,
+      );
+    }
   }
   const key = new Set<string>();
   for (const [at, name] of definition.key.entries()) {

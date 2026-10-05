@@ -1,5 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { defaultLimits, type QueryDefinition, type ValueType } from '@alloy-works/domain';
+import { defaultLimits, type ColumnType, type QueryDefinition } from '@alloy-works/domain';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import { Notice } from '../states/Notice.js';
@@ -464,7 +464,7 @@ function GeneratedSql({ shown }: { readonly shown: { sql: string } | { needs: st
 
 /** The SQL of a definition the person may only read, and its declarations, in words. */
 function ReadOnly({ definition }: { readonly definition: QueryDefinition }) {
-  const typeName = (type: ValueType) =>
+  const typeName = (type: ColumnType) =>
     BASES.find((each) => each.base === type.base)?.label ?? type.base;
   const { fetch: statement } = definition;
   return (

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { parseContentDocument, type ContentDocument } from '../content/model/document.js';
 import type { CanonicalResult, CanonicalValue } from '../data/canonical.js';
+import type { ValueType } from '../data/columns.js';
 import type { Column } from '../data/definition.js';
 import { formatValue } from '../data/format.js';
 import {
@@ -117,7 +118,7 @@ describe('bind', () => {
       DEFAULT_VALUE_FORMATS,
     );
     expect(failures).toEqual([]);
-    const printed = formatValue('4200.5', COLUMNS[1]!.type, DEFAULT_VALUE_FORMATS);
+    const printed = formatValue('4200.5', COLUMNS[1]!.type as ValueType, DEFAULT_VALUE_FORMATS);
     expect(printed).toBe('4,200.50');
     expect(bound.content[0]).toEqual(
       paragraph('p1', text('The reading is '), text(printed), text('.')),

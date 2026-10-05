@@ -372,6 +372,8 @@ describe('the domain package', () => {
         'dataFailureCodes',
         'dataFailures',
         'columnTypeSchema',
+        // What a describe proposes, an image for a binary column among it (the D8 plan, D8-A).
+        'proposedTypeSchema',
         'SEALED',
         'SEALED_MAX_BYTES',
         'SECRET_MAX_BYTES',
@@ -418,6 +420,8 @@ describe('the domain package', () => {
         'SOURCE_MESSAGE_MAX',
         'sourceMessage',
         'RUN_REQUEST_MAX_BYTES',
+        // Base64 as a run's answer carries an image (the D8 plan, D8-B).
+        'isPaddedBase64',
         'canonicalResultSchema',
         'describeSqlAnswerSchema',
         'describeSqlRequestSchema',

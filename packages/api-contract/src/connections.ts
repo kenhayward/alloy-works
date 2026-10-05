@@ -5,7 +5,7 @@ import {
   draftDefinitionSchema,
   sqlTextSchema,
   parameterSchema,
-  valueTypeSchema,
+  proposedTypeSchema,
 } from '@alloy-works/domain';
 import { z } from 'zod';
 import { FacetCountView, idsFilter, listingQuery, listingTotal, nextCursor } from './listing.js';
@@ -246,9 +246,11 @@ export const DescribeSqlView = z.object({
     z.object({
       name: z.string(),
       sourceType: z.string().describe("The source's own name for the column's type"),
-      proposed: valueTypeSchema
+      proposed: proposedTypeSchema
         .nullable()
-        .describe('The column type proposed for it, or null where the author must declare one'),
+        .describe(
+          "The column type proposed for it, or null where the author must declare one. A binary column is proposed as an image, its description the author's to declare",
+        ),
     }),
   ),
   parameters: z

@@ -16,6 +16,7 @@ import pg from 'pg';
 
 import { describeStatement, QUERY_CANCELED, sourceRefused, withRefusedColumn } from './describe.js';
 import { admits, fromPostgresText } from './from-text.js';
+import { readImage } from './image.js';
 import { SERVER_TEXT, sourceTypes } from './postgres.js';
 import { finishResult } from './result.js';
 
@@ -92,8 +93,16 @@ export async function runStatement(
 
     const remaining = Math.max(1, Math.floor(deadline - Date.now()));
     await client.query(`set local statement_timeout = ${remaining}`);
-    const rows = await readRows(client, bound, definition, places, limits, deadline, cancel);
-    const finished = finishResult(rows, definition, limits);
+    const { rows, images, imageBytes } = await readRows(
+      client,
+      bound,
+      definition,
+      places,
+      limits,
+      deadline,
+      cancel,
+    );
+    const finished = finishResult(rows, definition, limits, imageBytes);
     if ('failure' in finished) return failed(finished.failure);
     return {
       outcome: 'ok',
@@ -103,6 +112,9 @@ export async function runStatement(
       rowCount: finished.rowCount,
       ran: { sql: bound.text },
       durationMs: Date.now() - started,
+      images: Object.fromEntries(
+        [...images].map(([hash, bytes]) => [hash, bytes.toString('base64')]),
+      ),
     };
   } catch (error) {
     if (error instanceof Stopped) return failed(error.failure);
@@ -133,7 +145,7 @@ async function admittedColumns(
   const places: number[] = [];
   for (const column of definition.columns) {
     const matching = fields.flatMap((field, at) => (field.name === column.from.column ? [at] : []));
-    if (matching.length !== 1 || !admits(column.type.base, types[matching[0]!]!)) {
+    if (matching.length !== 1 || !admits(column.type, types[matching[0]!]!)) {
       return { failure: dataFailure('result_mismatch', { column: column.name }) };
     }
     places.push(matching[0]!);
@@ -155,9 +167,18 @@ async function admittedColumns(
 const socketOf = (client: pg.Client) =>
   (client as unknown as { connection: { stream: Socket } }).connection.stream;
 
+/** The rows a run read, and each distinct image they hold by its hash, with those images' bytes. */
+interface Read {
+  readonly rows: CanonicalValue[][];
+  readonly images: ReadonlyMap<string, Buffer>;
+  readonly imageBytes: number;
+}
+
 /**
  * The statement's rows, each in canonical form, read a page at a time: stopped at the socket past
  * the row limit, the byte limit or the deadline, or at the first value its declared type does not take.
+ * An image cell is its hash, the image kept once, and its bytes counted against the byte limit beside
+ * the rows' (D8-B, D8-C); one not admitted is `image_refused`, naming its row and column.
  */
 function readRows(
   client: pg.Client,
@@ -167,10 +188,12 @@ function readRows(
   limits: Limits,
   deadline: number,
   cancel: () => Promise<void>,
-): Promise<CanonicalValue[][]> {
+): Promise<Read> {
   return new Promise((resolve, reject) => {
     const socket = socketOf(client);
     const rows: CanonicalValue[][] = [];
+    const images = new Map<string, Buffer>();
+    let imageBytes = 0;
     let received = 0;
     let kept = 0;
     let stopped: DataFailure | undefined;
@@ -219,6 +242,19 @@ function readRows(
           canonical.push(null);
           continue;
         }
+        if (column.type.base === 'image') {
+          const image = readImage(text, column.type.encoding);
+          if ('refused' in image) {
+            stop(dataFailure('image_refused', { column: column.name, row: rows.length + 1 }));
+            return;
+          }
+          if (!images.has(image.hash)) {
+            images.set(image.hash, image.bytes);
+            imageBytes += image.bytes.length;
+          }
+          canonical.push(image.hash);
+          continue;
+        }
         const taken = fromPostgresText(text, column.type);
         if ('refused' in taken) {
           stop(dataFailure(taken.refused, { column: column.name, row: rows.length + 1 }));
@@ -229,9 +265,13 @@ function readRows(
       rows.push(canonical);
       // What is kept, as it grows: a row's JSON and its comma, which the canonical bytes are.
       kept += Buffer.byteLength(JSON.stringify(canonical), 'utf8') + 1;
-      if (kept > limits.bytes) stop(dataFailure('byte_limit'));
+      if (kept + imageBytes > limits.bytes) stop(dataFailure('byte_limit'));
     });
-    query.on('end', () => settle(() => (stopped ? reject(new Stopped(stopped)) : resolve(rows))));
+    query.on('end', () =>
+      settle(() =>
+        stopped ? reject(new Stopped(stopped)) : resolve({ rows, images, imageBytes }),
+      ),
+    );
     query.on('error', (error: Error) =>
       settle(() => reject(stopped ? new Stopped(stopped) : error)),
     );

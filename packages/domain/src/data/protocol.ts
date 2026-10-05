@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { storableText } from '../stored/storable.js';
-import { columnTypeSchema, MAX_COLUMNS, valueTypeSchema } from './columns.js';
+import { MAX_COLUMNS, proposedTypeSchema } from './columns.js';
 import { connectionSettingsSchema } from './connection.js';
 import { builderQuerySchema, checkTree, type Query } from './builder.js';
 import {
@@ -28,17 +28,19 @@ export const SEALED = /^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]+
 
 /**
  * The most an answer of the connector's may be, in bytes: a child's answer is cut off past it by the
- * supervisor, and the service stops reading one past it. A describe can reach it - 2,000 relations of
- * wide tables with long names come to tens of megabytes - so the child stops listing relations before
- * its answer passes `DESCRIBE_BUDGET_BYTES`, half of this, and says `truncated`.
+ * supervisor, and the service stops reading one past it. A run's answer at the byte ceiling, its images
+ * as base64 (D8-C), comes to about 34 MiB, so the cap is 40. A describe can reach it - 2,000 relations
+ * of wide tables with long names come to tens of megabytes - so the child stops listing relations before
+ * its answer passes `DESCRIBE_BUDGET_BYTES`, and says `truncated`.
  */
-export const CONNECTOR_ANSWER_MAX_BYTES = 32 * 1024 * 1024;
+export const CONNECTOR_ANSWER_MAX_BYTES = 40 * 1024 * 1024;
 
 /**
  * The most a describe's answer may be, in UTF-8 bytes of its JSON, before the child stops adding
- * relations and says `truncated`: half the cap, so an answer never meets it (the D1 fix, round two).
+ * relations and says `truncated`: well under the cap, so an answer never meets it (the D1 fix, round
+ * two).
  */
-export const DESCRIBE_BUDGET_BYTES = CONNECTOR_ANSWER_MAX_BYTES / 2;
+export const DESCRIBE_BUDGET_BYTES = 16 * 1024 * 1024;
 
 /** A secret's longest, in UTF-8 bytes. */
 export const SECRET_MAX_BYTES = 4096;
@@ -158,7 +160,7 @@ export const relationSchema = z.strictObject({
         // `format_type`'s text: a qualified, quoted name with its modifier and array bounds.
         sourceType: sourceTypeSchema,
         nullable: z.boolean(),
-        proposed: columnTypeSchema.nullable(),
+        proposed: proposedTypeSchema.nullable(),
       }),
     )
     .max(MAX_COLUMNS),
@@ -266,9 +268,47 @@ export const canonicalResultSchema = z
   });
 
 /**
+ * Whether text is base64 as the connector writes it: the standard alphabet, padded to a multiple of
+ * four, and nothing between. A character class and a length, so megabytes are read in one pass.
+ */
+export function isPaddedBase64(text: string): boolean {
+  return text.length > 0 && text.length % 4 === 0 && /^[A-Za-z0-9+/]*={0,2}$/.test(text);
+}
+
+/**
+ * Each distinct image a result holds, by its SHA-256, as base64 (D8-B). Whether the bytes are the
+ * hash's is the service's to check, which holds `node:crypto`.
+ */
+const imagesSchema = z.record(
+  z.string().regex(/^[0-9a-f]{64}$/),
+  z.string().refine(isPaddedBase64, { message: 'An image is padded base64' }),
+);
+
+/** Whether a result's image cells are hashes, each carried, and every image carried is in a cell. */
+function imagesHeld(answer: {
+  readonly result: z.infer<typeof canonicalResultSchema>;
+  readonly images?: Readonly<Record<string, string>> | undefined;
+}): boolean {
+  const carried = answer.images ?? {};
+  const held = new Set<string>();
+  for (const [at, [, base]] of answer.result.columns.entries()) {
+    if (base !== 'image') continue;
+    for (const row of answer.result.rows) {
+      const cell = row[at];
+      if (cell === null) continue;
+      if (typeof cell !== 'string' || !/^[0-9a-f]{64}$/.test(cell) || !(cell in carried)) {
+        return false;
+      }
+      held.add(cell);
+    }
+  }
+  return Object.keys(carried).every((hash) => held.has(hash));
+}
+
+/**
  * A run's answer (D2-K): the canonical result as a JSON value, its SHA-256 checksum, which the service
- * checks against the bytes it serialises, the row count, the SQL that ran and how long it took - or
- * one named failure.
+ * checks against the bytes it serialises, the row count, the SQL that ran and how long it took, and each
+ * image its cells name (D8-B) - or one named failure.
  */
 export const runAnswerSchema = z.discriminatedUnion('outcome', [
   z
@@ -279,9 +319,15 @@ export const runAnswerSchema = z.discriminatedUnion('outcome', [
       rowCount: z.number().int().min(0),
       ran: z.strictObject({ sql: z.string().max(RAN_MAX_CHARACTERS) }),
       durationMs: z.number().int().min(0),
+      // Absent where a result holds no image, as every answer before D8.
+      images: imagesSchema.optional(),
     })
     .refine((answer) => answer.rowCount === answer.result.rows.length, {
       message: 'The row count is the number of rows',
+    })
+    .refine(imagesHeld, {
+      message:
+        'Every image cell is a hash the answer carries, and every image carried is in a cell',
     }),
   z.strictObject({ outcome: z.literal('failed'), failure: dataFailureSchema }),
 ]);
@@ -387,7 +433,7 @@ export const describeSqlAnswerSchema = z.union([
         z.strictObject({
           name: sourceName,
           sourceType: sourceTypeSchema,
-          proposed: valueTypeSchema.nullable(),
+          proposed: proposedTypeSchema.nullable(),
         }),
       )
       .max(MAX_COLUMNS),

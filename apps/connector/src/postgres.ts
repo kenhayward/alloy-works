@@ -6,9 +6,9 @@ import {
   sourceNameSchema,
   sourceTypeSchema,
   type ConnectionSettings,
+  type ProposedType,
   type Relation,
   type TestFinding,
-  type ValueType,
 } from '@alloy-works/domain';
 import pg from 'pg';
 
@@ -309,13 +309,14 @@ const AS_TEXT = new Set([
 
 /**
  * The column type proposed for a source type (the D1 plan, "The proposal map"), a domain's base type
- * followed first; null for a type the author declares in D2.
+ * followed first; an image for `bytea`, its description the author's to declare (D8-A); null for a type
+ * the author declares in D2.
  */
 export function proposedType(type: {
   readonly name: string;
   readonly kind: string;
   readonly typmod: number;
-}): ValueType | null {
+}): ProposedType | null {
   const { name, kind, typmod } = type;
   if (name === 'int2' || name === 'int4' || name === 'int8') return { base: 'integer' };
   if (name === 'numeric') {
@@ -326,6 +327,7 @@ export function proposedType(type: {
   }
   if (AS_TEXT.has(name) || kind === 'e') return { base: 'text' };
   if (name === 'bool') return { base: 'boolean' };
+  if (name === 'bytea') return { base: 'image', encoding: 'binary' };
   if (name === 'date') return { base: 'date' };
   const fraction = typmod >= 0 && typmod <= 6 ? typmod : 6;
   if (name === 'time') return { base: 'time', fraction };

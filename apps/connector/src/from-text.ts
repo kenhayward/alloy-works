@@ -1,4 +1,4 @@
-import type { CanonicalValue, ValueType } from '@alloy-works/domain';
+import type { CanonicalValue, ColumnType, ValueType } from '@alloy-works/domain';
 
 /**
  * A PostgreSQL value, as the server printed it, to its canonical form (ADR-0035; the D2 plan, D2-L and
@@ -18,17 +18,25 @@ const ADMITTED: Readonly<Record<ValueType['base'], readonly string[]>> = {
   boolean: ['bool'],
 };
 
+/** The character types an image declared base64 is read from (D8-A). */
+const BASE64_TEXT = ['text', 'varchar', 'bpchar', 'citext'];
+
 /**
- * Whether a declared base takes a source type (D2-L): text from the character types, the JSON and XML
+ * Whether a declared type takes a source type (D2-L): text from the character types, the JSON and XML
  * types, a UUID and any enum; an integer or a decimal from the integer types and numeric; each date and
- * time from its own type; a boolean from `bool`. Anything else is the author's to cast in the SQL.
+ * time from its own type; a boolean from `bool`; an image from `bytea` where it is declared binary,
+ * and from the character types where it is declared base64 (D8-A). Anything else is the author's to
+ * cast in the SQL.
  */
 export function admits(
-  base: ValueType['base'],
+  type: ColumnType,
   source: { readonly name: string; readonly kind: string },
 ): boolean {
-  if (base === 'text' && source.kind === 'e') return true;
-  return ADMITTED[base].includes(source.name);
+  if (type.base === 'image') {
+    return type.encoding === 'binary' ? source.name === 'bytea' : BASE64_TEXT.includes(source.name);
+  }
+  if (type.base === 'text' && source.kind === 'e') return true;
+  return ADMITTED[type.base].includes(source.name);
 }
 
 /** Why a value could not be taken: not exact in its declared type, or in no canonical form at all. */

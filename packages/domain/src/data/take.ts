@@ -110,9 +110,11 @@ export function takeValue(
   }
   if (rows.length > 1) return { failure: 'value_many', count: rows.length };
 
+  const column = declared.get(take.column)!;
+  // An image is placed by a figure's binding, B6's (D8-H), never taken as a value.
+  if (column.type.base === 'image') return { failure: 'take_invalid', column: take.column };
   const cell = rows[0]![index.get(take.column)!];
   if (cell === null || cell === undefined) return { failure: 'value_null' };
-  const column = declared.get(take.column)!;
   if (column.type.base === 'text' && typeof cell === 'string' && SPACES_ALONE.test(cell)) {
     return { failure: 'value_empty' };
   }
