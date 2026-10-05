@@ -248,7 +248,8 @@ as it arrives - the binding stage in T2, transclusion, conditions and variables 
 ```
 1 resolve      the latest document version, and each occurrence's version     (at the request)
 2 conditions   over each occurrence's content                                  REU, T4: identity
-3 contribute   contributionsOf(conditioned content), by occurrence
+2b bind        bind(conditioned content): each value taken, formatted, set     bindings.md, B3
+3 contribute   contributionsOf(bound content), by occurrence
 4 number       number(conditioned, layout.scheme)                              structure.md
 5 references   references(conditioned, numbering)                              structure 4
 6 generate     contents(depth), listOf(sequence) for each list the layout names
@@ -270,15 +271,16 @@ order, and a test that claimed they did would be claiming what only some of them
 pair is tested in whichever way the code allows, over one document - a table a condition hides, a
 second table, a third whose caption refers to the second, and a paragraph that does too:
 
-| Pair                   | How                                                                                                                                                                                                             |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| resolve, conditions    | The types forbid the swap: `conditionContent` takes resolved content, and an outline's reference - the occurrence before resolution - is refused at compile time; `assemble` is shown to hand it the content    |
-| conditions, contribute | Swapped: counted from the content as stored, the hidden table takes a number and every table after it is one out                                                                                                |
-| contribute, number     | Swapped: numbered before anything is counted, no table takes a number. And `number` refuses at compile time a `Resolved` that has not been through the outline's own condition stage                            |
-| number, references     | Swapped: resolved against a numbering not yet made, a reference has no number to print                                                                                                                          |
-| references, generate   | Swapped: a list generated from the captions' words before references resolve lists the third table without the number its caption refers to                                                                     |
-| generate, check        | Not functions a test can reorder (below). The check that reads the generated matter comes after it: a declared contents that generates no entry is checked as none, and a document with nothing else is refused |
-| check, project         | Checking and projecting are one walk, and the projection is returned only where every check passed: a document that fails one is never projected, and the types give a refused assembly no document to read     |
+| Pair                   | How                                                                                                                                                                                                                                  |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| resolve, conditions    | The types forbid the swap: `conditionContent` takes resolved content, and an outline's reference - the occurrence before resolution - is refused at compile time; `assemble` is shown to hand it the content                         |
+| conditions, contribute | Swapped: counted from the content as stored, the hidden table takes a number and every table after it is one out                                                                                                                     |
+| bind (PUB-108)         | Swapped after references, a reference to a table whose caption holds a value prints none; after generation, the list of tables omits it; after contributions or numbering, `contributionsOf` refuses unbound content at compile time |
+| contribute, number     | Swapped: numbered before anything is counted, no table takes a number. And `number` refuses at compile time a `Resolved` that has not been through the outline's own condition stage                                                 |
+| number, references     | Swapped: resolved against a numbering not yet made, a reference has no number to print                                                                                                                                               |
+| references, generate   | Swapped: a list generated from the captions' words before references resolve lists the third table without the number its caption refers to                                                                                          |
+| generate, check        | Not functions a test can reorder (below). The check that reads the generated matter comes after it: a declared contents that generates no entry is checked as none, and a document with nothing else is refused                      |
+| check, project         | Checking and projecting are one walk, and the projection is returned only where every check passed: a document that fails one is never projected, and the types give a refused assembly no document to read                          |
 
 The compile-time refusals are `@ts-expect-error` directives, which `pnpm typecheck` holds: were a
 type to allow the swap, the directive would be unused and the typecheck would fail. **As built, the

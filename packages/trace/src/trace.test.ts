@@ -236,7 +236,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(591);
+    ).toBe(592);
   });
 });
 
@@ -783,7 +783,7 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(636);
+    expect(model.citations).toHaveLength(648);
   });
 
   it('cites no identifier the corpus does not hold', () => {

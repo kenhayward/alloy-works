@@ -15649,6 +15649,10 @@
           "howItIsMet": "The binding stage either sets a value `takeValue` took and the theme formatted, or fails the job by name; it has no path that sets a blank, a zero, a placeholder or the binding's own description in a value's place"
         },
         {
+          "id": "PUB-108",
+          "howItIsMet": "The binding stage, `bind`, runs after conditions and before contributions (BI-L): `contributionsOf` and the reference resolver take `Bound` content alone, so `order.test.ts` fails with the stage moved after references or generation, and `pnpm typecheck` fails with it moved after contributions or numbering. The types refuse the swap as `number` refuses an unconditioned outline; neither stops a caller choosing another function, and `unbound` is the one named way round, for the document page's numbering, which counts no value"
+        },
+        {
           "id": "DAT-042",
           "howItIsMet": "A publication records every binding it printed, `publication_binding`, held whole to its request, and is accompanied by `provenance.json`, an output beside the PDF and Word: for each value, where it stood, what was printed, what the query returned, any revision, and the dataset version's provenance; `GET /v1/publications/{id}/bindings` answers the same"
         },
@@ -18192,7 +18196,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 792,
+      "line": 795,
       "kind": "title"
     },
     {
@@ -18430,45 +18434,57 @@
       "kind": "title"
     },
     {
+      "id": "DAT-042",
+      "file": "apps/service/src/publication-bindings.test.ts",
+      "line": 67,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-087",
+      "file": "apps/service/src/publication-bindings.test.ts",
+      "line": 44,
+      "kind": "title"
+    },
+    {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 475,
+      "line": 422,
       "kind": "rule"
     },
     {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 410,
+      "line": 357,
       "kind": "title"
     },
     {
       "id": "PUB-014",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 503,
+      "line": 450,
       "kind": "rule"
     },
     {
       "id": "PUB-047",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 711,
+      "line": 658,
       "kind": "title"
     },
     {
       "id": "PUB-048",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 653,
+      "line": 600,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 592,
+      "line": 539,
       "kind": "rule"
     },
     {
       "id": "PUB-095",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 520,
+      "line": 467,
       "kind": "rule"
     },
     {
@@ -18972,7 +18988,7 @@
     {
       "id": "PUB-100",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 284,
+      "line": 315,
       "kind": "title"
     },
     {
@@ -19138,6 +19154,36 @@
       "kind": "title"
     },
     {
+      "id": "DAT-042",
+      "file": "apps/worker/src/bindings.test.ts",
+      "line": 434,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-046",
+      "file": "apps/worker/src/bindings.test.ts",
+      "line": 419,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-088",
+      "file": "apps/worker/src/bindings.test.ts",
+      "line": 387,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-049",
+      "file": "apps/worker/src/bindings.test.ts",
+      "line": 434,
+      "kind": "title"
+    },
+    {
+      "id": "STY-082",
+      "file": "apps/worker/src/bindings.test.ts",
+      "line": 471,
+      "kind": "title"
+    },
+    {
       "id": "PUB-091",
       "file": "apps/worker/src/check.test.ts",
       "line": 305,
@@ -19236,31 +19282,31 @@
     {
       "id": "PUB-007",
       "file": "apps/worker/src/layout.test.ts",
-      "line": 300,
+      "line": 303,
       "kind": "title"
     },
     {
       "id": "PUB-008",
       "file": "apps/worker/src/layout.test.ts",
-      "line": 447,
+      "line": 450,
       "kind": "title"
     },
     {
       "id": "PUB-009",
       "file": "apps/worker/src/layout.test.ts",
-      "line": 349,
+      "line": 352,
       "kind": "title"
     },
     {
       "id": "PUB-037",
       "file": "apps/worker/src/layout.test.ts",
-      "line": 483,
+      "line": 486,
       "kind": "title"
     },
     {
       "id": "PUB-088",
       "file": "apps/worker/src/layout.test.ts",
-      "line": 534,
+      "line": 537,
       "kind": "title"
     },
     {
@@ -19831,6 +19877,18 @@
       "id": "IAM-078",
       "file": "packages/db/src/provision.test.ts",
       "line": 44,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-042",
+      "file": "packages/db/src/publication-bindings.test.ts",
+      "line": 416,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-087",
+      "file": "packages/db/src/publication-bindings.test.ts",
+      "line": 318,
       "kind": "title"
     },
     {
@@ -20586,7 +20644,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 473,
+      "line": 478,
       "kind": "title"
     },
     {
@@ -20968,6 +21026,18 @@
       "kind": "title"
     },
     {
+      "id": "DAT-046",
+      "file": "packages/domain/src/publishing/bind.test.ts",
+      "line": 173,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-087",
+      "file": "packages/domain/src/publishing/bind.test.ts",
+      "line": 148,
+      "kind": "title"
+    },
+    {
       "id": "PUB-011",
       "file": "packages/domain/src/publishing/layout.test.ts",
       "line": 34,
@@ -20982,7 +21052,13 @@
     {
       "id": "PUB-098",
       "file": "packages/domain/src/publishing/order.test.ts",
-      "line": 165,
+      "line": 167,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-108",
+      "file": "packages/domain/src/publishing/order.test.ts",
+      "line": 382,
       "kind": "title"
     },
     {
@@ -21024,79 +21100,79 @@
     {
       "id": "STR-040",
       "file": "packages/domain/src/structure/lists.test.ts",
-      "line": 79,
+      "line": 82,
       "kind": "title"
     },
     {
       "id": "STR-041",
       "file": "packages/domain/src/structure/lists.test.ts",
-      "line": 172,
+      "line": 175,
       "kind": "title"
     },
     {
       "id": "STR-071",
       "file": "packages/domain/src/structure/lists.test.ts",
-      "line": 221,
+      "line": 224,
       "kind": "title"
     },
     {
       "id": "CNT-041",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 643,
+      "line": 644,
       "kind": "title"
     },
     {
       "id": "CNT-047",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 218,
+      "line": 219,
       "kind": "title"
     },
     {
       "id": "STR-014",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 248,
+      "line": 249,
       "kind": "title"
     },
     {
       "id": "STR-015",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 270,
+      "line": 271,
       "kind": "title"
     },
     {
       "id": "STR-016",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 295,
+      "line": 296,
       "kind": "title"
     },
     {
       "id": "STR-017",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 599,
+      "line": 600,
       "kind": "title"
     },
     {
       "id": "STR-018",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 698,
+      "line": 699,
       "kind": "title"
     },
     {
       "id": "STR-021",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 630,
+      "line": 631,
       "kind": "title"
     },
     {
       "id": "STR-022",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 669,
+      "line": 670,
       "kind": "title"
     },
     {
       "id": "STR-071",
       "file": "packages/domain/src/structure/numbering.test.ts",
-      "line": 102,
+      "line": 103,
       "kind": "title"
     },
     {
@@ -21168,19 +21244,19 @@
     {
       "id": "CNT-125",
       "file": "packages/domain/src/structure/references.test.ts",
-      "line": 811,
+      "line": 814,
       "kind": "title"
     },
     {
       "id": "STR-068",
       "file": "packages/domain/src/structure/references.test.ts",
-      "line": 789,
+      "line": 792,
       "kind": "title"
     },
     {
       "id": "STR-071",
       "file": "packages/domain/src/structure/references.test.ts",
-      "line": 376,
+      "line": 377,
       "kind": "title"
     },
     {
@@ -21720,13 +21796,13 @@
     {
       "id": "AST-005",
       "file": "tests/e2e/src/stack.test.ts",
-      "line": 486,
+      "line": 448,
       "kind": "title"
     },
     {
       "id": "PUB-005",
       "file": "tests/e2e/src/stack.test.ts",
-      "line": 416,
+      "line": 378,
       "kind": "title"
     }
   ]
