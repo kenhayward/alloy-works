@@ -52,9 +52,9 @@ const BUDGET = { p95: 10_000, max: 30_000 } as const;
 const REPORT_WITHIN = 300_000;
 /**
  * Held to both bounds on a developer's machine, and stated against the reference configuration that
- * docs/testing.md declares; recorded only on a shared CI runner, whose speed varies from run to run
- * by more than a budget can absorb - W-D, as STR-063's navigation budget is
- * (`apps/service/src/test/budget.ts`). `CI` is the variable GitHub Actions sets to `true`.
+ * docs/testing.md declares; recorded only where `CI` is `true`, a shared runner whose speed varies
+ * from run to run by more than a budget can absorb - W-D, as STR-063's navigation budget is
+ * (`apps/service/src/test/budget.ts`). CI itself leaves this file out (`vitest.config.ts`).
  */
 const BINDS = process.env['CI'] !== 'true';
 

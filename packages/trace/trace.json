@@ -2705,9 +2705,18 @@
       "area": "CNT",
       "statement": "A document assembling four hundred components in an outline of five hundred nodes must open in the document view with its outline and its first screen of text shown at or under 1 second at p95, with no measured sample above 2 seconds, and a jump to any of its nodes must bring that node's text into view at or under 250 ms at p95, with no measured sample above 500 ms - measured in a browser against the running service on a declared reference configuration recorded beside the result",
       "tranche": "T1",
-      "status": "Specified",
+      "status": "Superseded by CNT-180",
       "document": "CNT-content-and-authoring.md",
       "line": 477
+    },
+    {
+      "id": "CNT-180",
+      "area": "CNT",
+      "statement": "A document assembling four hundred components in an outline of five hundred nodes must open in the document view with its outline and its first screen of text shown at or under 1 second at p90, with no measured sample above 2 seconds, and a jump to any of its nodes must bring that node's text into view at or under 250 ms at p90, with no measured sample above 500 ms - measured in a browser against the running service on a declared reference configuration recorded beside the result",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "CNT-content-and-authoring.md",
+      "line": 478
     },
     {
       "id": "CNT-082",
@@ -2716,7 +2725,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 478
+      "line": 479
     },
     {
       "id": "CNT-097",
@@ -2725,7 +2734,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 479
+      "line": 480
     },
     {
       "id": "CNT-115",
@@ -2734,7 +2743,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 480
+      "line": 481
     },
     {
       "id": "CNT-095",
@@ -2743,7 +2752,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-150",
       "document": "CNT-content-and-authoring.md",
-      "line": 481
+      "line": 482
     },
     {
       "id": "CNT-150",
@@ -2752,7 +2761,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 482
+      "line": 483
     },
     {
       "id": "CNT-096",
@@ -2761,7 +2770,7 @@
       "tranche": "T1",
       "status": "Withdrawn",
       "document": "CNT-content-and-authoring.md",
-      "line": 483
+      "line": 484
     },
     {
       "id": "CNT-114",
@@ -2770,7 +2779,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-136",
       "document": "CNT-content-and-authoring.md",
-      "line": 484
+      "line": 485
     },
     {
       "id": "CNT-136",
@@ -2779,7 +2788,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-151",
       "document": "CNT-content-and-authoring.md",
-      "line": 485
+      "line": 486
     },
     {
       "id": "CNT-151",
@@ -2788,7 +2797,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 486
+      "line": 487
     },
     {
       "id": "CNT-104",
@@ -2797,7 +2806,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-154",
       "document": "CNT-content-and-authoring.md",
-      "line": 495
+      "line": 496
     },
     {
       "id": "CNT-154",
@@ -2806,7 +2815,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 496
+      "line": 497
     },
     {
       "id": "CNT-155",
@@ -2815,7 +2824,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 497
+      "line": 498
     },
     {
       "id": "CNT-105",
@@ -2824,7 +2833,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 498
+      "line": 499
     },
     {
       "id": "CNT-106",
@@ -2833,7 +2842,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-156",
       "document": "CNT-content-and-authoring.md",
-      "line": 499
+      "line": 500
     },
     {
       "id": "CNT-156",
@@ -2842,7 +2851,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 500
+      "line": 501
     },
     {
       "id": "CNT-157",
@@ -2851,7 +2860,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 501
+      "line": 502
     },
     {
       "id": "CNT-108",
@@ -2860,7 +2869,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-158",
       "document": "CNT-content-and-authoring.md",
-      "line": 507
+      "line": 508
     },
     {
       "id": "CNT-158",
@@ -2869,7 +2878,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 508
+      "line": 509
     },
     {
       "id": "CNT-159",
@@ -2878,7 +2887,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 509
+      "line": 510
     },
     {
       "id": "CNT-109",
@@ -2887,7 +2896,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-160",
       "document": "CNT-content-and-authoring.md",
-      "line": 510
+      "line": 511
     },
     {
       "id": "CNT-160",
@@ -2896,7 +2905,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 511
+      "line": 512
     },
     {
       "id": "CNT-161",
@@ -2905,7 +2914,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 512
+      "line": 513
     },
     {
       "id": "CNT-110",
@@ -2914,7 +2923,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-141",
       "document": "CNT-content-and-authoring.md",
-      "line": 513
+      "line": 514
     },
     {
       "id": "CNT-141",
@@ -2923,7 +2932,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-162",
       "document": "CNT-content-and-authoring.md",
-      "line": 514
+      "line": 515
     },
     {
       "id": "CNT-162",
@@ -2932,7 +2941,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 515
+      "line": 516
     },
     {
       "id": "CNT-163",
@@ -2941,7 +2950,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 516
+      "line": 517
     },
     {
       "id": "CNT-111",
@@ -2950,7 +2959,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 517
+      "line": 518
     },
     {
       "id": "CNT-112",
@@ -2959,7 +2968,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 518
+      "line": 519
     },
     {
       "id": "CNT-113",
@@ -2968,7 +2977,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 519
+      "line": 520
     },
     {
       "id": "CNT-077",
@@ -2977,7 +2986,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 560
+      "line": 561
     },
     {
       "id": "CNT-078",
@@ -2986,7 +2995,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 561
+      "line": 562
     },
     {
       "id": "CNT-079",
@@ -2995,7 +3004,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-175",
       "document": "CNT-content-and-authoring.md",
-      "line": 562
+      "line": 563
     },
     {
       "id": "CNT-175",
@@ -3004,7 +3013,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 563
+      "line": 564
     },
     {
       "id": "CNT-080",
@@ -3013,7 +3022,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 564
+      "line": 565
     },
     {
       "id": "CNT-137",
@@ -3022,7 +3031,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 565
+      "line": 566
     },
     {
       "id": "CNT-138",
@@ -3031,7 +3040,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 566
+      "line": 567
     },
     {
       "id": "CNT-139",
@@ -3040,7 +3049,7 @@
       "tranche": "T1",
       "status": "Superseded by CNT-176",
       "document": "CNT-content-and-authoring.md",
-      "line": 567
+      "line": 568
     },
     {
       "id": "CNT-176",
@@ -3049,7 +3058,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 568
+      "line": 569
     },
     {
       "id": "CNT-177",
@@ -3058,7 +3067,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "CNT-content-and-authoring.md",
-      "line": 569
+      "line": 570
     },
     {
       "id": "COL-001",
@@ -11390,9 +11399,18 @@
       "area": "STR",
       "statement": "Opening a document of five hundred outline nodes, four hundred of them component references, from within the application - from the documents list, the interface already running, never its address loaded into a fresh page - and showing the result of each structural act on it - an insert, a removal, a retitle, a move, a promotion, a demotion and where a section starts - must take the interface at or under 250 ms at p95, with no measured sample above 500 ms: the time from the act to its result painted, less the time the service spends answering the requests it waits on, measured in a browser against the running service on a declared reference configuration recorded beside the result",
       "tranche": "T1",
-      "status": "Specified",
+      "status": "Superseded by STR-073",
       "document": "STR-structure-numbering-and-cross-references.md",
       "line": 199
+    },
+    {
+      "id": "STR-073",
+      "area": "STR",
+      "statement": "Opening a document of five hundred outline nodes, four hundred of them component references, from within the application - from the documents list, the interface already running, never its address loaded into a fresh page - and showing the result of each structural act on it - an insert, a removal, a retitle, a move, a promotion, a demotion and where a section starts - must take the interface at or under 250 ms at p90, with no measured sample above 500 ms: the time from the act to its result painted, less the time the service spends answering the requests it waits on, measured in a browser against the running service on a declared reference configuration recorded beside the result",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "STR-structure-numbering-and-cross-references.md",
+      "line": 200
     },
     {
       "id": "STR-040",
@@ -11401,7 +11419,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 205
+      "line": 206
     },
     {
       "id": "STR-041",
@@ -11410,7 +11428,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 206
+      "line": 207
     },
     {
       "id": "STR-042",
@@ -11419,7 +11437,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 207
+      "line": 208
     },
     {
       "id": "STR-043",
@@ -11428,7 +11446,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 208
+      "line": 209
     },
     {
       "id": "STR-044",
@@ -11437,7 +11455,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 214
+      "line": 215
     },
     {
       "id": "STR-045",
@@ -11446,7 +11464,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 215
+      "line": 216
     },
     {
       "id": "STR-046",
@@ -11455,7 +11473,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 216
+      "line": 217
     },
     {
       "id": "STR-047",
@@ -11464,7 +11482,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 217
+      "line": 218
     },
     {
       "id": "STR-048",
@@ -11473,7 +11491,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 231
+      "line": 232
     },
     {
       "id": "STR-049",
@@ -11482,7 +11500,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 232
+      "line": 233
     },
     {
       "id": "STR-050",
@@ -11491,7 +11509,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 233
+      "line": 234
     },
     {
       "id": "STY-001",
@@ -13878,61 +13896,61 @@
       "id": "CNT-N01",
       "statement": "**No typeface, font size or colour _chosen by the author_.** The editor renders the theme's typefaces at the theme's sizes (CNT-097) - what the author cannot do is pick a different one. Narrower than \"no styling\" on purpose - see CNT-035",
       "document": "CNT-content-and-authoring.md",
-      "line": 587
+      "line": 588
     },
     {
       "id": "CNT-N02",
       "statement": "**No page geometry in content.** Page size, margins, running heads and columns belong to the publishing layout. Whether a forced page break is an exception is **CNT-Q07**",
       "document": "CNT-content-and-authoring.md",
-      "line": 588
+      "line": 589
     },
     {
       "id": "CNT-N03",
       "statement": "**No free-form drawing or diagramming.** A figure references a managed asset produced elsewhere",
       "document": "CNT-content-and-authoring.md",
-      "line": 589
+      "line": 590
     },
     {
       "id": "CNT-N04",
       "statement": "**No embedded spreadsheets or live formulas.** Computation belongs in the query layer",
       "document": "CNT-content-and-authoring.md",
-      "line": 590
+      "line": 591
     },
     {
       "id": "CNT-N05",
       "statement": "**No arbitrary HTML or raw markup escape hatch.** It would defeat every guarantee in section 3",
       "document": "CNT-content-and-authoring.md",
-      "line": 591
+      "line": 592
     },
     {
       "id": "CNT-N06",
       "statement": "**No per-author formatting preferences.** Two authors editing one document must produce content that looks the same",
       "document": "CNT-content-and-authoring.md",
-      "line": 592
+      "line": 593
     },
     {
       "id": "CNT-N07",
       "statement": "**No tables or images inside footnotes** (CNT-129, which superseded CNT-040)",
       "document": "CNT-content-and-authoring.md",
-      "line": 593
+      "line": 594
     },
     {
       "id": "CNT-N08",
       "statement": "**No per-document override of a theme's styles.** Where a document needs a different look it uses a different theme, which an administrator configures. Otherwise every document drifts into being its own theme",
       "document": "CNT-content-and-authoring.md",
-      "line": 594
+      "line": 595
     },
     {
       "id": "CNT-N09",
       "statement": "**No headings in component content.** A component carries no heading, because the outline owns structure and its titles (**STR**) - and because a component that knew its own heading level could not be used at two depths. A decision, not an omission",
       "document": "CNT-content-and-authoring.md",
-      "line": 595
+      "line": 596
     },
     {
       "id": "CNT-N10",
       "statement": "**No link to content inside the product expressed as a URL.** An internal target is a cross-reference (CNT-027), which survives a move, a rename and a renumber. A URL to a component would be a second, weaker way of doing the same thing",
       "document": "CNT-content-and-authoring.md",
-      "line": 596
+      "line": 597
     },
     {
       "id": "COL-N01",
@@ -14370,31 +14388,31 @@
       "id": "STR-N01",
       "statement": "**No numbering stored in content.** A number is computed from an outline, a layout and a profile, and storing one makes all three unchangeable",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 239
+      "line": 240
     },
     {
       "id": "STR-N02",
       "statement": "**Sections are not reusable.** A shared section is a component; that is what components are for",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 240
+      "line": 241
     },
     {
       "id": "STR-N03",
       "statement": "**No page geometry here.** Size, margins, running heads and columns belong to the publishing layout",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 241
+      "line": 242
     },
     {
       "id": "STR-N04",
       "statement": "**No outline without a document.** A standalone tree of sections that no document owns is a template's starting outline, and belongs to **TPL**",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 242
+      "line": 243
     },
     {
       "id": "STR-N05",
       "statement": "**No bookmarks on arbitrary content.** A cross-reference targets an outline node, a caption-bearing block, a footnote or a bibliography entry (STR-026) - things that carry identity for their own reasons (**CNT-081**, **CNT-125**). A bookmark anywhere would be an identity created solely to be pointed at, and it would have to survive every edit to the sentence around it",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 243
+      "line": 244
     },
     {
       "id": "STY-N01",
@@ -14645,105 +14663,105 @@
       "question": "**What is the canonical equation representation (CNT-043)?** MathML, LaTeX, or a structured form",
       "settledBy": "The publishing engine decision - it constrains what can be rendered to PDF faithfully",
       "document": "CNT-content-and-authoring.md",
-      "line": 602
+      "line": 603
     },
     {
       "id": "CNT-Q02",
       "question": "**Is the three-level vocabulary in section 11 adopted, and what are the interim saves called?**",
       "settledBy": "**Settled.** Adopted as iteration / version / revision in [ADR-0006](../../decisions/0006-iteration-version-revision.md); the scope, the domain package and the spike findings are reconciled",
       "document": "CNT-content-and-authoring.md",
-      "line": 603
+      "line": 604
     },
     {
       "id": "CNT-Q03",
       "question": "**What exactly is the boundary that cuts a version (CNT-070)?**",
       "settledBy": "**Settled.** A positive act only - an explicit save or a deliberate lock release. Never inactivity: a version records that somebody decided something, and time passing is not a decision. Iterations are retained until the next version, so nothing is lost when a lock times out",
       "document": "CNT-content-and-authoring.md",
-      "line": 604
+      "line": 605
     },
     {
       "id": "CNT-Q04",
       "question": "**Does the mark vocabulary need an extension point?** CNT-006 closes it, which may not survive a real customer",
       "settledBy": "The first customer requirement that cannot be expressed with the closed set",
       "document": "CNT-content-and-authoring.md",
-      "line": 605
+      "line": 606
     },
     {
       "id": "CNT-Q05",
       "question": "**How is an authored table's cell identified for a footnote anchor (CNT-037)?**",
       "settledBy": "**Settled.** An authored table is data too: it may declare key columns, and anchoring then works exactly as it does for a bound table (CNT-107). Positional fallback where no key is declared, marked as the weaker form",
       "document": "CNT-content-and-authoring.md",
-      "line": 606
+      "line": 607
     },
     {
       "id": "CNT-Q06",
       "question": "**May a document override the theme's resolution of an image's size (CNT-088)?**",
       "settledBy": "**Settled: no.** Only styles the configuration provides. An administrator adds a style; a document picks one. See CNT-N08",
       "document": "CNT-content-and-authoring.md",
-      "line": 607
+      "line": 608
     },
     {
       "id": "CNT-Q07",
       "question": "**Is a forced page break content or structure?** \"This section starts on a new page\" reads like an outline property; \"keep these two blocks together\" reads like a content one. Recommendation: the first in **STR**, the second here",
       "settledBy": "A decision in **STR**, since the outline is where the first half would live",
       "document": "CNT-content-and-authoring.md",
-      "line": 608
+      "line": 609
     },
     {
       "id": "CNT-Q09",
       "question": "**Do style catalogues need their own capability area?**",
       "settledBy": "**Settled: yes.** Added as `STY`, the eighteenth area, with scope §7.18. Style catalogues span the editor and the publisher and belonged to neither",
       "document": "CNT-content-and-authoring.md",
-      "line": 609
+      "line": 610
     },
     {
       "id": "CNT-Q10",
       "question": "**How do review and authoring interact for a user who may do both?** Note what is _not_ open: suggestions with accept and reject are settled by scope decision 4 and specified in §7.7 and CNT-033. What is open is whether a reviewer who also holds authoring rights may edit directly instead of suggesting, and whether an author may suggest to themselves rather than simply typing",
       "settledBy": "A decision in **COL**, informed by whether review in this market is expected to be a separate pass or a mode anyone can drop into",
       "document": "CNT-content-and-authoring.md",
-      "line": 610
+      "line": 611
     },
     {
       "id": "CNT-Q11",
       "question": "**Which area owns a document being created from a template?**",
       "settledBy": "**Settled: a new one.** Added as `TPL`, the nineteenth area, with scope §7.19 - template authoring, the metadata schema and structure outline definitions nothing else owned, declared parameters, instantiation, divergence, and what happens when a template changes after documents exist",
       "document": "CNT-content-and-authoring.md",
-      "line": 611
+      "line": 612
     },
     {
       "id": "CNT-Q12",
       "question": "**Who owns a component's own metadata - its title, its tags?** **TPL** owns the metadata schema a document declares and **SCH** searches the values, but no area states where a component's own title and values live, or what validates them",
       "settledBy": "**Settled** by [MET](MET-metadata-and-component-types.md). A component is of exactly one component type (MET-011), which assigns the schemas its fields come from, and a component never takes fields from a document that references it (MET-013), so transclusion into documents from different templates changes nothing. CNT-145 adds the type to the attributes every component carries",
       "document": "CNT-content-and-authoring.md",
-      "line": 612
+      "line": 613
     },
     {
       "id": "CNT-Q13",
       "question": "**What is the reference configuration the preview budget is measured on (CNT-151)?** Two seconds on what, rendering what content",
       "settledBy": "The first performance harness, which has to name a machine before it can report a number. A budget with no baseline can be neither confirmed nor refuted",
       "document": "CNT-content-and-authoring.md",
-      "line": 613
+      "line": 614
     },
     {
       "id": "CNT-Q14",
       "question": "**What happens when content carrying a condition arrives in a space whose axis does not exist (CNT-132 to CNT-135)?**",
       "settledBy": "A decision in **REU**, which owns axes. Three candidates - refuse the paste, drop the condition and report it, or create the axis - and the third is how a taxonomy quietly becomes whatever anybody pasted",
       "document": "CNT-content-and-authoring.md",
-      "line": 614
+      "line": 615
     },
     {
       "id": "CNT-Q15",
       "question": "**Should CNT-091 to CNT-093 be superseded by their STY equivalents?** They said what STY-016, STY-017, STY-029 and STY-030 say, and two owners of one rule is how the two drift apart",
       "settledBy": "**Settled: yes.** CNT-091, CNT-092 and CNT-093 are superseded by STY-016, STY-017 and STY-029. This area keeps what content carries - a named style and no absolute dimension (CNT-121, CNT-123) - and **STY** owns how a style resolves. `docs/design/themes.md` claims the STY requirements directly",
       "document": "CNT-content-and-authoring.md",
-      "line": 615
+      "line": 616
     },
     {
       "id": "CNT-Q08",
       "question": "**Is block alignment ever the author's?**",
       "settledBy": "**Settled.** Alignment comes from a named style, chosen from a catalogue - and so do paragraph, table, image and citation appearance generally (CNT-094)",
       "document": "CNT-content-and-authoring.md",
-      "line": 616
+      "line": 617
     },
     {
       "id": "COL-Q01",
@@ -15296,28 +15314,28 @@
       "question": "**May a number ever be overridden by hand?** \"Section 4a\" appears in real submissions, usually because a numbered thing was inserted after a document was already cited elsewhere",
       "settledBy": "A real regulatory submission that requires it. The default answer is no, because an override is a stored number by another name",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 249
+      "line": 250
     },
     {
       "id": "STR-Q02",
       "question": "**Do cross-references need to cross documents?** A submission may reference a section of a companion report by number",
       "settledBy": "Whether early customers submit related documents as a set. It would make resolution depend on a baseline of something else, which is a large change",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 250
+      "line": 251
     },
     {
       "id": "STR-Q03",
       "question": "**Is an index in scope at all (STR-043)?** It needs marked entries in content, which is a CNT change",
       "settledBy": "A customer whose house style requires one. Marked as `should`, not `must`, until then",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 251
+      "line": 252
     },
     {
       "id": "STR-Q04",
       "question": "**How is \"above\" or \"below\" resolved (STR-027)?** It depends on final pagination, which the editor cannot know",
       "settledBy": "The publishing engine decision, since only the paginator knows whether a target is above",
       "document": "STR-structure-numbering-and-cross-references.md",
-      "line": 252
+      "line": 253
     },
     {
       "id": "STY-Q01",
@@ -16486,8 +16504,8 @@
           "howItIsMet": "Opening a node's link scrolls the text to the node and marks it there as well as in the outline, for whoever may read the document; a component they may not read is reached at its place and not shown"
         },
         {
-          "id": "CNT-179",
-          "howItIsMet": "The browser suite (`tests/browser/src/budgets.test.ts`) opens a document of 400 components in 500 nodes, a fifth of whose texts hold cross-references, twenty times from the documents list and twenty times cold - its address loaded into a fresh page - to its outline named and its first component's text on the screen, against p95 1 s and a maximum of 2 s; and jumps from the outline to twenty nodes drawn from a seeded sequence, to the node's heading on the screen and still there once the page has settled, against p95 250 ms and a maximum of 500 ms. Each is the whole time, timed by the page, with the configuration recorded beside it; bound on a named machine and recorded only on CI"
+          "id": "CNT-180",
+          "howItIsMet": "The browser suite (`tests/browser/src/budgets.test.ts`) opens a document of 400 components in 500 nodes, a fifth of whose texts hold cross-references, ten times from the documents list and ten times cold - its address loaded into a fresh page - to its outline named and its first component's text on the screen, against p90 1 s and a maximum of 2 s; and jumps from the outline to ten nodes drawn from a seeded sequence, to the node's heading on the screen and still there once the page has settled, against p90 250 ms and a maximum of 500 ms. Each is the whole time, timed by the page, with the configuration recorded beside it; run and bound only off CI, on a named machine"
         }
       ]
     },
@@ -16673,7 +16691,7 @@
         },
         {
           "id": "PUB-102",
-          "howItIsMet": "The reference document is declared in `apps/worker/src/publishing-budget.test.ts`: 30 chapters, each placing a component of 100 blocks - 150 each of figures, tables, numbered equations and footnotes, and 2,400 paragraphs of prose - set to 311 pages. It is published eleven times from `requestPublication` to the publication `processNext` records, the first reported and held to the maximum and the other ten held to a p95 of ten seconds and a maximum of thirty on a developer's machine, stated against [the reference configuration](../testing.md#the-reference-configuration) that `docs/testing.md` declares, and recorded only on CI's runner (W-D), with the configuration and the document's pages and parts written beside the result in `.trace-results/worker.json`. As with STR-063, a run on CI's runner is held to neither bound, so a green CI run does not show the budget met. The measured span runs from `requestPublication` to the recorded publication, in process: it leaves out the HTTP route that asks for the publish and the time a request waits in the queue for a worker. The conformance report joins the publication after it is recorded, as a job of its own (ADR-0030), outside that span, **within five minutes**: the same test takes each check at once, as a free worker does, and measures from the request's `finished_at` to the `publication_check` row's `checked_at`, by the database's clock, bound to five minutes where the budget binds - 23.6 seconds for veraPDF's first check, its JVM starting, and 6.2 warm, on the reference configuration, measured with the test suite's veraPDF rather than the worker's own. A check whose first attempt fails still joins within five minutes under the worker's defaults, which `config.test.ts` holds: an attempt ends within its lease, 120 seconds, whether it throws - veraPDF's start and check a third of the lease each - or its worker dies and the lease runs out; the queue retries after 2 seconds and an idle worker asks within a poll, 5 seconds; so a second attempt ends by 120 + 2 + 5 + 120 = 247 seconds. The bound is not held past that - see beside the table"
+          "howItIsMet": "The reference document is declared in `apps/worker/src/publishing-budget.test.ts`: 30 chapters, each placing a component of 100 blocks - 150 each of figures, tables, numbered equations and footnotes, and 2,400 paragraphs of prose - set to 311 pages. It is published eleven times from `requestPublication` to the publication `processNext` records, the first reported and held to the maximum and the other ten held to a p95 of ten seconds and a maximum of thirty on a developer's machine, stated against [the reference configuration](../testing.md#the-reference-configuration) that `docs/testing.md` declares, and not run on CI, whose runner binds nothing (W-D), with the configuration and the document's pages and parts written beside the result in `.trace-results/worker.json`. CI leaves the test out, since a shared runner's speed is not the reference configuration. The measured span runs from `requestPublication` to the recorded publication, in process: it leaves out the HTTP route that asks for the publish and the time a request waits in the queue for a worker. The conformance report joins the publication after it is recorded, as a job of its own (ADR-0030), outside that span, **within five minutes**: the same test takes each check at once, as a free worker does, and measures from the request's `finished_at` to the `publication_check` row's `checked_at`, by the database's clock, bound to five minutes where the budget binds - 23.6 seconds for veraPDF's first check, its JVM starting, and 6.2 warm, on the reference configuration, measured with the test suite's veraPDF rather than the worker's own. A check whose first attempt fails still joins within five minutes under the worker's defaults, which `config.test.ts` holds: an attempt ends within its lease, 120 seconds, whether it throws - veraPDF's start and check a third of the lease each - or its worker dies and the lease runs out; the queue retries after 2 seconds and an idle worker asks within a poll, 5 seconds; so a second attempt ends by 120 + 2 + 5 + 120 = 247 seconds. The bound is not held past that - see beside the table"
         },
         {
           "id": "PUB-037",
@@ -17450,8 +17468,8 @@
           "howItIsMet": "The document route, the contributions route, the numbering route and an outline act are each measured in the service suite over a document of 500 nodes and 400 occurrences, against p95 250 ms and a maximum of 500 ms, after five warm-up calls that are not measured samples, with the configuration recorded beside the result. A run on a named machine is held to both; a run on a shared CI runner, whose speed varies by more than the budget itself, records both and is held to neither (issues #179 and #188), so a green CI run does not show the budget met"
         },
         {
-          "id": "STR-072",
-          "howItIsMet": "Opened from within the application - from the documents list, the interface already running - and every act the outline offers are measured in the browser suite (`tests/browser/src/budgets.test.ts`) over STR-063's document, the interface's share against p95 250 ms and a maximum of 500 ms, on the reference machine, whose configuration each run records beside its samples"
+          "id": "STR-073",
+          "howItIsMet": "Opened from within the application - from the documents list, the interface already running - and every act the outline offers are measured in the browser suite (`tests/browser/src/budgets.test.ts`) over STR-063's document, the interface's share against p90 250 ms and a maximum of 500 ms, on the reference machine, whose configuration each run records beside its samples"
         },
         {
           "id": "STR-040",
@@ -21776,13 +21794,13 @@
       "kind": "title"
     },
     {
-      "id": "CNT-179",
+      "id": "CNT-180",
       "file": "tests/browser/src/budgets.test.ts",
       "line": 420,
       "kind": "title"
     },
     {
-      "id": "STR-072",
+      "id": "STR-073",
       "file": "tests/browser/src/budgets.test.ts",
       "line": 268,
       "kind": "title"

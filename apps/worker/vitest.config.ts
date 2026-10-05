@@ -1,9 +1,14 @@
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
+    // The publishing budget binds only off a shared runner (W-D), so CI does not run it.
+    exclude: [
+      ...configDefaults.exclude,
+      ...(process.env['CI'] === 'true' ? ['src/publishing-budget.test.ts'] : []),
+    ],
     // The login roles set once for the run, so each file prepares only its own database and the
     // files run side by side; and one veraPDF kept warm for the run (src/testing/verapdf-server.ts),
     // not one started per check.

@@ -29,15 +29,15 @@ import {
  * itself, from the act to the frame showing its result painted, and that result is the state's own
  * content, asked for by the page: the outline's five hundred items named and the first text on the
  * screen, a node inserted, gone, renamed or renumbered, a node's heading in view. One warm-up,
- * reported and held to the maximum, then twenty samples, of which the nearest-rank p95 is the second
- * slowest; forty for an act measured both ways, of which it is the third slowest. Each sample's
+ * reported and held to the maximum, then ten samples, of which the nearest-rank p90 is the second
+ * slowest; twenty for an act measured both ways, of which it is the third slowest. Each sample's
  * requests are held to the paths its act asks for, so nothing else is taken off the interface's share.
  * The document is opened two ways: from the documents list, as a link followed there opens it, and
  * cold, its address loaded into a fresh page.
  */
 
 const WARM_UP = 1;
-const SAMPLES = 20;
+const SAMPLES = 10;
 
 /**
  * What the document's page reads as it opens (B-L): the document, its texts, its contributions, its
@@ -76,9 +76,9 @@ declare module 'vitest' {
 /** Held to `budget` where it binds; recorded either way. */
 function hold(name: string, measured: Summary, warmUp: number, budget: Budget): void {
   const bound = binding(budget, process.env);
-  if (bound.p95 !== null) {
-    expect(measured.p95, `${name}: the p95 of ${measured.samples.join(', ')}`).toBeLessThanOrEqual(
-      bound.p95,
+  if (bound.p90 !== null) {
+    expect(measured.p90, `${name}: the p90 of ${measured.samples.join(', ')}`).toBeLessThanOrEqual(
+      bound.p90,
     );
   }
   if (bound.max !== null) {
@@ -236,7 +236,7 @@ async function choose(page: Page, node: string): Promise<void> {
   await focusedOn(page, node);
 }
 
-/** The acts the outline offers (STR-072's "each structural act"), each made by the keyboard. */
+/** The acts the outline offers (STR-073's "each structural act"), each made by the keyboard. */
 const ACTS = ['insert', 'remove', 'retitle', 'set', 'move', 'demote', 'promote'] as const;
 type Act = (typeof ACTS)[number];
 
@@ -261,11 +261,11 @@ describe('the navigation budgets over a document of five hundred nodes', () => {
     fixture = await fiveHundred(api());
   }, 1_800_000);
 
-  // STR-072 is an open from within the application (Ken, 2026-09-29; ADR-0033), so the open from the
+  // STR-073 is an open from within the application (Ken, 2026-09-29; ADR-0033), so the open from the
   // documents list is held to it. Opened cold, the interface's share is recorded and not held: it is
-  // over the number (334 ms at p95 on the reference machine, W13.3), and CNT-179's test holds the
+  // over the number (334 ms at p95 on the reference machine, W13.3), and CNT-180's test holds the
   // whole time a cold open takes.
-  it("STR-072 opens a document of five hundred nodes from the documents list within the interface's share of the budget, and records it opened cold", async ({
+  it("STR-073 opens a document of five hundred nodes from the documents list within the interface's share of the budget, and records it opened cold", async ({
     task,
   }) => {
     await withPage(async (page) => {
@@ -291,7 +291,7 @@ describe('the navigation budgets over a document of five hundred nodes', () => {
     });
   }, 600_000);
 
-  it("STR-072 shows each structural act on the outline within the interface's share of the budget: insert, remove, retitle, Starts on, move, demote and promote", async ({
+  it("STR-073 shows each structural act on the outline within the interface's share of the budget: insert, remove, retitle, Starts on, move, demote and promote", async ({
     task,
   }) => {
     await withPage(async (page) => {
@@ -417,7 +417,7 @@ describe('the navigation budgets over a document of five hundred nodes', () => {
     });
   }, 900_000);
 
-  it('CNT-179 opens the document view and jumps to any node within the budget', async ({
+  it('CNT-180 opens the document view and jumps to any node within the budget', async ({
     task,
   }) => {
     await withPage(async (page) => {

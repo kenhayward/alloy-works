@@ -419,10 +419,10 @@ includes veraPDF's first start, and the last sample's is warm. Both must pass PD
 checks are passed over unchecked, since a check of 311 pages takes several seconds and each would tell
 no more than the last. W14.2 measured 23.6 seconds for the first and 6.2 warm.
 
-It is part of the ordinary worker suite, since it takes about fifty seconds, and needs nothing the
-suite does not. **It binds where `CI` is not `true`, and records only on CI's runner**, as STR-063's
-navigation budget does (`apps/service/src/test/budget.ts`): a shared runner's speed is not the declared
-reference configuration, and a green CI run does not show the budget met. Either way the
+It is part of the ordinary worker suite, since it needs nothing the suite does not. **It runs and binds
+only where `CI` is not `true`**: a shared runner's speed is not the declared reference configuration,
+so `apps/worker/vitest.config.ts` leaves it out on CI, as the browser suite does its navigation
+budgets. Either way the
 configuration it ran on - CPU, operating system, memory, Node, Typst and PostgreSQL - the document's
 pages and parts, the p50, p95, maximum and each sample's request and job times, and the two reports'
 times after recording are written into the test's `meta`, which the JSON reporter carries into
@@ -808,8 +808,8 @@ ALLOY_BROWSER_SERVICE=http://dev.acme.localhost:8188 ALLOY_BROWSER_API=http://12
 docker compose -p aw-browser -f deploy/compose.yaml down -v
 ```
 
-**CI runs it in the whole-system job**, after the end-to-end suite and against the same containers,
-with every variable set to them, whenever the stack came up; neither step is `continue-on-error`. Its report goes to the traceability
+**CI runs it in the whole-system job**, after the end-to-end suite and against the same containers, but for
+`budgets.test.ts`, which runs only off CI (below), with every variable set to them, whenever the stack came up; neither step is `continue-on-error`. Its report goes to the traceability
 gate's own job with the rest ([CI, branches and releases](ci-and-releases.md)).
 
 **What it covers so far.** `accessibility.test.ts` (W13.2, CNT-176) runs axe over every state of the
@@ -918,9 +918,10 @@ the seeds.
   person.
 
 **The navigation budgets** (`budgets.test.ts`, W13.3) time the document view on a document of five
-hundred nodes: STR-072, the interface's share of opening it and of each act the outline offers, 250 ms
-at p95 and no sample above 500; and CNT-179, the whole time to open it, 1 second at p95 and none above
-2, and to jump to any node, 250 ms and none above 500.
+hundred nodes: STR-073, the interface's share of opening it and of each act the outline offers, 250 ms
+at p90 and no sample above 500; and CNT-180, the whole time to open it, 1 second at p90 and none above
+2, and to jump to any node, 250 ms and none above 500. STR-072 and CNT-179 asked the same at p95; Ken
+judged p90 enough (2026-10-05).
 
 - **The fixture** is STR-063's reference shape, made through the API (`src/testing/five-hundred.ts`):
   ten chapters of nine sections, a hundred sections in all, holding four hundred references to four
@@ -947,27 +948,28 @@ at p95 and no sample above 500; and CNT-179, the whole time to open it, 1 second
   files, a jump nothing - and a sample holding any other is refused, naming it, so a heartbeat can
   never be taken off the interface's share. `timing.test.ts` holds that, on a page of its own. The
   whole time and the service's are recorded beside it.
-- **Each is one warm-up, then twenty samples**, the nearest-rank p95 being the second slowest of
-  twenty; a retitle, **Starts on** and a move are measured both ways, forty samples after two warm-ups,
-  and there the p95 is the third slowest. The document is opened two ways: **from the documents list**,
+- **Each is one warm-up, then ten samples**, the nearest-rank p90 being the second slowest of ten; a
+  retitle, **Starts on** and a move are measured both ways, twenty samples after two warm-ups, and
+  there the p90 is the third slowest. The document is opened two ways: **from the documents list**,
   as a link followed there opens it, and **cold**, its address loaded into a fresh page of the same
   browser - the renderer started, then the document opened. Every act is made by the keyboard and
   paired with its inverse, so the fixture ends each cycle as it began; the jumps are to nodes drawn
   from a generator seeded 179, each chosen in the outline by a pointer. Every warm-up is held to the
   maximum.
-- **They bind where `CI` is not `true`, and record only on CI** (B-P), as STR-063's and PUB-102's do:
-  every sample, the p50, p95 and maximum, and the configuration - CPU, memory, operating system, Node,
+- **They run and bind only where `CI` is not `true`** (B-P): a shared runner's speed is not the
+  reference configuration, so `vitest.config.ts` leaves the file out on CI. Every sample, the p50, p90,
+  p95 and maximum, and the configuration - CPU, memory, operating system, Node,
   Chromium as the browser reports itself, the stack's version, the fixture's shape, and every compose
   project Docker was running - are written into the test's `meta` and printed. The reference
   configuration is [the one above](#the-reference-configuration), with the compose stack in Docker
   Desktop and the pinned Chromium beside it. To measure them alone:
   `pnpm --filter @alloy-works/browser exec vitest run src/budgets.test.ts`, with the stack's variables
   set as above, on a machine running nothing else.
-- **STR-072 is opening from within the application**, from the documents list, and not a cold load
+- **STR-073 is opening from within the application**, from the documents list, and not a cold load
   (Ken, 2026-09-29; [ADR-0033](decisions/0033-t2-is-the-data-spine.md)), so the open's test and the
   acts' test cite it. The interface's share of a cold open is recorded beside the open from the list
-  and not held, since it is above 250 ms at p95 (below) and STR-072 does not ask it; CNT-179's cold
-  open, the whole time a reader waits, is held to CNT-179's, which it meets.
+  and not held, since it is above 250 ms at p95 (below) and STR-073 does not ask it; CNT-180's cold
+  open, the whole time a reader waits, is held to CNT-180's.
 
 W13.3 measured them on the reference configuration, Chromium 153.0.8010.12 and the stack at
 0.125.0, with no other stack of the suite's running; beside it Docker was running

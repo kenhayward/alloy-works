@@ -12,10 +12,11 @@ branch cancels the older run.
 | Checks            | Format            | `pnpm format`                                       | **Yes**                      |
 | Checks            | Typecheck         | `pnpm typecheck`                                    | **Yes**                      |
 | Checks            | Build             | `pnpm build`                                        | **Yes**                      |
-| Checks            | Test              | `pnpm test`                                         | Through the gate (see below) |
+| Checks            | Test              | `pnpm test`, but the connector's suite              | Through the gate (see below) |
+| The connector     | Test              | the connector's suite                               | **Yes**                      |
 | The whole system  | Chromium          | `pnpm --filter @alloy-works/browser fetch-chromium` | **Yes**                      |
 | The whole system  | End to end        | `pnpm test:e2e`                                     | **Yes**                      |
-| The whole system  | Browser           | `pnpm test:browser`                                 | **Yes**                      |
+| The whole system  | Browser           | `pnpm test:browser`, but `budgets.test.ts`          | **Yes**                      |
 | Traceability gate | Traceability gate | `pnpm trace gate`                                   | **Yes**                      |
 
 - **Install is frozen.** A loose install can resolve a different tree than the lock file names.
@@ -23,11 +24,16 @@ branch cancels the older run.
   run, so a red test still fails the build.
 - **The end-to-end and browser steps** set every address they drive to the job's own stack. Neither
   suite has a default ([deploy/README.md](../deploy/README.md#running-the-suites-against-a-stack)).
+- **The connector's suite has its own job**, beside the build job: it runs one file at a time and
+  was the longest there. The stack's images are built with layers from the Actions cache, one scope a
+  target, written by the whole-system job.
+- **The navigation budgets run only off CI.** They bind only on the reference machine (B-P), so
+  `tests/browser/vitest.config.ts` leaves `budgets.test.ts` out where `CI` is `true`.
 
 ### The traceability gate
 
 `pnpm trace gate` runs in its own job after the other two, reading every suite's report from
-`.trace-results/` (uploaded as `trace-results-build` and `trace-results-system`). It fails when:
+`.trace-results/` (uploaded as `trace-results-build`, `-connector` and `-system`). It fails when:
 
 - a requirement the newest baseline includes is not verified;
 - the baseline itself is malformed;
