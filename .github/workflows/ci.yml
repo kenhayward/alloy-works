@@ -93,7 +93,7 @@ jobs:
 
       # Every suite but the connector's, which runs one file at a time and has a job of its own.
       - name: Test
-        run: pnpm exec turbo run test --filter='!@alloy-works/connector'
+        run: pnpm exec turbo run test --continue --filter='!@alloy-works/connector'
         continue-on-error: true
 
       # What every suite above wrote, for the traceability gate's own job, which reads it beside the
