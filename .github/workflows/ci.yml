@@ -185,23 +185,10 @@ jobs:
 
   # The whole system, as a person's browser would meet it. Its own job because the stack publishes
   # the same ports the job above gives to a Postgres service container and a SeaweedFS step, and
-  # two things cannot hold one port. Twice, each on its own stack: the navigation budgets take as long
-  # as the rest of the browser suite and want a quiet machine (B-F), so they run beside it.
+  # two things cannot hold one port.
   end-to-end:
-    name: ${{ matrix.part.name }}
+    name: The whole system
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        part:
-          - name: The whole system
-            report: system
-            e2e: true
-            browser: --exclude src/budgets.test.ts
-          - name: The navigation budgets
-            report: budgets
-            e2e: false
-            browser: src/budgets.test.ts --outputFile.json=../../.trace-results/browser-budgets.json
     env:
       TURBO_LOG_ORDER: stream
     steps:
@@ -269,7 +256,6 @@ jobs:
       # to the stack this job just started: neither suite has a default, and each refuses to run with
       # any of its targets unset, so it can never reach a stack it was not pointed at (#363).
       - name: End to end
-        if: ${{ matrix.part.e2e }}
         env:
           ALLOY_E2E_SERVICE: http://127.0.0.1:8088
           ALLOY_E2E_IDP: http://127.0.0.1:9090
@@ -291,7 +277,7 @@ jobs:
           ALLOY_BROWSER_IDP: http://idp.localhost:9090
           ALLOY_BROWSER_DATABASE: postgres://aw_service:aw_service_dev@127.0.0.1:5432/alloy_dev
           ALLOY_BROWSER_STORE_AT: 127.0.0.1
-        run: pnpm exec turbo run test:browser --filter=@alloy-works/browser -- ${{ matrix.part.browser }}
+        run: pnpm test:browser
 
       - name: Stop the stack
         if: always()
@@ -302,7 +288,7 @@ jobs:
       - uses: actions/upload-artifact@v5
         if: always()
         with:
-          name: compose-logs-${{ matrix.part.report }}
+          name: compose-logs
           path: compose-logs.txt
 
       # The end-to-end and browser suites' reports, for the gate. None at all means the stack never
@@ -311,13 +297,13 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: trace-results-${{ matrix.part.report }}
+          name: trace-results-system
           path: .trace-results
           include-hidden-files: true
           if-no-files-found: error
 
   # The traceability gate, in a job of its own so it reads every suite's report: the build job's, the
-  # connector's and both whole-system jobs', the browser suite's among them (the W13 plan's B-G). It runs unless the run
+  # connector's and the whole-system job's, the browser suite's among them (the W13 plan's B-G). It runs unless the run
   # was cancelled, so a failed suite is read and refused rather than skipped.
   #
   # NOT continue-on-error. The baseline declares what this release is answerable for, so the gate
@@ -360,19 +346,13 @@ jobs:
           name: trace-results-connector
           path: .trace-results
 
-      - name: The navigation budgets' report
-        uses: actions/download-artifact@v5
-        with:
-          name: trace-results-budgets
-          path: .trace-results
-
-      # Both suites that drive the stack must have reported, the browser suite in its two parts. `pnpm trace gate` exempts their reports
+      # Both suites that drive the stack must have reported. `pnpm trace gate` exempts their reports
       # from "no report at all", since `pnpm test` never writes them, so without this a run whose
       # browser step never ran - the stack came up and the end-to-end step died with nothing written -
       # would pass the gate on the build job's reports alone.
       - name: Both system reports
         run: |
-          for report in e2e browser browser-budgets; do
+          for report in e2e browser; do
             if [ ! -f ".trace-results/$report.json" ]; then
               echo "::error::.trace-results/$report.json is missing: the whole-system job did not report its $report suite"
               exit 1

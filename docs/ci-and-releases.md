@@ -5,38 +5,39 @@
 `.github/workflows/ci.yml` runs on every push to `main` and every pull request. A newer push to a
 branch cancels the older run.
 
-| Job                | Step              | Command                                             | Blocks?                      |
-| ------------------ | ----------------- | --------------------------------------------------- | ---------------------------- |
-| Checks             | Install           | `pnpm install --frozen-lockfile`                    | **Yes**                      |
-| Checks             | Lint              | `pnpm lint`                                         | **Yes**                      |
-| Checks             | Format            | `pnpm format`                                       | **Yes**                      |
-| Checks             | Typecheck         | `pnpm typecheck`                                    | **Yes**                      |
-| Checks             | Build             | `pnpm build`                                        | **Yes**                      |
-| Checks             | Test              | `pnpm test`, but the connector's suite              | Through the gate (see below) |
-| The connector      | Test              | the connector's suite                               | **Yes**                      |
-| The whole system   | Chromium          | `pnpm --filter @alloy-works/browser fetch-chromium` | **Yes**                      |
-| The whole system   | End to end        | `pnpm test:e2e`                                     | **Yes**                      |
-| The whole system   | Browser           | `pnpm test:browser`, but `budgets.test.ts`          | **Yes**                      |
-| Navigation budgets | Browser           | `budgets.test.ts`, on a stack of its own            | **Yes**                      |
-| Traceability gate  | Traceability gate | `pnpm trace gate`                                   | **Yes**                      |
+| Job               | Step              | Command                                             | Blocks?                      |
+| ----------------- | ----------------- | --------------------------------------------------- | ---------------------------- |
+| Checks            | Install           | `pnpm install --frozen-lockfile`                    | **Yes**                      |
+| Checks            | Lint              | `pnpm lint`                                         | **Yes**                      |
+| Checks            | Format            | `pnpm format`                                       | **Yes**                      |
+| Checks            | Typecheck         | `pnpm typecheck`                                    | **Yes**                      |
+| Checks            | Build             | `pnpm build`                                        | **Yes**                      |
+| Checks            | Test              | `pnpm test`, but the connector's suite              | Through the gate (see below) |
+| The connector     | Test              | the connector's suite                               | **Yes**                      |
+| The whole system  | Chromium          | `pnpm --filter @alloy-works/browser fetch-chromium` | **Yes**                      |
+| The whole system  | End to end        | `pnpm test:e2e`                                     | **Yes**                      |
+| The whole system  | Browser           | `pnpm test:browser`, but `budgets.test.ts`          | **Yes**                      |
+| Traceability gate | Traceability gate | `pnpm trace gate`                                   | **Yes**                      |
 
 - **Install is frozen.** A loose install can resolve a different tree than the lock file names.
 - **Test keeps `continue-on-error`** so its JSON reports still upload; the gate then refuses a failed
   run, so a red test still fails the build.
 - **The end-to-end and browser steps** set every address they drive to the job's own stack. Neither
   suite has a default ([deploy/README.md](../deploy/README.md#running-the-suites-against-a-stack)).
-- **The jobs run side by side.** The connector's suite and the navigation budgets each run one file
-  at a time and took the longest, so each has its own job. The stack's images are built with layers
-  from the Actions cache, one scope a target, written by the whole-system job.
+- **The connector's suite has its own job**, beside the build job: it runs one file at a time and
+  was the longest there. The stack's images are built with layers from the Actions cache, one scope a
+  target, written by the whole-system job.
+- **The navigation budgets run only off CI.** They bind only on the reference machine (B-P), so
+  `tests/browser/vitest.config.ts` leaves `budgets.test.ts` out where `CI` is `true`.
 
 ### The traceability gate
 
 `pnpm trace gate` runs in its own job after the other two, reading every suite's report from
-`.trace-results/` (uploaded as `trace-results-build`, `-connector`, `-system` and `-budgets`). It fails when:
+`.trace-results/` (uploaded as `trace-results-build`, `-connector` and `-system`). It fails when:
 
 - a requirement the newest baseline includes is not verified;
 - the baseline itself is malformed;
-- a report is failed, stale, or missing (`e2e.json`, `browser.json` and `browser-budgets.json` are checked for explicitly).
+- a report is failed, stale, or missing (`e2e.json` and `browser.json` are checked for explicitly).
 
 A baseline is declared at every slice or tranche close ([ADR-0037](decisions/0037-change-fragments-and-versions-at-a-close.md)),
 so the gate grows with what has shipped.
