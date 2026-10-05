@@ -25,13 +25,14 @@ nearest thing the editor already has to a binding; the one scroll, its modes and
 [themes.md](themes.md)'s. A bound table's presentation is `tables.md`'s, not designed; a template's
 parameters feeding a binding are the `templates.md` additions'.
 
-> **B1 built; B2 to B6 not built.** D3 built the binding's stored shape, datasets, resolutions and the
+> **B1 and B2 built; B3 to B6 not built.** D3 built the binding's stored shape, datasets, resolutions and the
 > resolve, check and accept routes, and refuses to publish or preview any document holding a binding.
 > [B1](../plans/2026-10-04-b1-the-value-shown.md) built the editor's node - a component holding a
 > binding opens for editing - `takeValue`, `formatValue` and the value catalogue, `dataset_take`, the
-> bindings view's values, and each value, its failure and its provenance shown in a document. No screen
-> places, resolves or accepts a binding yet (B2, B4), and a publish and a preview still refuse one
-> (B3).
+> bindings view's values, and each value, its failure and its provenance shown in a document.
+> [B2](../plans/2026-10-05-b2-placing-and-changing.md) built the Value dialog, placing and changing a
+> binding, the session read, Keep (`confirm`, 0049) and the holders route. No Data tab resolves or
+> accepts a binding yet (B4), and a publish and a preview still refuse one (B3).
 
 ## The shape in one paragraph
 

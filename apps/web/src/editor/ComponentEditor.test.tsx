@@ -6731,6 +6731,7 @@ describe('a binding in the editor (the B1 plan, task 5)', () => {
             stale: false,
             taken: { value: '1234.5', column: { name: 'depth', type: decimal } },
             act: 'resolve',
+            keepable: false,
             by: { id: ADA, displayName: 'Ada' },
             at: '2026-10-04T09:31:00.000Z',
           },
@@ -6854,5 +6855,100 @@ describe('a binding in the editor (the B1 plan, task 5)', () => {
     expect(report).toHaveTextContent(
       'Bound values were copied, each to be resolved in a document before it shows a value.',
     );
+  });
+
+  /** The definition the Value dialog offers, at its latest version: a site's depth by its id. */
+  const definitionRoutes = (): Record<string, Answer> => ({
+    'GET /v1/query-definitions': () =>
+      json(200, {
+        items: [
+          {
+            id: READINGS,
+            title: 'Readings',
+            space: { id: 's', name: 'General' },
+            connection: { id: 'c', name: null, identity: 'service' },
+            retired: false,
+            version: { id: 'v', number: '0.2' },
+            changedAt: '2026-10-05T09:00:00.000Z',
+          },
+        ],
+        next: null,
+        total: 1,
+        facets: { spaces: [] },
+      }),
+    [`GET /v1/query-definitions/${READINGS}`]: () =>
+      json(200, {
+        id: READINGS,
+        version: { id: 'abcdef01-0000-4000-8000-0000000000a2', number: '0.2' },
+        definition: {
+          title: 'Readings',
+          parameters: [{ name: 'site', type: { base: 'integer' }, required: true, list: false }],
+          columns: [{ name: 'depth', from: { column: 'depth' }, type: decimal }],
+          key: [],
+        },
+        connection: { id: 'c', name: null, identity: 'service' },
+        mayUse: true,
+      }),
+  });
+
+  it('places a binding from the Value dialog in a document, and tells the document once its session has saved it', async () => {
+    const onSettle = vi.fn();
+    const { surface, asked } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened({ content: holding() })),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+        ...definitionRoutes(),
+      },
+      quick,
+      false,
+      { ...inDocument(), bindingActs: { pinned: false, onSettle } },
+    );
+    const view = await surface();
+    selectText(view, 4, 4);
+    await userEvent.click(screen.getByRole('button', { name: 'Value' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Value' });
+    await userEvent.click(await within(dialog).findByRole('radio', { name: /Readings/ }));
+    await userEvent.type(await within(dialog).findByLabelText('site'), '1');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+    await waitFor(() => expect(onSettle).toHaveBeenCalledTimes(1));
+    const placed = asked.find((each) => each.route.startsWith('PUT'))!.body;
+    expect(JSON.stringify(placed)).toContain('"type":"binding"');
+    expect(onSettle).toHaveBeenCalledWith(expect.any(String), SESSION, 'placed');
+    expect(screen.queryByRole('dialog', { name: 'Value' })).toBeNull();
+  });
+
+  it('offers Change in the Value panel, and Keep where what it holds may be kept, Resolve otherwise', async () => {
+    const onSettle = vi.fn();
+    const document = inDocument();
+    const keepable = new Map(
+      [...document.bindingStates!].map(([id, state]) => [
+        id,
+        { ...state, held: { ...state.held!, stale: true, keepable: true } },
+      ]),
+    );
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened({ content: holding(bound('b1')) })),
+        ...definitionRoutes(),
+      },
+      quick,
+      false,
+      { ...document, bindingStates: keepable, bindingActs: { pinned: false, onSettle } },
+    );
+    const view = await surface();
+    act(() =>
+      view.dispatch(
+        view.state.tr.setSelection(NodeSelection.create(view.state.doc, bindingAt(view))),
+      ),
+    );
+    const panel = await screen.findByRole('region', { name: 'Value' });
+    expect(within(panel).queryByRole('button', { name: 'Resolve' })).toBeNull();
+    await userEvent.click(within(panel).getByRole('button', { name: 'Keep' }));
+    // Nothing typed: the page holds no session, and the binding is read from the version.
+    await waitFor(() => expect(onSettle).toHaveBeenCalledWith('b1', null, 'keep'));
+    await userEvent.click(within(panel).getByRole('button', { name: 'Change' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Value' });
+    expect(await within(dialog).findByRole('button', { name: 'Change' })).toBeInTheDocument();
   });
 });
