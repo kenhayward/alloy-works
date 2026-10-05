@@ -21762,7 +21762,8 @@ export interface operations {
                      *         "retired": false
                      *       },
                      *       "mayEdit": false,
-                     *       "mayRun": false
+                     *       "mayRun": false,
+                     *       "mayUse": false
                      *     }
                      */
                     "application/json": {
@@ -21910,6 +21911,8 @@ export interface operations {
                         mayEdit: boolean;
                         /** @description Whether the caller may describe and sample its query against its connection: use connection there, and for SQL write SQL as well */
                         mayRun: boolean;
+                        /** @description Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query */
+                        mayUse: boolean;
                     };
                 };
             };
@@ -22367,7 +22370,8 @@ export interface operations {
                      *         "retired": false
                      *       },
                      *       "mayEdit": false,
-                     *       "mayRun": false
+                     *       "mayRun": false,
+                     *       "mayUse": false
                      *     }
                      */
                     "application/json": {
@@ -22515,6 +22519,8 @@ export interface operations {
                         mayEdit: boolean;
                         /** @description Whether the caller may describe and sample its query against its connection: use connection there, and for SQL write SQL as well */
                         mayRun: boolean;
+                        /** @description Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query */
+                        mayUse: boolean;
                     };
                 };
             };
@@ -22700,6 +22706,8 @@ export interface operations {
                             mayEdit: boolean;
                             /** @description Whether the caller may describe and sample its query against its connection: use connection there, and for SQL write SQL as well */
                             mayRun: boolean;
+                            /** @description Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query */
+                            mayUse: boolean;
                         };
                     };
                 };
@@ -22946,6 +22954,8 @@ export interface operations {
                             mayEdit: boolean;
                             /** @description Whether the caller may describe and sample its query against its connection: use connection there, and for SQL write SQL as well */
                             mayRun: boolean;
+                            /** @description Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query */
+                            mayUse: boolean;
                         };
                     };
                 };
@@ -26161,7 +26171,8 @@ export interface operations {
                      *         "retired": false
                      *       },
                      *       "mayEdit": false,
-                     *       "mayRun": false
+                     *       "mayRun": false,
+                     *       "mayUse": false
                      *     }
                      */
                     "application/json": {
@@ -26309,6 +26320,8 @@ export interface operations {
                         mayEdit: boolean;
                         /** @description Whether the caller may describe and sample its query against its connection: use connection there, and for SQL write SQL as well */
                         mayRun: boolean;
+                        /** @description Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query */
+                        mayUse: boolean;
                     };
                 };
             };
@@ -26494,6 +26507,8 @@ export interface operations {
                             mayEdit: boolean;
                             /** @description Whether the caller may describe and sample its query against its connection: use connection there, and for SQL write SQL as well */
                             mayRun: boolean;
+                            /** @description Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query */
+                            mayUse: boolean;
                         };
                     };
                 };
@@ -26740,6 +26755,8 @@ export interface operations {
                             mayEdit: boolean;
                             /** @description Whether the caller may describe and sample its query against its connection: use connection there, and for SQL write SQL as well */
                             mayRun: boolean;
+                            /** @description Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query */
+                            mayUse: boolean;
                         };
                     };
                 };

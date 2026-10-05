@@ -820,6 +820,12 @@ describe('routes that check a permission', () => {
       url: `/v1/documents/${report}/datasets/${MISSING}`,
       status: 404,
     }),
+    confirmBinding: () => ({
+      url: `/v1/documents/${report}/bindings/confirm`,
+      status: 404,
+      payload: { node: 'a'.repeat(26), binding: 'b1', replaces: MISSING },
+    }),
+    getBindingHolders: () => ({ url: `/v1/components/${dosing}/bindings/b1/holders`, status: 404 }),
     nameDataset: () => ({
       url: `/v1/datasets/${dailyReadings}/name`,
       status: 404,

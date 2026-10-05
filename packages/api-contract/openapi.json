@@ -64826,6 +64826,10 @@
                     "mayRun": {
                       "type": "boolean",
                       "description": "Whether the caller may describe and sample its query against its connection: use connection there, and for SQL write SQL as well"
+                    },
+                    "mayUse": {
+                      "type": "boolean",
+                      "description": "Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query"
                     }
                   },
                   "required": [
@@ -64835,7 +64839,8 @@
                     "definition",
                     "connection",
                     "mayEdit",
-                    "mayRun"
+                    "mayRun",
+                    "mayUse"
                   ]
                 },
                 "example": {
@@ -64889,7 +64894,8 @@
                     "retired": false
                   },
                   "mayEdit": false,
-                  "mayRun": false
+                  "mayRun": false,
+                  "mayUse": false
                 }
               }
             },
@@ -66729,6 +66735,10 @@
                     "mayRun": {
                       "type": "boolean",
                       "description": "Whether the caller may describe and sample its query against its connection: use connection there, and for SQL write SQL as well"
+                    },
+                    "mayUse": {
+                      "type": "boolean",
+                      "description": "Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query"
                     }
                   },
                   "required": [
@@ -66738,7 +66748,8 @@
                     "definition",
                     "connection",
                     "mayEdit",
-                    "mayRun"
+                    "mayRun",
+                    "mayUse"
                   ]
                 },
                 "example": {
@@ -66792,7 +66803,8 @@
                     "retired": false
                   },
                   "mayEdit": false,
-                  "mayRun": false
+                  "mayRun": false,
+                  "mayUse": false
                 }
               }
             },
@@ -67550,6 +67562,10 @@
                         "mayRun": {
                           "type": "boolean",
                           "description": "Whether the caller may describe and sample its query against its connection: use connection there, and for SQL write SQL as well"
+                        },
+                        "mayUse": {
+                          "type": "boolean",
+                          "description": "Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query"
                         }
                       },
                       "required": [
@@ -67559,7 +67575,8 @@
                         "definition",
                         "connection",
                         "mayEdit",
-                        "mayRun"
+                        "mayRun",
+                        "mayUse"
                       ]
                     }
                   },
@@ -68439,6 +68456,10 @@
                         "mayRun": {
                           "type": "boolean",
                           "description": "Whether the caller may describe and sample its query against its connection: use connection there, and for SQL write SQL as well"
+                        },
+                        "mayUse": {
+                          "type": "boolean",
+                          "description": "Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query"
                         }
                       },
                       "required": [
@@ -68448,7 +68469,8 @@
                         "definition",
                         "connection",
                         "mayEdit",
-                        "mayRun"
+                        "mayRun",
+                        "mayUse"
                       ]
                     }
                   },
@@ -77214,6 +77236,10 @@
                     "mayRun": {
                       "type": "boolean",
                       "description": "Whether the caller may describe and sample its query against its connection: use connection there, and for SQL write SQL as well"
+                    },
+                    "mayUse": {
+                      "type": "boolean",
+                      "description": "Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query"
                     }
                   },
                   "required": [
@@ -77223,7 +77249,8 @@
                     "definition",
                     "connection",
                     "mayEdit",
-                    "mayRun"
+                    "mayRun",
+                    "mayUse"
                   ]
                 },
                 "example": {
@@ -77277,7 +77304,8 @@
                     "retired": false
                   },
                   "mayEdit": false,
-                  "mayRun": false
+                  "mayRun": false,
+                  "mayUse": false
                 }
               }
             },
@@ -78035,6 +78063,10 @@
                         "mayRun": {
                           "type": "boolean",
                           "description": "Whether the caller may describe and sample its query against its connection: use connection there, and for SQL write SQL as well"
+                        },
+                        "mayUse": {
+                          "type": "boolean",
+                          "description": "Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query"
                         }
                       },
                       "required": [
@@ -78044,7 +78076,8 @@
                         "definition",
                         "connection",
                         "mayEdit",
-                        "mayRun"
+                        "mayRun",
+                        "mayUse"
                       ]
                     }
                   },
@@ -78924,6 +78957,10 @@
                         "mayRun": {
                           "type": "boolean",
                           "description": "Whether the caller may describe and sample its query against its connection: use connection there, and for SQL write SQL as well"
+                        },
+                        "mayUse": {
+                          "type": "boolean",
+                          "description": "Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query"
                         }
                       },
                       "required": [
@@ -78933,7 +78970,8 @@
                         "definition",
                         "connection",
                         "mayEdit",
-                        "mayRun"
+                        "mayRun",
+                        "mayUse"
                       ]
                     }
                   },

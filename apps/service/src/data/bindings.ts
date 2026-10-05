@@ -3,9 +3,12 @@ import type {
   AcceptBindingBody,
   BindingStateView,
   CheckBindingsView,
+  ComponentBindingParams,
+  ConfirmBindingBody,
   DatasetNameBody,
   DatasetParams,
   DocumentBindingParams,
+  DocumentBindingsQuery,
   DocumentDatasetParams,
   QueryDefinitionParams,
   ResolveBindingsBody,
@@ -17,6 +20,7 @@ import {
   componentsBinding,
   dataPolicy,
   datasetName,
+  documentsHolding,
   documentsResolving,
   findApiToken,
   inSavepoint,
@@ -31,6 +35,7 @@ import {
   recordTake,
   resolutionsOf,
   resolveOccurrences,
+  sessionContent,
   takeDigest,
   takesOf,
   type HeldResolution,
@@ -52,8 +57,10 @@ import {
   parametersDigestInput,
   parseProvenance,
   parseQueryDefinition,
+  questionUnchanged,
   readContent,
   readOutline,
+  walkOutline,
   takeOutcomeSchema,
   takeValue,
   type Binding,
@@ -160,14 +167,30 @@ interface Placed {
 const key = (node: string, binding: string) => `${node} ${binding}`;
 
 /**
+ * Where bindings are read from beside the component versions (B2-C): the caller's own editing session,
+ * for the nodes named - `strict`, a node it cannot be read for holds nothing, so its binding is
+ * `binding_missing` - or for every node, falling back to the version where it cannot (the view's).
+ */
+interface SessionSource {
+  readonly session: string;
+  readonly nodes: ReadonlySet<string> | 'every';
+}
+
+/**
  * Every binding in the components the document's latest version places, read as `principalId`, in the
  * outline's order (D3-E): the version each node resolves to - its pin, or the component's latest - and
  * never one of a component they may not read. Undefined where the id is no document.
+ *
+ * With a session source (B2-C), a node it names is read from the latest save of the caller's own
+ * session instead, only where the node floats at the latest, the session holds the component's lock
+ * and it opened from the version the node resolves to: a node named for a resolve or a Keep that is
+ * not so holds nothing, and the view's falls back to the version.
  */
 async function bindingsPlaced(
   trx: TenantTransaction,
   documentId: string,
   principalId: string,
+  source?: SessionSource,
 ): Promise<Placed[] | undefined> {
   const document = await readDocument(trx, documentId);
   if (!document) return undefined;
@@ -176,12 +199,33 @@ async function bindingsPlaced(
     version: document.version.id,
   });
   if (!read.ok) throw new Error(`The document ${documentId} does not read`);
+  const floating = new Set<string>();
+  walkOutline(read.outline.nodes, (node) => {
+    if (node.type === 'reference' && node.mode.kind === 'latest') floating.add(node.id);
+  });
   const placed: Placed[] = [];
   for (const occurrence of await resolveOccurrences(trx, read.outline, principalId)) {
     if (occurrence.outcome !== 'resolved') continue;
-    const stored = await readVersion(trx, occurrence.version);
-    if (!stored) throw new Error(`The component version ${occurrence.version} is gone`);
-    const content = readContent(stored.content, {
+    let substance: unknown;
+    const named =
+      source !== undefined && (source.nodes === 'every' || source.nodes.has(occurrence.node));
+    if (named) {
+      const saved = floating.has(occurrence.node)
+        ? await sessionContent(trx, {
+            artifactId: occurrence.component,
+            principal: principalId,
+            session: source.session,
+          })
+        : undefined;
+      if (saved?.openedFrom === occurrence.version) substance = saved.content;
+      else if (source.nodes !== 'every') continue;
+    }
+    if (substance === undefined) {
+      const stored = await readVersion(trx, occurrence.version);
+      if (!stored) throw new Error(`The component version ${occurrence.version} is gone`);
+      substance = stored.content;
+    }
+    const content = readContent(substance, {
       artifact: occurrence.component,
       version: occurrence.version,
     });
@@ -570,15 +614,19 @@ const recordable = (runs: readonly Prepared[], ran: ReadonlyMap<string, Ran>): P
     return outcome?.ok === true ? [outcome.provenance] : [];
   });
 
-/** Re-reads each binding a run answers, refusing the act where one has changed since (D3-H). */
+/**
+ * Re-reads each binding a run answers, from where it was read, refusing the act where one has changed
+ * since (D3-H) - a session's among them, which may have saved again or lost its lock (B2-C).
+ */
 async function unchangedSince(
   trx: TenantTransaction,
   documentId: string,
   principalId: string,
   bindings: readonly Placed[],
+  source?: SessionSource,
 ): Promise<void> {
   const now = new Map(
-    ((await bindingsPlaced(trx, documentId, principalId)) ?? []).map((each) => [
+    ((await bindingsPlaced(trx, documentId, principalId, source)) ?? []).map((each) => [
       key(each.node, each.binding.id),
       each,
     ]),
@@ -800,6 +848,19 @@ function viewer(
     return version?.kind === 'connection' && typeof name === 'string' ? { name } : null;
   }
 
+  /**
+   * Whether Keep may hold what a stale binding holds (B2-G): its question unchanged against the held
+   * result, by `questionUnchanged`, the definition's latest version read for a binding that floats.
+   */
+  async function keepable(placed: Placed, held: HeldResolution): Promise<boolean> {
+    if (held.digest === placed.digest) return false;
+    const latest = await readQueryDefinition(trx, placed.binding.query);
+    return (
+      latest !== undefined &&
+      questionUnchanged(placed.binding, held.held.provenance, latest.version.id)
+    );
+  }
+
   /** The view of each binding as a document holds it now (D3-J, D3-R, B1-I), in the order given. */
   return async function views(
     each: readonly { readonly placed: Placed; readonly held: HeldResolution | undefined }[],
@@ -842,6 +903,7 @@ function viewer(
           stale,
           taken: stale ? null : taken.get(takeKey(held.held.version, take))!,
           act: held.act,
+          keepable: await keepable(placed, held),
           by: { id: held.by, displayName: await nameOf(held.by) },
           at: held.at.toISOString(),
         },
@@ -899,7 +961,12 @@ export async function resolveAct(
   const body = request.body as ResolveBindingsBody;
   if (!objects) throw storageUnavailable();
   const caller = callerOf(request);
-  const placed = await bindingsPlaced(trx, id, principalId);
+  const fromSession = body.bindings.filter((each) => each.from === 'session');
+  const source: SessionSource | undefined =
+    body.session === undefined || fromSession.length === 0
+      ? undefined
+      : { session: body.session, nodes: new Set(fromSession.map((each) => each.node)) };
+  const placed = await bindingsPlaced(trx, id, principalId, source);
   if (!placed) throw notFound();
   const byKey = new Map(placed.map((each) => [key(each.node, each.binding.id), each]));
   const asked = [
@@ -941,6 +1008,7 @@ export async function resolveAct(
         id,
         principalId,
         succeeded.map((each) => each.placed),
+        source,
       );
       const seesSource = await seeingSourceNow(record, caller, prepared);
       const held = await heldBy(record, id);
@@ -1165,7 +1233,13 @@ export function bindingHandlers(
   return {
     getDocumentBindings: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
       const { id } = request.params as DocumentBindingParams;
-      const placed = await bindingsPlaced(trx, id, principalId);
+      const { session } = request.query as DocumentBindingsQuery;
+      const placed = await bindingsPlaced(
+        trx,
+        id,
+        principalId,
+        session === undefined ? undefined : { session, nodes: 'every' },
+      );
       if (!placed) throw notFound();
       const held = await heldBy(trx, id);
       const views = viewer(trx, callerOf(request), objects, tenantOf(request));
@@ -1236,6 +1310,99 @@ export function bindingHandlers(
         by: principalId,
       });
       return stateView(views, found, (await heldBy(trx, id)).get(key(body.node, body.binding)));
+    },
+
+    /**
+     * Keep (bindings.md, "Keeping a value across a changed binding"; B2-F, BI-J): a resolution row
+     * holding the version the binding already holds under its changed digest, `act: 'confirm'`,
+     * replacing that same version, querying nothing - only where its question is unchanged
+     * (`questionUnchanged`, B2-E) and what it now takes is that version's. `edit` on the document is
+     * the route's; `read` on the definition is decided here, one not readable answered as none.
+     */
+    confirmBinding: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
+      const { id } = request.params as DocumentBindingParams;
+      const body = request.body as ConfirmBindingBody;
+      const placed = await bindingsPlaced(
+        trx,
+        id,
+        principalId,
+        body.from === 'session' && body.session !== undefined
+          ? { session: body.session, nodes: new Set([body.node]) }
+          : undefined,
+      );
+      if (!placed) throw notFound();
+      const found = placed.find(
+        (each) => each.node === body.node && each.binding.id === body.binding,
+      );
+      const naming = { binding: body.binding, node: body.node, document: id };
+      if (!found) {
+        throw bindingMissing(
+          naming,
+          `The component the node ${body.node} places holds no binding ${body.binding}.`,
+        );
+      }
+      await lockBindings(trx, id, [{ node: found.node, binding: found.binding.id }]);
+      const caller = callerOf(request);
+      const facts = await connectionFacts(trx, caller, found.binding.query);
+      if (!facts || !decide('read', facts).allowed) {
+        throw bindingMissing(
+          { ...naming, definition: found.binding.query },
+          `The binding ${found.binding.id} names no query definition here.`,
+        );
+      }
+      const held = (await heldBy(trx, id)).get(key(body.node, body.binding));
+      const views = viewer(trx, caller, objects, tenantOf(request));
+      if (!held || held.held.version !== body.replaces) {
+        throw refused(
+          409,
+          'resolution.precondition',
+          'This binding no longer holds what this was kept from.',
+          { current: await stateView(views, found, held) },
+        );
+      }
+      const latest = await readQueryDefinition(trx, found.binding.query);
+      const { provenance } = held.held;
+      if (!latest || !questionUnchanged(found.binding, provenance, latest.version.id)) {
+        throw refused(
+          409,
+          'confirm.not_possible',
+          `The binding ${found.binding.id} asks another question than the result it holds answers: resolve it instead.`,
+          { ...naming, definition: found.binding.query },
+        );
+      }
+      const ran = await readVersion(trx, provenance.queryDefinition.version);
+      const take = checkTake(found.binding.take, parseQueryDefinition(ran!.content));
+      if (take !== null) throw named(refused(400, 'take.invalid', `${take}.`), naming);
+      await recordResolution(trx, {
+        document: id,
+        node: found.node,
+        binding: found.binding.id,
+        digest: found.digest,
+        version: held.held.version,
+        replaces: held.held.version,
+        act: 'confirm',
+        by: principalId,
+      });
+      return stateView(views, found, (await heldBy(trx, id)).get(key(body.node, body.binding)));
+    },
+
+    /**
+     * The documents holding a value for one binding of a component (B2-I): those the caller may read
+     * by title, the rest counted. `read` on the component is the route's.
+     */
+    getBindingHolders: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
+      const { id, binding } = request.params as ComponentBindingParams;
+      const component = await trx
+        .selectFrom('artifact')
+        .select('id')
+        .where('id', '=', id)
+        .where('kind', '=', 'component')
+        .executeTakeFirst();
+      if (!component) throw notFound();
+      const uses = await documentsHolding(trx, principalId, id, binding);
+      return {
+        documents: { readable: uses.readable.map((each) => ({ ...each })), others: uses.others },
+      };
     },
 
     /**

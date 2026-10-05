@@ -839,7 +839,10 @@ describe('query definitions through the service', () => {
     });
     const listed = await call('alice', 'GET', '/v1/query-definitions');
     expect(listed.json<{ items: { id: string; connection: unknown }[] }>().items).toEqual([
-      expect.objectContaining({ id, connection: { id: hidden.id, name: null } }),
+      expect.objectContaining({
+        id,
+        connection: { id: hidden.id, name: null, identity: 'service' },
+      }),
     ]);
     const searched = await call('alice', 'GET', '/v1/search?q=Warehouse');
     expect(searched.statusCode).toBe(200);
@@ -857,7 +860,9 @@ describe('query definitions through the service', () => {
         items: { connection: unknown }[];
       }>().items,
     ).toEqual([
-      expect.objectContaining({ connection: { id: hidden.id, name: 'Hidden Warehouse Name' } }),
+      expect.objectContaining({
+        connection: { id: hidden.id, name: 'Hidden Warehouse Name', identity: 'service' },
+      }),
     ]);
   });
 
