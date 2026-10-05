@@ -18426,7 +18426,7 @@
     {
       "id": "DAT-022",
       "file": "apps/service/src/placing-bindings.test.ts",
-      "line": 332,
+      "line": 355,
       "kind": "title"
     },
     {
@@ -18936,7 +18936,7 @@
     {
       "id": "DAT-022",
       "file": "apps/web/src/editor/ValueDialog.test.tsx",
-      "line": 98,
+      "line": 117,
       "kind": "title"
     },
     {
@@ -19782,7 +19782,7 @@
     {
       "id": "VER-001",
       "file": "packages/db/src/editing.test.ts",
-      "line": 300,
+      "line": 327,
       "kind": "title"
     },
     {
