@@ -1,0 +1,1542 @@
+{
+  "success": true,
+  "startTime": 1791206711897,
+  "commit": "04d45c8326199506f84d205995afba2b47af09b5",
+  "clean": true,
+  "counts": {
+    "total": 341,
+    "passed": 341,
+    "failed": 0,
+    "skipped": 0
+  },
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "fullName": "publishing a document holding a value DAT-088 reads each value from its stored result, never a source, and fails a result altered in the store by name",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document holding a value DAT-046 fails a preview as the publish fails, by name, and makes neither",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document holding a value DAT-042 PUB-049 accompanies a publication holding a value with provenance.json, recording what was printed and holding no SQL, connection or column source",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document holding a value DAT-042 publishes a document whose bound block a condition removes, its provenance.json beside it listing nothing printed",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document holding a value STY-082 prints a value from the theme's value catalogue alone, the same in the PDF and in Word, under formats unlike the default",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "checking a publication's PDF with veraPDF, after it is recorded PUB-091 PUB-103 records a publication with its check queued in the same transaction, and keeps what veraPDF found of its PDF: PDF/UA-1, passed",
+          "status": "passed"
+        },
+        {
+          "fullName": "checking a publication's PDF with veraPDF, after it is recorded PUB-091 retains veraPDF's whole report with the publication, byte for byte, in the tenant's store by its hash",
+          "status": "passed"
+        },
+        {
+          "fullName": "checking a publication's PDF with veraPDF, after it is recorded PUB-091 keeps a PDF that fails PDF/UA-1 as checked and not compliant, naming each rule it failed",
+          "status": "passed"
+        },
+        {
+          "fullName": "checking a publication's PDF with veraPDF, after it is recorded PUB-091 checks a publication whose worker died after recording it: the check stays queued and the next worker takes it",
+          "status": "passed"
+        },
+        {
+          "fullName": "checking a publication's PDF with veraPDF, after it is recorded checks a publication once: a second run finds it checked, asks veraPDF nothing and records nothing",
+          "status": "passed"
+        },
+        {
+          "fullName": "checking a publication's PDF with veraPDF, after it is recorded tries a check again when veraPDF could not run, recording nothing until it does",
+          "status": "passed"
+        },
+        {
+          "fullName": "checking a publication's PDF with veraPDF, after it is recorded checks only the bytes the publication recorded, and tries again where the store answers others",
+          "status": "passed"
+        },
+        {
+          "fullName": "checking a publication's PDF with veraPDF, after it is recorded PUB-091 queues a check again, from the sweep, for a publication whose check gave up, and none for one checked, one whose check is still queued, or one recorded under five minutes ago",
+          "status": "passed"
+        },
+        {
+          "fullName": "checking a publication's PDF with veraPDF, after it is recorded PUB-091 leaves a publication whose check has given up three times, queueing no more, and records that it could not be checked",
+          "status": "passed"
+        },
+        {
+          "fullName": "checking a publication's PDF with veraPDF, after it is recorded PUB-091 checks the publications recorded before checks were queued, from the first sweep after, a hundred a sweep in each tenant",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "the worker's configuration reads what it needs and fills in the rest",
+          "status": "passed"
+        },
+        {
+          "fullName": "the worker's configuration sizes the defaults so a check whose first attempt fails still joins its publication within five minutes of its recording",
+          "status": "passed"
+        },
+        {
+          "fullName": "the worker's configuration runs veraPDF from where the image holds it, unless told where else",
+          "status": "passed"
+        },
+        {
+          "fullName": "the worker's configuration gives veraPDF's JVM the deployment's JAVA_OPTS, and none where it names none",
+          "status": "passed"
+        },
+        {
+          "fullName": "the worker's configuration refuses to start without somewhere to keep what it makes",
+          "status": "passed"
+        },
+        {
+          "fullName": "the worker's configuration describes itself for a log without its secrets",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "the default theme's 0.4 styles, published to PDF and to Word (W8.5) passes veraPDF and the Open XML SDK",
+          "status": "passed"
+        },
+        {
+          "fullName": "the default theme's 0.4 styles, published to PDF and to Word (W8.5) sets Lead, Centred and Small print in the PDF as each declares: its size, its line spacing, the space after it and its alignment",
+          "status": "passed"
+        },
+        {
+          "fullName": "the default theme's 0.4 styles, published to PDF and to Word (W8.5) sets a table in Banded in the PDF: its header row filled, bold and ruled below it, every other body row banded from the first, its rows ruled in grey and its columns not at all",
+          "status": "passed"
+        },
+        {
+          "fullName": "the default theme's 0.4 styles, published to PDF and to Word (W8.5) sets a figure in Half width in the PDF half the measure wide, its proportion kept, centred",
+          "status": "passed"
+        },
+        {
+          "fullName": "the default theme's 0.4 styles, published to PDF and to Word (W8.5) writes each as Word's own: the three paragraph styles at their sizes, spaces and alignments, the table style Banded, and the figure half the measure wide, centred",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "equations in the PDF (equations 2) CNT-080 tags every equation a Formula carrying its alternative, spoken in the language of the text it stands in",
+          "status": "passed"
+        },
+        {
+          "fullName": "equations in the PDF (equations 2) sets a numbered equation's number after it, where it is read, and an unnumbered one with none",
+          "status": "passed"
+        },
+        {
+          "fullName": "equations in the PDF (equations 2) never sets a numbered equation under its number, however near the line its width comes",
+          "status": "passed"
+        },
+        {
+          "fullName": "equations in the PDF (equations 2) sets what would be Typst source in an equation as the characters it is",
+          "status": "passed"
+        },
+        {
+          "fullName": "equations in the PDF (equations 2) sets what MathML sets a script level smaller as the characters it holds",
+          "status": "passed"
+        },
+        {
+          "fullName": "equations in the PDF (equations 2) PUB-038 generates the lists of figures, tables and equations after the contents, each entry linking to its page",
+          "status": "passed"
+        },
+        {
+          "fullName": "equations in the PDF (equations 2) links a reference to a numbered equation to its page, printing its number and its page's label",
+          "status": "passed"
+        },
+        {
+          "fullName": "equations in the PDF (equations 2) sets an equation in a section's title in its heading, the contents, the running heads and the bookmarks",
+          "status": "passed"
+        },
+        {
+          "fullName": "equations in the PDF (equations 2) sets a header row holding an equation again on each page the table reaches, tagged once",
+          "status": "passed"
+        },
+        {
+          "fullName": "equations in the PDF (equations 2) is PDF/UA-1, as veraPDF reads it",
+          "status": "passed"
+        },
+        {
+          "fullName": "what the converter refuses never reaches the engine (the final review of equations 2, I1) refuses a space too wide to be a number and an accent of two characters by name, so the job never compiles them",
+          "status": "passed"
+        },
+        {
+          "fullName": "what the converter refuses never reaches the engine (the final review of equations 2, I1) would have stopped the compile with nothing to say which equation, had either reached the engine",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "a figure in the PDF (figures 3) AST-015 AST-039 tags each figure with its text in its own language, and a decorative one not at all, and passes veraPDF",
+          "status": "passed"
+        },
+        {
+          "fullName": "a figure in the PDF (figures 3) keeps every image inside the text block of its page, however tall it is",
+          "status": "passed"
+        },
+        {
+          "fullName": "a figure in the PDF (figures 3) lists every figure after the contents, the decorative one too, each entry linked to it",
+          "status": "passed"
+        },
+        {
+          "fullName": "a figure in the PDF (figures 3) keeps a long caption on the page with its image, making the image smaller, and refuses one too long for any",
+          "status": "passed"
+        },
+        {
+          "fullName": "a figure in the PDF (figures 3) sets figures and their list, none marked unnumbered, as template 13 set them, so what was published publishes the same",
+          "status": "passed"
+        },
+        {
+          "fullName": "a figure in the PDF (figures 3) STR-071 sets a figure marked unnumbered under its caption alone, numbers the next as the first and lists only that, and passes veraPDF",
+          "status": "passed"
+        },
+        {
+          "fullName": "an image in a line of text in the PDF (figures 5) CNT-086 CNT-087 sets an image in a paragraph and in a table cell, each tagged where it stands, and passes veraPDF",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "footnotes and a table note in the PDF (footnotes 2) PUB-016 sets every footnote at the foot of the page that carries its anchor",
+          "status": "passed"
+        },
+        {
+          "fullName": "footnotes and a table note in the PDF (footnotes 2) CNT-036 publishes a footnote anchored to a span as a tagged note, numbered straight through",
+          "status": "passed"
+        },
+        {
+          "fullName": "footnotes and a table note in the PDF (footnotes 2) CNT-038 publishes a table's note straight after the table, which keeps its caption",
+          "status": "passed"
+        },
+        {
+          "fullName": "footnotes and a table note in the PDF (footnotes 2) is PDF/UA-1, as veraPDF reads it",
+          "status": "passed"
+        },
+        {
+          "fullName": "a note longer than a page (footnotes 2) PUB-016 begins on the page carrying its anchor and carries on over the pages after it",
+          "status": "passed"
+        },
+        {
+          "fullName": "a note in a component in another language (footnotes 2, final review) is read in the language of the text its mark stands in, not the document's",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "the worker image's veraPDF is copied from the very image the suite checks with, pinned by the same digest",
+          "status": "passed"
+        },
+        {
+          "fullName": "the worker image's veraPDF holds veraPDF where the worker runs it from, beside its Java runtime",
+          "status": "passed"
+        },
+        {
+          "fullName": "the worker image's veraPDF runs veraPDF on Debian's own Java runtime, so the image builds for every architecture",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "the ingest job, which proves an upload is only an image (figures 1) AST-005 records a decoded image as an asset, its dimensions as displayed and its description in its language",
+          "status": "passed"
+        },
+        {
+          "fullName": "the ingest job, which proves an upload is only an image (figures 1) AST-006 AST-051 refuses a file whose structure is sound but whose pixels do not decode, and keeps no bytes",
+          "status": "passed"
+        },
+        {
+          "fullName": "the ingest job, which proves an upload is only an image (figures 1) AST-051 walks the bytes again rather than trusting the service, refusing a second file hidden after the image",
+          "status": "passed"
+        },
+        {
+          "fullName": "the ingest job, which proves an upload is only an image (figures 1) refuses the same bytes a second time without removing them from the asset that already has them",
+          "status": "passed"
+        },
+        {
+          "fullName": "the ingest job, which proves an upload is only an image (figures 1) retries a decode that failed for the decoder's own reasons rather than refusing the image",
+          "status": "passed"
+        },
+        {
+          "fullName": "the ingest job, which proves an upload is only an image (figures 1) refuses an upload whose check never finished, once its job has failed for the last time",
+          "status": "passed"
+        },
+        {
+          "fullName": "the ingest job, which proves an upload is only an image (figures 1) keeps the bytes another upload of the same image is still being checked against, when refusing one",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "sweeping iterations past their window, in every tenant VER-003 removes the iterations past their window in every tenant, and one tenant failing does not stop the rest",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "template 4 lays out the page PUB-007 sets the page the layout declares: its size, orientation, and inside and outside margins alternating about the gutter",
+          "status": "passed"
+        },
+        {
+          "fullName": "template 4 lays out the page PUB-009 numbers each matter's pages as the layout declares",
+          "status": "passed"
+        },
+        {
+          "fullName": "template 4 lays out the page numbers a matter entered again from where its own pages stopped, never giving two pages one label",
+          "status": "passed"
+        },
+        {
+          "fullName": "template 4 lays out the page sets the cover alone on a page of its own with no number, and without one opens the first page with the title",
+          "status": "passed"
+        },
+        {
+          "fullName": "template 4 lays out the page sets an empty document as its cover alone, on one page that numbers nothing",
+          "status": "passed"
+        },
+        {
+          "fullName": "template 4 lays out the page PUB-008 sets running heads and feet from the layout's words and fields",
+          "status": "passed"
+        },
+        {
+          "fullName": "template 4 lays out the page PUB-037 sets a contents to the layout's depth, tagged as a table of contents, with number's numbers and Typst's pages",
+          "status": "passed"
+        },
+        {
+          "fullName": "template 4 lays out the page ends the contents on a page of its own, which opens the front matter whether or not there is any",
+          "status": "passed"
+        },
+        {
+          "fullName": "template 4 lays out the page PUB-088 sets the cover and contents a layout declares, starts each appendix on a new page, and sets none of them where it declares none",
+          "status": "passed"
+        },
+        {
+          "fullName": "template 4 lays out the page sets a layout's own notice and sentence, not the default's, on every page and once to assistive technology",
+          "status": "passed"
+        },
+        {
+          "fullName": "template 4 lays out the page says Not approved on every page, the cover included, and once to assistive technology, under any layout",
+          "status": "passed"
+        },
+        {
+          "fullName": "template 4 lays out the page passes veraPDF under the default layout and under the test layout",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "the PDF a list makes sets a list as a list at every level, numbers it as asked, and passes veraPDF",
+          "status": "passed"
+        },
+        {
+          "fullName": "the PDF a list makes sets a definition term as its item label, which is all this engine gives",
+          "status": "passed"
+        },
+        {
+          "fullName": "the PDF a list makes keeps an item that came out empty, numbering the items below it as the author wrote them",
+          "status": "passed"
+        },
+        {
+          "fullName": "the PDF a list makes carries six levels in a mixture of all three kinds, and a term with marks, into the PDF",
+          "status": "passed"
+        },
+        {
+          "fullName": "the PDF a list makes sets a roman numbering from the start the author set",
+          "status": "passed"
+        },
+        {
+          "fullName": "the PDF a list makes is refused by the engine one level shallower than the model stops accepting a list",
+          "status": "passed"
+        },
+        {
+          "fullName": "the PDF a list makes numbers a format it has never heard of, and refuses a block it has never heard of",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "the PDF a marked document makes sets every mark, links what is linked, and passes veraPDF",
+          "status": "passed"
+        },
+        {
+          "fullName": "the PDF a marked document makes CNT-085 draws an underlined run with a rule beneath it, and no other run with one",
+          "status": "passed"
+        },
+        {
+          "fullName": "the PDF a marked document makes keeps a run that is code and emphasised whatever order its marks arrive in",
+          "status": "passed"
+        },
+        {
+          "fullName": "the PDF a marked document makes says a quoted phrase is a quotation and adds no quotation marks of its own",
+          "status": "passed"
+        },
+        {
+          "fullName": "the PDF a marked document makes tells a reader which run is in another language, and says nothing of any other run",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "a face's vertical metrics and advances reads the units per em from head, the ascender and descender from hhea, and every advance from hmtx",
+          "status": "passed"
+        },
+        {
+          "fullName": "a face's vertical metrics and advances tells a face with an OpenType MATH table, which can set an equation, from one without",
+          "status": "passed"
+        },
+        {
+          "fullName": "a face's vertical metrics and advances reads Liberation Serif's and Liberation Mono's own, a single advance for every glyph of the monospace",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "the maths tree as OMML, in Word's schema (Word 4, ruling R3) writes an equation holding every kind of node, inline and displayed, which the Open XML SDK finds nothing wrong with",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "sweeping previews an hour after they finished (PV-F) removes an expired preview's PDF from its tenant's store, keeps one another row names, and sweeps every tenant though one store fails",
+          "status": "passed"
+        },
+        {
+          "fullName": "sweeping previews an hour after they finished (PV-F) logs the keys of a tenant's swept PDFs when its store cannot be reached, and sweeps the others",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "publishing a document, from the request to the stored PDF PUB-021 bookmarks the outline, each heading with the number the outline panel shows",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF PUB-093 says on every page and once to assistive technology that it is not approved, and its record says so",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF PUB-005 says on every page of a stored preview, and once to assistive technology, that it is a preview of unapproved content, and never that it is a draft",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF PUB-006 makes a preview by the same pipeline as a publish of the same version: the same inputs recorded, the same pages but for the notice, and no publication",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF PUB-061 is always tagged PDF/UA-1, in the document title and language",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF PUB-062 sets content that would be Typst source as the words it is",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF PUB-063 records the engine, the engine's version and the template's version that made it",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF records the default layout's version on the publication",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF publishes an empty document as its cover alone, under the default layout",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF refuses a publish job with no subject at once, rather than completing it silently",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF fails a document with a character no face can set once, with every failure, and logs none of it",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF PUB-094 refuses a publish holding a component the publisher may not read, naming its node and nothing of it, and makes no publication",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF PUB-053 records no publication and no artifact when the store will not take the PDF",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF PUB-086 names the engine stage and the store stage, and no place, when the platform fails",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF prints the images its figures place from the store, held to their hashes, and names each on the publication",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF keeps nothing of a record the database refuses, and fails the request at the store stage",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF makes the same bytes from what a request recorded, compiled again",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF publishes to Word alone: a .docx the Open XML SDK finds nothing wrong with, recorded by its writer with its report, and no PDF engine",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF publishes to the PDF and Word from one assembly, the PDF byte for byte what the PDF alone is made of",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF records neither output when the store keeps the PDF and will not take the Word document, and fails the request at the store stage",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF publishes to the PDF alone as it did before Word: one output, by Typst under its template, with nothing to report",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF PUB-074 refuses Word alone where a page is cited, and otherwise records on the Word document that it carries no page-cited output",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF publishes an equation to the PDF and to Word, the Word document's record naming the maths face Word sets it in (Word 4, R5)",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF PUB-065 carries the resolved document's content, numbering and cross-references into Word and leaves its pagination to Word, the PDF the output a page number cites and the record saying so",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a document, from the request to the stored PDF publishes a figure to Word alone under the default layout: its image read from the store, held to its hash, written into the document once, described, and listed after the contents",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing a request made before layouts publishes it with template 1 and pipeline 1, as the first slice did, and records no layout",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "PUB-102 publishes the 300-page reference document within the budget PUB-102 publishes the declared 300-page reference document to a recorded PDF at or under ten seconds at p95, no sample above thirty, its conformance report joining it within five minutes, recording the configuration beside the result",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "the tagged PDF a quotation and preformatted text make CNT-018 sets a preformatted block in Liberation Mono with every character in the column its whitespace put it in, under its language label",
+          "status": "passed"
+        },
+        {
+          "fullName": "the tagged PDF a quotation and preformatted text make sets a quotation as a BlockQuote, its attribution at the end of it with no dash the author did not type",
+          "status": "passed"
+        },
+        {
+          "fullName": "the tagged PDF a quotation and preformatted text make nests a quotation in a quotation, and preformatted text in a list item",
+          "status": "passed"
+        },
+        {
+          "fullName": "the tagged PDF a quotation and preformatted text make sets an 83-column line on one line inside its panel, and refuses one inside a list too narrow for it before the engine runs",
+          "status": "passed"
+        },
+        {
+          "fullName": "the tagged PDF a quotation and preformatted text make passes veraPDF as PDF/UA-1, every case at once",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "cross-references in the PDF (cross-references 2) STR-027 prints a number, a title, both, a page in its matter numbering, and above and below in the layout words",
+          "status": "passed"
+        },
+        {
+          "fullName": "cross-references in the PDF (cross-references 2) prints every page reference as the label of the page its target is set on",
+          "status": "passed"
+        },
+        {
+          "fullName": "cross-references in the PDF (cross-references 2) PUB-096 links a reference in a paragraph's text to its target's page, and sets one anywhere else as text",
+          "status": "passed"
+        },
+        {
+          "fullName": "cross-references in the PDF (cross-references 2) sets above and below in the layout's language, inside a paragraph in another",
+          "status": "passed"
+        },
+        {
+          "fullName": "cross-references in the PDF (cross-references 2) sets no link of its own in a caption, a title, the contents, the lists or a running head",
+          "status": "passed"
+        },
+        {
+          "fullName": "cross-references in the PDF (cross-references 2) is PDF/UA-1, as veraPDF reads it",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "the publishing regression corpus PUB-103 publishes six heading levels through the template as PDF/UA-1 that veraPDF passes, each tagged a heading, H1 to H6, and bookmarked six deep",
+          "status": "passed"
+        },
+        {
+          "fullName": "the publishing regression corpus PUB-103 refuses nine heading levels for the PDF, naming each heading past the sixth, which the engine tags as a paragraph, and publishes all nine to Word as its nine heading levels",
+          "status": "passed"
+        },
+        {
+          "fullName": "the publishing regression corpus the checker fails a PDF that is not PDF/UA-1, naming its rules",
+          "status": "passed"
+        },
+        {
+          "fullName": "the publishing regression corpus refuses before the engine runs every character the engine would refuse, and only those",
+          "status": "passed"
+        },
+        {
+          "fullName": "the publishing regression corpus refuses in preformatted text every character the body face sets without a glyph, because the engine drops the letter before one in code",
+          "status": "passed"
+        },
+        {
+          "fullName": "PUB-087 the engine spike's nine cases, through the pipeline case 1: tags headings, a list, a header row, a figure described and a passage in French, and veraPDF passes it",
+          "status": "passed"
+        },
+        {
+          "fullName": "PUB-087 the engine spike's nine cases, through the pipeline case 2: sets each of twenty footnotes at the foot of its mark's page, carrying one longer than a page over to the next",
+          "status": "passed"
+        },
+        {
+          "fullName": "PUB-087 the engine spike's nine cases, through the pipeline case 3: repeats a forty-row table header on every page it crosses, and sets a note in one of its cells at the foot of that page",
+          "status": "passed"
+        },
+        {
+          "fullName": "PUB-087 the engine spike's nine cases, through the pipeline case 4: sets an edit near the fortieth page of some three hundred where it stands, within the worker compile limit, moving nothing before it",
+          "status": "passed"
+        },
+        {
+          "fullName": "PUB-087 the engine spike's nine cases, through the pipeline case 5: tags an equation in running text, a heading, a cell, a note and a caption, and in blocks, each a formula with its words, numbering two of three",
+          "status": "passed"
+        },
+        {
+          "fullName": "PUB-087 the engine spike's nine cases, through the pipeline case 6: numbers each matter's pages as the layout says, from the cover to the appendix, and heads each page with the chapter it is in",
+          "status": "passed"
+        },
+        {
+          "fullName": "PUB-087 the engine spike's nine cases, through the pipeline case 7: embeds every face it sets as a subset, and a face the worker does not hold is refused by name rather than set in another",
+          "status": "passed"
+        },
+        {
+          "fullName": "PUB-087 the engine spike's nine cases, through the pipeline case 8: prints the right page for every contents entry, every figure listed and every cross-reference to a figure in a long document",
+          "status": "passed"
+        },
+        {
+          "fullName": "PUB-087 the engine spike's nine cases, through the pipeline case 9: makes the same bytes of the same inputs, assembled and compiled again",
+          "status": "passed"
+        },
+        {
+          "fullName": "PUB-087 a case for each publishing defect fixed, named by its issue #145: sets a publication in the pinned faces alone, each embedded, and in nothing the engine carries itself",
+          "status": "passed"
+        },
+        {
+          "fullName": "PUB-087 a case for each publishing defect fixed, named by its issue #158 (its refusal fixed; open for a theme's markers): sets a second level of bullets in a glyph the pinned faces have, rather than refusing",
+          "status": "passed"
+        },
+        {
+          "fullName": "PUB-087 a case for each publishing defect fixed, named by its issue #253: a figure a condition hides takes no number in the PDF, moves no other, and is in no list",
+          "status": "passed"
+        },
+        {
+          "fullName": "the resolution order, in the PDF PUB-098 lists a table whose caption refers to another with the number the reference resolved to, since the lists are generated after the references",
+          "status": "passed"
+        },
+        {
+          "fullName": "a Word publishing defect fixed, named by its issue #7: a Word publication numbers its headings and its footnotes, and spaces a heading from what follows it",
+          "status": "passed"
+        },
+        {
+          "fullName": "the publishing defects still open, each pinned as it stands until the pull request that fixes it #162, open: a preformatted block's indentation does not reach the PDF's text layer, only its page",
+          "status": "passed"
+        },
+        {
+          "fullName": "the publishing defects still open, each pinned as it stands until the pull request that fixes it #163, open: a quotation's attribution is one more paragraph of it, and a preformatted block's label a paragraph outside it",
+          "status": "passed"
+        },
+        {
+          "fullName": "the publishing defects still open, each pinned as it stands until the pull request that fixes it #164, open: a preformatted line in a numbered list is refused at fewer columns than the engine sets inside the margin",
+          "status": "passed"
+        },
+        {
+          "fullName": "the publishing defects still open, each pinned as it stands until the pull request that fixes it #165, open: a preformatted line wider than the page refuses the whole publish, at 84 columns on the default layout",
+          "status": "passed"
+        },
+        {
+          "fullName": "the publishing defects still open, each pinned as it stands until the pull request that fixes it #232, open: the PDF's running head carries a long title up past the top of the page",
+          "status": "passed"
+        },
+        {
+          "fullName": "the publishing defects still open, each pinned as it stands until the pull request that fixes it #233, open: a tab in running text is dropped by the PDF and kept by Word",
+          "status": "passed"
+        },
+        {
+          "fullName": "the publishing defects still open, each pinned as it stands until the pull request that fixes it #234, open: a section marked to start a new page runs on after the one before it",
+          "status": "passed"
+        },
+        {
+          "fullName": "the publishing defects still open, each pinned as it stands until the pull request that fixes it #235, open: a table's caption is left at the foot of a page, with its table on the next",
+          "status": "passed"
+        },
+        {
+          "fullName": "PUB-106 the keep rules: declared by a paragraph style, passed to each engine as its own rule, and holding in the PDF wherever the page allows STY-008 keeps a heading with what follows it where its style says, and leaves it alone at the foot where it does not",
+          "status": "passed"
+        },
+        {
+          "fullName": "PUB-106 the keep rules: declared by a paragraph style, passed to each engine as its own rule, and holding in the PDF wherever the page allows STY-008 keeps a paragraph together where its style says, moving it whole rather than breaking it",
+          "status": "passed"
+        },
+        {
+          "fullName": "PUB-106 the keep rules: declared by a paragraph style, passed to each engine as its own rule, and holding in the PDF wherever the page allows sets widow and orphan control across a page foot: never one line alone at either side of it where on, and either where off",
+          "status": "passed"
+        },
+        {
+          "fullName": "PUB-106 the keep rules: declared by a paragraph style, passed to each engine as its own rule, and holding in the PDF wherever the page allows STY-008 keeps a paragraph together only where it fits a page: one taller than a page breaks across pages, every line on one",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "the sample job, from the queue to the store renders what a tenant asked for, and keeps it in that tenant's own store",
+          "status": "passed"
+        },
+        {
+          "fullName": "the sample job, from the queue to the store says so on the environment's channel, in the transaction that finishes it",
+          "status": "passed"
+        },
+        {
+          "fullName": "the sample job, from the queue to the store has nothing to do when the queue is empty",
+          "status": "passed"
+        },
+        {
+          "fullName": "the sample job, from the queue to the store tries again, then gives up and says so on the sample, recording only the kind",
+          "status": "passed"
+        },
+        {
+          "fullName": "the sample job, from the queue to the store finishes a job refused on its merits at once, never trying the same input again (issue #146)",
+          "status": "passed"
+        },
+        {
+          "fullName": "the sample job, from the queue to the store records a refusal by Typst as its code, and nowhere the engine's diagnostic, which quotes content",
+          "status": "passed"
+        },
+        {
+          "fullName": "the sample job, from the queue to the store refuses a kind it does not know rather than guessing",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "sweeping what sign-ins leave behind removes what has expired in every tenant, and leaves what has not",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "a table set from its style (themes 2) passes veraPDF under every style, the label included",
+          "status": "passed"
+        },
+        {
+          "fullName": "a table set from its style (themes 2) STY-076 sets two table styles differing in their header row and column, banding, rules and padding, each as it declares, read back from the PDF",
+          "status": "passed"
+        },
+        {
+          "fullName": "a table set from its style (themes 2) STY-013 PUB-017 TAB-032 breaks a table across pages as its style says: its header repeated or not, a tall row kept whole or split, and a label on each continued page and not its first",
+          "status": "passed"
+        },
+        {
+          "fullName": "a table set from its style (themes 2) keeps a row whole only where it fits a page: one taller than a page breaks across pages, every line on one",
+          "status": "passed"
+        },
+        {
+          "fullName": "an image placed and sized by its style (themes 2) passes veraPDF, every placement a Figure carrying its text",
+          "status": "passed"
+        },
+        {
+          "fullName": "an image placed and sized by its style (themes 2) STY-018 places each image as its style says: in its line, as a block, or floated to the head or the foot of its page, aligned at the start, the centre or the end",
+          "status": "passed"
+        },
+        {
+          "fullName": "an image placed and sized by its style (themes 2) PUB-031 tags a floated figure where the document puts it, not where it is drawn",
+          "status": "passed"
+        },
+        {
+          "fullName": "an image placed and sized by its style (themes 2) prints a fixed width and a fixed height each held to its maximum, the proportion kept, at the size assemble gave it",
+          "status": "passed"
+        },
+        {
+          "fullName": "a caption where its style places it (W14.5) passes veraPDF, each caption on either side tagged as its table's or its figure's",
+          "status": "passed"
+        },
+        {
+          "fullName": "a caption where its style places it (W14.5) STY-079 STR-025 sets a table's caption above it or below it as its table style says - two tables alike but for their style - its note last, and numbers each the same",
+          "status": "passed"
+        },
+        {
+          "fullName": "a caption where its style places it (W14.5) STY-079 sets a figure's caption above its image or below it as its image style says, as a block and floated, each tagged as before",
+          "status": "passed"
+        },
+        {
+          "fullName": "a caption where its style places it (W14.5) sets a document under the default theme as template 14 set it, so what was published publishes the same",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "a table in the PDF (tables 2) PUB-032 TAB-040 publishes a table with header rows, a header column and spans across a page, and passes veraPDF",
+          "status": "passed"
+        },
+        {
+          "fullName": "a table in the PDF (tables 2) TAB-050 tags the table as one table, read row by row and cell by cell in stored order across the page it breaks at",
+          "status": "passed"
+        },
+        {
+          "fullName": "a table in the PDF (tables 2) sets the caption above the table, after number's label",
+          "status": "passed"
+        },
+        {
+          "fullName": "a table in the PDF (tables 2) sets the list of tables on a page of its own before the table, as a table of contents naming the table's page",
+          "status": "passed"
+        },
+        {
+          "fullName": "a table in the PDF (tables 2) sets no list where the document has no table, and no page for one",
+          "status": "passed"
+        },
+        {
+          "fullName": "a table in the PDF (tables 2) sets a document holding no table marked unnumbered as template 13 set it, so what was published publishes the same",
+          "status": "passed"
+        },
+        {
+          "fullName": "a table in the PDF (tables 2) STR-071 sets a table marked unnumbered under its caption alone, still tagged its caption, a reference to it printing that caption, numbers the next as the first and lists only that, and passes veraPDF",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "the publication template is the version its number says: an edit is a new version, never a change to this one",
+          "status": "passed"
+        },
+        {
+          "fullName": "the publication template is chosen by the schema of the document it reads: slice 1's for a request made before layouts",
+          "status": "passed"
+        },
+        {
+          "fullName": "the publication template never sets an attribution through the engine's own parameter, which writes a dash the author never typed",
+          "status": "passed"
+        },
+        {
+          "fullName": "the publication template holds no typographic literal from version 12: every face, size, weight, colour, rule, fill and length is the theme's",
+          "status": "passed"
+        },
+        {
+          "fullName": "the publication template finds each kind of typographic literal the final review found the test let through",
+          "status": "passed"
+        },
+        {
+          "fullName": "the publication template reads the schema it was written for, and a frozen schema stays frozen",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pipeline version is a literal row per schema, so a schema bumped without it goes red rather than lying",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pipeline version is the version its number says: what assemble makes of a fixed input, the draft notice included",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pipeline version is the version its number says under a layout: what assemble makes of the fixed input under the default layout",
+          "status": "passed"
+        },
+        {
+          "fullName": "the published list shapes that are easy to read past numbers an ordered list from a start of 0 with no format, which is decimal",
+          "status": "passed"
+        },
+        {
+          "fullName": "the published list shapes that are easy to read past sets an item that came out empty as an item with nothing in it, and passes veraPDF",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "two themes in the PDF (themes 1) passes veraPDF under both, each on its own paper",
+          "status": "passed"
+        },
+        {
+          "fullName": "two themes in the PDF (themes 1) STY-008 a paragraph style declares the face, size, weight, colour, alignment, indents, spaces and line spacing sets every style in its face, size, weight, posture and colour, from running text to the running head",
+          "status": "passed"
+        },
+        {
+          "fullName": "two themes in the PDF (themes 1) STY-008 a paragraph style declares the face, size, weight, colour, alignment, indents, spaces and line spacing aligns and indents each paragraph as its style says: at the start, justified, centred and at the end",
+          "status": "passed"
+        },
+        {
+          "fullName": "two themes in the PDF (themes 1) STY-008 a paragraph style declares the face, size, weight, colour, alignment, indents, spaces and line spacing sets a table's cells in their place's style: centred under the default theme, and at the cell's start where it says start",
+          "status": "passed"
+        },
+        {
+          "fullName": "two themes in the PDF (themes 1) STY-008 a paragraph style declares the face, size, weight, colour, alignment, indents, spaces and line spacing spaces its lines and its blocks as it says: its line spacing within it, and after, before and the leading between",
+          "status": "passed"
+        },
+        {
+          "fullName": "two themes in the PDF (themes 1) the marks STY-009 renders each of the nine marks as its character style declares, in both themes",
+          "status": "passed"
+        },
+        {
+          "fullName": "two themes in the PDF (themes 1) the marks sets a subscript and a superscript at the fraction of their text the theme's projection states, not the engine's own",
+          "status": "passed"
+        },
+        {
+          "fullName": "two themes in the PDF (themes 1) the marks STY-010 sets strong in bold under the default theme, and in a colour and underlined, not bold, under the ledger's",
+          "status": "passed"
+        },
+        {
+          "fullName": "two themes in the PDF (themes 1) embeds every face either theme sets text in, and no other",
+          "status": "passed"
+        },
+        {
+          "fullName": "a quotation set off by its style, its own paragraphs a line apart (themes 2) stands a quotation as far from the text around it as template 11 did, and its paragraphs one line spacing apart, by contextual spacing",
+          "status": "passed"
+        },
+        {
+          "fullName": "a quotation set off by its style, its own paragraphs a line apart (themes 2) applies contextual spacing only within one container: two quotations in a row stand apart by their spaces, and two paragraphs at the top level whose style asks for it still stand a line apart",
+          "status": "passed"
+        },
+        {
+          "fullName": "hyphenation by the passage's language PUB-069 breaks a line at a hyphen in the text as the passage's language does, repeating it where that language does",
+          "status": "passed"
+        },
+        {
+          "fullName": "hyphenation by the passage's language PUB-069 hyphenates a passage by its own language, and one the engine has no patterns for not at all - never by the document's",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned faces' own files (themes 1) records each typeface's ascent, descent and a monospaced face's advance as its files hold them",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned faces' own files (themes 1) STY-074 covers the Latin, Greek, Cyrillic and Hebrew scripts in every file of the text faces, and every character the maths tree sets in the maths face",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned faces' own files (themes 1) holds a theme's typefaces to the pinned files exactly: every file of the family and no other, the files' own metrics, and a maths face for equations",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing under a theme it must refuse, from the request to the recorded failure (themes 1) STY-042 PUB-019 embeds every face the default theme sets, and refuses by name a theme whose face may not be embedded, publishing nothing",
+          "status": "passed"
+        },
+        {
+          "fullName": "publishing under a theme it must refuse, from the request to the recorded failure (themes 1) fails a theme naming a face the worker does not hold typeface_unavailable, by name, before anything is set",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "the pinned Typst is the version this worker was built against",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned Typst renders the sample as a PDF",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned Typst treats the data as data, whatever it looks like (ADR-0013)",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned Typst renders the same bytes for the same input",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned Typst places each image it is handed in the compile root at its path, and no other file",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned Typst says plainly when the binary is not there",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned Typst says only how the run ended when the binary will not tell its version",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned Typst refuses, once and for all, a document the engine will not set",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned Typst fails, to be tried again, a compile killed at its time limit",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned Typst carries no word of what Typst printed, or of the command, into a logged failure",
+          "status": "passed"
+        },
+        {
+          "fullName": "how a Typst run ended is a refusal when Typst exits 1 of its own accord",
+          "status": "passed"
+        },
+        {
+          "fullName": "how a Typst run ended is a failure when Typst panics, which exits 101",
+          "status": "passed"
+        },
+        {
+          "fullName": "how a Typst run ended is a failure when Typst crashes on Windows, exiting with a status code",
+          "status": "passed"
+        },
+        {
+          "fullName": "how a Typst run ended is a failure when Typst is stopped by a signal",
+          "status": "passed"
+        },
+        {
+          "fullName": "how a Typst run ended is a failure when Typst is killed at its time limit",
+          "status": "passed"
+        },
+        {
+          "fullName": "how a Typst run ended is a failure when Typst could not be started at all",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned fonts (issue #145) ships the faces as pinned, with their licence beside them",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned fonts (issue #145) pins STIX Two Math 2.13 b171 as the one maths face",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned fonts (issue #145) sets every PDF in the pinned faces and in nothing Typst carries itself",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned fonts (issue #145) names one font directory, with its own and the system fonts ignored",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned fonts (issue #145) runs the engine with its accessibility features, which a header column is tagged through",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned fonts (issue #145) hands Typst the pinned faces alone, whatever else lies beside them",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned fonts (issue #145) refuses to start with no fonts, where Typst would print blank pages and exit 0",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned fonts (issue #145) refuses a face that is not the file pinned",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned fonts (issue #145) refuses to compile once a face has changed or gone, and returns no PDF",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned fonts (issue #145) knows which characters every face of a family can set, asked by the family the theme names",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned fonts (issue #145) knows which characters the monospace faces can set, apart from the body faces",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned fonts (issue #145) knows which characters the maths face can set, apart from the body faces",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned fonts (issue #145) refuses to start when the maths face is missing, as it does for a serif one",
+          "status": "passed"
+        },
+        {
+          "fullName": "the pinned fonts (issue #145) refuses to start when a monospace face is missing, as it does for a serif one",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "reading a veraPDF report for the worker reads the verdict, veraPDF's own version and each failed rule with its words",
+          "status": "passed"
+        },
+        {
+          "fullName": "reading a veraPDF report for the worker refuses a report that names no version of veraPDF, which a check could not record",
+          "status": "passed"
+        },
+        {
+          "fullName": "the worker's own veraPDF, one process kept warm checks each PDF with one process, and leaves neither a PDF nor a report behind",
+          "status": "passed"
+        },
+        {
+          "fullName": "the worker's own veraPDF, one process kept warm starts veraPDF again for the next check after it dies, failing only the check it died on",
+          "status": "passed"
+        },
+        {
+          "fullName": "the worker's own veraPDF, one process kept warm refuses an answer that is not a report of its own, or one for another file, and ends the process",
+          "status": "passed"
+        },
+        {
+          "fullName": "the worker's own veraPDF, one process kept warm rejects the check, naming why, when veraPDF cannot be started at all",
+          "status": "passed"
+        },
+        {
+          "fullName": "the worker's own veraPDF, one process kept warm starts veraPDF with only what it needs of the worker's environment, and none of its secrets",
+          "status": "passed"
+        },
+        {
+          "fullName": "the worker's own veraPDF, one process kept warm gives the JVM a heap limit where JAVA_OPTS names none, and keeps the one it names",
+          "status": "passed"
+        },
+        {
+          "fullName": "the worker's own veraPDF, one process kept warm gives up on a veraPDF that never says it is ready, once its start-up wait is over",
+          "status": "passed"
+        },
+        {
+          "fullName": "the worker's own veraPDF, one process kept warm ends its process when closed, leaving nothing of it, and starts none that was never asked for",
+          "status": "passed"
+        },
+        {
+          "fullName": "the worker's own veraPDF, one process kept warm removes the directories a veraPDF of a worker that has gone left behind, and no live one's",
+          "status": "passed"
+        },
+        {
+          "fullName": "the worker's veraPDF, inside the queue's lease waits a third of the lease for veraPDF to start and a third for a check, so both fit inside one",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land opens every fixture without an error",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land numbers every heading by Word's own list, as the numbering table numbers it, and holds no number in its text",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land lists every heading to the layout depth, with its number and its page, once the contents is updated, and keeps its section",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land says Not approved at the head of every page, the cover included",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land names the level-one heading a page is in, in its running head: the first on it, else the last before it, by its title alone where it has no number, an equation in it among its words",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land leaves no page blank, an appendix that fills its last page to the foot included",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land numbers the front matter from i with the cover unnumbered, the body from 1, and the appendices carrying on",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land feet every page but the cover with the revision as the layout's words read it, right to left as well",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land embeds the Liberation faces and sets every visible character in them, never in Times New Roman, but the maths, in Cambria Math",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land changes nothing by saving it again: every paragraph's text, style and number as it was",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land numbers each list's items as the PDF prints them - bullets, numbers from 0, letters past z and roman numerals - nested to the ninth level",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land spaces the lists' items and the quotations, attributed, as the PDF spaces them, within a point",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land sets two blocks of preformatted text in a row as two panels, as the PDF does",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land sets on one line the widest line of preformatted text the PDF's measure holds",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land repeats a table's header rows on every page it crosses, marked as header rows, and fills and bands its cells as the PDF does",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land labels every figure and table by Word's own fields as the numbering table does, each prefilled wrong, a prefix from the third and the ninth levels among them",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land sizes every image as the PDF does, within half a point, and describes it or flags it decorative",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land sets each floated figure and its caption together in a text box at the head of its page, where the PDF sets the first, two on one page one above the other and never over each other",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land prints a right-to-left caption's label left to right before its words, as the PDF does: across the page, its words, then the label",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land lists every figure, every table and every numbered equation after the contents, each by its label, its caption and the page Word sets it on, which is the page the PDF lists",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land numbers every footnote as the numbering table does, each on its mark's page - in text, in a cell and in a header row, three to a page, afresh in each matter",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land updates every cross-reference, each prefilled wrong, to what the PDF prints - Word's own words for above and below in another language - every page to the page Word sets its target on, and links it exactly where the PDF links",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land names every bookmark the writer writes `_Ref` and nine digits, hidden, and Word keeps each name whole",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land sets every equation as Word's own maths, displayed where the PDF displays it and in its line where the PDF sets it in one, each in Cambria Math - in the text, a note, a heading, the contents and the lists after it",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land reports each heading and each listed caption holding an equation Word's rebuilt entries set as its characters in a row, and Word's rebuilt contents, list and running heads hold it so, where the heading and the caption keep its fraction and its script (the final review of Word 4, I2)",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land numbers every equation by Word's own field, each prefilled wrong, as the numbering table does - i in front matter, 1 in the body, A.1 in an appendix - at the right where the PDF sets its number, and one too wide broken in its cell beside it",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check, where Word is (Word 1, ruling R16) PUB-029 the Word check: each fixture opened in Word itself, verified by what Word shows, as a standing practice before the writer's changes land prints every bound value as formatValue prints it in the theme's value catalogue - in a paragraph, a table's caption, cell and note, and a footnote - as Word reads it back, as Word's PDF prints it and as the PDF of the same document does (B3)",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "the Word check's export-only mode, where Word is (W15.1) reports each document opened, Word's version and build, and Word's own PDF of it, with none of the check's reads",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check's export-only mode, where Word is (W15.1) reads Word's PDF of the measured fixture with the kit's reader: every token found, in a face the file names",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check's export-only mode, where Word is (W15.1) names the face Word drew each run in by its embedded program's PostScript name, the maths in Cambria Math",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check's export-only mode, where Word is (W15.1) reads what stands behind each cell's and each panel's words, and each table's rules, as Word painted them",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "Word's measurement, what W15.2 left held exactly holds a run that found exactly what each kind measured",
+          "status": "passed"
+        },
+        {
+          "fullName": "Word's measurement, what W15.2 left held exactly fails on a colour a kind does not name, as every table rule drawn red would be",
+          "status": "passed"
+        },
+        {
+          "fullName": "Word's measurement, what W15.2 left held exactly fails on a difference that is not a length in a kind held by its lengths, as a cell's background under white paper would be",
+          "status": "passed"
+        },
+        {
+          "fullName": "Word's measurement, what W15.2 left held exactly fails on a length of a property its kind does not name, never reading a missing largest as nought",
+          "status": "passed"
+        },
+        {
+          "fullName": "Word's measurement, what W15.2 left held exactly fails on one difference more of a kind, though under its largest, and on one fewer",
+          "status": "passed"
+        },
+        {
+          "fullName": "Word's measurement, what W15.2 left held exactly fails on a length past its kind largest, and on a named difference not found",
+          "status": "passed"
+        },
+        {
+          "fullName": "Word's measurement, what W15.2 left held exactly fails on a difference of no kind",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "Word measured against the PDF, where Word is (W15.2) opens every theme's document in Word, one version and build of Word for the run",
+          "status": "passed"
+        },
+        {
+          "fullName": "Word measured against the PDF, where Word is (W15.2) sets what it measures where the PDF sets it, under eight themes - each length within half a point, and each face, weight, posture, colour, underline and fill exactly - but the maths face approved for Word and what W15.2 leaves, each kind named and none larger than measured",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "which Word the Word check may drive refuses while any Word is running, naming its processes, and asks nothing of Word where none is",
+          "status": "passed"
+        },
+        {
+          "fullName": "which Word the Word check may drive drives only the one WINWORD process that was not there before it asked, and none where COM gave it another",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check's script refuses a running Word before it asks COM for one, and hides only the Word it started",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "taking turns at Word lets one file drive Word at a time, the next waiting for the first to finish",
+          "status": "passed"
+        },
+        {
+          "fullName": "taking turns at Word gives the turn up when the work fails, so the next is not kept waiting",
+          "status": "passed"
+        },
+        {
+          "fullName": "taking turns at Word takes a turn a process that has ended left behind",
+          "status": "passed"
+        },
+        {
+          "fullName": "taking turns at Word lets one of several waiters take a turn a process that has ended left behind, never two at once",
+          "status": "passed"
+        },
+        {
+          "fullName": "taking turns at Word takes a turn whose lock was left empty a while ago, by a process that ended before it wrote its number",
+          "status": "passed"
+        },
+        {
+          "fullName": "taking turns at Word waits on a lock just made and still empty, whose maker is writing its number",
+          "status": "passed"
+        },
+        {
+          "fullName": "taking turns at Word stops waiting after as long as it is told, naming the lock",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "the Word check's fixture holding values prints every binding by formatValue in the formats the catalogue gives the document language, each unlike the default",
+          "status": "passed"
+        },
+        {
+          "fullName": "the Word check's fixture holding values hands Word each value as a run of its own, in the text where it stands and in the footnotes",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "a publication in Word, written from the worker's own faces (Word 1 to Word 4) writes a document the Open XML SDK finds nothing wrong with",
+          "status": "passed"
+        },
+        {
+          "fullName": "a publication in Word, written from the worker's own faces (Word 1 to Word 4) STR-071 writes a table marked unnumbered under its caption alone, with no SEQ field for Word to count or list, which the Open XML SDK finds nothing wrong with",
+          "status": "passed"
+        },
+        {
+          "fullName": "a publication in Word, written from the worker's own faces (Word 1 to Word 4) STY-079 writes a table's caption below it and a figure's above it where their styles place them, each numbered by Word's fields as before, never one table straight after another, which the Open XML SDK finds nothing wrong with",
+          "status": "passed"
+        },
+        {
+          "fullName": "a publication in Word, written from the worker's own faces (Word 1 to Word 4) writes each footnote as Word's own - in text, in a cell and, for Word alone, in a table's header row, which the PDF refuses - which the Open XML SDK finds nothing wrong with (Word 3)",
+          "status": "passed"
+        },
+        {
+          "fullName": "a publication in Word, written from the worker's own faces (Word 1 to Word 4) writes every cross-reference as a field at a hidden bookmark named Word's way - every form, to a section, a table, a figure, a footnote and a paragraph, in a paragraph, a note, a caption, a header row, a table's note, a section's title and a German passage - which the Open XML SDK finds nothing wrong with (Word 3)",
+          "status": "passed"
+        },
+        {
+          "fullName": "a publication in Word, written from the worker's own faces (Word 1 to Word 4) PUB-066 writes the contents, the lists of figures and of tables and every page reference as fields Word refreshes as the document opens, and never a page number of the PDF's",
+          "status": "passed"
+        },
+        {
+          "fullName": "a publication in Word, written from the worker's own faces (Word 1 to Word 4) TAB-039 TAB-049 associates a table's caption and its header rows with it in both outputs of one publication, its header column in the PDF, and names the table whose header column Word cannot mark",
+          "status": "passed"
+        },
+        {
+          "fullName": "a publication in Word, written from the worker's own faces (Word 1 to Word 4) PUB-100 writes what Word carries of the PDF's accessibility: every heading at its outline level, every image described or flagged decorative, every table's header rows marked and its caption its title, every footnote Word's own, every cross-reference a field with the PDF's words, a link where the PDF's is one, every list's items on Word's own list, every run in its language, a note's and a reference's among them, and every equation Word's own maths, never an image and never described by us",
+          "status": "passed"
+        },
+        {
+          "fullName": "a publication in Word, written from the worker's own faces (Word 1 to Word 4) writes an equation in every place the PDF sets one - in a line in text, a list's item, a term, an attribution, a table's caption, header row, cells and note, a figure's caption, a footnote and a section's title; displayed, numbered or not, in text, a list's item, a quotation, front matter and an appendix - which the Open XML SDK finds nothing wrong with (Word 4)",
+          "status": "passed"
+        },
+        {
+          "fullName": "a publication in Word, written from the worker's own faces (Word 1 to Word 4) CNT-045 sets every equation in the PDF and in Word from its one stored MathML, converted once to the maths tree both are set from: in the PDF a Formula saying its words, and in Word the OMML of that tree",
+          "status": "passed"
+        },
+        {
+          "fullName": "a publication in Word, written from the worker's own faces (Word 1 to Word 4) PUB-100 carries every construct a T1 document can hold into Word as Word's own structure, with what the writer knows it loses named in the report, in a document the Open XML SDK finds nothing wrong with",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "keeping the corpus's PDFs for a person to read leaves Typst as it is where no directory is given",
+          "status": "passed"
+        },
+        {
+          "fullName": "keeping the corpus's PDFs for a person to read writes each PDF compiled into the directory, named by the case that compiled it and numbered in order",
+          "status": "passed"
+        },
+        {
+          "fullName": "keeping the corpus's PDFs for a person to read names each by its test's own title, not its describe's, so two tests under one long describe are told apart",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "checking a Word document with the Open XML SDK finds nothing wrong with a valid document",
+          "status": "passed"
+        },
+        {
+          "fullName": "checking a Word document with the Open XML SDK refuses a paragraph whose properties are out of order, naming the element",
+          "status": "passed"
+        },
+        {
+          "fullName": "checking a Word document with the Open XML SDK throws for bytes that are not a package at all, rather than listing their errors",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "the paint of a PDF's pages: its text's faces, sizes and colours, and its fills reads each run of text with its face, its size, its colour, where its baseline starts and how wide it is",
+          "status": "passed"
+        },
+        {
+          "fullName": "the paint of a PDF's pages: its text's faces, sizes and colours, and its fills reads the fills - the paper first - and the rules drawn, each in its colour",
+          "status": "passed"
+        },
+        {
+          "fullName": "the paint of a PDF's pages: its text's faces, sizes and colours, and its fills reads how thick each rule is drawn, in points on the page however it was scaled to get there",
+          "status": "passed"
+        },
+        {
+          "fullName": "the paint of a PDF's pages: its text's faces, sizes and colours, and its fills reads a run's width as far as its ink goes, a space it ends with left out, and whether it is an artifact",
+          "status": "passed"
+        },
+        {
+          "fullName": "the paint of a PDF's pages: its text's faces, sizes and colours, and its fills reads a justified line to the margin, its spaces stretched as the engine stretched them",
+          "status": "passed"
+        },
+        {
+          "fullName": "the paint of a PDF's pages: its text's faces, sizes and colours, and its fills names every face embedded in the file, and only those",
+          "status": "passed"
+        },
+        {
+          "fullName": "the order a reader is given a PDF in reads every structure element in the order the tree gives it, each with the text it holds",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "assertionResults": [
+        {
+          "fullName": "reading a veraPDF report refuses a report with no validation result, naming the exit code",
+          "status": "passed"
+        },
+        {
+          "fullName": "a warm veraPDF, one process for the run the pinned veraPDF answers in server mode: a PDF/UA-1 PDF passes and one without tags fails",
+          "status": "passed"
+        },
+        {
+          "fullName": "a warm veraPDF, one process for the run two checks sent together are answered each with its own report",
+          "status": "passed"
+        },
+        {
+          "fullName": "a warm veraPDF, one process for the run a veraPDF that stops answering is ended, rejects what waits on it, and leaves no container",
+          "status": "passed"
+        },
+        {
+          "fullName": "a warm veraPDF, one process for the run closes leaving no timer to hold the run open",
+          "status": "passed"
+        },
+        {
+          "fullName": "a warm veraPDF that cannot run rejects the check in progress and the next one, naming what docker said",
+          "status": "passed"
+        }
+      ]
+    }
+  ]
+}
