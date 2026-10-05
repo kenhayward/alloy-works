@@ -64,14 +64,6 @@ jobs:
           docker logs seaweedfs
           exit 1
 
-      # The connector suite's own source (the D1 plan, D1-K): the pinned PostgreSQL and the seed the
-      # compose file's `source-postgres` uses, on 127.0.0.1:5434 - never the database above. Without it
-      # the connector's supervisor, postgres, secrets and server suites cannot reach a source.
-      - name: Connector source
-        run: pnpm --filter @alloy-works/connector source
-        env:
-          ALLOY_TEST_SOURCE_PORT: '5434'
-
       # The pinned Typst, checked against its hash: the same version the tests, CI and the image use.
       - name: Typst
         run: pnpm --filter @alloy-works/worker fetch-typst
@@ -99,8 +91,9 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # Every suite but the connector's, which runs one file at a time and has a job of its own.
       - name: Test
-        run: pnpm test
+        run: pnpm exec turbo run test --filter='!@alloy-works/connector'
         continue-on-error: true
 
       # What every suite above wrote, for the traceability gate's own job, which reads it beside the
@@ -116,12 +109,24 @@ jobs:
           if-no-files-found: error
 
       # The images are built on every pull request so a broken Dockerfile is found by the change
-      # that broke it. They are never pushed: a registry comes with hosting.
+      # that broke it. They are never pushed: a registry comes with hosting. Their layers come from the
+      # Actions cache the whole-system job writes, by target.
+      - uses: docker/setup-buildx-action@v3
+
       - name: Images
-        run: |
-          docker build -f deploy/Dockerfile --target service -t alloy-works-service .
-          docker build -f deploy/Dockerfile --target worker -t alloy-works-worker .
-          docker build -f deploy/Dockerfile --target connector -t alloy-works-connector .
+        uses: docker/bake-action@v6
+        with:
+          source: .
+          files: deploy/compose.yaml
+          targets: service,worker,connector
+          load: true
+          set: |
+            service.tags=alloy-works-service
+            worker.tags=alloy-works-worker
+            connector.tags=alloy-works-connector
+            service.cache-from=type=gha,scope=service
+            worker.cache-from=type=gha,scope=worker
+            connector.cache-from=type=gha,scope=connector
 
       # Each image refuses to start without its configuration, which is what a working entry point
       # looks like: the alternative is a stack trace about a missing module.
@@ -140,12 +145,63 @@ jobs:
           # And the per-request child it spawns is beside its entry point.
           docker run --rm --entrypoint test alloy-works-connector -f dist/child.js
 
+  # The connector's suite (the D1 plan, D1-K), beside the job above: it runs one file at a time, and
+  # was the longest suite there.
+  connector:
+    name: The connector
+    runs-on: ubuntu-latest
+    env:
+      TURBO_LOG_ORDER: stream
+      ALLOY_TEST_SOURCE_PORT: '5434'
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Its own source: the pinned PostgreSQL and the seed the compose file's `source-postgres` uses,
+      # on 127.0.0.1:5434.
+      - name: Connector source
+        run: pnpm --filter @alloy-works/connector source
+
+      - name: Test
+        run: pnpm exec turbo run test --filter=@alloy-works/connector
+
+      - name: Test reports
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: trace-results-connector
+          path: .trace-results
+          include-hidden-files: true
+          if-no-files-found: error
+
   # The whole system, as a person's browser would meet it. Its own job because the stack publishes
   # the same ports the job above gives to a Postgres service container and a SeaweedFS step, and
-  # two things cannot hold one port.
+  # two things cannot hold one port. Twice, each on its own stack: the navigation budgets take as long
+  # as the rest of the browser suite and want a quiet machine (B-F), so they run beside it.
   end-to-end:
-    name: The whole system
+    name: ${{ matrix.part.name }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        part:
+          - name: The whole system
+            report: system
+            e2e: true
+            browser: --exclude src/budgets.test.ts
+          - name: The navigation budgets
+            report: budgets
+            e2e: false
+            browser: src/budgets.test.ts --outputFile.json=../../.trace-results/browser-budgets.json
     env:
       TURBO_LOG_ORDER: stream
     steps:
@@ -177,15 +233,43 @@ jobs:
       - name: The engine
         run: docker version
 
+      # The stack's images, built with layers from the Actions cache, one scope a target, and tagged
+      # with the names Compose gives them, so `up` below builds nothing.
+      - uses: docker/setup-buildx-action@v3
+
+      - name: The images
+        uses: docker/bake-action@v6
+        with:
+          source: .
+          files: deploy/compose.yaml
+          targets: stand-in-idp,setup,service,worker,connector
+          load: true
+          set: |
+            stand-in-idp.tags=alloy-works-stand-in-idp
+            setup.tags=alloy-works-setup
+            service.tags=alloy-works-service
+            worker.tags=alloy-works-worker
+            connector.tags=alloy-works-connector
+            stand-in-idp.cache-from=type=gha,scope=tools
+            stand-in-idp.cache-to=type=gha,mode=max,scope=tools
+            setup.cache-from=type=gha,scope=tools
+            service.cache-from=type=gha,scope=service
+            service.cache-to=type=gha,mode=max,scope=service
+            worker.cache-from=type=gha,scope=worker
+            worker.cache-to=type=gha,mode=max,scope=worker
+            connector.cache-from=type=gha,scope=connector
+            connector.cache-to=type=gha,mode=max,scope=connector
+
       # With the development source, which the connector's isolation and end-to-end tests reach.
       - name: The stack
         id: stack
-        run: docker compose -f deploy/compose.yaml --profile sources up -d --build --wait
+        run: docker compose -f deploy/compose.yaml --profile sources up -d --wait
 
       # Through turbo, which builds what the suite imports before running it. Every target is set here,
       # to the stack this job just started: neither suite has a default, and each refuses to run with
       # any of its targets unset, so it can never reach a stack it was not pointed at (#363).
       - name: End to end
+        if: ${{ matrix.part.e2e }}
         env:
           ALLOY_E2E_SERVICE: http://127.0.0.1:8088
           ALLOY_E2E_IDP: http://127.0.0.1:9090
@@ -207,7 +291,7 @@ jobs:
           ALLOY_BROWSER_IDP: http://idp.localhost:9090
           ALLOY_BROWSER_DATABASE: postgres://aw_service:aw_service_dev@127.0.0.1:5432/alloy_dev
           ALLOY_BROWSER_STORE_AT: 127.0.0.1
-        run: pnpm test:browser
+        run: pnpm exec turbo run test:browser --filter=@alloy-works/browser -- ${{ matrix.part.browser }}
 
       - name: Stop the stack
         if: always()
@@ -218,7 +302,7 @@ jobs:
       - uses: actions/upload-artifact@v5
         if: always()
         with:
-          name: compose-logs
+          name: compose-logs-${{ matrix.part.report }}
           path: compose-logs.txt
 
       # The end-to-end and browser suites' reports, for the gate. None at all means the stack never
@@ -227,13 +311,13 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: trace-results-system
+          name: trace-results-${{ matrix.part.report }}
           path: .trace-results
           include-hidden-files: true
           if-no-files-found: error
 
-  # The traceability gate, in a job of its own so it reads every suite's report: the build job's and
-  # the whole-system job's, the browser suite's among them (the W13 plan's B-G). It runs unless the run
+  # The traceability gate, in a job of its own so it reads every suite's report: the build job's, the
+  # connector's and both whole-system jobs', the browser suite's among them (the W13 plan's B-G). It runs unless the run
   # was cancelled, so a failed suite is read and refused rather than skipped.
   #
   # NOT continue-on-error. The baseline declares what this release is answerable for, so the gate
@@ -242,7 +326,7 @@ jobs:
   # and does not begin the switch-over in docs/ci-and-releases.md.
   gate:
     name: Traceability gate
-    needs: [build, end-to-end]
+    needs: [build, connector, end-to-end]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
@@ -270,13 +354,25 @@ jobs:
           name: trace-results-system
           path: .trace-results
 
-      # Both suites that drive the stack must have reported. `pnpm trace gate` exempts their reports
+      - name: The connector's report
+        uses: actions/download-artifact@v5
+        with:
+          name: trace-results-connector
+          path: .trace-results
+
+      - name: The navigation budgets' report
+        uses: actions/download-artifact@v5
+        with:
+          name: trace-results-budgets
+          path: .trace-results
+
+      # Both suites that drive the stack must have reported, the browser suite in its two parts. `pnpm trace gate` exempts their reports
       # from "no report at all", since `pnpm test` never writes them, so without this a run whose
       # browser step never ran - the stack came up and the end-to-end step died with nothing written -
       # would pass the gate on the build job's reports alone.
       - name: Both system reports
         run: |
-          for report in e2e browser; do
+          for report in e2e browser browser-budgets; do
             if [ ! -f ".trace-results/$report.json" ]; then
               echo "::error::.trace-results/$report.json is missing: the whole-system job did not report its $report suite"
               exit 1

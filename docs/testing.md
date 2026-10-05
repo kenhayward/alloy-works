@@ -808,7 +808,8 @@ ALLOY_BROWSER_SERVICE=http://dev.acme.localhost:8188 ALLOY_BROWSER_API=http://12
 docker compose -p aw-browser -f deploy/compose.yaml down -v
 ```
 
-**CI runs it in the whole-system job**, after the end-to-end suite and against the same containers,
+**CI runs it in the whole-system job**, after the end-to-end suite and against the same containers, but for
+`budgets.test.ts`, which runs beside it on a stack of its own,
 with every variable set to them, whenever the stack came up; neither step is `continue-on-error`. Its report goes to the traceability
 gate's own job with the rest ([CI, branches and releases](ci-and-releases.md)).
 
