@@ -3,6 +3,7 @@ import {
   conditions,
   contents,
   contributionsOf,
+  unbound,
   defaultLayout,
   OUTLINE_SCHEMA_VERSION,
   parseContentDocument,
@@ -140,7 +141,9 @@ const expectedContents = (nodes: readonly Node[], layout: Layout, depth: number)
   const made = assemble(input);
   if (!made.ok) throw new Error(JSON.stringify(made.failures));
   const contributions = new Map(
-    [...input.occurrences].map(([node, content]) => [node, contributionsOf(content)] as const),
+    [...input.occurrences].map(
+      ([node, content]) => [node, contributionsOf(unbound(content))] as const,
+    ),
   );
   const conditioned = conditions(resolve(input.outline, contributions));
   return contents(conditioned, made.numbering, depth).map((entry) => {

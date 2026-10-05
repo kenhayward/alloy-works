@@ -8,9 +8,12 @@ import { Waiting } from '../states/Waiting.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
-/** One output of a publication: a PDF or a Word document, to save and, for the PDF, to show. */
+/**
+ * One output of a publication: a PDF or a Word document, to save and, for the PDF, to show; or
+ * `provenance.json`, where each value it printed came from (B3), to save.
+ */
 interface Output {
-  readonly format: 'pdf' | 'docx';
+  readonly format: 'pdf' | 'docx' | 'provenance';
   readonly download: string;
   /**
    * The same bytes, signed to be shown rather than saved: the PDF's alone, and absent from an older
@@ -117,7 +120,7 @@ function shownIn(data: unknown): Shown | undefined {
   if (template !== null && typeof template !== 'number') return undefined;
   const outputs = (Array.isArray(data.outputs) ? data.outputs : []).flatMap((each): Output[] =>
     isRecord(each) &&
-    (each.format === 'pdf' || each.format === 'docx') &&
+    (each.format === 'pdf' || each.format === 'docx' || each.format === 'provenance') &&
     typeof each.download === 'string'
       ? [
           {
@@ -205,6 +208,7 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
   }
   const pdf = shown.outputs.find((each) => each.format === 'pdf');
   const word = shown.outputs.find((each) => each.format === 'docx');
+  const provenance = shown.outputs.find((each) => each.format === 'provenance');
   return (
     <article aria-labelledby="publication-title" className={styles['page']}>
       {/* Layout D: the publication itself, on the desk its pages sit on, shown by the browser's own
@@ -281,6 +285,12 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
           <p>
             <a href={word.download}>Download the Word document</a>
             {size(word.bytes)}
+          </p>
+        )}
+        {provenance !== undefined && (
+          <p>
+            <a href={provenance.download}>Download where its values came from</a>
+            {size(provenance.bytes)}, provenance.json
           </p>
         )}
         {word !== undefined && word.report.length > 0 && (

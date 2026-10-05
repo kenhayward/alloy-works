@@ -15,6 +15,8 @@ import { defaultNumberingScheme } from '../structure/scheme.js';
 import { resolved } from '../theme/theme.fixture.js';
 
 import { assemble, type AssembleInput } from './assemble.js';
+import { bind, unbound, type Held } from './bind.js';
+import { DEFAULT_VALUE_FORMATS } from '../theme/default.js';
 import { defaultLayout, parseLayout, type Layout } from './layout.js';
 import type { PublishedBlock, PublishedInline, PublishedNode } from './published.js';
 
@@ -157,7 +159,7 @@ const printed = (runs: readonly PublishedInline[]) =>
 /** Stages 2 to 4 as `assemble` composes them, for the one occurrence. */
 const numbered = (content: ContentDocument) =>
   number(
-    conditions(resolve(outline, new Map([[id('calib'), contributionsOf(content)]]))),
+    conditions(resolve(outline, new Map([[id('calib'), contributionsOf(unbound(content))]]))),
     defaultNumberingScheme,
   );
 
@@ -206,7 +208,7 @@ describe('the resolution order, each adjacent pair of stages that exists', () =>
     // Swapped: the outline numbered with nothing yet counted for its occurrence - the only way to
     // number first, since `resolve` wants what each occurrence contributes - and counted after.
     const early = number(conditions(resolve(outline, new Map())), defaultNumberingScheme);
-    contributionsOf(content);
+    contributionsOf(unbound(content));
     expect(tableLabels(inOrder)).toEqual({ t2: 'Table 1.1', t3: 'Table 1.2' });
     expect(tableLabels(early)).toEqual({});
     // And the product numbers in order: what `assemble` publishes is the numbering counted first. The
@@ -225,7 +227,10 @@ describe('the resolution order, each adjacent pair of stages that exists', () =>
     expect(tableLabels(made.numbering)).toEqual(tableLabels(inOrder));
     // And the outline's own condition stage, which `number` reads the contributions through, cannot
     // be skipped or come after it: a `Resolved` is not the `Conditioned` that `number` takes.
-    const unconditioned = resolve(outline, new Map([[id('calib'), contributionsOf(content)]]));
+    const unconditioned = resolve(
+      outline,
+      new Map([[id('calib'), contributionsOf(unbound(content))]]),
+    );
     const skipped = () =>
       // @ts-expect-error - `number` takes only what has been through the outline's conditions.
       number(unconditioned, defaultNumberingScheme);
@@ -235,7 +240,7 @@ describe('the resolution order, each adjacent pair of stages that exists', () =>
   it('PUB-098 numbers before resolving references: resolved against a numbering not yet made, a reference to a table has no number to print', () => {
     const made = assemble(input());
     if (!made.ok) throw new Error(JSON.stringify(made.failures));
-    const conditioned = new Map([[id('calib'), hiding(id('calib'), stored)]]);
+    const conditioned = new Map([[id('calib'), unbound(hiding(id('calib'), stored))]]);
     const target = { kind: 'block', block: 't2' } as const;
     const inOrder = referenceResolver({
       outline,
@@ -276,7 +281,10 @@ describe('the resolution order, each adjacent pair of stages that exists', () =>
     // Swapped: generated from what exists before references resolve - the conditioned outline, its
     // numbering and each caption's words - the reference is not yet anything to print.
     const conditioned = conditions(
-      resolve(outline, new Map([[id('calib'), contributionsOf(hiding(id('calib'), stored))]])),
+      resolve(
+        outline,
+        new Map([[id('calib'), contributionsOf(unbound(hiding(id('calib'), stored)))]]),
+      ),
     );
     expect(listOf(conditioned, made.numbering, 'table').map((entry) => entry.caption)).toEqual([
       'Pressures',
@@ -317,5 +325,101 @@ describe('the resolution order, each adjacent pair of stages that exists', () =>
       // @ts-expect-error - a refused assembly carries no published document.
       made.document;
     expect(read()).toBeUndefined();
+  });
+});
+
+/**
+ * PUB-108: the binding stage, between conditions and contributions (B3-D). `bind` is a function of its
+ * own, so the test composes it after each later stage and shows the output differs; after numbering,
+ * where no value is counted, the types refuse the swap: `contributionsOf` takes only `Bound` content.
+ */
+describe('the binding stage in the resolution order', () => {
+  const QUERY = '00000000-0000-4000-8000-0000000000aa';
+  const binding = {
+    type: 'binding',
+    id: 'b1',
+    query: QUERY,
+    parameters: {},
+    mode: 'checked',
+    take: { column: 'site' },
+  };
+  const titled = (name: string, block: string) => ({
+    ...xref(name, block),
+    display: 'numberAndTitle',
+  });
+  const valued: ContentDocument = parseContentDocument({
+    ...stored,
+    content: [
+      table('t1', [text('Readings at '), binding]),
+      { type: 'paragraph', id: 'p1', style: 'body', content: [text('See '), titled('x1', 't1')] },
+    ],
+  });
+  const held: ReadonlyMap<string, Held> = new Map([
+    [
+      'b1',
+      {
+        result: { columns: [['site', 'text']], rows: [['York']] },
+        columns: [{ name: 'site', from: { column: 'site' }, type: { base: 'text' } }],
+        datasetVersion: '00000000-0000-4000-8000-0000000000d1',
+      },
+    ],
+  ]);
+  const made = () => {
+    const assembled = assemble(
+      input({
+        occurrences: new Map([[id('calib'), valued]]),
+        bindings: new Map([[id('calib'), held]]),
+        conditionContent: (_node, content) => content,
+      }),
+    );
+    if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+    return assembled;
+  };
+  const { bound } = bind(id('calib'), valued, held, DEFAULT_VALUE_FORMATS);
+  const counted = (content: typeof bound) =>
+    conditions(resolve(outline, new Map([[id('calib'), contributionsOf(content)]])));
+
+  it('PUB-108 binds before resolving references: swapped after them, a reference to a table whose caption holds a value prints none', () => {
+    const assembled = made();
+    const paragraph = blocksOf(assembled.document.nodes).find(
+      (block) => block.type === 'paragraph' && printed(block.runs).startsWith('See '),
+    );
+    expect(paragraph?.type === 'paragraph' && printed(paragraph.runs)).toBe(
+      'See Table 1.1 Readings at York',
+    );
+    // Swapped: the references resolved over the content before its values are in it.
+    const target = { kind: 'block', block: 't1' } as const;
+    const late = referenceResolver({
+      outline,
+      occurrences: new Map([[id('calib'), unbound(valued)]]),
+      numbering: assembled.numbering,
+    });
+    expect(late(target, { node: id('calib') })).toMatchObject({
+      ok: true,
+      target: { title: 'Readings at ' },
+    });
+  });
+
+  it('PUB-108 binds before generating the lists: swapped after generation, the list of tables sets the caption without its value', () => {
+    const assembled = made();
+    const captions = blocksOf(assembled.document.nodes).flatMap((block) =>
+      block.type === 'table' ? [printed(block.caption)] : [],
+    );
+    expect(captions).toEqual(['Readings at York']);
+    expect(
+      listOf(counted(bound), assembled.numbering, 'table').map((each) => each.caption),
+    ).toEqual(['Readings at York']);
+    // Swapped: generated from what the content held before the binding stage.
+    expect(
+      listOf(counted(unbound(valued)), assembled.numbering, 'table').map((each) => each.caption),
+    ).toEqual(['Readings at ']);
+  });
+
+  it('PUB-108 binds before contributions and numbering: `contributionsOf` refuses at compile time content that has not been through the binding stage', () => {
+    expect(tableLabels(made().numbering)).toEqual({ t1: 'Table 1.1' });
+    const skipped = () =>
+      // @ts-expect-error - `contributionsOf` takes only what has been through the binding stage.
+      contributionsOf(valued);
+    expect(typeof skipped).toBe('function');
   });
 });

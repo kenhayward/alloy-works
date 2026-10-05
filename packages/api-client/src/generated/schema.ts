@@ -1207,6 +1207,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/publications/{id}/bindings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The values a publication printed, and the results they were taken from
+         * @description Returns each value a publication printed, by node and binding, with the dataset version and stored result it was taken from. Needs read on the publication. The SQL that ran, the connection and each column’s source column are included only where the caller may read the query definition; provenance.json, the publication’s own output, never holds them.
+         */
+        get: operations["getPublicationBindings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/query-definitions": {
         parameters: {
             query?: never;
@@ -17230,9 +17250,9 @@ export interface operations {
                         state: "queued" | "done" | "failed";
                         failures: {
                             /** @enum {string} */
-                            stage: "resolve" | "compose" | "engine" | "store";
+                            stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "engine_failed" | "store_failed";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "engine_failed" | "store_failed";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -17254,7 +17274,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `format_unsupported`: the layout makes no PDF; `layout_language`: the document is not in its layout's language; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a component it places holds a value bound to a query, which nothing publishes yet */
+            /** @description `format_unsupported`: the layout makes no PDF; `layout_language`: the document is not in its layout's language; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -17300,16 +17320,21 @@ export interface operations {
                             [key: string]: unknown;
                         }[];
                         /**
-                         * @description binding_unresolved: the product's, since nothing publishes a binding yet
+                         * @description binding_unresolved: the product's: a value is resolved in the document, not the source
                          * @enum {string}
                          */
                         attribution?: "product";
                         /** @description binding_unresolved: the document holding the bindings */
                         document?: string;
-                        /** @description binding_unresolved: each binding the publish would meet, by the outline node whose component holds it and the binding's identifier */
+                        /** @description binding_unresolved: each binding with no result to print, by the outline node whose component holds it, the binding's identifier and why */
                         bindings?: {
                             node: string;
                             binding: string;
+                            /**
+                             * @description `never`: never resolved in this document; `changed`: edited since it was
+                             * @enum {string}
+                             */
+                            reason: "never" | "changed";
                         }[];
                     };
                 };
@@ -17420,16 +17445,21 @@ export interface operations {
                             [key: string]: unknown;
                         }[];
                         /**
-                         * @description binding_unresolved: the product's, since nothing publishes a binding yet
+                         * @description binding_unresolved: the product's: a value is resolved in the document, not the source
                          * @enum {string}
                          */
                         attribution?: "product";
                         /** @description binding_unresolved: the document holding the bindings */
                         document?: string;
-                        /** @description binding_unresolved: each binding the publish would meet, by the outline node whose component holds it and the binding's identifier */
+                        /** @description binding_unresolved: each binding with no result to print, by the outline node whose component holds it, the binding's identifier and why */
                         bindings?: {
                             node: string;
                             binding: string;
+                            /**
+                             * @description `never`: never resolved in this document; `changed`: edited since it was
+                             * @enum {string}
+                             */
+                            reason: "never" | "changed";
                         }[];
                     };
                 };
@@ -17712,9 +17742,9 @@ export interface operations {
                         state: "queued" | "done" | "failed";
                         failures: {
                             /** @enum {string} */
-                            stage: "resolve" | "compose" | "engine" | "store";
+                            stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "engine_failed" | "store_failed";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "engine_failed" | "store_failed";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -17736,7 +17766,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a component it places holds a value bound to a query, which nothing publishes yet */
+            /** @description `format_unsupported`: a format the layout does not make; `layout_language`: the document is not in its layout's language; `page_reference_without_pdf`: the document cites a page and the PDF was not asked for; `section_required`: a section its template requires is missing; `metadata_invalid`: its values, or a section's, do not satisfy its template; `values_unresolved`: its template no longer resolves; `binding_unresolved`: a value a component it places holds has no result in this document, never resolved or changed since it was */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -17782,16 +17812,21 @@ export interface operations {
                             [key: string]: unknown;
                         }[];
                         /**
-                         * @description binding_unresolved: the product's, since nothing publishes a binding yet
+                         * @description binding_unresolved: the product's: a value is resolved in the document, not the source
                          * @enum {string}
                          */
                         attribution?: "product";
                         /** @description binding_unresolved: the document holding the bindings */
                         document?: string;
-                        /** @description binding_unresolved: each binding the publish would meet, by the outline node whose component holds it and the binding's identifier */
+                        /** @description binding_unresolved: each binding with no result to print, by the outline node whose component holds it, the binding's identifier and why */
                         bindings?: {
                             node: string;
                             binding: string;
+                            /**
+                             * @description `never`: never resolved in this document; `changed`: edited since it was
+                             * @enum {string}
+                             */
+                            reason: "never" | "changed";
                         }[];
                     };
                 };
@@ -17902,16 +17937,21 @@ export interface operations {
                             [key: string]: unknown;
                         }[];
                         /**
-                         * @description binding_unresolved: the product's, since nothing publishes a binding yet
+                         * @description binding_unresolved: the product's: a value is resolved in the document, not the source
                          * @enum {string}
                          */
                         attribution?: "product";
                         /** @description binding_unresolved: the document holding the bindings */
                         document?: string;
-                        /** @description binding_unresolved: each binding the publish would meet, by the outline node whose component holds it and the binding's identifier */
+                        /** @description binding_unresolved: each binding with no result to print, by the outline node whose component holds it, the binding's identifier and why */
                         bindings?: {
                             node: string;
                             binding: string;
+                            /**
+                             * @description `never`: never resolved in this document; `changed`: edited since it was
+                             * @enum {string}
+                             */
+                            reason: "never" | "changed";
                         }[];
                     };
                 };
@@ -20951,9 +20991,9 @@ export interface operations {
                         state: "queued" | "done" | "failed";
                         failures: {
                             /** @enum {string} */
-                            stage: "resolve" | "compose" | "engine" | "store";
+                            stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "engine_failed" | "store_failed";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "engine_failed" | "store_failed";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -21284,7 +21324,7 @@ export interface operations {
                             version: number;
                         } | null;
                         pipeline: string;
-                        /** @description One per format, the PDF first */
+                        /** @description One per format, the PDF first, and `provenance.json` last wherever the publication prints a value */
                         outputs: ({
                             /** @constant */
                             format: "pdf";
@@ -21440,6 +21480,21 @@ export interface operations {
                             download: string;
                             /** @description None: a browser saves a Word document rather than showing it */
                             view: null;
+                        } | {
+                            /** @constant */
+                            format: "provenance";
+                            bytes: number;
+                            sha256: string;
+                            standard: null;
+                            /** @constant */
+                            producer: "pipeline";
+                            /** @description The publishing pipeline's version */
+                            producerVersion: string;
+                            report: [
+                            ];
+                            /** @description A link to the bytes, valid for five minutes, named by the publication id and format */
+                            download: string;
+                            view: null;
                         })[];
                     };
                 };
@@ -21506,6 +21561,165 @@ export interface operations {
             };
             /** @description This environment has nowhere to keep documents yet */
             503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getPublicationBindings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The publication's bindings, in node order */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "bindings": []
+                     *     }
+                     */
+                    "application/json": {
+                        bindings: {
+                            /** @description The outline node whose component holds the binding */
+                            node: string;
+                            /** @description The binding's identifier in that component */
+                            binding: string;
+                            dataset: {
+                                id: string;
+                                name: string | null;
+                                /** @description The dataset version the value was taken from */
+                                version: string;
+                                number: string;
+                            };
+                            result: {
+                                queryDefinition: {
+                                    artifact: string;
+                                    version: string;
+                                };
+                                parameters: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description When the query ran, in UTC */
+                                at: string;
+                                durationMs: number;
+                                rowCount: number;
+                                checksum: string;
+                                columns: {
+                                    name: string;
+                                    type: {
+                                        [key: string]: unknown;
+                                    };
+                                    /** @description The source's column: to a reader of the query definition alone */
+                                    from?: {
+                                        column: string;
+                                    };
+                                }[];
+                                /** @description The SQL that ran: to a reader of the query definition alone */
+                                ran?: {
+                                    sql: string;
+                                };
+                                /** @description The connection it ran on: to a reader of the query definition alone */
+                                connection?: {
+                                    artifact: string;
+                                    version: string;
+                                };
+                            };
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a publication the caller may read is one they may open */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such publication in this environment, or none the caller may read */
+            404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

@@ -1,3 +1,4 @@
+import { unbound } from '../publishing/bind.js';
 import { describe, expect, it } from 'vitest';
 
 import { parseContentDocument } from '../content/model/document.js';
@@ -67,7 +68,7 @@ describe('what a component contributes to the sequences', () => {
       ],
     });
     // The table before its cells, its cells before its note, and an unnumbered equation said so.
-    expect(contributionsOf(content)).toEqual([
+    expect(contributionsOf(unbound(content))).toEqual([
       { block: 'n1', sequence: 'footnote', numbered: true },
       { block: 'f1', sequence: 'figure', numbered: true, caption: 'A caption' },
       { block: 't1', sequence: 'table', numbered: true, caption: 'Parts' },
@@ -88,6 +89,6 @@ describe('what a component contributes to the sequences', () => {
       direction: 'ltr',
       content: [{ type: 'paragraph', id: 'p1', content: [] }],
     });
-    expect(contributionsOf(content)).toEqual([]);
+    expect(contributionsOf(unbound(content))).toEqual([]);
   });
 });

@@ -1,10 +1,10 @@
 import { createHash } from 'node:crypto';
 import { crc32, deflateSync } from 'node:zlib';
-import { request as httpRequest } from 'node:http';
 import { createApiClient, followStream } from '@alloy-works/api-client';
 import { completeAtStandIn } from '@alloy-works/stand-in-idp/testing';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { readPdf, spoken } from './pdf.js';
+import { followSignedLink } from './signed-link.js';
 import { e2eTargets } from './targets.js';
 
 /**
@@ -19,44 +19,6 @@ const SERVICE = TARGETS.service;
 const IDP_ISSUER = TARGETS.idpIssuer;
 /** Where it actually answers, so this suite needs no opinion about resolving `*.localhost`. */
 const IDP = TARGETS.idp;
-/** Where the object store actually answers; the name it signs by is a browser's business. */
-const STORE_AT = TARGETS.storeAt;
-
-/**
- * Follows a link the object store signed. The store's own name is part of what was signed, so it
- * stays in the `Host` header exactly as it was; only where the socket goes is changed, which is
- * what keeps this suite from having an opinion about how a machine resolves `*.localhost`.
- */
-function followSignedLink(link: URL): Promise<{
-  readonly status: number;
-  readonly contentType: string | undefined;
-  readonly body: Buffer;
-}> {
-  return new Promise((resolve, reject) => {
-    const asked = httpRequest(
-      {
-        host: STORE_AT,
-        port: link.port,
-        path: `${link.pathname}${link.search}`,
-        headers: { host: link.host },
-      },
-      (answer) => {
-        const chunks: Buffer[] = [];
-        answer.on('data', (chunk: Buffer) => chunks.push(chunk));
-        answer.on('error', reject);
-        answer.on('end', () =>
-          resolve({
-            status: answer.statusCode ?? 0,
-            contentType: answer.headers['content-type'],
-            body: Buffer.concat(chunks),
-          }),
-        );
-      },
-    );
-    asked.on('error', reject);
-    asked.end();
-  });
-}
 
 async function untilReady(within = 120_000): Promise<void> {
   const stop = Date.now() + within;

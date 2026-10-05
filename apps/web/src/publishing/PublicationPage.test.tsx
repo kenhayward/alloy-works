@@ -197,6 +197,37 @@ describe('a publication at its own address', () => {
     ]);
   });
 
+  it('offers provenance.json to save beside the PDF and the Word document where the publication prints a value, and shows it nowhere', async () => {
+    const PROVENANCE = 'http://store.example.test/t_acme/sha256/eee?X-Amz-Signature=p';
+    open(
+      json(200, {
+        ...record,
+        formats: ['pdf', 'docx'],
+        outputs: [
+          pdfOutput,
+          wordOutput([]),
+          {
+            format: 'provenance',
+            bytes: 2_048,
+            sha256: 'e'.repeat(64),
+            standard: null,
+            producer: 'pipeline',
+            producerVersion: '16',
+            report: [],
+            download: PROVENANCE,
+            view: null,
+          },
+        ],
+      }),
+    );
+    const aside = await screen.findByRole('complementary', { name: 'What it was made from' });
+    expect(
+      within(aside).getByRole('link', { name: 'Download where its values came from' }),
+    ).toHaveAttribute('href', PROVENANCE);
+    expect(aside).toHaveTextContent('Download where its values came from (2 KB), provenance.json');
+    expect(document.querySelectorAll('iframe')).toHaveLength(1);
+  });
+
   it('says what Word could not carry of each table, naming it by its label, or as a table with no number where it has none (Word 2)', async () => {
     const readings = { node: 'readingsaaaaaaaaaaaaaaaaaa', block: 't1', label: 'Table 1.1' };
     const unnumbered = { node: 'prefaceaaaaaaaaaaaaaaaaaaa', block: 't2', label: null };

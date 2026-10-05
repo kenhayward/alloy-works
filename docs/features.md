@@ -690,8 +690,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   resolved it - with **Show the result**, its first 200 rows. Selecting a binding in the editor shows
   the **Value panel**, whose **Provenance** opens the same. On its own a component shows what each
   binding asks for - its column and its query definition's title - and never a value. **A document
-  holding a binding cannot be published or previewed yet**: it is refused before anything is queued,
-  naming each binding.
+  holding values publishes and previews**: the PDF and Word print each value as the page shows it, read
+  from the stored result and never the source, and a publication carries `provenance.json` beside them,
+  where each value came from, without the SQL, the connection or a source column. A value with no result
+  in the document is refused before anything is queued, naming it and whether it was never resolved or
+  changed since; one whose result holds no value fails the publish by name.
 - **Search.** **Search**, beside Components, Documents and Publications, finds everything you may read
   by its words, and nothing you may not: components, documents and each of their sections,
   publications, templates, images, fields, metadata schemas and component types. Words are found
@@ -1170,8 +1173,7 @@ Named explicitly so nobody has to read the source to find out:
 - No way to delete a component or a document, including one made by mistake.
 - A binding is placed, resolved, checked and accepted through the API alone: a document shows the
   values it holds and their provenance, but no screen places, resolves, checks or accepts one, or
-  lists a document's bindings with their states, and a document holding a binding cannot be published
-  or previewed. A document's own parameters do not exist, so a binding
+  lists a document's bindings with their states. A document's own parameters do not exist, so a binding
   taking one cannot be resolved. A connection reaches PostgreSQL alone, as its own service account;
   the builder's page builds from one table or view - a join or a nested query is written through the
   API, or as a view at the database - and no page shows or changes the environment's lowered run

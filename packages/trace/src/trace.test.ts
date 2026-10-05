@@ -236,7 +236,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(591);
+    ).toBe(592);
   });
 });
 
@@ -783,9 +783,10 @@ describe('the citations in the committed model', () => {
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
   // 639, from 636 (2026-10-05): B2, DAT-022 three times - the listing's identity, the Value dialog's
-  // Runs as, and the browser's.
+  // Runs as, and the browser's. 651 (2026-10-05): B3's twelve - PUB-108, DAT-087, DAT-046, DAT-042,
+  // PUB-049, DAT-088 and STY-082 across the domain, the store, the worker and the service.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(639);
+    expect(model.citations).toHaveLength(651);
   });
 
   it('cites no identifier the corpus does not hold', () => {

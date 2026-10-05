@@ -1,3 +1,4 @@
+import { unbound } from '../publishing/bind.js';
 import { describe, expect, it } from 'vitest';
 
 import { parseContentDocument, type ContentDocument } from '../content/model/document.js';
@@ -676,7 +677,9 @@ describe('resolving a reference in the document that publishes it', () => {
    */
   const resolving = (nodes: OutlineNode[], contents: Record<string, ContentDocument>) => {
     const outline = { nodes };
-    const occurrences = new Map(Object.entries(contents).map(([name, held]) => [id(name), held]));
+    const occurrences = new Map(
+      Object.entries(contents).map(([name, held]) => [id(name), unbound(held)]),
+    );
     const contributions = new Map(
       [...occurrences].map(([node, held]) => [node, contributionsOf(held)]),
     );

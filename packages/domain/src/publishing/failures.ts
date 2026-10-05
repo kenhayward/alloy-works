@@ -1,8 +1,8 @@
 /**
- * Where a failure arose (PUB-086): resolving the document at the request, composing it in `assemble`,
- * the engine, or storing what it made.
+ * Where a failure arose (PUB-086): resolving the document at the request, binding its values (B3),
+ * composing it in `assemble`, the engine, or storing what it made.
  */
-export type PublishStage = 'resolve' | 'compose' | 'engine' | 'store';
+export type PublishStage = 'resolve' | 'bind' | 'compose' | 'engine' | 'store';
 
 /**
  * Every failure a publish can end in, closed, and only ever added to: a request's stored failures are
@@ -155,12 +155,20 @@ export const publishFailureCodes = [
   // engine tags a seventh level as a paragraph, so a reader would not be told it is a heading
   // (PUB-103). Word numbers and tags nine levels, and publishes it.
   'heading_too_deep',
-  // compose, from D3 (the plan's "Added in phase B"): a binding in a component the request resolved,
-  // naming its block and, in `detail`, the binding's identifier. Nothing publishes a binding until the
-  // publish's binding stage (bindings.md, DAT-087), and the service refuses a document holding one at
-  // the door, so this is met only by a request built past that check - never a run printed without
-  // its value.
+  // compose, from D3 (the plan's "Added in phase B"), and `bind` since B3: a binding the request
+  // recorded no result for (DAT-087), naming its block and, in `detail`, the binding's identifier.
+  // Stored by D3 at stage `compose`, and read back so.
   'binding_unresolved',
+  // bind, from B3 (B3-D, B3-F): a binding's take holding no value, by `takeValue`'s own codes, and a
+  // result the worker could not read whole by its checksum - each naming the block and, in `detail`,
+  // the binding. Never a blank, a zero or a placeholder in its place (DAT-046).
+  'value_none',
+  'value_many',
+  'row_missing',
+  'value_null',
+  'value_empty',
+  'take_invalid',
+  'result_unreadable',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',

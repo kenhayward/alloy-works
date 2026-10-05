@@ -99,6 +99,8 @@ export {
   TokenView,
 } from './tokens.js';
 export {
+  PublicationBindingList,
+  PublicationBindingView,
   PublicationList,
   PublicationListQuery,
   PublicationParams,

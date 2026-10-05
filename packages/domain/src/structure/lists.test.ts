@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { parseContentDocument } from '../content/model/document.js';
+import { unbound } from '../publishing/bind.js';
 
 import { contributionsOf, type Contribution } from './contributions.js';
 import { contents, listOf } from './lists.js';
@@ -49,13 +50,15 @@ const figure = (block: string, caption: string) => ({
 /** What a component holding these blocks contributes, through the content model's own parse. */
 const holding = (...content: unknown[]) =>
   contributionsOf(
-    parseContentDocument({
-      schemaVersion: 1,
-      title: 'Install the printer',
-      language: 'en-GB',
-      direction: 'ltr',
-      content,
-    }),
+    unbound(
+      parseContentDocument({
+        schemaVersion: 1,
+        title: 'Install the printer',
+        language: 'en-GB',
+        direction: 'ltr',
+        content,
+      }),
+    ),
   );
 
 /** The pipeline in its order, and the stage and table both lists read. */

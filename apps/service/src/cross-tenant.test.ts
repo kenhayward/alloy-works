@@ -157,6 +157,9 @@ const OTHER_TENANT_IDS: Readonly<
   getPublicationRequest: async (tenant, db) => ({ id: (await publicationIn(tenant, db)).request }),
   listPublications: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   getPublication: async (tenant, db) => ({ id: (await publicationIn(tenant, db)).publication }),
+  getPublicationBindings: async (tenant, db) => ({
+    id: (await publicationIn(tenant, db)).publication,
+  }),
   claimLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   releaseLock: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
   cutVersion: async (tenant, db) => ({ id: await componentIdIn(tenant, db) }),
