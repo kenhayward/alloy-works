@@ -6,17 +6,23 @@ import {
   recordPreview,
   recordPublication,
   type NewPublicationOutput,
+  type PublicationInputs,
   type TenantDatabase,
 } from '@alloy-works/db';
 import {
   assemble,
+  canonicalResultSchema,
   OUTPUT_CONTENT_TYPES,
+  provenanceBytes,
+  publishedProvenance,
   PUBLISHING_SCHEMA_1,
   WORD_WRITER_VERSION,
   writeDocx,
+  type HeldDataset,
+  type Held,
   type PublishFailure,
 } from '@alloy-works/domain';
-import type { ObjectStores, TenantStore } from '@alloy-works/objects';
+import { tenantPrefix, type ObjectStores, type TenantStore } from '@alloy-works/objects';
 import {
   PINNED_FONT_FILES,
   pinnedFacesByHash,
@@ -48,7 +54,8 @@ import type { JobHandler } from '../worker.js';
  * first to resolve and print a cross-reference, 11 the first to set an equation, 12 the first to
  * be set from the theme the request was made under, 13 the first to set a table and an image from
  * their styles, 14 the first to leave a table or a figure marked unnumbered out of the list of its
- * kind, and 15 the first to set a table's or a figure's caption where its style places it.
+ * kind, 15 the first to set a table's or a figure's caption where its style places it, and 16 the
+ * first to set a bound value, read from its stored result, and make `provenance.json` beside it.
  *
  * **Both keys are frozen.** Keyed by `PUBLISHING_SCHEMA` itself, a repoint moved the key while the
  * value stayed behind, and the `satisfies` clause could not catch it because `PublishedSchema`
@@ -60,7 +67,7 @@ import type { JobHandler } from '../worker.js';
  */
 export const PIPELINE_VERSION = {
   [PUBLISHING_SCHEMA_1]: '1',
-  [PUBLISHING_SCHEMA_CURRENT]: '15',
+  [PUBLISHING_SCHEMA_CURRENT]: '16',
 } as const satisfies Record<PublishedSchema, string>;
 
 /** The document's own failures, every one at once: the job is finished, never tried again. */
@@ -113,10 +120,61 @@ const platformFailure = (stage: 'engine' | 'store'): PublishFailure => ({
   detail: null,
 });
 
+/**
+ * **Each binding's result, read from the store and never a source** (DAT-088; the B3 plan, B3-F): each
+ * distinct dataset version the request recorded read once, by its checksum's key, and held to it and
+ * to the canonical shape. A missing object, altered bytes or a result that does not parse is
+ * `unreadable` for every binding taking it, which the binding stage fails `result_unreadable` - never
+ * retried, since a missing object never comes back.
+ */
+export async function heldResults(
+  bindings: PublicationInputs['bindings'],
+  get: (key: string) => Promise<Uint8Array>,
+  prefix: string,
+): Promise<Map<string, Map<string, Held>>> {
+  const read = new Map<string, Promise<Held>>();
+  const readOnce = (version: string, dataset: HeldDataset): Promise<Held> => {
+    let held = read.get(version);
+    if (held === undefined) {
+      held = (async (): Promise<Held> => {
+        const { checksum, columns } = dataset.provenance;
+        try {
+          const bytes = await get(`${prefix}sha256/${checksum}`);
+          if (createHash('sha256').update(bytes).digest('hex') !== checksum) return 'unreadable';
+          const parsed = canonicalResultSchema.safeParse(
+            JSON.parse(Buffer.from(bytes).toString('utf8')),
+          );
+          if (!parsed.success) return 'unreadable';
+          return { result: parsed.data, columns, datasetVersion: version };
+        } catch {
+          return 'unreadable';
+        }
+      })();
+      read.set(version, held);
+    }
+    return held;
+  };
+  const byNode = new Map<string, Map<string, Held>>();
+  for (const [node, held] of bindings) {
+    const results = new Map<string, Held>();
+    for (const [binding, recorded] of held) {
+      results.set(binding, await readOnce(recorded.datasetVersion, recorded.dataset));
+    }
+    byNode.set(node, results);
+  }
+  return byNode;
+}
+
+/** `provenance.json`'s content type: kept and served as JSON. */
+const PROVENANCE_CONTENT_TYPE = 'application/json';
+
 /** One output into the tenant's store by its hash, as its format's content type. */
-async function keep(store: TenantStore, bytes: Uint8Array, format: 'pdf' | 'docx') {
+async function keep(store: TenantStore, bytes: Uint8Array, format: 'pdf' | 'docx' | 'provenance') {
   try {
-    return await store.put(bytes, OUTPUT_CONTENT_TYPES[format]);
+    return await store.put(
+      bytes,
+      format === 'provenance' ? PROVENANCE_CONTENT_TYPE : OUTPUT_CONTENT_TYPES[format],
+    );
   } catch (error) {
     throw new StoreFailed('The store did not take the publication.', { cause: error });
   }
@@ -153,7 +211,7 @@ export function publishJob(deps: {
       }));
       // Nothing to do: finished by another attempt.
       if (!read.inputs) return;
-      const { request, outline, occurrences, refused, layout, theme, revision, assets } =
+      const { request, outline, occurrences, refused, layout, theme, revision, assets, bindings } =
         read.inputs;
 
       // The theme's faces held to the pinned files before anything is composed (themes 1, ruling R5,
@@ -178,6 +236,9 @@ export function publishJob(deps: {
 
       const { formats } = request;
       const preview = request.kind === 'preview';
+      // Each value from its stored result, read from the store by its checksum, never from a source:
+      // the worker holds no connector and no connection's configuration (DAT-088).
+      const held = await heldResults(bindings, (key) => read.store.get(key), tenantPrefix(tenant));
       const assembled = assemble({
         // A preview says so on every page in the layout's words (PUB-005), and is otherwise assembled
         // exactly as a publish of the same request would be (PUB-006).
@@ -188,6 +249,8 @@ export function publishJob(deps: {
         formats,
         outline,
         occurrences: new Map([...occurrences].map(([node, each]) => [node, each.content])),
+        // The binding stage's results, by node and binding: a preview takes and fails as a publish does.
+        bindings: held,
         refused,
         // The layout version the request was made under, never the latest; none for a request made
         // before layouts, which `assemble` makes `publishing/1` of, as the first slice did.
@@ -248,6 +311,28 @@ export function publishJob(deps: {
           format: 'docx',
           writerVersion: WORD_WRITER_VERSION,
           report,
+          key: stored.key,
+          sha256: stored.sha256,
+          bytes: stored.size,
+        });
+      }
+      // `provenance.json` beside the outputs wherever a value is printed (B3-G; DAT-042, PUB-049): a
+      // publication's alone, since a preview records no publication (B3-H).
+      if (!preview && assembled.values.length > 0) {
+        const datasets = new Map(
+          [...bindings.values()].flatMap((each) =>
+            [...each.values()].map(
+              (recorded) => [recorded.datasetVersion, recorded.dataset] as const,
+            ),
+          ),
+        );
+        const bytes = provenanceBytes(
+          publishedProvenance(assembled.values, datasets, assembled.numbering),
+        );
+        const stored = await keep(read.store, bytes, 'provenance');
+        outputs.push({
+          format: 'provenance',
+          pipelineVersion: PIPELINE_VERSION[schema],
           key: stored.key,
           sha256: stored.sha256,
           bytes: stored.size,

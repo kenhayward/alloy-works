@@ -389,7 +389,8 @@ describe('the pipeline version', () => {
   // themes 2 did, and their rows never move again; '14' is W14.4's - '13' with a table and a figure
   // saying whether the list of their kind lists them - and '15' W14.5's - '14' with a figure saying
   // where its caption stands and the theme's table and image styles saying where theirs do - each
-  // re-pinned freely until the pull request that makes it merges.
+  // re-pinned freely until the pull request that makes it merges. '16' is B3's: '15' with a bound value
+  // set as text, so a fixed input holding none makes what '15' made.
   const madeByPipeline: Record<string, string> = {
     '1': '3b844cb4ceedbe2b52040c79014ea18959295a1602754eb9861631891beb6fa1',
     '2': '699d5c34b7e4049fc32f5846a5525f5d3a35785c2858a78755161c58427ad1d5',
@@ -406,6 +407,7 @@ describe('the pipeline version', () => {
     '13': '87888c8930915481bea27617df0268ab1c045b097024e92fbc3f4565bdabbf7f',
     '14': '10d85c91e42a2b59079d2e18f8b0f28663ce273af750cf2cd61dd7dfc315d37c',
     '15': 'fc3fbcf4e8168c467a96dc4f2a31d7986deb5bddca1bb36f71aeb60b2bcbe425',
+    '16': 'fc3fbcf4e8168c467a96dc4f2a31d7986deb5bddca1bb36f71aeb60b2bcbe425',
   };
   // The theme is an input as the layout is, recorded on a publication beside the pipeline, so the
   // input is fixed at one: the default theme's 0.3, which '13' to '15' were pinned under. The default moving
@@ -425,7 +427,7 @@ describe('the pipeline version', () => {
     // the one field PUB-063 exists for, so a key that moves while its value stays behind records
     // every publication the new pipeline makes as having been made by the old one - in the PDF's
     // own provenance, with the typecheck clean. Literals, never the constants.
-    expect(PIPELINE_VERSION).toEqual({ 'publishing/1': '1', 'publishing/15': '15' });
+    expect(PIPELINE_VERSION).toEqual({ 'publishing/1': '1', 'publishing/15': '16' });
   });
 
   it('is the version its number says: what assemble makes of a fixed input, the draft notice included', async () => {
@@ -449,7 +451,7 @@ describe('the pipeline version', () => {
     });
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
     expect(assembled.document.schema).toBe(PUBLISHING_SCHEMA);
-    expect(PIPELINE_VERSION[assembled.document.schema]).toBe('15');
+    expect(PIPELINE_VERSION[assembled.document.schema]).toBe('16');
     expect(digest(assembled)).toBe(madeByPipeline[PIPELINE_VERSION[assembled.document.schema]]);
     expect(assembled.document.words).toMatchObject({
       notice: DRAFT_NOTICE.page,
