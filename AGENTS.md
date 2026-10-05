@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-Guidance for Claude Code in this repository. **Write concisely: concise beats complete**, in code
+Guidance for Codex in this repository. **Write concisely: concise beats complete**, in code
 comments, docs, plans, fragments and replies. Link to the detail rather than restating it.
 
 ## What this is
