@@ -33,6 +33,7 @@ import {
   recordDatasetVersion,
   recordResolution,
   recordTake,
+  publishedBindings,
   resolutionsOf,
   resolveOccurrences,
   sessionContent,
@@ -791,9 +792,81 @@ function viewer(
   caller: Caller,
   objects: ObjectStores | undefined,
   tenant: Tenant,
+  documentId: string,
 ) {
   // `read` on any artifact, each asked once: a definition, and a connection.
   const reads = definitionReader(trx, caller);
+  const facts = new Map<string, Promise<boolean>>();
+  /** Whether the caller holds a permission on an artifact, each asked once. */
+  const may = (permission: 'edit' | 'use_connection', artifact: string) => {
+    let allowed = facts.get(`${permission} ${artifact}`);
+    if (!allowed) {
+      allowed = connectionFacts(trx, caller, artifact).then(
+        (found) => found !== undefined && decide(permission, found).allowed,
+      );
+      facts.set(`${permission} ${artifact}`, allowed);
+    }
+    return allowed;
+  };
+  let published: ReturnType<typeof publishedBindings> | undefined;
+  const latestDefinitions = new Map<string, ReturnType<typeof readQueryDefinition>>();
+  const latestOf = (definition: string) => {
+    let latest = latestDefinitions.get(definition);
+    if (!latest) {
+      latest = readQueryDefinition(trx, definition);
+      latestDefinitions.set(definition, latest);
+    }
+    return latest;
+  };
+
+  /**
+   * The facts the Data tab reads beside the rest (B4-C, B4-D): whether a floating binding's definition
+   * has moved on, how it differs from the latest publication, and what the caller may do with it.
+   */
+  async function dataFacts(placed: Placed, held: HeldResolution | undefined) {
+    const latest = await latestOf(placed.binding.query);
+    const asked = placed.binding.version ?? latest?.version.id;
+    const ran = held?.held.provenance;
+    const definitionChanged =
+      placed.binding.version === undefined &&
+      ran !== undefined &&
+      latest !== undefined &&
+      latest.version.id !== ran.queryDefinition.version;
+    const printed = await (published ??= publishedBindings(trx, documentId));
+    let sincePublished: BindingStateView['sincePublished'] = null;
+    if (printed) {
+      const was = printed.get(key(placed.node, placed.binding.id));
+      if (!was) sincePublished = 'new';
+      else {
+        const differ = [
+          ...(was.digest !== placed.digest ? (['digest'] as const) : []),
+          ...(was.datasetVersion !== held?.held.version ? (['dataset'] as const) : []),
+          ...(was.definitionVersion !== ran?.queryDefinition.version
+            ? (['definition'] as const)
+            : []),
+        ];
+        sincePublished = differ.length > 0 ? differ : null;
+      }
+    }
+    const mayCheck =
+      placed.binding.mode === 'checked' &&
+      held !== undefined &&
+      held.digest === placed.digest &&
+      (await may('use_connection', held.held.provenance.connection.artifact));
+    let mayResolve = false;
+    if (asked !== undefined && (await reads(placed.binding.query))) {
+      const version = await readVersion(trx, asked);
+      const connection =
+        version?.kind === 'queryDefinition'
+          ? parseQueryDefinition(version.content).connection
+          : undefined;
+      mayResolve =
+        connection !== undefined &&
+        (await may('edit', documentId)) &&
+        (await may('use_connection', connection));
+    }
+    return { definitionChanged, sincePublished, mayCheck, mayResolve };
+  }
   let opened: Promise<TenantStore> | undefined;
   // Opened in a savepoint of its own: opening a store reads its credential in this transaction, and
   // a failure there, caught as `unavailable`, must not leave the rest of the view an aborted one.
@@ -875,6 +948,7 @@ function viewer(
       const shown = {
         definition: await definitionOf(placed, held),
         connection: await connectionOf(held),
+        ...(await dataFacts(placed, held)),
       };
       if (!held) {
         out.push({
@@ -1265,7 +1339,7 @@ export function bindingHandlers(
       );
       if (!placed) throw notFound();
       const held = await heldBy(trx, id, placed);
-      const views = viewer(trx, callerOf(request), objects, tenantOf(request));
+      const views = viewer(trx, callerOf(request), objects, tenantOf(request), id);
       const bindings = await views(
         placed.map((each) => ({ placed: each, held: held.get(key(each.node, each.binding.id)) })),
       );
@@ -1296,7 +1370,7 @@ export function bindingHandlers(
       // Before what it holds is read, so two accepts, or an accept and a resolve, take turns.
       await lockBindings(trx, id, [{ node: found.node, binding: found.binding.id }]);
       const held = (await heldBy(trx, id, placed)).get(key(body.node, body.binding));
-      const views = viewer(trx, callerOf(request), objects, tenantOf(request));
+      const views = viewer(trx, callerOf(request), objects, tenantOf(request), id);
       const precondition = async () =>
         refused(
           409,
@@ -1371,7 +1445,7 @@ export function bindingHandlers(
         );
       }
       const held = (await heldBy(trx, id, placed)).get(key(body.node, body.binding));
-      const views = viewer(trx, caller, objects, tenantOf(request));
+      const views = viewer(trx, caller, objects, tenantOf(request), id);
       if (!held || held.held.version !== body.replaces) {
         throw refused(
           409,

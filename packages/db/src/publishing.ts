@@ -826,6 +826,60 @@ export async function publicationBindings(
   return recordedBindings(trx, { publication: publicationId });
 }
 
+/** A binding as a document's latest publication printed it: what changed since is compared by these. */
+export interface PublishedBinding {
+  readonly node: string;
+  readonly binding: string;
+  /** The binding's digest, as the resolution the publication printed recorded it. */
+  readonly digest: string;
+  readonly datasetVersion: string;
+  /** The definition version that dataset version ran, from its provenance. */
+  readonly definitionVersion: string;
+}
+
+/**
+ * The bindings a document's latest publication printed (B4-D), by `node binding`, or undefined where
+ * it has never been published. A preview is no publication, so it is never the latest.
+ */
+export async function publishedBindings(
+  trx: TenantTransaction,
+  documentId: string,
+): Promise<Map<string, PublishedBinding> | undefined> {
+  if (!UUID.test(documentId)) return undefined;
+  const latest = await sql<{ id: string }>`
+    select p.id from publication p join artifact a on a.id = p.id
+     where p.document_id = ${documentId}
+     order by p.published_at desc, a.created_at desc
+     limit 1`.execute(trx);
+  const publication = latest.rows[0]?.id;
+  if (publication === undefined) return undefined;
+  const { rows } = await sql<{
+    node: string;
+    binding: string;
+    digest: string;
+    dataset_version: string;
+    definition_version: string;
+  }>`
+    select b.node, b.binding, r.binding_digest as digest, b.dataset_version,
+           v.content->'queryDefinition'->>'version' as definition_version
+      from publication_binding b
+      join binding_resolution r on r.id = b.resolution
+      join artifact_version v on v.id = b.dataset_version
+     where b.publication_id = ${publication}`.execute(trx);
+  return new Map(
+    rows.map((row) => [
+      `${row.node} ${row.binding}`,
+      {
+        node: row.node,
+        binding: row.binding,
+        digest: row.digest,
+        datasetVersion: row.dataset_version,
+        definitionVersion: row.definition_version,
+      },
+    ]),
+  );
+}
+
 /**
  * A queued request's inputs, or undefined when there is nothing to do - finished by another attempt.
  * The worker has no principal and decides nothing: it reads exactly the versions the request recorded
