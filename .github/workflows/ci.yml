@@ -66,7 +66,7 @@ jobs:
           FULL: ${{ steps.decide.outputs.full }}
           DOCS: ${{ steps.decide.outputs.docs }}
         run: |
-          node .github/scripts/reach.mjs >> "$GITHUB_OUTPUT"
+          node .github/scripts/reach.js >> "$GITHUB_OUTPUT"
 
   build:
     name: Lint, typecheck, build and test

@@ -13,7 +13,7 @@ A newer push to a branch cancels the older run.
 
 | Job                 | Runs                                                                                                                                     |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| What changed        | The path, and what the change reaches: `.github/scripts/reach.mjs` over `turbo ls --affected`, the changed packages and their dependents |
+| What changed        | The path, and what the change reaches: `.github/scripts/reach.js` over `turbo ls --affected`, the changed packages and their dependents |
 | Lint, typecheck...  | The checks, every package's tests but the five suites', and on the full run the images built and started                                 |
 | The `<suite>` suite | The connector's, service's, database's, web's and worker's suites, a job each, on either path, each only if reached                      |
 | The whole system    | Full run: the stack in containers, `pnpm test:e2e` and `pnpm test:browser` but `budgets.test.ts`                                         |
