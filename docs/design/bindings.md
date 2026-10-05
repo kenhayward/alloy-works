@@ -25,7 +25,7 @@ nearest thing the editor already has to a binding; the one scroll, its modes and
 [themes.md](themes.md)'s. A bound table's presentation is `tables.md`'s, not designed; a template's
 parameters feeding a binding are the `templates.md` additions'.
 
-> **B1 to B3 built; B4 to B6 not built.** D3 built the binding's stored shape, datasets, resolutions
+> **B1 to B4 built; B5 and B6 not built.** D3 built the binding's stored shape, datasets, resolutions
 > and the resolve, check and accept routes. [B1](../plans/2026-10-04-b1-the-value-shown.md) built the
 > editor's node - a component holding a binding opens for editing - `takeValue`, `formatValue` and the
 > value catalogue, `dataset_take`, the bindings view's values, and each value, its failure and its
@@ -33,8 +33,9 @@ parameters feeding a binding are the `templates.md` additions'.
 > dialog, placing and changing a binding, the session read, Keep (`confirm`, 0049) and the holders
 > route. [B3](../plans/2026-10-05-b3-the-publish-stage.md) built the publish's binding stage: a request
 > refused for a binding with no result, the worker reading each result from the store, values in the
-> PDF, Word and a preview, `publication_binding`, and `provenance.json` with its route (0050). No Data
-> tab resolves or accepts a binding yet (B4).
+> PDF, Word and a preview, `publication_binding`, and `provenance.json` with its route (0050).
+> [B4](../plans/2026-10-05-b4-the-data-tab.md) built the Data tab, the check on opening and the
+> waiting rule decided against the definition version a binding asks; DAT-091's warning waits for D7.
 
 ## The shape in one paragraph
 
@@ -135,7 +136,7 @@ it was made.
 | The editor opens a component holding a binding read-only, by name (`packages/editor/src/mapping.ts`, `marksWithNoType`)                                                                                 | B1, built: the editor schema gains the node, and such a component opens for editing                                                                                                                                                                         |
 | **The admission pipeline's re-identify stage keeps a binding's identifier** (`reidentify.ts`, `reidentifyInline` returns any inline but text, a reference and a footnote as it came)                    | B1, built, **a fix**: a pasted binding is given a new identifier (`bindingsRenamed`), so a copy pasted into the component it came from does not hold an identifier twice; the editor's paste gives it back its own where nothing else holds it (BI-D, B1-C) |
 | Resolve reads a binding from the component version the node resolves to (D3-E)                                                                                                                          | B2: it may also read it from the caller's own editing session's latest iteration, where the node floats at latest, so a binding just placed shows a value without a version being cut (BI-C)                                                                |
-| `resolutionsOf` answers a newer dataset version as waiting only where its checksum differs (D3, "Changed while building")                                                                               | B4: also where it ran a newer version of a floating binding's definition, so a definition moved on with the same rows is offered (BI-K)                                                                                                                     |
+| `resolutionsOf` answers a newer dataset version as waiting only where its checksum differs (D3, "Changed while building")                                                                               | B4, built: a revision waits only from a result of the definition version the binding asks - its pin, or the latest - where its checksum or its definition version differs, so a definition moved on with the same rows is offered (BI-K)                    |
 | `binding_resolution.act` is `resolve` or `accept` (0047)                                                                                                                                                | B2: gains `confirm`, a held result kept across a binding change that leaves its question unchanged (BI-J)                                                                                                                                                   |
 | A publish and a preview of a document holding any binding are refused, `binding_unresolved` (`apps/service/src/publishing.ts`, `refuseBindings`); `assemble` refuses one too (`publishing/assemble.ts`) | B3, built: the request refuses only a binding holding no matching resolution, and records the rest; `assemble`'s refusal becomes the stage's own check (BI-L)                                                                                               |
 | `packages/domain/src/content/binding.ts`, `resolveBoundTable` over string rows, and `cases/case-03-bound-table-footnote.test.ts`: the scaffolding's bound table, which nothing outside its test imports | Left to `tables.md`, which replaces it; it is not the rule this design takes a value by. It cites no requirement, so the trace is unchanged by its removal                                                                                                  |

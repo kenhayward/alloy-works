@@ -18106,7 +18106,19 @@
     {
       "id": "DAT-037",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 325,
+      "line": 439,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-070",
+      "file": "apps/service/src/bindings-routes.test.ts",
+      "line": 320,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-082",
+      "file": "apps/service/src/bindings-routes.test.ts",
+      "line": 284,
       "kind": "title"
     },
     {
@@ -18124,19 +18136,19 @@
     {
       "id": "DAT-086",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 675,
+      "line": 789,
       "kind": "title"
     },
     {
       "id": "DAT-090",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 443,
+      "line": 557,
       "kind": "title"
     },
     {
       "id": "DAT-093",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 284,
+      "line": 398,
       "kind": "title"
     },
     {
@@ -18442,13 +18454,19 @@
     {
       "id": "DAT-042",
       "file": "apps/service/src/publication-bindings.test.ts",
-      "line": 67,
+      "line": 73,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-070",
+      "file": "apps/service/src/publication-bindings.test.ts",
+      "line": 162,
       "kind": "title"
     },
     {
       "id": "DAT-087",
       "file": "apps/service/src/publication-bindings.test.ts",
-      "line": 44,
+      "line": 50,
       "kind": "title"
     },
     {
@@ -19004,6 +19022,18 @@
       "kind": "title"
     },
     {
+      "id": "DAT-039",
+      "file": "apps/web/src/structure/DataTab.test.tsx",
+      "line": 112,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-070",
+      "file": "apps/web/src/structure/DataTab.test.tsx",
+      "line": 149,
+      "kind": "title"
+    },
+    {
       "id": "CNT-046",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
       "line": 2295,
@@ -19072,19 +19102,25 @@
     {
       "id": "DAT-027",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 5772,
+      "line": 5792,
       "kind": "title"
     },
     {
       "id": "DAT-041",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 5828,
+      "line": 5848,
       "kind": "title"
     },
     {
       "id": "DAT-047",
       "file": "apps/web/src/structure/DocumentPage.test.tsx",
-      "line": 5796,
+      "line": 5816,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-082",
+      "file": "apps/web/src/structure/DocumentPage.test.tsx",
+      "line": 6083,
       "kind": "title"
     },
     {
@@ -19727,6 +19763,12 @@
       "id": "MET-042",
       "file": "packages/db/src/creation.test.ts",
       "line": 104,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-070",
+      "file": "packages/db/src/datasets.test.ts",
+      "line": 715,
       "kind": "title"
     },
     {
