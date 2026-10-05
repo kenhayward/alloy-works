@@ -1124,7 +1124,7 @@ cycle once there is an index to walk, and record - never rebasing one person's a
   `budgets.test.ts`, for the open from the documents list and for every act the outline offers,
   against 250 ms at p90 over ten samples and a maximum of 500 ms, and is claimed: opening a document is opening it from within the
   application (Ken, 2026-09-29; [ADR-0033](../decisions/0033-t2-is-the-data-spine.md)). The document
-  loaded cold at its own address is recorded beside it, and held by CNT-179's budget for the whole
+  loaded cold at its own address is recorded beside it, and held by CNT-180's budget for the whole
   time a reader waits, in the same file.
 
 ## What was ruled out

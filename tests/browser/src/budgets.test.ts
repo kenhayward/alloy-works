@@ -29,19 +29,15 @@ import {
  * itself, from the act to the frame showing its result painted, and that result is the state's own
  * content, asked for by the page: the outline's five hundred items named and the first text on the
  * screen, a node inserted, gone, renamed or renumbered, a node's heading in view. One warm-up,
- * reported and held to the maximum, then the samples: ten for STR-073, of which the nearest-rank p90
- * is the second slowest, twenty for an act measured both ways, of which it is the third slowest;
- * twenty for CNT-179, of which the nearest-rank p95 is the second slowest. Each sample's
+ * reported and held to the maximum, then ten samples, of which the nearest-rank p90 is the second
+ * slowest; twenty for an act measured both ways, of which it is the third slowest. Each sample's
  * requests are held to the paths its act asks for, so nothing else is taken off the interface's share.
  * The document is opened two ways: from the documents list, as a link followed there opens it, and
  * cold, its address loaded into a fresh page.
  */
 
 const WARM_UP = 1;
-/** STR-073's samples of each act, held at p90. */
 const SAMPLES = 10;
-/** CNT-179's samples, held at p95. */
-const READER_SAMPLES = 20;
 
 /**
  * What the document's page reads as it opens (B-L): the document, its texts, its contributions, its
@@ -80,10 +76,9 @@ declare module 'vitest' {
 /** Held to `budget` where it binds; recorded either way. */
 function hold(name: string, measured: Summary, warmUp: number, budget: Budget): void {
   const bound = binding(budget, process.env);
-  if (bound.at !== null) {
-    const p = `p${budget.percentile}` as const;
-    expect(measured[p], `${name}: the ${p} of ${measured.samples.join(', ')}`).toBeLessThanOrEqual(
-      bound.at,
+  if (bound.p90 !== null) {
+    expect(measured.p90, `${name}: the p90 of ${measured.samples.join(', ')}`).toBeLessThanOrEqual(
+      bound.p90,
     );
   }
   if (bound.max !== null) {
@@ -129,9 +124,9 @@ function opened(fixture: FiveHundred): Until {
  * opens a link to it from elsewhere, timed from the navigation's start. One warm-up and the samples,
  * each page closed after it; what one says in its console fails the test, as the gated page's does.
  */
-async function coldOpens(page: Page, fixture: FiveHundred, samples: number): Promise<Measured[]> {
+async function coldOpens(page: Page, fixture: FiveHundred): Promise<Measured[]> {
   const all: Measured[] = [];
-  for (let sample = 0; sample < WARM_UP + samples; sample++) {
+  for (let sample = 0; sample < WARM_UP + SAMPLES; sample++) {
     const fresh = await page.context().newPage();
     const said: string[] = [];
     fresh.on('console', (message) => {
@@ -166,14 +161,9 @@ async function prepared(page: Page) {
 }
 
 /** Opens, one warm-up and then the samples, each from the list. */
-async function opens(
-  page: Page,
-  fixture: FiveHundred,
-  settle: () => Promise<void>,
-  samples: number,
-) {
+async function opens(page: Page, fixture: FiveHundred, settle: () => Promise<void>) {
   const all: Measured[] = [];
-  for (let sample = 0; sample < WARM_UP + samples; sample++) {
+  for (let sample = 0; sample < WARM_UP + SAMPLES; sample++) {
     await atTheList(page, settle);
     all.push(await openFromTheList(page, fixture));
     await settle();
@@ -273,15 +263,15 @@ describe('the navigation budgets over a document of five hundred nodes', () => {
 
   // STR-073 is an open from within the application (Ken, 2026-09-29; ADR-0033), so the open from the
   // documents list is held to it. Opened cold, the interface's share is recorded and not held: it is
-  // over the number (334 ms at p95 on the reference machine, W13.3), and CNT-179's test holds the
+  // over the number (334 ms at p95 on the reference machine, W13.3), and CNT-180's test holds the
   // whole time a cold open takes.
   it("STR-073 opens a document of five hundred nodes from the documents list within the interface's share of the budget, and records it opened cold", async ({
     task,
   }) => {
     await withPage(async (page) => {
       const requests = await prepared(page);
-      const all = await opens(page, fixture, () => requests.quiet(), SAMPLES);
-      const cold = await coldOpens(page, fixture, SAMPLES);
+      const all = await opens(page, fixture, () => requests.quiet());
+      const cold = await coldOpens(page, fixture);
       const open = recorded(all);
       const load = recorded(cold);
       record(task.meta, {
@@ -427,13 +417,13 @@ describe('the navigation budgets over a document of five hundred nodes', () => {
     });
   }, 900_000);
 
-  it('CNT-179 opens the document view and jumps to any node within the budget', async ({
+  it('CNT-180 opens the document view and jumps to any node within the budget', async ({
     task,
   }) => {
     await withPage(async (page) => {
       const requests = await prepared(page);
       const settle = () => requests.quiet();
-      const fromList = await opens(page, fixture, settle, READER_SAMPLES);
+      const fromList = await opens(page, fixture, settle);
 
       // Jumps to nodes drawn from a seeded sequence, each chosen in the outline by a pointer, passing
       // over any whose heading is already on the screen, since a jump there moves nothing. A heading
@@ -441,7 +431,7 @@ describe('the navigation budgets over a document of five hundred nodes', () => {
       const random = seeded(179);
       const jumps: Measured[] = [];
       const chosen: string[] = [];
-      while (jumps.length < WARM_UP + READER_SAMPLES) {
+      while (jumps.length < WARM_UP + SAMPLES) {
         const node = fixture.order[Math.floor(random() * fixture.order.length)]!.id;
         const until: Until = { kind: 'inView', node };
         if (await holdsNow(page, until)) continue;
@@ -454,7 +444,7 @@ describe('the navigation budgets over a document of five hundred nodes', () => {
         expect(await holdsNow(page, until), `the jump to ${node} stays where it landed`).toBe(true);
       }
 
-      const cold = await coldOpens(page, fixture, READER_SAMPLES);
+      const cold = await coldOpens(page, fixture);
       const open = recorded(fromList);
       const load = recorded(cold);
       const jump = summary(jumps.slice(WARM_UP).map((each) => each.whole));

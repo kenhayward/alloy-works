@@ -3,23 +3,22 @@ import { readFileSync } from 'node:fs';
 import { arch, availableParallelism, cpus, platform, release, totalmem, version } from 'node:os';
 import type { Browser } from 'playwright-core';
 
-/** A budget: a percentile and its bound, and a maximum no sample may pass, in milliseconds. */
+/** A budget: a 90th percentile, and a maximum no sample may pass, in milliseconds. */
 export interface Budget {
-  readonly percentile: 90 | 95;
-  readonly at: number;
+  readonly p90: number;
   readonly max: number;
 }
 
 /**
  * The navigation budgets the browser measures (the W13 plan's B-K and B-L). STR-073 is the
  * interface's share of an act on the outline, STR-063's interactive budget again with the service's
- * requests taken out, at p90; CNT-179's open is CNT-136's preview numbers and its jump STR-063's again, each
+ * requests taken out; CNT-180's open is CNT-136's preview numbers and its jump STR-063's again, each
  * the whole time a reader waits.
  */
 export const BUDGETS = {
-  interface: { percentile: 90, at: 250, max: 500 },
-  open: { percentile: 95, at: 1000, max: 2000 },
-  jump: { percentile: 95, at: 250, max: 500 },
+  interface: { p90: 250, max: 500 },
+  open: { p90: 1000, max: 2000 },
+  jump: { p90: 250, max: 500 },
 } as const satisfies Record<string, Budget>;
 
 /**
@@ -31,8 +30,8 @@ export const BUDGETS = {
 export function binding(
   budget: Budget,
   env: Readonly<Record<string, string | undefined>>,
-): { readonly at: number | null; readonly max: number | null } {
-  return env['CI'] === 'true' ? { at: null, max: null } : { at: budget.at, max: budget.max };
+): { readonly p90: number | null; readonly max: number | null } {
+  return env['CI'] === 'true' ? { p90: null, max: null } : { ...budget };
 }
 
 /** The nearest-rank percentile: the smallest sample at or above `p` percent of them. */
