@@ -1,5 +1,8 @@
 import {
+  bindingDigestInput,
+  bindingsIn,
   missingSections,
+  parseProvenance,
   parseAssetVersion,
   parseOutputReport,
   PUBLISHING_FORMATS,
@@ -28,6 +31,7 @@ import {
   resolveComponentFields,
   validate,
   type DefinitionOf,
+  type HeldDataset,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
@@ -53,6 +57,7 @@ import { indexPublication } from './search.js';
 import type { TenantTransaction } from './tables.js';
 import { documentLayout, documentRules, documentTheme } from './templates.js';
 import { themeAt } from './themes.js';
+import { sha256Hex } from './version-digest.js';
 import { headingOf, latestVersion, readVersion, type VersionHeading } from './versions.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -436,7 +441,78 @@ export type PublicationRequestAnswer =
   | { readonly answer: 'metadata.invalid'; readonly failures: readonly NodeFailure[] }
   /** Its template no longer resolves, so there is nothing to check its values against (TE-K). */
   | { readonly answer: 'template.unresolved'; readonly unresolved: readonly UnresolvedReference[] }
+  /**
+   * A binding the resolved components hold with no result in this document (B3-C; DAT-087): `never`
+   * resolved, or its latest resolution `changed` - taken under another digest, the binding edited
+   * since. Each by its node, in reading order, and nothing is recorded.
+   */
+  | { readonly answer: 'binding.unresolved'; readonly bindings: readonly UnresolvedBinding[] }
   | { readonly answer: 'document.missing' };
+
+/** A binding a request cannot publish, and why (B3-C). */
+export interface UnresolvedBinding {
+  readonly node: string;
+  readonly binding: string;
+  readonly reason: 'never' | 'changed';
+}
+
+/** A binding's latest resolution, recorded on a request when its digest matches (B3-C). */
+interface HeldBinding {
+  readonly node: string;
+  readonly binding: string;
+  readonly digest: string;
+  readonly resolution: string;
+  readonly datasetVersion: string;
+  readonly datasetId: string;
+}
+
+/**
+ * Each binding the resolved occurrences hold, against the latest resolution its document has for its
+ * node and binding: held where that resolution's digest is the binding's as read now, and otherwise
+ * unresolved, `never` or `changed`.
+ */
+async function bindingsHeld(
+  trx: TenantTransaction,
+  documentId: string,
+  resolved: readonly ReadOccurrence[],
+): Promise<{ held: HeldBinding[]; unresolved: UnresolvedBinding[] }> {
+  const asked = resolved.flatMap((each) =>
+    bindingsIn(each.content).map(({ binding }) => ({
+      node: each.node,
+      binding: binding.id,
+      digest: sha256Hex(bindingDigestInput(binding)),
+    })),
+  );
+  if (asked.length === 0) return { held: [], unresolved: [] };
+  const latest = await trx
+    .selectFrom('binding_resolution')
+    .distinctOn(['node_id', 'binding_id'])
+    .select(['id', 'node_id', 'binding_id', 'binding_digest', 'dataset_version', 'dataset_id'])
+    .where('document_id', '=', documentId)
+    .orderBy('node_id')
+    .orderBy('binding_id')
+    .orderBy('id', 'desc')
+    .execute();
+  const byKey = new Map(latest.map((row) => [`${row.node_id} ${row.binding_id}`, row]));
+  const held: HeldBinding[] = [];
+  const unresolved: UnresolvedBinding[] = [];
+  for (const each of asked) {
+    const row = byKey.get(`${each.node} ${each.binding}`);
+    if (row === undefined)
+      unresolved.push({ node: each.node, binding: each.binding, reason: 'never' });
+    else if (row.binding_digest !== each.digest) {
+      unresolved.push({ node: each.node, binding: each.binding, reason: 'changed' });
+    } else {
+      held.push({
+        ...each,
+        resolution: String(row.id),
+        datasetVersion: row.dataset_version,
+        datasetId: row.dataset_id,
+      });
+    }
+  }
+  return { held, unresolved };
+}
 
 /**
  * One publish asked for, decided and recorded in the caller's transaction (docs/design/publishing.md,
@@ -548,6 +624,12 @@ export async function requestPublication(
     const failures = valueFailures(rules.resolved, read.outline, latest.values);
     if (failures.length > 0) return { answer: 'metadata.invalid', failures };
   }
+  // Every binding the publisher's resolved components hold, by its latest resolution in this document
+  // (B3-C): one without a result, or with one taken under another digest, refuses the request by name.
+  const bindings = await bindingsHeld(trx, input.documentId, resolved);
+  if (bindings.unresolved.length > 0) {
+    return { answer: 'binding.unresolved', bindings: bindings.unresolved };
+  }
   const images = await resolveImages(trx, resolved, input.requester);
   const held = await componentFailures(trx, resolved);
   // Set from the document's theme - its template's (STY-025), or the environment's declared one - at
@@ -595,6 +677,22 @@ export async function requestPublication(
           request_id: request.id,
           version_id: each.version,
           asset_id: each.asset,
+        })),
+      )
+      .execute();
+  }
+  if (bindings.held.length > 0) {
+    await trx
+      .insertInto('publication_request_binding')
+      .values(
+        bindings.held.map((each) => ({
+          request_id: request.id,
+          node: each.node,
+          binding: each.binding,
+          digest: each.digest,
+          resolution: each.resolution,
+          dataset_version: each.datasetVersion,
+          dataset_id: each.datasetId,
         })),
       )
       .execute();
@@ -647,6 +745,85 @@ export interface PublicationInputs {
    * and describes it from. One the publisher could not read is not here; the request says why.
    */
   readonly assets: ReadonlyMap<string, PublishingAsset>;
+  /**
+   * Each binding the request recorded (B3-C), by node and then binding: the resolution, the dataset
+   * version whose result the worker reads by its checksum, and that version's dataset and provenance.
+   */
+  readonly bindings: ReadonlyMap<string, ReadonlyMap<string, RecordedBinding>>;
+}
+
+/** A binding as a request or a publication records it, with the dataset version it took. */
+export interface RecordedBinding {
+  readonly resolution: string;
+  readonly datasetVersion: string;
+  readonly dataset: HeldDataset;
+}
+
+/**
+ * Whether a request's resolved components hold a binding, read from their content: exactly where the
+ * request recorded its bindings, since one it could not resolve refused it (B3-C).
+ */
+async function holdsBindings(trx: TenantTransaction, requestId: string): Promise<boolean> {
+  const { rows } = await sql<{ held: boolean }>`
+    select exists (
+      select 1 from publication_request_occurrence o
+        join artifact_version v on v.id = o.version_id
+       where o.request_id = ${requestId}
+         and jsonb_path_exists(v.content, '$.** ? (@.type == "binding")')
+    ) as held`.execute(trx);
+  return rows[0]!.held;
+}
+
+/** The bindings recorded on a request or a publication, each with its dataset version, in order. */
+async function recordedBindings(
+  trx: TenantTransaction,
+  on: { readonly request: string } | { readonly publication: string },
+): Promise<(RecordedBinding & { readonly node: string; readonly binding: string })[]> {
+  const { rows } = await sql<{
+    node: string;
+    binding: string;
+    resolution: string;
+    dataset_version: string;
+    dataset_id: string;
+    revision_no: number;
+    version_no: number;
+    content: unknown;
+    name: string | null;
+  }>`
+    select b.node, b.binding, b.resolution::text as resolution, b.dataset_version, b.dataset_id,
+           v.revision_no, v.version_no, v.content,
+           (select n.name from dataset_name n where n.dataset_id = b.dataset_id
+             order by n.id desc limit 1) as name
+      from ${'request' in on ? sql`publication_request_binding` : sql`publication_binding`} b
+      join artifact_version v on v.id = b.dataset_version
+     where ${'request' in on ? sql`b.request_id = ${on.request}` : sql`b.publication_id = ${on.publication}`}
+     order by b.node collate "C", b.binding collate "C"`.execute(trx);
+  return rows.map((row) => ({
+    node: row.node,
+    binding: row.binding,
+    resolution: row.resolution,
+    datasetVersion: row.dataset_version,
+    dataset: {
+      id: row.dataset_id,
+      name: row.name,
+      number: `${row.revision_no}.${row.version_no}`,
+      // Written by `recordDatasetVersion`, which parsed it: one that does not parse is a broken store.
+      provenance: parseProvenance(row.content),
+    },
+  }));
+}
+
+/**
+ * What a publication printed each value from (B3-C; DAT-042): its bindings, each with its dataset
+ * version and provenance whole - the SQL, the connection and each column's source among it. Who may
+ * read which of it is the caller's to decide.
+ */
+export async function publicationBindings(
+  trx: TenantTransaction,
+  publicationId: string,
+): Promise<(RecordedBinding & { readonly node: string; readonly binding: string })[]> {
+  if (!UUID.test(publicationId)) return [];
+  return recordedBindings(trx, { publication: publicationId });
 }
 
 /**
@@ -746,6 +923,15 @@ export async function publicationInputs(
     const { object, format, width, height, alternative } = parseAssetVersion(row.content);
     assets.set(row.version_id, { object, format, width, height, alternative });
   }
+  // Read only where a component holds a binding: the request recorded one for each, or was refused.
+  const bindings = new Map<string, Map<string, RecordedBinding>>();
+  const holding = [...occurrences.values()].some((each) => bindingsIn(each.content).length > 0);
+  for (const { node, binding, ...recorded } of holding
+    ? await recordedBindings(trx, { request: requestId })
+    : []) {
+    if (!bindings.has(node)) bindings.set(node, new Map());
+    bindings.get(node)!.set(binding, recorded);
+  }
   return {
     request: {
       id: request.id,
@@ -767,6 +953,7 @@ export async function publicationInputs(
     theme,
     revision: `${request.revision_no}.${request.version_no}`,
     assets,
+    bindings,
   };
 }
 
@@ -801,6 +988,11 @@ export type NewPublicationOutput = {
       readonly format: 'docx';
       readonly writerVersion: string;
       readonly report: OutputReport;
+    }
+  | {
+      /** `provenance.json` (B3-G), made by the pipeline at its version: where a value is printed. */
+      readonly format: 'provenance';
+      readonly pipelineVersion: string;
     }
 );
 
@@ -869,13 +1061,21 @@ export async function recordPublication(
       `The request ${request.id} carries failures, so it has no publication to record: fail it instead`,
     );
   }
-  const made = input.outputs.map((each) => each.format);
+  const made = input.outputs.flatMap((each) => (each.format === 'provenance' ? [] : [each.format]));
   if (
     made.length !== request.formats.length ||
     !request.formats.every((format) => made.includes(format))
   ) {
     throw new Error(
       `The request ${request.id} asked for ${request.formats.join(', ')}, and a publication records one output per format it asked for: ${made.join(', ') || 'none'} is not that`,
+    );
+  }
+  // `provenance.json` exactly where the request holds a binding, and once (B3-G; DAT-042).
+  const bound = await holdsBindings(trx, request.id);
+  const provenances = input.outputs.filter((each) => each.format === 'provenance').length;
+  if (provenances !== (bound ? 1 : 0)) {
+    throw new Error(
+      `The request ${request.id} ${bound ? 'holds a binding, and a publication of it records one provenance output' : 'holds no binding, so a publication of it records no provenance output'}`,
     );
   }
   // What the writer reports is held to its closed shape before it is stored, as it is read back.
@@ -886,7 +1086,7 @@ export async function recordPublication(
   // `publication_recorded_whole` refuses at commit whatever a caller that skipped this left.
   await sql`savepoint record_publication`.execute(trx);
   try {
-    const id = await insertPublication(trx, request, input);
+    const id = await insertPublication(trx, request, input, bound);
     // Found by its words from the moment it is recorded, as a version is (search.md; SCH-066).
     await indexPublication(trx, id);
     // Its PDF checked by veraPDF afterwards, by a job queued now, in this transaction (W14.1, W-B): a
@@ -921,6 +1121,7 @@ async function insertPublication(
     readonly space_id: string | null;
   },
   input: NewPublication,
+  bound: boolean,
 ): Promise<string> {
   // The PDF's engine and template are the publication's, as they always were; none without a PDF.
   const pdf = input.outputs.find((each) => each.format === 'pdf');
@@ -1008,15 +1209,29 @@ async function insertPublication(
               producer_version: String(each.templateVersion),
               report: '[]',
             }
-          : {
-              standard: null,
-              producer: 'word' as const,
-              producer_version: each.writerVersion,
-              report: JSON.stringify(each.report),
-            }),
+          : each.format === 'docx'
+            ? {
+                standard: null,
+                producer: 'word' as const,
+                producer_version: each.writerVersion,
+                report: JSON.stringify(each.report),
+              }
+            : {
+                standard: null,
+                producer: 'pipeline' as const,
+                producer_version: each.pipelineVersion,
+                report: '[]',
+              }),
       })),
     )
     .execute();
+  // Exactly the bindings the request recorded (B3-C), which 0049's check holds at commit.
+  if (bound) {
+    await sql`insert into publication_binding
+                (publication_id, node, binding, resolution, dataset_version, dataset_id)
+              select ${artifact.id}, node, binding, resolution, dataset_version, dataset_id
+                from publication_request_binding where request_id = ${request.id}`.execute(trx);
+  }
   await trx
     .updateTable('publication_request')
     .set({ state: 'done', finished_at: sql<Date>`now()` })
@@ -1426,12 +1641,13 @@ export interface StoredPublication {
   readonly pipelineVersion: string;
   /** One per format, in the order the formats are named: the PDF first. */
   readonly outputs: readonly {
-    readonly format: PublishingFormat;
+    /** A format it names, or `provenance.json` beside them where it holds a value (B3-G). */
+    readonly format: PublishingFormat | 'provenance';
     readonly key: string;
     readonly sha256: string;
     readonly bytes: number;
     readonly standard: 'ua-1' | null;
-    readonly producer: 'typst' | 'word';
+    readonly producer: 'typst' | 'word' | 'pipeline';
     readonly producerVersion: string;
     readonly report: OutputReport;
     /** What veraPDF found of the PDF, once it has been checked; none before, and none for Word. */
@@ -1514,8 +1730,9 @@ export async function readPublication(
     .select('format')
     .where('publication_id', '=', id)
     .execute();
-  // In the order the publication names its formats, the PDF first.
-  const order = (format: PublishingFormat) => row.formats.indexOf(format);
+  // In the order the publication names its formats, the PDF first, and `provenance.json` last.
+  const order = (format: PublishingFormat | 'provenance') =>
+    format === 'provenance' ? row.formats.length : row.formats.indexOf(format);
   return {
     ...summaryOf(row),
     outputs: outputs

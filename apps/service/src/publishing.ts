@@ -202,6 +202,19 @@ async function answered(
         'layout.language',
         `This document is in ${answer.document}, and its layout is written in ${answer.layout}. It can be published only under a layout in its own language.`,
       );
+    // Each binding with no result in this document, by its node, and why (B3-C; DAT-087).
+    case 'binding.unresolved': {
+      const said = answer.bindings.map(
+        (each) =>
+          `${each.binding} (${each.reason === 'never' ? 'never resolved' : 'changed since it was resolved'})`,
+      );
+      throw refused(
+        400,
+        'binding.unresolved',
+        `This document holds ${said.length === 1 ? 'a value' : 'values'} with no result to print: ${said.join(', ')}. Resolve ${said.length === 1 ? 'it' : 'them'} in the document to publish it.`,
+        { attribution: 'product', document: id, bindings: answer.bindings },
+      );
+    }
     case 'requested': {
       const made = await readPublicationRequest(trx, answer.request.id);
       if (!made) throw new Error(`The request ${answer.request.id} was not recorded`);

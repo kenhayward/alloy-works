@@ -15,6 +15,8 @@ import type {
   PublicationOutputTable,
   PublicationAssetTable,
   PublicationRequestAssetTable,
+  PublicationRequestBindingTable,
+  PublicationBindingTable,
   PublicationRequestOccurrenceTable,
   PublicationRequestTable,
   PublicationTable,
@@ -534,6 +536,8 @@ export interface TenantTables {
   document_template: DocumentTemplateTable;
   definition_name: DefinitionNameTable;
   publication_request_asset: PublicationRequestAssetTable;
+  publication_request_binding: PublicationRequestBindingTable;
+  publication_binding: PublicationBindingTable;
   publication_asset: PublicationAssetTable;
   asset_upload: AssetUploadTable;
   search_entry: SearchEntryTable;
