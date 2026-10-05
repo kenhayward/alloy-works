@@ -1312,13 +1312,16 @@ describe('bindings and datasets through the service', () => {
       acting = act === 'resolve' ? resolve('ada', document.id, both) : check('ada', document.id);
       await untilWaitingOnLocks(h.db.adminUrl, 1);
       // What it wrote is its transaction's until it commits, so it is read from its locks: a table
-      // written holds a row exclusive lock to the transaction's end.
+      // written holds a row exclusive lock to the transaction's end. The sign-in session is left
+      // out: the request touches it once its last touch is a minute old, which a slow run reaches.
       const { rows } = await queryAs(
         h.db.adminUrl,
         `select c.relname as name
            from pg_locks l join pg_class c on c.oid = l.relation
           where l.mode = 'RowExclusiveLock'
             and c.relnamespace = $1::regnamespace
+            and c.relkind = 'r'
+            and c.relname <> 'session'
             and l.pid in (select pid from pg_locks where locktype = 'advisory' and not granted)
           order by 1`,
         [h.tenant.schema],
