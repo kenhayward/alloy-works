@@ -7,6 +7,9 @@ export default defineConfig({
     // Login roles are cluster-wide, so two files bootstrapping them at once would race. Each file
     // has a database of its own; they simply take turns.
     fileParallelism: false,
+    // One file at a time, each reusing the modules the one before loaded: isolated, every file paid
+    // its imports again, most of the suite's time on CI (ADR-0039).
+    isolate: false,
     testTimeout: 30_000,
     hookTimeout: 30_000,
     // Pinned rather than left implicit: the default reporter varies by platform, and a run
