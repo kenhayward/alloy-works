@@ -281,6 +281,120 @@ describe('bindings and datasets through the service', () => {
     ).toHaveLength(2);
   });
 
+  it("DAT-082 never checks a pinned binding, and shows a checked one's revision beside the value it holds, which nothing moves until it is accepted", async () => {
+    const definition = await h.definition(connection.id);
+    const { document, node } = await placed(
+      binding('checked', definition.id, { parameters: { site: { literal: '13' } } }),
+      binding('pinned', definition.id, { mode: 'pinned', parameters: { site: { literal: '14' } } }),
+    );
+    h.connector.run = ranOk([['13', 'Held']]);
+    await resolve('ada', document.id, [
+      { node, binding: 'checked' },
+      { node, binding: 'pinned' },
+    ]);
+    const held = (await stateOf('ada', document.id, 'checked')).held!;
+    h.connector.run = ranOk([['13', 'Revised']]);
+    const answer = await check('ada', document.id);
+    expect(
+      answer.json<{ results: { binding: string }[] }>().results.map((each) => each.binding),
+    ).toEqual(['checked']);
+    const revision = answer.json<{ results: { version: string }[] }>().results[0]!.version;
+    // Checked again, and the view read again: the revision beside the value, the value unmoved.
+    await check('ada', document.id);
+    for (let read = 0; read < 2; read += 1) {
+      const state = await stateOf('ada', document.id, 'checked');
+      expect(state.held).toMatchObject({ version: held.version, act: 'resolve' });
+      expect(state.waiting).toMatchObject({ version: revision });
+    }
+    expect((await stateOf('ada', document.id, 'pinned')).waiting).toBeNull();
+    const accepted = await h.call('ada', 'POST', `/v1/documents/${document.id}/bindings/accept`, {
+      node,
+      binding: 'checked',
+      version: revision,
+      replaces: held.version,
+    });
+    expect(accepted.statusCode, accepted.body).toBe(200);
+    expect((await stateOf('ada', document.id, 'checked')).held!.version).toBe(revision);
+  });
+
+  it('DAT-070 flags a floating binding once its definition advances, though the rows are the same, and accepting it moves the value to the new version', async () => {
+    const definition = await h.definition(connection.id);
+    const { document, node } = await placed(
+      binding('floating', definition.id, { parameters: { site: { literal: '15' } } }),
+    );
+    h.connector.run = ranOk([['15', 'Same']]);
+    await resolve('ada', document.id, [{ node, binding: 'floating' }]);
+    const held = (await stateOf('ada', document.id, 'floating')).held!;
+    const second = await h.nextDefinition(
+      definition.id,
+      definition.version,
+      definitionBody(connection.id, { description: 'Each site, again.' }),
+    );
+    const answer = await check('ada', document.id);
+    const [result] = answer.json<{ results: { outcome: string; version: string }[] }>().results;
+    expect(result).toMatchObject({ outcome: 'revision' });
+    const state = await stateOf('ada', document.id, 'floating');
+    expect(state.held!.version).toBe(held.version);
+    expect(state.waiting).toMatchObject({
+      version: result!.version,
+      provenance: { checksum: held.provenance.checksum, queryDefinition: { version: second } },
+    });
+    const accepted = await h.call('ada', 'POST', `/v1/documents/${document.id}/bindings/accept`, {
+      node,
+      binding: 'floating',
+      version: result!.version,
+      replaces: held.version,
+    });
+    expect(accepted.statusCode, accepted.body).toBe(200);
+    expect(accepted.json<State>().held!.provenance.queryDefinition.version).toBe(second);
+    expect(accepted.json<State>().waiting).toBeNull();
+  });
+
+  it('offers a binding pinned to a definition version no result of another, and refuses accepting one, nor a floating binding a result of an older version (#396)', async () => {
+    const definition = await h.definition(connection.id);
+    const component = await h.component(h.general, 'Asked');
+    const site = { site: { literal: '16' } };
+    await h.place(
+      component,
+      binding('pinned', definition.id, { version: definition.version, parameters: site }),
+    );
+    const other = await h.component(h.general, 'Floating');
+    await h.place(other, binding('floating', definition.id, { parameters: site }));
+    const pinnedIn = await h.documentReferencing([component.id]);
+    const floatingIn = await h.documentReferencing([other.id]);
+    h.connector.run = ranOk([['16', 'First']]);
+    await resolve('ada', pinnedIn.id, [{ node: pinnedIn.nodes[0]!, binding: 'pinned' }]);
+    const pinnedHeld = (await stateOf('ada', pinnedIn.id, 'pinned')).held!;
+    // The definition moves on; the floating binding resolves the same question with it.
+    await h.nextDefinition(
+      definition.id,
+      definition.version,
+      definitionBody(connection.id, { description: 'Moved on.' }),
+    );
+    h.connector.run = ranOk([['16', 'Second']]);
+    await resolve('ada', floatingIn.id, [{ node: floatingIn.nodes[0]!, binding: 'floating' }]);
+    const floatingHeld = (await stateOf('ada', floatingIn.id, 'floating')).held!;
+    expect(floatingHeld.dataset).toBe(pinnedHeld.dataset);
+    expect((await stateOf('ada', pinnedIn.id, 'pinned')).waiting).toBeNull();
+    const accepted = await h.call('ada', 'POST', `/v1/documents/${pinnedIn.id}/bindings/accept`, {
+      node: pinnedIn.nodes[0],
+      binding: 'pinned',
+      version: floatingHeld.version,
+      replaces: pinnedHeld.version,
+    });
+    expect(accepted.statusCode, accepted.body).toBe(409);
+    expect(accepted.json()).toMatchObject({ code: 'resolution_precondition' });
+
+    // The pinned binding's check finds new rows of its own version: its revision, not the other's.
+    h.connector.run = ranOk([['16', 'Third']]);
+    const revision = (await check('ada', pinnedIn.id)).json<{ results: { version: string }[] }>()
+      .results[0]!.version;
+    expect((await stateOf('ada', pinnedIn.id, 'pinned')).waiting).toMatchObject({
+      version: revision,
+    });
+    expect((await stateOf('ada', floatingIn.id, 'floating')).waiting).toBeNull();
+  });
+
   it("DAT-093 moves only the accepting document's binding to the accepted version, and another document holding the same dataset keeps its own", async () => {
     const definition = await h.definition(connection.id);
     const component = await h.component(h.general, 'Shared');
@@ -399,8 +513,52 @@ describe('bindings and datasets through the service', () => {
     });
   });
 
-  it('accepts one of two revisions accepted at once, each replacing the version held, and refuses the other', async () => {
-    // Each round a binding holding v1 with v2 and v3 waiting, and both accepted at the same moment.
+  it('refuses accepting a newer result that is not the one waiting, and a reader who may not edit the document (#396)', async () => {
+    // A connection of its own, which Alice, a reader of General, may use.
+    const own = await h.connection('Accepted by a reader');
+    await h.allow(h.ids.alice!, h.roles['Connection user']!, { kind: 'artifact', id: own.id });
+    const definition = await h.definition(own.id);
+    const { document, node } = await placed(
+      binding('b1', definition.id, { parameters: { site: { literal: '42' } } }),
+    );
+    h.connector.run = ranOk([['42', 'One']]);
+    await resolve('ada', document.id, [{ node, binding: 'b1' }]);
+    const held = (await stateOf('ada', document.id, 'b1')).held!;
+    const revisions: string[] = [];
+    for (const name of ['Two', 'Three']) {
+      h.connector.run = ranOk([['42', name]]);
+      revisions.push(
+        (await check('ada', document.id)).json<{ results: { version: string }[] }>().results[0]!
+          .version,
+      );
+    }
+    const accept = (version: string) =>
+      h.call('ada', 'POST', `/v1/documents/${document.id}/bindings/accept`, {
+        node,
+        binding: 'b1',
+        version,
+        replaces: held.version,
+      });
+    const older = await accept(revisions[0]!);
+    expect(older.statusCode, older.body).toBe(409);
+    expect(older.json()).toMatchObject({
+      code: 'resolution_precondition',
+      current: { waiting: { version: revisions[1] } },
+    });
+    // Alice reads the document and may use its connection, but may not edit it: refused, nothing held.
+    const reader = await h.call('alice', 'POST', `/v1/documents/${document.id}/bindings/accept`, {
+      node,
+      binding: 'b1',
+      version: revisions[1],
+      replaces: held.version,
+    });
+    expect(reader.statusCode, reader.body).toBe(403);
+    expect((await stateOf('ada', document.id, 'b1')).held!.version).toBe(held.version);
+    expect((await accept(revisions[1]!)).statusCode).toBe(200);
+  });
+
+  it('accepts the revision waiting once when it is accepted twice at once, and refuses the other', async () => {
+    // Each round a binding holding v1 with v3 waiting after v2, and v3 accepted twice at the same moment.
     for (let round = 0; round < 10; round += 1) {
       const definition = await h.definition(connection.id);
       const site = String(2000 + round);
@@ -419,7 +577,7 @@ describe('bindings and datasets through the service', () => {
         );
       }
       const answers = await Promise.all(
-        revisions.map((version) =>
+        [revisions[1]!, revisions[1]!].map((version) =>
           h.call('ada', 'POST', `/v1/documents/${document.id}/bindings/accept`, {
             node,
             binding: 'b1',
@@ -1086,17 +1244,24 @@ describe('bindings and datasets through the service', () => {
     ]);
   });
 
-  it('takes turns on a binding: an accept while a check records waits for it, so the check answers against what is held when it is answered', async () => {
-    const { held, revision, acted, accepted, answeredWhileRecording, rows } =
-      await acceptWhileRecording('88', 'check');
+  it('takes turns on a binding: an accept while a check records waits for it, and is answered against what waits once the check has recorded', async () => {
+    const { held, acted, accepted, answeredWhileRecording, rows } = await acceptWhileRecording(
+      '88',
+      'check',
+    );
     expect(answeredWhileRecording).toBe(false);
     expect(acted.statusCode, acted.body).toBe(200);
-    expect(acted.json()).toMatchObject({ results: [{ outcome: 'revision' }] });
-    // The check records no resolution, so nothing forks; the accept, after it, moves the binding.
-    expect(accepted.statusCode, accepted.body).toBe(200);
+    const found = acted.json<{ results: { outcome: string; version: string }[] }>().results[0]!;
+    expect(found).toMatchObject({ outcome: 'revision' });
+    // The check records no resolution, so nothing forks; the accept, after it, finds the check's
+    // revision waiting rather than the one it was asked for, and moves nothing (B4-B).
+    expect(accepted.statusCode, accepted.body).toBe(409);
+    expect(accepted.json()).toMatchObject({
+      code: 'resolution_precondition',
+      current: { held: { version: held.version }, waiting: { version: found.version } },
+    });
     expect(rows.map((row) => [row.act, row.replaces, row.dataset_version])).toEqual([
       ['resolve', null, held.version],
-      ['accept', held.version, revision],
     ]);
   });
 

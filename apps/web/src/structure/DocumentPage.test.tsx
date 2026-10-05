@@ -32,7 +32,7 @@ import {
   type EditorView,
   TEXT_CLASS,
 } from '@alloy-works/editor';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -5591,6 +5591,7 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
       definition?: unknown;
       connection?: unknown;
       redacted?: boolean;
+      facts?: Record<string, unknown>;
     } = {},
   ) => ({
     node: RESULTS,
@@ -5617,8 +5618,15 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     definition:
       over.definition === undefined ? { title: 'Readings', version: '0.2' } : over.definition,
     connection: over.connection === undefined ? { name: 'Harbour source' } : over.connection,
+    definitionChanged: false,
+    sincePublished: null,
+    mayCheck: true,
+    mayResolve: true,
+    ...over.facts,
   });
   const value = { value: '1234.5', column: { name: 'depth', type: decimal } };
+  /** A reader who may check: what the check on opening asks of the view (B4-F). */
+  const checks = { mayCheck: true };
 
   /**
    * The page over one document placing the printer at `RESULTS`, and `plain` at `OTHER` where asked,
@@ -5632,6 +5640,12 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     presentation?: unknown;
     /** Where given, the stored result is answered only once it settles. */
     datasetGate?: Promise<void>;
+    /** What a check answers, and what it changes first. */
+    check?: { results: unknown[]; then?: () => void };
+    /** Where given, a check is answered only once it settles. */
+    checkGate?: Promise<void>;
+    /** What an accept changes before it answers. */
+    accepted?: () => void;
   }) {
     const fake = service(
       outline([
@@ -5642,6 +5656,9 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
       ]),
     );
     const asked: string[] = [];
+    // Whether the check on opening has answered and the values it reads again been answered after it.
+    let checkAnswered = false;
+    let readAfterCheck = false;
     const fetching = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const request = input instanceof Request ? input : new Request(String(input), init);
       const path = new URL(request.url).pathname;
@@ -5677,7 +5694,18 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
           ],
         });
       }
+      if (path === `/v1/documents/${DOCUMENT}/bindings/check`) {
+        if (options.checkGate) await options.checkGate;
+        options.check?.then?.();
+        checkAnswered = true;
+        return json(200, { results: options.check?.results ?? [] });
+      }
+      if (path === `/v1/documents/${DOCUMENT}/bindings/accept`) {
+        options.accepted?.();
+        return json(200, {});
+      }
       if (path === `/v1/documents/${DOCUMENT}/bindings`) {
+        if (checkAnswered) readAfterCheck = true;
         return options.bindings === null
           ? json(500, { code: 'internal', message: 'x', traceId: 't' })
           : json(200, { bindings: options.bindings });
@@ -5723,7 +5751,19 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
         <DocumentPage client={client(fetching)} id={DOCUMENT} principalId={ADA} />
       </StrictMode>,
     );
-    return { asked };
+    /**
+     * Settles once the check on opening has answered and the values it reads again have landed. The
+     * text is drawn again as they do, so a node taken before then is no longer the one on the page,
+     * and an event sent to it reaches nothing - as no click in a browser, sent to what is under the
+     * pointer, ever can.
+     */
+    const checked = async () => {
+      await waitFor(() => expect(readAfterCheck).toBe(true));
+      await act(async () => {
+        await new Promise((settle) => setTimeout(settle, 0));
+      });
+    };
+    return { asked, checked };
   }
 
   /** What an element shows a sighted reader: its text, without the words only a screen reader hears. */
@@ -5771,12 +5811,13 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
 
   it("DAT-027 shows in a document's text the one value the document holds, formatted by its theme, where the binding stands in the sentence", async () => {
     const user = userEvent.setup();
-    openWithValues({
+    const { checked } = openWithValues({
       content: withValue(bound('b1')),
       bindings: [state(bound('b1'), value)],
       presentation: formattedPresentation,
     });
     const text = await textRegion();
+    await checked();
     // The text is drawn again as the values arrive, so its paragraph is read afresh each time.
     const paragraph = () =>
       within(text)
@@ -5795,12 +5836,13 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
 
   it("DAT-047 shows a failed value in place with its reason in the document's text and its open editor, and every other component as before", async () => {
     const user = userEvent.setup();
-    openWithValues({
+    const { checked } = openWithValues({
       content: withValue(bound('b1')),
       bindings: [state(bound('b1'), { failure: 'value_many', count: 3 })],
       other: true,
     });
     const text = await textRegion();
+    await checked();
     const reason = 'No value - the query returned 3 rows';
     const paragraph = () =>
       within(text)
@@ -5827,8 +5869,12 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
 
   it("DAT-041 opens a value's provenance in one step from the value in the document's text, by a click or by Enter", async () => {
     const user = userEvent.setup();
-    openWithValues({ content: withValue(bound('b1')), bindings: [state(bound('b1'), value)] });
+    const { checked } = openWithValues({
+      content: withValue(bound('b1')),
+      bindings: [state(bound('b1'), value)],
+    });
     const text = await textRegion();
+    await checked();
     const button = await within(text).findByRole('button', { name: '1,234.5, bound value' });
 
     // A click opens its provenance, and never the editor.
@@ -5870,10 +5916,13 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
 
   it('returns the focus to the value when the provenance is closed by Escape', async () => {
     const user = userEvent.setup();
-    openWithValues({ content: withValue(bound('b1')), bindings: [state(bound('b1'), value)] });
-    const button = await within(await textRegion()).findByRole('button', {
-      name: '1,234.5, bound value',
+    const { checked } = openWithValues({
+      content: withValue(bound('b1')),
+      bindings: [state(bound('b1'), value)],
     });
+    const text = await textRegion();
+    await checked();
+    const button = await within(text).findByRole('button', { name: '1,234.5, bound value' });
     await user.click(button);
     await screen.findByRole('region', { name: 'Provenance' });
     await user.keyboard('{Escape}');
@@ -5883,7 +5932,7 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
 
   it('shows a held value with a newer result waiting, marked always, and the waiting value beside it in the provenance', async () => {
     const user = userEvent.setup();
-    openWithValues({
+    const { checked } = openWithValues({
       content: withValue(bound('b1')),
       bindings: [
         state(bound('b1'), value, {
@@ -5895,7 +5944,9 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
         }),
       ],
     });
-    const button = await within(await textRegion()).findByRole('button', {
+    const text = await textRegion();
+    await checked();
+    const button = await within(text).findByRole('button', {
       name: /^1,234\.5, bound value,/,
     });
     expect(seen(button)).toContain('revision waiting');
@@ -5906,13 +5957,13 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
 
   it("shows a reader who may not read the definition its value, and none of the definition's SQL or connection", async () => {
     const user = userEvent.setup();
-    openWithValues({
+    const { checked } = openWithValues({
       content: withValue(bound('b1')),
       bindings: [state(bound('b1'), value, { definition: null, connection: null, redacted: true })],
     });
-    await user.click(
-      await within(await textRegion()).findByRole('button', { name: '1,234.5, bound value' }),
-    );
+    const text = await textRegion();
+    await checked();
+    await user.click(await within(text).findByRole('button', { name: '1,234.5, bound value' }));
     const panel = await screen.findByRole('region', { name: 'Provenance' });
     expect(panel).toHaveTextContent('a query definition you cannot read');
     expect(panel.textContent).not.toContain('select');
@@ -5922,14 +5973,14 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
 
   it('shows the result a value was taken from, its first 200 rows and how many more', async () => {
     const user = userEvent.setup();
-    openWithValues({
+    const { checked } = openWithValues({
       content: withValue(bound('b1')),
       bindings: [state(bound('b1'), value)],
       rows: 250,
     });
-    await user.click(
-      await within(await textRegion()).findByRole('button', { name: '1,234.5, bound value' }),
-    );
+    const text = await textRegion();
+    await checked();
+    await user.click(await within(text).findByRole('button', { name: '1,234.5, bound value' }));
     const panel = await screen.findByRole('region', { name: 'Provenance' });
     await user.click(within(panel).getByRole('button', { name: 'Show the result' }));
     const table = await within(panel).findByRole('table');
@@ -5945,8 +5996,9 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
       content: withValue(bound('b1')),
       bindings: [state(bound('b1'), value)],
     };
-    openWithValues(options);
+    const { checked } = openWithValues(options);
     const text = await textRegion();
+    await checked();
     await user.click(await within(text).findByRole('button', { name: '1,234.5, bound value' }));
     const panel = await screen.findByRole('region', { name: 'Provenance' });
     const heading = within(panel).getByRole('heading', { name: 'Provenance' });
@@ -5974,13 +6026,13 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
 
   it("says in a failed value's provenance why it has none, in the words the text shows", async () => {
     const user = userEvent.setup();
-    openWithValues({
+    const { checked } = openWithValues({
       content: withValue(bound('b1')),
       bindings: [state(bound('b1'), { failure: 'value_many', count: 3 })],
     });
-    await user.click(
-      await within(await textRegion()).findByRole('button', { name: /bound value, failed/ }),
-    );
+    const text = await textRegion();
+    await checked();
+    await user.click(await within(text).findByRole('button', { name: /bound value, failed/ }));
     const panel = await screen.findByRole('region', { name: 'Provenance' });
     expect(panel).toHaveTextContent('No value - the query returned 3 rows');
   });
@@ -5991,8 +6043,9 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
       content: withValue(bound('b1')),
       bindings: [state(bound('b1'), value)],
     };
-    openWithValues(options);
+    const { checked } = openWithValues(options);
     const text = await textRegion();
+    await checked();
     await user.click(await within(text).findByRole('button', { name: '1,234.5, bound value' }));
     const panel = await screen.findByRole('region', { name: 'Provenance' });
     const held = state(bound('b1'), value);
@@ -6007,7 +6060,7 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
   it("shows no result asked for one value once another value's provenance is open", async () => {
     const user = userEvent.setup();
     let release: () => void = () => undefined;
-    openWithValues({
+    const { checked } = openWithValues({
       content: withValue(bound('b1'), bound('b2')),
       bindings: [
         state(bound('b1'), value),
@@ -6018,6 +6071,7 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
       }),
     });
     const text = await textRegion();
+    await checked();
     await user.click(await within(text).findByRole('button', { name: '1,234.5, bound value' }));
     const panel = await screen.findByRole('region', { name: 'Provenance' });
     await user.click(within(panel).getByRole('button', { name: 'Show the result' }));
@@ -6058,6 +6112,157 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     await waitFor(() => expect(seen(paragraph())).toBe('The mean was Bound value m.'));
     expect(within(text).queryByRole('button', { name: /bound value/ })).toBeNull();
     expect(screen.queryByText(/could not/)).toBeNull();
+  });
+
+  it('DAT-082 checks once on opening for a reader who may check, shows the revision beside the value held in the Data tab, and moves nothing until it is accepted', async () => {
+    const user = userEvent.setup();
+    const revised = { value: '1240.5', column: { name: 'depth', type: decimal } };
+    const waiting = {
+      version: 'abcdef09-0000-4000-8000-000000000009',
+      provenance: provenance(),
+      taken: revised,
+    };
+    const options: Parameters<typeof openWithValues>[0] = {
+      content: withValue(bound('b1')),
+      bindings: [state(bound('b1'), value, { facts: checks })],
+      check: {
+        results: [{ node: RESULTS, binding: 'b1', outcome: 'revision', version: waiting.version }],
+        then: () => {
+          options.bindings = [state(bound('b1'), value, { waiting, facts: checks })];
+        },
+      },
+      accepted: () => {
+        options.bindings = [state(bound('b1'), revised, { facts: checks })];
+      },
+    };
+    const { asked } = openWithValues(options);
+    const text = await textRegion();
+    await user.click(await screen.findByRole('tab', { name: 'Data' }));
+    const panel = screen.getByRole('tabpanel', { name: 'Data' });
+    // The revision is shown beside the value held, which the text still shows.
+    await within(panel).findByText('Waiting: 1,240.5');
+    expect(within(panel).getByText('1,234.5')).toBeInTheDocument();
+    expect(
+      within(text).getByRole('button', { name: /^1,234\.5, bound value/ }),
+    ).toBeInTheDocument();
+    expect(asked.filter((path) => path.endsWith('/bindings/check'))).toHaveLength(1);
+
+    await user.click(within(panel).getByRole('button', { name: 'Accept' }));
+    await waitFor(() =>
+      expect(
+        within(text).getByRole('button', { name: '1,240.5, bound value' }),
+      ).toBeInTheDocument(),
+    );
+    // Read again after the accept, never checked again.
+    expect(asked.filter((path) => path.endsWith('/bindings/check'))).toHaveLength(1);
+  });
+
+  it('keeps the editor opened in place, with its text, while the check on opening and the values it reads again land', async () => {
+    const user = userEvent.setup();
+    let release = () => {};
+    const checkGate = new Promise<void>((settle) => {
+      release = settle;
+    });
+    const waiting = {
+      version: 'abcdef09-0000-4000-8000-000000000009',
+      provenance: provenance(),
+      taken: { value: '1240.5', column: { name: 'depth', type: decimal } },
+    };
+    const options: Parameters<typeof openWithValues>[0] = {
+      content: withValue(bound('b1')),
+      bindings: [state(bound('b1'), value, { facts: checks })],
+      checkGate,
+      check: {
+        results: [{ node: RESULTS, binding: 'b1', outcome: 'revision', version: waiting.version }],
+        then: () => {
+          options.bindings = [state(bound('b1'), value, { waiting, facts: checks })];
+        },
+      },
+    };
+    const { asked } = openWithValues(options);
+    const text = await textRegion();
+    // Opened straight after the page loads, while the check is still out.
+    await within(text).findByRole('button', { name: /^1,234\.5, bound value/ });
+    await waitFor(() => expect(asked).toContain(`/v1/documents/${DOCUMENT}/bindings/check`));
+    await user.click(within(text).getByText(/The mean was/));
+    const surface = await within(text).findByRole('textbox', {
+      name: 'Content of Install the printer',
+    });
+    await waitFor(() => expect(seen(surface.querySelector('p')!)).toBe('The mean was 1,234.5 m.'));
+
+    const reads = asked.filter((path) => path === `/v1/documents/${DOCUMENT}/bindings`).length;
+    release();
+    await waitFor(() =>
+      expect(asked.filter((path) => path === `/v1/documents/${DOCUMENT}/bindings`).length).toBe(
+        reads + 1,
+      ),
+    );
+    await act(async () => {
+      await new Promise((settle) => setTimeout(settle, 50));
+    });
+    // The same editor, never closed or drawn again, its text kept and its value told of the revision.
+    expect(within(text).getByRole('textbox', { name: 'Content of Install the printer' })).toBe(
+      surface,
+    );
+    expect(surface.isConnected).toBe(true);
+    await waitFor(() =>
+      expect(seen(surface.querySelector('p')!)).toMatch(
+        /^The mean was 1,234\.5.*revision waiting m\.$/,
+      ),
+    );
+  });
+
+  it('DAT-082 never checks on opening where no binding may be checked by this reader, or every one is pinned', async () => {
+    for (const binding of [
+      state(bound('b1'), value, { facts: { mayCheck: false } }),
+      state({ ...bound('b1'), mode: 'pinned' }, value, { facts: checks }),
+    ]) {
+      const { asked } = openWithValues({ content: withValue(bound('b1')), bindings: [binding] });
+      await screen.findByRole('tab', { name: 'Data' });
+      await act(async () => {
+        await new Promise((settle) => setTimeout(settle, 50));
+      });
+      expect(asked).toContain(`/v1/documents/${DOCUMENT}/bindings`);
+      expect(asked).not.toContain(`/v1/documents/${DOCUMENT}/bindings/check`);
+      cleanup();
+    }
+  });
+
+  it("lists a value the check on opening failed for as failed in the Data tab, in the check's words", async () => {
+    const user = userEvent.setup();
+    openWithValues({
+      content: withValue(bound('b1')),
+      bindings: [state(bound('b1'), value, { facts: checks })],
+      check: {
+        results: [
+          {
+            node: RESULTS,
+            binding: 'b1',
+            outcome: 'failed',
+            failure: {
+              code: 'source_unreachable',
+              message: 'The source could not be reached.',
+              attribution: 'source',
+              definition: DEFINITION,
+              binding: 'b1',
+              node: RESULTS,
+              document: DOCUMENT,
+            },
+          },
+        ],
+      },
+    });
+    await user.click(await screen.findByRole('tab', { name: 'Data' }));
+    const panel = screen.getByRole('tabpanel', { name: 'Data' });
+    await within(panel).findByText('The source could not be reached.');
+    expect(within(panel).getByText('Failed', { selector: 'span' })).toBeInTheDocument();
+    expect(screen.getByText('A value could not be checked. See the Data tab.')).toBeInTheDocument();
+  });
+
+  it('offers the Data tab only where the document holds a binding', async () => {
+    openWithValues({ content: plain, bindings: [] });
+    await within(await textRegion()).findByText('Nothing bound here.');
+    expect(screen.queryByRole('tab', { name: 'Data' })).toBeNull();
   });
 
   it('asks for the values only where a text holds a binding', async () => {

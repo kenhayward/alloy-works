@@ -26550,6 +26550,46 @@
                               }
                             ],
                             "description": "The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection"
+                          },
+                          "definitionChanged": {
+                            "type": "boolean",
+                            "description": "Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran"
+                          },
+                          "sincePublished": {
+                            "anyOf": [
+                              {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "const": "new"
+                                  },
+                                  {
+                                    "minItems": 1,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "enum": [
+                                        "digest",
+                                        "dataset",
+                                        "definition"
+                                      ]
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published"
+                          },
+                          "mayCheck": {
+                            "type": "boolean",
+                            "description": "Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on"
+                          },
+                          "mayResolve": {
+                            "type": "boolean",
+                            "description": "Whether the caller may resolve it: they may edit the document and use the connection its definition runs on"
                           }
                         },
                         "required": [
@@ -26558,7 +26598,11 @@
                           "held",
                           "waiting",
                           "definition",
-                          "connection"
+                          "connection",
+                          "definitionChanged",
+                          "sincePublished",
+                          "mayCheck",
+                          "mayResolve"
                         ]
                       },
                       "description": "Every binding in the components the document's latest version places that the caller may read, in the outline's order"
@@ -28275,6 +28319,46 @@
                         }
                       ],
                       "description": "The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection"
+                    },
+                    "definitionChanged": {
+                      "type": "boolean",
+                      "description": "Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran"
+                    },
+                    "sincePublished": {
+                      "anyOf": [
+                        {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "new"
+                            },
+                            {
+                              "minItems": 1,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "digest",
+                                  "dataset",
+                                  "definition"
+                                ]
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published"
+                    },
+                    "mayCheck": {
+                      "type": "boolean",
+                      "description": "Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on"
+                    },
+                    "mayResolve": {
+                      "type": "boolean",
+                      "description": "Whether the caller may resolve it: they may edit the document and use the connection its definition runs on"
                     }
                   },
                   "required": [
@@ -28283,7 +28367,11 @@
                     "held",
                     "waiting",
                     "definition",
-                    "connection"
+                    "connection",
+                    "definitionChanged",
+                    "sincePublished",
+                    "mayCheck",
+                    "mayResolve"
                   ]
                 },
                 "example": {
@@ -28409,7 +28497,11 @@
                   },
                   "connection": {
                     "name": "example"
-                  }
+                  },
+                  "definitionChanged": false,
+                  "sincePublished": "new",
+                  "mayCheck": false,
+                  "mayResolve": false
                 }
               }
             },
@@ -29967,6 +30059,46 @@
                             }
                           ],
                           "description": "The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection"
+                        },
+                        "definitionChanged": {
+                          "type": "boolean",
+                          "description": "Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran"
+                        },
+                        "sincePublished": {
+                          "anyOf": [
+                            {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "new"
+                                },
+                                {
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "digest",
+                                      "dataset",
+                                      "definition"
+                                    ]
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published"
+                        },
+                        "mayCheck": {
+                          "type": "boolean",
+                          "description": "Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on"
+                        },
+                        "mayResolve": {
+                          "type": "boolean",
+                          "description": "Whether the caller may resolve it: they may edit the document and use the connection its definition runs on"
                         }
                       },
                       "required": [
@@ -29975,7 +30107,11 @@
                         "held",
                         "waiting",
                         "definition",
-                        "connection"
+                        "connection",
+                        "definitionChanged",
+                        "sincePublished",
+                        "mayCheck",
+                        "mayResolve"
                       ]
                     }
                   },
@@ -31655,6 +31791,46 @@
                             }
                           ],
                           "description": "The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection"
+                        },
+                        "definitionChanged": {
+                          "type": "boolean",
+                          "description": "Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran"
+                        },
+                        "sincePublished": {
+                          "anyOf": [
+                            {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "new"
+                                },
+                                {
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "digest",
+                                      "dataset",
+                                      "definition"
+                                    ]
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published"
+                        },
+                        "mayCheck": {
+                          "type": "boolean",
+                          "description": "Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on"
+                        },
+                        "mayResolve": {
+                          "type": "boolean",
+                          "description": "Whether the caller may resolve it: they may edit the document and use the connection its definition runs on"
                         }
                       },
                       "required": [
@@ -31663,7 +31839,11 @@
                         "held",
                         "waiting",
                         "definition",
-                        "connection"
+                        "connection",
+                        "definitionChanged",
+                        "sincePublished",
+                        "mayCheck",
+                        "mayResolve"
                       ]
                     }
                   },
@@ -33646,6 +33826,46 @@
                             }
                           ],
                           "description": "The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection"
+                        },
+                        "definitionChanged": {
+                          "type": "boolean",
+                          "description": "Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran"
+                        },
+                        "sincePublished": {
+                          "anyOf": [
+                            {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "new"
+                                },
+                                {
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "digest",
+                                      "dataset",
+                                      "definition"
+                                    ]
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published"
+                        },
+                        "mayCheck": {
+                          "type": "boolean",
+                          "description": "Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on"
+                        },
+                        "mayResolve": {
+                          "type": "boolean",
+                          "description": "Whether the caller may resolve it: they may edit the document and use the connection its definition runs on"
                         }
                       },
                       "required": [
@@ -33654,7 +33874,11 @@
                         "held",
                         "waiting",
                         "definition",
-                        "connection"
+                        "connection",
+                        "definitionChanged",
+                        "sincePublished",
+                        "mayCheck",
+                        "mayResolve"
                       ]
                     }
                   },
@@ -35211,6 +35435,46 @@
                             }
                           ],
                           "description": "The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection"
+                        },
+                        "definitionChanged": {
+                          "type": "boolean",
+                          "description": "Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran"
+                        },
+                        "sincePublished": {
+                          "anyOf": [
+                            {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "new"
+                                },
+                                {
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "digest",
+                                      "dataset",
+                                      "definition"
+                                    ]
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published"
+                        },
+                        "mayCheck": {
+                          "type": "boolean",
+                          "description": "Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on"
+                        },
+                        "mayResolve": {
+                          "type": "boolean",
+                          "description": "Whether the caller may resolve it: they may edit the document and use the connection its definition runs on"
                         }
                       },
                       "required": [
@@ -35219,7 +35483,11 @@
                         "held",
                         "waiting",
                         "definition",
-                        "connection"
+                        "connection",
+                        "definitionChanged",
+                        "sincePublished",
+                        "mayCheck",
+                        "mayResolve"
                       ]
                     }
                   },
@@ -36812,6 +37080,46 @@
                         }
                       ],
                       "description": "The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection"
+                    },
+                    "definitionChanged": {
+                      "type": "boolean",
+                      "description": "Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran"
+                    },
+                    "sincePublished": {
+                      "anyOf": [
+                        {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "new"
+                            },
+                            {
+                              "minItems": 1,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "digest",
+                                  "dataset",
+                                  "definition"
+                                ]
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published"
+                    },
+                    "mayCheck": {
+                      "type": "boolean",
+                      "description": "Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on"
+                    },
+                    "mayResolve": {
+                      "type": "boolean",
+                      "description": "Whether the caller may resolve it: they may edit the document and use the connection its definition runs on"
                     }
                   },
                   "required": [
@@ -36820,7 +37128,11 @@
                     "held",
                     "waiting",
                     "definition",
-                    "connection"
+                    "connection",
+                    "definitionChanged",
+                    "sincePublished",
+                    "mayCheck",
+                    "mayResolve"
                   ]
                 },
                 "example": {
@@ -36946,7 +37258,11 @@
                   },
                   "connection": {
                     "name": "example"
-                  }
+                  },
+                  "definitionChanged": false,
+                  "sincePublished": "new",
+                  "mayCheck": false,
+                  "mayResolve": false
                 }
               }
             },
@@ -38504,6 +38820,46 @@
                             }
                           ],
                           "description": "The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection"
+                        },
+                        "definitionChanged": {
+                          "type": "boolean",
+                          "description": "Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran"
+                        },
+                        "sincePublished": {
+                          "anyOf": [
+                            {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "new"
+                                },
+                                {
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "digest",
+                                      "dataset",
+                                      "definition"
+                                    ]
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published"
+                        },
+                        "mayCheck": {
+                          "type": "boolean",
+                          "description": "Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on"
+                        },
+                        "mayResolve": {
+                          "type": "boolean",
+                          "description": "Whether the caller may resolve it: they may edit the document and use the connection its definition runs on"
                         }
                       },
                       "required": [
@@ -38512,7 +38868,11 @@
                         "held",
                         "waiting",
                         "definition",
-                        "connection"
+                        "connection",
+                        "definitionChanged",
+                        "sincePublished",
+                        "mayCheck",
+                        "mayResolve"
                       ]
                     }
                   },
@@ -40192,6 +40552,46 @@
                             }
                           ],
                           "description": "The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection"
+                        },
+                        "definitionChanged": {
+                          "type": "boolean",
+                          "description": "Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran"
+                        },
+                        "sincePublished": {
+                          "anyOf": [
+                            {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "new"
+                                },
+                                {
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "digest",
+                                      "dataset",
+                                      "definition"
+                                    ]
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published"
+                        },
+                        "mayCheck": {
+                          "type": "boolean",
+                          "description": "Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on"
+                        },
+                        "mayResolve": {
+                          "type": "boolean",
+                          "description": "Whether the caller may resolve it: they may edit the document and use the connection its definition runs on"
                         }
                       },
                       "required": [
@@ -40200,7 +40600,11 @@
                         "held",
                         "waiting",
                         "definition",
-                        "connection"
+                        "connection",
+                        "definitionChanged",
+                        "sincePublished",
+                        "mayCheck",
+                        "mayResolve"
                       ]
                     }
                   },
@@ -42076,6 +42480,46 @@
                             }
                           ],
                           "description": "The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection"
+                        },
+                        "definitionChanged": {
+                          "type": "boolean",
+                          "description": "Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran"
+                        },
+                        "sincePublished": {
+                          "anyOf": [
+                            {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "new"
+                                },
+                                {
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "digest",
+                                      "dataset",
+                                      "definition"
+                                    ]
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published"
+                        },
+                        "mayCheck": {
+                          "type": "boolean",
+                          "description": "Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on"
+                        },
+                        "mayResolve": {
+                          "type": "boolean",
+                          "description": "Whether the caller may resolve it: they may edit the document and use the connection its definition runs on"
                         }
                       },
                       "required": [
@@ -42084,7 +42528,11 @@
                         "held",
                         "waiting",
                         "definition",
-                        "connection"
+                        "connection",
+                        "definitionChanged",
+                        "sincePublished",
+                        "mayCheck",
+                        "mayResolve"
                       ]
                     }
                   },
@@ -43682,6 +44130,46 @@
                             }
                           ],
                           "description": "The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection"
+                        },
+                        "definitionChanged": {
+                          "type": "boolean",
+                          "description": "Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran"
+                        },
+                        "sincePublished": {
+                          "anyOf": [
+                            {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "new"
+                                },
+                                {
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "digest",
+                                      "dataset",
+                                      "definition"
+                                    ]
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published"
+                        },
+                        "mayCheck": {
+                          "type": "boolean",
+                          "description": "Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on"
+                        },
+                        "mayResolve": {
+                          "type": "boolean",
+                          "description": "Whether the caller may resolve it: they may edit the document and use the connection its definition runs on"
                         }
                       },
                       "required": [
@@ -43690,7 +44178,11 @@
                         "held",
                         "waiting",
                         "definition",
-                        "connection"
+                        "connection",
+                        "definitionChanged",
+                        "sincePublished",
+                        "mayCheck",
+                        "mayResolve"
                       ]
                     }
                   },
@@ -45288,6 +45780,46 @@
                             }
                           ],
                           "description": "The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection"
+                        },
+                        "definitionChanged": {
+                          "type": "boolean",
+                          "description": "Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran"
+                        },
+                        "sincePublished": {
+                          "anyOf": [
+                            {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "new"
+                                },
+                                {
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "digest",
+                                      "dataset",
+                                      "definition"
+                                    ]
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published"
+                        },
+                        "mayCheck": {
+                          "type": "boolean",
+                          "description": "Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on"
+                        },
+                        "mayResolve": {
+                          "type": "boolean",
+                          "description": "Whether the caller may resolve it: they may edit the document and use the connection its definition runs on"
                         }
                       },
                       "required": [
@@ -45296,7 +45828,11 @@
                         "held",
                         "waiting",
                         "definition",
-                        "connection"
+                        "connection",
+                        "definitionChanged",
+                        "sincePublished",
+                        "mayCheck",
+                        "mayResolve"
                       ]
                     }
                   },
@@ -46853,6 +47389,46 @@
                             }
                           ],
                           "description": "The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection"
+                        },
+                        "definitionChanged": {
+                          "type": "boolean",
+                          "description": "Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran"
+                        },
+                        "sincePublished": {
+                          "anyOf": [
+                            {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "new"
+                                },
+                                {
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "digest",
+                                      "dataset",
+                                      "definition"
+                                    ]
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published"
+                        },
+                        "mayCheck": {
+                          "type": "boolean",
+                          "description": "Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on"
+                        },
+                        "mayResolve": {
+                          "type": "boolean",
+                          "description": "Whether the caller may resolve it: they may edit the document and use the connection its definition runs on"
                         }
                       },
                       "required": [
@@ -46861,7 +47437,11 @@
                         "held",
                         "waiting",
                         "definition",
-                        "connection"
+                        "connection",
+                        "definitionChanged",
+                        "sincePublished",
+                        "mayCheck",
+                        "mayResolve"
                       ]
                     }
                   },

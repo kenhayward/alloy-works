@@ -10284,6 +10284,14 @@ export interface operations {
                             connection: {
                                 name: string;
                             } | null;
+                            /** @description Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran */
+                            definitionChanged: boolean;
+                            /** @description How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published */
+                            sincePublished: ("new" | ("digest" | "dataset" | "definition")[]) | null;
+                            /** @description Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on */
+                            mayCheck: boolean;
+                            /** @description Whether the caller may resolve it: they may edit the document and use the connection its definition runs on */
+                            mayResolve: boolean;
                         }[];
                     };
                 };
@@ -10543,7 +10551,11 @@ export interface operations {
                      *       },
                      *       "connection": {
                      *         "name": "example"
-                     *       }
+                     *       },
+                     *       "definitionChanged": false,
+                     *       "sincePublished": "new",
+                     *       "mayCheck": false,
+                     *       "mayResolve": false
                      *     }
                      */
                     "application/json": {
@@ -10861,6 +10873,14 @@ export interface operations {
                         connection: {
                             name: string;
                         } | null;
+                        /** @description Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran */
+                        definitionChanged: boolean;
+                        /** @description How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published */
+                        sincePublished: ("new" | ("digest" | "dataset" | "definition")[]) | null;
+                        /** @description Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on */
+                        mayCheck: boolean;
+                        /** @description Whether the caller may resolve it: they may edit the document and use the connection its definition runs on */
+                        mayResolve: boolean;
                     };
                 };
             };
@@ -11227,6 +11247,14 @@ export interface operations {
                             connection: {
                                 name: string;
                             } | null;
+                            /** @description Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran */
+                            definitionChanged: boolean;
+                            /** @description How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published */
+                            sincePublished: ("new" | ("digest" | "dataset" | "definition")[]) | null;
+                            /** @description Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on */
+                            mayCheck: boolean;
+                            /** @description Whether the caller may resolve it: they may edit the document and use the connection its definition runs on */
+                            mayResolve: boolean;
                         };
                     };
                 };
@@ -11654,6 +11682,14 @@ export interface operations {
                             connection: {
                                 name: string;
                             } | null;
+                            /** @description Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran */
+                            definitionChanged: boolean;
+                            /** @description How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published */
+                            sincePublished: ("new" | ("digest" | "dataset" | "definition")[]) | null;
+                            /** @description Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on */
+                            mayCheck: boolean;
+                            /** @description Whether the caller may resolve it: they may edit the document and use the connection its definition runs on */
+                            mayResolve: boolean;
                         };
                     };
                 };
@@ -12193,6 +12229,14 @@ export interface operations {
                             connection: {
                                 name: string;
                             } | null;
+                            /** @description Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran */
+                            definitionChanged: boolean;
+                            /** @description How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published */
+                            sincePublished: ("new" | ("digest" | "dataset" | "definition")[]) | null;
+                            /** @description Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on */
+                            mayCheck: boolean;
+                            /** @description Whether the caller may resolve it: they may edit the document and use the connection its definition runs on */
+                            mayResolve: boolean;
                         };
                     };
                 };
@@ -12560,6 +12604,14 @@ export interface operations {
                             connection: {
                                 name: string;
                             } | null;
+                            /** @description Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran */
+                            definitionChanged: boolean;
+                            /** @description How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published */
+                            sincePublished: ("new" | ("digest" | "dataset" | "definition")[]) | null;
+                            /** @description Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on */
+                            mayCheck: boolean;
+                            /** @description Whether the caller may resolve it: they may edit the document and use the connection its definition runs on */
+                            mayResolve: boolean;
                         };
                     };
                 };
@@ -12761,7 +12813,11 @@ export interface operations {
                      *       },
                      *       "connection": {
                      *         "name": "example"
-                     *       }
+                     *       },
+                     *       "definitionChanged": false,
+                     *       "sincePublished": "new",
+                     *       "mayCheck": false,
+                     *       "mayResolve": false
                      *     }
                      */
                     "application/json": {
@@ -13079,6 +13135,14 @@ export interface operations {
                         connection: {
                             name: string;
                         } | null;
+                        /** @description Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran */
+                        definitionChanged: boolean;
+                        /** @description How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published */
+                        sincePublished: ("new" | ("digest" | "dataset" | "definition")[]) | null;
+                        /** @description Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on */
+                        mayCheck: boolean;
+                        /** @description Whether the caller may resolve it: they may edit the document and use the connection its definition runs on */
+                        mayResolve: boolean;
                     };
                 };
             };
@@ -13445,6 +13509,14 @@ export interface operations {
                             connection: {
                                 name: string;
                             } | null;
+                            /** @description Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran */
+                            definitionChanged: boolean;
+                            /** @description How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published */
+                            sincePublished: ("new" | ("digest" | "dataset" | "definition")[]) | null;
+                            /** @description Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on */
+                            mayCheck: boolean;
+                            /** @description Whether the caller may resolve it: they may edit the document and use the connection its definition runs on */
+                            mayResolve: boolean;
                         };
                     };
                 };
@@ -13872,6 +13944,14 @@ export interface operations {
                             connection: {
                                 name: string;
                             } | null;
+                            /** @description Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran */
+                            definitionChanged: boolean;
+                            /** @description How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published */
+                            sincePublished: ("new" | ("digest" | "dataset" | "definition")[]) | null;
+                            /** @description Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on */
+                            mayCheck: boolean;
+                            /** @description Whether the caller may resolve it: they may edit the document and use the connection its definition runs on */
+                            mayResolve: boolean;
                         };
                     };
                 };
@@ -14361,6 +14441,14 @@ export interface operations {
                             connection: {
                                 name: string;
                             } | null;
+                            /** @description Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran */
+                            definitionChanged: boolean;
+                            /** @description How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published */
+                            sincePublished: ("new" | ("digest" | "dataset" | "definition")[]) | null;
+                            /** @description Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on */
+                            mayCheck: boolean;
+                            /** @description Whether the caller may resolve it: they may edit the document and use the connection its definition runs on */
+                            mayResolve: boolean;
                         };
                     };
                 };
@@ -14748,6 +14836,14 @@ export interface operations {
                             connection: {
                                 name: string;
                             } | null;
+                            /** @description Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran */
+                            definitionChanged: boolean;
+                            /** @description How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published */
+                            sincePublished: ("new" | ("digest" | "dataset" | "definition")[]) | null;
+                            /** @description Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on */
+                            mayCheck: boolean;
+                            /** @description Whether the caller may resolve it: they may edit the document and use the connection its definition runs on */
+                            mayResolve: boolean;
                         };
                     };
                 };
@@ -15135,6 +15231,14 @@ export interface operations {
                             connection: {
                                 name: string;
                             } | null;
+                            /** @description Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran */
+                            definitionChanged: boolean;
+                            /** @description How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published */
+                            sincePublished: ("new" | ("digest" | "dataset" | "definition")[]) | null;
+                            /** @description Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on */
+                            mayCheck: boolean;
+                            /** @description Whether the caller may resolve it: they may edit the document and use the connection its definition runs on */
+                            mayResolve: boolean;
                         };
                     };
                 };
@@ -15502,6 +15606,14 @@ export interface operations {
                             connection: {
                                 name: string;
                             } | null;
+                            /** @description Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran */
+                            definitionChanged: boolean;
+                            /** @description How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published */
+                            sincePublished: ("new" | ("digest" | "dataset" | "definition")[]) | null;
+                            /** @description Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on */
+                            mayCheck: boolean;
+                            /** @description Whether the caller may resolve it: they may edit the document and use the connection its definition runs on */
+                            mayResolve: boolean;
                         };
                     };
                 };

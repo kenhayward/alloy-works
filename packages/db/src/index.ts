@@ -67,6 +67,8 @@ export {
   type OccurrenceOutcome,
   type PublicationInputs,
   type PublicationRequestAnswer,
+  publishedBindings,
+  type PublishedBinding,
   type RecordedBinding,
   type UnresolvedBinding,
   type PublicationSummary,

@@ -55,11 +55,31 @@ export interface BindingState {
   } | null;
   readonly definition: { readonly title: string; readonly version: string } | null;
   readonly connection: { readonly name: string } | null;
+  /** Floating, and its definition has moved on from the version its held result ran (DAT-070). */
+  readonly definitionChanged: boolean;
+  /** How it differs from what the document's latest publication printed, or null (B4-D). */
+  readonly sincePublished: 'new' | readonly SinceDiffers[] | null;
+  /** Whether a check would look for a revision of it for this reader (B4-F). */
+  readonly mayCheck: boolean;
+  /** Whether this reader may resolve it. */
+  readonly mayResolve: boolean;
   /**
    * Where what the view answered of what it holds, or of what waits, does not read: it is shown
    * unavailable, with no provenance to open, never as one never resolved.
    */
   readonly unread?: true;
+}
+
+/** What may differ from the latest publication: the binding itself, the result, the definition. */
+export type SinceDiffers = 'digest' | 'dataset' | 'definition';
+
+const SINCE: readonly string[] = ['digest', 'dataset', 'definition'];
+
+function sinceIn(value: unknown): BindingState['sincePublished'] {
+  if (value === 'new') return 'new';
+  if (!Array.isArray(value) || value.length === 0) return null;
+  const differs = value.filter((each): each is SinceDiffers => SINCE.includes(each as string));
+  return differs.length > 0 ? differs : null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -156,6 +176,12 @@ export function bindingStatesIn(data: unknown): readonly BindingState[] | undefi
       isRecord(each.connection) && typeof each.connection.name === 'string'
         ? { name: each.connection.name }
         : null;
+    const facts = {
+      definitionChanged: each.definitionChanged === true,
+      sincePublished: sinceIn(each.sincePublished),
+      mayCheck: each.mayCheck === true,
+      mayResolve: each.mayResolve === true,
+    };
     if (held === undefined || waiting === undefined) {
       return [
         {
@@ -165,11 +191,14 @@ export function bindingStatesIn(data: unknown): readonly BindingState[] | undefi
           waiting: null,
           definition,
           connection,
+          ...facts,
           unread: true,
         },
       ];
     }
-    return [{ node: each.node, binding: binding.data, held, waiting, definition, connection }];
+    return [
+      { node: each.node, binding: binding.data, held, waiting, definition, connection, ...facts },
+    ];
   });
 }
 

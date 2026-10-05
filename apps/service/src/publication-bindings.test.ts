@@ -1,7 +1,13 @@
 import { defaultNumberingScheme } from '@alloy-works/domain';
 import { findRole, recordPublication } from '@alloy-works/db';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { binding, ranOk, startHarness, type Harness } from './test/bindings-harness.js';
+import {
+  binding,
+  definitionBody,
+  ranOk,
+  startHarness,
+  type Harness,
+} from './test/bindings-harness.js';
 
 /**
  * A publish of a document holding values, through the routes (the B3 plan, task 4): refused naming
@@ -151,5 +157,121 @@ describe('publishing a document holding values, through the routes', () => {
     // And an id that is no publication Alice may read is answered as none.
     const outsider = await h.call('alice', 'GET', `/v1/publications/${quality.id}/bindings`);
     expect(outsider.statusCode).toBe(404);
+  });
+
+  it('DAT-070 flags a floating binding once its definition advances and never a pinned one, and shows how each binding has changed since the document was last published', async () => {
+    const definition = await h.definition(connection.id);
+    const component = await h.component(h.general, 'Readings');
+    const floating = binding('b1', definition.id, { parameters: { site: { literal: '71' } } });
+    const pinned = binding('b2', definition.id, {
+      version: definition.version,
+      parameters: { site: { literal: '72' } },
+    });
+    await h.place(component, floating, pinned);
+    const document = await h.documentReferencing([component.id]);
+    const node = document.nodes[0]!;
+    h.connector.run = ranOk([['71', 'One']]);
+    await h.call('ada', 'POST', `/v1/documents/${document.id}/bindings/resolve`, {
+      bindings: [
+        { node, binding: 'b1' },
+        { node, binding: 'b2' },
+      ],
+    });
+    type Facts = {
+      binding: { id: string };
+      held: { version: string } | null;
+      waiting: { version: string } | null;
+      definitionChanged: boolean;
+      sincePublished: null | 'new' | string[];
+      mayCheck: boolean;
+      mayResolve: boolean;
+    };
+    const facts = async (as = 'ada') => {
+      const answer = await h.call(as, 'GET', `/v1/documents/${document.id}/bindings`);
+      expect(answer.statusCode, answer.body).toBe(200);
+      return Object.fromEntries(
+        answer.json<{ bindings: Facts[] }>().bindings.map((each) => [each.binding.id, each]),
+      );
+    };
+    const accept = async (id: string) => {
+      const now = (await facts())[id]!;
+      const answer = await h.call('ada', 'POST', `/v1/documents/${document.id}/bindings/accept`, {
+        node,
+        binding: id,
+        version: now.waiting!.version,
+        replaces: now.held!.version,
+      });
+      expect(answer.statusCode, answer.body).toBe(200);
+    };
+    // Never published: nothing has changed since.
+    let now = await facts();
+    expect([now.b1!.sincePublished, now.b2!.sincePublished]).toEqual([null, null]);
+    expect([now.b1!.definitionChanged, now.b2!.definitionChanged]).toEqual([false, false]);
+    // Ada may check and resolve; Alice reads the document, and may do neither.
+    expect([now.b1!.mayCheck, now.b1!.mayResolve]).toEqual([true, true]);
+    const alice = await facts('alice');
+    expect([alice.b1!.mayCheck, alice.b1!.mayResolve]).toEqual([false, false]);
+
+    const asked = await publish(document);
+    expect(asked.statusCode, asked.body).toBe(200);
+    await h.tenantDb.withTenant(h.tenant, (trx) =>
+      recordPublication(trx, {
+        requestId: asked.json<{ id: string }>().id,
+        pipelineVersion: '16',
+        fonts: [{ file: 'LiberationSerif-Regular.ttf', sha256: 'a'.repeat(64) }],
+        dataSha256: 'b'.repeat(64),
+        numbering: { scheme: defaultNumberingScheme.id, entries: [] },
+        outputs: [
+          {
+            format: 'pdf',
+            engineVersion: '0.15.1',
+            templateVersion: 15,
+            key: `${h.tenant.role}/sha256/${'c'.repeat(64)}`,
+            sha256: 'c'.repeat(64),
+            bytes: 1000,
+          },
+          {
+            format: 'provenance',
+            pipelineVersion: '16',
+            key: `${h.tenant.role}/sha256/${'e'.repeat(64)}`,
+            sha256: 'e'.repeat(64),
+            bytes: 200,
+          },
+        ],
+      }),
+    );
+    now = await facts();
+    expect([now.b1!.sincePublished, now.b2!.sincePublished]).toEqual([null, null]);
+
+    // The definition advances: the floating binding is flagged, the pinned one is not.
+    await h.nextDefinition(
+      definition.id,
+      definition.version,
+      definitionBody(connection.id, { description: 'Advanced.' }),
+    );
+    now = await facts();
+    expect([now.b1!.definitionChanged, now.b2!.definitionChanged]).toEqual([true, false]);
+    expect(now.b1!.sincePublished).toBeNull();
+
+    // Accepting the new definition's result: another dataset version and definition version.
+    h.connector.run = ranOk([['71', 'Two']]);
+    await h.call('ada', 'POST', `/v1/documents/${document.id}/bindings/check`, {});
+    await accept('b1');
+    await accept('b2');
+    now = await facts();
+    expect(now.b1!.definitionChanged).toBe(false);
+    expect(now.b1!.sincePublished).toEqual(['dataset', 'definition']);
+    expect(now.b2!.sincePublished).toEqual(['dataset']);
+
+    // The pinned binding takes another column, and a binding is added.
+    await h.place(
+      component,
+      floating,
+      { ...pinned, take: { column: 'id' } },
+      binding('b3', definition.id),
+    );
+    now = await facts();
+    expect(now.b2!.sincePublished).toEqual(['digest', 'dataset']);
+    expect(now.b3!.sincePublished).toBe('new');
   });
 });
