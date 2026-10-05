@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   checkCoherence,
+  flakesIn,
   parseResults,
   readRecordedRun,
   reduceRun,
@@ -283,5 +284,30 @@ describe('reducing a local run for its record', () => {
 
   it('refuses a report that is not a Vitest report', () => {
     expect(() => reduceRun({ success: true }, at)).toThrow(/testResults/);
+  });
+});
+
+describe('finding the tests that passed only on a retry', () => {
+  const file = (assertionResults: unknown[]) => ({
+    success: true,
+    startTime: NOW,
+    testResults: [{ name: '/repo/apps/web/src/a.test.tsx', assertionResults }],
+  });
+
+  it('names a passed test that failed first, by its file and full name, and nothing else', () => {
+    expect(
+      flakesIn([
+        file([
+          {
+            fullName: 'the dialog focuses its box',
+            status: 'passed',
+            failureMessages: ['Error: x'],
+          },
+          { fullName: 'steady', status: 'passed', failureMessages: [] },
+          { fullName: 'broken', status: 'failed', failureMessages: ['Error: y'] },
+          { fullName: 'older reporter', status: 'passed' },
+        ]),
+      ]),
+    ).toEqual([{ file: 'apps/web/src/a.test.tsx', test: 'the dialog focuses its box' }]);
   });
 });
