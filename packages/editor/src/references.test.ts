@@ -13,8 +13,10 @@ import {
   type Command,
   type Transaction,
 } from 'prosemirror-state';
+import { closeHistory, undo } from 'prosemirror-history';
 import { describe, expect, it } from 'vitest';
 
+import { bindingPlaceable, bindingSelected, changeBinding, insertBinding } from './bindings.js';
 import { blockCommand } from './blocks.js';
 import { fromEditor, toEditor } from './mapping.js';
 import {
@@ -27,6 +29,7 @@ import {
 import { changeReference, insertReference, referenceAt } from './references.js';
 import { editorSchema } from './schema.js';
 import { createEditorState, footnotePluginsOf } from './state.js';
+import { titleSchema } from './title.js';
 
 const { nodes } = editorSchema;
 
@@ -460,5 +463,158 @@ describe('placing and changing a cross-reference (cross-references 1)', () => {
     expect(listening['Mod-Alt-x']!(inCode, () => undefined)).toBe(false);
     expect(asked).toEqual(['reference']);
     expect(commandKeymap(counter())['Mod-Alt-x']!(inText, () => undefined)).toBe(false);
+  });
+});
+
+/** What the Value dialog places: a definition, its parameters, its mode and what it takes (B2). */
+const DEPTH = {
+  query: '00000000-0000-4000-8000-00000000d001',
+  parameters: { site: { literal: 'north' } },
+  mode: 'checked',
+  take: { column: 'depth' },
+} as const;
+
+describe('placing and changing a binding (the B2 plan, task 1)', () => {
+  it('places one in every inline home, selected whole and named, and never in preformatted text, over a block equation or in a title', () => {
+    const base = stateOf(
+      documentOf(
+        paragraph('p1', text('Mean')),
+        {
+          type: 'list',
+          id: 'l1',
+          kind: 'definition',
+          items: [{ term: [text('Load')], content: [paragraph('i1', text('Weight'))] }],
+        },
+        {
+          type: 'blockquote',
+          id: 'q1',
+          content: [paragraph('b1', text('Said'))],
+          attribution: [text('Ada')],
+        },
+        { ...table([text('Readings')]), note: [text('Estimated')] } as BlockNode,
+        figure([text('Visits')]),
+        paragraph('p2', text('Visited'), {
+          type: 'footnote',
+          id: 'f1',
+          anchor: { kind: 'span' },
+          content: [paragraph('fp1', text('Once'))],
+        }),
+        { type: 'preformatted', id: 'pre1', text: 'code' },
+      ),
+    );
+    const tableAt = startOf(base.doc, 't1');
+    const homes: [string, number][] = [
+      ['paragraph', startOf(base.doc, 'p1')],
+      ['term', startOf(base.doc, 'l1') + 2],
+      ['attribution', startOf(base.doc, 'b1') + base.doc.nodeAt(startOf(base.doc, 'b1'))!.nodeSize],
+      ['caption', tableAt + 1],
+      ['cell', startOf(base.doc, 'c1')],
+      [
+        'note',
+        tableAt +
+          base.doc.nodeAt(tableAt)!.nodeSize -
+          1 -
+          base.doc.nodeAt(tableAt)!.lastChild!.nodeSize,
+      ],
+      ['figure caption', startOf(base.doc, 'g1') + 1],
+    ];
+    for (const [name, start] of homes) {
+      const at = caretIn(base, start, 1);
+      expect(bindingPlaceable(at), name).toBe(true);
+      const { handled, next } = run(at, insertBinding(DEPTH));
+      expect(handled, name).toBe(true);
+      const placed = bindingSelected(next);
+      expect(placed?.binding, name).toMatchObject({ type: 'binding', ...DEPTH });
+      expect(placed?.binding.id, name).toMatch(/^n\d+$/);
+      expect(() => fromEditor(next.doc), name).not.toThrow();
+    }
+    const footnote = footnoteState(base, 'f1', 2);
+    expect(bindingPlaceable(footnote), 'footnote').toBe(true);
+    expect(run(footnote, insertBinding(DEPTH)).next.doc.firstChild!.childCount).toBe(3);
+
+    expect(bindingPlaceable(caretIn(base, startOf(base.doc, 'pre1'), 1)), 'preformatted').toBe(
+      false,
+    );
+    expect(insertBinding(DEPTH)(caretIn(base, startOf(base.doc, 'pre1'), 1))).toBe(false);
+    const withEquation = base.apply(
+      base.tr.insert(base.doc.content.size, nodes.equationBlock!.create({ mathml: '<math/>' })),
+    );
+    const equation = withEquation.apply(
+      withEquation.tr.setSelection(NodeSelection.create(withEquation.doc, base.doc.content.size)),
+    );
+    expect(bindingPlaceable(equation), 'a block equation').toBe(false);
+    const title = EditorState.create({
+      doc: titleSchema.node('doc', null, [titleSchema.text('Readings')]),
+    });
+    expect(bindingPlaceable(title), 'a title').toBe(false);
+  });
+
+  it('changes a binding in place, keeping its identifier, and an undo puts the old one back under it', () => {
+    const placed = run(
+      caretIn(
+        stateOf(documentOf(paragraph('p1', text('Mean')))),
+        startOf(stateOf(documentOf(paragraph('p1', text('Mean')))).doc, 'p1'),
+        4,
+      ),
+      insertBinding(DEPTH),
+    ).next;
+    const before = bindingSelected(placed)!;
+    const { handled, next } = run(
+      placed.apply(closeHistory(placed.tr)),
+      changeBinding(before.pos, {
+        ...DEPTH,
+        version: '00000000-0000-4000-8000-00000000e001',
+        mode: 'pinned',
+        take: { column: 'site' },
+      }),
+    );
+    expect(handled).toBe(true);
+    expect(bindingSelected(next)).toEqual({
+      pos: before.pos,
+      binding: {
+        ...before.binding,
+        version: '00000000-0000-4000-8000-00000000e001',
+        mode: 'pinned',
+        take: { column: 'site' },
+      },
+    });
+    let undone = next;
+    undo(next, (tr) => (undone = undone.apply(tr)));
+    const back: string[] = [];
+    undone.doc.descendants((node) => {
+      if (node.type.name === 'binding') back.push(`${node.attrs.id} ${node.attrs.mode}`);
+    });
+    expect(back).toEqual([`${before.binding.id} checked`]);
+    expect(changeBinding(1, DEPTH)(next)).toBe(false);
+  });
+
+  it('is a registry command, Value, on Ctrl or Cmd, Shift and 6, which asks the renderer, on a shortcut nothing else takes', () => {
+    expect(EDITOR_COMMANDS.find((command) => command.label === 'Value')).toEqual({
+      kind: 'block',
+      action: 'value',
+      label: 'Value',
+      shortcut: 'Mod-Shift-6',
+      shortcutSaid: 'Ctrl or Cmd, Shift and 6',
+      prompts: true,
+    });
+    const shortcuts = EDITOR_COMMANDS.map((command) => command.shortcut.toLowerCase());
+    expect(shortcuts.filter((each) => each === 'mod-shift-6')).toHaveLength(1);
+    const state = stateOf(
+      documentOf(paragraph('p1', text('See')), { type: 'preformatted', id: 'pre1', text: 'code' }),
+    );
+    const inText = caretIn(state, startOf(state.doc, 'p1'), 3);
+    const inCode = caretIn(state, startOf(state.doc, 'pre1'), 1);
+    const value = blockCommand('value', counter());
+    expect(value(inText)).toBe(true);
+    expect(value(inCode)).toBe(false);
+    expect(run(inText, value).next.doc.eq(inText.doc)).toBe(true);
+    const asked: string[] = [];
+    const listening = commandKeymap(counter(), (name) => {
+      asked.push(name);
+      return true;
+    });
+    expect(listening['Mod-Shift-6']!(inText, () => undefined)).toBe(true);
+    expect(listening['Mod-Shift-6']!(inCode, () => undefined)).toBe(false);
+    expect(asked).toEqual(['value']);
   });
 });
