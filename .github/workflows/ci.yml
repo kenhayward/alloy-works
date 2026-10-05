@@ -1,9 +1,21 @@
 name: CI
 
+# Two speeds (ADR-0039). A pull request runs the fast path: lint, format, typecheck, build and the
+# tests of the packages it changes, or for one touching only docs, format and the docs' own checks.
+# The full run - every suite, the whole system and the traceability gate - runs on a close (a PR
+# changing version.json), on a PR changing CI or the deployment, after every merge to main, and
+# nightly. A red full run on main opens an issue, and the next close cannot pass until it is fixed.
 on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
 
 # A second push to the same branch supersedes the first; no point burning minutes on a stale commit.
 concurrency:
@@ -11,8 +23,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: What changed
+    runs-on: ubuntu-latest
+    outputs:
+      full: ${{ steps.decide.outputs.full }}
+      docs: ${{ steps.decide.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - id: decide
+        run: |
+          if [ "${{ github.event_name }}" != 'pull_request' ]; then
+            echo 'full=true' >> "$GITHUB_OUTPUT"; echo 'docs=false' >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          files=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD")
+          echo "$files"
+          if echo "$files" | grep -qE '^(version\.json|\.github/|deploy/)'; then full=true; else full=false; fi
+          if echo "$files" | grep -qvE '^(docs/|changes/|packages/trace/trace\.json$|[^/]+\.md$)'; then docs=false; else docs=true; fi
+          echo "full=$full" >> "$GITHUB_OUTPUT"
+          echo "docs=$docs" >> "$GITHUB_OUTPUT"
+
   build:
     name: Lint, typecheck, build and test
+    needs: changes
     runs-on: ubuntu-latest
     # The db suite runs against a real Postgres, as in development. PostgreSQL 16 or later is
     # required (role membership granted WITH INHERIT FALSE); the image matches deploy/compose.yaml.
@@ -33,8 +69,14 @@ jobs:
       # Turbo holds each task's output until the task ends when it detects CI, so the slowest suite
       # looked like a hang. Streamed, every line arrives as it is printed, prefixed with its task.
       TURBO_LOG_ORDER: stream
+      ALLOY_TEST_SOURCE_PORT: '5434'
+      FULL: ${{ needs.changes.outputs.full }}
+      DOCS: ${{ needs.changes.outputs.docs }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          # `--affected` compares with the base branch's history.
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 
@@ -52,6 +94,7 @@ jobs:
       # The object store the objects and worker suites run against. A service container cannot take
       # a command, and SeaweedFS needs one, so it is started as a step.
       - name: Object store
+        if: env.DOCS != 'true'
         run: |
           docker run -d --name seaweedfs -p 8333:8333 \
             -e AWS_ACCESS_KEY_ID=alloy-store-admin \
@@ -66,41 +109,73 @@ jobs:
 
       # The pinned Typst, checked against its hash: the same version the tests, CI and the image use.
       - name: Typst
+        if: env.DOCS != 'true'
         run: pnpm --filter @alloy-works/worker fetch-typst
 
       # The pinned veraPDF, by digest: the checker the regression corpus answers to (PUB-087).
       - name: veraPDF
+        if: env.DOCS != 'true'
         run: pnpm --filter @alloy-works/worker fetch-verapdf
 
       # The Word validator, built from digest-pinned .NET images and a locked Open XML SDK: the check
       # every .docx a worker test makes answers to.
       - name: Word validator
+        if: env.DOCS != 'true'
         run: pnpm --filter @alloy-works/worker fetch-ooxml-check
 
       # Lint, format, typecheck and build block (docs/ci-and-releases.md). Test keeps continue-on-error:
       # the traceability gate already fails the run on a failed test report, after the reports upload.
       - name: Lint
+        if: env.DOCS != 'true'
         run: pnpm lint
 
       - name: Format
         run: pnpm format
 
       - name: Typecheck
+        if: env.DOCS != 'true'
         run: pnpm typecheck
 
       - name: Build
+        if: env.DOCS != 'true'
         run: pnpm build
 
-      # Every suite but the connector's, which runs one file at a time and has a job of its own.
+      # The connector's own source, should the change reach its suite on the fast path.
+      - name: Connector source
+        if: env.FULL != 'true' && env.DOCS != 'true'
+        run: pnpm --filter @alloy-works/connector source
+
+      # A test that fails is tried once more (ADR-0039); one that then passes does not block, and the
+      # Flakes step below reports it.
+      - name: Test the changed packages
+        if: env.FULL != 'true' && env.DOCS != 'true'
+        run: pnpm exec turbo run test --continue --affected -- --retry=1
+
+      - name: The docs' own checks
+        if: env.DOCS == 'true'
+        run: pnpm exec turbo run test --continue --filter=@alloy-works/trace --filter=@alloy-works/desktop -- --retry=1
+
+      - name: Trace check
+        if: env.FULL != 'true'
+        run: pnpm trace check
+
+      # Every suite but the connector's, the service's and the database's, which have jobs of their own.
       - name: Test
-        run: pnpm exec turbo run test --continue --filter='!@alloy-works/connector'
+        if: env.FULL == 'true'
+        run: pnpm exec turbo run test --continue --filter='!@alloy-works/connector' --filter='!@alloy-works/service' --filter='!@alloy-works/db' -- --retry=1
         continue-on-error: true
+
+      - name: Flakes
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: .github/scripts/flakes.sh
 
       # What every suite above wrote, for the traceability gate's own job, which reads it beside the
       # end-to-end and browser suites' reports from the whole-system job. `.trace-results` is a hidden
       # directory, which the action leaves out unless told otherwise.
       - name: Test reports
-        if: always()
+        if: always() && env.FULL == 'true'
         uses: actions/upload-artifact@v5
         with:
           name: trace-results-build
@@ -112,8 +187,10 @@ jobs:
       # that broke it. They are never pushed: a registry comes with hosting. Their layers come from the
       # Actions cache the whole-system job writes, by target.
       - uses: docker/setup-buildx-action@v3
+        if: env.FULL == 'true'
 
       - name: Images
+        if: env.FULL == 'true'
         uses: docker/bake-action@v6
         with:
           source: .
@@ -133,6 +210,7 @@ jobs:
       # Each image refuses to start without its configuration, which is what a working entry point
       # looks like: the alternative is a stack trace about a missing module.
       - name: Image entry points
+        if: env.FULL == 'true'
         run: |
           set -e
           docker run --rm alloy-works-worker typst --version | grep '0.15.1'
@@ -147,13 +225,32 @@ jobs:
           # And the per-request child it spawns is beside its entry point.
           docker run --rm --entrypoint test alloy-works-connector -f dist/child.js
 
-  # The connector's suite (the D1 plan, D1-K), beside the job above: it runs one file at a time, and
-  # was the longest suite there.
-  connector:
-    name: The connector
+  # The three longest suites, each beside the job above on a runner of its own: the connector's runs
+  # one file at a time, and the service's and the database's took a CPU each from one another there.
+  suites:
+    name: The ${{ matrix.suite }} suite
+    needs: changes
+    if: needs.changes.outputs.full == 'true'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [connector, service, db]
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 30
     env:
       TURBO_LOG_ORDER: stream
+      ALLOY_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres
       ALLOY_TEST_SOURCE_PORT: '5434'
     steps:
       - uses: actions/checkout@v5
@@ -168,19 +265,37 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      # Its own source: the pinned PostgreSQL and the seed the compose file's `source-postgres` uses,
-      # on 127.0.0.1:5434.
+      - name: Object store
+        if: ${{ matrix.suite == 'service' }}
+        run: |
+          docker run -d --name seaweedfs -p 8333:8333             -e AWS_ACCESS_KEY_ID=alloy-store-admin             -e AWS_SECRET_ACCESS_KEY=alloy-store-admin-dev-secret             chrislusf/seaweedfs:4.46 server -dir=/data -s3 -s3.port=8333 -s3.iam.readOnly=false
+          for attempt in $(seq 1 60); do
+            curl -fs http://127.0.0.1:8333/healthz > /dev/null && exit 0
+            sleep 1
+          done
+          docker logs seaweedfs
+          exit 1
+
+      # The connector's own source: the pinned PostgreSQL and the seed the compose file's
+      # `source-postgres` uses, on 127.0.0.1:5434.
       - name: Connector source
+        if: ${{ matrix.suite == 'connector' }}
         run: pnpm --filter @alloy-works/connector source
 
       - name: Test
-        run: pnpm exec turbo run test --filter=@alloy-works/connector
+        run: pnpm exec turbo run test --filter=@alloy-works/${{ matrix.suite }} -- --retry=1
+
+      - name: Flakes
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: .github/scripts/flakes.sh
 
       - name: Test reports
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: trace-results-connector
+          name: trace-results-${{ matrix.suite }}
           path: .trace-results
           include-hidden-files: true
           if-no-files-found: error
@@ -190,6 +305,8 @@ jobs:
   # two things cannot hold one port.
   end-to-end:
     name: The whole system
+    needs: changes
+    if: needs.changes.outputs.full == 'true'
     runs-on: ubuntu-latest
     env:
       TURBO_LOG_ORDER: stream
@@ -268,7 +385,7 @@ jobs:
           # The project the stack above runs as, compose.yaml's own name: the connector's tests reach
           # into its containers by it.
           ALLOY_E2E_COMPOSE_PROJECT: alloy-works
-        run: pnpm test:e2e
+        run: pnpm exec turbo run test:e2e --filter=@alloy-works/e2e -- --retry=1
 
       # The renderer in a real browser, against the same containers (the W13 plan's B-A): run whenever
       # the stack came up, so a failing end-to-end check does not hide what the browser would say.
@@ -281,7 +398,13 @@ jobs:
           ALLOY_BROWSER_IDP: http://idp.localhost:9090
           ALLOY_BROWSER_DATABASE: postgres://aw_service:aw_service_dev@127.0.0.1:5432/alloy_dev
           ALLOY_BROWSER_STORE_AT: 127.0.0.1
-        run: pnpm test:browser
+        run: pnpm exec turbo run test:browser --filter=@alloy-works/browser -- --retry=1
+
+      - name: Flakes
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: .github/scripts/flakes.sh
 
       - name: Stop the stack
         if: always()
@@ -307,7 +430,7 @@ jobs:
           if-no-files-found: error
 
   # The traceability gate, in a job of its own so it reads every suite's report: the build job's, the
-  # connector's and the whole-system job's, the browser suite's among them (the W13 plan's B-G). It runs unless the run
+  # three suites' and the whole-system job's, the browser suite's among them (the W13 plan's B-G). It runs unless the run
   # was cancelled, so a failed suite is read and refused rather than skipped.
   #
   # NOT continue-on-error. The baseline declares what this release is answerable for, so the gate
@@ -316,8 +439,8 @@ jobs:
   # and does not begin the switch-over in docs/ci-and-releases.md.
   gate:
     name: Traceability gate
-    needs: [build, connector, end-to-end]
-    if: ${{ !cancelled() }}
+    needs: [changes, build, suites, end-to-end]
+    if: ${{ !cancelled() && needs.changes.outputs.full == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -332,23 +455,13 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: The build job's reports
+      # Every job's reports: the build job's, each suite's and the whole system's.
+      - name: The reports
         uses: actions/download-artifact@v5
         with:
-          name: trace-results-build
+          pattern: trace-results-*
           path: .trace-results
-
-      - name: The whole system's reports
-        uses: actions/download-artifact@v5
-        with:
-          name: trace-results-system
-          path: .trace-results
-
-      - name: The connector's report
-        uses: actions/download-artifact@v5
-        with:
-          name: trace-results-connector
-          path: .trace-results
+          merge-multiple: true
 
       # Both suites that drive the stack must have reported. `pnpm trace gate` exempts their reports
       # from "no report at all", since `pnpm test` never writes them, so without this a run whose
@@ -365,3 +478,35 @@ jobs:
 
       - name: Traceability gate
         run: pnpm trace gate
+
+  # The one required check (ADR-0039): every job above passed or was not asked for. On main, a red
+  # full run opens an issue, or comments on the one already open.
+  checks:
+    name: Checks
+    needs: [changes, build, suites, end-to-end, gate]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every job's verdict
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "$RESULTS"
+          for result in $RESULTS; do
+            case "$result" in success | skipped) ;; *) exit 1 ;; esac
+          done
+
+      - name: A red main opens an issue
+        if: failure() && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          run="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          number=$(gh issue list -R "$GITHUB_REPOSITORY" --state open --search 'main is red in:title' \
+            --json number,title | jq -r '.[] | select(.title == "main is red") | .number' | head -n 1)
+          if [ -n "$number" ]; then
+            gh issue comment "$number" -R "$GITHUB_REPOSITORY" --body "Still red: $run"
+          else
+            gh issue create -R "$GITHUB_REPOSITORY" --title 'main is red' \
+              --body "The full run failed on main: $run. The next close cannot pass until it is fixed (ADR-0039)."
+          fi

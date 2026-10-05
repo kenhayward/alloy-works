@@ -16183,7 +16183,7 @@
         },
         {
           "id": "DAT-074",
-          "howItIsMet": "A connection's `type` is `postgres`, `sqlServer`, `http` or `s3`, and a query definition's fetch reads CSV, XLSX, JSON or JSON Lines from an S3 object or an HTTP response; every one is pulled by the connector"
+          "howItIsMet": "A connection's `type` is `postgres`, `sqlServer` (deferred, [ADR-0038](../decisions/0038-sql-server-is-deferred-past-the-first-release.md)), `http` or `s3`, and a query definition's fetch reads CSV, XLSX, JSON or JSON Lines from an S3 object or an HTTP response; every one is pulled by the connector"
         },
         {
           "id": "DAT-003",
@@ -16211,7 +16211,7 @@
         },
         {
           "id": "DAT-078",
-          "howItIsMet": "Each connection type's connector declares the mechanisms it supports - `postgres` and `sqlServer` asserted, `http` delegated, `s3` none - and a connection version declaring another is refused, `identity_not_supported`"
+          "howItIsMet": "Each connection type's connector declares the mechanisms it supports - `postgres` and `sqlServer` (once built, ADR-0038) asserted, `http` delegated, `s3` none - and a connection version declaring another is refused, `identity_not_supported`"
         },
         {
           "id": "DAT-064",
@@ -16231,7 +16231,7 @@
         },
         {
           "id": "DAT-113",
-          "howItIsMet": "On PostgreSQL an asserted identity runs only builder-generated text, the SQL fallback refused; on SQL Server the assertion is a `read_only` `SESSION_CONTEXT` key or `EXECUTE AS USER ... WITH COOKIE` with the cookie held by the connector"
+          "howItIsMet": "On PostgreSQL an asserted identity runs only builder-generated text, the SQL fallback refused; on SQL Server, once built (ADR-0038), the assertion is a `read_only` `SESSION_CONTEXT` key or `EXECUTE AS USER ... WITH COOKIE` with the cookie held by the connector"
         },
         {
           "id": "DAT-114",
@@ -16291,7 +16291,7 @@
         },
         {
           "id": "DAT-103",
-          "howItIsMet": "The connection test checks, where the source can say - PostgreSQL's and SQL Server's catalogues - that the account holds no write privilege, and a `sql` fetch is refused on a connection whose last test did not find it read-only"
+          "howItIsMet": "The connection test checks, where the source can say - PostgreSQL's catalogues, and SQL Server's once built (ADR-0038) - that the account holds no write privilege, and a `sql` fetch is refused on a connection whose last test did not find it read-only"
         },
         {
           "id": "DAT-104",
@@ -16327,7 +16327,7 @@
         },
         {
           "id": "DAT-109",
-          "howItIsMet": "The connector's deadline covers the whole execution, and a limit reached cancels at the source: a PostgreSQL cancel request, a SQL Server attention, an aborted HTTP or S3 exchange"
+          "howItIsMet": "The connector's deadline covers the whole execution, and a limit reached cancels at the source: a PostgreSQL cancel request, a SQL Server attention once built (ADR-0038), an aborted HTTP or S3 exchange"
         },
         {
           "id": "DAT-110",

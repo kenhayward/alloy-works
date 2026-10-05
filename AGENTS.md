@@ -82,8 +82,12 @@ and Windows disagree, reproduce on Linux before calling it a flake. See [`docs/t
 
 ## CI
 
-Lint, format, typecheck, build, the whole-system suites and `pnpm trace gate` block. `Test` keeps
-`continue-on-error` so its reports upload, and the gate fails a red run. Install is
+Two speeds ([ADR-0039](docs/decisions/0039-ci-at-two-speeds-and-fewer-prs.md)). A PR runs lint,
+format, typecheck, build, `pnpm trace check` and the tests of the packages it changes; a docs-only PR,
+format and the docs' checks. The full run (every suite, the whole system, `pnpm trace gate`) runs on a
+close, on a PR changing `.github/` or `deploy/`, after each merge to `main` and nightly; a red `main`
+opens an issue and blocks the next close. A test failing then passing on CI's one retry is a flake: it
+does not block, and gets an issue to fix. `Checks` is the one required check. Install is
 `--frozen-lockfile`. Do not add `continue-on-error`. A red PR does not merge; never rerun until
 green. Details: [`docs/ci-and-releases.md`](docs/ci-and-releases.md).
 
@@ -104,6 +108,7 @@ green. Details: [`docs/ci-and-releases.md`](docs/ci-and-releases.md).
   bumps `version.json` and its mirrors (root and `apps/desktop` `package.json`): Minor +1 if anything
   was added, else Build +1; Major only when asked. The close also updates `docs/architecture.md` and
   drafts the baseline. ([ADR-0037](docs/decisions/0037-change-fragments-and-versions-at-a-close.md))
+  It rides in the slice's last build PR, not a PR of its own (ADR-0039).
 - `apps/web` and `packages/domain` stay `private` at `0.0.0`.
 
 ## Plans and reviews scale with risk
@@ -111,7 +116,8 @@ green. Details: [`docs/ci-and-releases.md`](docs/ci-and-releases.md).
 The tiers are in [`docs/plans/README.md`](docs/plans/README.md): a written plan with pre-flight
 review only for multi-PR work, migrations and stored shapes, process boundaries, auth or tenancy, or
 a new contract; a few lines in the PR body for one ordinary PR; none for docs, copy, UI-only or
-test-only changes. Review depth follows the same tiers.
+test-only changes. Review depth follows the same tiers. A plan rides in its slice's first build PR,
+unless it needs Ken's answers first (ADR-0039).
 
 ## Docs
 
