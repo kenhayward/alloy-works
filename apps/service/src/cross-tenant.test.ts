@@ -551,6 +551,7 @@ const pendingIn = async (tenant: Tenant, db: TenantDatabase) => {
       node: 'a'.repeat(26),
       binding: 'b1',
       digest: 'c'.repeat(64),
+      holding: null,
       session: null,
       provenance: {
         schemaVersion: 1,

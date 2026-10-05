@@ -9,6 +9,7 @@ import {
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { enqueueJob } from './queue.js';
+import { indexVersion } from './search.js';
 import type { TenantTransaction } from './tables.js';
 import { createArtifact, readVersion, type StoredVersion } from './versions.js';
 
@@ -250,6 +251,8 @@ export async function recordAsset(
     })
     .where('id', '=', id)
     .execute();
+  // Indexed as it was written, before the upload named it; a dataset's image is never found (D8-I).
+  if (upload.origin === 'dataset') await indexVersion(trx, version);
   return version;
 }
 

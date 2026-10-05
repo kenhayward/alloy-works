@@ -506,6 +506,7 @@ export interface DatasetPendingTable {
   node_id: ColumnType<string, string, never>;
   binding_id: ColumnType<string, string, never>;
   binding_digest: ColumnType<string, string, never>;
+  holding: ColumnType<string | null, string | null, never>;
   session: ColumnType<string | null, string | null, never>;
   definition_id: ColumnType<string, string, never>;
   definition_version: ColumnType<string, string, never>;

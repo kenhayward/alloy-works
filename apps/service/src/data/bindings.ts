@@ -578,54 +578,90 @@ type Admission =
   | { readonly failure: FailureIn };
 
 /**
- * Admits a run's images (D8-D): each an asset in the definition's space holds is reused, by the
- * earliest version holding it, and nothing is ingested. Each of the rest is held by its hash, as
- * `holdObject` holds an upload's, in the order of the hashes so two acts never wait on each other,
- * found still stored - a refusal of another upload of the same bytes may have removed them since the
- * run stored them - and given the upload already checking it there, or one made for it, its `ingest`
- * queued. Its provenance names the asset version of each image already held.
+ * Admits the images of every run an act records (D8-D), each run by its question: each image an
+ * asset in the definition's space holds is reused, by the earliest version holding it, and nothing is
+ * ingested. Every other image, across all the runs, is held by its hash as `holdObject` holds an
+ * upload's, all of them before any is admitted and in the order of the hashes, so two acts sharing
+ * images across questions never each hold what the other waits for. Under its lock each is asked of
+ * the assets again, found still stored - a refusal of another upload of the same bytes may have
+ * removed it since the run stored it - and given the upload already checking it there, or one made
+ * for it, its `ingest` queued. Each provenance names the asset version of each image already held.
  */
-async function admitImages(
+async function admitAll(
   trx: TenantTransaction,
   store: () => Promise<{ get(key: string): Promise<Buffer> }>,
   principalId: string,
-  ran: Extract<Ran, { ok: true }>,
-): Promise<Admission> {
-  const hashes = [...ran.images.keys()].sort();
-  if (hashes.length === 0) return { held: true, provenance: ran.provenance, hashes };
-  const definition = await trx
-    .selectFrom('artifact')
-    .select('space_id')
-    .where('id', '=', ran.provenance.queryDefinition.artifact)
-    .executeTakeFirstOrThrow();
-  const space = definition.space_id!;
-  const images: Record<string, string> = {};
-  const missing: string[] = [];
-  for (const hash of hashes) {
-    const version = await assetHolding(trx, space, hash);
-    if (version === undefined) missing.push(hash);
-    else images[hash] = version;
-  }
-  const provenance = { ...ran.provenance, images };
-  if (missing.length === 0) return { held: true, provenance, hashes };
-  const uploads: string[] = [];
-  for (const hash of missing) {
-    await holdObject(trx, hash);
-    const image = ran.images.get(hash)!;
-    const kept = await (await store()).get(image.key).catch(() => undefined);
-    if (kept === undefined || createHash('sha256').update(kept).digest('hex') !== hash) {
-      return { failure: { code: 'connector_error' } };
+  runs: ReadonlyMap<string, Extract<Ran, { ok: true }>>,
+): Promise<Map<string, Admission>> {
+  const spaces = new Map<string, string>();
+  const found = new Map<
+    string,
+    { space: string; held: Record<string, string>; missing: string[] }
+  >();
+  for (const [question, ran] of runs) {
+    const definition = ran.provenance.queryDefinition.artifact;
+    let space = spaces.get(definition);
+    if (space === undefined) {
+      space = (
+        await trx
+          .selectFrom('artifact')
+          .select('space_id')
+          .where('id', '=', definition)
+          .executeTakeFirstOrThrow()
+      ).space_id!;
+      spaces.set(definition, space);
     }
-    const { upload } = await uploadForDatasetImage(trx, {
-      spaceId: space,
-      uploader: principalId,
-      key: image.key,
-      format: image.format,
-      bytes: image.bytes,
-    });
-    uploads.push(upload.id);
+    const held: Record<string, string> = {};
+    const missing: string[] = [];
+    for (const hash of [...ran.images.keys()].sort()) {
+      const version = await assetHolding(trx, space, hash);
+      if (version === undefined) missing.push(hash);
+      else held[hash] = version;
+    }
+    found.set(question, { space, held, missing });
   }
-  return { held: false, provenance, uploads };
+  const locking = [...new Set([...found.values()].flatMap((each) => each.missing))].sort();
+  for (const hash of locking) await holdObject(trx, hash);
+
+  const admitted = new Map<string, Admission>();
+  for (const [question, ran] of runs) {
+    const { space, held, missing } = found.get(question)!;
+    const hashes = [...ran.images.keys()].sort();
+    const uploads: string[] = [];
+    let failure: FailureIn | undefined;
+    for (const hash of missing) {
+      // Admitted since it was first asked, by an upload that finished meanwhile.
+      const version = await assetHolding(trx, space, hash);
+      if (version !== undefined) {
+        held[hash] = version;
+        continue;
+      }
+      const image = ran.images.get(hash)!;
+      const kept = await (await store()).get(image.key).catch(() => undefined);
+      if (kept === undefined || createHash('sha256').update(kept).digest('hex') !== hash) {
+        failure = { code: 'connector_error' };
+        break;
+      }
+      const { upload } = await uploadForDatasetImage(trx, {
+        spaceId: space,
+        uploader: principalId,
+        key: image.key,
+        format: image.format,
+        bytes: image.bytes,
+      });
+      uploads.push(upload.id);
+    }
+    const provenance = { ...ran.provenance, images: held };
+    admitted.set(
+      question,
+      failure !== undefined
+        ? { failure }
+        : uploads.length === 0
+          ? { held: true, provenance, hashes }
+          : { held: false, provenance, uploads },
+    );
+  }
+  return admitted;
 }
 
 /** Each question run once, at most `atOnce` at a time, in the order asked. */
@@ -717,6 +753,18 @@ async function seeingSourceNow(
   }
   return (run) => sees.get(run.connection.id) === true;
 }
+
+/** Each run that answered, by its question, for its images to be admitted. */
+const recordedRuns = (
+  runs: readonly Prepared[],
+  ran: ReadonlyMap<string, Ran>,
+): Map<string, Extract<Ran, { ok: true }>> =>
+  new Map(
+    runs.flatMap((each) => {
+      const outcome = ran.get(each.question);
+      return outcome?.ok === true ? [[each.question, outcome] as const] : [];
+    }),
+  );
 
 /** The provenance of each result these runs recorded, for the locks on their questions. */
 const recordable = (runs: readonly Prepared[], ran: ReadonlyMap<string, Ran>): Provenance[] =>
@@ -1225,7 +1273,7 @@ export async function resolveAct(
       // act takes them, so two acts recording the same questions never wait on each other.
       await lockDatasetQuestions(record, recordable(succeeded, ran));
       const versions = new Map<string, Awaited<ReturnType<typeof recordDatasetVersion>>>();
-      const admitted = new Map<string, Admission>();
+      const admitted = await admitAll(record, store, principalId, recordedRuns(succeeded, ran));
       const results: ResolveResult[] = [];
       for (const each of prepared) {
         const outcome = ran.get(each.question)!;
@@ -1245,11 +1293,7 @@ export async function resolveAct(
           failed(outcome.failure);
           continue;
         }
-        let admission = admitted.get(each.question);
-        if (!admission) {
-          admission = await admitImages(record, store, principalId, outcome);
-          admitted.set(each.question, admission);
-        }
+        const admission = admitted.get(each.question)!;
         if ('failure' in admission) {
           failed(admission.failure);
           continue;
@@ -1263,6 +1307,7 @@ export async function resolveAct(
             node,
             binding: binding.id,
             digest: each.placed.digest,
+            holding: held.get(key(node, binding.id))?.id ?? null,
             session: act === 'session' ? body.session! : null,
             provenance: admission.provenance,
             uploads: admission.uploads,
@@ -1414,7 +1459,7 @@ export async function checkAct(
       const seesSource = await seeingSourceNow(record, caller, toRun);
       await lockDatasetQuestions(record, recordable(succeeded, ran));
       const versions = new Map<string, Awaited<ReturnType<typeof recordDatasetVersion>>>();
-      const admitted = new Map<string, Admission>();
+      const admitted = await admitAll(record, store, principalId, recordedRuns(succeeded, ran));
       let waits = false;
       for (const each of toRun) {
         const outcome = ran.get(each.question);
@@ -1437,11 +1482,7 @@ export async function checkAct(
           failed(outcome.failure);
           continue;
         }
-        let admission = admitted.get(each.question);
-        if (!admission) {
-          admission = await admitImages(record, store, principalId, outcome);
-          admitted.set(each.question, admission);
-        }
+        const admission = admitted.get(each.question)!;
         if ('failure' in admission) {
           failed(admission.failure);
           continue;
@@ -1455,6 +1496,7 @@ export async function checkAct(
             node,
             binding: binding.id,
             digest: each.placed.digest,
+            holding: holdingNow.get(key(node, binding.id))?.id ?? null,
             session: null,
             provenance: admission.provenance,
             uploads: admission.uploads,
@@ -1800,23 +1842,37 @@ async function whereImage(
 }
 
 /**
- * What a pending result's act decided before its source was asked, decided again as it is finished
- * (D8-E, D3-H): `edit` on the document for a resolve, `read` for a check; `read` on the definition it
- * ran and `use_connection` on the connection, each lost answered `access_changed`; and the binding as
- * the act read it - from the session a resolve from one read - or `binding_changed`. Answers what the
- * document places now, for what its bindings hold.
+ * Every image hash a stored result's image cells hold, read from the result object itself and held to
+ * its checksum, so what a finish records is checked against the result rather than against the
+ * pending row that names it (the final review, finding 6). Throws where it cannot be read: nothing is
+ * recorded, and asking again tries again.
  */
-async function mayFinish(
+async function resultImages(store: TenantStore, key: string, checksum: string): Promise<string[]> {
+  const bytes = await store.get(key);
+  if (createHash('sha256').update(bytes).digest('hex') !== checksum) {
+    throw new Error(`The result kept under ${checksum} is not its checksum's`);
+  }
+  const { columns, rows } = canonicalResultSchema.parse(JSON.parse(bytes.toString('utf8')));
+  const hashes = new Set<string>();
+  for (const row of rows) {
+    for (const [at, [, base]] of columns.entries()) {
+      const cell = row[at];
+      if (base === 'image' && typeof cell === 'string') hashes.add(cell);
+    }
+  }
+  return [...hashes];
+}
+
+/**
+ * What a pending result's act decided about access before its source was asked, decided again as it
+ * is followed (D8-E, D3-H): `edit` on the document for a resolve, `read` for a check; `read` on the
+ * definition it ran and `use_connection` on the connection, each lost answered `access_changed`.
+ */
+async function mayStillAct(
   trx: TenantTransaction,
   caller: Caller,
   pending: StoredPending,
-): Promise<Placed[]> {
-  const naming = {
-    definition: pending.provenance.queryDefinition.artifact,
-    binding: pending.binding,
-    node: pending.node,
-    document: pending.document,
-  };
+): Promise<void> {
   try {
     await authoriseAt(trx, caller, pending.act === 'check' ? 'read' : 'edit', {
       kind: 'artifact',
@@ -1840,6 +1896,27 @@ async function mayFinish(
   ) {
     throw accessChanged();
   }
+}
+
+/**
+ * Everything a pending result's act decided, decided again as it is finished, under the binding's
+ * lock: access (`mayStillAct`); the binding as the act read it - from the session a resolve from one
+ * read - or `binding_changed`; and what the binding holds, still the resolution it held when the act
+ * read it, or none as then, or `resolution_precondition`, so a finish never records over a newer
+ * result (the final review, finding 1). Answers what the binding holds now.
+ */
+async function mayFinish(
+  trx: TenantTransaction,
+  caller: Caller,
+  pending: StoredPending,
+): Promise<HeldResolution | undefined> {
+  const naming = {
+    definition: pending.provenance.queryDefinition.artifact,
+    binding: pending.binding,
+    node: pending.node,
+    document: pending.document,
+  };
+  await mayStillAct(trx, caller, pending);
   const placed =
     (await bindingsPlaced(
       trx,
@@ -1853,7 +1930,18 @@ async function mayFinish(
     (each) => each.node === pending.node && each.binding.id === pending.binding,
   );
   if (found?.digest !== pending.digest) throw bindingChanged(naming);
-  return placed;
+  const holding = (await heldBy(trx, pending.document, placed)).get(
+    key(pending.node, pending.binding),
+  );
+  if ((holding?.id ?? null) !== pending.holding) {
+    throw refused(
+      409,
+      'resolution.precondition',
+      `The binding ${pending.binding} holds another result than it held when this one was run, so this one is not kept.`,
+      naming,
+    );
+  }
+  return holding;
 }
 
 /**
@@ -1862,7 +1950,8 @@ async function mayFinish(
  * binding's, then the question's - recording the dataset version, and for a resolve the binding's
  * resolution, as the act would have, and removing the pending result in the same transaction; any
  * image refused, it is refused `image_refused`, naming the row and column, and nothing is recorded.
- * The pending row is held while it is finished, so two asking at once take turns, and the second
+ * Access is decided again before anything of it is answered. The pending row is held while it is
+ * finished, once it is found to be the caller's, so two asking at once take turns and the second
  * finds it gone.
  */
 export function pendingHandlers(
@@ -1876,8 +1965,11 @@ export function pendingHandlers(
       const tenant = tenantOf(request);
       const caller = callerOf(request);
       return db.withTenant(tenant, async (trx) => {
+        // Whose it is, before its row is taken: nobody else's request ever waits on it.
+        const seen = await readPendingResult(trx, id);
+        if (!seen || seen.requestedBy !== caller.principalId) throw notFound();
         const pending = await readPendingResult(trx, id, true);
-        if (!pending || pending.requestedBy !== caller.principalId) throw notFound();
+        if (!pending) throw notFound();
         const { node, binding, document } = pending;
         const view = (result: PendingResultView['result']): PendingResultView => ({
           id,
@@ -1903,23 +1995,34 @@ export function pendingHandlers(
           node,
           document,
         };
-        if (pending.state === 'refused') return view(failed(pending.failure as Failure));
+        const resultKey = `${tenantPrefix(tenant)}sha256/${pending.provenance.checksum}`;
+        if (pending.state === 'refused') {
+          try {
+            await mayStillAct(trx, caller, pending);
+          } catch (error) {
+            if (!(error instanceof AppError)) throw error;
+            return view(failed(bindingFailure(error, naming)));
+          }
+          return view(failed(pending.failure as Failure));
+        }
         const images = await pendingImages(trx, pending);
         if (images.state === 'waiting') return view(null);
+        if (!objects) throw storageUnavailable();
+        const store = await objects.forTenant(trx, tenant);
+        await lockBindings(trx, document, [{ node, binding }]);
         if (images.state === 'refused') {
-          if (!objects) throw storageUnavailable();
-          const store = await objects.forTenant(trx, tenant);
-          const at = await whereImage(
-            store,
-            `${tenantPrefix(tenant)}sha256/${pending.provenance.checksum}`,
-            images.hash,
-          );
+          try {
+            await mayStillAct(trx, caller, pending);
+          } catch (error) {
+            if (!(error instanceof AppError)) throw error;
+            return refuse(bindingFailure(error, naming));
+          }
+          const at = await whereImage(store, resultKey, images.hash);
           return refuse(bindingFailure({ code: 'image_refused', ...at }, naming));
         }
-        await lockBindings(trx, document, [{ node, binding }]);
-        let placed: Placed[];
+        let holding: HeldResolution | undefined;
         try {
-          placed = await mayFinish(trx, caller, pending);
+          holding = await mayFinish(trx, caller, pending);
         } catch (error) {
           if (!(error instanceof AppError)) throw error;
           return refuse(bindingFailure(error, naming));
@@ -1929,12 +2032,11 @@ export function pendingHandlers(
         const recorded = await recordDatasetVersion(trx, {
           provenance,
           author: pending.requestedBy,
-          images: Object.keys(images.images),
+          images: await resultImages(store, resultKey, pending.provenance.checksum),
         });
         // Held since it was read, so nothing else has finished it.
         if (!(await finishPending(trx, id)))
           throw new Error(`Pending result ${id} was finished twice`);
-        const holding = (await heldBy(trx, document, placed)).get(key(node, binding));
         if (pending.act === 'check') {
           if (!holding || holding.digest !== pending.digest) {
             return view({ node, binding, outcome: 'unchecked', reason: 'unresolved' });

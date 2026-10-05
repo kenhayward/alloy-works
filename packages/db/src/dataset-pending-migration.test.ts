@@ -7,7 +7,7 @@ import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createAssetUpload, uploadForDatasetImage } from './assets.js';
 import { bootstrapCluster } from './bootstrap.js';
-import { pendingResult } from './datasets.js';
+import { pendingResult, recordResolution } from './datasets.js';
 import { migrate } from './migrate.js';
 import { createTenant, provisionTenant, type Tenant } from './provision.js';
 import { createSpace } from './spaces.js';
@@ -187,6 +187,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       'definition_version',
       'document_id',
       'document_kind',
+      'holding',
       'node_id',
       'provenance',
       'requested_by',
@@ -204,6 +205,8 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
     let provenance: Provenance;
     let upload: string;
     let elsewhere: string;
+    /** A resolution of another binding at the same node. */
+    let another: string;
 
     const tenant = <T>(work: (trx: TenantTransaction) => Promise<T>) =>
       service.withTenant(fresh, work);
@@ -216,6 +219,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
           node: NODE,
           binding: 'b1',
           digest: 'c'.repeat(64),
+          holding: null,
           session: null,
           provenance,
           uploads: [upload],
@@ -241,6 +245,18 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
           role: fresh.schema,
         });
         document = made.document;
+        another = (
+          await recordResolution(trx, {
+            document,
+            node: NODE,
+            binding: 'b2',
+            digest: 'c'.repeat(64),
+            version: (await latestVersion(trx, made.dataset!))!.id,
+            replaces: null,
+            act: 'resolve',
+            by: ada,
+          })
+        ).id;
         const definition = (await latestVersion(trx, made.queryDefinition!))!;
         const connection = (definition.content as { connection: string }).connection;
         provenance = {
@@ -326,6 +342,8 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
         [{ act: 'session' as const }, /dataset_pending_session/],
         [{ session: '00000000-0000-4000-8000-000000000001' }, /dataset_pending_session/],
         [{ node: 'n1' }, /dataset_pending_node/],
+        [{ holding: another }, /what the binding held/],
+        [{ holding: '999999' }, /dataset_pending/],
       ] as const) {
         await expect(pending(over), JSON.stringify(over)).rejects.toThrow(refusal);
       }

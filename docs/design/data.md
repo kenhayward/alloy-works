@@ -910,7 +910,9 @@ with its parameters, not a URL that could carry one, and a header by name alone.
   whole as it does an upload; an image whose hash an asset in the space already holds reuses that
   asset. **The dataset version and the resolution are recorded only once every image is admitted** -
   the screen checks back, as it does for an upload - and one image refused refuses the whole result,
-  `image_refused`, naming its row and column.
+  `image_refused`, naming its row and column. A dataset image is an asset only so the door can check
+  it and the publisher embed it: it is read only through a document that holds it, as every returned
+  value is, and never found in search (Ken, 2026-10-05).
 
 ## Acts, revisions and failures
 

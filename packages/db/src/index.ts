@@ -386,6 +386,7 @@ export {
   datasetIdentity,
   datasetName,
   documentsHolding,
+  documentsHoldingAsset,
   documentsResolving,
   lockBindings,
   lockDatasetQuestions,

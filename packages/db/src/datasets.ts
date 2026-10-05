@@ -679,6 +679,46 @@ export async function assetHolding(
   return row?.id;
 }
 
+/**
+ * The documents holding an asset a dataset's image made (the D8 plan, D8-I): each whose latest
+ * resolution for some node and binding holds a dataset version whose provenance names a version of
+ * the asset. Undefined for any other asset - one a person uploaded - which is read as its space is.
+ * One query, its search of the resolutions run only for such an asset. Who may read which document is
+ * the caller's to decide.
+ */
+export async function documentsHoldingAsset(
+  trx: TenantTransaction,
+  assetId: string,
+): Promise<readonly string[] | undefined> {
+  if (!UUID.test(assetId)) return undefined;
+  const { rows } = await sql<{ from_dataset: boolean; documents: string[] | null }>`
+    select origin.from_dataset, holding.documents
+      from (
+        select exists (
+          select 1 from asset_upload u where u.asset_id = ${assetId} and u.origin = 'dataset'
+        ) as from_dataset
+      ) origin
+      left join lateral (
+        select array_agg(distinct latest.document_id) as documents
+          from (
+            select distinct on (r.document_id, r.node_id, r.binding_id)
+                   r.document_id, r.dataset_version
+              from binding_resolution r
+             order by r.document_id, r.node_id, r.binding_id, r.id desc
+          ) latest
+          join artifact_version held on held.id = latest.dataset_version
+         where origin.from_dataset
+           and exists (
+             select 1
+               from jsonb_each_text(held.content -> 'images') image
+               join artifact_version named on named.id = image.value::uuid
+              where named.artifact_id = ${assetId}
+           )
+      ) holding on true`.execute(trx);
+  const row = rows[0]!;
+  return row.from_dataset ? (row.documents ?? []) : undefined;
+}
+
 /** The act a pending result waits for (D8-F): a resolve, one from a session, or a check. */
 export type PendingAct = 'resolve' | 'session' | 'check';
 
@@ -691,6 +731,8 @@ export interface StoredPending {
   readonly binding: string;
   /** The binding's digest when the act read it (D3-R). */
   readonly digest: string;
+  /** The resolution the binding held when the act read it, or null for none. */
+  readonly holding: string | null;
   /** The editing session a resolve from a session read the binding from. */
   readonly session: string | null;
   /** What the version will be recorded with, naming the asset of each image already held. */
@@ -709,6 +751,7 @@ type PendingRow = {
   node_id: string;
   binding_id: string;
   binding_digest: string;
+  holding: string | null;
   session: string | null;
   provenance: unknown;
   uploads: string[];
@@ -725,6 +768,7 @@ const pendingOf = (row: PendingRow): StoredPending => ({
   node: row.node_id,
   binding: row.binding_id,
   digest: row.binding_digest,
+  holding: row.holding === null ? null : String(row.holding),
   session: row.session,
   provenance: parseProvenance(row.provenance),
   uploads: row.uploads,
@@ -748,6 +792,8 @@ export async function pendingResult(
     readonly node: string;
     readonly binding: string;
     readonly digest: string;
+    /** The resolution the binding held when the act read it, or null for none. */
+    readonly holding: string | null;
     readonly session: string | null;
     readonly provenance: Provenance;
     readonly uploads: readonly string[];
@@ -763,6 +809,7 @@ export async function pendingResult(
       node_id: input.node,
       binding_id: input.binding,
       binding_digest: input.digest,
+      holding: input.holding,
       session: input.session,
       definition_id: provenance.queryDefinition.artifact,
       definition_version: provenance.queryDefinition.version,

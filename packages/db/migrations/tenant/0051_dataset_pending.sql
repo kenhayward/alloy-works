@@ -10,6 +10,10 @@ alter table asset_upload
     constraint asset_upload_origin check (origin in ('upload', 'dataset')),
   add constraint asset_upload_dataset_undescribed check (origin = 'upload' or alternative is null);
 
+-- An asset a dataset's image made is read only through a document holding it (D8-I): found by its
+-- asset, so the routes reading an asset version ask this only of such an asset.
+create index asset_upload_dataset_asset on asset_upload (asset_id) where origin = 'dataset';
+
 do $$
 begin
   execute format(
@@ -63,6 +67,9 @@ create table dataset_pending (
     ),
   binding_digest text not null
     constraint dataset_pending_digest check (binding_digest ~ '^[0-9a-f]{64}$'),
+  -- What the binding held when the act read it - its latest resolution, or none - so a finish never
+  -- records over a newer one (the final review, finding 1).
+  holding bigint references binding_resolution (id) on delete restrict,
   -- The editing session a resolve from a session read the binding from, and only then.
   session uuid,
   definition_id uuid not null,
@@ -102,7 +109,7 @@ do $$
 begin
   execute format('revoke insert, update, delete, truncate on dataset_pending from %I', current_schema());
   execute format(
-    'grant insert (act, document_id, document_kind, node_id, binding_id, binding_digest, session, '
+    'grant insert (act, document_id, document_kind, node_id, binding_id, binding_digest, holding, session, '
     'definition_id, definition_version, definition_kind, checksum, provenance, uploads, requested_by) '
     'on dataset_pending to %I',
     current_schema()
@@ -113,12 +120,25 @@ end
 $$;
 
 -- Each upload is one admitting an image into the definition's space, each named once: an image is
--- admitted where the dataset is, and nothing else's upload is waited on.
+-- admitted where the dataset is, and nothing else's upload is waited on. What the binding held is a
+-- resolution of the same document, node and binding.
 create function dataset_pending_uploads_held() returns trigger
 language plpgsql as $$
 declare
   held boolean;
+  holds boolean;
 begin
+  if new.holding is not null then
+    execute format(
+      'select exists (select 1 from %1$I.binding_resolution r where r.id = $1 '
+      'and r.document_id = $2 and r.node_id = $3 and r.binding_id = $4)',
+      tg_table_schema
+    ) into holds using new.holding, new.document_id, new.node_id, new.binding_id;
+    if not holds then
+      raise exception
+        'dataset_pending: what the binding held is a resolution of its document, node and binding';
+    end if;
+  end if;
   execute format(
     'select count(distinct u.id) = cardinality($1) from %1$I.asset_upload u '
     'join %1$I.artifact a on a.id = $2 '

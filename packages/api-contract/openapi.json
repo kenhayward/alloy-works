@@ -8957,7 +8957,7 @@
       "get": {
         "operationId": "getAssetVersion",
         "summary": "An asset version's recorded properties",
-        "description": "Reads the recorded properties of an asset version that the caller may access.",
+        "description": "Reads the recorded properties of an asset version that the caller may access. An image a dataset holds is read only by a caller who may also read a document holding it, and is otherwise not found.",
         "tags": [
           "Assets"
         ],
@@ -9279,7 +9279,7 @@
       "get": {
         "operationId": "getAssetVersionContent",
         "summary": "An asset version's image, as it was uploaded",
-        "description": "Returns the stored image bytes of a readable asset version. Use the response media type as supplied.",
+        "description": "Returns the stored image bytes of a readable asset version. Use the response media type as supplied. An image a dataset holds is read only by a caller who may also read a document holding it, and is otherwise not found.",
         "tags": [
           "Assets"
         ],
@@ -22181,7 +22181,7 @@
       "get": {
         "operationId": "getPendingResult",
         "summary": "A result waiting on its images, finished once every image is admitted",
-        "description": "Follows a pending result, which a resolve or a check answers with status 202 for a binding whose run holds an image no asset in the definition's space holds yet. Each such image is stored and admitted as an asset, as an upload is. Asked while any image is still being admitted, it answers pending. Once every one is admitted, it records the dataset version, and for a resolve the binding's resolution, exactly as the act would have, deciding again the act's permissions and that the binding has not changed, and answers the act's own result for the binding; the pending result is then gone. Where an image is refused, nothing is recorded and the result is refused `image_refused`, naming its row and column. Only the person whose act ran it may follow it; anybody else is told there is no such pending result.",
+        "description": "Follows a pending result, which a resolve or a check answers with status 202 for a binding whose run holds an image no asset in the definition's space holds yet. Each such image is stored and admitted as an asset, as an upload is. Asked while any image is still being admitted, it answers pending. Once every one is admitted, it records the dataset version, and for a resolve the binding's resolution, exactly as the act would have, deciding again the act's permissions, that the binding has not changed (`binding_changed`), and that it still holds what it held when the act ran (`resolution_precondition`, so an older result never replaces a newer one), and answers the act's own result for the binding; the pending result is then gone. Where an image is refused, nothing is recorded and the result is refused `image_refused`, naming its row and column. Only the person whose act ran it may follow it; anybody else is told there is no such pending result.",
         "tags": [
           "Bindings and datasets"
         ],
@@ -22263,129 +22263,6 @@
                       "anyOf": [
                         {
                           "anyOf": [
-                            {
-                              "type": "object",
-                              "properties": {
-                                "node": {
-                                  "type": "string"
-                                },
-                                "binding": {
-                                  "type": "string"
-                                },
-                                "held": {
-                                  "type": "object",
-                                  "properties": {
-                                    "dataset": {
-                                      "type": "string"
-                                    },
-                                    "version": {
-                                      "type": "string",
-                                      "description": "The dataset version it now holds"
-                                    },
-                                    "reused": {
-                                      "type": "boolean",
-                                      "description": "Whether the run found what the latest version already records, so no version was made"
-                                    }
-                                  },
-                                  "required": [
-                                    "dataset",
-                                    "version",
-                                    "reused"
-                                  ]
-                                }
-                              },
-                              "required": [
-                                "node",
-                                "binding",
-                                "held"
-                              ]
-                            },
-                            {
-                              "type": "object",
-                              "properties": {
-                                "node": {
-                                  "type": "string"
-                                },
-                                "binding": {
-                                  "type": "string"
-                                },
-                                "failure": {
-                                  "type": "object",
-                                  "properties": {
-                                    "code": {
-                                      "type": "string",
-                                      "description": "Stable and machine-readable"
-                                    },
-                                    "attribution": {
-                                      "type": "string",
-                                      "enum": [
-                                        "connector",
-                                        "query",
-                                        "product"
-                                      ],
-                                      "description": "Whose failure it is: the source's side, the query's author, or the product"
-                                    },
-                                    "message": {
-                                      "type": "string"
-                                    },
-                                    "source": {
-                                      "type": "object",
-                                      "properties": {
-                                        "sqlstate": {
-                                          "type": "string",
-                                          "description": "The source's five-character SQLSTATE"
-                                        },
-                                        "message": {
-                                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
-                                          "type": "string"
-                                        }
-                                      },
-                                      "required": [
-                                        "sqlstate"
-                                      ],
-                                      "description": "What the source said, where it refused the statement: `source_refused` alone"
-                                    },
-                                    "column": {
-                                      "description": "The column the failure names, where it names one",
-                                      "type": "string"
-                                    },
-                                    "row": {
-                                      "description": "The row the failure names, counted from 1",
-                                      "type": "integer",
-                                      "minimum": -9007199254740991,
-                                      "maximum": 9007199254740991
-                                    },
-                                    "definition": {
-                                      "type": "string",
-                                      "description": "The query definition the binding names"
-                                    },
-                                    "binding": {
-                                      "type": "string"
-                                    },
-                                    "node": {
-                                      "type": "string"
-                                    },
-                                    "document": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "required": [
-                                    "code",
-                                    "attribution",
-                                    "message",
-                                    "definition",
-                                    "binding",
-                                    "node",
-                                    "document"
-                                  ]
-                                }
-                              },
-                              "required": [
-                                "node",
-                                "binding",
-                                "failure"
-                              ]
-                            },
                             {
                               "type": "object",
                               "properties": {
@@ -22551,6 +22428,129 @@
                                 "outcome",
                                 "failure"
                               ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "node": {
+                                  "type": "string"
+                                },
+                                "binding": {
+                                  "type": "string"
+                                },
+                                "held": {
+                                  "type": "object",
+                                  "properties": {
+                                    "dataset": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "type": "string",
+                                      "description": "The dataset version it now holds"
+                                    },
+                                    "reused": {
+                                      "type": "boolean",
+                                      "description": "Whether the run found what the latest version already records, so no version was made"
+                                    }
+                                  },
+                                  "required": [
+                                    "dataset",
+                                    "version",
+                                    "reused"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "node",
+                                "binding",
+                                "held"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "node": {
+                                  "type": "string"
+                                },
+                                "binding": {
+                                  "type": "string"
+                                },
+                                "failure": {
+                                  "type": "object",
+                                  "properties": {
+                                    "code": {
+                                      "type": "string",
+                                      "description": "Stable and machine-readable"
+                                    },
+                                    "attribution": {
+                                      "type": "string",
+                                      "enum": [
+                                        "connector",
+                                        "query",
+                                        "product"
+                                      ],
+                                      "description": "Whose failure it is: the source's side, the query's author, or the product"
+                                    },
+                                    "message": {
+                                      "type": "string"
+                                    },
+                                    "source": {
+                                      "type": "object",
+                                      "properties": {
+                                        "sqlstate": {
+                                          "type": "string",
+                                          "description": "The source's five-character SQLSTATE"
+                                        },
+                                        "message": {
+                                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "sqlstate"
+                                      ],
+                                      "description": "What the source said, where it refused the statement: `source_refused` alone"
+                                    },
+                                    "column": {
+                                      "description": "The column the failure names, where it names one",
+                                      "type": "string"
+                                    },
+                                    "row": {
+                                      "description": "The row the failure names, counted from 1",
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "definition": {
+                                      "type": "string",
+                                      "description": "The query definition the binding names"
+                                    },
+                                    "binding": {
+                                      "type": "string"
+                                    },
+                                    "node": {
+                                      "type": "string"
+                                    },
+                                    "document": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "code",
+                                    "attribution",
+                                    "message",
+                                    "definition",
+                                    "binding",
+                                    "node",
+                                    "document"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "node",
+                                "binding",
+                                "failure"
+                              ]
                             }
                           ]
                         },
@@ -22581,11 +22581,7 @@
                   "result": {
                     "node": "example",
                     "binding": "example",
-                    "held": {
-                      "dataset": "example",
-                      "version": "example",
-                      "reused": false
-                    }
+                    "outcome": "unchanged"
                   }
                 }
               }

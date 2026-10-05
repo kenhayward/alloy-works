@@ -1,6 +1,14 @@
 import { crc32, deflateSync } from 'node:zlib';
-import { recordAsset, refuseAssetUpload } from '@alloy-works/db';
-import { queryAs } from '@alloy-works/db/testing';
+import {
+  pendingResult,
+  readPendingResult,
+  readQueryDefinition,
+  recordAsset,
+  refuseAssetUpload,
+  removeGrant,
+  uploadForDatasetImage,
+} from '@alloy-works/db';
+import { holdingAdvisoryLock, queryAs, untilWaitingOnLocks } from '@alloy-works/db/testing';
 import {
   canonicalResultBytes,
   readImageHeader,
@@ -95,6 +103,7 @@ describe("a result's images, admitted before it is kept (the D8 plan, D8-D and D
   beforeAll(async () => {
     h = await startHarness();
     connection = await h.connection('Readings');
+    await h.allow(h.ids.ada!, h.roles.Author!, { kind: 'space', id: h.quality });
     definition = await h.definition(connection.id, { columns: PHOTO_COLUMNS });
   });
 
@@ -286,10 +295,18 @@ describe("a result's images, admitted before it is kept (the D8 plan, D8-D and D
     const one = await placed();
     const two = await placed();
     h.connector.run = ranWithImages([[String(site), 'North', image]]);
-    const [first, second] = await Promise.all([
+    // Both acts reach the image's lock while it is held, so they overlap; let go, they take turns.
+    const release = await holdingAdvisoryLock(h.db.adminUrl, `alloy-works:object:${hashOf(image)}`);
+    const both = Promise.all([
       resolve(one.document.id, one.node),
       resolve(two.document.id, two.node),
     ]);
+    try {
+      await untilWaitingOnLocks(h.db.adminUrl, 2);
+    } finally {
+      await release();
+    }
+    const [first, second] = await both;
     const ids = [pendingOf(first!), pendingOf(second!)];
     const uploads = await uploadsOf(image);
     expect(uploads).toHaveLength(1);
@@ -301,6 +318,295 @@ describe("a result's images, admitted before it is kept (the D8 plan, D8-D and D
         [hashOf(image)]: asset.id,
       });
     }
+  });
+
+  it('refuses to finish an older pending result once the binding holds a newer one, recording nothing', async () => {
+    const older = png(20);
+    const newer = png(21);
+    const { document, node } = await placed();
+    h.connector.run = ranWithImages([[String(site), 'Old', older]]);
+    const first = pendingOf(await resolve(document.id, node));
+    h.connector.run = ranWithImages([[String(site), 'New', newer]]);
+    const second = pendingOf(await resolve(document.id, node));
+    await admit((await uploadsOf(older))[0]!.id, older);
+    await admit((await uploadsOf(newer))[0]!.id, newer);
+    const held = await followed(second);
+    expect(held).toMatchObject({ state: 'done', result: { held: { reused: false } } });
+    const versions = await datasetVersions();
+    expect(await followed(first)).toMatchObject({
+      state: 'done',
+      result: { node, binding: 'b1', failure: { code: 'resolution_precondition', node } },
+    });
+    expect(await datasetVersions()).toBe(versions);
+    expect(await resolutionsOf(document.id)).toBe(1);
+    expect((await stateOf(document.id)).held!.version).toBe(held.result!.held!.version);
+  });
+
+  it('refuses to finish a pending result once a resolve recorded at once has moved what the binding holds', async () => {
+    const reused = png(22);
+    const waiting = png(23);
+    // An asset already holds the first image, so a resolve of it is recorded at once.
+    const earlier = await placed();
+    h.connector.run = ranWithImages([[String(site), 'Earlier', reused]]);
+    const made = pendingOf(await resolve(earlier.document.id, earlier.node));
+    await admit((await uploadsOf(reused))[0]!.id, reused);
+    expect((await followed(made)).state).toBe('done');
+
+    const { document, node } = await placed();
+    h.connector.run = ranWithImages([[String(site), 'Waiting', waiting]]);
+    const id = pendingOf(await resolve(document.id, node));
+    h.connector.run = ranWithImages([[String(site), 'At once', reused]]);
+    const atOnce = await resolve(document.id, node);
+    expect(atOnce.statusCode, atOnce.body).toBe(200);
+    await admit((await uploadsOf(waiting))[0]!.id, waiting);
+    expect(await followed(id)).toMatchObject({
+      result: { failure: { code: 'resolution_precondition' } },
+    });
+    expect(await resolutionsOf(document.id)).toBe(1);
+  });
+
+  it("refuses to finish a check's pending result once what the binding holds has moved", async () => {
+    const first = png(24);
+    const checked = png(25);
+    const moved = png(26);
+    const { document, node } = await placed();
+    h.connector.run = ranWithImages([[String(site), 'North', first]]);
+    const resolved = pendingOf(await resolve(document.id, node));
+    await admit((await uploadsOf(first))[0]!.id, first);
+    expect((await followed(resolved)).state).toBe('done');
+    h.connector.run = ranWithImages([[String(site), 'North', checked]]);
+    const check = await h.call('ada', 'POST', `/v1/documents/${document.id}/bindings/check`, {});
+    const id = check.json<{ results: { pending: string }[] }>().results[0]!.pending;
+    h.connector.run = ranWithImages([[String(site), 'North', moved]]);
+    const again = pendingOf(await resolve(document.id, node));
+    await admit((await uploadsOf(moved))[0]!.id, moved);
+    expect((await followed(again)).state).toBe('done');
+    await admit((await uploadsOf(checked))[0]!.id, checked);
+    const versions = await datasetVersions();
+    expect(await followed(id)).toMatchObject({
+      act: 'check',
+      result: { outcome: 'failed', failure: { code: 'resolution_precondition' } },
+    });
+    expect(await datasetVersions()).toBe(versions);
+  });
+
+  it('answers a refused image by its row and column only to a caller who may still act', async () => {
+    const image = png(27);
+    const { document, node } = await placed();
+    const grants = [
+      await h.allow(h.ids.ivy!, h.roles.Author!, { kind: 'space', id: h.general }),
+      await h.allow(h.ids.ivy!, h.roles['Connection user']!, { kind: 'space', id: h.general }),
+    ];
+    h.connector.run = ranWithImages([[String(site), 'North', image]]);
+    const id = pendingOf(await resolve(document.id, node, 'ivy'));
+    await refuse((await uploadsOf(image))[0]!.id);
+    for (const grant of grants) {
+      await h.tenantDb.withTenant(h.tenant, (trx) => removeGrant(trx, grant));
+    }
+    const answer = await followed(id, 'ivy');
+    expect(answer).toMatchObject({ result: { failure: { code: 'access_changed' } } });
+    expect(answer.result!.failure).not.toHaveProperty('row');
+    expect(answer.result!.failure).not.toHaveProperty('column');
+  });
+
+  it('records nothing where the stored result holds an image its pending result names no upload for', async () => {
+    const named = png(28);
+    const unnamed = png(29);
+    const { document, node } = await placed();
+    // The result as stored holds two images; the pending result waits on an upload for one.
+    const ran = ranWithImages([
+      [String(site), 'North', named],
+      [String(site + 1000), 'South', unnamed],
+    ]);
+    if (ran.outcome !== 'ok') throw new Error('expected an answer');
+    // The binding's digest as a resolve records it, from a run holding the one image alone.
+    h.connector.run = ranWithImages([[String(site), 'North', named]]);
+    const real = pendingOf(await resolve(document.id, node));
+    const { binding_digest: digest } = (
+      await queryAs(
+        h.db.adminUrl,
+        `select binding_digest from ${h.tenant.schema}.dataset_pending where id = $1`,
+        [real],
+      )
+    ).rows[0] as { binding_digest: string };
+    const id = await h.tenantDb.withTenant(h.tenant, async (trx) => {
+      const store = await h.stores.forTenant(trx, h.tenant);
+      await store.put(Buffer.from(canonicalResultBytes(ran.result), 'utf8'), 'application/json');
+      const stored = await store.put(named, 'image/png');
+      const { upload } = await uploadForDatasetImage(trx, {
+        spaceId: h.general,
+        uploader: h.ids.ada!,
+        key: stored.key,
+        format: 'png',
+        bytes: stored.size,
+      });
+      const defined = (await readQueryDefinition(trx, definition.id))!;
+      return (
+        await pendingResult(trx, {
+          act: 'resolve',
+          document: document.id,
+          node,
+          binding: 'b1',
+          digest,
+          session: null,
+          holding: null,
+          provenance: {
+            schemaVersion: 1,
+            queryDefinition: { artifact: definition.id, version: defined.version.id },
+            connection: { artifact: connection.id, version: connection.version },
+            parameters: { site: String(site) },
+            ran: { sql: ran.ran.sql },
+            identity: { kind: 'service' },
+            at: '2026-10-05T09:00:00.000Z',
+            durationMs: 1,
+            rowCount: 2,
+            columns: defined.definition.columns,
+            canonical: 1,
+            checksum: ran.checksum,
+            images: {},
+          },
+          uploads: [upload.id],
+          by: h.ids.ada!,
+        })
+      ).id;
+    });
+    await admit((await uploadsOf(named))[0]!.id, named);
+    const versions = await datasetVersions();
+    const answer = await follow(id);
+    expect(answer.statusCode, answer.body).toBe(500);
+    expect(await datasetVersions()).toBe(versions);
+    expect(await resolutionsOf(document.id)).toBe(0);
+  });
+
+  it('takes every image lock an act needs in one order, so two acts sharing images across questions never deadlock', async () => {
+    const a = png(30);
+    const b = png(31);
+    const [first, second] = [a, b].sort((x, y) => hashOf(x).localeCompare(hashOf(y)));
+    /** A document whose one component holds two bindings, at two sites. */
+    const twoSites = async () => {
+      const sites = [String((site += 1)), String((site += 1))];
+      const component = await h.component(h.general, 'Sites');
+      await h.place(
+        component,
+        binding('b1', definition.id, { parameters: { site: { literal: sites[0]! } } }),
+        binding('b2', definition.id, { parameters: { site: { literal: sites[1]! } } }),
+      );
+      const document = await h.documentReferencing([component.id]);
+      return { document, node: document.nodes[0]!, sites };
+    };
+    const x = await twoSites();
+    const y = await twoSites();
+    // X's first question holds the later image and its second the earlier; Y's the other way round.
+    const holds = new Map([
+      [x.sites[0]!, second!],
+      [x.sites[1]!, first!],
+      [y.sites[0]!, first!],
+      [y.sites[1]!, second!],
+    ]);
+    h.connector.runFor = ({ values }) =>
+      ranWithImages([[String(values.site), 'North', holds.get(String(values.site))!]]);
+    // Both images held, so each act stops at the first image lock it asks for.
+    const releases = [
+      await holdingAdvisoryLock(h.db.adminUrl, `alloy-works:object:${hashOf(first!)}`),
+      await holdingAdvisoryLock(h.db.adminUrl, `alloy-works:object:${hashOf(second!)}`),
+    ];
+    const both = [x, y].map(({ document, node }) =>
+      h.call('ada', 'POST', `/v1/documents/${document.id}/bindings/resolve`, {
+        bindings: [
+          { node, binding: 'b1' },
+          { node, binding: 'b2' },
+        ],
+      }),
+    );
+    try {
+      await untilWaitingOnLocks(h.db.adminUrl, 2);
+    } finally {
+      h.connector.runFor = undefined;
+      for (const release of releases) await release();
+    }
+    for (const answer of await Promise.all(both)) {
+      expect(answer.statusCode, answer.body).toBe(202);
+    }
+    expect(await uploadsOf(first!)).toHaveLength(1);
+    expect(await uploadsOf(second!)).toHaveLength(1);
+  });
+
+  describe('a dataset image is read only through a document holding it (D8-I)', () => {
+    /**
+     * How many search entries an asset has: what the library finds it by, words or none. An image a
+     * result holds carries no description, so no words would find it; it has no entry at all.
+     */
+    const entries = (asset: string) =>
+      count(
+        `select count(*)::int as n from ${h.tenant.schema}.search_entry where artifact_id = $1`,
+        [asset],
+      );
+
+    it('refuses a dataset image to a reader of its space who reads no document holding it, and keeps it out of search', async () => {
+      const image = png(40);
+      // The definition and so the asset in General; the document holding it in Quality, which Alice
+      // does not read.
+      const component = await h.component(h.general, 'Sites');
+      site += 1;
+      await h.place(
+        component,
+        binding('b1', definition.id, { parameters: { site: { literal: String(site) } } }),
+      );
+      const document = await h.documentReferencing([component.id], h.quality);
+      const node = document.nodes[0]!;
+      h.connector.run = ranWithImages([[String(site), 'North', image]]);
+      const id = pendingOf(await resolve(document.id, node));
+      const asset = await admit((await uploadsOf(image))[0]!.id, image);
+      expect((await followed(id)).state).toBe('done');
+
+      for (const path of [
+        `/v1/asset-versions/${asset.id}`,
+        `/v1/asset-versions/${asset.id}/content`,
+      ]) {
+        const refused = await h.call('alice', 'GET', path);
+        expect(refused.statusCode, path).toBe(404);
+        expect(refused.json(), path).toMatchObject({ code: 'not_found' });
+        // Ada reads the document holding it.
+        expect((await h.call('ada', 'GET', path)).statusCode, path).toBe(200);
+      }
+      expect(await entries(asset.artifactId)).toBe(0);
+    });
+
+    it('reads a dataset image for a reader of a document holding it, and an uploaded asset as before', async () => {
+      const image = png(41);
+      const { document, node } = await placed();
+      h.connector.run = ranWithImages([[String(site), 'North', image]]);
+      const id = pendingOf(await resolve(document.id, node));
+      const asset = await admit((await uploadsOf(image))[0]!.id, image);
+      expect((await followed(id)).state).toBe('done');
+      // Alice reads General, where the document is.
+      expect((await h.call('alice', 'GET', `/v1/asset-versions/${asset.id}`)).statusCode).toBe(200);
+
+      // An image a person uploaded: read by its space's readers, and found.
+      const uploaded = png(42);
+      const made = await h.call('ada', 'POST', `/v1/spaces/${h.general}/asset-uploads`, {
+        alternative: null,
+      });
+      expect(made.statusCode, made.body).toBe(200);
+      const upload = made.json<{ id: string }>().id;
+      const filled = await h.app.inject({
+        method: 'PUT',
+        url: `/v1/asset-uploads/${upload}/bytes`,
+        headers: {
+          host: 'acme.alloy.test',
+          cookie: h.cookies.ada!,
+          'content-type': 'application/octet-stream',
+        },
+        payload: uploaded,
+      });
+      expect(filled.statusCode, filled.body).toBe(200);
+      const own = await admit(upload, uploaded);
+      expect((await h.call('alice', 'GET', `/v1/asset-versions/${own.id}`)).statusCode).toBe(200);
+      expect(
+        (await h.call('alice', 'GET', `/v1/asset-versions/${own.id}/content`)).statusCode,
+      ).toBe(200);
+      expect(await entries(own.artifactId)).toBe(1);
+    });
   });
 
   it('answers a pending result only to the person whose act ran it', async () => {
@@ -315,6 +621,22 @@ describe("a result's images, admitted before it is kept (the D8 plan, D8-D and D
     }
     expect((await follow('00000000-0000-4000-8000-000000000000')).statusCode).toBe(404);
     expect((await followed(id)).state).toBe('pending');
+  });
+
+  it("answers somebody else's request for a pending result without waiting on its row", async () => {
+    const image = png(32);
+    const { document, node } = await placed();
+    h.connector.run = ranWithImages([[String(site), 'North', image]]);
+    const id = pendingOf(await resolve(document.id, node));
+    // The row held, as a finish holds it: another person is answered at once all the same.
+    const status = await h.tenantDb.withTenant(h.tenant, async (trx) => {
+      await readPendingResult(trx, id, true);
+      return Promise.race([
+        follow(id, 'grace').then((answer) => answer.statusCode),
+        new Promise<string>((settle) => setTimeout(() => settle('waited'), 2_000)),
+      ]);
+    });
+    expect(status).toBe(404);
   });
 
   it('finishes a pending result once, however many ask at once', async () => {

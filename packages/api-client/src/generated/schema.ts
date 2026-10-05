@@ -108,7 +108,7 @@ export interface paths {
         };
         /**
          * An asset version's recorded properties
-         * @description Reads the recorded properties of an asset version that the caller may access.
+         * @description Reads the recorded properties of an asset version that the caller may access. An image a dataset holds is read only by a caller who may also read a document holding it, and is otherwise not found.
          */
         get: operations["getAssetVersion"];
         put?: never;
@@ -128,7 +128,7 @@ export interface paths {
         };
         /**
          * An asset version's image, as it was uploaded
-         * @description Returns the stored image bytes of a readable asset version. Use the response media type as supplied.
+         * @description Returns the stored image bytes of a readable asset version. Use the response media type as supplied. An image a dataset holds is read only by a caller who may also read a document holding it, and is otherwise not found.
          */
         get: operations["getAssetVersionContent"];
         put?: never;
@@ -496,7 +496,7 @@ export interface paths {
         };
         /**
          * A result waiting on its images, finished once every image is admitted
-         * @description Follows a pending result, which a resolve or a check answers with status 202 for a binding whose run holds an image no asset in the definition's space holds yet. Each such image is stored and admitted as an asset, as an upload is. Asked while any image is still being admitted, it answers pending. Once every one is admitted, it records the dataset version, and for a resolve the binding's resolution, exactly as the act would have, deciding again the act's permissions and that the binding has not changed, and answers the act's own result for the binding; the pending result is then gone. Where an image is refused, nothing is recorded and the result is refused `image_refused`, naming its row and column. Only the person whose act ran it may follow it; anybody else is told there is no such pending result.
+         * @description Follows a pending result, which a resolve or a check answers with status 202 for a binding whose run holds an image no asset in the definition's space holds yet. Each such image is stored and admitted as an asset, as an upload is. Asked while any image is still being admitted, it answers pending. Once every one is admitted, it records the dataset version, and for a resolve the binding's resolution, exactly as the act would have, deciding again the act's permissions, that the binding has not changed (`binding_changed`), and that it still holds what it held when the act ran (`resolution_precondition`, so an older result never replaces a newer one), and answers the act's own result for the binding; the pending result is then gone. Where an image is refused, nothing is recorded and the result is refused `image_refused`, naming its row and column. Only the person whose act ran it may follow it; anybody else is told there is no such pending result.
          */
         get: operations["getPendingResult"];
         put?: never;
@@ -8837,11 +8837,7 @@ export interface operations {
                      *       "result": {
                      *         "node": "example",
                      *         "binding": "example",
-                     *         "held": {
-                     *           "dataset": "example",
-                     *           "version": "example",
-                     *           "reused": false
-                     *         }
+                     *         "outcome": "unchanged"
                      *       }
                      *     }
                      */
@@ -8864,16 +8860,30 @@ export interface operations {
                         result: ({
                             node: string;
                             binding: string;
-                            held: {
-                                dataset: string;
-                                /** @description The dataset version it now holds */
-                                version: string;
-                                /** @description Whether the run found what the latest version already records, so no version was made */
-                                reused: boolean;
-                            };
+                            /** @constant */
+                            outcome: "unchanged";
                         } | {
                             node: string;
                             binding: string;
+                            /** @constant */
+                            outcome: "revision";
+                            /** @description The different result, recorded and waiting to be accepted */
+                            version: string;
+                        } | {
+                            node: string;
+                            binding: string;
+                            /** @constant */
+                            outcome: "unchecked";
+                            /**
+                             * @description `limit`: past the 50 distinct runs a check makes; `permission`: the caller may not use its connection; `unresolved`: it holds nothing to compare, or has changed since it was resolved
+                             * @enum {string}
+                             */
+                            reason: "limit" | "permission" | "unresolved";
+                        } | {
+                            node: string;
+                            binding: string;
+                            /** @constant */
+                            outcome: "failed";
                             failure: {
                                 /** @description Stable and machine-readable */
                                 code: string;
@@ -8903,30 +8913,16 @@ export interface operations {
                         } | {
                             node: string;
                             binding: string;
-                            /** @constant */
-                            outcome: "unchanged";
+                            held: {
+                                dataset: string;
+                                /** @description The dataset version it now holds */
+                                version: string;
+                                /** @description Whether the run found what the latest version already records, so no version was made */
+                                reused: boolean;
+                            };
                         } | {
                             node: string;
                             binding: string;
-                            /** @constant */
-                            outcome: "revision";
-                            /** @description The different result, recorded and waiting to be accepted */
-                            version: string;
-                        } | {
-                            node: string;
-                            binding: string;
-                            /** @constant */
-                            outcome: "unchecked";
-                            /**
-                             * @description `limit`: past the 50 distinct runs a check makes; `permission`: the caller may not use its connection; `unresolved`: it holds nothing to compare, or has changed since it was resolved
-                             * @enum {string}
-                             */
-                            reason: "limit" | "permission" | "unresolved";
-                        } | {
-                            node: string;
-                            binding: string;
-                            /** @constant */
-                            outcome: "failed";
                             failure: {
                                 /** @description Stable and machine-readable */
                                 code: string;

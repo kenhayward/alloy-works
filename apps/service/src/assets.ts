@@ -8,6 +8,7 @@ import type {
 import { createHash } from 'node:crypto';
 import {
   createAssetUpload,
+  documentsHoldingAsset,
   holdObject,
   readAssetUpload,
   readAssetVersion,
@@ -19,10 +20,11 @@ import {
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { ADMITTED_FORMATS, ASSET_MAX_BYTES, readImageHeader } from '@alloy-works/domain';
+import { ADMITTED_FORMATS, ASSET_MAX_BYTES, decide, readImageHeader } from '@alloy-works/domain';
 import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
-import { authoriseAt, callerOf, notFound, type Authorised } from './access.js';
+import { authoriseAt, callerOf, notFound, type Authorised, type Caller } from './access.js';
+import { connectionFacts } from './data/sql-access.js';
 import { AppError, storageUnavailable } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
 
@@ -67,6 +69,23 @@ export const REFUSED_AT_THE_DOOR = {
     rule: 'AST-051',
   },
 } as const satisfies Partial<Record<AssetUploadReason, object>>;
+
+/**
+ * An asset version as a route reads it: `read` on it was decided by the route; an asset a dataset's
+ * image made is read only by a caller who may also read a document holding it, as every value a
+ * result returns is (the D8 plan, D8-I), and is otherwise not found, as an asset they may not read is.
+ */
+async function readableAssetVersion(trx: TenantTransaction, caller: Caller, id: string) {
+  const version = await readAssetVersion(trx, id);
+  if (!version) throw notFound();
+  const holders = await documentsHoldingAsset(trx, version.assetId);
+  if (holders === undefined) return version;
+  for (const document of holders) {
+    const facts = await connectionFacts(trx, caller, document);
+    if (facts && decide('read', facts).allowed) return version;
+  }
+  throw notFound();
+}
 
 /**
  * Uploading an image into a space, following its check, and reading what it made
@@ -192,8 +211,7 @@ export function assetHandlers(
       { trx }: Authorised,
     ): Promise<AssetVersionView> => {
       const { id } = request.params as AssetVersionParams;
-      const version = await readAssetVersion(trx, id);
-      if (!version) throw notFound();
+      const version = await readableAssetVersion(trx, callerOf(request), id);
       const { content } = version;
       return {
         id: version.id,
@@ -217,8 +235,7 @@ export function assetHandlers(
       { trx }: Authorised,
     ): Promise<BinaryBody> => {
       const { id } = request.params as AssetVersionParams;
-      const version = await readAssetVersion(trx, id);
-      if (!version) throw notFound();
+      const version = await readableAssetVersion(trx, callerOf(request), id);
       if (!objects) throw storageUnavailable();
       const store = await objects.forTenant(trx, tenantOf(request));
       return {

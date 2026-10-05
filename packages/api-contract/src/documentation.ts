@@ -296,7 +296,7 @@ const descriptions: Readonly<Record<string, string>> = {
   getDocumentDataset:
     "Returns a stored result whole - its columns, every row in canonical form, and its provenance - but only a version the document's bindings show the caller: one a binding in a component they may read holds, or has waiting while that binding has not changed. A version held only in a component they may not read, at a node the outline no longer has, or waiting for a binding that has changed since, is not found. Reading needs only read on the document; the provenance shows the SQL that ran, the connection and the source's column each declared column reads only to a caller who may read its query definition.",
   getPendingResult:
-    "Follows a pending result, which a resolve or a check answers with status 202 for a binding whose run holds an image no asset in the definition's space holds yet. Each such image is stored and admitted as an asset, as an upload is. Asked while any image is still being admitted, it answers pending. Once every one is admitted, it records the dataset version, and for a resolve the binding's resolution, exactly as the act would have, deciding again the act's permissions and that the binding has not changed, and answers the act's own result for the binding; the pending result is then gone. Where an image is refused, nothing is recorded and the result is refused `image_refused`, naming its row and column. Only the person whose act ran it may follow it; anybody else is told there is no such pending result.",
+    "Follows a pending result, which a resolve or a check answers with status 202 for a binding whose run holds an image no asset in the definition's space holds yet. Each such image is stored and admitted as an asset, as an upload is. Asked while any image is still being admitted, it answers pending. Once every one is admitted, it records the dataset version, and for a resolve the binding's resolution, exactly as the act would have, deciding again the act's permissions, that the binding has not changed (`binding_changed`), and that it still holds what it held when the act ran (`resolution_precondition`, so an older result never replaces a newer one), and answers the act's own result for the binding; the pending result is then gone. Where an image is refused, nothing is recorded and the result is refused `image_refused`, naming its row and column. Only the person whose act ran it may follow it; anybody else is told there is no such pending result.",
   nameDataset:
     'Names a dataset. The name is kept beside every earlier one, and the latest is the name. It needs edit on the dataset, which sits in the space of its query definition.',
   listQueryDefinitions:
@@ -313,9 +313,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Reads the state of an upload the caller created and, once ingestion completes, the resulting asset version.',
   putAssetUploadBytes:
     'Sends the image bytes for an existing upload. Only PNG and JPEG images admitted by the ingest worker become assets.',
-  getAssetVersion: 'Reads the recorded properties of an asset version that the caller may access.',
+  getAssetVersion:
+    'Reads the recorded properties of an asset version that the caller may access. An image a dataset holds is read only by a caller who may also read a document holding it, and is otherwise not found.',
   getAssetVersionContent:
-    'Returns the stored image bytes of a readable asset version. Use the response media type as supplied.',
+    'Returns the stored image bytes of a readable asset version. Use the response media type as supplied. An image a dataset holds is read only by a caller who may also read a document holding it, and is otherwise not found.',
   requestPreview:
     'Queues a short-lived PDF preview of the latest document version for the caller. Follow the returned request to completion.',
   requestPublication:

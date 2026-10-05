@@ -347,8 +347,10 @@ export const PendingResultView = z.object({
     .describe(
       '`pending`: an image is still being admitted; `done`: recorded, or refused, as `result` says',
     ),
+  // A check's first: each names its outcome, which a resolve's failure, were it matched first,
+  // would drop.
   result: z
-    .union([...ResolveDone, ...CheckDone])
+    .union([...CheckDone, ...ResolveDone])
     .nullable()
     .describe(
       "Null while pending. Done, the act's own result for the binding: for a resolve, the version it now holds or the failure; for a check, its outcome. `image_refused` names the row and column of an image that is not one the product admits",
