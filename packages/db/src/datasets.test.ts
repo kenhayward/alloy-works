@@ -599,7 +599,7 @@ describe('datasets and resolutions', () => {
       version: one.version.id,
       replaces: one.version.id,
     });
-    const held = await tenant((trx) => resolutionsOf(trx, document.artifactId));
+    const held = await tenant((trx) => resolutionsOf(trx, document.artifactId, new Map()));
     expect(held.map((each) => each.act)).toEqual(['confirm']);
   });
 
@@ -657,7 +657,11 @@ describe('datasets and resolutions', () => {
       );
     await resolve('k1', held.version.id, null);
     await resolve('k2', held.version.id, null);
-    expect(await tenant((trx) => resolutionsOf(trx, document.artifactId))).toEqual([
+    const asked = new Map([
+      [`${node('c')} k1`, query.version.id],
+      [`${node('c')} k2`, query.version.id],
+    ]);
+    expect(await tenant((trx) => resolutionsOf(trx, document.artifactId, asked))).toEqual([
       expect.objectContaining({
         node: node('c'),
         binding: 'k1',
@@ -675,7 +679,9 @@ describe('datasets and resolutions', () => {
 
     // The same result found again is not a revision; a different one, recorded after, is.
     await recorded({ parameters: { site: 'held' }, checksum: '4'.repeat(64) });
-    expect((await tenant((trx) => resolutionsOf(trx, document.artifactId)))[0]!.waiting).toBeNull();
+    expect(
+      (await tenant((trx) => resolutionsOf(trx, document.artifactId, asked)))[0]!.waiting,
+    ).toBeNull();
     // Nor is the same result from other SQL: a version of its own (D3-F), and no revision.
     const sameRows = await recorded({
       parameters: { site: 'held' },
@@ -683,15 +689,19 @@ describe('datasets and resolutions', () => {
       ran: { sql: `${SQL_RAN} ` },
     });
     expect(sameRows.reused).toBe(false);
-    expect((await tenant((trx) => resolutionsOf(trx, document.artifactId)))[0]!.waiting).toBeNull();
+    expect(
+      (await tenant((trx) => resolutionsOf(trx, document.artifactId, asked)))[0]!.waiting,
+    ).toBeNull();
     const newer = await recorded({ parameters: { site: 'held' }, checksum: '6'.repeat(64) });
-    const [k1, k2] = await tenant((trx) => resolutionsOf(trx, document.artifactId));
+    const [k1, k2] = await tenant((trx) => resolutionsOf(trx, document.artifactId, asked));
     expect(k1!.waiting).toEqual({ version: newer.version.id, provenance: newer.version.content });
     expect(k2!.waiting).toMatchObject({ version: newer.version.id });
 
     // Accepting it moves that binding alone; the latest row is what it holds.
     await resolve('k1', newer.version.id, held.version.id);
-    const [afterK1, afterK2] = await tenant((trx) => resolutionsOf(trx, document.artifactId));
+    const [afterK1, afterK2] = await tenant((trx) =>
+      resolutionsOf(trx, document.artifactId, asked),
+    );
     expect(afterK1).toMatchObject({
       act: 'accept',
       replaces: held.version.id,
@@ -700,6 +710,69 @@ describe('datasets and resolutions', () => {
     });
     expect(afterK2).toMatchObject({ held: { version: held.version.id } });
     expect(afterK2!.waiting).toMatchObject({ version: newer.version.id });
+  });
+
+  it('DAT-070 offers a floating binding a newer definition version returning the same rows, and a binding nothing of a definition version it does not ask', async () => {
+    const site = { site: 'asked' };
+    const first = query.version.id;
+    const held = await recorded({ parameters: site, checksum: '7'.repeat(64) });
+    const component = await componentHolding(general, [
+      binding({ parameters: { site: { literal: 'asked' } } }),
+      binding({ id: 'k2', parameters: { site: { literal: 'asked' } }, version: first }),
+    ]);
+    const document = await documentReferencing(general, component.artifactId, node('d'));
+    for (const id of ['k1', 'k2']) {
+      await tenant((trx) =>
+        recordResolution(trx, {
+          document: document.artifactId,
+          node: node('d'),
+          binding: id,
+          digest: '8'.repeat(64),
+          version: held.version.id,
+          replaces: null,
+          act: 'resolve',
+          by: ada,
+        }),
+      );
+    }
+    const cut = await tenant((trx) =>
+      recordQueryDefinitionVersion(trx, {
+        author: ada,
+        id: query.id,
+        openedFrom: first,
+        definition: { ...query.definition, description: 'Each depth, asked again.' },
+      }),
+    );
+    if (cut.answer !== 'recorded') throw new Error(cut.answer);
+    const second = cut.definition.version.id;
+    // k1 floats, so asks the latest; k2 is pinned to the first.
+    const asked = new Map([
+      [`${node('d')} k1`, second],
+      [`${node('d')} k2`, first],
+    ]);
+    const now = async () => {
+      const [k1, k2] = await tenant((trx) => resolutionsOf(trx, document.artifactId, asked));
+      return { k1: k1!.waiting?.version ?? null, k2: k2!.waiting?.version ?? null };
+    };
+
+    // The newer definition version returns the same rows: a revision for k1, nothing for k2.
+    const sameRows = await recorded({
+      parameters: site,
+      checksum: '7'.repeat(64),
+      queryDefinition: { artifact: query.id, version: second },
+    });
+    expect(await now()).toEqual({ k1: sameRows.version.id, k2: null });
+
+    // A later result of the first version, different rows: k2's revision, and never k1's.
+    const older = await recorded({ parameters: site, checksum: '9'.repeat(64) });
+    expect(await now()).toEqual({ k1: sameRows.version.id, k2: older.version.id });
+
+    // A binding the map does not name waits on nothing.
+    const [unasked] = await tenant((trx) =>
+      resolutionsOf(trx, document.artifactId, new Map([[`${node('d')} k2`, first]])),
+    );
+    expect(unasked!.waiting).toBeNull();
+    query = cut.definition;
   });
 
   it('refuses a dataset name that is empty, too long, padded, holds a control character or is not in NFC', async () => {

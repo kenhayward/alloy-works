@@ -55,7 +55,6 @@ import {
   effectiveLimits,
   literalValues,
   parametersDigestInput,
-  parseProvenance,
   parseQueryDefinition,
   questionUnchanged,
   readContent,
@@ -931,13 +930,34 @@ type Views = ReturnType<typeof viewer>;
 const stateView = async (views: Views, placed: Placed, held: HeldResolution | undefined) =>
   (await views([{ placed, held }]))[0]!;
 
-/** The latest resolution for each node and binding of a document, by both. */
+/**
+ * The latest resolution for each node and binding of a document, by both, each waiting only on a
+ * result of the definition version its binding as placed asks: its pin, or the latest (B4-A).
+ */
 async function heldBy(
   trx: TenantTransaction,
   documentId: string,
+  placed: readonly Placed[],
 ): Promise<Map<string, HeldResolution>> {
+  const latest = new Map<string, Promise<string | undefined>>();
+  const asked = new Map<string, string>();
+  for (const { node, binding } of placed) {
+    let version = binding.version;
+    if (version === undefined) {
+      let reading = latest.get(binding.query);
+      if (!reading) {
+        reading = readQueryDefinition(trx, binding.query).then((found) => found?.version.id);
+        latest.set(binding.query, reading);
+      }
+      version = await reading;
+    }
+    if (version !== undefined) asked.set(key(node, binding.id), version);
+  }
   return new Map(
-    (await resolutionsOf(trx, documentId)).map((each) => [key(each.node, each.binding), each]),
+    (await resolutionsOf(trx, documentId, asked)).map((each) => [
+      key(each.node, each.binding),
+      each,
+    ]),
   );
 }
 
@@ -1011,7 +1031,7 @@ export async function resolveAct(
         source,
       );
       const seesSource = await seeingSourceNow(record, caller, prepared);
-      const held = await heldBy(record, id);
+      const held = await heldBy(record, id, placed);
       // Every question this records, in turn, before the first: after the bindings' locks, as every
       // act takes them, so two acts recording the same questions never wait on each other.
       await lockDatasetQuestions(record, recordable(succeeded, ran));
@@ -1090,7 +1110,7 @@ export async function checkAct(
   const caller = callerOf(request);
   const placed = await bindingsPlaced(trx, id, principalId);
   if (!placed) throw notFound();
-  const held = await heldBy(trx, id);
+  const held = await heldBy(trx, id, placed);
   const results = new Map<string, CheckResult>();
   const toRun: Prepared[] = [];
   for (const each of placed) {
@@ -1171,7 +1191,7 @@ export async function checkAct(
       );
       // What each holds now, under the lock: an accept while the source answered moves what the
       // result is compared with, so what was read before the run is not the comparison.
-      const holdingNow = await heldBy(record, id);
+      const holdingNow = await heldBy(record, id, placed);
       const seesSource = await seeingSourceNow(record, caller, toRun);
       await lockDatasetQuestions(record, recordable(succeeded, ran));
       const versions = new Map<string, Awaited<ReturnType<typeof recordDatasetVersion>>>();
@@ -1213,9 +1233,12 @@ export async function checkAct(
           });
           continue;
         }
+        // A revision where the rows differ, or a floating binding's definition has moved on (B4-A).
         results.set(
           key(node, binding.id),
-          outcome.provenance.checksum === holding.held.provenance.checksum
+          outcome.provenance.checksum === holding.held.provenance.checksum &&
+            outcome.provenance.queryDefinition.version ===
+              holding.held.provenance.queryDefinition.version
             ? { node, binding: binding.id, outcome: 'unchanged' }
             : { node, binding: binding.id, outcome: 'revision', version: recorded.version.id },
         );
@@ -1241,7 +1264,7 @@ export function bindingHandlers(
         session === undefined ? undefined : { session, nodes: 'every' },
       );
       if (!placed) throw notFound();
-      const held = await heldBy(trx, id);
+      const held = await heldBy(trx, id, placed);
       const views = viewer(trx, callerOf(request), objects, tenantOf(request));
       const bindings = await views(
         placed.map((each) => ({ placed: each, held: held.get(key(each.node, each.binding.id)) })),
@@ -1272,7 +1295,7 @@ export function bindingHandlers(
       }
       // Before what it holds is read, so two accepts, or an accept and a resolve, take turns.
       await lockBindings(trx, id, [{ node: found.node, binding: found.binding.id }]);
-      const held = (await heldBy(trx, id)).get(key(body.node, body.binding));
+      const held = (await heldBy(trx, id, placed)).get(key(body.node, body.binding));
       const views = viewer(trx, callerOf(request), objects, tenantOf(request));
       const precondition = async () =>
         refused(
@@ -1284,16 +1307,9 @@ export function bindingHandlers(
       if (!held || held.digest !== found.digest || held.held.version !== body.replaces) {
         throw await precondition();
       }
-      const offered = await readVersion(trx, body.version);
-      const newer =
-        offered !== undefined &&
-        offered.kind === 'dataset' &&
-        offered.artifactId === held.held.dataset &&
-        (offered.revision > held.held.number.revision ||
-          (offered.revision === held.held.number.revision &&
-            offered.version > held.held.number.version));
-      if (!newer) throw await precondition();
-      await mayTakeResult(trx, callerOf(request), parseProvenance(offered.content), {
+      // Only the version waiting: a newer result of the definition version the binding asks (B4-B).
+      if (held.waiting?.version !== body.version) throw await precondition();
+      await mayTakeResult(trx, callerOf(request), held.waiting.provenance, {
         definition: found.binding.query,
         binding: found.binding.id,
         node: found.node,
@@ -1309,7 +1325,11 @@ export function bindingHandlers(
         act: 'accept',
         by: principalId,
       });
-      return stateView(views, found, (await heldBy(trx, id)).get(key(body.node, body.binding)));
+      return stateView(
+        views,
+        found,
+        (await heldBy(trx, id, placed)).get(key(body.node, body.binding)),
+      );
     },
 
     /**
@@ -1350,7 +1370,7 @@ export function bindingHandlers(
           `The binding ${found.binding.id} names no query definition here.`,
         );
       }
-      const held = (await heldBy(trx, id)).get(key(body.node, body.binding));
+      const held = (await heldBy(trx, id, placed)).get(key(body.node, body.binding));
       const views = viewer(trx, caller, objects, tenantOf(request));
       if (!held || held.held.version !== body.replaces) {
         throw refused(
@@ -1393,7 +1413,11 @@ export function bindingHandlers(
         act: 'confirm',
         by: principalId,
       });
-      return stateView(views, found, (await heldBy(trx, id)).get(key(body.node, body.binding)));
+      return stateView(
+        views,
+        found,
+        (await heldBy(trx, id, placed)).get(key(body.node, body.binding)),
+      );
     },
 
     /**
@@ -1425,7 +1449,7 @@ export function bindingHandlers(
       const { id, version } = request.params as DocumentDatasetParams;
       const placed = await bindingsPlaced(trx, id, principalId);
       if (!placed) throw notFound();
-      const held = await heldBy(trx, id);
+      const held = await heldBy(trx, id, placed);
       let found: { dataset: string; provenance: Provenance } | undefined;
       for (const each of placed) {
         const holding = held.get(key(each.node, each.binding.id));

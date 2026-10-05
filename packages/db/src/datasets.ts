@@ -330,23 +330,31 @@ export interface HeldVersion {
 export interface HeldResolution extends Omit<StoredResolution, 'dataset' | 'version'> {
   readonly held: HeldVersion;
   /**
-   * The newest version of the dataset held, where it was recorded after the version held and its
-   * checksum differs: a revision a check found, which nothing resolves to until it is accepted.
+   * The newest version of the dataset held that ran the definition version the binding asks (B4-A),
+   * where it was recorded after the version held and its checksum or its definition version differs:
+   * a revision, which nothing resolves to until it is accepted.
    */
   readonly waiting: { readonly version: string; readonly provenance: Provenance } | null;
 }
 
 /**
  * What each binding holds in a document: the latest resolution for each node and binding, with its
- * version's provenance and any revision waiting (D3-J), by node and then binding. Whether a binding's
- * digest still matches the component version its node resolves to now - whether it is stale - is the
- * caller's to compare (D3-R).
+ * version's provenance and any revision waiting (D3-J), by node and then binding. `asked` names, by
+ * `node binding`, the definition version each binding asks - its pin, or the definition's latest where
+ * it floats - and a revision waits only from a version that ran it (B4-A); a binding it does not name
+ * waits on nothing. Whether a binding's digest still matches the component version its node resolves
+ * to now - whether it is stale - is the caller's to compare (D3-R).
  */
 export async function resolutionsOf(
   trx: TenantTransaction,
   documentId: string,
+  asked: ReadonlyMap<string, string>,
 ): Promise<HeldResolution[]> {
   if (!UUID.test(documentId)) return [];
+  const askedRows = [...asked].map(([at, version]) => {
+    const space = at.indexOf(' ');
+    return { node: at.slice(0, space), binding: at.slice(space + 1), version };
+  });
   const { rows } = await sql<{
     id: string;
     document_id: string;
@@ -362,7 +370,7 @@ export async function resolutionsOf(
     held_revision: number;
     held_version: number;
     held_content: unknown;
-    newest_id: string;
+    newest_id: string | null;
     newest_revision: number;
     newest_version: number;
     newest_content: unknown;
@@ -380,20 +388,28 @@ export async function resolutionsOf(
          order by node_id, binding_id, id desc
       ) r
       join artifact_version held on held.id = r.dataset_version
-      join lateral (
+      left join jsonb_to_recordset(${JSON.stringify(askedRows)}::jsonb)
+           as asked(node text, binding text, version text)
+        on asked.node = r.node_id::text and asked.binding = r.binding_id::text
+      left join lateral (
         select v.id, v.revision_no, v.version_no, v.content
           from artifact_version v
          where v.artifact_id = r.dataset_id
+           and v.content->'queryDefinition'->>'version' = asked.version
          order by v.revision_no desc, v.version_no desc
          limit 1
       ) newest on true
      order by r.node_id collate "C", r.binding_id collate "C"`.execute(trx);
   return rows.map((row) => {
     const provenance = parseProvenance(row.held_content);
-    const newest = parseProvenance(row.newest_content);
+    const newest = row.newest_id === null ? undefined : parseProvenance(row.newest_content);
     const later =
       row.newest_revision > row.held_revision ||
       (row.newest_revision === row.held_revision && row.newest_version > row.held_version);
+    const differs =
+      newest !== undefined &&
+      (newest.checksum !== provenance.checksum ||
+        newest.queryDefinition.version !== provenance.queryDefinition.version);
     return {
       id: String(row.id),
       document: row.document_id,
@@ -411,8 +427,8 @@ export async function resolutionsOf(
         provenance,
       },
       waiting:
-        later && newest.checksum !== provenance.checksum
-          ? { version: row.newest_id, provenance: newest }
+        newest !== undefined && later && differs
+          ? { version: row.newest_id!, provenance: newest }
           : null,
     };
   });
