@@ -49,6 +49,13 @@ import { FONT_DIRECTORY, loadPinnedFonts, pinnedFacesByHash } from './fonts.js';
 import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { defaultTheme } from './testing/theme.js';
 import {
+  VALUES,
+  valuesBindings,
+  valuesOccurrences,
+  valuesOutline,
+  valuesTheme,
+} from './testing/word-values.js';
+import {
   askedOf,
   blocksOf,
   fieldOf,
@@ -1231,6 +1238,11 @@ interface Fixture {
    * constructs' measurements a compared fixture is held to.
    */
   readonly beside?: boolean;
+  /**
+   * B3's (the B3 plan, "The Word check"): each binding's result, held as the worker holds one, for the
+   * binding stage; and its PDF compiled beside it, for what each value prints.
+   */
+  readonly bindings?: AssembleInput['bindings'];
 }
 
 const withMatter = (matter: Partial<Layout['matter']>): Layout => ({
@@ -1346,6 +1358,17 @@ const FIXTURES: readonly Fixture[] = [
     occurrences: equationsOccurrences,
     serifOnly: true,
     beside: true,
+  },
+  {
+    name: 'values',
+    layout: defaultLayout,
+    formats: ['pdf', 'docx'],
+    sections: ['cover', 'contents', 'body'],
+    outline: valuesOutline,
+    occurrences: valuesOccurrences,
+    serifOnly: true,
+    theme: valuesTheme,
+    bindings: valuesBindings,
   },
 ];
 
@@ -1558,6 +1581,8 @@ interface Checked {
   readonly prefilled: readonly string[];
   /** The PDF, and Word's own PDF, each as laid out, where the fixture's PDF is compiled beside it. */
   readonly beside: { readonly pdf: LaidOut; readonly word: LaidOut } | null;
+  /** The PDF, and Word's own PDF, each as laid out, where the fixture holds values. */
+  readonly valued: { readonly pdf: LaidOut; readonly word: LaidOut } | null;
   /** What the writer reported of the document. */
   readonly report: OutputReport;
   /**
@@ -2324,6 +2349,7 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
           revision: '0.7',
           covers: fonts.covers,
           assets,
+          ...(fixture.bindings ? { bindings: fixture.bindings } : {}),
         };
         const widest = widestLine(base);
         const own = fixture.occurrences ?? occurrences;
@@ -2345,7 +2371,7 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
         const filled = wrongFilled(bytes);
         await writeFile(join(FOLDER, `${fixture.name}.docx`), filled);
         const pdf =
-          fixture.compared || fixture.beside
+          fixture.compared || fixture.beside || fixture.bindings
             ? await typst.compile(
                 PUBLICATION_TEMPLATE[TEMPLATE_READING[assembled.document.schema]].file,
                 JSON.stringify(assembled.document),
@@ -2434,12 +2460,13 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
           },
           compared: each.fixture.compared ? both : null,
           beside: each.fixture.beside ? both : null,
+          valued: each.fixture.bindings ? both : null,
         });
       }
       // The record a pull request pastes: what Word showed of every fixture, beside what was asked -
       // and, where a fixture is compared, each step between two lines both PDFs set, which the tests
       // below hold within a point.
-      const record = checked.map(({ compared, beside: _, ...each }) => ({
+      const record = checked.map(({ compared, beside: _, valued: __, ...each }) => ({
         ...each,
         fixture: each.fixture.name,
         steps: compared === null ? null : measuredSteps(compared),
@@ -3314,6 +3341,46 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
           each.equations.some((equation) => equation.alternative === 'A long sum'),
         ),
       ).toBe(true);
+    });
+
+    it("prints every bound value as formatValue prints it in the theme's value catalogue - in a paragraph, a table's caption, cell and note, and a footnote - as Word reads it back, as Word's PDF prints it and as the PDF of the same document does (B3)", () => {
+      const valued = checked.filter((each) => each.fixture.bindings !== undefined);
+      expect(valued.map((each) => each.fixture.name)).toEqual(['values']);
+      for (const { fixture, word, valued: both } of valued) {
+        const captions = word.paragraphs.filter((each) => each.style === 'Caption');
+        const others = word.paragraphs.filter((each) => each.style !== 'Caption');
+        const cells = word.tables.flatMap((table) => table.cells.map((each) => each.text));
+        const read: Readonly<Record<string, readonly string[]>> = {
+          paragraph: others.map((each) => each.text),
+          caption: captions.map((each) => each.text),
+          cell: cells,
+          note: others.map((each) => each.text),
+          footnote: word.notes.map((each) => each.text),
+        };
+        // How many times each PDF prints it, a line's text read with its spaces taken out: a caption's
+        // value stands in the list of tables after the contents too.
+        const times = (laid: LaidOut, printed: string) =>
+          laid.lines.reduce((sum, line) => sum + line.key.split(printed).length - 1, 0);
+        for (const value of VALUES) {
+          const at = `${fixture.name} ${value.binding}`;
+          expect(
+            read[value.place]!.some((each) => each.includes(value.printed)),
+            at,
+          ).toBe(true);
+          // Nor printed as the default's formats would: a word as short as "No" stands in others.
+          if (value.byDefault.length >= 4) {
+            expect(
+              [...word.paragraphs, ...word.notes].some((each) =>
+                each.text.includes(value.byDefault),
+              ),
+              `${at} by default`,
+            ).toBe(false);
+          }
+          const inPdf = times(both!.pdf, value.printed);
+          expect(inPdf, at).toBeGreaterThan(0);
+          expect(times(both!.word, value.printed), at).toBe(inPdf);
+        }
+      }
     });
   });
 });

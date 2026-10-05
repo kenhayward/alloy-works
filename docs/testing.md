@@ -465,7 +465,7 @@ change meets it.
 
 Passing the validator says Word will open a file, not what it will show. **The Word check opens the
 writer's fixtures in Word itself**, as a standing practice (PUB-029):
-`apps/worker/src/word-check.test.ts` makes twelve documents through the worker's own path - `assemble`
+`apps/worker/src/word-check.test.ts` makes thirteen documents through the worker's own path - `assemble`
 with the worker's own face files, under the default theme and layout but where a fixture says
 otherwise, then `writeDocx` - and `apps/worker/scripts/word-check.ps1` opens each in a hidden Word
 through COM, updates its contents and fields, reads every section, paragraph, list string and field
@@ -543,6 +543,13 @@ equation and to the appendix's, with front matter numbering one, which Word numb
 front matter's equations counted under a name of their own; and a fraction holding a script in a
 chapter's title and a listed caption, which the writer reports and which the copy Word saved holds as
 a fraction where the heading and the caption stand and as its runs alone in the entries Word rebuilt.
+
+Since B3 it holds bound values. One fixture, `testing/word-values.ts`, compiled through template 13
+beside it, binds values in a paragraph, a table's caption, cells and note, and a footnote, printed by a
+value catalogue whose English formats differ from the default's in every separator, a date's order and
+a boolean's words; the test checks that each value's text, as Word reads it back and as Word's PDF
+prints it, is `formatValue`'s, as often as the PDF prints it. `word-values.test.ts` holds the same
+fixture in CI, to the values it prints and the runs the document Word is handed carries.
 
 - **Who and when.** Whoever changes the Word writer - `packages/domain/src/word/`, the theme's Word
   projection or `wordRun` - runs it before the change lands, on Windows with Word installed. **A pull
