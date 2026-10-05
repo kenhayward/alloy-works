@@ -1,6 +1,6 @@
 import type { BlockNode } from '../content/model/blocks.js';
-import type { ContentDocument } from '../content/model/document.js';
 import type { InlineNode } from '../content/model/inline.js';
+import type { Bound } from '../publishing/bind.js';
 
 /**
  * What one caption-bearing block (CNT-081) or one footnote contributes to the sequences: its
@@ -99,7 +99,11 @@ function blockContributions(block: BlockNode): Contribution[] {
  * table and block equation with whether it is numbered, and every footnote, wherever each is
  * nested - a list item, a blockquote, a table cell. Pure, and linear in the content. It reads content
  * that has already been through `parseContentDocument`, so it recurses no deeper than that parse did.
+ *
+ * **It takes `Bound` content alone** (the B3 plan, B3-D; PUB-108): what has been through the binding
+ * stage, so a caption is counted with its values in it. The document page counts through `unbound`,
+ * the one named way to count without values.
  */
-export function contributionsOf(content: ContentDocument): Contribution[] {
+export function contributionsOf(content: Bound): Contribution[] {
   return content.content.flatMap(blockContributions);
 }

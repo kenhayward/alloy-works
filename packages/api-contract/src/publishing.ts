@@ -92,7 +92,7 @@ export type PublicationParams = z.infer<typeof PublicationParams>;
 
 /** One failure, naming its stage and its place (PUB-086). An unreadable place carries its node alone. */
 export const PublishFailureView = z.object({
-  stage: z.enum(['resolve', 'compose', 'engine', 'store']),
+  stage: z.enum(['resolve', 'bind', 'compose', 'engine', 'store']),
   code: z.enum(publishFailureCodes),
   node: z.string().nullable().describe('The outline node it concerns'),
   block: z.string().nullable().describe("The block within that node's component"),

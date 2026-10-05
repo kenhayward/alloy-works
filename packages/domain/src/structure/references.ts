@@ -1,5 +1,5 @@
 import type { BlockNode } from '../content/model/blocks.js';
-import type { ContentDocument } from '../content/model/document.js';
+import type { Bound } from '../publishing/bind.js';
 import type {
   CrossReferenceDisplay,
   CrossReferenceTarget,
@@ -340,7 +340,8 @@ export type ReferenceResolution =
  */
 export interface ResolvingDocument {
   readonly outline: { readonly nodes: readonly OutlineNode[] };
-  readonly occurrences: ReadonlyMap<string, ContentDocument>;
+  /** Through the binding stage (B3-D): a title form prints a caption with its values in it. */
+  readonly occurrences: ReadonlyMap<string, Bound>;
   readonly numbering: NumberingTable;
 }
 

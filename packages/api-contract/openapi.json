@@ -47034,6 +47034,7 @@
                             "type": "string",
                             "enum": [
                               "resolve",
+                              "bind",
                               "compose",
                               "engine",
                               "store"
@@ -47086,6 +47087,13 @@
                               "preview_words_missing",
                               "heading_too_deep",
                               "binding_unresolved",
+                              "value_none",
+                              "value_many",
+                              "row_missing",
+                              "value_null",
+                              "value_empty",
+                              "take_invalid",
+                              "result_unreadable",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -48365,6 +48373,7 @@
                             "type": "string",
                             "enum": [
                               "resolve",
+                              "bind",
                               "compose",
                               "engine",
                               "store"
@@ -48417,6 +48426,13 @@
                               "preview_words_missing",
                               "heading_too_deep",
                               "binding_unresolved",
+                              "value_none",
+                              "value_many",
+                              "row_missing",
+                              "value_null",
+                              "value_empty",
+                              "take_invalid",
+                              "result_unreadable",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -56560,6 +56576,7 @@
                             "type": "string",
                             "enum": [
                               "resolve",
+                              "bind",
                               "compose",
                               "engine",
                               "store"
@@ -56612,6 +56629,13 @@
                               "preview_words_missing",
                               "heading_too_deep",
                               "binding_unresolved",
+                              "value_none",
+                              "value_many",
+                              "row_missing",
+                              "value_null",
+                              "value_empty",
+                              "take_invalid",
+                              "result_unreadable",
                               "engine_failed",
                               "store_failed"
                             ]
