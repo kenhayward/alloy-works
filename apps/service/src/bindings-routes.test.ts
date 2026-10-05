@@ -513,6 +513,50 @@ describe('bindings and datasets through the service', () => {
     });
   });
 
+  it('refuses accepting a newer result that is not the one waiting, and a reader who may not edit the document (#396)', async () => {
+    // A connection of its own, which Alice, a reader of General, may use.
+    const own = await h.connection('Accepted by a reader');
+    await h.allow(h.ids.alice!, h.roles['Connection user']!, { kind: 'artifact', id: own.id });
+    const definition = await h.definition(own.id);
+    const { document, node } = await placed(
+      binding('b1', definition.id, { parameters: { site: { literal: '42' } } }),
+    );
+    h.connector.run = ranOk([['42', 'One']]);
+    await resolve('ada', document.id, [{ node, binding: 'b1' }]);
+    const held = (await stateOf('ada', document.id, 'b1')).held!;
+    const revisions: string[] = [];
+    for (const name of ['Two', 'Three']) {
+      h.connector.run = ranOk([['42', name]]);
+      revisions.push(
+        (await check('ada', document.id)).json<{ results: { version: string }[] }>().results[0]!
+          .version,
+      );
+    }
+    const accept = (version: string) =>
+      h.call('ada', 'POST', `/v1/documents/${document.id}/bindings/accept`, {
+        node,
+        binding: 'b1',
+        version,
+        replaces: held.version,
+      });
+    const older = await accept(revisions[0]!);
+    expect(older.statusCode, older.body).toBe(409);
+    expect(older.json()).toMatchObject({
+      code: 'resolution_precondition',
+      current: { waiting: { version: revisions[1] } },
+    });
+    // Alice reads the document and may use its connection, but may not edit it: refused, nothing held.
+    const reader = await h.call('alice', 'POST', `/v1/documents/${document.id}/bindings/accept`, {
+      node,
+      binding: 'b1',
+      version: revisions[1],
+      replaces: held.version,
+    });
+    expect(reader.statusCode, reader.body).toBe(403);
+    expect((await stateOf('ada', document.id, 'b1')).held!.version).toBe(held.version);
+    expect((await accept(revisions[1]!)).statusCode).toBe(200);
+  });
+
   it('accepts the revision waiting once when it is accepted twice at once, and refuses the other', async () => {
     // Each round a binding holding v1 with v3 waiting after v2, and v3 accepted twice at the same moment.
     for (let round = 0; round < 10; round += 1) {
