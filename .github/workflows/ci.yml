@@ -120,7 +120,9 @@ jobs:
           files: deploy/compose.yaml
           targets: service,worker,connector
           load: true
+          # Bake reads the compose file's `context: ..` from the working directory, not from deploy/.
           set: |
+            *.context=.
             service.tags=alloy-works-service
             worker.tags=alloy-works-worker
             connector.tags=alloy-works-connector
@@ -231,7 +233,9 @@ jobs:
           files: deploy/compose.yaml
           targets: stand-in-idp,setup,service,worker,connector
           load: true
+          # Bake reads the compose file's `context: ..` from the working directory, not from deploy/.
           set: |
+            *.context=.
             stand-in-idp.tags=alloy-works-stand-in-idp
             setup.tags=alloy-works-setup
             service.tags=alloy-works-service
