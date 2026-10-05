@@ -87,6 +87,7 @@ const LABELS = [
   'Table',
   'Footnote',
   'Reference',
+  'Value',
   'Equation',
   'Symbols',
 ];

@@ -211,9 +211,14 @@ export interface QueryDefinitionSummary {
   readonly space: { readonly id: string; readonly name: string };
   /**
    * The connection it names, by its latest name where the principal may read the connection and null
-   * otherwise; itself null where that is no connection any more.
+   * otherwise, and whose identity its query runs as, to every reader of the definition (DAT-022);
+   * itself null where that is no connection any more.
    */
-  readonly connection: { readonly id: string; readonly name: string | null } | null;
+  readonly connection: {
+    readonly id: string;
+    readonly name: string | null;
+    readonly identity: 'service' | 'endUser';
+  } | null;
   readonly version: { readonly id: string; readonly revision: number; readonly version: number };
   /** When its latest version was made. */
   readonly changedAt: Date;
@@ -308,7 +313,12 @@ export async function listReadableQueryDefinitions(
       : await trx
           .selectFrom('artifact_version as v')
           .innerJoin('artifact as a', 'a.id', 'v.artifact_id')
-          .select(['v.artifact_id', 'a.space_id', sql<string>`v.content ->> 'name'`.as('name')])
+          .select([
+            'v.artifact_id',
+            'a.space_id',
+            sql<string>`v.content ->> 'name'`.as('name'),
+            sql<'service' | 'endUser'>`v.content -> 'identity' ->> 'kind'`.as('identity'),
+          ])
           .distinctOn('v.artifact_id')
           .where('v.artifact_id', 'in', connectionIds)
           .where('v.kind', '=', 'connection')
@@ -319,7 +329,12 @@ export async function listReadableQueryDefinitions(
   const named = new Map(
     names.map((row) => [
       row.artifact_id,
-      mayReadArtifact(readable, { id: row.artifact_id, spaceId: row.space_id }) ? row.name : null,
+      {
+        name: mayReadArtifact(readable, { id: row.artifact_id, spaceId: row.space_id })
+          ? row.name
+          : null,
+        identity: row.identity,
+      },
     ]),
   );
   return {
@@ -329,7 +344,7 @@ export async function listReadableQueryDefinitions(
       retired: row.retired,
       space: { id: row.space_id, name: row.space_name },
       connection: named.has(row.connection)
-        ? { id: row.connection, name: named.get(row.connection)! }
+        ? { id: row.connection, ...named.get(row.connection)! }
         : null,
       version: { id: row.version_id, revision: row.revision_no, version: row.version_no },
       changedAt: new Date(row.created_at),

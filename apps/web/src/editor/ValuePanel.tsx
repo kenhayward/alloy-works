@@ -32,6 +32,12 @@ export interface ValuePanelProps {
    * button: what opened it, whatever holds the focus as it is pressed.
    */
   readonly onProvenance?: ((opener: HTMLElement) => void) | undefined;
+  /** Opens the Value dialog on it, to change it (B2); absent where it may not be changed. */
+  readonly onChange?: (() => void) | undefined;
+  /** Keeps what it holds under the binding as it now stands, offered where that may be (B2-G). */
+  readonly onKeep?: (() => void) | undefined;
+  /** Resolves it, in a document where nothing may be kept (B2-G). */
+  readonly onResolve?: (() => void) | undefined;
   /** The panel's own element: a region `F6` moves between while a binding is selected (CNT-077). */
   readonly ref?: Ref<HTMLElement>;
 }
@@ -40,7 +46,8 @@ export interface ValuePanelProps {
  * **The Value panel** (the B1 plan, B1-M; bindings.md, "Keyboard and accessibility"), in the dock
  * beside the Figure and Table panels while a binding is selected whole: what it shows, its definition,
  * its mode and when its value was fetched, and **Provenance**, which opens the whole of it beside the
- * text. Nothing here changes a binding: **Change** is B2's.
+ * text; **Change**, which opens the Value dialog on it; and in a document **Keep** where what it held
+ * may be kept under the binding as it now stands, **Resolve** otherwise (the B2 plan, B2-G).
  */
 export function ValuePanel({
   binding,
@@ -49,6 +56,9 @@ export function ValuePanel({
   state,
   title,
   onProvenance,
+  onChange,
+  onKeep,
+  onResolve,
   ref,
 }: ValuePanelProps) {
   const heading = useId();
@@ -71,6 +81,21 @@ export function ValuePanel({
       {onProvenance && resolved && held !== null && (
         <button type="button" onClick={(event) => onProvenance(event.currentTarget)}>
           Provenance
+        </button>
+      )}
+      {onChange && (
+        <button type="button" onClick={onChange}>
+          Change
+        </button>
+      )}
+      {held?.keepable === true && onKeep && (
+        <button type="button" onClick={onKeep}>
+          Keep
+        </button>
+      )}
+      {held?.keepable !== true && onResolve && (
+        <button type="button" onClick={onResolve}>
+          Resolve
         </button>
       )}
     </section>

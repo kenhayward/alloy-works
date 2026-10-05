@@ -28,6 +28,7 @@ import styles from './DocumentPage.module.css';
 import { ComponentEditor } from '../editor/ComponentEditor.js';
 import { ProvenancePanel } from '../data/ProvenancePanel.js';
 import { bindingStatesIn, holdsBinding, type BindingState } from './bindingContexts.js';
+import { settleBinding, type SettleAct } from './settleBinding.js';
 import { DocumentText, type Editable, type Place } from './DocumentText.js';
 import { GeneratedLists, type Known } from './GeneratedLists.js';
 import { documentAccessLink, nodeLink } from './links.js';
@@ -529,14 +530,23 @@ export function DocumentPage({
   // and only where a text holds a binding. A failed read shows no values, and says nothing.
   const [bindingStates, setBindingStates] = useState<readonly BindingState[] | null>(null);
   const holdsBindings = useMemo(() => [...texts.values()].some(holdsBinding), [texts]);
+  // The editing session of the editor open in place once it has placed or changed a binding, whose
+  // bindings the view is read with until it closes (B2-C), and a count read again by.
+  const [bindingSession, setBindingSession] = useState<string | null>(null);
+  const [bindingsRead, setBindingsRead] = useState(0);
   useEffect(() => {
-    if (!holdsBindings) {
+    if (!holdsBindings && bindingSession === null) {
       setBindingStates(null);
       return undefined;
     }
     let current = true;
     client
-      .GET('/v1/documents/{id}/bindings', { params: { path: { id } } })
+      .GET('/v1/documents/{id}/bindings', {
+        params: {
+          path: { id },
+          query: bindingSession === null ? {} : { session: bindingSession },
+        },
+      })
       .then(({ data }) => {
         if (current) setBindingStates(bindingStatesIn(data) ?? null);
       })
@@ -546,7 +556,25 @@ export function DocumentPage({
     return () => {
       current = false;
     };
-  }, [client, id, texts, holdsBindings]);
+  }, [client, id, texts, holdsBindings, bindingSession, bindingsRead]);
+  /**
+   * A binding the editor in place placed, changed, or asked to keep or resolve (B2-C, B2-H): resolved
+   * or kept from its session, said where it was left holding nothing, and the view read again.
+   */
+  const onBindingSettle = (
+    node: string,
+    binding: string,
+    session: string | null,
+    act: SettleAct,
+  ) => {
+    if (session !== null) setBindingSession(session);
+    void settleBinding(client, id, node, binding, session, act)
+      .then((said) => {
+        if (said !== null) setNotice(said);
+      })
+      .catch(() => undefined)
+      .finally(() => setBindingsRead((count) => count + 1));
+  };
   // The value whose provenance is open beside the text, and what opened it, to be given the focus back.
   // `last` is the view of it last read, kept while a re-read answers nothing for it or fails, so the
   // panel, and the focus in it, stay where they are.
@@ -1255,13 +1283,18 @@ export function DocumentPage({
               {...(document.mayEdit && authoring ? { choosing } : {})}
               bindingStates={bindingStates}
               onProvenance={(node, binding, opener) => setProvenance({ node, binding, opener })}
+              onBindingSettle={onBindingSettle}
               {...(principalId === undefined || !authoring
                 ? {}
                 : {
                     onEdit: (node: string | null) => {
                       setEditing(node);
-                      // Closing reads the text again, so the card shows what was saved.
-                      if (node === null) setTextsAttempt((count) => count + 1);
+                      // Closing reads the text again, so the card shows what was saved, and its
+                      // bindings from the version it cut.
+                      if (node === null) {
+                        setTextsAttempt((count) => count + 1);
+                        setBindingSession(null);
+                      }
                     },
                     editor: (component: string, place: Place) => (
                       <ComponentEditor

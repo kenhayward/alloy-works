@@ -293,6 +293,18 @@ describe('the editing session', () => {
     expect(session.view().phase).toBe('editing');
   });
 
+  it('saves at once when asked, after the claim the first change starts, so a binding just placed can be resolved from it', async () => {
+    const { clock, service, session, type } = harness();
+    type('Unbox');
+    const saving = session.saveNow();
+    await clock.advance(0);
+    expect(await saving).toBe(true);
+    expect(service.saved).toEqual([{ sequence: 1, openedFrom: 'v1', text: 'Unbox' }]);
+    // Nothing more to send: answered at once, sending nothing.
+    expect(await session.saveNow()).toBe(true);
+    expect(service.saved).toHaveLength(1);
+  });
+
   it('CNT-066 saves changes as an iteration after a pause, without the author doing anything', async () => {
     const { clock, service, session, type } = harness();
     type('Unbox');

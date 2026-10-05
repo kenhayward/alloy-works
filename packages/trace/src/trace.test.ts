@@ -782,8 +782,10 @@ describe('the citations in the committed model', () => {
   // VER-009, IAM-053, IAM-078 and API-005; CNT-085 in three, the PDF's paint, Word's run and Word's
   // style; and CNT-124's second sentence on the creation test. CNT-061 and CNT-062 wait on a
   // rewording, and API-003 on issue #240.
+  // 639, from 636 (2026-10-05): B2, DAT-022 three times - the listing's identity, the Value dialog's
+  // Runs as, and the browser's.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(636);
+    expect(model.citations).toHaveLength(639);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -851,6 +853,7 @@ describe('scanning the repository for test files', () => {
     // 33, from 32 (2026-09-28): account/ApiTokens.test.tsx, which cites nothing.
     // 34, from 33 (2026-09-30): data/connections.test.tsx, which cites DAT-075 and DAT-004.
     // 35, from 34 (2026-09-30): data/query-definitions.test.tsx, which cites DAT-105 and DAT-014.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(35);
+    // 36, from 35 (2026-10-05): editor/ValueDialog.test.tsx, which cites DAT-022.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(36);
   });
 });

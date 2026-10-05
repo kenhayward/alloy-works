@@ -91,6 +91,8 @@ describe('the rule behind a refusal', () => {
       'definition.retired',
       'resolution.precondition',
       'name.invalid',
+      // B2's Keep, refused where the binding's question changed (B2-F).
+      'confirm.not_possible',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

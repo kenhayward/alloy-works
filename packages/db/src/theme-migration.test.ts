@@ -329,6 +329,7 @@ describe('migration 0024, which gives every environment its default theme', () =
       '0046_query_definitions',
       '0047_datasets',
       '0048_bound_values',
+      '0049_binding_confirm',
     ]);
 
     // The one trigger held off during the migration stands enabled again, as does every other.
@@ -1012,6 +1013,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0046_query_definitions',
       '0047_datasets',
       '0048_bound_values',
+      '0049_binding_confirm',
     ]);
 
     expect((await themeChain(tenant)).map((each) => each.id)).toEqual([
@@ -1067,6 +1069,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0046_query_definitions',
       '0047_datasets',
       '0048_bound_values',
+      '0049_binding_confirm',
     ]);
 
     const chain = await themeChain(tenant);
@@ -1749,7 +1752,10 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       FIFTH_DEFAULT_THEME_VERSION,
     );
 
-    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual(['0048_bound_values']);
+    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
+      '0048_bound_values',
+      '0049_binding_confirm',
+    ]);
 
     // The theme is at 0.6, under its fixed identifier, unauthored, on top of 0.5; the value catalogue
     // an artifact of its own in no space, its 0.1 at catalogue/3; the six catalogues as they were.
@@ -1823,7 +1829,10 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
     );
     if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
 
-    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual(['0048_bound_values']);
+    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
+      '0048_bound_values',
+      '0049_binding_confirm',
+    ]);
 
     // The theme is left at the environment's own version, with nothing of the product's on top; the
     // value catalogue is held, and named by nothing until the environment's theme names it.
@@ -1846,7 +1855,10 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
 
   /** The theme's chain past 0.4, by identifier, after migrating to the end. */
   const migratedPastFourth = async (tenant: Tenant) => {
-    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual(['0048_bound_values']);
+    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
+      '0048_bound_values',
+      '0049_binding_confirm',
+    ]);
     return (await chainOf(tenant, DEFAULT_THEME_ID)).slice(4).map((each) => each.id);
   };
 

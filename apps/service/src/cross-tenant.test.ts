@@ -192,6 +192,8 @@ const OTHER_TENANT_IDS: Readonly<
   resolveBindings: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   checkBindings: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   acceptBinding: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  confirmBinding: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  getBindingHolders: async (tenant, db) => ({ id: await componentIdIn(tenant, db), binding: 'b1' }),
   getDocumentDataset: async (tenant, db) => ({
     id: await documentIdIn(tenant, db),
     version: (await datasetIn(tenant, db)).version,
@@ -245,6 +247,7 @@ const VALID_INPUT: Readonly<
   acceptBinding: {
     payload: { node: 'a'.repeat(26), binding: 'b1', version: SESSION, replaces: SESSION },
   },
+  confirmBinding: { payload: { node: 'a'.repeat(26), binding: 'b1', replaces: SESSION } },
   nameDataset: { payload: { name: 'Elsewhere' } },
   recordQueryDefinitionVersion: {
     payload: { openedFrom: SESSION, definition: aQueryDefinition(SESSION) },

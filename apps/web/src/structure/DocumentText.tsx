@@ -28,7 +28,9 @@ import {
 } from 'react';
 
 import { heldSentence } from '../editor/held.js';
+import type { BindingActs } from '../editor/ComponentEditor.js';
 import { bindingContexts, statesByNode, type BindingState } from './bindingContexts.js';
+import type { SettleAct } from './settleBinding.js';
 import { referenceContexts } from './contexts.js';
 import { textOffsetIn } from '../editor/caret.js';
 
@@ -69,6 +71,8 @@ export interface Place {
   readonly bindingStates?: ReadonlyMap<string, BindingState>;
   /** Opens a value's provenance, from the Value panel's **Provenance** (B1-M), given that button. */
   readonly onProvenance?: (binding: string, opener: HTMLElement) => void;
+  /** What the document does with a binding placed or changed in it (B2-C, B2-D, B2-H). */
+  readonly bindingActs?: BindingActs;
 }
 
 /**
@@ -289,6 +293,7 @@ export function DocumentText({
   choosing,
   bindingStates = null,
   onProvenance,
+  onBindingSettle,
 }: {
   outline: OutlineView;
   scheme: NumberingScheme | null;
@@ -329,6 +334,8 @@ export function DocumentText({
   bindingStates?: readonly BindingState[] | null;
   /** Opens a value's provenance, from the text or the editor opened in place (B1-M). */
   onProvenance?: (node: string, binding: string, opener: HTMLElement | null) => void;
+  /** Resolves or keeps a binding placed, changed, kept or resolved in the editor at a node (B2). */
+  onBindingSettle?: (node: string, binding: string, session: string | null, act: SettleAct) => void;
 }) {
   // The whole document is one canvas, the theme's paper (document-view.md, "One scroll"; CNT-072).
   const column = useRef<HTMLElement>(null);
@@ -469,6 +476,16 @@ export function DocumentText({
                       ? {
                           onProvenance: (binding: string, opener: HTMLElement) =>
                             onProvenance(node.id, binding, opener),
+                        }
+                      : {}),
+                    ...(onBindingSettle && node.type === 'reference'
+                      ? {
+                          bindingActs: {
+                            // Only a node floating at the latest reads a session's binding (B2-D).
+                            pinned: node.mode.kind !== 'latest',
+                            onSettle: (binding: string, session: string | null, act: SettleAct) =>
+                              onBindingSettle(node.id, binding, session, act),
+                          },
                         }
                       : {}),
                     onDone: () => onEdit?.(null),
