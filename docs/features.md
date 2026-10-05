@@ -695,6 +695,15 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   where each value came from, without the SQL, the connection or a source column. A value with no result
   in the document is refused before anything is queued, naming it and whether it was never resolved or
   changed since; one whose result holds no value fails the publish by name.
+- **The Data tab.** Beside Contents, in a document holding values: every value you may see, under its
+  part of the document, with its definition, its mode and its state - never resolved, changed since
+  resolved, failed, revision waiting, definition changed, changed since published, or holding -
+  filtered by state. Opening the document checks its checked values once, where you may; **Check now**
+  checks again. A waiting value shows beside the one held, which nothing moves until **Accept**; a
+  value whose definition has a newer version is flagged, and a check of it waits even where its rows
+  are the same; a value pinned to a definition version is offered only results of that version. Each
+  value says how it differs from the document's latest publication, and **Resolve**, **Keep** and
+  **Go to** act on it there.
 - **Search.** **Search**, beside Components, Documents and Publications, finds everything you may read
   by its words, and nothing you may not: components, documents and each of their sections,
   publications, templates, images, fields, metadata schemas and component types. Words are found
@@ -1171,9 +1180,8 @@ Named explicitly so nobody has to read the source to find out:
 - No page for component types: a Definitions manager makes and changes them through the API alone,
   and nothing yet changes which one is the environment's default.
 - No way to delete a component or a document, including one made by mistake.
-- A binding is placed, resolved, checked and accepted through the API alone: a document shows the
-  values it holds and their provenance, but no screen places, resolves, checks or accepts one, or
-  lists a document's bindings with their states. A document's own parameters do not exist, so a binding
+- A value fetched as the person who accepts it does not exist yet, so Accept never warns that it
+  shows that person's view to every reader. A document's own parameters do not exist, so a binding
   taking one cannot be resolved. A connection reaches PostgreSQL alone, as its own service account;
   the builder's page builds from one table or view - a join or a nested query is written through the
   API, or as a view at the database - and no page shows or changes the environment's lowered run

@@ -684,6 +684,151 @@ describe('a binding over the whole system', () => {
     const counted = takesAtTheService(versions);
     expect(counted).toEqual({ [versions[0]]: 2, [versions[1]]: 1 });
   }, 180_000);
+
+  it('offers a binding pinned to a definition version no result of a later one, and a floating one none of an earlier, over the whole system (#396)', async () => {
+    atTheSource(`insert into ${table} values (3, 'West pier');`);
+    const connection = ok(
+      await call('POST', `/v1/spaces/${general}/connections`, {
+        settings: {
+          schemaVersion: 1,
+          name: `Readings for versions ${Date.now()}`,
+          description: 'The development source.',
+          type: 'postgres',
+          source: {
+            host: 'source-postgres',
+            port: 5432,
+            database: 'readings',
+            account: READER.account,
+            tls: 'require',
+          },
+          identity: { kind: 'service' },
+          retired: false,
+        },
+      }),
+    )['id'] as string;
+    ok(await call('PUT', `/v1/connections/${connection}/credential`, { secret: READER.password }));
+    const body = (description: string) => ({
+      schemaVersion: 1,
+      title: `Site by version ${Date.now()}`,
+      description,
+      connection,
+      parameters: [{ name: 'site', type: { base: 'integer' }, required: true, list: false }],
+      fetch: { kind: 'sql', text: `select id, name from ${table} where id = {{site}} order by id` },
+      columns: [
+        { name: 'id', from: { column: 'id' }, type: { base: 'integer' } },
+        { name: 'name', from: { column: 'name' }, type: { base: 'text' } },
+      ],
+      key: ['id'],
+      order: [{ column: 'id', direction: 'ascending' }],
+      empty: 'valid',
+      limits: { rows: 100, bytes: 65_536, seconds: 10 },
+      retired: false,
+    });
+    const definition = ok(
+      await call('POST', `/v1/spaces/${general}/query-definitions`, { definition: body('One.') }),
+    ) as { id: string; version: { id: string } };
+
+    /** A document placing a component holding this binding of site 3, cut by the editing routes. */
+    const documentHolding = async (binding: Json) => {
+      const component = ok(
+        await call('POST', `/v1/spaces/${general}/components`, {
+          title: 'Pier',
+          language: 'en-GB',
+          direction: 'ltr',
+        }),
+      ) as { id: string; version: { id: string } };
+      const session = randomUUID();
+      ok(await call('POST', `/v1/components/${component.id}/lock`, { session }));
+      ok(
+        await call('PUT', `/v1/components/${component.id}/iterations/${session}/1`, {
+          openedFrom: component.version.id,
+          content: {
+            schemaVersion: 1,
+            title: 'Pier',
+            language: 'en-GB',
+            direction: 'ltr',
+            content: [{ type: 'paragraph', id: 'p1', style: 'body', content: [binding] }],
+          },
+        }),
+      );
+      ok(
+        await call(
+          'DELETE',
+          `/v1/components/${component.id}/lock?session=${session}&openedFrom=${component.version.id}`,
+        ),
+      );
+      const made = ok(
+        await call('POST', `/v1/spaces/${general}/documents`, {
+          title: `Pier report ${Date.now()}`,
+          language: 'en-GB',
+          direction: 'ltr',
+        }),
+      ) as { id: string; version: { id: string } };
+      const edited = ok(
+        await call('POST', `/v1/documents/${made.id}/outline`, {
+          openedFrom: made.version.id,
+          operation: {
+            operation: 'insert',
+            parent: null,
+            position: 0,
+            node: { type: 'reference', component: component.id, mode: { kind: 'latest' } },
+          },
+        }),
+      ) as { outline: { nodes: { id: string }[] } };
+      const node = edited.outline.nodes[0]!.id;
+      ok(
+        await call('POST', `/v1/documents/${made.id}/bindings/resolve`, {
+          bindings: [{ node, binding: 'pier' }],
+        }),
+      );
+      return { id: made.id, node };
+    };
+    const asked = { type: 'binding', id: 'pier', query: definition.id, mode: 'checked' };
+    const site = { site: { literal: '3' } };
+    const pinned = await documentHolding({
+      ...asked,
+      version: definition.version.id,
+      parameters: site,
+      take: { column: 'name' },
+    });
+    // The definition moves on, and a floating binding resolves the same question with it.
+    ok(
+      await call('POST', `/v1/query-definitions/${definition.id}/versions`, {
+        openedFrom: definition.version.id,
+        definition: body('Two.'),
+      }),
+    );
+    const floating = await documentHolding({
+      ...asked,
+      parameters: site,
+      take: { column: 'name' },
+    });
+    type View = { bindings: { held: { dataset: string; version: string }; waiting: unknown }[] };
+    const viewOf = async (document: string) =>
+      (ok(await call('GET', `/v1/documents/${document}/bindings`)) as View).bindings[0]!;
+    const [pinnedHeld, floatingHeld] = [await viewOf(pinned.id), await viewOf(floating.id)];
+    expect(floatingHeld.held.dataset).toBe(pinnedHeld.held.dataset);
+    expect(pinnedHeld.waiting).toBeNull();
+    const refused = await call('POST', `/v1/documents/${pinned.id}/bindings/accept`, {
+      node: pinned.node,
+      binding: 'pier',
+      version: floatingHeld.held.version,
+      replaces: pinnedHeld.held.version,
+    });
+    expect(refused.status).toBe(409);
+    expect(refused.body).toMatchObject({ code: 'resolution_precondition' });
+
+    // The source changes: the pinned binding's check is offered to it alone.
+    atTheSource(`update ${table} set name = 'West pier head' where id = 3;`);
+    const checked = ok(await call('POST', `/v1/documents/${pinned.id}/bindings/check`, {})) as {
+      results: { outcome: string; version: string }[];
+    };
+    expect(checked.results[0]).toMatchObject({ outcome: 'revision' });
+    expect(await viewOf(pinned.id)).toMatchObject({
+      waiting: { version: checked.results[0]!.version },
+    });
+    expect((await viewOf(floating.id)).waiting).toBeNull();
+  }, 180_000);
 });
 
 /**

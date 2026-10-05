@@ -785,8 +785,10 @@ describe('the citations in the committed model', () => {
   // 639, from 636 (2026-10-05): B2, DAT-022 three times - the listing's identity, the Value dialog's
   // Runs as, and the browser's. 651 (2026-10-05): B3's twelve - PUB-108, DAT-087, DAT-046, DAT-042,
   // PUB-049, DAT-088 and STY-082 across the domain, the store, the worker and the service.
+  // 658 (2026-10-05): B4's seven - DAT-039, DAT-082 and DAT-070 across the store, the service and the
+  // page.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(651);
+    expect(model.citations).toHaveLength(658);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -855,6 +857,7 @@ describe('scanning the repository for test files', () => {
     // 34, from 33 (2026-09-30): data/connections.test.tsx, which cites DAT-075 and DAT-004.
     // 35, from 34 (2026-09-30): data/query-definitions.test.tsx, which cites DAT-105 and DAT-014.
     // 36, from 35 (2026-10-05): editor/ValueDialog.test.tsx, which cites DAT-022.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(36);
+    // 37, from 36 (2026-10-05): structure/DataTab.test.tsx, which cites DAT-039 and DAT-070.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(37);
   });
 });
