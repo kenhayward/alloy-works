@@ -19168,31 +19168,31 @@
     {
       "id": "DAT-042",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 434,
+      "line": 437,
       "kind": "title"
     },
     {
       "id": "DAT-046",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 419,
+      "line": 422,
       "kind": "title"
     },
     {
       "id": "DAT-088",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 387,
+      "line": 390,
       "kind": "title"
     },
     {
       "id": "PUB-049",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 434,
+      "line": 437,
       "kind": "title"
     },
     {
       "id": "STY-082",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 471,
+      "line": 497,
       "kind": "title"
     },
     {
@@ -19894,7 +19894,7 @@
     {
       "id": "DAT-042",
       "file": "packages/db/src/publication-bindings.test.ts",
-      "line": 416,
+      "line": 496,
       "kind": "title"
     },
     {

@@ -97,8 +97,11 @@ describe('publishing a document holding a value', () => {
 
   const within = <T>(work: (trx: TenantTransaction) => Promise<T>) =>
     service.withTenant(tenant, work);
-  const work = (over: ObjectStores = stores) => {
-    const publish = publishJob({ db: worker, stores: over, typst, fonts });
+  const work = (
+    over: ObjectStores = stores,
+    conditionContent?: (node: string, content: ContentDocument) => ContentDocument,
+  ) => {
+    const publish = publishJob({ db: worker, stores: over, typst, fonts, conditionContent });
     return processNextBesideChecks(
       {
         queue,
@@ -466,6 +469,29 @@ describe('publishing a document holding a value', () => {
     ]) {
       expect(text).not.toContain(secret);
     }
+  });
+
+  it('DAT-042 publishes a document whose bound block a condition removes, its provenance.json beside it listing nothing printed', async () => {
+    const version = await documentHoldingAValue();
+    const request = await ask(version, ['pdf']);
+    // The binding is recorded on the request; a condition then takes its block out before binding.
+    const removed = (_node: string, content: ContentDocument): ContentDocument =>
+      ({
+        ...content,
+        content: [
+          {
+            type: 'paragraph',
+            id: 'p2',
+            style: 'body',
+            content: [{ type: 'text', value: 'No depth today.', marks: [] }],
+          },
+        ],
+      }) as ContentDocument;
+    expect(await work(stores, removed)).toBe('done');
+    const outputs = await outputsOf(request);
+    expect(outputs.map((each) => each.format).sort()).toEqual(['pdf', 'provenance']);
+    const kept = outputs.find((each) => each.format === 'provenance')!;
+    expect(JSON.parse((await bytesOf(kept.object_key)).toString('utf8')).values).toEqual([]);
   });
 
   it("STY-082 prints a value from the theme's value catalogue alone, the same in the PDF and in Word, under formats unlike the default", async () => {

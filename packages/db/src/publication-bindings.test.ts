@@ -413,6 +413,86 @@ describe('the bindings of a publication request and a publication', () => {
     expect(document.artifactId).toBeTruthy();
   });
 
+  it("refuses a request's binding whose request is no longer queued, or whose digest or dataset version alone is not its resolution's", async () => {
+    const { document, request } = await requestedWithBindings();
+    const [held] = await requestBindings(request);
+    // A resolution the request did not record: a row naming it exactly is the control.
+    const k9 = await resolved(document.artifactId, 'k9', digest('k9'), 'south');
+    const insert = (into: string, over: Record<string, unknown> = {}) =>
+      tenant(async (trx) => {
+        const version = (over.dataset_version as string | undefined) ?? k9.version;
+        const dataset = await trx
+          .selectFrom('artifact_version')
+          .select('artifact_id')
+          .where('id', '=', version)
+          .executeTakeFirstOrThrow();
+        await trx
+          .insertInto('publication_request_binding')
+          .values({
+            request_id: into,
+            node: NODE,
+            binding: 'k9',
+            digest: digest('k9'),
+            resolution: k9.id,
+            dataset_version: version,
+            dataset_id: dataset.artifact_id,
+            ...over,
+          } as never)
+          .execute();
+      });
+    // The digest alone, or the dataset version alone, differs from the resolution's.
+    await expect(insert(request, { digest: 'f'.repeat(64) })).rejects.toThrow(
+      /as its document resolved it/,
+    );
+    expect(held!.dataset_version).not.toBe(k9.version);
+    await expect(insert(request, { dataset_version: held!.dataset_version })).rejects.toThrow(
+      /as its document resolved it/,
+    );
+    // A request no longer queued takes no binding, even one matching its resolution exactly.
+    const { request: failed } = await requestedWithBindings();
+    await tenant((trx) =>
+      sql`update publication_request set state = 'failed', finished_at = now(),
+                     failures = '[{"stage":"store","code":"store_failed","node":null,"block":null,"detail":null}]'
+                   where id = ${failed}`.execute(trx),
+    );
+    const other = await requestsOf(document.artifactId);
+    expect(other.map((each) => each.id)).toEqual([request]);
+    await expect(
+      tenant(async (trx) => {
+        const own = await trx
+          .selectFrom('publication_request')
+          .select('document_id')
+          .where('id', '=', failed)
+          .executeTakeFirstOrThrow();
+        const mine = await recordResolution(trx, {
+          document: own.document_id,
+          node: NODE,
+          binding: 'k9',
+          digest: digest('k9'),
+          version: k9.version,
+          replaces: null,
+          act: 'resolve',
+          by: ada,
+        });
+        await trx
+          .insertInto('publication_request_binding')
+          .values({
+            request_id: failed,
+            node: NODE,
+            binding: 'k9',
+            digest: digest('k9'),
+            resolution: mine.id,
+            dataset_version: k9.version,
+            dataset_id: k9.dataset,
+          } as never)
+          .execute();
+      }),
+    ).rejects.toThrow(/as its document resolved it/);
+    // The control: the same row on the queued request, matching its resolution, is recorded.
+    await insert(request);
+    expect((await requestBindings(request)).map((each) => each.binding)).toEqual(['k1', 'k9']);
+  });
+
   it('DAT-042 records a publication holding values only with its bindings and its provenance output whole', async () => {
     const { request } = await requestedWithBindings();
     // Without the provenance, or with one where nothing is bound, the record is refused before a row.

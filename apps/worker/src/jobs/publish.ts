@@ -18,6 +18,7 @@ import {
   PUBLISHING_SCHEMA_1,
   WORD_WRITER_VERSION,
   writeDocx,
+  type ContentDocument,
   type HeldDataset,
   type Held,
   type PublishFailure,
@@ -199,6 +200,11 @@ export function publishJob(deps: {
   readonly stores: ObjectStores;
   readonly typst: Typst;
   readonly fonts: PinnedFonts;
+  /**
+   * The conditions stage, handed to `assemble`: REU's, in T4, and the identity until then. A test
+   * hands one to remove a block before binding.
+   */
+  readonly conditionContent?: (node: string, content: ContentDocument) => ContentDocument;
 }): JobHandler {
   return {
     async run(tenant, job) {
@@ -261,6 +267,7 @@ export function publishJob(deps: {
         revision,
         covers: deps.fonts.covers,
         assets,
+        ...(deps.conditionContent ? { conditionContent: deps.conditionContent } : {}),
       });
       if (!assembled.ok) throw new PublishRefused(assembled.failures);
 
@@ -317,8 +324,11 @@ export function publishJob(deps: {
         });
       }
       // `provenance.json` beside the outputs wherever a value is printed (B3-G; DAT-042, PUB-049): a
-      // publication's alone, since a preview records no publication (B3-H).
-      if (!preview && assembled.values.length > 0) {
+      // publication's alone, since a preview records no publication (B3-H). Wherever the request
+      // recorded a binding, as `recordPublication` counts them, even where a condition took every
+      // bound block out before binding: it lists what printed, which may be nothing.
+      const recordedABinding = [...bindings.values()].some((each) => each.size > 0);
+      if (!preview && recordedABinding) {
         const datasets = new Map(
           [...bindings.values()].flatMap((each) =>
             [...each.values()].map(
