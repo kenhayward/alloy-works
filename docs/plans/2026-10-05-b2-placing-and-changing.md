@@ -124,6 +124,8 @@ session read), and the baseline drafted adding DAT-022, checked with `pnpm trace
 
 ## Questions for Ken
 
+Answered by Ken on 2026-10-05, with the decisions: every one as recommended.
+
 1. **B2-H, keeping or resolving the open document on Change without a second click?**
    Recommended: yes; it is BI-C's rule applied to a change.
 2. **B2-A, `Mod-Shift-6`?** Recommended: yes; no browser or registry entry takes it, and the toolbar
