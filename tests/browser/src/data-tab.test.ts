@@ -158,4 +158,40 @@ describe('the Data tab, in Chromium (the B4 plan, task 4)', () => {
       ).toBe(0);
     });
   });
+
+  it('keeps the editor opened in place straight after the page loads while the check on opening and the values it reads again land', async () => {
+    const opened = await definitionMovedOn(api());
+    await withPage(async (page) => {
+      // The check held until the editor is open, so the values read again after it land on an open
+      // editor, as they would where a person opens one before a slow source answers.
+      let editorOpen: () => void = () => undefined;
+      const open = new Promise<void>((settle) => {
+        editorOpen = settle;
+      });
+      await page.route('**/bindings/check', async (route) => {
+        await open;
+        await route.continue();
+      });
+      await page.goto(`${SERVICE}/#/documents/${opened}`);
+      const opens = page.locator('section.aw-canvas [data-opens="true"]').first();
+      await opens.getByText('metres at the weir.').waitFor();
+      await opens.click();
+      const surface = page.getByRole('textbox', { name: /^Content of / });
+      await surface.waitFor();
+      const held = await surface.elementHandle();
+      const readAgain = page.waitForResponse(
+        (response) =>
+          response.request().method() === 'GET' &&
+          new URL(response.url()).pathname === `/v1/documents/${opened}/bindings`,
+      );
+      editorOpen();
+      await readAgain;
+      // The revision the check found reaches the value in the open editor, which is never closed or
+      // drawn again.
+      await surface.getByText('revision waiting').waitFor();
+      expect(await held!.evaluate((element) => element.isConnected)).toBe(true);
+      expect(await surface.evaluate((element, before) => element === before, held)).toBe(true);
+      expect(await surface.textContent()).toContain('metres at the weir.');
+    });
+  });
 });
