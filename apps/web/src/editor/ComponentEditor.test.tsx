@@ -5197,7 +5197,7 @@ describe('equations in the editor (equations 1)', () => {
     expect(button).toHaveAttribute('aria-haspopup', 'dialog');
     await userEvent.click(button);
     const dialog = await opens();
-    expect(latexOf(dialog)).toHaveFocus();
+    await waitFor(() => expect(latexOf(dialog)).toHaveFocus());
 
     await write(dialog, '\\frac{a+b}{c}');
     // Drawn beneath as it is typed, as the browser draws MathML.
@@ -5525,7 +5525,7 @@ describe('equations in the editor (equations 1)', () => {
     expect(drawnIn(dialog)).toBeNull();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
     // Back in the field whose words say what to put right.
-    expect(latexOf(dialog)).toHaveFocus();
+    await waitFor(() => expect(latexOf(dialog)).toHaveFocus());
     expect(equationsIn(view)).toEqual([]);
   });
 
@@ -5545,7 +5545,7 @@ describe('equations in the editor (equations 1)', () => {
       ),
     );
     await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
-    expect(latexOf(dialog)).toHaveFocus();
+    await waitFor(() => expect(latexOf(dialog)).toHaveFocus());
     expect(equationsIn(view)).toEqual([]);
   });
 
@@ -5572,7 +5572,7 @@ describe('equations in the editor (equations 1)', () => {
     const close = within(dialog).getByRole('button', { name: 'Close' });
     close.focus();
     await userEvent.tab();
-    expect(latexOf(dialog)).toHaveFocus();
+    await waitFor(() => expect(latexOf(dialog)).toHaveFocus());
     await userEvent.tab({ shift: true });
     expect(close).toHaveFocus();
     await write(dialog, 'x^2');
