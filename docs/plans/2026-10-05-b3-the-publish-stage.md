@@ -142,6 +142,8 @@ record-run`; the pull request says so.
 
 ## Questions for Ken
 
+Answered by Ken on 2026-10-05, with the decisions: every one as recommended.
+
 1. **B3-D: claim PUB-108 on `contributionsOf(Bound)`**, with `unbound` the page's named way round it?
    The types refuse the swap as `number` refuses an unconditioned outline; neither stops a caller
    choosing the other function. **Recommended: yes**, and say so beside the claim.
