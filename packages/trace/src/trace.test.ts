@@ -67,6 +67,7 @@ describe('the committed trace.json', () => {
     // more elsewhere, superseding 18 - TPL's schema rows among them, because a template now assigns
     // schemas it does not own. Before that, 1306 from 1303: CNT-142 to CNT-144 gave a component a
     // title of its own.
+    // 1533, from 1532 (2026-10-05): STR-073 supersedes STR-072, the interface's budget at p90 over ten samples, on Ken's answer.
     // 1532, from 1525 (2026-10-04): bindings.md's questions, answered by Ken - DAT-115 supersedes DAT-059 (a revision marked in a publication's provenance, not its print), DAT-116 supersedes DAT-072 (each binding act's precondition on what it changes), STY-082 (a theme's value formats), and PUB-108 to PUB-111 supersede PUB-099, one per stage. DAT-057, 058, 060, 061 and 062 move whole to T3. DAT-Q05 settled.
     // 1525, from 1524 (2026-09-30): API-062 adds the versioned, navigable and token-executable developer API reference (issue #352).
     // 1524, from 1522 (2026-09-30): IAM-083 and IAM-084 (T7) supersede IAM-020, Ken's answer that a dataset's own read grant comes later and the document's permission alone governs in T2.
@@ -80,7 +81,7 @@ describe('the committed trace.json', () => {
     // 1471, from 1470 (2026-09-28): W14.7's final review - CNT-178 supersedes CNT-148, because macOS chooses its spelling checker's languages itself.
     // 1470, from 1458 (2026-09-28): the T1 audit's last decisions and rewordings: CNT-176 and CNT-177, PUB-098 to PUB-104, IAM-080 and IAM-081 supersede the rows they split, and STY-079 is new (issue #306).
     // 1458, from 1449 (2026-09-26): the rewordings Ken agreed after the T1 audit (K7, and W1's three): CNT-171 to CNT-175, STR-070, MET-042, STY-078 and API-061 supersede the rows they reword.
-    expect(model.requirements).toHaveLength(1532);
+    expect(model.requirements).toHaveLength(1533);
     expect(model.nonRequirements).toHaveLength(118);
     expect(model.questions).toHaveLength(135);
     // 591, from 589 (2026-10-04): bindings.md claims DAT-116 and STY-082 on Ken's answers to its questions; DAT-115 (review is not designed) and PUB-108 are named gaps.

@@ -3,22 +3,23 @@ import { readFileSync } from 'node:fs';
 import { arch, availableParallelism, cpus, platform, release, totalmem, version } from 'node:os';
 import type { Browser } from 'playwright-core';
 
-/** A budget: a 95th percentile, and a maximum no sample may pass, in milliseconds. */
+/** A budget: a percentile and its bound, and a maximum no sample may pass, in milliseconds. */
 export interface Budget {
-  readonly p95: number;
+  readonly percentile: 90 | 95;
+  readonly at: number;
   readonly max: number;
 }
 
 /**
- * The navigation budgets the browser measures (the W13 plan's B-K and B-L). STR-072 is the
+ * The navigation budgets the browser measures (the W13 plan's B-K and B-L). STR-073 is the
  * interface's share of an act on the outline, STR-063's interactive budget again with the service's
- * requests taken out; CNT-179's open is CNT-136's preview numbers and its jump STR-063's again, each
+ * requests taken out, at p90; CNT-179's open is CNT-136's preview numbers and its jump STR-063's again, each
  * the whole time a reader waits.
  */
 export const BUDGETS = {
-  interface: { p95: 250, max: 500 },
-  open: { p95: 1000, max: 2000 },
-  jump: { p95: 250, max: 500 },
+  interface: { percentile: 90, at: 250, max: 500 },
+  open: { percentile: 95, at: 1000, max: 2000 },
+  jump: { percentile: 95, at: 250, max: 500 },
 } as const satisfies Record<string, Budget>;
 
 /**
@@ -30,8 +31,8 @@ export const BUDGETS = {
 export function binding(
   budget: Budget,
   env: Readonly<Record<string, string | undefined>>,
-): { readonly p95: number | null; readonly max: number | null } {
-  return env['CI'] === 'true' ? { p95: null, max: null } : { ...budget };
+): { readonly at: number | null; readonly max: number | null } {
+  return env['CI'] === 'true' ? { at: null, max: null } : { at: budget.at, max: budget.max };
 }
 
 /** The nearest-rank percentile: the smallest sample at or above `p` percent of them. */
@@ -43,10 +44,11 @@ export function percentile(samples: readonly number[], p: number): number {
   ]!;
 }
 
-/** What a run of samples is reported as: how many, the p50, the p95 and the maximum, and each. */
+/** What a run of samples is reported as: how many, the p50, the p90, the p95 and the maximum, and each. */
 export interface Summary {
   readonly n: number;
   readonly p50: number;
+  readonly p90: number;
   readonly p95: number;
   readonly max: number;
   readonly samples: readonly number[];
@@ -57,6 +59,7 @@ export function summary(samples: readonly number[]): Summary {
   return {
     n: samples.length,
     p50: round(percentile(samples, 50)),
+    p90: round(percentile(samples, 90)),
     p95: round(percentile(samples, 95)),
     max: round(Math.max(...samples)),
     samples: samples.map(round),
