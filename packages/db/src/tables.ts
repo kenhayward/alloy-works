@@ -481,7 +481,7 @@ export interface BindingResolutionTable {
   dataset_id: ColumnType<string, string, never>;
   dataset_kind: ColumnType<'dataset', 'dataset' | undefined, never>;
   replaces: ColumnType<string | null, string | null, never>;
-  act: ColumnType<'resolve' | 'accept', 'resolve' | 'accept', never>;
+  act: ColumnType<'resolve' | 'accept' | 'confirm', 'resolve' | 'accept' | 'confirm', never>;
   resolved_by: ColumnType<string, string, never>;
   resolved_at: ColumnType<Date, never, never>;
 }

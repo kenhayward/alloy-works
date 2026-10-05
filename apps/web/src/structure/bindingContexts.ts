@@ -42,7 +42,9 @@ export interface BindingState {
     readonly name: string | null;
     readonly stale: boolean;
     readonly taken: Taken | null;
-    readonly act: 'resolve' | 'accept';
+    readonly act: 'resolve' | 'accept' | 'confirm';
+    /** Whether Keep may hold it under the binding as it now stands (B2-G). */
+    readonly keepable: boolean;
     readonly by: { readonly id: string; readonly displayName: string | null };
     readonly at: string;
   } | null;
@@ -105,7 +107,8 @@ function heldIn(value: unknown): BindingState['held'] | undefined {
   ];
   if (!provenance || !dataset || !version || !number || !at || !by) return undefined;
   if (typeof value.stale !== 'boolean') return undefined;
-  if (value.act !== 'resolve' && value.act !== 'accept') return undefined;
+  if (value.act !== 'resolve' && value.act !== 'accept' && value.act !== 'confirm')
+    return undefined;
   return {
     dataset,
     version,
@@ -115,6 +118,7 @@ function heldIn(value: unknown): BindingState['held'] | undefined {
     stale: value.stale,
     taken: takenIn(value.taken),
     act: value.act,
+    keepable: value.keepable === true,
     by: { id: by, displayName: text(value.by.displayName) ?? null },
     at,
   };

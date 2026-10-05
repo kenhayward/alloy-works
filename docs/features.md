@@ -654,7 +654,13 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   those you may read linked, and how many more. A sample keeps nothing.
 - **Results kept and checked, through the API.** A component's text can hold a **binding** - a value
   taken from a query definition's result, a column of its one row or of the row a key names, with
-  the values it runs with - placed through the API alone: no screen places or accepts one yet. A
+  the values it runs with - placed and changed from the **Value dialog**: **Value** on the toolbar,
+  or Ctrl or Cmd, Shift and 6, offers each query definition you may read with whose identity it runs
+  as, its version, its parameters checked as typed, the column it takes and its mode; opened on a
+  binding it changes it, saying first which documents will hold no value until resolved again. In a
+  document a binding placed is resolved at once from your own unsaved editing, and one whose value
+  taken or mode alone changed keeps its value by **Keep**, which asks the database nothing; the Value
+  panel offers **Change**, and **Keep** or **Resolve**. No screen accepts a result yet. A
   component holding one opens for editing, and a binding is deleted, undone, copied, cut and pasted as
   any atom is: a pasted binding keeps its identifier wherever the receiving component does not
   already hold it - a cut and paste, or a paste into another component - so its value is kept, and

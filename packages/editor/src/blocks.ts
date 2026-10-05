@@ -5,6 +5,7 @@ import { liftListItem, sinkListItem, splitListItem, wrapInList } from 'prosemirr
 import { Selection, TextSelection, type Command, type EditorState } from 'prosemirror-state';
 import { ReplaceAroundStep, ReplaceStep } from 'prosemirror-transform';
 
+import { canPlaceBinding } from './bindings.js';
 import { canPlaceEquation } from './equations.js';
 import { insertFootnote } from './footnotes.js';
 import { canPlaceReference } from './references.js';
@@ -152,7 +153,8 @@ export type BlockAction =
   | 'footnote'
   | 'reference'
   | 'equation'
-  | 'symbol';
+  | 'symbol'
+  | 'value';
 
 /** The innermost list the cursor stands in, with the position it stands at, or null. */
 function innermostList(state: EditorState): { node: Node; pos: number } | null {
@@ -928,6 +930,9 @@ export function blockCommand(action: BlockAction, newIdentifier: () => string): 
     // palette runs `insertSymbol` with the author's choice.
     case 'symbol':
       return canInsertSymbol;
+    // Reference's kind (B2-A): what it binds is chosen in the renderer's Value dialog.
+    case 'value':
+      return canPlaceBinding;
   }
 }
 

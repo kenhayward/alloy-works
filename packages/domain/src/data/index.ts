@@ -109,6 +109,7 @@ export {
 } from './provenance.js';
 export type { Provenance } from './provenance.js';
 export { identityKey, parametersDigestInput } from './identity.js';
+export { questionUnchanged } from './question.js';
 export {
   aggregates,
   BUILDER_FORMAT,

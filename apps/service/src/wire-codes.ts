@@ -64,6 +64,7 @@ const WIRE_CODES = {
   'take.invalid': 'take_invalid',
   'definition.retired': 'definition_retired',
   'resolution.precondition': 'resolution_precondition',
+  'confirm.not_possible': 'confirm_not_possible',
   'name.invalid': 'name_invalid',
 } as const satisfies Record<string, string>;
 

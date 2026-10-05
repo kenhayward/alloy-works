@@ -67,6 +67,7 @@ async function definitionView(
           },
     mayEdit: decide('edit', facts).allowed && mayRun,
     mayRun,
+    mayUse: atConnection !== undefined && decide('use_connection', atConnection).allowed,
   };
 }
 

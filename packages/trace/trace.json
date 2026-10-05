@@ -18192,7 +18192,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 792,
+      "line": 795,
       "kind": "title"
     },
     {
@@ -18421,6 +18421,12 @@
       "id": "IAM-075",
       "file": "apps/service/src/oidc.test.ts",
       "line": 183,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-022",
+      "file": "apps/service/src/placing-bindings.test.ts",
+      "line": 355,
       "kind": "title"
     },
     {
@@ -18870,13 +18876,13 @@
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
-      "line": 220,
+      "line": 221,
       "kind": "title"
     },
     {
       "id": "CNT-164",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
-      "line": 678,
+      "line": 679,
       "kind": "title"
     },
     {
@@ -18928,6 +18934,12 @@
       "kind": "title"
     },
     {
+      "id": "DAT-022",
+      "file": "apps/web/src/editor/ValueDialog.test.tsx",
+      "line": 117,
+      "kind": "title"
+    },
+    {
       "id": "DAT-047",
       "file": "apps/web/src/editor/bindings.test.ts",
       "line": 151,
@@ -18948,13 +18960,13 @@
     {
       "id": "CNT-066",
       "file": "apps/web/src/editor/session.test.ts",
-      "line": 296,
+      "line": 308,
       "kind": "title"
     },
     {
       "id": "CNT-070",
       "file": "apps/web/src/editor/session.test.ts",
-      "line": 352,
+      "line": 364,
       "kind": "title"
     },
     {
@@ -19674,13 +19686,13 @@
     {
       "id": "DAT-085",
       "file": "packages/db/src/datasets.test.ts",
-      "line": 339,
+      "line": 340,
       "kind": "title"
     },
     {
       "id": "DAT-092",
       "file": "packages/db/src/datasets.test.ts",
-      "line": 268,
+      "line": 269,
       "kind": "title"
     },
     {
@@ -19770,7 +19782,7 @@
     {
       "id": "VER-001",
       "file": "packages/db/src/editing.test.ts",
-      "line": 300,
+      "line": 327,
       "kind": "title"
     },
     {
@@ -20586,7 +20598,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 473,
+      "line": 475,
       "kind": "title"
     },
     {
@@ -21540,19 +21552,19 @@
     {
       "id": "CNT-004",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 195,
+      "line": 197,
       "kind": "title"
     },
     {
       "id": "CNT-077",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 634,
+      "line": 636,
       "kind": "title"
     },
     {
       "id": "CNT-127",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 313,
+      "line": 315,
       "kind": "title"
     },
     {
@@ -21673,6 +21685,12 @@
       "id": "STR-006",
       "file": "tests/browser/src/outline.test.ts",
       "line": 187,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-022",
+      "file": "tests/browser/src/placing.test.ts",
+      "line": 113,
       "kind": "title"
     },
     {

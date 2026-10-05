@@ -32,6 +32,33 @@ const NodeBinding = z.strictObject({
   binding: z.string().min(1).max(200).describe("The binding's identifier in that component"),
 });
 
+/** Where a binding is read from (B2-C): the component version the node resolves to, or a session. */
+const BindingFrom = z
+  .enum(['version', 'session'])
+  .optional()
+  .describe(
+    "`session`: read the binding from the latest save of the caller's own editing session, named by `session`, where the node floats at the latest version, that session holds the component's lock, and it opened from the latest version; otherwise it is `binding_missing`. Absent or `version`: from the component version the node resolves to",
+  );
+
+const SessionNamed = LowercaseUuid.optional().describe(
+  "The caller's own editing session a binding is read from, for an item that says `session`",
+);
+
+/** A component and one binding's identifier in it, for its holders. */
+export const ComponentBindingParams = z.object({
+  id: LowercaseUuid,
+  binding: z.string().min(1).max(200),
+});
+export type ComponentBindingParams = z.infer<typeof ComponentBindingParams>;
+
+/** The bindings view, read with the bindings of one editing session (B2-C). */
+export const DocumentBindingsQuery = z.object({
+  session: SessionNamed.describe(
+    "The caller's own editing session: a component whose lock it holds is read from its latest save, as a resolve's `session` item is",
+  ),
+});
+export type DocumentBindingsQuery = z.infer<typeof DocumentBindingsQuery>;
+
 /**
  * A dataset version's provenance record (DAT-085): what ran, as whom, when, and the checksum - the SQL
  * that ran, the connection and the source's column each declared column reads shown only to a caller
@@ -118,7 +145,14 @@ const HeldView = z.object({
   taken: TakeOutcomeView.nullable().describe(
     'The value the binding takes from the version held, or null where it is stale',
   ),
-  act: z.enum(['resolve', 'accept']).describe('The act that made it what the binding holds'),
+  act: z
+    .enum(['resolve', 'accept', 'confirm'])
+    .describe('The act that made it what the binding holds'),
+  keepable: z
+    .boolean()
+    .describe(
+      'Whether Keep may hold it under the binding as it now stands: stale, and still asking the question it answers - the same definition, parameters and version - so only the value taken or the mode changed',
+    ),
   by: z
     .object({
       id: z.string(),
@@ -181,9 +215,19 @@ export const BindingFailureView = DataFailureView.extend({
   document: z.string(),
 });
 
-export const ResolveBindingsBody = z.strictObject({
-  bindings: z.array(NodeBinding).min(1).max(50).describe('The bindings to resolve, 1 to 50'),
-});
+export const ResolveBindingsBody = z
+  .strictObject({
+    bindings: z
+      .array(NodeBinding.extend({ from: BindingFrom }))
+      .min(1)
+      .max(50)
+      .describe('The bindings to resolve, 1 to 50'),
+    session: SessionNamed,
+  })
+  .refine(
+    (body) => body.session !== undefined || body.bindings.every((each) => each.from !== 'session'),
+    { message: 'An item read from a session needs the session named', path: ['session'] },
+  );
 export type ResolveBindingsBody = z.infer<typeof ResolveBindingsBody>;
 
 export const ResolveBindingsView = z.object({
@@ -254,6 +298,30 @@ export const AcceptBindingBody = z.strictObject({
     ),
 });
 export type AcceptBindingBody = z.infer<typeof AcceptBindingBody>;
+
+export const ConfirmBindingBody = z
+  .strictObject({
+    node: NodeBinding.shape.node,
+    binding: NodeBinding.shape.binding,
+    replaces: LowercaseUuid.describe(
+      'The dataset version the binding holds now, as the caller saw it',
+    ),
+    from: BindingFrom,
+    session: SessionNamed,
+  })
+  .refine((body) => body.from !== 'session' || body.session !== undefined, {
+    message: 'A binding read from a session needs the session named',
+    path: ['session'],
+  });
+export type ConfirmBindingBody = z.infer<typeof ConfirmBindingBody>;
+
+/** The documents holding a value for one binding of a component (B2-I). */
+export const BindingHoldersView = z.object({
+  documents: UsesView.describe(
+    'The documents whose latest outline places the component at a node holding a value for the binding',
+  ),
+});
+export type BindingHoldersView = z.infer<typeof BindingHoldersView>;
 
 /** A stored result, read through a document (DAT-090): its provenance and its rows, whole. */
 export const DocumentDatasetView = z.object({
@@ -336,6 +404,7 @@ export const bindingRoutes = {
     tenantScoped: true,
     access: { check: 'permission', permission: 'read', target: documentTarget },
     params: DocumentBindingParams,
+    query: DocumentBindingsQuery,
     responses: {
       200: { description: 'Every binding the caller may read', schema: DocumentBindingsView },
       401: unauthenticated,
@@ -440,6 +509,59 @@ export const bindingRoutes = {
         description:
           '`resolution_precondition`: the binding no longer holds what `replaces` names, or the version is not a newer result of what it holds, answered with the binding as it stands',
         schema: BindingRefusal,
+      },
+    },
+  },
+  confirmBinding: {
+    operationId: 'confirmBinding',
+    method: 'POST',
+    path: '/v1/documents/{id}/bindings/confirm',
+    summary: 'Keep the result a changed binding holds, where its question is unchanged',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'edit', target: documentTarget },
+    params: DocumentBindingParams,
+    body: ConfirmBindingBody,
+    responses: {
+      200: { description: 'The binding as it now stands', schema: BindingStateView },
+      400: {
+        description:
+          "`binding_missing`: no such binding in the component the node places, or in the session named, or a definition the caller may not read; `take_invalid`: what it now takes is not the held result's",
+        schema: BindingRefusal,
+      },
+      401: unauthenticated,
+      403: {
+        description: 'The caller may read the document but may not edit it. Nothing is recorded',
+        schema: ErrorBody,
+      },
+      404: documentNotFound,
+      409: {
+        description:
+          '`resolution_precondition`: the binding no longer holds what `replaces` names, answered with the binding as it stands; `confirm_not_possible`: its definition, parameters or version changed, so it must be resolved',
+        schema: BindingRefusal,
+      },
+    },
+  },
+  getBindingHolders: {
+    operationId: 'getBindingHolders',
+    method: 'GET',
+    path: '/v1/components/{id}/bindings/{binding}/holders',
+    summary: 'The documents holding a value for one binding of a component',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    params: ComponentBindingParams,
+    responses: {
+      200: {
+        description: 'Those the caller may read, by title, and how many more',
+        schema: BindingHoldersView,
+      },
+      401: unauthenticated,
+      403: {
+        description: 'Never answered: a component the caller may not read is not found',
+        schema: ErrorBody,
+      },
+      404: {
+        description: 'No such component in this environment, or none the caller may read',
+        schema: ErrorBody,
       },
     },
   },

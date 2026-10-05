@@ -254,6 +254,12 @@ export interface Repeat {
 export interface Session {
   /** A change was made to the content. The first one claims the lock (COL-005). */
   changed(): void;
+  /**
+   * Saves what is on screen now, once the claim a first change started has answered, rather than after
+   * the pause (the B2 plan, B2-C): a binding just placed or changed is read from this save. Answers
+   * whether everything is saved; false where the session is not editing.
+   */
+  saveNow(): Promise<boolean>;
   /** Save version: flush, then cut. Never runs on its own (CNT-070). */
   saveVersion(): Promise<void>;
   /** Done editing: flush, cut if anything changed, release. */
@@ -339,6 +345,8 @@ export function createSession(options: SessionOptions): Session {
   let sequence = options.sequence ?? 0;
   let dirty = false;
   let inFlight: Promise<boolean> | null = null;
+  // The claim the first change started, while it is being asked: what `saveNow` waits for first.
+  let claiming: Promise<unknown> | null = null;
   let idle: unknown = null;
   let continuous: unknown = null;
   let retry: unknown = null;
@@ -929,11 +937,19 @@ export function createSession(options: SessionOptions): Session {
       // finding 2).
       save = hasFailed ? 'failing' : 'saving';
       if (phase === 'reading') {
-        void claim(false, false);
+        const asked = claim(false, false).finally(() => {
+          if (claiming === asked) claiming = null;
+        });
+        claiming = asked;
         return;
       }
       publish();
       if (phase === 'editing' || phase === 'cutting' || phase === 'releasing') schedule();
+    },
+    async saveNow() {
+      while (claiming !== null) await claiming;
+      if (disposed || phase !== 'editing') return false;
+      return flush(true);
     },
     saveVersion: () => finish('cutting', (openedFrom) => service.cut(openedFrom)),
     doneEditing: () => finish('releasing', (openedFrom) => service.release(openedFrom)),

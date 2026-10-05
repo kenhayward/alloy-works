@@ -16,6 +16,7 @@ import {
   datasetFor,
   datasetIdentity,
   datasetName,
+  documentsHolding,
   documentsResolving,
   lockBindings,
   lockDatasetQuestions,
@@ -566,6 +567,72 @@ describe('datasets and resolutions', () => {
     await expect(tenant((trx) => sql`delete from binding_resolution`.execute(trx))).rejects.toThrow(
       /permission denied/,
     );
+  });
+
+  it('records a confirm only where it replaces the version it holds', async () => {
+    const one = await recorded({ parameters: { site: 'confirm-one' } });
+    const later = await recorded({ parameters: { site: 'confirm-one' }, checksum: '4'.repeat(64) });
+    const component = await componentHolding(general, [binding()]);
+    const document = await documentReferencing(general, component.artifactId, node('c'));
+    const record = (version: string, replaces: string | null, act: 'resolve' | 'confirm') =>
+      tenant((trx) =>
+        recordResolution(trx, {
+          document: document.artifactId,
+          node: node('c'),
+          binding: 'k1',
+          digest: 'd'.repeat(64),
+          version,
+          replaces,
+          act,
+          by: ada,
+        }),
+      );
+    await record(one.version.id, null, 'resolve');
+    await expect(record(later.version.id, one.version.id, 'confirm')).rejects.toThrow(
+      /binding_resolution_confirm_holds/,
+    );
+    await expect(record(one.version.id, null, 'confirm')).rejects.toThrow(
+      /binding_resolution_accept_replaces/,
+    );
+    expect(await record(one.version.id, one.version.id, 'confirm')).toMatchObject({
+      act: 'confirm',
+      version: one.version.id,
+      replaces: one.version.id,
+    });
+    const held = await tenant((trx) => resolutionsOf(trx, document.artifactId));
+    expect(held.map((each) => each.act)).toEqual(['confirm']);
+  });
+
+  it('answers the documents holding a value for a binding of a component, naming those the caller may read', async () => {
+    const result = await recorded({ parameters: { site: 'holders' } });
+    const component = await componentHolding(general, [binding()], 'Held depths');
+    const resolveIn = async (space: string, at: string, title: string, id = 'k1') => {
+      const document = await documentReferencing(space, component.artifactId, at, title);
+      await tenant((trx) =>
+        recordResolution(trx, {
+          document: document.artifactId,
+          node: at,
+          binding: id,
+          digest: '9'.repeat(64),
+          version: result.version.id,
+          replaces: null,
+          act: 'resolve',
+          by: ada,
+        }),
+      );
+      return document;
+    };
+    await resolveIn(general, node('g'), 'General holder');
+    const inQuality = await resolveIn(quality, node('h'), 'Quality holder');
+    // Another binding's resolution, and a document placing the component holding nothing, are not.
+    await resolveIn(quality, node('i'), 'Another binding', 'k2');
+    await documentReferencing(quality, component.artifactId, node('j'), 'Never resolved');
+    expect(await tenant((trx) => documentsHolding(trx, grace, component.artifactId, 'k1'))).toEqual(
+      { readable: [{ id: inQuality.artifactId, title: 'Quality holder' }], others: 1 },
+    );
+    const forAda = await tenant((trx) => documentsHolding(trx, ada, component.artifactId, 'k1'));
+    expect(forAda.readable.map((each) => each.title)).toEqual(['General holder', 'Quality holder']);
+    expect(forAda.others).toBe(0);
   });
 
   it('answers what each binding holds in a document, the latest resolution, and a newer result waiting', async () => {

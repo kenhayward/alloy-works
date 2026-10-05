@@ -10,6 +10,7 @@ import {
   bindingSelected,
   bindingsShown,
   changeEquation,
+  changeBinding,
   changeReference,
   createEditorState,
   EDITOR_COMMANDS,
@@ -21,6 +22,7 @@ import {
   insertEquation,
   insertFigure,
   insertImage,
+  insertBinding,
   insertReference,
   insertSymbol,
   textWhereAt,
@@ -80,6 +82,7 @@ import { MarkPrompt, type Refused } from './MarkPrompt.js';
 import { askAndApply, pressCommand, type AskForValue, type MarkCommand } from './press.js';
 import { referenceChoicesIn, type ReferenceChoices } from './referenceChoices.js';
 import { ReferenceDialog } from './ReferenceDialog.js';
+import { ValueDialog } from './ValueDialog.js';
 import { SymbolPalette } from './SymbolPalette.js';
 import { SaveIndicator } from './SaveIndicator.js';
 import { uploadImage } from './upload.js';
@@ -191,10 +194,27 @@ export interface ComponentEditorProps {
    */
   readonly onProvenance?: (binding: string, opener: HTMLElement) => void;
   /**
+   * What a binding placed or changed here does in the document it is open in (the B2 plan, B2-C,
+   * B2-D, B2-H): at a pinned node, nothing until the node takes a version holding it; otherwise the
+   * page resolves or keeps it, told once this session has saved it - `session` null where this page
+   * is not editing, so the binding is read from the version. Absent on the component's own page.
+   */
+  readonly bindingActs?: BindingActs;
+  /**
    * The seam to whatever hosts the page, told the component's base language while it is open, for the
    * spelling checker (CNT-178); the host's own otherwise. Given in tests.
    */
   readonly bridge?: PlatformBridge;
+}
+
+/** What the document does with a binding placed, changed, kept or resolved here (B2). */
+export interface BindingActs {
+  readonly pinned: boolean;
+  readonly onSettle: (
+    binding: string,
+    session: string | null,
+    act: 'placed' | 'changed' | 'keep' | 'resolve',
+  ) => void;
 }
 
 type Loaded =
@@ -330,6 +350,7 @@ export function ComponentEditor({
   bindingContext,
   bindingStates,
   onProvenance,
+  bindingActs,
   bridge = resolveBridge(),
 }: ComponentEditorProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
@@ -432,6 +453,15 @@ export function ComponentEditor({
   } | null>(null);
   // What was focused as it opened, as for the Reference dialog, and apart from it.
   const equationOpener = useRef<HTMLElement | null>(null);
+  // The Value dialog, open over the view it was asked from on the binding selected whole there or
+  // none, or closed (the B2 plan, task 4); and what was focused as it opened.
+  const [valuing, setValuing] = useState<{
+    readonly view: EditorView;
+    readonly current: ReturnType<typeof bindingSelected>;
+  } | null>(null);
+  const valueOpener = useRef<HTMLElement | null>(null);
+  // The editing session this page saves under, which a binding placed here is read from (B2-C).
+  const sessionNow = useRef<string | null>(null);
   // The symbol palette, open over the view it was asked from - the surface, or a footnote's open
   // editor - or closed (W14.7, W-L).
   const [symbolizing, setSymbolizing] = useState<EditorView | null>(null);
@@ -673,6 +703,36 @@ export function ComponentEditor({
     back?.focus();
   }, [equating]);
 
+  /** Opens the Value dialog over `editing`, on the binding selected whole there or to place one. */
+  const openValue = (editing: EditorView): boolean => {
+    valueOpener.current ??=
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setValuing({ view: editing, current: bindingSelected(editing.state) });
+    return true;
+  };
+
+  useEffect(() => {
+    if (valuing !== null) return;
+    const back = valueOpener.current;
+    valueOpener.current = null;
+    back?.focus();
+  }, [valuing]);
+
+  /**
+   * Tells the document a binding was placed, changed, or asked to be kept or resolved, once this
+   * session has saved it where it is editing, so the binding is read from that save (B2-C).
+   */
+  const settle = (binding: string, act: 'placed' | 'changed' | 'keep' | 'resolve') => {
+    if (bindingActs === undefined || bindingActs.pinned) return;
+    const session = controls.current;
+    // A first change claims the lock: the save waits for the claim, as a binding placed is one.
+    const phase = session?.view().phase;
+    const editingNow = phase === 'editing' || phase === 'claiming';
+    void (editingNow ? session!.saveNow() : Promise.resolve(false)).then((saved) =>
+      bindingActs.onSettle(binding, saved ? sessionNow.current : null, act),
+    );
+  };
+
   /**
    * Opens the symbol palette over `editing` - the surface, or the footnote open in it; answers true,
    * since the command has already said a symbol could be typed there (W-L).
@@ -719,6 +779,8 @@ export function ComponentEditor({
   openReferenceRef.current = openReference;
   const openEquationRef = useRef(openEquation);
   openEquationRef.current = openEquation;
+  const openValueRef = useRef(openValue);
+  openValueRef.current = openValue;
   const openSymbolsRef = useRef(openSymbols);
   openSymbolsRef.current = openSymbols;
   // The page's latest context, which every fresh state starts from: a state rebuilt after a version is
@@ -822,6 +884,8 @@ export function ComponentEditor({
           if (name === 'equation') return openEquationRef.current(into);
           // **Symbols** too (W-L), from its shortcut, in the footnote's text as in the component's.
           if (name === 'symbol') return openSymbolsRef.current(into);
+          // **Value** too (B2-A), in the footnote's text as in the component's.
+          if (name === 'value') return openValueRef.current(into);
           const command = EDITOR_COMMANDS.find(
             (each) => each.kind === 'mark' && each.mark === name,
           );
@@ -891,6 +955,7 @@ export function ComponentEditor({
           (component.lock?.yours === true && component.lock.session === id) ||
           (replayed !== null && stored?.session === id),
       );
+    sessionNow.current = initialSession;
     // Replayed under the session it was kept in, or not at all: a page that starts under another id -
     // the id it was kept under gone from storage - offers what was kept as text instead.
     const sentLater = stored === null ? null : sentFor(component.id, stored.session);
@@ -1584,7 +1649,8 @@ export function ComponentEditor({
           figureDialog !== null ||
           referring !== null ||
           equating !== null ||
-          symbolizing !== null
+          symbolizing !== null ||
+          valuing !== null
         }
         onKeyDown={moveRegion}
       >
@@ -1715,7 +1781,8 @@ export function ComponentEditor({
                 surface !== null &&
                 ((action === 'reference' && openReference(surface, view)) ||
                   (action === 'equation' && openEquation(view)) ||
-                  (action === 'symbol' && openSymbols(view)))
+                  (action === 'symbol' && openSymbols(view)) ||
+                  (action === 'value' && openValue(view)))
               }
             />
             {/* The style of the paragraphs the selection touches, from the theme's catalogue: the
@@ -1859,6 +1926,15 @@ export function ComponentEditor({
                   ? {
                       onProvenance: (opener: HTMLElement) =>
                         onProvenance(selectedBinding.binding.id, opener),
+                    }
+                  : {})}
+                {...(mayFormat && surface !== null
+                  ? { onChange: () => openValue(openFootnote(surface) ?? surface) }
+                  : {})}
+                {...(bindingActs !== undefined && !bindingActs.pinned
+                  ? {
+                      onKeep: () => settle(selectedBinding.binding.id, 'keep'),
+                      onResolve: () => settle(selectedBinding.binding.id, 'resolve'),
                     }
                   : {})}
               />
@@ -2019,6 +2095,43 @@ export function ComponentEditor({
               return null;
             }}
             onCancel={() => setReferring(null)}
+          />,
+          document.body,
+        )}
+      {valuing !== null &&
+        createPortal(
+          <ValueDialog
+            client={client}
+            componentId={componentId}
+            current={valuing.current?.binding ?? null}
+            inDocument={
+              bindingContext === undefined ? null : { pinned: bindingActs?.pinned ?? false }
+            }
+            onDone={(choice) => {
+              const now = controls.current?.view().phase;
+              const into = valuing.view;
+              if (
+                !shown.mayEdit ||
+                now === undefined ||
+                !isEditablePhase(now) ||
+                into.isDestroyed
+              ) {
+                return 'This component can no longer be edited here, so the value was not placed.';
+              }
+              const changing = valuing.current;
+              const command =
+                changing === null ? insertBinding(choice) : changeBinding(changing.pos, choice);
+              if (!command(into.state, into.dispatch.bind(into))) {
+                return changing === null
+                  ? 'A value cannot be placed where the cursor is.'
+                  : 'That value is not there any more.';
+              }
+              setValuing(null);
+              const placed = bindingSelected(into.state)?.binding.id;
+              if (placed) settle(placed, changing === null ? 'placed' : 'changed');
+              return null;
+            }}
+            onCancel={() => setValuing(null)}
           />,
           document.body,
         )}

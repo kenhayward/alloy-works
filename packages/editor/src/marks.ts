@@ -215,6 +215,19 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     shortcutSaid: 'Ctrl or Cmd, Alt and X',
     prompts: true,
   },
+  // B2-A: beside Reference, prompting as it does, for the definition, parameters and value only the
+  // author can choose. On Shift and 6, beside the list family's 7 to 0, rather than V (paste as plain
+  // text), X (Firefox's text direction) or a Ctrl-Alt chord (AltGr). Checked for its plan: nothing in
+  // this registry, the base keymap or the renderer takes it, and no browser binds an accelerator to
+  // it; the toolbar's button is the way in wherever a layout or an input method takes it first.
+  {
+    kind: 'block',
+    action: 'value',
+    label: 'Value',
+    shortcut: 'Mod-Shift-6',
+    shortcutSaid: 'Ctrl or Cmd, Shift and 6',
+    prompts: true,
+  },
   // Equations 1, ruling R6: prompting as Reference does, for the LaTeX only the author can type. On
   // Shift and E rather than a Ctrl-Alt chord, which AltGr types a character with on common layouts
   // (the euro sign on E among them). Checked for its plan: nothing in this registry or the renderer

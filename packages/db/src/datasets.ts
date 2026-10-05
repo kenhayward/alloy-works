@@ -184,7 +184,7 @@ export interface StoredResolution {
   readonly dataset: string;
   readonly version: string;
   readonly replaces: string | null;
-  readonly act: 'resolve' | 'accept';
+  readonly act: 'resolve' | 'accept' | 'confirm';
   readonly by: string;
   readonly at: Date;
 }
@@ -205,7 +205,7 @@ export async function recordResolution(
     readonly digest: string;
     readonly version: string;
     readonly replaces: string | null;
-    readonly act: 'resolve' | 'accept';
+    readonly act: 'resolve' | 'accept' | 'confirm';
     readonly by: string;
   },
 ): Promise<StoredResolution> {
@@ -356,7 +356,7 @@ export async function resolutionsOf(
     dataset_id: string;
     dataset_version: string;
     replaces: string | null;
-    act: 'resolve' | 'accept';
+    act: 'resolve' | 'accept' | 'confirm';
     resolved_by: string;
     resolved_at: Date;
     held_revision: number;
@@ -575,6 +575,46 @@ export async function documentsResolving(
            join dataset d on d.artifact_id = latest.dataset_id
            join artifact_version held on held.id = latest.dataset_version
           where ${matches}
+       )
+     order by outline.content ->> 'title' collate "C", a.id`.execute(trx);
+  return splitByReading(trx, principalId, rows);
+}
+
+/**
+ * The documents holding a value for one binding of a component (the B2 plan, B2-I): each document
+ * whose latest outline places the component at a node with a resolution for the binding, whatever its
+ * digest - what Change warns will hold none until resolved again. Those the principal may read by
+ * title, and the rest counted, as the uses routes answer.
+ */
+export async function documentsHolding(
+  trx: TenantTransaction,
+  principalId: string,
+  componentId: string,
+  bindingId: string,
+): Promise<Uses> {
+  if (!UUID.test(componentId)) return { readable: [], others: 0 };
+  const { rows } = await sql<{ id: string; space_id: string; title: string }>`
+    select a.id, a.space_id, outline.content ->> 'title' as title
+      from artifact a
+      join lateral (
+        select v.content
+          from artifact_version v
+         where v.artifact_id = a.id
+         order by v.revision_no desc, v.version_no desc
+         limit 1
+      ) outline on true
+     where a.kind = 'document'
+       and exists (
+         select 1
+           from jsonb_path_query(
+                  outline.content,
+                  '$.** ? (@.type == "reference" && @.component == $c).id',
+                  jsonb_build_object('c', ${componentId}::text)
+                ) placed (node)
+           join binding_resolution r
+             on r.document_id = a.id
+            and r.node_id = placed.node #>> '{}'
+            and r.binding_id = ${bindingId}
        )
      order by outline.content ->> 'title' collate "C", a.id`.execute(trx);
   return splitByReading(trx, principalId, rows);

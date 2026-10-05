@@ -55,6 +55,11 @@ export const QueryDefinitionView = z.object({
     .describe(
       'Whether the caller may describe and sample its query against its connection: use connection there, and for SQL write SQL as well',
     ),
+  mayUse: z
+    .boolean()
+    .describe(
+      'Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query',
+    ),
 });
 export type QueryDefinitionView = z.infer<typeof QueryDefinitionView>;
 
@@ -69,6 +74,11 @@ export const QueryDefinitionSummary = z.object({
         .string()
         .nullable()
         .describe('Its latest name, or null where the caller may not read the connection'),
+      identity: z
+        .enum(['service', 'endUser'])
+        .describe(
+          'Whose identity the connection runs a query as, told to every reader of the definition',
+        ),
     })
     .nullable()
     .describe('The connection it names'),
