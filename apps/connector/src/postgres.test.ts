@@ -186,6 +186,7 @@ describe('the connector against a PostgreSQL source', () => {
     expect(named).toEqual([
       'sample.reading table',
       'sample.site table',
+      'sample.site_photo table',
       'sample.site_summary view',
       'sample.tag table',
       'sample.typed table',
@@ -283,7 +284,7 @@ describe('the connector against a PostgreSQL source', () => {
 
   it('cuts a describe short, truncated, before its answer would pass the budget it is given', async () => {
     const whole = await asAccount('reader', (client) => describeRelations(client));
-    expect(whole.relations).toHaveLength(6);
+    expect(whole.relations).toHaveLength(7);
     expect(whole.truncated).toBe(false);
     const [first, second] = whole.relations;
     const budgetBytes =

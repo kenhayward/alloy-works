@@ -46,6 +46,7 @@ import {
   effectiveLimits,
   lexPostgres,
   parseDraftDefinition,
+  readImageHeader,
   type AccessFacts,
   type ConnectionProblem,
   type DataFailureCode,
@@ -726,14 +727,40 @@ export function connectionHandlers(
         if (checksum !== ran.checksum) {
           return { outcome: 'failed', failure: failureView('connector_error') };
         }
+        const rows = ran.result.rows.slice(0, SAMPLE_ROWS);
+        // Each image in the rows shown, by its header alone (the D8 plan, D8-G): nothing is stored,
+        // and an image that is not what its hash says is the connector's error, as a resolve's is.
+        const shown = new Set<string>();
+        ran.result.columns.forEach(([, base], at) => {
+          if (base !== 'image') return;
+          for (const row of rows) if (typeof row[at] === 'string') shown.add(row[at]);
+        });
+        const images: Extract<SampleView, { outcome: 'ok' }>['images'] = {};
+        for (const hash of [...shown].sort()) {
+          const encoded = ran.images?.[hash];
+          const image = encoded === undefined ? null : Buffer.from(encoded, 'base64');
+          const read = image === null ? null : readImageHeader(image);
+          if (
+            image === null ||
+            read === null ||
+            !read.ok ||
+            read.header.end !== image.length ||
+            createHash('sha256').update(image).digest('hex') !== hash
+          ) {
+            return { outcome: 'failed', failure: failureView('connector_error') };
+          }
+          const { format, width, height } = read.header;
+          images[hash] = { format, bytes: image.length, width, height };
+        }
         return {
           outcome: 'ok',
           columns: ran.result.columns.map(([name, base]) => [name, base] as [string, string]),
-          rows: ran.result.rows.slice(0, SAMPLE_ROWS).map((row) => [...row]),
+          rows: rows.map((row) => [...row]),
           rowCount: ran.rowCount,
           checksum,
           ran: { sql: ran.ran.sql },
           durationMs: ran.durationMs,
+          images,
         };
       });
     },

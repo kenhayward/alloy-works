@@ -35,12 +35,32 @@ export const BASES: readonly { readonly base: Base; readonly label: string }[] =
   { base: 'boolean', label: 'Yes or no' },
 ];
 
-/** A type as typed: a base, or none yet, and the numbers the base needs, as text. */
+/** A column's bases: the eight, and an image (D8-A), which a parameter never is (DAT-010). */
+export const COLUMN_BASES: readonly { readonly base: Base | 'image'; readonly label: string }[] = [
+  ...BASES,
+  { base: 'image', label: 'Image' },
+];
+
+/** How a source holds an image, in the order a list offers them (D8-A). */
+export const ENCODINGS = [
+  { encoding: 'binary', label: 'Binary' },
+  { encoding: 'base64', label: 'Base64 text' },
+] as const;
+
+/** An image's description: a declared text column, decorative, or not chosen yet (D8-A). */
+export type DescriptionDraft = { readonly column: string } | 'decorative' | null;
+
+/**
+ * A type as typed: a base, or none yet, and the numbers the base needs, as text; an image's encoding
+ * and description, or none yet, kept while another base is chosen.
+ */
 export interface TypeDraft {
-  readonly base: Base | '';
+  readonly base: Base | 'image' | '';
   readonly precision: string;
   readonly scale: string;
   readonly fraction: string;
+  readonly encoding: 'binary' | 'base64' | '';
+  readonly description: DescriptionDraft;
 }
 
 export interface ParameterDraft {
@@ -151,7 +171,14 @@ export interface DefinitionDraft {
   };
 }
 
-export const NO_TYPE: TypeDraft = { base: '', precision: '', scale: '', fraction: '' };
+export const NO_TYPE: TypeDraft = {
+  base: '',
+  precision: '',
+  scale: '',
+  fraction: '',
+  encoding: '',
+  description: null,
+};
 
 /** A new parameter: text, required, one value. */
 export const NEW_PARAMETER: ParameterDraft = {
@@ -194,12 +221,20 @@ export function newDraft(limits: {
 }
 
 /**
- * A type as typed, from a declared one. An image is offered by the screen from D8.3; until then one is
- * held as no type, to be chosen again, never saved as something else.
+ * A type as typed, from a declared one or a proposal: a proposed image (D8-A) has its encoding and no
+ * description yet, which the author declares.
  */
 export function typeDraftOf(type: ColumnType | ProposedType): TypeDraft {
-  if (type.base === 'image') return { base: '', precision: '', scale: '', fraction: '' };
+  if (type.base === 'image') {
+    return {
+      ...NO_TYPE,
+      base: 'image',
+      encoding: type.encoding,
+      description: 'description' in type ? type.description : null,
+    };
+  }
   return {
+    ...NO_TYPE,
     base: type.base,
     precision: type.base === 'decimal' ? String(type.precision) : '',
     scale: type.base === 'decimal' ? String(type.scale) : '',
@@ -212,11 +247,13 @@ export function typeDraftOf(type: ColumnType | ProposedType): TypeDraft {
 
 const WHOLE = /^(0|[1-9][0-9]{0,8})$/;
 
-/** A type as the service takes it, or the reason it cannot be one yet. */
+/** A parameter's type as the service takes it, or the reason it cannot be one yet. */
 export function valueTypeOf(type: TypeDraft): ValueType | string {
   switch (type.base) {
     case '':
       return 'Choose a type.';
+    case 'image':
+      return 'A parameter is never an image.';
     case 'decimal':
       if (!WHOLE.test(type.precision) || !WHOLE.test(type.scale)) {
         return 'A decimal needs its digits and its places, as whole numbers.';
@@ -232,8 +269,27 @@ export function valueTypeOf(type: TypeDraft): ValueType | string {
   }
 }
 
+/**
+ * A column's type as the service takes it, or the reason it cannot be one yet: an image needs its
+ * encoding, and its description a text column of `columns` or decorative (D8-A).
+ */
+export function columnTypeOf(
+  type: TypeDraft,
+  columns: readonly ColumnDraft[],
+): ColumnType | string {
+  if (type.base !== 'image') return valueTypeOf(type);
+  if (type.encoding === '') return 'Choose how the source holds the image.';
+  const { description } = type;
+  const describes =
+    description === 'decorative' ||
+    (description !== null &&
+      columns.some((each) => each.name === description.column && each.type.base === 'text'));
+  if (!describes) return 'Choose the text column that describes it, or mark it decorative.';
+  return { base: 'image', encoding: type.encoding, description };
+}
+
 /** A permitted value or a bound as the service takes it: a yes or no as a boolean, anything else as typed. */
-export function canonical(base: Base | '', text: string): string | boolean {
+export function canonical(base: TypeDraft['base'], text: string): string | boolean {
   if (base === 'boolean' && (text === 'true' || text === 'false')) return text === 'true';
   return text;
 }
@@ -527,7 +583,7 @@ export function generatedSql(draft: DefinitionDraft): { sql: string } | { needs:
   });
   if (problem !== undefined) return { needs: `${problem}.` };
   const columns = draft.columns.flatMap((column) => {
-    const type = valueTypeOf(column.type);
+    const type = columnTypeOf(column.type, draft.columns);
     return typeof type === 'string'
       ? []
       : [{ name: column.name, from: { column: column.name }, type }];
@@ -561,7 +617,7 @@ function parts(draft: DefinitionDraft) {
   if (typeof parameters === 'string') return parameters;
   const columns = [];
   for (const column of draft.columns) {
-    const type = valueTypeOf(column.type);
+    const type = columnTypeOf(column.type, draft.columns);
     if (typeof type === 'string') return `The column ${column.name}: ${type}`;
     columns.push({ name: column.name, from: { column: column.name }, type });
   }
@@ -688,7 +744,18 @@ const sameType = (one: TypeDraft, other: TypeDraft) =>
   one.base === other.base &&
   one.precision === other.precision &&
   one.scale === other.scale &&
-  one.fraction === other.fraction;
+  one.fraction === other.fraction &&
+  one.encoding === other.encoding &&
+  JSON.stringify(one.description) === JSON.stringify(other.description);
+
+/**
+ * Whether a declared type is what the source proposes: an image as its encoding, since a proposal
+ * never names a description, which is the author's (D8-A).
+ */
+const asProposed = (proposed: TypeDraft, declared: TypeDraft) =>
+  proposed.base === 'image'
+    ? declared.base === 'image' && declared.encoding === proposed.encoding
+    : sameType(proposed, declared);
 
 /**
  * The columns as they are, each to be confirmed again, its declared type kept: what the SQL or a
@@ -776,7 +843,7 @@ export function proposedColumns(
     const declared = held.find((each) => each.name === column.name);
     const proposed = column.proposed === null ? null : typeDraftOf(column.proposed);
     if (declared !== undefined && (proposed === null || declared.type.base !== '')) {
-      if (proposed !== null && sameType(proposed, declared.type)) {
+      if (proposed !== null && asProposed(proposed, declared.type)) {
         return { ...declared, sourceType: column.sourceType };
       }
       return {

@@ -54,7 +54,8 @@ export interface DataTabProps {
   readonly onChanged: () => void;
   readonly onCheckNow: () => void;
   readonly onGoTo: (node: string, binding: string) => void;
-  readonly onNotice: (words: string) => void;
+  /** Says something to the page's live region, or, given null, stops saying it. */
+  readonly onNotice: (words: string | null) => void;
 }
 
 /**
@@ -110,7 +111,18 @@ export function DataTab({
       });
   };
   const settle = (state: BindingState, how: 'resolve' | 'keep') =>
-    act(() => settleBinding(client, document, state.node, state.binding.id, null, how));
+    act(async () => {
+      // A result waiting on its images is said while it waits, and unsaid once it is held.
+      let waited = false;
+      const said = await settleBinding(client, document, state.node, state.binding.id, null, how, {
+        onWaiting: (words) => {
+          waited = true;
+          onNotice(words);
+        },
+      });
+      if (said === null && waited) onNotice(null);
+      return said;
+    });
   const accept = (state: BindingState) =>
     act(async () => {
       const { response } = await client.POST('/v1/documents/{id}/bindings/accept', {

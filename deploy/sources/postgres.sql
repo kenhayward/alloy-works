@@ -112,3 +112,19 @@ insert into sample.tag values
   (5, 'grace', 'blue');
 
 grant select on sample.tag to reader, writer;
+
+-- A site's photographs (the D8 plan, D8.3): two invented PNGs as `bytea`, 4 by 3 and 3 by 2 pixels of
+-- one shade each, which a describe proposes as images, each with a caption to describe it.
+create table sample.site_photo (
+  id integer primary key,
+  site integer not null references sample.site,
+  caption text not null,
+  photo bytea not null
+);
+insert into sample.site_photo values
+  (1, 1, 'The weir from the north bank',
+      '\x89504e470d0a1a0a0000000d49484452000000040000000308020000003b963991000000104944415478da63d0c85b00470c38390015f20e89dbfbf3790000000049454e44ae426082'),
+  (2, 2, 'The south bank at low water',
+      '\x89504e470d0a1a0a0000000d49484452000000030000000208020000001216f14d000000104944415478da63a8986603410c7016004ed407bd2d00b3fe0000000049454e44ae426082');
+
+grant select on sample.site_photo to reader, writer;

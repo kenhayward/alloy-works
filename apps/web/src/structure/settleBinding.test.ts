@@ -157,3 +157,100 @@ describe("a binding placed or changed in a document's editor (the B2 plan, B2-C,
     );
   });
 });
+
+describe('a resolve whose result waits on its images (the D8 plan, D8-F)', () => {
+  const PENDING = '33333333-3333-4333-8333-333333333333';
+
+  /** A service answering a resolve as pending, and following it with each of `follows` in turn. */
+  function pendingService(follows: unknown[]) {
+    const asked: string[] = [];
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const path = new URL(request.url).pathname;
+      asked.push(`${request.method} ${path}`);
+      if (path.endsWith('/resolve')) {
+        return json(202, { results: [{ node: NODE, binding: 'b1', pending: PENDING }] });
+      }
+      if (path === `/v1/datasets/pending/${PENDING}`) {
+        const answer = follows.length > 1 ? follows.shift() : follows[0];
+        return answer === undefined
+          ? json(404, { code: 'not_found', message: 'No.' })
+          : json(200, answer);
+      }
+      return json(200, { bindings: [state(false)] });
+    }) as unknown as typeof fetch;
+    return { client: createApiClient({ baseUrl: 'http://settle.test', fetch: fetching }), asked };
+  }
+  const following = (state: 'pending' | 'done', result: unknown = null) => ({
+    id: PENDING,
+    act: 'resolve',
+    document: DOCUMENT,
+    node: NODE,
+    binding: 'b1',
+    state,
+    result,
+  });
+  const noWait = () => Promise.resolve();
+
+  it('checks back until every image is admitted, saying it waits, then holds the value as a resolve does', async () => {
+    const { client, asked } = pendingService([
+      following('pending'),
+      following('pending'),
+      following('done', {
+        node: NODE,
+        binding: 'b1',
+        held: { dataset: '55555555-5555-4555-8555-555555555555', version: HELD, reused: false },
+      }),
+    ]);
+    const said: string[] = [];
+    expect(
+      await settleBinding(client, DOCUMENT, NODE, 'b1', null, 'resolve', {
+        onWaiting: (words) => said.push(words),
+        wait: noWait,
+      }),
+    ).toBeNull();
+    expect(said).toEqual([
+      'The value holds images, which are being checked. It is shown once every one is.',
+    ]);
+    expect(asked.filter((each) => each.includes('/datasets/pending/'))).toEqual([
+      `GET /v1/datasets/pending/${PENDING}`,
+      `GET /v1/datasets/pending/${PENDING}`,
+      `GET /v1/datasets/pending/${PENDING}`,
+    ]);
+  });
+
+  it('says the named failure of a result whose image was refused', async () => {
+    const { client } = pendingService([
+      following('done', {
+        node: NODE,
+        binding: 'b1',
+        failure: {
+          code: 'image_refused',
+          attribution: 'query',
+          message: 'Row 2, column photo: the image is not a PNG or a JPEG.',
+          row: 2,
+          column: 'photo',
+          definition: '44444444-4444-4444-8444-444444444441',
+          binding: 'b1',
+          node: NODE,
+          document: DOCUMENT,
+        },
+      }),
+    ]);
+    expect(
+      await settleBinding(client, DOCUMENT, NODE, 'b1', null, 'resolve', { wait: noWait }),
+    ).toBe('Row 2, column photo: the image is not a PNG or a JPEG.');
+  });
+
+  it('says so where the images take longer than it waits, or the pending result is gone', async () => {
+    const slow = pendingService([following('pending')]);
+    expect(
+      await settleBinding(slow.client, DOCUMENT, NODE, 'b1', null, 'resolve', { wait: noWait }),
+    ).toBe('Checking the images is taking longer than it should. Look again in a moment.');
+    expect(slow.asked.filter((each) => each.includes('/datasets/pending/'))).toHaveLength(60);
+    const gone = pendingService([undefined]);
+    expect(
+      await settleBinding(gone.client, DOCUMENT, NODE, 'b1', null, 'resolve', { wait: noWait }),
+    ).toBe('The value could not be fetched. Try again.');
+  });
+});

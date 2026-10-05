@@ -7431,7 +7431,8 @@ export interface operations {
                      *       "ran": {
                      *         "sql": "example"
                      *       },
-                     *       "durationMs": -9007199254740991
+                     *       "durationMs": -9007199254740991,
+                     *       "images": {}
                      *     }
                      */
                     "application/json": {
@@ -7453,6 +7454,19 @@ export interface operations {
                             sql: string;
                         };
                         durationMs: number;
+                        /** @description Each image in the first rows, by the hash its cell holds: its format, size and pixels, read from its header. A sample stores no image and makes no asset of one */
+                        images: {
+                            [key: string]: {
+                                /** @enum {string} */
+                                format: "png" | "jpeg";
+                                /** @description Its size in bytes */
+                                bytes: number;
+                                /** @description Its width in pixels, as displayed */
+                                width: number;
+                                /** @description Its height in pixels, as displayed */
+                                height: number;
+                            };
+                        };
                     } | {
                         /** @constant */
                         outcome: "failed";

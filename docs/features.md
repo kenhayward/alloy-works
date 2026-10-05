@@ -652,6 +652,15 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   only to somebody who may read the connection. A definition's page shows, under **Used by** and
   before **Save version**, the components that bind it and the documents holding a result of it -
   those you may read linked, and how many more. A sample keeps nothing.
+- **Image columns.** A PostgreSQL `bytea` column is proposed as an **image**, and a text column can be
+  declared one held as base64; each image column names the text column that describes it, or is
+  marked decorative, before the definition saves. Only a PNG or a JPEG is admitted, checked by its
+  bytes as an uploaded image is, and an image counts towards the most bytes a run may take. A sample
+  shows each image as its format, size and pixels, and keeps nothing. Resolving or checking a result
+  holding an image no asset in the space holds yet waits while each is checked and kept as an asset,
+  saying so, then shows the value as any other; an image refused fails the result by name, its row
+  and column. An image already kept is reused. A result's images are read only through a document
+  holding it, and never found in search.
 - **Results kept and checked, through the API.** A component's text can hold a **binding** - a value
   taken from a query definition's result, a column of its one row or of the row a key names, with
   the values it runs with - placed and changed from the **Value dialog**: **Value** on the toolbar,
@@ -1185,7 +1194,8 @@ Named explicitly so nobody has to read the source to find out:
   taking one cannot be resolved. A connection reaches PostgreSQL alone, as its own service account;
   the builder's page builds from one table or view - a join or a nested query is written through the
   API, or as a view at the database - and no page shows or changes the environment's lowered run
-  limits, which the API alone sets.
+  limits, which the API alone sets. An image column cannot yet be placed in a document: a binding
+  takes text, numbers, dates and the rest, and an image from a result waits for bound images.
 - No document view that sets a document as it will publish: its page shows the outline you build
   beside the text in reading order, each component opening in place to be edited. No reading view. No reuse or transclusion.
 - No publishing beyond a laid-out PDF of a document's outline, its formatted paragraphs, lists,

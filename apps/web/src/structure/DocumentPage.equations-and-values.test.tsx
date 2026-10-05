@@ -805,6 +805,8 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     checkGate?: Promise<void>;
     /** What an accept changes before it answers. */
     accepted?: () => void;
+    /** What following a pending result answers (the D8 plan, D8-F). */
+    pending?: unknown;
   }) {
     const fake = service(
       outline([
@@ -858,6 +860,9 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
         options.check?.then?.();
         checkAnswered = true;
         return json(200, { results: options.check?.results ?? [] });
+      }
+      if (path.startsWith('/v1/datasets/pending/') && options.pending !== undefined) {
+        return json(200, options.pending);
       }
       if (path === `/v1/documents/${DOCUMENT}/bindings/accept`) {
         options.accepted?.();
@@ -1415,6 +1420,43 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     const panel = screen.getByRole('tabpanel', { name: 'Data' });
     await within(panel).findByText('The source could not be reached.');
     expect(within(panel).getByText('Failed', { selector: 'span' })).toBeInTheDocument();
+    expect(screen.getByText('A value could not be checked. See the Data tab.')).toBeInTheDocument();
+  });
+
+  it("follows a check's result waiting on its images, and lists one whose image was refused as failed in its words", async () => {
+    const user = userEvent.setup();
+    const PENDING = 'abcdef09-0000-4000-8000-000000000007';
+    const failure = {
+      code: 'image_refused',
+      attribution: 'query',
+      message: 'Row 1, column photo: the image is not a PNG or a JPEG.',
+      row: 1,
+      column: 'photo',
+      definition: DEFINITION,
+      binding: 'b1',
+      node: RESULTS,
+      document: DOCUMENT,
+    };
+    const { asked } = openWithValues({
+      content: withValue(bound('b1')),
+      bindings: [state(bound('b1'), value, { facts: checks })],
+      check: {
+        results: [{ node: RESULTS, binding: 'b1', outcome: 'pending', pending: PENDING }],
+      },
+      pending: {
+        id: PENDING,
+        act: 'check',
+        document: DOCUMENT,
+        node: RESULTS,
+        binding: 'b1',
+        state: 'done',
+        result: { node: RESULTS, binding: 'b1', outcome: 'failed', failure },
+      },
+    });
+    await user.click(await screen.findByRole('tab', { name: 'Data' }));
+    const panel = screen.getByRole('tabpanel', { name: 'Data' });
+    await within(panel).findByText('Row 1, column photo: the image is not a PNG or a JPEG.');
+    expect(asked).toContain(`/v1/datasets/pending/${PENDING}`);
     expect(screen.getByText('A value could not be checked. See the Data tab.')).toBeInTheDocument();
   });
 

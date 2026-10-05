@@ -576,10 +576,10 @@ starts from it (BI-P):
 - **In a line of text and in a table's cell** (DAT-098's two): an inline binding whose take names an
   image column. It is drawn and printed as an inline image is - one line high in its paragraph or
   cell, by the theme's inline image style - from the asset the dataset version's provenance `images`
-  map gives the cell's hash. The Value dialog offers image columns once D8 has built them.
+  map gives the cell's hash. The Value dialog offers image columns with B6; D8 built them.
 - **As a figure**: the figure node's image is an asset version today; taking it from a binding
   instead needs a member beside `asset` that holds a `BindingCore` and a take, which is a content
-  schema change D8's plan makes by its stored-shape check and the footnotes plan's evidence rule. That
+  schema change B6's plan makes (the D8 plan, D8-H) by its stored-shape check and the footnotes plan's evidence rule. That
   shape is why DAT-098 is not claimed.
 - **The description** (DAT-097): the column the definition names, read from the taken row, or
   decorative where the definition says so. A null or empty description fails the publish by name,

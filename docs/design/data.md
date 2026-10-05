@@ -1203,6 +1203,20 @@ names a definition by identifier whatever its fetch, so nothing in D4 depends on
 | D4-P | **A name the builder cannot hold is shown and not offered**: a relation or a column whose name is not NFC; a view under a composed name reaches it                                                                                                                                                               |
 | D4-Q | **Describe takes a built query**, `{ builder: { query, parameters } }`, on `use_connection` alone                                                                                                                                                                                                                |
 
+### Settled by the D8 plan, approved by Ken on 2026-10-05
+
+The D8 plan's decisions this design takes as its own; the rest of them are the plan's alone.
+
+| #    | Decision                                                                                                                                                                                                           |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| D8-A | **A `bytea` column is proposed as an image held as binary**; text is an image only where the author declares it base64. An image column saves only with its description column or `decorative`                     |
+| D8-C | **An image's bytes count against the result's byte limit**, and no image may pass the asset door's 25 MB or 50 million pixels                                                                                      |
+| D8-D | **A result whose images the definition's space already holds is recorded at once**; otherwise the service stores each new image, makes an upload per image, queues `ingest`, and answers 202 with a pending result |
+| D8-E | **The service finishes a pending result when its caller asks again**, `GET /v1/datasets/pending/{id}`, under the act's own locks and permissions; the worker only admits images                                    |
+| D8-G | **A sample ingests nothing**: an image cell shows its format, size and pixels from its header                                                                                                                      |
+| D8-H | **Placing a bound image is B6's** (DAT-098); `takeValue` still refuses an image column                                                                                                                             |
+| D8-I | **A dataset image is read only through a document holding it**, and never in search                                                                                                                                |
+
 **Until the publish's binding stage exists, nothing publishes a binding** (the D3 plan, "Added in
 phase B"): a publish or a preview of a document whose resolved content holds one is refused before
 anything is queued, `binding_unresolved`, naming each binding by its node and the document, and
@@ -1253,7 +1267,7 @@ Each slice has a plan of its own, written when its turn comes.
 | **D5** | **Deferred past the first release** ([ADR-0038](../decisions/0038-sql-server-is-deferred-past-the-first-release.md)): SQL Server - `tedious`, its dialect, `NVARCHAR` and `CAST`                                                                                                                     |
 | **D6** | HTTP and S3 connections and the file formats: the product's own XLSX reader, CSV and JSON                                                                                                                                                                                                            |
 | **D7** | End-user identity: the delegated token, with the session holding the provider's token, and asserted identity on PostgreSQL (SQL Server's with D5); IAM-082, sign-out stopping data flowing on the person's authority                                                                                 |
-| **D8** | Image columns through `ingest`                                                                                                                                                                                                                                                                       |
+| **D8** | Image columns through `ingest`. Built by [the D8 plan](../plans/2026-10-05-d8-image-columns.md)                                                                                                                                                                                                      |
 
 Then `tables.md`, and the `templates.md` additions: a template's parameters, and a document's
 bindings established when it is made.
