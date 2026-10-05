@@ -287,9 +287,11 @@ describe('a binding over the whole system', () => {
     ]);
     expect((await read(second.id, held.version)).result.rows).toEqual([['1', 'North weir']]);
 
-    // Published to the PDF and Word with the source stopped: the worker reads the stored result.
-    const source = sourceContainer();
-    execFileSync('docker', ['stop', source], { timeout: 60_000 });
+    // Published to the PDF and Word with the table gone from the source: the worker reads the stored
+    // result, and never the source. Renamed away rather than the source stopped, which the suite's
+    // other files, running beside this one, still reach.
+    const away = `${table.split('.')[1]}_away`;
+    atTheSource(`alter table ${table} rename to ${away};`);
     let publication = '';
     try {
       const asked = ok(
@@ -307,7 +309,7 @@ describe('a binding over the whole system', () => {
         { timeout: 60_000, interval: 250 },
       );
     } finally {
-      execFileSync('docker', ['start', source], { timeout: 60_000 });
+      atTheSource(`alter table sample.${away} rename to ${table.split('.')[1]};`);
     }
     const kept = ok(await call('GET', `/v1/publications/${publication}`)) as {
       outputs: { format: string; download: string }[];
@@ -340,8 +342,6 @@ describe('a binding over the whole system', () => {
       expect(provenance).not.toContain(secret);
     }
     cookie = await signIn('ada');
-    // The source back before the table is dropped.
-    await vi.waitFor(() => atTheSource('select 1;'), { timeout: 60_000, interval: 500 });
   }, 180_000);
 
   it('resolves a binding from an editing session, keeps it across a changed take, and names its holders, over the whole system', async () => {
