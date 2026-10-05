@@ -258,6 +258,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0048_bound_values',
       '0049_binding_confirm',
       '0050_publication_bindings',
+      '0051_dataset_pending',
     ]);
 
     // No trigger was held off, and every one stands enabled.
@@ -624,6 +625,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0048_bound_values',
       '0049_binding_confirm',
       '0050_publication_bindings',
+      '0051_dataset_pending',
     ]);
 
     const { declared, versions } = await service.withTenant(tenant, async (trx) => ({
@@ -748,6 +750,7 @@ describe('migration 0021, which gives the default layout a list of figures', () 
       '0048_bound_values',
       '0049_binding_confirm',
       '0050_publication_bindings',
+      '0051_dataset_pending',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -854,6 +857,7 @@ describe('migration 0023, which gives the default layout words for a relative re
       '0048_bound_values',
       '0049_binding_confirm',
       '0050_publication_bindings',
+      '0051_dataset_pending',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -905,6 +909,7 @@ describe('migration 0023, which gives the default layout words for a relative re
       '0048_bound_values',
       '0049_binding_confirm',
       '0050_publication_bindings',
+      '0051_dataset_pending',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     const chain = await service.withTenant({ ...tenant, id }, (trx) =>
@@ -1032,6 +1037,7 @@ describe("migration 0025, which gives the default layout the words a continued t
       '0048_bound_values',
       '0049_binding_confirm',
       '0050_publication_bindings',
+      '0051_dataset_pending',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -1076,6 +1082,7 @@ describe("migration 0025, which gives the default layout the words a continued t
       '0048_bound_values',
       '0049_binding_confirm',
       '0050_publication_bindings',
+      '0051_dataset_pending',
     ]);
     const { declared, fifth } = await service.withTenant(tenant, async (trx) => ({
       declared: await defaultLayout(trx),
@@ -1186,6 +1193,7 @@ describe('migration 0027, which gives the default layout a Word page', () => {
       '0048_bound_values',
       '0049_binding_confirm',
       '0050_publication_bindings',
+      '0051_dataset_pending',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -1253,6 +1261,7 @@ describe('migration 0027, which gives the default layout a Word page', () => {
       '0048_bound_values',
       '0049_binding_confirm',
       '0050_publication_bindings',
+      '0051_dataset_pending',
     ]);
     const { declared, sixth, inputs } = await service.withTenant(tenant, async (trx) => ({
       declared: await defaultLayout(trx),
@@ -1365,6 +1374,7 @@ describe('migration 0035, which gives a request its kind and the default layout 
       '0048_bound_values',
       '0049_binding_confirm',
       '0050_publication_bindings',
+      '0051_dataset_pending',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -1419,6 +1429,7 @@ describe('migration 0035, which gives a request its kind and the default layout 
       '0048_bound_values',
       '0049_binding_confirm',
       '0050_publication_bindings',
+      '0051_dataset_pending',
     ]);
     const { declared, seventh, inputs, row } = await service.withTenant(tenant, async (trx) => ({
       declared: await defaultLayout(trx),

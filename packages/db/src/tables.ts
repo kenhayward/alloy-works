@@ -497,6 +497,29 @@ export interface DatasetTakeTable {
   outcome: ColumnType<unknown, string, never>;
 }
 
+/** A result waiting on its images (0051; the D8 plan, D8-D and D8-E). */
+export interface DatasetPendingTable {
+  id: ColumnType<string, never, never>;
+  act: ColumnType<'resolve' | 'session' | 'check', 'resolve' | 'session' | 'check', never>;
+  document_id: ColumnType<string, string, never>;
+  document_kind: ColumnType<'document', 'document' | undefined, never>;
+  node_id: ColumnType<string, string, never>;
+  binding_id: ColumnType<string, string, never>;
+  binding_digest: ColumnType<string, string, never>;
+  session: ColumnType<string | null, string | null, never>;
+  definition_id: ColumnType<string, string, never>;
+  definition_version: ColumnType<string, string, never>;
+  definition_kind: ColumnType<'queryDefinition', 'queryDefinition' | undefined, never>;
+  checksum: ColumnType<string, string, never>;
+  /** JSONB in as the text of a JSON document. */
+  provenance: ColumnType<unknown, string, never>;
+  uploads: ColumnType<string[], string[], never>;
+  requested_by: ColumnType<string, string, never>;
+  state: ColumnType<'pending' | 'refused', never, 'refused'>;
+  failure: ColumnType<unknown, never, string>;
+  created_at: ColumnType<Date, never, never>;
+}
+
 export interface TenantTables {
   component_lock: ComponentLockTable;
   iteration: IterationTable;
@@ -549,6 +572,7 @@ export interface TenantTables {
   dataset: DatasetTable;
   dataset_name: DatasetNameTable;
   binding_resolution: BindingResolutionTable;
+  dataset_pending: DatasetPendingTable;
   dataset_take: DatasetTakeTable;
 }
 

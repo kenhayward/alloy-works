@@ -12,6 +12,8 @@ export interface AssetUploadTable {
   uploader: ColumnType<string, string, never>;
   /** JSONB in as the text of a JSON document, as a version's content is. */
   alternative: ColumnType<unknown, string | null, never>;
+  /** A person's upload, or an image a dataset's result holds (0051; D8-D). */
+  origin: ColumnType<'upload' | 'dataset', 'upload' | 'dataset' | undefined, never>;
   state: ColumnType<AssetUploadState, never, Exclude<AssetUploadState, 'awaiting'>>;
   object_key: ColumnType<string | null, never, string>;
   format: ColumnType<AssetFormat | null, never, AssetFormat>;

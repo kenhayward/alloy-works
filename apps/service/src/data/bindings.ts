@@ -10,6 +10,8 @@ import type {
   DocumentBindingParams,
   DocumentBindingsQuery,
   DocumentDatasetParams,
+  PendingResultParams,
+  PendingResultView,
   QueryDefinitionParams,
   ResolveBindingsBody,
   ResolveBindingsView,
@@ -17,35 +19,46 @@ import type {
 } from '@alloy-works/api-contract';
 import { SESSION_COOKIE, type ProvenanceView } from '@alloy-works/api-contract';
 import {
+  assetHolding,
   componentsBinding,
   dataPolicy,
   datasetName,
   documentsHolding,
   documentsResolving,
   findApiToken,
+  finishPending,
+  holdObject,
   inSavepoint,
   lockBindings,
   lockDatasetQuestions,
   nameDataset,
+  pendingImages,
+  pendingResult,
   readDocument,
+  readPendingResult,
   readQueryDefinition,
   readVersion,
   recordDatasetVersion,
   recordResolution,
   recordTake,
+  refusePending,
   publishedBindings,
   resolutionsOf,
   resolveOccurrences,
   sessionContent,
   takeDigest,
   takesOf,
+  uploadForDatasetImage,
   type HeldResolution,
+  type PendingAct,
+  type StoredPending,
   type StoredConnection,
   type Tenant,
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
 import {
+  ADMITTED_FORMATS,
   bindingDigestInput,
   bindingsIn,
   canonicalResultBytes,
@@ -59,10 +72,12 @@ import {
   parseQueryDefinition,
   questionUnchanged,
   readContent,
+  readImageHeader,
   readOutline,
   walkOutline,
   takeOutcomeSchema,
   takeValue,
+  type AssetFormat,
   type Binding,
   type CanonicalResult,
   type Column,
@@ -79,7 +94,7 @@ import { tenantPrefix, type ObjectStores, type TenantStore } from '@alloy-works/
 import type { FastifyRequest } from 'fastify';
 import type { z } from 'zod';
 import { authoriseAt, callerOf, notFound, type Authorised, type Caller } from '../access.js';
-import { AfterCommit } from '../after-commit.js';
+import { Accepted, AfterCommit } from '../after-commit.js';
 import { AppError, storageUnavailable } from '../errors.js';
 import { findSession, hashToken } from '../sessions.js';
 import { bearerSecret, isBearer } from '../tokens.js';
@@ -414,8 +429,17 @@ type Ran =
       readonly provenance: Provenance;
       /** Each take's outcome by its digest, or undefined where the cell was not its column's. */
       readonly taken: ReadonlyMap<string, TakeOutcome | undefined>;
+      /** Each image the result holds, stored by its hash, by that hash (D8-D). */
+      readonly images: ReadonlyMap<string, StoredImage>;
     }
   | { readonly ok: false; readonly failure: FailureIn };
+
+/** An image a run's result holds, as it was stored: its key, its format and its size. */
+interface StoredImage {
+  readonly key: string;
+  readonly format: AssetFormat;
+  readonly bytes: number;
+}
 
 /** The takes of every binding asking each question, by question. */
 function takesByQuestion(prepared: readonly Prepared[]): Map<string, Take[]> {
@@ -463,14 +487,18 @@ const recordTaken = async (
  * bytes are then put in the tenant's store, whose key is their SHA-256, before any row names them
  * (D3-G); a key that is not that checksum's is a store that did not keep what it was given. Each take
  * asking this question is taken from the rows here, by `takeValue` over the columns the run declares,
- * and only its outcome is carried on (B1-H).
+ * and only its outcome is carried on (B1-H). Each image the answer carries (D8-B) is held to its hash
+ * and to the asset door's header reading, the image alone, or the run is `connector_error`; then
+ * stored under its hash, as an upload's image is, and carried on by its key alone.
  */
 async function runOnce(
   tenant: Tenant,
   prepared: Prepared,
   takes: readonly Take[],
   through: RunsThrough,
-  store: () => Promise<{ put(body: Uint8Array, contentType: string): Promise<{ key: string }> }>,
+  store: () => Promise<{
+    put(body: Uint8Array, contentType: string): Promise<{ key: string; size: number }>;
+  }>,
 ): Promise<Ran> {
   const asked = await through.run({
     requestId: randomUUID(),
@@ -489,9 +517,30 @@ async function runOnce(
   const bytes = canonicalResultBytes(ran.result);
   const checksum = sha256(bytes);
   if (checksum !== ran.checksum) return { ok: false, failure: { code: 'connector_error' } };
+  const decoded = new Map<string, { image: Buffer; format: AssetFormat }>();
+  for (const [hash, encoded] of Object.entries(ran.images ?? {})) {
+    const image = Buffer.from(encoded, 'base64');
+    const read = readImageHeader(image);
+    if (
+      createHash('sha256').update(image).digest('hex') !== hash ||
+      !read.ok ||
+      read.header.end !== image.length
+    ) {
+      return { ok: false, failure: { code: 'connector_error' } };
+    }
+    decoded.set(hash, { image, format: read.header.format });
+  }
   const kept = await (await store()).put(Buffer.from(bytes, 'utf8'), 'application/json');
   if (kept.key !== `${tenantPrefix(tenant)}sha256/${checksum}`) {
     throw new Error('The store kept a result under a key that is not its checksum');
+  }
+  const images = new Map<string, StoredImage>();
+  for (const [hash, { image, format }] of decoded) {
+    const stored = await (await store()).put(image, ADMITTED_FORMATS[format].contentType);
+    if (stored.key !== `${tenantPrefix(tenant)}sha256/${hash}`) {
+      throw new Error('The store kept an image under a key that is not its hash');
+    }
+    images.set(hash, { key: stored.key, format, bytes: stored.size });
   }
   const taken = new Map(
     takes.map((take) => [takeDigest(take), takeHeld(take, ran.result, prepared.draft.columns)]),
@@ -499,6 +548,7 @@ async function runOnce(
   return {
     ok: true,
     taken,
+    images,
     provenance: {
       schemaVersion: 1,
       queryDefinition: { artifact: prepared.definition.id, version: prepared.definition.version },
@@ -515,6 +565,67 @@ async function runOnce(
       images: {},
     },
   };
+}
+
+/**
+ * A run's images as the recording transaction finds them (the D8 plan, D8-D): every one an asset in
+ * the definition's space already holds, so the result is recorded at once, by the hashes it holds;
+ * or an upload admitting each of the rest, so it waits; or the failure that refuses it.
+ */
+type Admission =
+  | { readonly held: true; readonly provenance: Provenance; readonly hashes: readonly string[] }
+  | { readonly held: false; readonly provenance: Provenance; readonly uploads: readonly string[] }
+  | { readonly failure: FailureIn };
+
+/**
+ * Admits a run's images (D8-D): each an asset in the definition's space holds is reused, by the
+ * earliest version holding it, and nothing is ingested. Each of the rest is held by its hash, as
+ * `holdObject` holds an upload's, in the order of the hashes so two acts never wait on each other,
+ * found still stored - a refusal of another upload of the same bytes may have removed them since the
+ * run stored them - and given the upload already checking it there, or one made for it, its `ingest`
+ * queued. Its provenance names the asset version of each image already held.
+ */
+async function admitImages(
+  trx: TenantTransaction,
+  store: () => Promise<{ get(key: string): Promise<Buffer> }>,
+  principalId: string,
+  ran: Extract<Ran, { ok: true }>,
+): Promise<Admission> {
+  const hashes = [...ran.images.keys()].sort();
+  if (hashes.length === 0) return { held: true, provenance: ran.provenance, hashes };
+  const definition = await trx
+    .selectFrom('artifact')
+    .select('space_id')
+    .where('id', '=', ran.provenance.queryDefinition.artifact)
+    .executeTakeFirstOrThrow();
+  const space = definition.space_id!;
+  const images: Record<string, string> = {};
+  const missing: string[] = [];
+  for (const hash of hashes) {
+    const version = await assetHolding(trx, space, hash);
+    if (version === undefined) missing.push(hash);
+    else images[hash] = version;
+  }
+  const provenance = { ...ran.provenance, images };
+  if (missing.length === 0) return { held: true, provenance, hashes };
+  const uploads: string[] = [];
+  for (const hash of missing) {
+    await holdObject(trx, hash);
+    const image = ran.images.get(hash)!;
+    const kept = await (await store()).get(image.key).catch(() => undefined);
+    if (kept === undefined || createHash('sha256').update(kept).digest('hex') !== hash) {
+      return { failure: { code: 'connector_error' } };
+    }
+    const { upload } = await uploadForDatasetImage(trx, {
+      spaceId: space,
+      uploader: principalId,
+      key: image.key,
+      format: image.format,
+      bytes: image.bytes,
+    });
+    uploads.push(upload.id);
+  }
+  return { held: false, provenance, uploads };
 }
 
 /** Each question run once, at most `atOnce` at a time, in the order asked. */
@@ -1050,7 +1161,7 @@ export async function resolveAct(
   request: FastifyRequest,
   { trx, principalId }: Authorised,
   through: RunsThrough,
-): Promise<AfterCommit<ResolveBindingsView>> {
+): Promise<AfterCommit<ResolveBindingsView | Accepted<ResolveBindingsView>>> {
   const { id } = request.params as DocumentBindingParams;
   const body = request.body as ResolveBindingsBody;
   if (!objects) throw storageUnavailable();
@@ -1078,6 +1189,10 @@ export async function resolveAct(
     prepared.push(await prepare(trx, caller, id, found, through));
   }
   const questions = [...new Map(prepared.map((each) => [each.question, each])).values()];
+  // The bindings read from the session: a pending result of one finishes as a resolve from it.
+  const sessionNodes = new Set(
+    source === undefined ? [] : fromSession.map((each) => key(each.node, each.binding)),
+  );
   return new AfterCommit(async () => {
     let opened: Awaited<ReturnType<ObjectStores['forTenant']>> | undefined;
     const store = async () =>
@@ -1110,28 +1225,58 @@ export async function resolveAct(
       // act takes them, so two acts recording the same questions never wait on each other.
       await lockDatasetQuestions(record, recordable(succeeded, ran));
       const versions = new Map<string, Awaited<ReturnType<typeof recordDatasetVersion>>>();
+      const admitted = new Map<string, Admission>();
       const results: ResolveResult[] = [];
       for (const each of prepared) {
         const outcome = ran.get(each.question)!;
         const { node, binding } = each.placed;
-        if (!outcome.ok) {
+        const failed = (failure: FailureIn) =>
           results.push({
             node,
             binding: binding.id,
             failure: bindingFailure(
-              outcome.failure,
+              failure,
               { definition: each.definition.id, binding: binding.id, node, document: id },
               seesSource(each),
               each.draft.fetch.kind === 'builder',
             ),
           });
+        if (!outcome.ok) {
+          failed(outcome.failure);
+          continue;
+        }
+        let admission = admitted.get(each.question);
+        if (!admission) {
+          admission = await admitImages(record, store, principalId, outcome);
+          admitted.set(each.question, admission);
+        }
+        if ('failure' in admission) {
+          failed(admission.failure);
+          continue;
+        }
+        if (!admission.held) {
+          // Its images are being admitted: recorded once every one is, when it is asked for (D8-E).
+          const act: PendingAct = sessionNodes.has(key(node, binding.id)) ? 'session' : 'resolve';
+          const waiting = await pendingResult(record, {
+            act,
+            document: id,
+            node,
+            binding: binding.id,
+            digest: each.placed.digest,
+            session: act === 'session' ? body.session! : null,
+            provenance: admission.provenance,
+            uploads: admission.uploads,
+            by: principalId,
+          });
+          results.push({ node, binding: binding.id, pending: waiting.id });
           continue;
         }
         let recorded = versions.get(each.question);
         if (!recorded) {
           recorded = await recordDatasetVersion(record, {
-            provenance: outcome.provenance,
+            provenance: admission.provenance,
             author: principalId,
+            images: admission.hashes,
           });
           versions.set(each.question, recorded);
         }
@@ -1160,7 +1305,7 @@ export async function resolveAct(
           },
         });
       }
-      return { results };
+      return results.some((each) => 'pending' in each) ? new Accepted({ results }) : { results };
     });
   });
 }
@@ -1178,7 +1323,7 @@ export async function checkAct(
   request: FastifyRequest,
   { trx, principalId }: Authorised,
   through: RunsThrough,
-): Promise<AfterCommit<CheckBindingsView>> {
+): Promise<AfterCommit<CheckBindingsView | Accepted<CheckBindingsView>>> {
   const { id } = request.params as DocumentBindingParams;
   if (!objects) throw storageUnavailable();
   const caller = callerOf(request);
@@ -1269,30 +1414,67 @@ export async function checkAct(
       const seesSource = await seeingSourceNow(record, caller, toRun);
       await lockDatasetQuestions(record, recordable(succeeded, ran));
       const versions = new Map<string, Awaited<ReturnType<typeof recordDatasetVersion>>>();
+      const admitted = new Map<string, Admission>();
+      let waits = false;
       for (const each of toRun) {
         const outcome = ran.get(each.question);
         if (!outcome) continue;
         const { node, binding } = each.placed;
         const naming = { definition: each.definition.id, binding: binding.id, node, document: id };
-        if (!outcome.ok) {
+        const failed = (failure: FailureIn) =>
           results.set(key(node, binding.id), {
             node,
             binding: binding.id,
             outcome: 'failed',
             failure: bindingFailure(
-              outcome.failure,
+              failure,
               naming,
               seesSource(each),
               each.draft.fetch.kind === 'builder',
             ),
           });
+        if (!outcome.ok) {
+          failed(outcome.failure);
+          continue;
+        }
+        let admission = admitted.get(each.question);
+        if (!admission) {
+          admission = await admitImages(record, store, principalId, outcome);
+          admitted.set(each.question, admission);
+        }
+        if ('failure' in admission) {
+          failed(admission.failure);
+          continue;
+        }
+        if (!admission.held) {
+          // A result whose images are being admitted: recorded, as a check records one, once every
+          // one is, when it is asked for (D8-E).
+          const waiting = await pendingResult(record, {
+            act: 'check',
+            document: id,
+            node,
+            binding: binding.id,
+            digest: each.placed.digest,
+            session: null,
+            provenance: admission.provenance,
+            uploads: admission.uploads,
+            by: principalId,
+          });
+          results.set(key(node, binding.id), {
+            node,
+            binding: binding.id,
+            outcome: 'pending',
+            pending: waiting.id,
+          });
+          waits = true;
           continue;
         }
         let recorded = versions.get(each.question);
         if (!recorded) {
           recorded = await recordDatasetVersion(record, {
-            provenance: outcome.provenance,
+            provenance: admission.provenance,
             author: principalId,
+            images: admission.hashes,
           });
           versions.set(each.question, recorded);
         }
@@ -1317,7 +1499,7 @@ export async function checkAct(
             : { node, binding: binding.id, outcome: 'revision', version: recorded.version.id },
         );
       }
-      return { results: ordered() };
+      return waits ? new Accepted({ results: ordered() }) : { results: ordered() };
     });
   });
 }
@@ -1588,6 +1770,203 @@ export function bindingHandlers(
         components: view(await componentsBinding(trx, principalId, id)),
         documents: view(await documentsResolving(trx, principalId, { definition: id })),
       };
+    },
+  };
+}
+
+/**
+ * Where the first cell holding an image is in a stored result - its row, counted from 1, and its
+ * column - or nothing where the result cannot be read: `image_refused` names them where it can.
+ */
+async function whereImage(
+  store: TenantStore,
+  key: string,
+  hash: string,
+): Promise<{ row?: number; column?: string }> {
+  try {
+    const parsed = canonicalResultSchema.safeParse(JSON.parse((await store.get(key)).toString()));
+    if (!parsed.success) return {};
+    const { columns, rows } = parsed.data;
+    for (const [at, row] of rows.entries()) {
+      const column = columns.findIndex(
+        ([, base], index) => base === 'image' && row[index] === hash,
+      );
+      if (column >= 0) return { row: at + 1, column: columns[column]![0] };
+    }
+    return {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * What a pending result's act decided before its source was asked, decided again as it is finished
+ * (D8-E, D3-H): `edit` on the document for a resolve, `read` for a check; `read` on the definition it
+ * ran and `use_connection` on the connection, each lost answered `access_changed`; and the binding as
+ * the act read it - from the session a resolve from one read - or `binding_changed`. Answers what the
+ * document places now, for what its bindings hold.
+ */
+async function mayFinish(
+  trx: TenantTransaction,
+  caller: Caller,
+  pending: StoredPending,
+): Promise<Placed[]> {
+  const naming = {
+    definition: pending.provenance.queryDefinition.artifact,
+    binding: pending.binding,
+    node: pending.node,
+    document: pending.document,
+  };
+  try {
+    await authoriseAt(trx, caller, pending.act === 'check' ? 'read' : 'edit', {
+      kind: 'artifact',
+      id: pending.document,
+    });
+  } catch (error) {
+    if (error instanceof AppError) throw accessChanged();
+    throw error;
+  }
+  const definition = await connectionFacts(
+    trx,
+    caller,
+    pending.provenance.queryDefinition.artifact,
+  );
+  const connection = await connectionFacts(trx, caller, pending.provenance.connection.artifact);
+  if (
+    !definition ||
+    !decide('read', definition).allowed ||
+    !connection ||
+    !decide('use_connection', connection).allowed
+  ) {
+    throw accessChanged();
+  }
+  const placed =
+    (await bindingsPlaced(
+      trx,
+      pending.document,
+      caller.principalId,
+      pending.session === null
+        ? undefined
+        : { session: pending.session, nodes: new Set([pending.node]) },
+    )) ?? [];
+  const found = placed.find(
+    (each) => each.node === pending.node && each.binding.id === pending.binding,
+  );
+  if (found?.digest !== pending.digest) throw bindingChanged(naming);
+  return placed;
+}
+
+/**
+ * Following a pending result (the D8 plan, D8-E): the person whose act ran it, and nobody else, asks
+ * for it until it is done. Every image admitted, it is finished under the act's own locks - the
+ * binding's, then the question's - recording the dataset version, and for a resolve the binding's
+ * resolution, as the act would have, and removing the pending result in the same transaction; any
+ * image refused, it is refused `image_refused`, naming the row and column, and nothing is recorded.
+ * The pending row is held while it is finished, so two asking at once take turns, and the second
+ * finds it gone.
+ */
+export function pendingHandlers(
+  db: TenantDatabase,
+  tenantOf: (request: FastifyRequest) => Tenant,
+  objects: ObjectStores | undefined,
+) {
+  return {
+    getPendingResult: async (request: FastifyRequest): Promise<PendingResultView> => {
+      const { id } = request.params as PendingResultParams;
+      const tenant = tenantOf(request);
+      const caller = callerOf(request);
+      return db.withTenant(tenant, async (trx) => {
+        const pending = await readPendingResult(trx, id, true);
+        if (!pending || pending.requestedBy !== caller.principalId) throw notFound();
+        const { node, binding, document } = pending;
+        const view = (result: PendingResultView['result']): PendingResultView => ({
+          id,
+          act: pending.act,
+          document,
+          node,
+          binding,
+          state: result === null ? 'pending' : 'done',
+          result,
+        });
+        type Failure = ReturnType<typeof bindingFailure>;
+        const failed = (failure: Failure): PendingResultView['result'] =>
+          pending.act === 'check'
+            ? { node, binding, outcome: 'failed', failure }
+            : { node, binding, failure };
+        const refuse = async (failure: Failure) => {
+          await refusePending(trx, id, failure);
+          return view(failed(failure));
+        };
+        const naming = {
+          definition: pending.provenance.queryDefinition.artifact,
+          binding,
+          node,
+          document,
+        };
+        if (pending.state === 'refused') return view(failed(pending.failure as Failure));
+        const images = await pendingImages(trx, pending);
+        if (images.state === 'waiting') return view(null);
+        if (images.state === 'refused') {
+          if (!objects) throw storageUnavailable();
+          const store = await objects.forTenant(trx, tenant);
+          const at = await whereImage(
+            store,
+            `${tenantPrefix(tenant)}sha256/${pending.provenance.checksum}`,
+            images.hash,
+          );
+          return refuse(bindingFailure({ code: 'image_refused', ...at }, naming));
+        }
+        await lockBindings(trx, document, [{ node, binding }]);
+        let placed: Placed[];
+        try {
+          placed = await mayFinish(trx, caller, pending);
+        } catch (error) {
+          if (!(error instanceof AppError)) throw error;
+          return refuse(bindingFailure(error, naming));
+        }
+        const provenance = { ...pending.provenance, images: images.images };
+        await lockDatasetQuestions(trx, [provenance]);
+        const recorded = await recordDatasetVersion(trx, {
+          provenance,
+          author: pending.requestedBy,
+          images: Object.keys(images.images),
+        });
+        // Held since it was read, so nothing else has finished it.
+        if (!(await finishPending(trx, id)))
+          throw new Error(`Pending result ${id} was finished twice`);
+        const holding = (await heldBy(trx, document, placed)).get(key(node, binding));
+        if (pending.act === 'check') {
+          if (!holding || holding.digest !== pending.digest) {
+            return view({ node, binding, outcome: 'unchecked', reason: 'unresolved' });
+          }
+          return view(
+            provenance.checksum === holding.held.provenance.checksum &&
+              provenance.queryDefinition.version === holding.held.provenance.queryDefinition.version
+              ? { node, binding, outcome: 'unchanged' }
+              : { node, binding, outcome: 'revision', version: recorded.version.id },
+          );
+        }
+        await recordResolution(trx, {
+          document,
+          node,
+          binding,
+          digest: pending.digest,
+          version: recorded.version.id,
+          replaces:
+            holding && holding.held.dataset === recorded.dataset.id ? holding.held.version : null,
+          act: 'resolve',
+          by: caller.principalId,
+        });
+        return view({
+          node,
+          binding,
+          held: {
+            dataset: recorded.dataset.id,
+            version: recorded.version.id,
+            reused: recorded.reused,
+          },
+        });
+      });
     },
   };
 }

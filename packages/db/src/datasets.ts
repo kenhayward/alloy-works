@@ -98,12 +98,30 @@ export interface RecordedDatasetVersion {
  * them all first, with `lockDatasetQuestions`. The object holding the rows is the
  * caller's to have stored under the checksum first (D3-G). Throws on a provenance that is not a
  * record, or names a definition or connection version that is not one of theirs.
+ *
+ * `images` is every image hash the result's cells hold (D8): the provenance names an asset version
+ * for each and for no other, so no version is recorded holding an image nothing admitted. A result
+ * whose columns declare an image is recorded only with them.
  */
 export async function recordDatasetVersion(
   trx: TenantTransaction,
-  input: { readonly provenance: Provenance; readonly author: string },
+  input: {
+    readonly provenance: Provenance;
+    readonly author: string;
+    readonly images?: readonly string[];
+  },
 ): Promise<RecordedDatasetVersion> {
   const provenance = parseProvenanceForWrite(input.provenance);
+  if (input.images === undefined && provenance.columns.some((each) => each.type.base === 'image')) {
+    throw new Error('A result with an image column is recorded with the image hashes it holds');
+  }
+  const imagesNamed = Object.keys(provenance.images).sort();
+  const imagesHeld = [...new Set(input.images ?? [])].sort();
+  if (imagesNamed.join(' ') !== imagesHeld.join(' ')) {
+    throw new Error(
+      "A dataset version's provenance names an asset version for each image its result holds, and for no other",
+    );
+  }
   const identity = datasetIdentity({
     definition: provenance.queryDefinition.artifact,
     parameters: provenance.parameters,
@@ -634,4 +652,206 @@ export async function documentsHolding(
        )
      order by outline.content ->> 'title' collate "C", a.id`.execute(trx);
   return splitByReading(trx, principalId, rows);
+}
+
+/**
+ * The asset version in a space holding the image of this hash, or undefined where none does (the D8
+ * plan, D8-D): a result's image an asset there already holds is reused, and nothing is ingested. The
+ * earliest, so two acts asking are answered alike.
+ */
+export async function assetHolding(
+  trx: TenantTransaction,
+  space: string,
+  hash: string,
+): Promise<string | undefined> {
+  if (!UUID.test(space) || !/^[0-9a-f]{64}$/.test(hash)) return undefined;
+  const row = await trx
+    .selectFrom('artifact_version as v')
+    .innerJoin('artifact as a', 'a.id', 'v.artifact_id')
+    .select('v.id')
+    .where('v.kind', '=', 'asset')
+    .where('a.space_id', '=', space)
+    .where(sql<boolean>`v.content ->> 'object' like ${`%/sha256/${hash}`}`)
+    .orderBy('v.created_at')
+    .orderBy('v.id')
+    .limit(1)
+    .executeTakeFirst();
+  return row?.id;
+}
+
+/** The act a pending result waits for (D8-F): a resolve, one from a session, or a check. */
+export type PendingAct = 'resolve' | 'session' | 'check';
+
+/** A result waiting on its images (the D8 plan, D8-D and D8-E). */
+export interface StoredPending {
+  readonly id: string;
+  readonly act: PendingAct;
+  readonly document: string;
+  readonly node: string;
+  readonly binding: string;
+  /** The binding's digest when the act read it (D3-R). */
+  readonly digest: string;
+  /** The editing session a resolve from a session read the binding from. */
+  readonly session: string | null;
+  /** What the version will be recorded with, naming the asset of each image already held. */
+  readonly provenance: Provenance;
+  readonly uploads: readonly string[];
+  readonly requestedBy: string;
+  readonly state: 'pending' | 'refused';
+  readonly failure: unknown;
+  readonly createdAt: Date;
+}
+
+type PendingRow = {
+  id: string;
+  act: PendingAct;
+  document_id: string;
+  node_id: string;
+  binding_id: string;
+  binding_digest: string;
+  session: string | null;
+  provenance: unknown;
+  uploads: string[];
+  requested_by: string;
+  state: 'pending' | 'refused';
+  failure: unknown;
+  created_at: Date;
+};
+
+const pendingOf = (row: PendingRow): StoredPending => ({
+  id: row.id,
+  act: row.act,
+  document: row.document_id,
+  node: row.node_id,
+  binding: row.binding_id,
+  digest: row.binding_digest,
+  session: row.session,
+  provenance: parseProvenance(row.provenance),
+  uploads: row.uploads,
+  requestedBy: row.requested_by,
+  state: row.state,
+  failure: row.failure,
+  createdAt: row.created_at,
+});
+
+/**
+ * Keeps a result an act ran whose images are not all admitted yet (D8-D): the binding it answers, the
+ * provenance it will be recorded with - its images naming those an asset already holds - and the
+ * uploads admitting the rest. The result object is the caller's to have stored under its checksum,
+ * and each upload's bytes under theirs.
+ */
+export async function pendingResult(
+  trx: TenantTransaction,
+  input: {
+    readonly act: PendingAct;
+    readonly document: string;
+    readonly node: string;
+    readonly binding: string;
+    readonly digest: string;
+    readonly session: string | null;
+    readonly provenance: Provenance;
+    readonly uploads: readonly string[];
+    readonly by: string;
+  },
+): Promise<StoredPending> {
+  const provenance = parseProvenanceForWrite(input.provenance);
+  const row = await trx
+    .insertInto('dataset_pending')
+    .values({
+      act: input.act,
+      document_id: input.document,
+      node_id: input.node,
+      binding_id: input.binding,
+      binding_digest: input.digest,
+      session: input.session,
+      definition_id: provenance.queryDefinition.artifact,
+      definition_version: provenance.queryDefinition.version,
+      checksum: provenance.checksum,
+      provenance: JSON.stringify(provenance),
+      uploads: [...input.uploads],
+      requested_by: input.by,
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow();
+  return pendingOf(row);
+}
+
+/**
+ * A pending result by its id, or undefined where this tenant holds none by it. `lock` takes its row
+ * for the rest of the transaction, so two finishing it take turns and the second finds it gone.
+ */
+export async function readPendingResult(
+  trx: TenantTransaction,
+  id: string,
+  lock = false,
+): Promise<StoredPending | undefined> {
+  if (!UUID.test(id)) return undefined;
+  const query = trx.selectFrom('dataset_pending').selectAll().where('id', '=', id);
+  const row = await (lock ? query.forUpdate() : query).executeTakeFirst();
+  return row && pendingOf(row);
+}
+
+/** Where a pending result's images stand: one still checking, one refused, or every one admitted. */
+export type PendingImages =
+  | { readonly state: 'waiting' }
+  | { readonly state: 'refused'; readonly hash: string }
+  | { readonly state: 'admitted'; readonly images: Readonly<Record<string, string>> };
+
+/**
+ * Where a pending result's images stand (D8-E): refused where any upload was, naming the first such
+ * image's hash; waiting while any is still checking; otherwise admitted, each image by the asset
+ * version its upload made, beside those the provenance already names.
+ */
+export async function pendingImages(
+  trx: TenantTransaction,
+  pending: StoredPending,
+): Promise<PendingImages> {
+  const rows = await trx
+    .selectFrom('asset_upload')
+    .select(['id', 'state', 'object_key', 'asset_version_id'])
+    .where('id', 'in', [...pending.uploads])
+    .execute();
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const ordered = pending.uploads.map((id) => byId.get(id)!);
+  const hashOf = (key: string | null) => key!.slice(key!.lastIndexOf('/') + 1);
+  const refused = ordered.find((row) => row.state === 'refused');
+  if (refused) return { state: 'refused', hash: hashOf(refused.object_key) };
+  if (ordered.some((row) => row.state !== 'ready')) return { state: 'waiting' };
+  return {
+    state: 'admitted',
+    images: {
+      ...pending.provenance.images,
+      ...Object.fromEntries(ordered.map((row) => [hashOf(row.object_key), row.asset_version_id!])),
+    },
+  };
+}
+
+/** Refuses a pending result, saying why, where it is still pending. */
+export async function refusePending(
+  trx: TenantTransaction,
+  id: string,
+  failure: Readonly<Record<string, unknown>>,
+): Promise<boolean> {
+  const row = await trx
+    .updateTable('dataset_pending')
+    .set({ state: 'refused', failure: JSON.stringify(failure) })
+    .where('id', '=', id)
+    .where('state', '=', 'pending')
+    .returning('id')
+    .executeTakeFirst();
+  return row !== undefined;
+}
+
+/**
+ * Removes a pending result in the transaction that records it (D8-E), where it is still pending:
+ * false where another finished it first.
+ */
+export async function finishPending(trx: TenantTransaction, id: string): Promise<boolean> {
+  const row = await trx
+    .deleteFrom('dataset_pending')
+    .where('id', '=', id)
+    .where('state', '=', 'pending')
+    .returning('id')
+    .executeTakeFirst();
+  return row !== undefined;
 }

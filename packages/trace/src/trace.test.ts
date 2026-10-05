@@ -789,8 +789,9 @@ describe('the citations in the committed model', () => {
   // PUB-049, DAT-088 and STY-082 across the domain, the store, the worker and the service.
   // 658 (2026-10-05): B4's seven - DAT-039, DAT-082 and DAT-070 across the store, the service and the
   // page. 660 (2026-10-05): D8.1's DAT-096 and DAT-080, the connector's image column.
+  // 661 (2026-10-05): D8.2's DAT-096, the service's images admitted before a result is kept.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(660);
+    expect(model.citations).toHaveLength(661);
   });
 
   it('cites no identifier the corpus does not hold', () => {

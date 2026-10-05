@@ -14,3 +14,12 @@
 export class AfterCommit<T> {
   constructor(readonly run: () => Promise<T>) {}
 }
+
+/**
+ * What an `AfterCommit` answers with status 202 rather than 200: work accepted and not yet done, which
+ * the caller follows elsewhere (the D8 plan, D8-D) - a resolve whose result waits on its images. The
+ * body is the route's 200 schema's, which its 202 declares too.
+ */
+export class Accepted<T> {
+  constructor(readonly body: T) {}
+}

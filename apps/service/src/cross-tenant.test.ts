@@ -22,11 +22,13 @@ import {
   grant,
   invite,
   migrate,
+  pendingResult,
   receiveAssetBytes,
   recordAsset,
   recordPublication,
   requestPublication,
   setGroupMembers,
+  uploadForDatasetImage,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
@@ -202,6 +204,7 @@ const OTHER_TENANT_IDS: Readonly<
     version: (await datasetIn(tenant, db)).version,
   }),
   nameDataset: async (tenant, db) => ({ id: (await datasetIn(tenant, db)).dataset }),
+  getPendingResult: async (tenant, db) => ({ id: await pendingIn(tenant, db) }),
   createQueryDefinition: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getQueryDefinition: async (tenant, db) => ({ id: await queryDefinitionIdIn(tenant, db) }),
   recordQueryDefinitionVersion: async (tenant, db) => ({
@@ -525,6 +528,49 @@ const datasetIn = async (tenant: Tenant, db: TenantDatabase) => {
       },
     });
     return { dataset: recorded.dataset.id, version: recorded.version.id };
+  });
+};
+
+/** A result in environment B waiting on an image, as a resolve there leaves one (D8-D). */
+const pendingIn = async (tenant: Tenant, db: TenantDatabase) => {
+  const definition = await queryDefinitionIdIn(tenant, db);
+  const document = await documentIdIn(tenant, db);
+  return db.withTenant(tenant, async (trx) => {
+    const stored = (await readQueryDefinition(trx, definition))!;
+    const connection = (await readConnection(trx, stored.definition.connection))!;
+    const { upload } = await uploadForDatasetImage(trx, {
+      spaceId: stored.space.id,
+      uploader: stored.version.author!,
+      key: `${tenant.schema}/sha256/${'d'.repeat(64)}`,
+      format: 'png',
+      bytes: 10,
+    });
+    const pending = await pendingResult(trx, {
+      act: 'resolve',
+      document,
+      node: 'a'.repeat(26),
+      binding: 'b1',
+      digest: 'c'.repeat(64),
+      session: null,
+      provenance: {
+        schemaVersion: 1,
+        queryDefinition: { artifact: stored.id, version: stored.version.id },
+        connection: { artifact: connection.id, version: connection.version.id },
+        parameters: {},
+        ran: { sql: 'select 1' },
+        identity: { kind: 'service' },
+        at: '2026-10-05T09:00:00.000Z',
+        durationMs: 1,
+        rowCount: 0,
+        columns: stored.definition.columns,
+        canonical: 1,
+        checksum: 'e'.repeat(64),
+        images: {},
+      },
+      uploads: [upload.id],
+      by: stored.version.author!,
+    });
+    return pending.id;
   });
 };
 

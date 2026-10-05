@@ -1077,6 +1077,7 @@ is a pass of its latest version and credential that did not find its account abl
 | `POST /v1/documents/{id}/bindings/accept`   | `edit` on the document, `read` on the definition, `use_connection` | Accepts a waiting version for one binding                                                                                    |
 | `GET /v1/documents/{id}/datasets/{version}` | `read` on the document                                             | A dataset version's rows, where the document resolves to it or has it waiting                                                |
 | `PUT /v1/datasets/{id}/name`                | `edit` on the dataset                                              | Names a dataset                                                                                                              |
+| `GET /v1/datasets/pending/{id}`             | The act's own caller; its act's permissions decided again          | A result waiting on its images (D8-E): pending, or finished as its act would have, or refused `image_refused`                |
 | `GET /v1/settings/data`, `PUT` the same     | `read`, and `administer` at the tenant to change                   | The tenant's lowered limits                                                                                                  |
 
 ## Where the code lives

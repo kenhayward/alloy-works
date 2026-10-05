@@ -18238,13 +18238,19 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 798,
+      "line": 844,
       "kind": "title"
     },
     {
       "id": "DAT-005",
       "file": "apps/service/src/data-secrets.test.ts",
       "line": 162,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-096",
+      "file": "apps/service/src/dataset-images.test.ts",
+      "line": 176,
       "kind": "title"
     },
     {
@@ -19336,19 +19342,19 @@
     {
       "id": "AST-005",
       "file": "apps/worker/src/ingest.test.ts",
-      "line": 136,
+      "line": 137,
       "kind": "title"
     },
     {
       "id": "AST-006",
       "file": "apps/worker/src/ingest.test.ts",
-      "line": 164,
+      "line": 198,
       "kind": "title"
     },
     {
       "id": "AST-051",
       "file": "apps/worker/src/ingest.test.ts",
-      "line": 164,
+      "line": 198,
       "kind": "title"
     },
     {
@@ -19798,19 +19804,19 @@
     {
       "id": "DAT-070",
       "file": "packages/db/src/datasets.test.ts",
-      "line": 715,
+      "line": 722,
       "kind": "title"
     },
     {
       "id": "DAT-085",
       "file": "packages/db/src/datasets.test.ts",
-      "line": 340,
+      "line": 347,
       "kind": "title"
     },
     {
       "id": "DAT-092",
       "file": "packages/db/src/datasets.test.ts",
-      "line": 269,
+      "line": 276,
       "kind": "title"
     },
     {

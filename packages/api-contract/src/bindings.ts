@@ -251,58 +251,110 @@ export const ResolveBindingsBody = z
   );
 export type ResolveBindingsBody = z.infer<typeof ResolveBindingsBody>;
 
+/** What a resolve did for one binding: the version it holds now, or its run's failure. */
+const ResolveDone = [
+  z.object({
+    node: z.string(),
+    binding: z.string(),
+    held: z.object({
+      dataset: z.string(),
+      version: z.string().describe('The dataset version it now holds'),
+      reused: z
+        .boolean()
+        .describe(
+          'Whether the run found what the latest version already records, so no version was made',
+        ),
+    }),
+  }),
+  z.object({ node: z.string(), binding: z.string(), failure: BindingFailureView }),
+] as const;
+
+const pendingId = z
+  .string()
+  .describe(
+    'A pending result: the run holds images not yet admitted as assets. Ask `GET /v1/datasets/pending/{id}` until it is done',
+  );
+
 export const ResolveBindingsView = z.object({
   results: z.array(
     z.union([
-      z.object({
-        node: z.string(),
-        binding: z.string(),
-        held: z.object({
-          dataset: z.string(),
-          version: z.string().describe('The dataset version it now holds'),
-          reused: z
-            .boolean()
-            .describe(
-              'Whether the run found what the latest version already records, so no version was made',
-            ),
-        }),
-      }),
-      z.object({ node: z.string(), binding: z.string(), failure: BindingFailureView }),
+      ...ResolveDone,
+      z.object({ node: z.string(), binding: z.string(), pending: pendingId }),
     ]),
   ),
 });
 export type ResolveBindingsView = z.infer<typeof ResolveBindingsView>;
 
+/** What a check found for one binding. */
+const CheckDone = [
+  z.object({ node: z.string(), binding: z.string(), outcome: z.literal('unchanged') }),
+  z.object({
+    node: z.string(),
+    binding: z.string(),
+    outcome: z.literal('revision'),
+    version: z.string().describe('The different result, recorded and waiting to be accepted'),
+  }),
+  z.object({
+    node: z.string(),
+    binding: z.string(),
+    outcome: z.literal('unchecked'),
+    reason: z
+      .enum(['limit', 'permission', 'unresolved'])
+      .describe(
+        '`limit`: past the 50 distinct runs a check makes; `permission`: the caller may not use its connection; `unresolved`: it holds nothing to compare, or has changed since it was resolved',
+      ),
+  }),
+  z.object({
+    node: z.string(),
+    binding: z.string(),
+    outcome: z.literal('failed'),
+    failure: BindingFailureView,
+  }),
+] as const;
+
 export const CheckBindingsView = z.object({
   results: z.array(
     z.discriminatedUnion('outcome', [
-      z.object({ node: z.string(), binding: z.string(), outcome: z.literal('unchanged') }),
+      ...CheckDone,
       z.object({
         node: z.string(),
         binding: z.string(),
-        outcome: z.literal('revision'),
-        version: z.string().describe('The different result, recorded and waiting to be accepted'),
-      }),
-      z.object({
-        node: z.string(),
-        binding: z.string(),
-        outcome: z.literal('unchecked'),
-        reason: z
-          .enum(['limit', 'permission', 'unresolved'])
-          .describe(
-            '`limit`: past the 50 distinct runs a check makes; `permission`: the caller may not use its connection; `unresolved`: it holds nothing to compare, or has changed since it was resolved',
-          ),
-      }),
-      z.object({
-        node: z.string(),
-        binding: z.string(),
-        outcome: z.literal('failed'),
-        failure: BindingFailureView,
+        outcome: z.literal('pending'),
+        pending: pendingId,
       }),
     ]),
   ),
 });
 export type CheckBindingsView = z.infer<typeof CheckBindingsView>;
+
+export const PendingResultParams = z.object({ id: LowercaseUuid });
+export type PendingResultParams = z.infer<typeof PendingResultParams>;
+
+/**
+ * A pending result as its act's caller follows it (the D8 plan, D8-E, D8-F): waiting on its images,
+ * or done, answered with what the act would have answered for its binding had it not waited.
+ */
+export const PendingResultView = z.object({
+  id: z.string(),
+  act: z
+    .enum(['resolve', 'session', 'check'])
+    .describe('The act that ran it: a resolve, a resolve from an editing session, or a check'),
+  document: z.string(),
+  node: z.string(),
+  binding: z.string(),
+  state: z
+    .enum(['pending', 'done'])
+    .describe(
+      '`pending`: an image is still being admitted; `done`: recorded, or refused, as `result` says',
+    ),
+  result: z
+    .union([...ResolveDone, ...CheckDone])
+    .nullable()
+    .describe(
+      "Null while pending. Done, the act's own result for the binding: for a resolve, the version it now holds or the failure; for a check, its outcome. `image_refused` names the row and column of an image that is not one the product admits",
+    ),
+});
+export type PendingResultView = z.infer<typeof PendingResultView>;
 
 export const AcceptBindingBody = z.strictObject({
   node: NodeBinding.shape.node,
@@ -454,6 +506,11 @@ export const bindingRoutes = {
           'Each binding: the dataset version it now holds, or the failure of its run, naming the definition, the binding and the document',
         schema: ResolveBindingsView,
       },
+      202: {
+        description:
+          'As 200, where a run holds images not yet admitted as assets: each such binding is answered with a pending result, recorded only once every image is admitted',
+        schema: ResolveBindingsView,
+      },
       400: {
         description:
           "`binding_missing`: no such binding in the component the node places, a definition that is not there or that the caller may not read, answered alike, or a pinned version that is not its definition's; `take_invalid`: what it takes is not the definition's; `parameter_invalid`: a value fails its parameter, or a parameter is taken from the document, which has none yet",
@@ -488,6 +545,11 @@ export const bindingRoutes = {
       200: {
         description:
           'Each checked binding: unchanged, a revision waiting, unchecked and why, or its failure',
+        schema: CheckBindingsView,
+      },
+      202: {
+        description:
+          'As 200, where a different result holds images not yet admitted as assets: each such binding is answered with a pending result, recorded only once every image is admitted',
         schema: CheckBindingsView,
       },
       401: unauthenticated,
@@ -635,6 +697,31 @@ export const bindingRoutes = {
       },
       404: {
         description: 'No such dataset in this environment, or none the caller may read',
+        schema: ErrorBody,
+      },
+    },
+  },
+  getPendingResult: {
+    operationId: 'getPendingResult',
+    method: 'GET',
+    path: '/v1/datasets/pending/{id}',
+    summary: 'A result waiting on its images, finished once every image is admitted',
+    tenantScoped: true,
+    access: { check: 'session' },
+    params: PendingResultParams,
+    responses: {
+      200: {
+        description: "Pending, or done with the act's own result for its binding",
+        schema: PendingResultView,
+      },
+      401: unauthenticated,
+      404: {
+        description:
+          'No such pending result, one somebody else asked for, or one already done and recorded',
+        schema: ErrorBody,
+      },
+      503: {
+        description: '`storage_unavailable`: the environment has nowhere results are kept',
         schema: ErrorBody,
       },
     },

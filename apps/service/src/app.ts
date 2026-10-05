@@ -1,6 +1,6 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { IDEMPOTENT_REPLAYED, keyedRequest, once } from './idempotency.js';
-import { AfterCommit } from './after-commit.js';
+import { Accepted, AfterCommit } from './after-commit.js';
 import cookie from '@fastify/cookie';
 import {
   routes,
@@ -47,7 +47,7 @@ import {
 } from './access.js';
 import { assetHandlers, type BinaryBody } from './assets.js';
 import { componentHandlers } from './components.js';
-import { bindingHandlers } from './data/bindings.js';
+import { bindingHandlers, pendingHandlers } from './data/bindings.js';
 import { connectionHandlers, type ConnectorOptions } from './data/connections.js';
 import { queryDefinitionHandlers } from './data/query-definitions.js';
 import type { GoogleSettings } from './config.js';
@@ -175,7 +175,10 @@ export type Handlers = {
     ? (
         request: FastifyRequest,
         authorised: Authorised,
-      ) => Promise<Success<(typeof routes)[K]> | AfterCommit<Success<(typeof routes)[K]>>>
+      ) => Promise<
+        | Success<(typeof routes)[K]>
+        | AfterCommit<Success<(typeof routes)[K]> | Accepted<Success<(typeof routes)[K]>>>
+      >
     : (
         request: FastifyRequest,
         reply: FastifyReply,
@@ -419,6 +422,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...connectionHandlers(db, tenantOf, principalOf, options.connector, options.objects),
     ...queryDefinitionHandlers(db, tenantOf, principalOf),
     ...bindingHandlers(tenantOf, options.objects),
+    ...pendingHandlers(db, tenantOf, options.objects),
     ...definitionHandlers(db, tenantOf, principalOf),
     ...searchHandlers(db, tenantOf, principalOf),
     ...presentationHandlers(db, tenantOf),
@@ -788,7 +792,12 @@ export function buildApp(options: AppOptions): FastifyInstance {
       if (replayed) void reply.header(IDEMPOTENT_REPLAYED, 'true');
       // The deciding transaction has committed, and its lock on access with it: the rest of the work -
       // a connector's, say - holds back no grant or revocation (the D1 fix, C4).
-      if (body instanceof AfterCommit) return (body as AfterCommit<unknown>).run();
+      if (body instanceof AfterCommit) {
+        const answer = await (body as AfterCommit<unknown>).run();
+        // Accepted, not yet done: the caller follows it elsewhere (D8-D).
+        if (answer instanceof Accepted) return reply.status(202).send(answer.body);
+        return answer;
+      }
       if (!binary) return body;
       // Bytes, sent only now that the transaction has committed, as a body is (figures 1, R2): never
       // sniffed into something a browser would run, and never run as a document of this origin.

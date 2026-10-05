@@ -38,6 +38,12 @@ describe("a dataset version's provenance record", () => {
     expect(parseProvenanceForWrite(record())).toEqual(record());
   });
 
+  it('reads the asset version each image hash was admitted as (D8)', () => {
+    const images = { ['b'.repeat(64)]: DEFINITION_VERSION };
+    expect(parseProvenance(record({ images })).images).toEqual(images);
+    expect(parseProvenanceForWrite(record({ images })).images).toEqual(images);
+  });
+
   it('refuses a record missing any member, or holding one more', () => {
     for (const member of Object.keys(record())) {
       const rest: Record<string, unknown> = record();
@@ -84,8 +90,11 @@ describe("a dataset version's provenance record", () => {
       { canonical: 2 },
       { checksum: 'A'.repeat(64) },
       { checksum: 'a'.repeat(63) },
-      // Images are D8's.
-      { images: { ['b'.repeat(64)]: DEFINITION } },
+      // An image's hash to the asset version admitted for it (D8): a hash, and a version's identifier.
+      { images: { ['B'.repeat(64)]: DEFINITION } },
+      { images: { ['b'.repeat(63)]: DEFINITION } },
+      { images: { ['b'.repeat(64)]: 'v-1' } },
+      { images: { ['b'.repeat(64)]: null } },
     ]) {
       expect(() => parseProvenance(record(over)), JSON.stringify(over)).toThrow();
     }

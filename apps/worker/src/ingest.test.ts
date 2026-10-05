@@ -9,6 +9,7 @@ import {
   readAssetUpload,
   readAssetVersion,
   receiveAssetBytes,
+  uploadForDatasetImage,
   type JobQueue,
   type Tenant,
   type TenantDatabase,
@@ -156,6 +157,39 @@ describe('the ingest job, which proves an upload is only an image (figures 1)', 
       orientation: 6,
       colour: 'rgb',
       alternative: { text: 'A red field', language: 'de' },
+    });
+    expect(version?.spaceId).toBe(general);
+  });
+
+  it("admits an image a dataset's result holds as an asset with no description, as it admits an upload (D8)", async () => {
+    const image = await sharp({
+      create: { width: 6, height: 4, channels: 3, background: { r: 10, g: 120, b: 40 } },
+    })
+      .png()
+      .toBuffer();
+    const stored = await store.put(image, 'image/png');
+    const made = await service.withTenant(tenant, (trx) =>
+      uploadForDatasetImage(trx, {
+        spaceId: general,
+        uploader: ada,
+        key: stored.key,
+        format: 'png',
+        bytes: stored.size,
+      }),
+    );
+    expect(made.upload).toMatchObject({ origin: 'dataset', state: 'checking', alternative: null });
+    expect(await work()).toBe('done');
+    const upload = await uploadOf(made.upload.id);
+    expect(upload).toMatchObject({ state: 'ready', origin: 'dataset' });
+    const version = await service.withTenant(tenant, (trx) =>
+      readAssetVersion(trx, upload!.assetVersionId!),
+    );
+    expect(version?.content).toMatchObject({
+      object: stored.key,
+      format: 'png',
+      width: 6,
+      height: 4,
+      alternative: null,
     });
     expect(version?.spaceId).toBe(general);
   });

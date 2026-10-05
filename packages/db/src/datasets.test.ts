@@ -11,18 +11,25 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { createConnection, type StoredConnection } from './connections.js';
 import { createComponent } from './creation.js';
+import { recordAsset, refuseAssetUpload, uploadForDatasetImage } from './assets.js';
 import {
+  assetHolding,
   componentsBinding,
   datasetFor,
   datasetIdentity,
   datasetName,
   documentsHolding,
   documentsResolving,
+  finishPending,
   lockBindings,
   lockDatasetQuestions,
   nameDataset,
+  pendingImages,
+  pendingResult,
+  readPendingResult,
   recordDatasetVersion,
   recordResolution,
+  refusePending,
   resolutionsOf,
 } from './datasets.js';
 import { grant } from './grants.js';
@@ -1075,6 +1082,194 @@ describe('datasets and resolutions', () => {
       await releaseOther();
       await otherWaits;
     }
+  });
+
+  describe("a result's images (D8)", () => {
+    const PHOTO = {
+      name: 'photo',
+      from: { column: 'photo' },
+      type: {
+        base: 'image' as const,
+        encoding: 'binary' as const,
+        description: 'decorative' as const,
+      },
+    };
+    const hash = (letter: string) => letter.repeat(64);
+    const key = (letter: string) => `${production.schema}/sha256/${hash(letter)}`;
+    /** An asset in a space whose one version holds the image of this hash. */
+    const assetOf = (spaceId: string, letter: string) =>
+      tenant((trx) =>
+        createArtifact(trx, {
+          author: ada,
+          spaceId,
+          substance: {
+            kind: 'asset',
+            content: {
+              schemaVersion: 1,
+              object: key(letter),
+              format: 'png',
+              bytes: 10,
+              width: 1,
+              height: 1,
+              orientation: 1,
+              colour: 'rgb',
+              alpha: false,
+              depth: 8,
+              resolution: null,
+              alternative: null,
+            },
+          },
+        }),
+      );
+    const withImages = (images: Record<string, string>, site: string) =>
+      provenance({
+        parameters: { site },
+        columns: [...definition(connection.id).columns, PHOTO],
+        checksum: 'b'.repeat(64),
+        images,
+      });
+
+    it('answers the asset version in a space holding an image, and none for an image only another space holds', async () => {
+      const first = await assetOf(general, '1');
+      await assetOf(general, '1');
+      await assetOf(quality, '2');
+      expect(await tenant((trx) => assetHolding(trx, general, hash('1')))).toBe(first.id);
+      expect(await tenant((trx) => assetHolding(trx, general, hash('2')))).toBeUndefined();
+      expect(await tenant((trx) => assetHolding(trx, general, 'not a hash'))).toBeUndefined();
+    });
+
+    it("records a version naming an asset version for each image its result holds and no other, each holding it in its definition's space", async () => {
+      const held = await assetOf(general, '3');
+      const there = await assetOf(quality, '4');
+      const other = await assetOf(general, '5');
+      const record = (images: Record<string, string>, holds?: string[], site = 'images') =>
+        tenant((trx) =>
+          recordDatasetVersion(trx, {
+            provenance: withImages(images, site),
+            author: ada,
+            ...(holds === undefined ? {} : { images: holds }),
+          }),
+        );
+      const { version } = await record({ [hash('3')]: held.id }, [hash('3')]);
+      expect((version.content as Provenance).images).toEqual({ [hash('3')]: held.id });
+      for (const [images, holds] of [
+        // An image column, and nothing said of what the result holds.
+        [{ [hash('3')]: held.id }, undefined],
+        // An image the result holds that names no asset version, and one named it does not hold.
+        [{}, [hash('3')]],
+        [{ [hash('3')]: held.id, [hash('5')]: other.id }, [hash('3')]],
+        // An asset version holding another image, or the image in another space.
+        [{ [hash('3')]: other.id }, [hash('3')]],
+        [{ [hash('4')]: there.id }, [hash('4')]],
+      ] as const) {
+        await expect(
+          record(images, holds === undefined ? undefined : [...holds], 'refused images'),
+          JSON.stringify(images),
+        ).rejects.toThrow(/image/);
+      }
+      // And on the path every version is written by, whatever recorded it.
+      await expect(
+        tenant((trx) =>
+          createArtifact(trx, {
+            author: ada,
+            spaceId: general,
+            substance: { kind: 'dataset', content: withImages({ [hash('3')]: other.id }, 'raw') },
+          }),
+        ),
+      ).rejects.toThrow(/image/);
+    });
+
+    it('shares the upload already checking an image in a space, and waits on, refuses or admits a pending result by its uploads', async () => {
+      const component = await componentHolding(general, []);
+      const document = await documentReferencing(general, component.artifactId, node('p'));
+      const upload = (letter: string, spaceId = general) =>
+        tenant((trx) =>
+          uploadForDatasetImage(trx, {
+            spaceId,
+            uploader: ada,
+            key: key(letter),
+            format: 'png',
+            bytes: 10,
+          }),
+        );
+      const first = await upload('6');
+      expect(first).toMatchObject({
+        shared: false,
+        upload: { origin: 'dataset', state: 'checking' },
+      });
+      // A second act on the same image shares it; another space makes its own.
+      expect((await upload('6')).upload.id).toBe(first.upload.id);
+      expect((await upload('6')).shared).toBe(true);
+      expect((await upload('6', quality)).upload.id).not.toBe(first.upload.id);
+      const second = await upload('7');
+      const held = await assetOf(general, '8');
+      const pending = await tenant((trx) =>
+        pendingResult(trx, {
+          act: 'resolve',
+          document: document.artifactId,
+          node: node('p'),
+          binding: 'k1',
+          digest: 'c'.repeat(64),
+          session: null,
+          provenance: withImages({ [hash('8')]: held.id }, 'pending'),
+          uploads: [first.upload.id, second.upload.id],
+          by: ada,
+        }),
+      );
+      const images = () => tenant((trx) => pendingImages(trx, pending));
+      expect(await images()).toEqual({ state: 'waiting' });
+      const admitted = await tenant((trx) =>
+        recordAsset(trx, first.upload.id, {
+          format: 'png',
+          width: 1,
+          height: 1,
+          orientation: 1,
+          colour: 'rgb',
+          alpha: false,
+          depth: 8,
+          resolution: null,
+          end: 10,
+        } as never),
+      );
+      expect(await images()).toEqual({ state: 'waiting' });
+      await tenant((trx) => refuseAssetUpload(trx, second.upload.id, 'undecodable', 'checking'));
+      expect(await images()).toEqual({ state: 'refused', hash: hash('7') });
+
+      // Every upload admitted: each image by the version its upload made, beside those held.
+      const third = await upload('9');
+      const ready = await tenant(async (trx) => {
+        const made = await pendingResult(trx, {
+          act: 'check',
+          document: document.artifactId,
+          node: node('p'),
+          binding: 'k1',
+          digest: 'c'.repeat(64),
+          session: null,
+          provenance: withImages({ [hash('8')]: held.id }, 'pending'),
+          uploads: [first.upload.id],
+          by: ada,
+        });
+        return made;
+      });
+      expect(await tenant((trx) => pendingImages(trx, ready))).toEqual({
+        state: 'admitted',
+        images: { [hash('8')]: held.id, [hash('6')]: admitted.id },
+      });
+      expect(third.shared).toBe(false);
+      // Finished once: the second finds nothing to finish, and a refused one is kept.
+      expect(await tenant((trx) => finishPending(trx, ready.id))).toBe(true);
+      expect(await tenant((trx) => finishPending(trx, ready.id))).toBe(false);
+      expect(await tenant((trx) => readPendingResult(trx, ready.id))).toBeUndefined();
+      expect(await tenant((trx) => refusePending(trx, pending.id, { code: 'image_refused' }))).toBe(
+        true,
+      );
+      expect(await tenant((trx) => refusePending(trx, pending.id, { code: 'other' }))).toBe(false);
+      expect(await tenant((trx) => finishPending(trx, pending.id))).toBe(false);
+      expect(await tenant((trx) => readPendingResult(trx, pending.id))).toMatchObject({
+        state: 'refused',
+        failure: { code: 'image_refused' },
+      });
+    });
   });
 
   it('keeps a dataset version in no search', async () => {

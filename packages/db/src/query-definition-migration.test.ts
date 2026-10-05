@@ -132,6 +132,7 @@ describe('migration 0046, over an environment made before it', () => {
       '0048_bound_values',
       '0049_binding_confirm',
       '0050_publication_bindings',
+      '0051_dataset_pending',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1).
