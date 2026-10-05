@@ -436,6 +436,7 @@ version and each structural act records the next (see
 | `migrations/tenant/0046_query_definitions`               | `queryDefinition` as a kind, in exactly one space and authored, and as a search kind; `write_sql` in the roles' and tokens' closed sets; `data_policy`, the tenant's one row of lowered run limits, each null or within its ceiling, read and updated by the runtime role and never inserted or deleted (see [query definitions](#query-definitions-and-the-sample-run))                                                                                                                                                                                                                                                                  |
 | `migrations/tenant/0047_datasets`                        | `dataset` as a kind, in its definition's space and authored, in no search; `dataset`, a dataset's identity - its definition, the SHA-256 of its parameters and its identity key, unique together; `dataset_name` and `binding_resolution`, both insert-only, the latter a document's node and binding holding a dataset version, with the digest of the binding it answered and the version of the same dataset it replaces (see [datasets and resolutions](#datasets-and-resolutions))                                                                                                                                                   |
 | `migrations/tenant/0048_bound_values`                    | The value catalogue and its 0.1, the default theme's 0.6 naming it on 0043's guard one version on, and `dataset_take`, each take's outcome from a dataset version held as derived data, select, insert and delete only (see [values shown](#values-shown))                                                                                                                                                                                                                                                                                                                                                                                |
+| `migrations/tenant/0049_binding_confirm`                 | A binding resolution's `act` may be `confirm`, Keep's, and a confirm holds the version it replaces (see [placing and changing](#placing-and-changing))                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `src/version-digest.ts`                                  | `versionDigests`: SHA-256 over `canonicaliseVersionContent` and `canonicaliseVersion` from the domain package                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `src/spaces.ts`                                          | `createSpace`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `src/versions.ts`                                        | `createArtifact` at `0.1`, `readVersion`, `latestVersion`, `versionContents` - each version's content and number, for the texts route - `listVersions` - an artifact's versions newest first, by keyset over `(revision_no, version_no)` with no snapshot, since the chain is append-only (W9.4) - `substanceOf`, and `recordVersion`, each taking a component, a document, a definition or a layout; `createArtifact` refuses a layout, a theme and a catalogue, which only their migrations make, and `recordVersion` a theme and a catalogue, whose versions `themes.ts` reads whole before it writes them through `recordReadVersion` |
@@ -753,8 +754,9 @@ answered by the code-aware commands ahead of the list's in preformatted text), a
 (footnotes 1), cross-references (cross-references 1: a `crossReference` atom placed and changed from
 the **Reference** dialog, showing what it will print) and equations (equations 1: an `equation` atom
 and an `equationBlock`, placed and changed from the **Equation** dialog and drawn as MathML), and
-bound values (B1: a `binding` atom, placed only through the API, and selected, deleted, copied, cut
-and pasted as any other atom, showing what a document holds for it - [values shown](#values-shown)). A
+bound values (B1: a `binding` atom, selected, deleted, copied, cut and pasted as any other atom,
+showing what a document holds for it - [values shown](#values-shown); B2: placed and changed from the
+**Value** dialog - [placing and changing](#placing-and-changing)). A
 section's title is a second, smaller view (equations 3): `mountTitleEditor` over `titleSchema`, one
 line of text and inline equations, mounted by the outline panel. A component holding anything else
 opens for reading only. A component's values are edited in the **Fields** panel beside the surface
@@ -3164,9 +3166,9 @@ and the rest counted - before **Save version**.
 
 B1 of [bindings.md](design/bindings.md), built by [the B1 plan](plans/2026-10-04-b1-the-value-shown.md):
 a component holding a binding opens for editing, and a document shows the one value it holds for each
-binding, or says in place why it has none, with its provenance one step away. Still nothing places,
-resolves or accepts a binding from a screen (B2, B4), and **a publish or preview holding one is refused
-as D3 left it** (B1-O) until B3's binding stage.
+binding, or says in place why it has none, with its provenance one step away. B2 places, resolves
+and keeps one from a screen ([below](#placing-and-changing)); nothing accepts one from a screen (B4),
+and **a publish or preview holding one is refused as D3 left it** (B1-O) until B3's binding stage.
 
 **The take and the format are the domain's, and pure** (`packages/domain/src/data/`). `takeValue(take,
 result, columns)` (`take.ts`) takes one value from a canonical result against the columns the dataset
@@ -3231,6 +3233,57 @@ editor, a binding selected whole shows the **Value panel** (`src/editor/ValuePan
 | `editor: src/`                     | `bindings.ts`, `bindingView.ts`, and the node in `schema.ts`, `mapping.ts`, `render.ts`    |
 | `web: src/structure/`, `src/data/` | `bindingContexts.ts`, the page's read, `DocumentText.tsx`'s buttons, `ProvenancePanel.tsx` |
 | `web: src/editor/`                 | `ValuePanel.tsx`, and the context pushed into the editor opened in place                   |
+
+## Placing and changing
+
+B2 of [bindings.md](design/bindings.md), built by [the B2 plan](plans/2026-10-05-b2-placing-and-changing.md):
+an author places a binding from the **Value** dialog and changes one, keeping its identifier; placed in
+a document, the page resolves it at once from the author's own editing session (BI-C), and where a
+change leaves the question unchanged, **Keep** holds the value already held, querying nothing (BI-J).
+
+**The dialog** (`apps/web/src/editor/ValueDialog.tsx`), from **Value** on the toolbar or
+`Mod-Shift-6`, chooses a definition, its version - always the latest, the latest pinned, or the pin the
+binding has - its parameters through `checkParameterValues`, the column and row it takes and the mode,
+and says **Runs as** beside each definition and on the one chosen (DAT-022): the listing
+(`GET /v1/query-definitions`) answers each definition's connection `identity`, read in
+`listReadableQueryDefinitions` beside its name, and the definition view gains `mayUse`, which the
+dialog's note on who may resolve it reads. `insertBinding` places a binding with a fresh identifier and
+`changeBinding` keeps its own (`packages/editor/src/bindings.ts`). Before a change that loses values the
+dialog lists the documents that will hold none, unless `questionUnchanged`
+(`packages/domain/src/data/question.ts`) says the question stands: the same definition and parameters,
+resolving to the held version.
+
+**Resolving from the session.** A resolve item may say `from: 'session'` with the body's `session`: the
+binding is read by `sessionContent` (`packages/db/src/editing.ts`) from the latest iteration of the
+caller's own session on the node's component, only where the node floats, that session holds the lock
+and the iteration opened from the latest version; otherwise `binding_missing`. The bindings view takes
+`?session=` the same way, falling back to the version, so a value placed and not yet cut shows. The
+editor's session gains `saveNow`, waiting for the claim and saving at once before the page is told;
+`settleBinding` (`apps/web/src/structure/`) then resolves, keeps or re-reads, one act at a time per
+document, node and binding, a 409 said as the value changing meanwhile. A pinned node resolves nothing
+and says the value shows once the node takes a version holding it.
+
+**Keep** is `POST /v1/documents/{id}/bindings/confirm`, in one transaction under `lockBindings`: `edit`
+on the document and `read` on the definition, `replaces` the version held (`resolution_precondition`
+otherwise), the take checked against the definition version the held result ran, and
+`confirm_not_possible` unless the held resolution is stale and the question unchanged. It records
+`act: 'confirm'` with the new digest and the held version, which migration 0049 holds equal to
+`replaces`, and writes no `dataset_take`. The view's `held.keepable` says where it applies; the Value
+panel offers **Change**, **Keep** there and **Resolve** otherwise.
+
+**Holders** (`GET /v1/components/{id}/bindings/{binding}/holders`, `read` on the component):
+`documentsHolding` (`packages/db/src/datasets.ts`) answers the documents whose latest outline places the
+component at a node with a latest resolution for the binding, whatever its digest, those the caller may
+read named and the rest counted.
+
+| Where                                 | What                                                                       |
+| ------------------------------------- | -------------------------------------------------------------------------- |
+| `domain: src/data/question.ts`        | `questionUnchanged`                                                        |
+| `editor: src/bindings.ts`, `marks.ts` | `insertBinding`, `changeBinding`; **Value** on `Mod-Shift-6`               |
+| `db: migrations/tenant/0049`          | `act` widened to `confirm`, `binding_resolution_confirm_holds`             |
+| `db: src/editing.ts`, `datasets.ts`   | `sessionContent`; `documentsHolding`, and `recordResolution`'s `confirm`   |
+| `service: src/data/bindings.ts`       | The session source, confirm, `keepable`, holders; the listing's `identity` |
+| `web: src/editor/`, `src/structure/`  | `ValueDialog.tsx`, the Value panel's acts, `saveNow`; `settleBinding.ts`   |
 
 ## Containers and images
 

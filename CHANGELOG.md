@@ -3,6 +3,16 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.134.0 - 2026-10-05 (PR #394)
+
+### Added
+
+- **Place and change bound values.** **Value** on the toolbar opens a dialog to choose a query
+  definition, its parameters and the value it takes, and says whose identity each query runs as; in a
+  document the value shows at once.
+- **Keep a value across a change.** Changing only the value taken or the mode keeps the document's
+  value, asking the database nothing; a change that loses values says which documents first.
+
 ## 0.133.0 - 2026-10-05 (PR #390)
 
 ### Added
