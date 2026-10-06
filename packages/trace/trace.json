@@ -15701,6 +15701,10 @@
         {
           "id": "DAT-097",
           "howItIsMet": "A bound image, after D8, takes its description from the column its definition names, or is decorative; a row whose description is null or empty fails the publish by name, `image_description_missing`, naming the binding, the row and the column ([Bound images](#bound-images))"
+        },
+        {
+          "id": "DAT-098",
+          "howItIsMet": "A bound image stands wherever an image can: an inline binding taking an image column in a line or a table's cell, set as an inline image, and a figure's `binding` member in place of its `asset` (the B6 plan, B6-A), set as the figure's image; each printed from the asset version its dataset version's provenance names ([Bound images](#bound-images))"
         }
       ]
     },
@@ -18254,6 +18258,12 @@
       "kind": "title"
     },
     {
+      "id": "DAT-097",
+      "file": "apps/service/src/dataset-images.test.ts",
+      "line": 797,
+      "kind": "title"
+    },
+    {
       "id": "MET-008",
       "file": "apps/service/src/definition-routes.test.ts",
       "line": 185,
@@ -18496,7 +18506,7 @@
     {
       "id": "DAT-070",
       "file": "apps/service/src/publication-bindings.test.ts",
-      "line": 162,
+      "line": 164,
       "kind": "title"
     },
     {
@@ -19246,31 +19256,43 @@
     {
       "id": "DAT-042",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 443,
+      "line": 446,
       "kind": "title"
     },
     {
       "id": "DAT-046",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 428,
+      "line": 431,
       "kind": "title"
     },
     {
       "id": "DAT-088",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 396,
+      "line": 399,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-097",
+      "file": "apps/worker/src/bindings.test.ts",
+      "line": 788,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-098",
+      "file": "apps/worker/src/bindings.test.ts",
+      "line": 788,
       "kind": "title"
     },
     {
       "id": "PUB-049",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 443,
+      "line": 446,
       "kind": "title"
     },
     {
       "id": "STY-082",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 503,
+      "line": 506,
       "kind": "title"
     },
     {
@@ -20150,6 +20172,12 @@
       "kind": "title"
     },
     {
+      "id": "DAT-097",
+      "file": "packages/db/src/takes.test.ts",
+      "line": 326,
+      "kind": "title"
+    },
+    {
       "id": "TPL-001",
       "file": "packages/db/src/templates.test.ts",
       "line": 136,
@@ -20516,6 +20544,18 @@
       "kind": "title"
     },
     {
+      "id": "DAT-097",
+      "file": "packages/domain/src/content/model/document.test.ts",
+      "line": 2032,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-098",
+      "file": "packages/domain/src/content/model/document.test.ts",
+      "line": 2008,
+      "kind": "title"
+    },
+    {
       "id": "STR-025",
       "file": "packages/domain/src/content/model/document.test.ts",
       "line": 1957,
@@ -20656,7 +20696,7 @@
     {
       "id": "CNT-013",
       "file": "packages/domain/src/content/model/migrate.test.ts",
-      "line": 75,
+      "line": 78,
       "kind": "title"
     },
     {
@@ -20669,6 +20709,12 @@
       "id": "DAT-067",
       "file": "packages/domain/src/data/binding.test.ts",
       "line": 93,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-098",
+      "file": "packages/domain/src/data/binding.test.ts",
+      "line": 315,
       "kind": "title"
     },
     {
@@ -20738,9 +20784,15 @@
       "kind": "title"
     },
     {
+      "id": "DAT-097",
+      "file": "packages/domain/src/data/take.test.ts",
+      "line": 153,
+      "kind": "title"
+    },
+    {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 484,
+      "line": 486,
       "kind": "title"
     },
     {
@@ -21124,13 +21176,19 @@
     {
       "id": "DAT-046",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 174,
+      "line": 175,
       "kind": "title"
     },
     {
       "id": "DAT-087",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 149,
+      "line": 150,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-097",
+      "file": "packages/domain/src/publishing/bind.test.ts",
+      "line": 333,
       "kind": "title"
     },
     {
@@ -21154,7 +21212,7 @@
     {
       "id": "PUB-108",
       "file": "packages/domain/src/publishing/order.test.ts",
-      "line": 382,
+      "line": 383,
       "kind": "title"
     },
     {
@@ -21622,19 +21680,19 @@
     {
       "id": "AST-013",
       "file": "packages/editor/src/figures.test.ts",
-      "line": 213,
+      "line": 236,
       "kind": "title"
     },
     {
       "id": "AST-015",
       "file": "packages/editor/src/figures.test.ts",
-      "line": 220,
+      "line": 243,
       "kind": "title"
     },
     {
       "id": "CNT-017",
       "file": "packages/editor/src/figures.test.ts",
-      "line": 95,
+      "line": 96,
       "kind": "title"
     },
     {

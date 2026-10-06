@@ -238,7 +238,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(592);
+    ).toBe(593); // 593 (2026-10-06): bindings.md claims DAT-098 (B6.1).
   });
 });
 
@@ -791,8 +791,9 @@ describe('the citations in the committed model', () => {
   // page. 660 (2026-10-05): D8.1's DAT-096 and DAT-080, the connector's image column.
   // 662 (2026-10-05): D8.2's DAT-096, the service's images admitted before a result is kept.
   // 661 (2026-10-05): ComponentEditor.test.tsx split in four; STR-071 now in two of its files.
+  // 671 (2026-10-06): B6.1's DAT-097, DAT-098 and DAT-042, bound images in the model and publish.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(662);
+    expect(model.citations).toHaveLength(671);
   });
 
   it('cites no identifier the corpus does not hold', () => {

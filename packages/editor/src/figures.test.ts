@@ -14,6 +14,7 @@ import {
   setFigureNumbered,
 } from './figures.js';
 import { fromEditor, toEditor } from './mapping.js';
+import { renderContent } from './render.js';
 import { editorSchema } from './schema.js';
 import { createEditorState, placeholderDecorations } from './state.js';
 
@@ -115,6 +116,28 @@ describe('a figure in the editor (figures 2)', () => {
       ] as unknown as ReturnType<typeof text>[]),
     );
     expect(toEditor(imageInCaption)).toEqual({ editable: false, unsupported: ['image'] });
+  });
+
+  it('opens a component holding a bound figure for reading, by name, and its text draws without throwing (B6.2 draws it)', () => {
+    const bound = {
+      type: 'figure',
+      id: 'f1',
+      binding: {
+        type: 'binding',
+        id: 'k1',
+        query: '00000000-0000-4000-8000-00000000d001',
+        parameters: {},
+        mode: 'checked',
+        take: { column: 'photo' },
+      },
+      imageStyle: 'figure',
+      caption: [text('The gate')],
+      alternative: { kind: 'inherited' },
+    } as unknown as BlockNode;
+    const stored = documentOf(bound);
+    expect(toEditor(stored)).toEqual({ editable: false, unsupported: ['bound figure'] });
+    expect(() => renderContent(stored, {} as Document)).not.toThrow();
+    expect(renderContent(stored, {} as Document)).toBeNull();
   });
 
   it("renders the image from the asset version above the caption, its alt the figure's own text", () => {

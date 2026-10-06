@@ -485,6 +485,21 @@ describe('the re-identify stage', () => {
     );
   });
 
+  it("gives a pasted figure's binding a new identifier, as an inline one's (B6-A)", () => {
+    const bound: Record<string, unknown> = { ...figure('f1', '', 'Site'), binding: binding('k1') };
+    delete bound.asset;
+    const identified = reidentify(
+      { schemaVersion: 1, content: [bound] },
+      receiver(),
+      createReport(),
+    );
+    if (!identified.ok) throw new Error(identified.failure);
+    expect(identified.value.content).toEqual([
+      { ...bound, id: 'n3', binding: { ...binding('k1'), id: 'n4' } },
+    ]);
+    expect([...identified.bindingsRenamed]).toEqual([['k1', 'n4']]);
+  });
+
   it('keeps a block and a binding that arrived under one identifier apart, neither making the other ambiguous', () => {
     const identified = reidentify(
       { schemaVersion: 1, content: [paragraph('z', [text('Mean '), binding('z')])] },

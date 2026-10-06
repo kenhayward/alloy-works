@@ -169,6 +169,13 @@ export const publishFailureCodes = [
   'value_empty',
   'take_invalid',
   'result_unreadable',
+  // bind, from B6 (B6-D): a bound image's description null or spaces alone (DAT-097), `detail` the
+  // binding and the description's column as `<binding>: <column>`; an image a binding takes inside a
+  // footnote or a caption, which hold none (CNT-129, `image_in_caption`); and a figure's binding taking
+  // anything but an image.
+  'image_description_missing',
+  'image_not_placeable',
+  'value_not_image',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',

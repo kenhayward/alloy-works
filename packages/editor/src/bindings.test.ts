@@ -169,6 +169,9 @@ describe('bindingsShown, in a document (B1-J)', () => {
         'value_null',
         'value_empty',
         'unavailable',
+        'image_description_missing',
+        'value_not_image',
+        'image_not_placeable',
       ].sort(),
     );
   });

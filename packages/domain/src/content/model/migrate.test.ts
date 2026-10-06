@@ -36,6 +36,8 @@ describe('schema versions and migration', () => {
       if (typeof value !== 'object' || value === null) return;
       const record = value as Record<string, unknown>;
       if (typeof record.type === 'string') found.add(record.type);
+      // A figure taking its image from a binding (B6-A) is a construct of its own, not a node type.
+      if (record.type === 'figure' && 'binding' in record) found.add('figure with a binding');
       for (const member of Object.values(record)) collect(member);
     };
     collect(JSON.parse(readFileSync(join(fixtures, 'v1', 'every-node.json'), 'utf8')));
@@ -45,6 +47,7 @@ describe('schema versions and migration', () => {
       'list',
       'table',
       'figure',
+      'figure with a binding',
       'preformatted',
       'blockquote',
       'equation',

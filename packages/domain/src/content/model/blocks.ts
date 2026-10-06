@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
-import { alternativeSchema, equationContentSchema, inlineNodeSchema } from './inline.js';
+import {
+  alternativeSchema,
+  bindingNodeSchema,
+  equationContentSchema,
+  inlineNodeSchema,
+} from './inline.js';
 import { artifactIdentifierSchema } from './identifier.js';
 
 const identified = { id: z.string().min(1) };
@@ -33,7 +38,8 @@ export type BlockNode =
   | {
       type: 'figure';
       id: string;
-      asset: string;
+      asset?: string | undefined;
+      binding?: z.infer<typeof bindingNodeSchema> | undefined;
       imageStyle: string;
       caption: z.infer<typeof inlineNodeSchema>[];
       alternative: z.infer<typeof alternativeSchema>;
@@ -174,7 +180,12 @@ export const figureNodeSchema = z.strictObject({
   ...identified,
   // An asset VERSION, pinned (figures 1, R4; decision F-H): a component version shows the image it
   // was saved with. Tightened in place at schema version 1 on a read-only count of none stored.
-  asset: artifactIdentifierSchema,
+  //
+  // **Or a binding** (the B6 plan, B6-A): a whole binding node taking an image column, placed as this
+  // figure's image. Exactly one of the two, held by the walk (`figure_image`). Additive at schema 1
+  // (B6-B): every figure stored before has `asset` and no `binding`, so it parses and digests as it did.
+  asset: artifactIdentifierSchema.optional(),
+  binding: bindingNodeSchema.optional(),
   imageStyle: z.string().min(1),
   /** Inline content, as a table's caption is (issue #88). */
   caption: z.array(inlineNodeSchema),

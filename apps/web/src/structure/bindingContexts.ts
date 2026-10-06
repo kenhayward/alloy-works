@@ -210,11 +210,19 @@ export function holdsBinding(content: unknown): boolean {
   return Object.values(content).some(holdsBinding);
 }
 
-/** A taken value as the document shows it: formatted by its theme's formats (B1-G). */
+/**
+ * A taken value as the document shows it: formatted by its theme's formats (B1-G). An image (B6) is
+ * said by its description until the page draws it (B6.2).
+ */
 export function shownValue(
-  taken: Extract<TakeOutcome, { readonly value: unknown }>,
+  taken: Extract<TakeOutcome, { readonly value: unknown } | { readonly image: unknown }>,
   formats: ValueFormats,
 ): string {
+  if ('image' in taken) {
+    return taken.description === 'decorative' && taken.column.type.description === 'decorative'
+      ? 'A decorative image'
+      : `An image: ${taken.description}`;
+  }
   return formatValue(taken.value, taken.column.type, formats);
 }
 
@@ -248,7 +256,7 @@ function heldOf(state: BindingState, formats: ValueFormats): BindingHeld | null 
   if (taken === null || 'unavailable' in taken) {
     return { binding, shown: { failure: 'unavailable' } };
   }
-  if ('value' in taken) {
+  if ('value' in taken || 'image' in taken) {
     return {
       binding,
       shown: { value: shownValue(taken, formats), waiting: state.waiting !== null },
@@ -262,6 +270,9 @@ export function failureHeld(
   taken: Extract<TakeOutcome, { readonly failure: unknown }>,
   binding: Binding,
 ): BindingFailureHeld {
+  if (taken.failure === 'image_description_missing') {
+    return { failure: 'image_description_missing', column: taken.column ?? binding.take.column };
+  }
   return taken.failure === 'take_invalid'
     ? { failure: 'take_invalid', column: taken.column ?? binding.take.column }
     : {

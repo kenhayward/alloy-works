@@ -190,7 +190,12 @@ function imagesIn(
       case 'paragraph':
         return inRuns(block.content, block.id);
       case 'figure':
-        return [{ block: block.id, asset: block.asset }, ...inRuns(block.caption, block.id)];
+        // A bound figure's image is the binding's, held by the dataset version the request records
+        // (the B6 plan, B6-F), never an asset version of the request's own.
+        return [
+          ...(block.asset === undefined ? [] : [{ block: block.id, asset: block.asset }]),
+          ...inRuns(block.caption, block.id),
+        ];
       case 'list':
         return block.items.flatMap((item) => [
           ...inRuns(item.term, block.id),
@@ -750,6 +755,12 @@ export interface PublicationInputs {
    * version whose result the worker reads by its checksum, and that version's dataset and provenance.
    */
   readonly bindings: ReadonlyMap<string, ReadonlyMap<string, RecordedBinding>>;
+  /**
+   * Every asset version the recorded dataset versions' provenance `images` name, by asset version (the
+   * B6 plan, B6-F): what a bound image is sized and placed from. Nothing on the request records them,
+   * since the dataset version does; the worker reads the bytes only of those the binding stage placed.
+   */
+  readonly boundAssets: ReadonlyMap<string, PublishingAsset>;
 }
 
 /** A binding as a request or a publication records it, with the dataset version it took. */
@@ -986,6 +997,27 @@ export async function publicationInputs(
     if (!bindings.has(node)) bindings.set(node, new Map());
     bindings.get(node)!.set(binding, recorded);
   }
+  // Every image the held results could place, in one query: a binding's take is the stage's to decide.
+  const named = [
+    ...new Set(
+      [...bindings.values()].flatMap((each) =>
+        [...each.values()].flatMap((recorded) => Object.values(recorded.dataset.provenance.images)),
+      ),
+    ),
+  ];
+  const boundAssets = new Map<string, PublishingAsset>();
+  if (named.length > 0) {
+    const rows = await trx
+      .selectFrom('artifact_version')
+      .select(['id', 'content'])
+      .where('kind', '=', 'asset')
+      .where('id', 'in', named)
+      .execute();
+    for (const row of rows) {
+      const { object, format, width, height, alternative } = parseAssetVersion(row.content);
+      boundAssets.set(row.id, { object, format, width, height, alternative });
+    }
+  }
   return {
     request: {
       id: request.id,
@@ -1008,6 +1040,7 @@ export async function publicationInputs(
     revision: `${request.revision_no}.${request.version_no}`,
     assets,
     bindings,
+    boundAssets,
   };
 }
 

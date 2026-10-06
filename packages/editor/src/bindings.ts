@@ -10,15 +10,20 @@ const bindingNode = editorSchema.nodes.binding!;
  * Why a binding holds no value where the view answered for it: a take's failure (`takeValue`), or a
  * result the service could not read (`unavailable`, B1-H), which is never stored.
  */
-export type BindingFailureShown = TakeFailure | 'unavailable';
+export type BindingFailureShown =
+  | TakeFailure
+  | 'unavailable'
+  // Where an image a take gave cannot stand (the B6 plan, B6-D): the view's, never a take's.
+  | 'value_not_image'
+  | 'image_not_placeable';
 
 /**
  * A failure as the host tells it: `take_invalid` with the column, taken or key, the version does not
- * have - the take's outcome names it, so the words never guess which - and `value_many` with its
- * count.
+ * have - the take's outcome names it, so the words never guess which - `image_description_missing`
+ * with the description's column, and `value_many` with its count.
  */
 export type BindingFailureHeld = {
-  readonly [K in BindingFailureShown]: K extends 'take_invalid'
+  readonly [K in BindingFailureShown]: K extends 'take_invalid' | 'image_description_missing'
     ? { readonly failure: K; readonly column: string }
     : { readonly failure: K; readonly count?: number };
 }[BindingFailureShown];
@@ -127,6 +132,10 @@ export const BINDING_FAILURE_WORDS = {
   value_null: () => 'No value - empty',
   value_empty: () => 'No value - empty',
   unavailable: () => 'No value - the result cannot be read',
+  image_description_missing: (_binding, held) =>
+    `No image - the row has no description in ${held.column}`,
+  value_not_image: () => 'No image - the column is not an image',
+  image_not_placeable: () => 'No image - a footnote or a caption cannot hold one',
 } satisfies {
   readonly [K in BindingFailureShown]: (
     binding: Binding,

@@ -19,9 +19,20 @@ export function takeDigest(take: Take): string {
   return sha256Hex(takeDigestInput(take));
 }
 
-/** Two column types alike member for member, whatever order a store wrote their members in. */
-function sameType(a: object, b: object): boolean {
-  const spelt = (type: object) => JSON.stringify(type, Object.keys(type).sort());
+/**
+ * Two column types alike member for member, at every depth - an image's description is an object of
+ * its own (B6-D) - whatever order a store wrote their members in.
+ */
+function sameType(a: unknown, b: unknown): boolean {
+  const spelt = (type: unknown): string =>
+    typeof type === 'object' && type !== null
+      ? `{${Object.keys(type)
+          .sort()
+          .map(
+            (name) => `${JSON.stringify(name)}:${spelt((type as Record<string, unknown>)[name])}`,
+          )
+          .join(',')}}`
+      : JSON.stringify(type);
   return spelt(a) === spelt(b);
 }
 
@@ -56,7 +67,8 @@ export async function recordTake(
     .where('kind', '=', 'dataset')
     .executeTakeFirst();
   if (!version) throw new Error(`This environment holds no dataset version ${input.version}`);
-  if ('value' in outcome) {
+  // A value or an image (B6-D) to the column its version declares under that name, with that type.
+  if ('value' in outcome || 'image' in outcome) {
     const declared = parseProvenance(version.content).columns.find(
       (column) => column.name === outcome.column.name,
     );

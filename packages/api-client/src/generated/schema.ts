@@ -10402,14 +10402,34 @@ export interface operations {
                                         };
                                     };
                                 } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
-                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                     column?: string;
                                 } | {
                                     /**
@@ -10555,14 +10575,34 @@ export interface operations {
                                         };
                                     };
                                 } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
-                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                     column?: string;
                                 } | {
                                     /**
@@ -11011,14 +11051,34 @@ export interface operations {
                                     };
                                 };
                             } | {
+                                /** @description The image's SHA-256, as the result's cell holds it */
+                                image: string;
+                                /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                assetVersion: string;
+                                /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                description: string;
+                                column: {
+                                    /** @description The declared image column it was taken from */
+                                    name: string;
+                                    type: {
+                                        /** @constant */
+                                        base: "image";
+                                        /** @enum {string} */
+                                        encoding: "base64" | "binary";
+                                        description: {
+                                            column: string;
+                                        } | "decorative";
+                                    };
+                                };
+                            } | {
                                 /**
-                                 * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                  * @enum {string}
                                  */
-                                failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                 /** @description `value_many`: how many rows there were */
                                 count?: number;
-                                /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                 column?: string;
                             } | {
                                 /**
@@ -11164,14 +11224,34 @@ export interface operations {
                                     };
                                 };
                             } | {
+                                /** @description The image's SHA-256, as the result's cell holds it */
+                                image: string;
+                                /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                assetVersion: string;
+                                /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                description: string;
+                                column: {
+                                    /** @description The declared image column it was taken from */
+                                    name: string;
+                                    type: {
+                                        /** @constant */
+                                        base: "image";
+                                        /** @enum {string} */
+                                        encoding: "base64" | "binary";
+                                        description: {
+                                            column: string;
+                                        } | "decorative";
+                                    };
+                                };
+                            } | {
                                 /**
-                                 * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                  * @enum {string}
                                  */
-                                failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                 /** @description `value_many`: how many rows there were */
                                 count?: number;
-                                /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                 column?: string;
                             } | {
                                 /**
@@ -11405,14 +11485,34 @@ export interface operations {
                                         };
                                     };
                                 } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
-                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                     column?: string;
                                 } | {
                                     /**
@@ -11558,14 +11658,34 @@ export interface operations {
                                         };
                                     };
                                 } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
-                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                     column?: string;
                                 } | {
                                     /**
@@ -11860,14 +11980,34 @@ export interface operations {
                                         };
                                     };
                                 } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
-                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                     column?: string;
                                 } | {
                                     /**
@@ -12013,14 +12153,34 @@ export interface operations {
                                         };
                                     };
                                 } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
-                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                     column?: string;
                                 } | {
                                     /**
@@ -12512,14 +12672,34 @@ export interface operations {
                                         };
                                     };
                                 } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
-                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                     column?: string;
                                 } | {
                                     /**
@@ -12665,14 +12845,34 @@ export interface operations {
                                         };
                                     };
                                 } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
-                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                     column?: string;
                                 } | {
                                     /**
@@ -12907,14 +13107,34 @@ export interface operations {
                                         };
                                     };
                                 } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
-                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                     column?: string;
                                 } | {
                                     /**
@@ -13060,14 +13280,34 @@ export interface operations {
                                         };
                                     };
                                 } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
-                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                     column?: string;
                                 } | {
                                     /**
@@ -13458,14 +13698,34 @@ export interface operations {
                                     };
                                 };
                             } | {
+                                /** @description The image's SHA-256, as the result's cell holds it */
+                                image: string;
+                                /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                assetVersion: string;
+                                /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                description: string;
+                                column: {
+                                    /** @description The declared image column it was taken from */
+                                    name: string;
+                                    type: {
+                                        /** @constant */
+                                        base: "image";
+                                        /** @enum {string} */
+                                        encoding: "base64" | "binary";
+                                        description: {
+                                            column: string;
+                                        } | "decorative";
+                                    };
+                                };
+                            } | {
                                 /**
-                                 * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                  * @enum {string}
                                  */
-                                failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                 /** @description `value_many`: how many rows there were */
                                 count?: number;
-                                /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                 column?: string;
                             } | {
                                 /**
@@ -13611,14 +13871,34 @@ export interface operations {
                                     };
                                 };
                             } | {
+                                /** @description The image's SHA-256, as the result's cell holds it */
+                                image: string;
+                                /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                assetVersion: string;
+                                /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                description: string;
+                                column: {
+                                    /** @description The declared image column it was taken from */
+                                    name: string;
+                                    type: {
+                                        /** @constant */
+                                        base: "image";
+                                        /** @enum {string} */
+                                        encoding: "base64" | "binary";
+                                        description: {
+                                            column: string;
+                                        } | "decorative";
+                                    };
+                                };
+                            } | {
                                 /**
-                                 * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                  * @enum {string}
                                  */
-                                failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                 /** @description `value_many`: how many rows there were */
                                 count?: number;
-                                /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                 column?: string;
                             } | {
                                 /**
@@ -13852,14 +14132,34 @@ export interface operations {
                                         };
                                     };
                                 } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
-                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                     column?: string;
                                 } | {
                                     /**
@@ -14005,14 +14305,34 @@ export interface operations {
                                         };
                                     };
                                 } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
-                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                     column?: string;
                                 } | {
                                     /**
@@ -14307,14 +14627,34 @@ export interface operations {
                                         };
                                     };
                                 } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
-                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                     column?: string;
                                 } | {
                                     /**
@@ -14460,14 +14800,34 @@ export interface operations {
                                         };
                                     };
                                 } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
-                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                     column?: string;
                                 } | {
                                     /**
@@ -14891,14 +15251,34 @@ export interface operations {
                                         };
                                     };
                                 } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
-                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                     column?: string;
                                 } | {
                                     /**
@@ -15044,14 +15424,34 @@ export interface operations {
                                         };
                                     };
                                 } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
-                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                     column?: string;
                                 } | {
                                     /**
@@ -15306,14 +15706,34 @@ export interface operations {
                                         };
                                     };
                                 } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
-                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                     column?: string;
                                 } | {
                                     /**
@@ -15459,14 +15879,34 @@ export interface operations {
                                         };
                                     };
                                 } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
-                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                     column?: string;
                                 } | {
                                     /**
@@ -15721,14 +16161,34 @@ export interface operations {
                                         };
                                     };
                                 } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
-                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                     column?: string;
                                 } | {
                                     /**
@@ -15874,14 +16334,34 @@ export interface operations {
                                         };
                                     };
                                 } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
-                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                     column?: string;
                                 } | {
                                     /**
@@ -16116,14 +16596,34 @@ export interface operations {
                                         };
                                     };
                                 } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
-                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                     column?: string;
                                 } | {
                                     /**
@@ -16269,14 +16769,34 @@ export interface operations {
                                         };
                                     };
                                 } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
-                                    /** @description `take_invalid`: the column, taken or key, the result does not have */
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
                                     column?: string;
                                 } | {
                                     /**
@@ -18064,7 +18584,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "engine_failed" | "store_failed";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "engine_failed" | "store_failed";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -18556,7 +19076,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "engine_failed" | "store_failed";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "engine_failed" | "store_failed";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -21805,7 +22325,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "engine_failed" | "store_failed";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "engine_failed" | "store_failed";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -22484,6 +23004,10 @@ export interface operations {
                                 connection?: {
                                     artifact: string;
                                     version: string;
+                                };
+                                /** @description Each image the result holds, by its SHA-256, to the asset version it was admitted as: an image a binding placed is printed from that asset version's bytes */
+                                images: {
+                                    [key: string]: string;
                                 };
                             };
                         }[];

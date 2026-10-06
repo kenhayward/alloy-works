@@ -63,6 +63,14 @@ const definition = (connection: string): QueryDefinition => ({
 });
 
 const DEPTH = { name: 'depth', type: { base: 'decimal', precision: 6, scale: 2 } } as const;
+const PHOTO = {
+  name: 'photo',
+  type: { base: 'image', encoding: 'binary', description: { column: 'caption' } },
+} as const;
+const DECORATIVE_PHOTO = {
+  name: 'photo',
+  type: { base: 'image', encoding: 'binary', description: 'decorative' },
+} as const;
 
 describe('dataset_take', () => {
   let db: TestDatabase;
@@ -77,7 +85,7 @@ describe('dataset_take', () => {
     service.withTenant(production, work);
 
   /** A new dataset version: each run a question of its own, so each is a dataset's first version. */
-  const datasetVersion = () => {
+  const datasetVersion = (columns: Provenance['columns'] = definition(connection.id).columns) => {
     runs += 1;
     const provenance: Provenance = {
       schemaVersion: 1,
@@ -89,12 +97,12 @@ describe('dataset_take', () => {
       at: '2026-10-04T09:15:00.000Z',
       durationMs: 12,
       rowCount: 1,
-      columns: definition(connection.id).columns,
+      columns,
       canonical: 1,
       checksum: 'a'.repeat(64),
       images: {},
     };
-    return tenant((trx) => recordDatasetVersion(trx, { provenance, author: ada })).then(
+    return tenant((trx) => recordDatasetVersion(trx, { provenance, author: ada, images: [] })).then(
       (recorded) => recorded.version,
     );
   };
@@ -274,6 +282,20 @@ describe('dataset_take', () => {
       { value: '1', column: { name: 'depth', type: {} } },
       { value: '1', column: { name: 'depth', type: { base: 'image' } } },
       { value: '1', column: { name: 'depth', type: { base: 7 } } },
+      // An image (0052): exactly its hash, a description and an image column, nothing else.
+      { description: 'The gate', column: PHOTO },
+      { image: 'AB'.repeat(32), description: 'The gate', column: PHOTO },
+      { image: 'ab'.repeat(31), description: 'The gate', column: PHOTO },
+      { image: 'ab'.repeat(32), column: PHOTO },
+      { image: 'ab'.repeat(32), description: '', column: PHOTO },
+      { image: 'ab'.repeat(32), description: 7, column: PHOTO },
+      { image: 'ab'.repeat(32), description: 'The gate', column: DEPTH },
+      { image: 'ab'.repeat(32), description: 'The gate', column: { name: 'photo' } },
+      { image: 'ab'.repeat(32), description: 'The gate', column: PHOTO, value: 'x' },
+      { image: 'ab'.repeat(32), description: 'The gate', column: PHOTO, failure: 'value_none' },
+      // A missing description names its column, as take_invalid names the one it lacks.
+      { failure: 'image_description_missing' },
+      { failure: 'image_description_missing', column: '' },
       [],
       'value_none',
     ];
@@ -293,6 +315,78 @@ describe('dataset_take', () => {
       value: true,
       column: { name: 'open', type: { base: 'boolean' } },
     });
+    await insert('c'.repeat(64), {
+      image: 'ab'.repeat(32),
+      description: 'The gate',
+      column: PHOTO,
+    });
+    await insert('b'.repeat(64), { failure: 'image_description_missing', column: 'caption' });
+  });
+
+  it("DAT-097 records an image take's hash and description against the image column its version declares, or its description missing, and refuses an image with no hash", async () => {
+    const version = await datasetVersion([
+      ...definition(connection.id).columns,
+      { name: 'photo', from: { column: 'photo' }, type: PHOTO.type },
+      { name: 'caption', from: { column: 'caption' }, type: { base: 'text' } },
+    ]);
+    const take = { key: { site: 'north' }, column: 'photo' };
+    const image: TakeOutcome = { image: 'ab'.repeat(32), description: 'The gate', column: PHOTO };
+    await tenant((trx) => recordTake(trx, { version: version.id, take, outcome: image }));
+    const missing = { key: { site: 'south' }, column: 'photo' };
+    await tenant((trx) =>
+      recordTake(trx, {
+        version: version.id,
+        take: missing,
+        outcome: { failure: 'image_description_missing', column: 'caption' },
+      }),
+    );
+    expect(
+      await tenant((trx) =>
+        takesOf(trx, [
+          { version: version.id, takeDigest: takeDigest(take) },
+          { version: version.id, takeDigest: takeDigest(missing) },
+        ]),
+      ),
+    ).toEqual([
+      { version: version.id, takeDigest: takeDigest(take), outcome: image },
+      {
+        version: version.id,
+        takeDigest: takeDigest(missing),
+        outcome: { failure: 'image_description_missing', column: 'caption' },
+      },
+    ]);
+    // No hash, a column the version does not declare so, or a description its type does not give.
+    for (const outcome of [
+      { description: 'The gate', column: PHOTO },
+      { image: 'ab'.repeat(32), description: 'The gate', column: { ...PHOTO, name: 'logo' } },
+      {
+        image: 'ab'.repeat(32),
+        description: 'The gate',
+        column: { name: 'photo', type: { ...PHOTO.type, description: { column: 'site' } } },
+      },
+      { image: 'ab'.repeat(32), description: 'decorative', column: DECORATIVE_PHOTO },
+    ]) {
+      await expect(
+        tenant((trx) =>
+          recordTake(trx, {
+            version: version.id,
+            take: { column: 'photo' },
+            outcome: outcome as TakeOutcome,
+          }),
+        ),
+        JSON.stringify(outcome),
+      ).rejects.toThrow();
+    }
+    // And the table refuses an image with no hash, as a direct insert would store it.
+    await expect(
+      tenant((trx) =>
+        sql`insert into dataset_take (dataset_version, artifact_id, take_digest, outcome)
+            values (${version.id}, ${version.artifactId}, ${'9'.repeat(64)},
+                    ${JSON.stringify({ description: 'The gate', column: PHOTO })}::jsonb)`.execute(
+          trx,
+        ),
+      ),
+    ).rejects.toThrow(/dataset_take_outcome/);
   });
 
   it('gives the runtime role select, insert and delete, and no update or truncate', async () => {

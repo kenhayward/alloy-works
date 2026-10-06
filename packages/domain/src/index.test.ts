@@ -346,6 +346,7 @@ describe('the domain package', () => {
         'FOURTH_DEFAULT_CATALOGUE_VERSIONS',
         'FOURTH_DEFAULT_THEME',
         'FOURTH_DEFAULT_THEME_VERSION',
+        'FigureRefused',
         // Data, D1: a connection's settings and their check, the data failures and their
         // attribution, the column types a describe proposes, the connector's protocol, and the
         // limits (data.md; the D1 plan).
@@ -439,6 +440,7 @@ describe('the domain package', () => {
         'parseProvenance',
         'parseProvenanceForWrite',
         'identityKey',
+        'imageColumnTypeSchema',
         'parametersDigestInput',
         'BINDING_IN_TITLE',
         // D3's routes answer a binding and a dataset version's provenance by these shapes.

@@ -42,7 +42,9 @@ describe("the Word check's fixture holding values", () => {
       bindings: valuesBindings,
     });
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    printed = assembled.values.map(({ binding, printed: text }) => ({ binding, printed: text }));
+    printed = assembled.values.flatMap((each) =>
+      'printed' in each ? [{ binding: each.binding, printed: each.printed }] : [],
+    );
     const { bytes } = writeDocx({
       document: assembled.document,
       numbering: assembled.numbering,

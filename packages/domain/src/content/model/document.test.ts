@@ -1963,3 +1963,83 @@ describe('where a caption sits (W14.5, W-I)', () => {
     }
   });
 });
+
+describe("a figure's image from a binding (the B6 plan, B6-A to B6-C)", () => {
+  const run = (value: string) => ({ type: 'text', value, marks: [] });
+  const binding = (id = 'k1') => ({
+    type: 'binding',
+    id,
+    query: '00000000-0000-4000-8000-00000000d001',
+    parameters: { site: { literal: 'north' } },
+    mode: 'checked',
+    take: { column: 'site_photo' },
+  });
+  const figure = (over: Record<string, unknown> = {}) => ({
+    type: 'figure',
+    id: 'F1',
+    imageStyle: 'figure',
+    caption: [run('The site')],
+    alternative: { kind: 'inherited' },
+    ...over,
+  });
+
+  /**
+   * A figure stored before the member existed, canonicalised and written out rather than computed:
+   * the version digest (ADR-0024) is taken over this string, so a widening that moved it would record
+   * a new version of every component holding a figure (B6-B).
+   */
+  const CANONICAL_ASSET_FIGURE =
+    '{"content":[{"alternative":{"kind":"own","text":"A plan of the site"},' +
+    '"asset":"00000000-0000-4000-8000-00000000a551","caption":[{"marks":[],"type":"text",' +
+    '"value":"The site"}],"id":"F1","imageStyle":"figure","type":"figure"}],"direction":"ltr",' +
+    '"language":"en-GB","schemaVersion":1,"title":"A component"}';
+
+  it('keeps a figure stored with an asset valid, and its canonical form, and so its digest, unchanged', () => {
+    const stored = doc([
+      figure({ asset: ASSET_VERSION, alternative: { kind: 'own', text: 'A plan of the site' } }),
+    ]);
+    const read = readContent(stored, { artifact: 'a', version: 'v' });
+    if (!read.ok) throw new Error(read.failure);
+    expect(canonicalise(read.document)).toBe(CANONICAL_ASSET_FIGURE);
+    expect(CURRENT_SCHEMA_VERSION).toBe(1);
+    expect(contentMigrationChain.migrations).toEqual({});
+  });
+
+  it('DAT-098 holds a figure taking its image from a binding in place of an asset, through the parse of what the parse returned', () => {
+    const once = parseContentDocument(doc([figure({ binding: binding() })]));
+    expect(once.content[0]).toMatchObject({ type: 'figure', binding: binding() });
+    expect(once.content[0]).not.toHaveProperty('asset');
+    expect(parseContentDocument(once)).toEqual(once);
+  });
+
+  it('DAT-098 refuses a figure placing both an asset and a binding, or neither, by name: figure_image', () => {
+    expect(() =>
+      parseContentDocument(doc([figure({ asset: ASSET_VERSION, binding: binding() })])),
+    ).toThrow(/F1.*figure_image/);
+    expect(() => parseContentDocument(doc([figure()]))).toThrow(/F1.*figure_image/);
+  });
+
+  it("DAT-098 claims a figure's binding's identifier with the component's others", () => {
+    const inline = { type: 'paragraph', id: 'p1', style: 'body', content: [binding('k1')] };
+    expect(() => parseContentDocument(doc([inline, figure({ binding: binding('k1') })]))).toThrow(
+      /k1 is used more than once/,
+    );
+    expect(() => parseContentDocument(doc([figure({ id: 'k1', binding: binding('k1') })]))).toThrow(
+      /k1 is used more than once/,
+    );
+  });
+
+  it('DAT-097 refuses a bound figure its own alternative text, which could describe one row alone: figure_bound_alternative', () => {
+    expect(() =>
+      parseContentDocument(
+        doc([figure({ binding: binding(), alternative: { kind: 'own', text: 'North' } })]),
+      ),
+    ).toThrow(/F1.*figure_bound_alternative/);
+    for (const kind of ['inherited', 'decorative']) {
+      expect(
+        () => parseContentDocument(doc([figure({ binding: binding(), alternative: { kind } })])),
+        kind,
+      ).not.toThrow();
+    }
+  });
+});

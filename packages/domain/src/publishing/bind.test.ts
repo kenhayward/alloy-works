@@ -69,6 +69,7 @@ const held = (r: CanonicalResult): Held => ({
   result: r,
   columns: COLUMNS,
   datasetVersion: '00000000-0000-4000-8000-0000000000d1',
+  images: {},
 });
 
 const outline: OutlineDocument = parseOutlineDocument({
@@ -220,5 +221,220 @@ describe('bind', () => {
     if (made.ok) return;
     expect(made.failures.filter((each) => each.stage === 'bind')).toEqual(expected);
     expect('document' in made).toBe(false);
+  });
+});
+
+describe('bind, a bound image (the B6 plan, B6-D and B6-E)', () => {
+  const NORTH = 'a1'.repeat(32);
+  const SOUTH = 'b2'.repeat(32);
+  const NORTH_ASSET = '00000000-0000-4000-8000-00000000a501';
+  const SOUTH_ASSET = '00000000-0000-4000-8000-00000000a502';
+  const DESCRIBED = { base: 'image', encoding: 'binary', description: { column: 'caption' } };
+  const PHOTOS: Column[] = [
+    { name: 'site', from: { column: 'site' }, type: { base: 'text' } },
+    { name: 'photo', from: { column: 'photo' }, type: DESCRIBED as Column['type'] },
+    { name: 'caption', from: { column: 'caption' }, type: { base: 'text' } },
+  ];
+  const photos = (...rows: CanonicalValue[][]): Held => ({
+    result: {
+      columns: [
+        ['site', 'text'],
+        ['photo', 'image'],
+        ['caption', 'text'],
+      ],
+      rows,
+    },
+    columns: PHOTOS,
+    datasetVersion: '00000000-0000-4000-8000-0000000000d2',
+    images: { [NORTH]: NORTH_ASSET, [SOUTH]: SOUTH_ASSET },
+  });
+  const ROWS: CanonicalValue[][] = [
+    ['north', NORTH, 'The north gate'],
+    ['south', SOUTH, '  '],
+  ];
+  const at = (site: string, column = 'photo') => ({ key: { site }, column });
+  const figure = (name: string, bound: unknown, alternative = { kind: 'inherited' }) => ({
+    type: 'figure',
+    id: name,
+    binding: bound,
+    imageStyle: 'figure',
+    caption: [text('The site')],
+    alternative,
+  });
+  const cell = (...content: unknown[]) => ({ content, colspan: 1, rowspan: 1 });
+  const asset = (alternative: { text: string; language: string } | null = null) => ({
+    object: `t_acme/sha256/${'c'.repeat(64)}`,
+    format: 'png' as const,
+    width: 80,
+    height: 60,
+    alternative,
+  });
+
+  it('sets an inline binding taking an image as an inline image, and a figure as one with an asset, each described by the description taken', () => {
+    const content = component(
+      paragraph('p1', text('The gate '), binding('i1', at('north'))),
+      {
+        type: 'table',
+        id: 't1',
+        caption: [text('Gates')],
+        headerRows: 0,
+        headerColumns: 0,
+        rows: [{ cells: [cell(paragraph('c1', binding('i2', at('north'))))] }],
+      },
+      figure('f1', binding('i3', at('north'))),
+      figure('f2', binding('i4', at('north')), { kind: 'decorative' }),
+    );
+    const results = new Map(['i1', 'i2', 'i3', 'i4'].map((each) => [each, photos(...ROWS)]));
+    const { bound, failures, values } = bind(NODE, content, results, DEFAULT_VALUE_FORMATS);
+    expect(failures).toEqual([]);
+    const image = {
+      type: 'image',
+      asset: NORTH_ASSET,
+      imageStyle: 'inline',
+      alternative: { kind: 'own', text: 'The north gate' },
+    };
+    expect(bound.content[0]).toEqual(paragraph('p1', text('The gate '), image));
+    expect(bound.content[1]).toMatchObject({
+      rows: [{ cells: [{ content: [paragraph('c1', image)] }] }],
+    });
+    expect(bound.content[2]).toEqual({
+      ...figure('f1', undefined, { kind: 'own', text: 'The north gate' } as never),
+      binding: undefined,
+      asset: NORTH_ASSET,
+    });
+    expect(bound.content[2]).not.toHaveProperty('binding');
+    // The author's decorative stands over the definition's description.
+    expect(bound.content[3]).toMatchObject({
+      asset: NORTH_ASSET,
+      alternative: { kind: 'decorative' },
+    });
+    expect(values.map((each) => ('image' in each ? [each.binding, each.image] : []))).toEqual(
+      ['i1', 'i2', 'i3', 'i4'].map((each) => [each, { hash: NORTH, assetVersion: NORTH_ASSET }]),
+    );
+    // And `assemble` publishes each: two images in their lines and two figures, described as taken.
+    const made = assemble({
+      formats: ['pdf', 'docx'],
+      outline,
+      occurrences: new Map([[NODE, content]]),
+      bindings: new Map([[NODE, results]]),
+      refused: [],
+      layout: defaultLayout,
+      theme: resolved(),
+      revision: '0.1',
+      covers: () => true,
+      assets: new Map([[NORTH_ASSET, asset()]]),
+    });
+    if (!made.ok) throw new Error(JSON.stringify(made.failures));
+    const blocks = blocksOf(made.document.nodes);
+    const figures = blocks.filter((each) => each.type === 'figure');
+    expect(figures.map((each) => each.alternative?.text ?? null)).toEqual(['The north gate', null]);
+  });
+
+  it('DAT-097 fails every bound image whose description is missing by name, naming its binding, its block and the column, and places none', () => {
+    const content = component(
+      paragraph('p1', binding('i1', at('south'))),
+      // Nothing marks this figure decorative, so the row's description is required.
+      figure('f1', binding('i2', at('south'))),
+    );
+    const results = new Map(['i1', 'i2'].map((each) => [each, photos(...ROWS)]));
+    const expected = [
+      ['p1', 'i1'],
+      ['f1', 'i2'],
+    ].map(([block, binding]) => ({
+      stage: 'bind',
+      code: 'image_description_missing',
+      node: NODE,
+      block,
+      detail: `${binding}: caption`,
+    }));
+    const { bound, failures, values } = bind(NODE, content, results, DEFAULT_VALUE_FORMATS);
+    expect(failures).toEqual(expected);
+    expect(values).toEqual([]);
+    expect(bound.content.map((each) => ('asset' in each ? each.asset : undefined))).toEqual([
+      undefined,
+      undefined,
+    ]);
+    const made = assembled(content, results);
+    expect(made.ok).toBe(false);
+    if (made.ok) return;
+    expect(made.failures.filter((each) => each.stage === 'bind')).toEqual(expected);
+  });
+
+  it("DAT-097 publishes a bound figure its author marked decorative as decorative, whatever its row's description holds (Ken, 2026-10-06)", () => {
+    const rows: CanonicalValue[][] = [
+      ['west', NORTH, null],
+      ['south', SOUTH, '  '],
+    ];
+    const content = component(
+      figure('f1', binding('i1', at('west')), { kind: 'decorative' }),
+      figure('f2', binding('i2', at('south')), { kind: 'decorative' }),
+    );
+    const results = new Map(['i1', 'i2'].map((each) => [each, photos(...rows)]));
+    const { bound, failures, values } = bind(NODE, content, results, DEFAULT_VALUE_FORMATS);
+    expect(failures).toEqual([]);
+    expect(bound.content).toMatchObject([
+      { asset: NORTH_ASSET, alternative: { kind: 'decorative' } },
+      { asset: SOUTH_ASSET, alternative: { kind: 'decorative' } },
+    ]);
+    expect(bound.content.every((each) => !('binding' in each))).toBe(true);
+    // Recorded as placed decorative, from the column the definition declares.
+    expect(values).toMatchObject([
+      { binding: 'i1', description: 'decorative', column: { name: 'photo', type: DESCRIBED } },
+      { binding: 'i2', description: 'decorative', column: { name: 'photo', type: DESCRIBED } },
+    ]);
+    const made = assemble({
+      formats: ['pdf', 'docx'],
+      outline,
+      occurrences: new Map([[NODE, content]]),
+      bindings: new Map([[NODE, results]]),
+      refused: [],
+      layout: defaultLayout,
+      theme: resolved(),
+      revision: '0.1',
+      covers: () => true,
+      assets: new Map([
+        [NORTH_ASSET, asset()],
+        [SOUTH_ASSET, asset()],
+      ]),
+    });
+    if (!made.ok) throw new Error(JSON.stringify(made.failures));
+    const figures = blocksOf(made.document.nodes).filter((each) => each.type === 'figure');
+    expect(figures.map((each) => each.alternative)).toEqual([null, null]);
+  });
+
+  it('DAT-097 describes an image by the words its row holds, though they read "decorative": only the column or the author makes one decorative', () => {
+    const content = component(
+      paragraph('p1', binding('i1', at('east'))),
+      figure('f1', binding('i2', at('east'))),
+    );
+    const rows: CanonicalValue[][] = [['east', NORTH, 'decorative']];
+    const results = new Map(['i1', 'i2'].map((each) => [each, photos(...rows)]));
+    const { bound, failures } = bind(NODE, content, results, DEFAULT_VALUE_FORMATS);
+    expect(failures).toEqual([]);
+    const said = { kind: 'own', text: 'decorative' };
+    expect(bound.content).toMatchObject([
+      { content: [{ type: 'image', alternative: said }] },
+      { asset: NORTH_ASSET, alternative: said },
+    ]);
+  });
+
+  it("fails a figure's binding taking anything but an image, value_not_image, and an image bound in a footnote's text or a caption, image_not_placeable", () => {
+    const content = component(
+      figure('f1', binding('v1', at('north', 'caption'))),
+      paragraph('p1', text('Gate'), {
+        type: 'footnote',
+        id: 'n1',
+        anchor: { kind: 'span' },
+        content: [paragraph('np1', binding('i1', at('north')))],
+      }),
+      { ...figure('f2', binding('i2', at('north'))), caption: [binding('i3', at('north'))] },
+    );
+    const results = new Map(['v1', 'i1', 'i2', 'i3'].map((each) => [each, photos(...ROWS)]));
+    const { failures } = bind(NODE, content, results, DEFAULT_VALUE_FORMATS);
+    expect(failures).toEqual([
+      { stage: 'bind', code: 'value_not_image', node: NODE, block: 'f1', detail: 'v1' },
+      { stage: 'bind', code: 'image_not_placeable', node: NODE, block: 'np1', detail: 'i1' },
+      { stage: 'bind', code: 'image_not_placeable', node: NODE, block: 'f2', detail: 'i3' },
+    ]);
   });
 });

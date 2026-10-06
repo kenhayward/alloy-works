@@ -130,18 +130,68 @@ describe('takeValue', () => {
     ).toEqual({ failure: 'take_invalid', column: 'flag' });
   });
 
-  it('fails a take of an image column as take_invalid, naming it: placing an image is the figure binding (D8-H)', () => {
-    const photo = column('photo', { base: 'image', encoding: 'binary', description: 'decorative' });
-    const withPhoto: CanonicalResult = {
-      columns: [
-        ['site', 'text'],
-        ['photo', 'image'],
-      ],
-      rows: [['north', 'ab'.repeat(32)]],
+  describe('an image (the B6 plan, B6-D)', () => {
+    const HASH = 'ab'.repeat(32);
+    const DESCRIBED = { base: 'image', encoding: 'binary', description: { column: 'caption' } };
+    const DECORATIVE = { base: 'image', encoding: 'binary', description: 'decorative' };
+    const photos = (type: object, ...rows: CanonicalValue[][]) => ({
+      result: {
+        columns: [
+          ['site', 'text'],
+          ['photo', 'image'],
+          ['caption', 'text'],
+        ],
+        rows,
+      } as CanonicalResult,
+      columns: [column('site'), column('photo', type as Column['type']), column('caption')],
+    });
+    const take = (type: object, ...rows: CanonicalValue[][]) => {
+      const { result: held, columns } = photos(type, ...rows);
+      return takeValue({ key: { site: 'north' }, column: 'photo' }, held, columns);
     };
-    expect(takeValue({ column: 'photo' }, withPhoto, [column('site'), photo])).toEqual({
-      failure: 'take_invalid',
-      column: 'photo',
+
+    it("DAT-097 takes an image's description from the column its definition names, read from the same row, or decorative where the definition says so", () => {
+      expect(
+        take(DESCRIBED, ['north', HASH, 'The north gate'], ['south', 'cd'.repeat(32), 'x']),
+      ).toEqual({
+        image: HASH,
+        description: 'The north gate',
+        column: { name: 'photo', type: DESCRIBED },
+      });
+      expect(take(DECORATIVE, ['north', HASH, null])).toEqual({
+        image: HASH,
+        description: 'decorative',
+        column: { name: 'photo', type: DECORATIVE },
+      });
+      // A description that reads "decorative" is words, told apart by the column's type.
+      expect(take(DESCRIBED, ['north', HASH, 'decorative'])).toMatchObject({
+        description: 'decorative',
+        column: { type: DESCRIBED },
+      });
+    });
+
+    it('DAT-097 fails an image whose description is null or White_Space alone by name, naming the description column, image_description_missing', () => {
+      for (const missing of [null, '', ' \t', String.fromCodePoint(0x85)]) {
+        expect(take(DESCRIBED, ['north', HASH, missing]), JSON.stringify(missing)).toEqual({
+          failure: 'image_description_missing',
+          column: 'caption',
+        });
+      }
+      // A null image is a null, before its description is read.
+      expect(take(DESCRIBED, ['north', null, null])).toEqual({ failure: 'value_null' });
+    });
+
+    it('fails a description column the version does not declare or the result does not hold as take_invalid, naming it', () => {
+      const { result: held } = photos(DESCRIBED, ['north', HASH, 'x']);
+      const undeclared = [
+        column('site'),
+        column('photo', { ...DESCRIBED, description: { column: 'alt' } } as Column['type']),
+        column('caption'),
+      ];
+      expect(takeValue({ column: 'photo' }, held, undeclared)).toEqual({
+        failure: 'take_invalid',
+        column: 'alt',
+      });
     });
   });
 
@@ -196,6 +246,7 @@ describe('takeValue', () => {
       'row_missing',
       'value_null',
       'value_empty',
+      'image_description_missing',
     ]);
   });
 });
@@ -211,11 +262,40 @@ describe('takeOutcomeSchema', () => {
     expect(parses({ value: '42', column: { name: 'n', type: { base: 'integer' } } })).toBe(true);
     const ZWSP = String.fromCodePoint(0x200b);
     expect(parses({ value: ZWSP, column: { name: 'note', type: { base: 'text' } } })).toBe(true);
+    expect(parses({ failure: 'image_description_missing', column: 'caption' })).toBe(true);
     for (const failure of TAKE_FAILURES.filter(
-      (each) => each !== 'value_many' && each !== 'take_invalid',
+      (each) =>
+        each !== 'value_many' && each !== 'take_invalid' && each !== 'image_description_missing',
     )) {
       expect(parses({ failure }), failure).toBe(true);
       expect(parses({ failure, count: 2 }), failure).toBe(false);
+    }
+  });
+
+  it('holds an image with its column, decorative exactly where the column says so, and refuses any other image', () => {
+    const HASH = 'ab'.repeat(32);
+    const described = {
+      name: 'photo',
+      type: { base: 'image', encoding: 'binary', description: { column: 'caption' } },
+    };
+    const decorative = {
+      name: 'photo',
+      type: { base: 'image', encoding: 'base64', description: 'decorative' },
+    };
+    expect(parses({ image: HASH, description: 'The gate', column: described })).toBe(true);
+    expect(parses({ image: HASH, description: 'decorative', column: decorative })).toBe(true);
+    for (const loose of [
+      { description: 'The gate', column: described },
+      { image: 'AB'.repeat(32), description: 'The gate', column: described },
+      { image: HASH, description: ' ', column: described },
+      { image: HASH, description: '', column: described },
+      { image: HASH, description: 'The gate', column: decorative },
+      { image: HASH, column: decorative },
+      { image: HASH, description: 'The gate', column: DEPTH },
+      { image: HASH, description: 'The gate', column: described, value: 'x' },
+      { failure: 'image_description_missing' },
+    ]) {
+      expect(parses(loose), JSON.stringify(loose)).toBe(false);
     }
   });
 
@@ -241,6 +321,26 @@ describe('takeOutcomeSchema', () => {
     ]) {
       expect(parses(loose), JSON.stringify(loose)).toBe(false);
     }
+  });
+
+  it("refuses an image whose description disagrees with its column's type: words under a decorative column, or spaces alone under a described one", () => {
+    // Each shape-valid, so only the refine on the image arm refuses it.
+    const HASH = 'ab'.repeat(32);
+    const type = (description: unknown) => ({ base: 'image', encoding: 'binary', description });
+    expect(
+      parses({
+        image: HASH,
+        description: 'The gate',
+        column: { name: 'photo', type: type('decorative') },
+      }),
+    ).toBe(false);
+    expect(
+      parses({
+        image: HASH,
+        description: String.fromCodePoint(0x3000),
+        column: { name: 'photo', type: type({ column: 'caption' }) },
+      }),
+    ).toBe(false);
   });
 
   it('refuses a value takeValue never answers: one not canonical in its declared type, or a text of spaces alone', () => {
