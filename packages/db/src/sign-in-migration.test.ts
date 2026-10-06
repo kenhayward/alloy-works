@@ -62,6 +62,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0050_publication_bindings',
       '0051_dataset_pending',
       '0052_bound_images',
+      '0053_dataset_image_index',
     ]);
 
     const read = async () =>

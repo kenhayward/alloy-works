@@ -197,6 +197,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0050_publication_bindings',
       '0051_dataset_pending',
       '0052_bound_images',
+      '0053_dataset_image_index',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,
