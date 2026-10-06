@@ -323,6 +323,26 @@ describe('takeOutcomeSchema', () => {
     }
   });
 
+  it("refuses an image whose description disagrees with its column's type: words under a decorative column, or spaces alone under a described one", () => {
+    // Each shape-valid, so only the refine on the image arm refuses it.
+    const HASH = 'ab'.repeat(32);
+    const type = (description: unknown) => ({ base: 'image', encoding: 'binary', description });
+    expect(
+      parses({
+        image: HASH,
+        description: 'The gate',
+        column: { name: 'photo', type: type('decorative') },
+      }),
+    ).toBe(false);
+    expect(
+      parses({
+        image: HASH,
+        description: String.fromCodePoint(0x3000),
+        column: { name: 'photo', type: type({ column: 'caption' }) },
+      }),
+    ).toBe(false);
+  });
+
   it('refuses a value takeValue never answers: one not canonical in its declared type, or a text of spaces alone', () => {
     const NOTE = { name: 'note', type: { base: 'text' } } as const;
     for (const loose of [
