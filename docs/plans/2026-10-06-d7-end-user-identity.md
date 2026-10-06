@@ -19,7 +19,7 @@ connection, which D6 builds; D7 would store a provider token nothing reads.
 | PR   | Holds                                                                                                                                      |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | D7.0 | This plan, with a change fragment. Its own PR: it needs Ken's answers ([ADR-0039](../decisions/0039-ci-at-two-speeds-and-fewer-prs.md))    |
-| D7.1 | The assertion: the domain's arms, the connector's per-run privilege check and `set_config('role')`, the test's new finding, 0053           |
+| D7.1 | The assertion: the domain's arms, the connector's per-run privilege check and `set_config('role')`, the test's new finding, 0054           |
 | D7.2 | The acts: identity keys, provenance, check and accept by identity, the SQL refusal, IAM-082's stop; the review                             |
 | D7.3 | The screens, the seeded roles and the whole system; D7's close ([ADR-0037](../decisions/0037-change-fragments-and-versions-at-a-close.md)) |
 
@@ -41,7 +41,7 @@ connection, which D6 builds; D7 would store a provider token nothing reads.
 
 ## The stored-shape check
 
-- **0053** (tenant, or the next free number): `connection_test_findings` widens to
+- **0054** (tenant, or the next free number): `connection_test_findings` widens to
   `{account_not_read_only, account_holds_privilege}`. Nothing else: `dataset.identity_key` already
   admits `asserted:<uuid>`.
 - **Connection content**: `connectorIdentities.postgres` becomes `['asserted']`; `checkConnection`
@@ -61,7 +61,7 @@ connection, which D6 builds; D7 would store a provider token nothing reads.
 - Connector: `postgres.ts` `accountHoldsPrivilege(client)` (D7-D), used by `test` and before every
   asserted run and describe; `run.ts` and `describe.ts` assert per D7-A, read `asSeen`, recheck per
   D7-E; 22023 and 42501 at the assertion read as `identity_unmatched`.
-- Migration 0053 per the check.
+- Migration 0054 per the check.
 - Tests: **`DAT-078`** PostgreSQL declares `asserted` and refuses `delegated` and `assertion`
   (`connection.test.ts`). **`DAT-113`** an asserted request with a SQL fetch is refused at the door
   (`protocol.test.ts`); the role travels as a bound value, a role named `x'; reset role; --` is one
