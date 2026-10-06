@@ -22,7 +22,7 @@ export type JsonFormat = Extract<DataFormat, { kind: 'json' | 'jsonLines' }>;
  * The most a JSON body may be, and so the most one JSON line may be (the D6 review): `JSON.parse`
  * with its reviver holds many times the text it parses, whether it is a body or one line of a body.
  */
-export const MAX_JSON_LINE_BYTES = 4 * 1024 * 1024;
+export const MAX_JSON_LINE_BYTES = 2 * 1024 * 1024;
 
 /** The deepest a JSON value may nest. */
 export const MAX_JSON_DEPTH = 64;

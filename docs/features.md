@@ -679,7 +679,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   proposes a column for each member of the first rows, which you confirm. A redirect, a refused
   sign-in, an address the connector may not reach and a refused port read alike; any other refusal
   is its HTTP status alone. One deadline covers the whole exchange, a body is counted as it arrives
-  and once decoded, a JSON body is at most 4 MiB, JSON Lines 12 MiB and CSV 6 MiB, and a stated
+  and once decoded, a JSON body or one JSON line is at most 2 MiB, JSON Lines 12 MiB and CSV 6 MiB, and a stated
   length or digest is checked. An API may answer CSV or XLSX too, as a file is read.
 - **S3 buckets.** A connection to an S3 bucket - AWS, or any store that signs as it does, such as
   MinIO or SeaweedFS - holds its endpoint, its region, the bucket and whether it is addressed by name

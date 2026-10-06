@@ -3565,10 +3565,10 @@ every number its text and a nested value its canonical text (D6-G); CSV by `csv-
 deciding null; XLSX by the product's own reader (`zip.ts`, `xlsx.ts`, `serial.ts`): the central
 directory read and every local header checked against it, overlapping entries and ZIP64 refused, at
 most 10,000 entries, every inflated byte of every part counted by fflate's `Inflate` a 4 KiB slice at
-a time, XML by `saxes` with any `DOCTYPE` refused; one sheet by name, a number by its stored text, a
+a time, XML by `saxes` with any `DOCTYPE`, nesting past 32 and a tag past 64 attributes refused; one sheet by name, a number by its stored text, a
 serial converted in the workbook's date system, serial 60 `nonexistent_date`, an error or uncached
 formula `cell_error`. **Each format's ceiling, under the byte limit, was measured on Linux** in the
-child against D2's 371 MiB run at the ceilings: JSON 4 MiB, JSON Lines 12 MiB, CSV 6 MiB, XLSX 16 MiB
+child against D2's 371 MiB run at the ceilings: JSON 2 MiB (and any one JSON line), JSON Lines 12 MiB, CSV 6 MiB, XLSX 16 MiB
 of body and inflated bytes (203 to 218 MiB peak).
 
 **Proven together**: `cross-source.test.ts` reads case 6's table from PostgreSQL and from JSON, JSON

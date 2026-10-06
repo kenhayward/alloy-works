@@ -824,14 +824,19 @@ definition names, or it is declared decorative (DAT-097's declaration; its failu
   (DAT-110). **An HTTP body is counted as it arrives and again once decoded** (the D6 plan, D6-B),
   and held to a ceiling of its format's under the byte limit, measured in the child against the run
   below (D6.1), on Linux as CI runs it: `JSON.parse` with its source-text reviver peaked at 356 MiB for
-  an 8 MiB JSON body and 230 to 298 MiB for 4 MiB, so a JSON body is at most 4 MiB; JSON Lines, a line
-  at a time, peaked at about 410 MiB for 20 MiB and 272 MiB for 12 MiB, so it is at most 12 MiB. CSV,
+  an 8 MiB JSON body and 230 to 298 MiB for 4 MiB of rows, but its densest shape, one array of
+  numbers read as text, peaked at 492 MiB for 4 MiB, 407 to 417 for 3 and 298 to 310 for 2 (the D6
+  review), so a JSON body is at most 2 MiB; JSON Lines, a line at a time, peaked at about 410 MiB for
+  20 MiB and 272 MiB for 12 MiB, so it is at most 12 MiB, and any one line, parsed as a JSON body is,
+  at most 2 MiB. CSV,
   a record at a time by `csv-parse` and denser in rows, peaked at 375 to 401 MiB for 12 MiB, 339 to
   354 for 8 and 233 for 6 (D6.2), so it is at most 6 MiB, over HTTP or S3 alike. XLSX's ceiling holds
   the body and every byte inflated from it (D6.3): a workbook of numbers and shared strings peaked at
   203 to 218 MiB inflating 15 MiB, 232 to 291 for 23 and 307 to 319 for 24, so it is at most 16 MiB;
   and its kept text is counted as rows are kept, so one shared string read into many cells is
-  `byte_limit` before the rows are finished. Past any it is `byte_limit`. **The connector runs at most four definitions at once**, of its eight children: a result
+  `byte_limit` before the rows are finished; and a part's XML nesting past 32 or a tag of more than
+  64 attributes is `result_mismatch` as it is met, since the parser holds every open tag and builds
+  every attribute. Past any ceiling it is `byte_limit`. **The connector runs at most four definitions at once**, of its eight children: a result
   at the ceilings - 99,999 rows of 39 columns, about 19.9 MB canonical - peaked at 368 to 371 MiB in
   its child, against 88 MiB for a child at rest, and the supervisor held about 87 MiB of heap parsing
   each such answer (measured under `tsx` on Windows). Four fit the container's 3 GiB (`mem_limit:

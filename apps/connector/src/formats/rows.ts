@@ -35,8 +35,10 @@ import { eachSheetRow, type XlsxCell } from './xlsx.js';
  * connector's concurrency is sized by D2's run at the ceilings, which peaked at 371 MiB in its child.
  * `JSON.parse` with a reviver holds many times a body's size while it parses - a JSON body of 25 MiB
  * peaked at 588 MiB on Windows; on Linux (node:24, as CI) one of 8 MiB peaked at 356, 6 MiB at 332 to
- * 347 and 4 MiB at 230 to 298 - so JSON takes 4 MiB. JSON Lines, a line at a time, peaked on Linux at
- * about 410 MiB for 20 MiB, 371 for 16 and 272 for 12 - so it takes 12 MiB. CSV, a record at a time
+ * 347 and 4 MiB at 230 to 298 for rows of objects; but JSON's densest shape, one array of numbers
+ * read as text, peaked at 492 MiB for 4 MiB, 407 to 417 for 3 and 298 to 310 for 2 (the D6 review) -
+ * so JSON takes 2 MiB, and so does any one JSON line, which is parsed as a body is. JSON Lines, a
+ * line at a time, peaked on Linux at about 410 MiB for 20 MiB, 371 for 16 and 272 for 12 - so it takes 12 MiB. CSV, a record at a time
  * by `csv-parse`, is denser in rows than JSON Lines, and peaked on Linux at 375 to 401 MiB for 12 MiB
  * (75,000 rows), 339 to 354 for 8 and 233 for 6 (37,800 rows, three runs alike) - so it takes 6 MiB.
  * XLSX's ceiling holds both the body and every byte inflated from it, across every part read (D6.3):
