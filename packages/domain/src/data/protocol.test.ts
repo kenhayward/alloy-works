@@ -8,6 +8,7 @@ import type { Condition, Query } from './builder.js';
 import type { DraftDefinition } from './definition.js';
 import { limitCeilings } from './limits.js';
 import { RAN_MAX_CHARACTERS } from './sql.js';
+import { keyPairText } from './s3.js';
 import {
   childRequestSchema,
   CONNECTOR_ANSWER_MAX_BYTES,
@@ -766,5 +767,83 @@ describe("the connector's protocol for an HTTP connection (the D6 plan)", () => 
       ca: '-----BEGIN CERTIFICATE-----',
     };
     expect(childRequestSchema.safeParse(child).success).toBe(true);
+  });
+});
+
+describe("the connector's protocol for an S3 connection (the D6 plan)", () => {
+  const s3: ConnectionSettings = {
+    schemaVersion: 1,
+    name: 'Readings bucket',
+    description: '',
+    type: 's3',
+    source: {
+      endpoint: 'https://s3.example.test',
+      region: 'eu-west-2',
+      bucket: 'alloy-readings',
+      pathStyle: false,
+    },
+    identity: { kind: 'service' },
+    retired: false,
+  };
+  const key = [{ fixed: 'readings' }, { parameter: 'year' }];
+  const format = { kind: 'csv', delimiter: 'comma', headerRow: true, null: 'empty' } as const;
+  const fileDraft: DraftDefinition = {
+    ...draft,
+    parameters: [{ name: 'year', type: { base: 'integer' }, required: true, list: false }],
+    fetch: { kind: 'file', key, format },
+    columns: [{ name: 'id', from: { header: 'id' }, type: { base: 'integer' } }],
+  };
+  const fileRun = { ...runRequest, settings: s3, definition: fileDraft, values: { year: '2026' } };
+
+  it('takes a run of a file on an S3 connection alone, and reports the object it read, never a URL', () => {
+    expect(runRequestSchema.safeParse(fileRun).success).toBe(true);
+    expect(runRequestSchema.safeParse({ ...fileRun, settings }).success).toBe(false);
+    const answer = {
+      outcome: 'ok',
+      result: { columns: [['id', 'integer']], rows: [['1']] },
+      checksum,
+      rowCount: 1,
+      ran: { object: { bucket: 'alloy-readings', key: 'readings/2026', versionId: 'v-1' } },
+      durationMs: 4,
+    };
+    expect(runAnswerSchema.parse(answer)).toEqual(answer);
+    expect(
+      runAnswerSchema.safeParse({
+        ...answer,
+        ran: { object: { ...answer.ran.object, url: 'https://s3.example.test' } },
+      }).success,
+    ).toBe(false);
+  });
+
+  it('seals a key pair as the service writes it, and nothing else, for an S3 connection', () => {
+    const pair = keyPairText({ accessKeyId: 'AKIAEXAMPLE', secretAccessKey: 'abc/def+ghi=' });
+    const seal = { tenant: 'acme', connection: CONNECTION, secret: pair, settings: s3 };
+    expect(sealRequestSchema.safeParse(seal).success).toBe(true);
+    for (const secret of [
+      'abc/def+ghi=',
+      '{"secretAccessKey":"abc","accessKeyId":"AKIAEXAMPLE"}',
+      `${pair} `,
+    ]) {
+      expect(sealRequestSchema.safeParse({ ...seal, secret }).success, secret).toBe(false);
+    }
+  });
+
+  it('takes a sample of an object for its columns, with the values its key takes', () => {
+    const describing = {
+      ...testRequest,
+      settings: s3,
+      file: { key, format, parameters: fileDraft.parameters, values: { year: '2026' } },
+    };
+    expect(describeSqlRequestSchema.safeParse(describing).success).toBe(true);
+    expect(describeSqlRequestSchema.safeParse({ ...describing, settings }).success).toBe(false);
+    expect(
+      describeSqlRequestSchema.safeParse({ ...describing, file: { ...describing.file, values: {} } })
+        .success,
+    ).toBe(false);
+    const answer = {
+      columns: [{ name: 'id', sourceType: 'text', proposed: { base: 'integer' }, header: 'id' }],
+      parameters: [],
+    };
+    expect(describeSqlAnswerSchema.parse(answer)).toEqual(answer);
   });
 });

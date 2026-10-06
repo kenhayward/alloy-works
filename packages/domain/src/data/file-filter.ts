@@ -83,6 +83,10 @@ export function checkFileCondition(
     if ('and' in node) return node.and.forEach((each, i) => visit(each, `${path}.and.${i}`));
     if ('or' in node) return node.or.forEach((each, i) => visit(each, `${path}.or.${i}`));
     if ('not' in node) return visit(node.not, `${path}.not`);
+    // A parameter named is used, whatever else is wrong with its comparison.
+    if (node.to !== undefined && 'parameter' in node.to && byName.has(node.to.parameter)) {
+      used.add(node.to.parameter);
+    }
     const column = byColumn.get(node.column);
     if (column === undefined) {
       problem(`${path}.column`, `The filter names ${node.column}, which is not a column`);

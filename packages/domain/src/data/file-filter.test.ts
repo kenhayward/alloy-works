@@ -158,9 +158,6 @@ describe("a file's typed filter", () => {
         ...draft,
         fetch: { ...draft.fetch, where: { column: 'river', is: 'equal', to: { parameter: 'site' } } } as never,
       }).map((each) => each.message),
-    ).toEqual([
-      'The filter names river, which is not a column',
-      'Neither the key nor the filter uses site',
-    ]);
+    ).toEqual(['The filter names river, which is not a column']);
   });
 });

@@ -1216,4 +1216,125 @@ describe('connections through the service', () => {
     expect(query.statusCode, query.body).toBe(400);
     expect(query.json()).toMatchObject({ problems: [{ path: 'fetch' }] });
   });
+
+  it('makes an S3 connection, takes its key pair write-only, and samples and runs a file on it', async () => {
+    const s3 = {
+      ...settings({ name: 'Readings bucket' }),
+      type: 's3',
+      source: {
+        endpoint: 'https://s3.example.test',
+        region: 'eu-west-2',
+        bucket: 'alloy-readings',
+        pathStyle: false,
+      },
+    };
+    const made = await call('ada', 'POST', `/v1/spaces/${general}/connections`, { settings: s3 });
+    expect(made.statusCode, made.body).toBe(200);
+    const connection = made.json<ConnectionBody>();
+    await allow(ids.ada!, connectionUser, { kind: 'artifact', id: connection.id });
+    connector.mode = 'answer';
+    connector.test = { outcome: 'ok', findings: [] };
+    const pair = { accessKeyId: 'AKIAINVENTED', secretAccessKey: 'invented/secret+key' };
+    // One secret is a database's or an HTTP connection's: an S3 connection takes its key pair, whole.
+    for (const body of [
+      { secret: SECRET },
+      { accessKeyId: pair.accessKeyId },
+      { ...pair, secret: SECRET },
+      { accessKeyId: 'with space', secretAccessKey: pair.secretAccessKey },
+    ]) {
+      const wrong = await call('ada', 'PUT', `/v1/connections/${connection.id}/credential`, body);
+      expect(wrong.statusCode, JSON.stringify(body)).toBe(400);
+    }
+    const set = await call('ada', 'PUT', `/v1/connections/${connection.id}/credential`, pair);
+    expect(set.statusCode, set.body).toBe(200);
+    expect(set.json()).toMatchObject({ test: { outcome: 'ok', findings: [] } });
+    const sealing = connector.asked.filter((each) => each.path === '/v1/seal').at(-1);
+    expect(sealing?.body).toMatchObject({ secret: JSON.stringify(pair) });
+    // Never answered: not the pair, nor either half.
+    const read = await call('ada', 'GET', `/v1/connections/${connection.id}`);
+    expect(read.body).not.toContain(pair.secretAccessKey);
+    expect(read.body).not.toContain(pair.accessKeyId);
+    expect(read.json()).toMatchObject({ settings: s3, credential: { set: true } });
+
+    // A file is sampled by its key, its values placed by segment; a value no segment carries is
+    // refused, and the connector not asked.
+    const key = [{ fixed: 'readings' }, { parameter: 'year' }, { fixed: 'readings.csv' }];
+    const format = { kind: 'csv', delimiter: 'comma', headerRow: true, null: 'empty' };
+    const parameters = [{ name: 'year', type: { base: 'text' }, required: true, list: false }];
+    connector.describeSql = {
+      columns: [{ name: 'site', sourceType: 'text', proposed: { base: 'text' }, header: 'site' }],
+      parameters: [],
+    };
+    const sampled = await call('ada', 'POST', `/v1/connections/${connection.id}/describe`, {
+      file: { key, format, parameters, values: { year: '2026' } },
+    });
+    expect(sampled.statusCode, sampled.body).toBe(200);
+    expect(sampled.json()).toEqual(connector.describeSql);
+    const asked = connector.asked.length;
+    const climbing = await call('ada', 'POST', `/v1/connections/${connection.id}/describe`, {
+      file: { key, format, parameters, values: { year: '../private' } },
+    });
+    expect(climbing.statusCode).toBe(400);
+    expect(climbing.json()).toMatchObject({
+      code: 'parameter_invalid',
+      problems: [{ parameter: 'year', rule: 'position', value: '../private' }],
+    });
+    const tables = await call('ada', 'POST', `/v1/connections/${connection.id}/describe`, {});
+    expect(tables.json()).toMatchObject({ code: 'describe_not_supported' });
+    expect(connector.asked.length).toBe(asked);
+
+    // A sample of a file reports the object it read, never a URL.
+    const draft = {
+      schemaVersion: 1,
+      connection: connection.id,
+      parameters,
+      fetch: {
+        kind: 'file',
+        key,
+        format,
+        where: { column: 'site', is: 'startsWith', to: { literal: 'North', type: { base: 'text' } } },
+      },
+      columns: [{ name: 'site', from: { header: 'site' }, type: { base: 'text' } }],
+      key: [],
+      order: 'multiset',
+      empty: 'valid',
+      limits: { rows: 100, bytes: 1_000_000, seconds: 10 },
+    };
+    const result = { columns: [['site', 'text']], rows: [['North weir']] } as const;
+    const object = { bucket: 'alloy-readings', key: 'readings/2026/readings.csv' };
+    connector.run = {
+      outcome: 'ok',
+      result: { columns: [['site', 'text']], rows: [['North weir']] },
+      checksum: createHash('sha256').update(canonicalResultBytes(result), 'utf8').digest('hex'),
+      rowCount: 1,
+      ran: { object },
+      durationMs: 3,
+    };
+    const ran = await call('ada', 'POST', `/v1/connections/${connection.id}/sample`, {
+      definition: draft,
+      values: { year: '2026' },
+    });
+    expect(ran.statusCode, ran.body).toBe(200);
+    expect(ran.json()).toMatchObject({ outcome: 'ok', rows: [['North weir']], ran: { object } });
+    const slashed = await call('ada', 'POST', `/v1/connections/${connection.id}/sample`, {
+      definition: draft,
+      values: { year: '2026/..' },
+    });
+    expect(slashed.json()).toMatchObject({ problems: [{ parameter: 'year', rule: 'position' }] });
+    // An HTTP request is not sent on an S3 connection.
+    const http = await call('ada', 'POST', `/v1/connections/${connection.id}/sample`, {
+      definition: {
+        ...draft,
+        parameters: [],
+        fetch: {
+          kind: 'http',
+          request: { method: 'GET', path: [], query: [], headers: [] },
+          format,
+        },
+      },
+      values: {},
+    });
+    expect(http.statusCode).toBe(400);
+    expect(http.json()).toMatchObject({ problems: [{ path: 'fetch' }] });
+  });
 });

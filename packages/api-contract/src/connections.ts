@@ -2,7 +2,11 @@ import {
   SECRET_MAX_BYTES,
   builderFetchSchema,
   connectionSettingsSchema,
+  dataFormatSchema,
   httpFetchSchema,
+  objectKeySchema,
+  ranObjectSchema,
+  s3KeyPairSchema,
   httpTemplateSchema,
   draftDefinitionSchema,
   sqlTextSchema,
@@ -36,8 +40,13 @@ export type ConnectionVersionBody = z.infer<typeof ConnectionVersionBody>;
 
 const utf8Bytes = (value: string) => new TextEncoder().encode(value).length;
 
-/** The credential, taken and never answered (DAT-003): a database password, in D1. */
-export const CredentialBody = z.strictObject({
+/**
+ * The credential, taken and never answered (DAT-003): one secret - a database password, or the value
+ * an HTTP connection sends in its secret header - or an S3 connection's access key pair, sealed
+ * together (the D6 plan, D6-C). One form or the other, never both.
+ */
+export const CredentialBody = z
+  .strictObject({
   secret: z
     .string()
     .refine((value) => utf8Bytes(value) >= 1 && utf8Bytes(value) <= SECRET_MAX_BYTES, {
@@ -46,8 +55,22 @@ export const CredentialBody = z.strictObject({
     .refine((value) => !value.includes('\u0000'), { message: 'A credential holds no U+0000' })
     .describe(
       "The credential: a PostgreSQL source's password, or the value an HTTP connection sends in its secret header. Never answered by any route",
-    ),
-});
+    )
+    .optional(),
+    accessKeyId: s3KeyPairSchema.shape.accessKeyId
+      .optional()
+      .describe("An S3 connection's access key id, sent with its secret access key"),
+    secretAccessKey: s3KeyPairSchema.shape.secretAccessKey
+      .optional()
+      .describe("An S3 connection's secret access key. Never answered by any route"),
+  })
+  .refine(
+    (body) =>
+      body.secret !== undefined
+        ? body.accessKeyId === undefined && body.secretAccessKey === undefined
+        : body.accessKeyId !== undefined && body.secretAccessKey !== undefined,
+    { message: 'A credential is a secret, or an access key id and a secret access key' },
+  );
 export type CredentialBody = z.infer<typeof CredentialBody>;
 
 const Named = z.object({
@@ -257,6 +280,20 @@ export const HttpSampleBody = z.strictObject({
     .describe("Each parameter's value by name, in its type's canonical form"),
 });
 
+/**
+ * An S3 object sampled for its columns (DAT-105; the D6 plan, task 2): its key, its format, the
+ * parameters its key names and a value for each. The object is read, and each column of its first
+ * rows proposed by its pointer, its header or its letter; its filter waits for its columns.
+ */
+export const FileSampleBody = z.strictObject({
+  key: objectKeySchema,
+  format: dataFormatSchema,
+  parameters: z.array(parameterSchema).max(50),
+  values: z
+    .record(z.string(), z.union([z.string(), z.boolean(), z.null(), z.array(z.string())]))
+    .describe("Each parameter's value by name, in its type's canonical form"),
+});
+
 export const DescribeBody = z.strictObject({
   sql: SqlStatementBody.optional().describe(
     "A statement to describe instead of the source's tables and views: its result's columns, never run",
@@ -265,7 +302,10 @@ export const DescribeBody = z.strictObject({
     "A built query to describe instead of the source's tables and views: the columns its tree returns, from SQL the service generates, never run. Send this or sql, never both",
   ),
   http: HttpSampleBody.optional().describe(
-    "An HTTP connection's request, sent and its first rows read to propose its columns, each read by a pointer: an HTTP connection lists no tables. Send one of sql, builder and http",
+    "An HTTP connection's request, sent and its first rows read to propose its columns, each read by a pointer: an HTTP connection lists no tables. Send one of sql, builder, http and file",
+  ),
+  file: FileSampleBody.optional().describe(
+    "An S3 connection's object, read and its first rows read to propose its columns, each by a pointer, a header or a letter: an S3 connection lists no tables. Send one of sql, builder, http and file",
   ),
 });
 export type DescribeBody = z.infer<typeof DescribeBody>;
@@ -284,7 +324,15 @@ export const DescribeSqlView = z.object({
       pointer: z
         .string()
         .optional()
-        .describe('For an HTTP response, the JSON Pointer that reads the column from its row'),
+        .describe('For JSON, the JSON Pointer that reads the column from its row'),
+      header: z
+        .string()
+        .optional()
+        .describe("For a CSV whose first record is a header, the header that names the column's field"),
+      letter: z
+        .string()
+        .optional()
+        .describe("For a CSV, the letter of the column's field, A for the first"),
     }),
   ),
   parameters: z
@@ -335,8 +383,15 @@ export const SampleView = z.discriminatedUnion('outcome', [
             'The HTTP request template that was sent, each value placed by position; never its URL',
           ),
         }),
+        z.object({
+          object: ranObjectSchema.describe(
+            'The S3 object read: its bucket, its key as bound and its version where the store names one; never a URL',
+          ),
+        }),
       ])
-      .describe('What ran: SQL for a database, the request template for an HTTP connection'),
+      .describe(
+        'What ran: SQL for a database, the request template for an HTTP connection, the object for an S3 one',
+      ),
     durationMs: z.number().int(),
     images: z
       .record(
@@ -360,7 +415,7 @@ export const ConnectionSummary = z.object({
   id: z.string(),
   name: z.string(),
   space: z.object({ id: z.string(), name: z.string() }),
-  type: z.enum(['postgres', 'http']),
+  type: z.enum(['postgres', 'http', 's3']),
   retired: z.boolean(),
   version: z.object({ id: z.string(), number: z.string() }),
   credentialSet: z

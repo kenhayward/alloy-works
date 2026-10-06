@@ -102,7 +102,7 @@ export function fakeConnector(): FakeConnector {
           : path === '/v1/test'
             ? testRequestSchema
             : path === '/v1/describe'
-              ? 'sql' in body || 'builder' in body || 'http' in body
+              ? 'sql' in body || 'builder' in body || 'http' in body || 'file' in body
                 ? describeSqlRequestSchema
                 : describeRequestSchema
               : undefined;
@@ -164,7 +164,9 @@ export function fakeConnector(): FakeConnector {
           return Response.json(fake.describeSql);
         }
         // A statement's, or an HTTP request's sample for its columns (the D6 plan, D6-A).
-        return Response.json('sql' in body || 'http' in body ? fake.describeSql : fake.describe);
+        return Response.json(
+          'sql' in body || 'http' in body || 'file' in body ? fake.describeSql : fake.describe,
+        );
       }
       if (path === '/v1/run') {
         running += 1;
