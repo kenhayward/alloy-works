@@ -2,7 +2,8 @@
 // development CA beside this file, the invented key `source-http-dev-key` in `x-api-key`, and the
 // sample's readings as JSON and JSON Lines - with the hostile answers the connector's suite and the
 // whole-system suite hold it to: a redirect, a trickle, a gzip bomb, a short body, a wrong digest and
-// a wrong count. Every value is invented. No dependency but Node.
+// a wrong count - and case 6's table as JSON, JSON Lines, CSV and XLSX under /v1/files. Every value
+// is invented. No dependency but Node.
 //
 //   node fake-api.mjs           listens on PORT (8443), the certificate from CERT_DIR (this folder)
 import { Buffer } from 'node:buffer';
@@ -93,6 +94,10 @@ export function createFakeApi(options = {}) {
         return send(401, json({ error: 'key' }));
       const status = /^\/v1\/status\/([0-9]{3})$/.exec(url.pathname);
       if (status) return send(Number(status[1]), json({ error: 'status' }));
+      // Case 6's table as each file format writes it (the D6 plan, task 3), from ./files, by a name
+      // it holds and no other.
+      const file = /^\/v1\/files\/(typed\.(?:json|jsonl|csv|xlsx))$/.exec(url.pathname);
+      if (file) return send(200, readFileSync(`${dir}/files/${file[1]}`));
       // The echo answers under any path beneath it, so a value placed in a segment reaches it.
       const pathname = url.pathname.startsWith('/v1/echo/') ? '/v1/echo' : url.pathname;
       switch (pathname) {

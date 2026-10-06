@@ -490,7 +490,8 @@ at sign-out**. No refresh token is held: an expired token fails the next data ac
 `identity_expired`, and signing in again cures it. This is the session model change ADR-0035 names;
 [service-foundations.md](service-foundations.md), under which the service keeps no provider token, is
 changed by the slice that builds it, not before. **Not built**: Ken moved the delegated token to D6,
-where `http` first reads it (the D7 plan, question 1).
+which deferred it past the first release
+([ADR-0041](../decisions/0041-the-delegated-provider-token-is-deferred-past-the-first-release.md)).
 
 ### Deployment
 
@@ -721,10 +722,19 @@ value is a typed filter the connector applies to its canonical rows.
 
 **JSON** (DAT-095) is read at a JSON Pointer to an array of objects, or as JSON Lines; a column maps
 by a pointer relative to the row; a number is read from its source text, never through a double; a
-nested object or array is refused, `nested_value`, unless its column is text. **XLSX** is read by the
-product's own reader over `fflate` and `saxes`, converting serials in the workbook's date system and
-refusing serial 60; **CSV** by `csv-parse`, which reports whether a field was quoted. Neither SheetJS
-nor ExcelJS (ADR-0035).
+nested object or array is refused, `nested_value`, unless its column is text, where it is its
+canonical text - members sorted, no whitespace, numbers as written (the D6 plan, D6-G) - so
+reformatting at the source moves no checksum. **CSV** is read by `csv-parse`, which reports whether a
+field was quoted. **XLSX** is read by the product's own reader (D6.3; neither SheetJS nor ExcelJS,
+ADR-0035): a zip read from its central directory, every local header checked against it, entries
+that overlap refused, at most 10,000 of them, and every inflated byte of every part counted against
+the byte limit; XML by `saxes`, any `DOCTYPE` refused; one declared sheet, its columns by header or
+letter as CSV's. A number is its stored text; a date or a time is converted from its serial in the
+workbook's date system, 1900 or 1904, serial 60 (1900-02-29) refused `nonexistent_date`, a time the
+double cannot carry to the declared precision `precision_not_carried`, an instant `zone_missing`; an
+error cell or a formula with no cached value `cell_error`. One table read from PostgreSQL, JSON, JSON
+Lines, CSV and XLSX, over HTTP and S3, gives one checksum in four zones
+(`apps/connector/src/cross-source.test.ts`).
 
 ### The columns, a second step
 
@@ -814,11 +824,19 @@ definition names, or it is declared decorative (DAT-097's declaration; its failu
   (DAT-110). **An HTTP body is counted as it arrives and again once decoded** (the D6 plan, D6-B),
   and held to a ceiling of its format's under the byte limit, measured in the child against the run
   below (D6.1), on Linux as CI runs it: `JSON.parse` with its source-text reviver peaked at 356 MiB for
-  an 8 MiB JSON body and 230 to 298 MiB for 4 MiB, so a JSON body is at most 4 MiB; JSON Lines, a line
-  at a time, peaked at about 410 MiB for 20 MiB and 272 MiB for 12 MiB, so it is at most 12 MiB. CSV,
+  an 8 MiB JSON body and 230 to 298 MiB for 4 MiB of rows, but its densest shape, one array of
+  numbers read as text, peaked at 492 MiB for 4 MiB, 407 to 417 for 3 and 298 to 310 for 2 (the D6
+  review), so a JSON body is at most 2 MiB; JSON Lines, a line at a time, peaked at about 410 MiB for
+  20 MiB and 272 MiB for 12 MiB, so it is at most 12 MiB, and any one line, parsed as a JSON body is,
+  at most 2 MiB. CSV,
   a record at a time by `csv-parse` and denser in rows, peaked at 375 to 401 MiB for 12 MiB, 339 to
-  354 for 8 and 233 for 6 (D6.2), so it is at most 6 MiB, over HTTP or S3 alike. Past any it is
-  `byte_limit`. **The connector runs at most four definitions at once**, of its eight children: a result
+  354 for 8 and 233 for 6 (D6.2), so it is at most 6 MiB, over HTTP or S3 alike. XLSX's ceiling holds
+  the body and every byte inflated from it (D6.3): a workbook of numbers and shared strings peaked at
+  203 to 218 MiB inflating 15 MiB, 232 to 291 for 23 and 307 to 319 for 24, so it is at most 16 MiB;
+  and its kept text is counted as rows are kept, so one shared string read into many cells is
+  `byte_limit` before the rows are finished; and a part's XML nesting past 32 or a tag of more than
+  64 attributes is `result_mismatch` as it is met, since the parser holds every open tag and builds
+  every attribute. Past any ceiling it is `byte_limit`. **The connector runs at most four definitions at once**, of its eight children: a result
   at the ceilings - 99,999 rows of 39 columns, about 19.9 MB canonical - peaked at 368 to 371 MiB in
   its child, against 88 MiB for a child at rest, and the supervisor held about 87 MiB of heap parsing
   each such answer (measured under `tsx` on Windows). Four fit the container's 3 GiB (`mem_limit:
@@ -1287,23 +1305,23 @@ unclaimed: their answer is the binding stage, `bindings.md`'s.
 | The concurrency of a creation's resolves (case 4: 1.4 to 1.8 s for 440 at 8). A check's is answered by D3-I: each distinct question once, two at a time, fifty a check                                             | The `templates.md` additions       |
 | When a screen asks for a check - on opening a document, or on request                                                                                                                                              | `bindings.md`                      |
 | Comparison and order under each source's collation, where two keys compare equal: answered for PostgreSQL's SQL by D2-M - checked by code point, ordered `COLLATE "C"` - and for the builder on PostgreSQL by D4-G | D5's plan, for SQL Server          |
-| A nested JSON value kept as text: its source text or a canonical form, which decides whether reformatting at the source moves a checksum                                                                           | D6's plan                          |
+| A nested JSON value kept as text: answered by D6-G - its canonical form, members sorted and numbers as written, so reformatting at the source moves no checksum                                                    | D6's plan                          |
 | How a new definition version a floating binding would take, or a changed parameter value, is offered                                                                                                               | `bindings.md` (DAT-070)            |
 
 ## Build order
 
 Each slice has a plan of its own, written when its turn comes.
 
-| Slice  | What                                                                                                                                                                                                                                                                                                 |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **D1** | The connection kind and its sealed credential; `use_connection`; `apps/connector` with a process per request, the guard, PostgreSQL, `test`, `describe` and `seal`; the compose networks; a Connections page                                                                                         |
-| **D2** | The query definition kind: parameters, the SQL fallback and `write_sql` with the check that reads it, columns second, the sample run, canonicalising and checksumming in the connector; search. Built by [the D2 plan](../plans/2026-09-30-d2-query-definitions.md)                                  |
-| **D3** | Datasets and resolutions: the dataset kind, objects keyed by checksum, provenance, resolve, check and accept; the binding inline widened after the evidence query. Built by [the D3 plan](../plans/2026-10-03-d3-datasets-and-resolutions.md). **[`bindings.md`](bindings.md) is designed after D4** |
-| **D4** | The builder: the saved query tree, PostgreSQL's SQL generated from it, its screens. Built by [the D4 plan](../plans/2026-10-03-d4-the-builder.md), before `bindings.md` by Ken's choice                                                                                                              |
-| **D5** | **Deferred past the first release** ([ADR-0038](../decisions/0038-sql-server-is-deferred-past-the-first-release.md)): SQL Server - `tedious`, its dialect, `NVARCHAR` and `CAST`                                                                                                                     |
-| **D6** | HTTP and S3 connections and the file formats: the product's own XLSX reader, CSV and JSON; the delegated token, with the session holding the provider's token (moved from D7)                                                                                                                        |
-| **D7** | End-user identity: asserted identity on PostgreSQL (SQL Server's with D5); IAM-082, sign-out stopping data flowing on the person's authority. Built by [the D7 plan](../plans/2026-10-06-d7-end-user-identity.md); the delegated token moved to D6                                                   |
-| **D8** | Image columns through `ingest`. Built by [the D8 plan](../plans/2026-10-05-d8-image-columns.md)                                                                                                                                                                                                      |
+| Slice  | What                                                                                                                                                                                                                                                                                                                |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **D1** | The connection kind and its sealed credential; `use_connection`; `apps/connector` with a process per request, the guard, PostgreSQL, `test`, `describe` and `seal`; the compose networks; a Connections page                                                                                                        |
+| **D2** | The query definition kind: parameters, the SQL fallback and `write_sql` with the check that reads it, columns second, the sample run, canonicalising and checksumming in the connector; search. Built by [the D2 plan](../plans/2026-09-30-d2-query-definitions.md)                                                 |
+| **D3** | Datasets and resolutions: the dataset kind, objects keyed by checksum, provenance, resolve, check and accept; the binding inline widened after the evidence query. Built by [the D3 plan](../plans/2026-10-03-d3-datasets-and-resolutions.md). **[`bindings.md`](bindings.md) is designed after D4**                |
+| **D4** | The builder: the saved query tree, PostgreSQL's SQL generated from it, its screens. Built by [the D4 plan](../plans/2026-10-03-d4-the-builder.md), before `bindings.md` by Ken's choice                                                                                                                             |
+| **D5** | **Deferred past the first release** ([ADR-0038](../decisions/0038-sql-server-is-deferred-past-the-first-release.md)): SQL Server - `tedious`, its dialect, `NVARCHAR` and `CAST`                                                                                                                                    |
+| **D6** | HTTP and S3 connections and the file formats: the product's own XLSX reader, CSV and JSON. Built by [the D6 plan](../plans/2026-10-06-d6-http-s3-and-files.md); the delegated token, moved from D7, is deferred by [ADR-0041](../decisions/0041-the-delegated-provider-token-is-deferred-past-the-first-release.md) |
+| **D7** | End-user identity: asserted identity on PostgreSQL (SQL Server's with D5); IAM-082, sign-out stopping data flowing on the person's authority. Built by [the D7 plan](../plans/2026-10-06-d7-end-user-identity.md); the delegated token moved to D6                                                                  |
+| **D8** | Image columns through `ingest`. Built by [the D8 plan](../plans/2026-10-05-d8-image-columns.md)                                                                                                                                                                                                                     |
 
 Then `tables.md`, and the `templates.md` additions: a template's parameters, and a document's
 bindings established when it is made.

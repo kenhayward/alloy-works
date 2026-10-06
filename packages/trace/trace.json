@@ -17966,6 +17966,12 @@
       "kind": "title"
     },
     {
+      "id": "DAT-074",
+      "file": "apps/connector/src/cross-source.test.ts",
+      "line": 110,
+      "kind": "title"
+    },
+    {
       "id": "DAT-105",
       "file": "apps/connector/src/formats/csv.test.ts",
       "line": 128,
@@ -17974,7 +17980,25 @@
     {
       "id": "DAT-095",
       "file": "apps/connector/src/formats/json.test.ts",
-      "line": 18,
+      "line": 19,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-080",
+      "file": "apps/connector/src/formats/xlsx.test.ts",
+      "line": 191,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-110",
+      "file": "apps/connector/src/formats/xlsx.test.ts",
+      "line": 272,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-110",
+      "file": "apps/connector/src/hostile-files.test.ts",
+      "line": 114,
       "kind": "title"
     },
     {
@@ -18022,19 +18046,19 @@
     {
       "id": "DAT-108",
       "file": "apps/connector/src/https.test.ts",
-      "line": 75,
+      "line": 79,
       "kind": "title"
     },
     {
       "id": "DAT-109",
       "file": "apps/connector/src/https.test.ts",
-      "line": 47,
+      "line": 51,
       "kind": "title"
     },
     {
       "id": "DAT-110",
       "file": "apps/connector/src/https.test.ts",
-      "line": 65,
+      "line": 69,
       "kind": "title"
     },
     {

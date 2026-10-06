@@ -22558,6 +22558,27 @@
                               "null"
                             ],
                             "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "const": "xlsx"
+                              },
+                              "sheet": {
+                                "type": "string"
+                              },
+                              "headerRow": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "sheet",
+                              "headerRow"
+                            ],
+                            "additionalProperties": false
                           }
                         ]
                       },
@@ -22953,6 +22974,27 @@
                               "delimiter",
                               "headerRow",
                               "null"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "const": "xlsx"
+                              },
+                              "sheet": {
+                                "type": "string"
+                              },
+                              "headerRow": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "sheet",
+                              "headerRow"
                             ],
                             "additionalProperties": false
                           }
@@ -24776,6 +24818,27 @@
                                       "null"
                                     ],
                                     "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "xlsx"
+                                      },
+                                      "sheet": {
+                                        "type": "string"
+                                      },
+                                      "headerRow": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "sheet",
+                                      "headerRow"
+                                    ],
+                                    "additionalProperties": false
                                   }
                                 ]
                               }
@@ -24897,6 +24960,27 @@
                                       "delimiter",
                                       "headerRow",
                                       "null"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "xlsx"
+                                      },
+                                      "sheet": {
+                                        "type": "string"
+                                      },
+                                      "headerRow": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "sheet",
+                                      "headerRow"
                                     ],
                                     "additionalProperties": false
                                   }
@@ -88300,6 +88384,26 @@
                                         "headerRow",
                                         "null"
                                       ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "xlsx"
+                                        },
+                                        "sheet": {
+                                          "type": "string"
+                                        },
+                                        "headerRow": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "sheet",
+                                        "headerRow"
+                                      ]
                                     }
                                   ]
                                 }
@@ -88416,6 +88520,26 @@
                                         "delimiter",
                                         "headerRow",
                                         "null"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "xlsx"
+                                        },
+                                        "sheet": {
+                                          "type": "string"
+                                        },
+                                        "headerRow": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "sheet",
+                                        "headerRow"
                                       ]
                                     }
                                   ]
@@ -89980,6 +90104,27 @@
                                       "null"
                                     ],
                                     "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "xlsx"
+                                      },
+                                      "sheet": {
+                                        "type": "string"
+                                      },
+                                      "headerRow": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "sheet",
+                                      "headerRow"
+                                    ],
+                                    "additionalProperties": false
                                   }
                                 ]
                               }
@@ -90101,6 +90246,27 @@
                                       "delimiter",
                                       "headerRow",
                                       "null"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "xlsx"
+                                      },
+                                      "sheet": {
+                                        "type": "string"
+                                      },
+                                      "headerRow": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "sheet",
+                                      "headerRow"
                                     ],
                                     "additionalProperties": false
                                   }
@@ -91079,6 +91245,26 @@
                                         "headerRow",
                                         "null"
                                       ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "xlsx"
+                                        },
+                                        "sheet": {
+                                          "type": "string"
+                                        },
+                                        "headerRow": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "sheet",
+                                        "headerRow"
+                                      ]
                                     }
                                   ]
                                 }
@@ -91195,6 +91381,26 @@
                                         "delimiter",
                                         "headerRow",
                                         "null"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "xlsx"
+                                        },
+                                        "sheet": {
+                                          "type": "string"
+                                        },
+                                        "headerRow": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "sheet",
+                                        "headerRow"
                                       ]
                                     }
                                   ]
@@ -92330,6 +92536,26 @@
                                             "headerRow",
                                             "null"
                                           ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "xlsx"
+                                            },
+                                            "sheet": {
+                                              "type": "string"
+                                            },
+                                            "headerRow": {
+                                              "type": "boolean"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "sheet",
+                                            "headerRow"
+                                          ]
                                         }
                                       ]
                                     }
@@ -92446,6 +92672,26 @@
                                             "delimiter",
                                             "headerRow",
                                             "null"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "xlsx"
+                                            },
+                                            "sheet": {
+                                              "type": "string"
+                                            },
+                                            "headerRow": {
+                                              "type": "boolean"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "sheet",
+                                            "headerRow"
                                           ]
                                         }
                                       ]
@@ -93648,6 +93894,26 @@
                                             "headerRow",
                                             "null"
                                           ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "xlsx"
+                                            },
+                                            "sheet": {
+                                              "type": "string"
+                                            },
+                                            "headerRow": {
+                                              "type": "boolean"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "sheet",
+                                            "headerRow"
+                                          ]
                                         }
                                       ]
                                     }
@@ -93764,6 +94030,26 @@
                                             "delimiter",
                                             "headerRow",
                                             "null"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "xlsx"
+                                            },
+                                            "sheet": {
+                                              "type": "string"
+                                            },
+                                            "headerRow": {
+                                              "type": "boolean"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "sheet",
+                                            "headerRow"
                                           ]
                                         }
                                       ]
@@ -103005,6 +103291,27 @@
                                       "null"
                                     ],
                                     "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "xlsx"
+                                      },
+                                      "sheet": {
+                                        "type": "string"
+                                      },
+                                      "headerRow": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "sheet",
+                                      "headerRow"
+                                    ],
+                                    "additionalProperties": false
                                   }
                                 ]
                               }
@@ -103126,6 +103433,27 @@
                                       "delimiter",
                                       "headerRow",
                                       "null"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "xlsx"
+                                      },
+                                      "sheet": {
+                                        "type": "string"
+                                      },
+                                      "headerRow": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "sheet",
+                                      "headerRow"
                                     ],
                                     "additionalProperties": false
                                   }
@@ -104102,6 +104430,26 @@
                                         "headerRow",
                                         "null"
                                       ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "xlsx"
+                                        },
+                                        "sheet": {
+                                          "type": "string"
+                                        },
+                                        "headerRow": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "sheet",
+                                        "headerRow"
+                                      ]
                                     }
                                   ]
                                 }
@@ -104218,6 +104566,26 @@
                                         "delimiter",
                                         "headerRow",
                                         "null"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "xlsx"
+                                        },
+                                        "sheet": {
+                                          "type": "string"
+                                        },
+                                        "headerRow": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "sheet",
+                                        "headerRow"
                                       ]
                                     }
                                   ]
@@ -105353,6 +105721,26 @@
                                             "headerRow",
                                             "null"
                                           ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "xlsx"
+                                            },
+                                            "sheet": {
+                                              "type": "string"
+                                            },
+                                            "headerRow": {
+                                              "type": "boolean"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "sheet",
+                                            "headerRow"
+                                          ]
                                         }
                                       ]
                                     }
@@ -105469,6 +105857,26 @@
                                             "delimiter",
                                             "headerRow",
                                             "null"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "xlsx"
+                                            },
+                                            "sheet": {
+                                              "type": "string"
+                                            },
+                                            "headerRow": {
+                                              "type": "boolean"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "sheet",
+                                            "headerRow"
                                           ]
                                         }
                                       ]
@@ -106671,6 +107079,26 @@
                                             "headerRow",
                                             "null"
                                           ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "xlsx"
+                                            },
+                                            "sheet": {
+                                              "type": "string"
+                                            },
+                                            "headerRow": {
+                                              "type": "boolean"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "sheet",
+                                            "headerRow"
+                                          ]
                                         }
                                       ]
                                     }
@@ -106787,6 +107215,26 @@
                                             "delimiter",
                                             "headerRow",
                                             "null"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "xlsx"
+                                            },
+                                            "sheet": {
+                                              "type": "string"
+                                            },
+                                            "headerRow": {
+                                              "type": "boolean"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "sheet",
+                                            "headerRow"
                                           ]
                                         }
                                       ]

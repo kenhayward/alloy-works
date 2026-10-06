@@ -679,8 +679,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   proposes a column for each member of the first rows, which you confirm. A redirect, a refused
   sign-in, an address the connector may not reach and a refused port read alike; any other refusal
   is its HTTP status alone. One deadline covers the whole exchange, a body is counted as it arrives
-  and once decoded, a JSON body is at most 4 MiB, JSON Lines 12 MiB and CSV 6 MiB, and a stated
-  length or digest is checked. An API may answer CSV too, as a file is read.
+  and once decoded, a JSON body or one JSON line is at most 2 MiB, JSON Lines 12 MiB and CSV 6 MiB, and a stated
+  length or digest is checked. An API may answer CSV or XLSX too, as a file is read.
 - **S3 buckets.** A connection to an S3 bucket - AWS, or any store that signs as it does, such as
   MinIO or SeaweedFS - holds its endpoint, its region, the bucket and whether it is addressed by name
   before the endpoint or in its path, and runs as a static access key pair set on its page, the
@@ -1247,7 +1247,7 @@ Named explicitly so nobody has to read the source to find out:
 - A document's own parameters do not exist, so a binding taking one cannot be resolved. A connection
   reaches PostgreSQL, as its own account or as each person by a role the database's administrator
   made, an HTTPS API by its own secret or an S3 bucket by a static key pair, each answering JSON,
-  JSON Lines or CSV; no XLSX yet, no S3 role, instance credentials or anonymous bucket, and no
+  JSON Lines, CSV or XLSX; no S3 role, instance credentials or anonymous bucket, and no
   connection runs with a person's own token from their sign-in provider
   ([ADR-0041](decisions/0041-the-delegated-provider-token-is-deferred-past-the-first-release.md));
   an API that redirects is not followed;

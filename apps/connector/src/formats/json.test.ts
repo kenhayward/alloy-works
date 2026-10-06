@@ -2,7 +2,8 @@ import { JsonNumber } from '@alloy-works/domain';
 import { describe, expect, it } from 'vitest';
 
 import { fromJson, plainDecimal } from './cells.js';
-import { countAgrees, firstRows, parseJson, withinDepth } from './json.js';
+import { countAgrees, firstRows, MAX_JSON_LINE_BYTES, parseJson, withinDepth } from './json.js';
+import { JSON_MAX_BYTES } from './rows.js';
 
 const body = (text: string) => Buffer.from(text, 'utf8');
 
@@ -120,6 +121,26 @@ describe('JSON and JSON Lines', () => {
     });
     expect(fromJson('2026-01-02T03:04:05.123Z', { base: 'instant', fraction: 2 })).toEqual({
       refused: 'precision_lost',
+    });
+  });
+
+  it('refuses a JSON line longer than a JSON body may be, byte_limit, before it is parsed', () => {
+    const line = (bytes: number) => `{"a":"${'x'.repeat(bytes - 8)}"}`;
+    expect(line(MAX_JSON_LINE_BYTES)).toHaveLength(MAX_JSON_LINE_BYTES);
+    expect(MAX_JSON_LINE_BYTES).toBe(JSON_MAX_BYTES);
+    const lines = (...texts: string[]) => body(`${texts.join('\n')}\n`);
+    expect(
+      readRows(lines(line(16), line(MAX_JSON_LINE_BYTES)), { kind: 'jsonLines' }),
+    ).toMatchObject({
+      rows: [{}, {}],
+    });
+    expect(readRows(lines(line(16), line(MAX_JSON_LINE_BYTES + 1)), { kind: 'jsonLines' })).toEqual(
+      { refused: 'byte_limit', row: 2 },
+    );
+    // The last line, with no line feed after it, is held to it too.
+    expect(readRows(body(line(MAX_JSON_LINE_BYTES + 1)), { kind: 'jsonLines' })).toEqual({
+      refused: 'byte_limit',
+      row: 1,
     });
   });
 

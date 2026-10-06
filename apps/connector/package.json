@@ -18,7 +18,9 @@
     "@alloy-works/sealing": "workspace:^",
     "@smithy/signature-v4": "^5.7.4",
     "csv-parse": "^7.0.3",
+    "fflate": "^0.8.3",
     "pg": "^8.23.0",
+    "saxes": "^6.0.0",
     "zod": "^4.6.1"
   },
   "devDependencies": {
