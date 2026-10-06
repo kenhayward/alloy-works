@@ -58,7 +58,7 @@ async function closedPort(): Promise<number> {
 const WIDE_COLUMNS = 15;
 const JSON_ROWS = 16_750;
 const LINES_ROWS = 49_500;
-const CSV_ROWS = 50_500;
+const CSV_ROWS = 37_800;
 
 const readings = [
   member('id', { base: 'integer' }),
@@ -342,7 +342,7 @@ describe('an HTTP source', { timeout: LOADED_TIMEOUT_MS }, () => {
     expect(jsonLines.peaks[0]).toBeLessThan(371 * 1024 * 1024);
   });
 
-  it('reads a CSV body at its ceiling, 8 MiB, within the memory a run at the ceilings takes, and refuses one past it', async () => {
+  it('reads a CSV body at its ceiling, 6 MiB, within the memory a run at the ceilings takes, and refuses one past it', async () => {
     const csv = await measuredRun(CSV_ROWS, 'csv');
     expect(csv.bytes).toBeGreaterThan(CSV_MAX_BYTES - 512 * 1024);
     expect(csv.bytes).toBeLessThanOrEqual(CSV_MAX_BYTES);
