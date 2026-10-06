@@ -42,6 +42,7 @@ exist.
 | [0003](0003-one-renderer-two-deliveries.md)                                       | One renderer, two deliveries                                                  | Accepted           |
 | [0004](0004-brand-assets-and-packaging.md)                                        | Brand assets and desktop packaging                                            | Accepted           |
 | [0005](0005-purpose-built-node-and-mark-content-model.md)                         | A purpose-built node-and-mark content model                                   | Accepted           |
+| [0040](0040-asserted-identity-trusts-the-sources-function-authors.md)             | Asserted identity trusts the source's function authors                        | Accepted           |
 | [0039](0039-ci-at-two-speeds-and-fewer-prs.md)                                    | CI at two speeds, and fewer PRs                                               | Accepted           |
 | [0038](0038-sql-server-is-deferred-past-the-first-release.md)                     | SQL Server is deferred past the first release                                 | Accepted           |
 | [0037](0037-change-fragments-and-versions-at-a-close.md)                          | Change fragments, and versions at a close                                     | Accepted           |

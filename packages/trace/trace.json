@@ -16375,7 +16375,7 @@
         },
         {
           "id": "DAT-077",
-          "howItIsMet": "A query runs at the source as the identity its connection declares, so the source's own rules decide the rows; an `s3` connection's identity may only be `service`"
+          "howItIsMet": "A query runs at the source as the identity its connection declares, so the source's own rules decide the rows - for an asserted identity, where the source's function, view and policy authors are trusted ([ADR-0040](../decisions/0040-asserted-identity-trusts-the-sources-function-authors.md)); an `s3` connection's identity may only be `service`"
         },
         {
           "id": "DAT-090",

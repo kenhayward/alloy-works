@@ -44,6 +44,13 @@ and own nothing, and the account own no function, procedure or view and create i
 connector refuses otherwise (`identity_role_unsafe`, `account_holds_privilege`), since a later
 `set_config('role')` is checked against the account, which may set every person's role.
 
+**Ken's answer (2026-10-06), on the re-review's route** - a function any source user may create can
+switch roles too: keep today's checks and trust the source's authors
+([ADR-0040](../decisions/0040-asserted-identity-trusts-the-sources-function-authors.md)). D7.3's guide
+gives the administrator's checklist: person roles `NOLOGIN`, no `CREATE`, owning nothing; `CREATE` on
+`public` revoked from `PUBLIC` on PostgreSQL 14 and 15; only trusted roles may create functions, views
+or policies; views over data people see `security_invoker`, or owned by the administrator.
+
 ## The stored-shape check
 
 - **0054** (tenant, or the next free number): `connection_test_findings` widens to
