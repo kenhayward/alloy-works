@@ -131,6 +131,8 @@ offers image columns, and the editor reads a bound image only through the docume
 
 ## Questions for Ken
 
+Answered by Ken on 2026-10-06: both as recommended.
+
 1. B6-A and B6-B: the figure's `binding` member beside an optional `asset`, at content schema 1
    with no migration? **Recommended: yes**; it is additive, and every binding path reads it as an
    inline binding.
