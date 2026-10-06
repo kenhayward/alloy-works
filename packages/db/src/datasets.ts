@@ -6,6 +6,7 @@ import {
   parseProvenanceForWrite,
   type ParameterValues,
   type Provenance,
+  type ProvenanceIdentity,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
@@ -29,7 +30,7 @@ export interface DatasetIdentity {
   readonly definition: string;
   /** SHA-256 over the parameters' canonical JSON (`parametersDigestInput`). */
   readonly parametersDigest: string;
-  /** The identity as the source sees it: `service` for every run in D3. */
+  /** The identity as the source sees it: `service`, or `asserted:<principal>` (D7-H). */
   readonly identityKey: string;
 }
 
@@ -37,7 +38,7 @@ export interface DatasetIdentity {
 export function datasetIdentity(input: {
   readonly definition: string;
   readonly parameters: ParameterValues;
-  readonly identity: { readonly kind: 'service' };
+  readonly identity: ProvenanceIdentity;
 }): DatasetIdentity {
   return {
     definition: input.definition,

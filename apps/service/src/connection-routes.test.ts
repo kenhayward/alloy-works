@@ -814,17 +814,54 @@ describe('connections through the service', () => {
       expect(unstorable.statusCode, member).toBe(400);
       expect(unstorable.json<{ message: string }>().message, member).toContain(member);
     }
+    // PostgreSQL asserts a person's role (the D7 plan), and has no SQL Server assertion to choose.
+    const chosen = await call('ada', 'POST', `/v1/spaces/${general}/connections`, {
+      settings: settings({
+        name: 'Chosen',
+        identity: {
+          kind: 'endUser',
+          mechanism: 'asserted',
+          attribute: 'email',
+          assertion: 'executeAs',
+        },
+      }),
+    });
+    expect(chosen.statusCode).toBe(400);
+    expect(chosen.json()).toMatchObject({
+      code: 'identity_not_supported',
+      rule: 'DAT-078',
+      problems: [
+        {
+          rule: 'identity_not_supported',
+          type: 'postgres',
+          mechanism: 'asserted',
+          path: 'identity.assertion',
+        },
+      ],
+    });
+    const delegated = await call('ada', 'POST', `/v1/spaces/${general}/connections`, {
+      settings: settings({
+        name: 'Delegated',
+        identity: {
+          kind: 'endUser',
+          mechanism: 'delegated',
+          tokenEndpoint: 'https://idp.example.test/token',
+          audience: 'readings',
+        },
+      }),
+    });
+    expect(delegated.statusCode).toBe(400);
+    expect(delegated.json()).toMatchObject({
+      code: 'identity_not_supported',
+      problems: [{ rule: 'identity_not_supported', type: 'postgres', mechanism: 'delegated' }],
+    });
     const asserted = await call('ada', 'POST', `/v1/spaces/${general}/connections`, {
       settings: settings({
+        name: 'Asserted',
         identity: { kind: 'endUser', mechanism: 'asserted', attribute: 'email' },
       }),
     });
-    expect(asserted.statusCode).toBe(400);
-    expect(asserted.json()).toMatchObject({
-      code: 'identity_not_supported',
-      rule: 'DAT-078',
-      problems: [{ rule: 'identity_not_supported', type: 'postgres', mechanism: 'asserted' }],
-    });
+    expect(asserted.statusCode, asserted.body).toBe(200);
     const retired = await call('ada', 'POST', `/v1/spaces/${general}/connections`, {
       settings: settings({ retired: true }),
     });

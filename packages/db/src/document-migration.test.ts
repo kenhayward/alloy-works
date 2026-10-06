@@ -120,6 +120,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0051_dataset_pending',
       '0052_bound_images',
       '0053_dataset_image_index',
+      '0054_connection_test_privilege',
     ]);
 
     // The component and its version are as they were.
@@ -237,6 +238,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0051_dataset_pending',
       '0052_bound_images',
       '0053_dataset_image_index',
+      '0054_connection_test_privilege',
     ]);
 
     const { rows } = await queryAs(

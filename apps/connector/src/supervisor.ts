@@ -14,6 +14,7 @@ import {
   type DataFailureCode,
   type DescribeAnswer,
   type DescribeSqlAnswer,
+  type DescribeRequest,
   type DescribeSqlRequest,
   type RunAnswer,
   type RunRequest,
@@ -173,7 +174,7 @@ export type RequestKind = 'test' | 'describe' | 'run' | 'describeSql';
 
 interface Kinds {
   readonly test: { readonly request: TestRequest; readonly answer: TestAnswer };
-  readonly describe: { readonly request: TestRequest; readonly answer: DescribeAnswer };
+  readonly describe: { readonly request: DescribeRequest; readonly answer: DescribeAnswer };
   readonly run: { readonly request: RunRequest; readonly answer: RunAnswer };
   readonly describeSql: {
     readonly request: DescribeSqlRequest;

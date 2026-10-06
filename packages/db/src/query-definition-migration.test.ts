@@ -135,6 +135,7 @@ describe('migration 0046, over an environment made before it', () => {
       '0051_dataset_pending',
       '0052_bound_images',
       '0053_dataset_image_index',
+      '0054_connection_test_privilege',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1).

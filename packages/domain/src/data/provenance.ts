@@ -5,11 +5,12 @@ import { MAX_COLUMNS } from './columns.js';
 import { canonicalValueSchema, columnSchema, PARAMETER_NAME, type Column } from './definition.js';
 import { MAX_LIST_ITEMS, type ParameterValues } from './parameters.js';
 import { RAN_MAX_CHARACTERS } from './sql.js';
+import { sourceNameSchema } from './protocol.js';
 
 /**
  * A dataset version's content: its provenance record (data.md, "Storage of results and provenance";
- * DAT-085), in the arms D3 writes, and D8's images. The request form of `ran` arrives with D6 and an
- * end user's identity with D7 - each an arm added, refusing nothing stored. The result itself is an
+ * DAT-085), in the arms D3 writes, D8's images and D7's person. The request form of `ran` arrives with
+ * D6, an arm added, refusing nothing stored. The result itself is an
  * object in the tenant's store under `checksum`, never in the record.
  */
 export const PROVENANCE_SCHEMA_VERSION = 1;
@@ -33,6 +34,20 @@ const instant = z
 
 const count = z.number().int().min(0);
 
+/** A principal's id, as the platform's `principal` table holds it, lower case as 0047's key admits. */
+const PRINCIPAL = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/** Who a run ran as: the connection's account, or a person's own role asserted at the source (D7-J). */
+export type ProvenanceIdentity =
+  | { readonly kind: 'service' }
+  | {
+      readonly kind: 'endUser';
+      readonly mechanism: 'asserted';
+      readonly principal: string;
+      readonly signInRoute: 'organisation' | 'google' | 'token';
+      readonly asSeen: string;
+    };
+
 export const provenanceSchema = z.strictObject({
   schemaVersion: z.literal(PROVENANCE_SCHEMA_VERSION),
   queryDefinition: versioned,
@@ -50,7 +65,17 @@ export const provenanceSchema = z.strictObject({
   ),
   // The SQL the connector reports it ran, its values bound apart from it: never a secret.
   ran: z.strictObject({ sql: z.string().min(1).max(RAN_MAX_CHARACTERS) }),
-  identity: z.strictObject({ kind: z.literal('service') }),
+  identity: z.union([
+    z.strictObject({ kind: z.literal('service') }),
+    // A person's own view (the D7 plan, D7-J): whose, how they signed in, and the role the source saw.
+    z.strictObject({
+      kind: z.literal('endUser'),
+      mechanism: z.literal('asserted'),
+      principal: z.string().regex(PRINCIPAL),
+      signInRoute: z.enum(['organisation', 'google', 'token']),
+      asSeen: sourceNameSchema,
+    }),
+  ]),
   at: instant,
   durationMs: count,
   rowCount: count,
@@ -68,7 +93,7 @@ export type Provenance = {
   readonly connection: { readonly artifact: string; readonly version: string };
   readonly parameters: ParameterValues;
   readonly ran: { readonly sql: string };
-  readonly identity: { readonly kind: 'service' };
+  readonly identity: ProvenanceIdentity;
   readonly at: string;
   readonly durationMs: number;
   readonly rowCount: number;

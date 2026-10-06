@@ -86,7 +86,9 @@ export {
   describeSqlRequestSchema,
   relationSchema,
   runAnswerSchema,
+  runIdentitySchema,
   runRequestSchema,
+  assertedRoleSchema,
   sealAnswerSchema,
   sealRequestSchema,
   sourceNameSchema,
@@ -102,6 +104,7 @@ export type {
   DescribeSqlRequest,
   Relation,
   RunAnswer,
+  RunIdentity,
   RunRequest,
   SealAnswer,
   SealRequest,
@@ -119,7 +122,7 @@ export {
   parseProvenance,
   parseProvenanceForWrite,
 } from './provenance.js';
-export type { Provenance } from './provenance.js';
+export type { Provenance, ProvenanceIdentity } from './provenance.js';
 export { identityKey, parametersDigestInput } from './identity.js';
 export { questionUnchanged } from './question.js';
 export {

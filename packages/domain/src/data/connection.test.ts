@@ -163,12 +163,17 @@ describe('a connection version', () => {
     expect(database).toMatchObject({ message: 'A database is 1 to 63 bytes of UTF-8' });
   });
 
-  it('DAT-078 refuses a connection whose identity its connector does not declare, identity_not_supported', () => {
-    expect(connectorIdentities.postgres).toEqual([]);
+  it('DAT-078 PostgreSQL declares asserted identity alone: refuses delegated, and a choice of assertion, identity_not_supported', () => {
+    expect(connectorIdentities.postgres).toEqual(['asserted']);
     const asserted = withMember(['identity'], {
       kind: 'endUser',
       mechanism: 'asserted',
       attribute: 'email',
+    });
+    const bySubject = withMember(['identity'], {
+      kind: 'endUser',
+      mechanism: 'asserted',
+      attribute: 'subject',
     });
     const delegated = withMember(['identity'], {
       kind: 'endUser',
@@ -176,18 +181,33 @@ describe('a connection version', () => {
       tokenEndpoint: 'https://idp.example.test/token',
       audience: 'readings',
     });
-    expect(refusal(asserted)).toEqual([
-      { rule: 'identity_not_supported', type: 'postgres', mechanism: 'asserted' },
-    ]);
+    expect(refusal(asserted)).toEqual([]);
+    expect(refusal(bySubject)).toEqual([]);
     expect(refusal(delegated)).toEqual([
       { rule: 'identity_not_supported', type: 'postgres', mechanism: 'delegated' },
     ]);
+    // SQL Server's choice of how to assert is not PostgreSQL's to take.
+    for (const assertion of ['sessionContext', 'executeAs']) {
+      const chosen = withMember(['identity'], {
+        kind: 'endUser',
+        mechanism: 'asserted',
+        attribute: 'email',
+        assertion,
+      });
+      expect(refusal(chosen), assertion).toEqual([
+        {
+          rule: 'identity_not_supported',
+          type: 'postgres',
+          mechanism: 'asserted',
+          path: 'identity.assertion',
+        },
+      ]);
+    }
     expect(refusal(whole)).toEqual([]);
-    // A version stored once a connector declares a mechanism still reads when the shape alone is
-    // asked, so widening a declaration later never makes a stored version unreadable.
-    expect(parseConnection(asserted)).toMatchObject({ identity: { mechanism: 'asserted' } });
-    expect(checkConnection(parseConnection(asserted))).toEqual([
-      { rule: 'identity_not_supported', type: 'postgres', mechanism: 'asserted' },
+    // A version stored with a mechanism no longer declared still reads when the shape alone is asked.
+    expect(parseConnection(delegated)).toMatchObject({ identity: { mechanism: 'delegated' } });
+    expect(checkConnection(parseConnection(delegated))).toEqual([
+      { rule: 'identity_not_supported', type: 'postgres', mechanism: 'delegated' },
     ]);
   });
 

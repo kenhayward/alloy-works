@@ -15250,7 +15250,8 @@
                               "items": {
                                 "type": "string",
                                 "enum": [
-                                  "account_not_read_only"
+                                  "account_not_read_only",
+                                  "account_holds_privilege"
                                 ]
                               }
                             },
@@ -15750,10 +15751,11 @@
                               "items": {
                                 "type": "string",
                                 "enum": [
-                                  "account_not_read_only"
+                                  "account_not_read_only",
+                                  "account_holds_privilege"
                                 ]
                               },
-                              "description": "What the test found of the account once it had signed in"
+                              "description": "What the test found of the account once it had signed in: that it may change data, or, on a connection asserting each person's own identity, that it may read data of its own"
                             },
                             "at": {
                               "type": "string"
@@ -19248,10 +19250,11 @@
                           "items": {
                             "type": "string",
                             "enum": [
-                              "account_not_read_only"
+                              "account_not_read_only",
+                              "account_holds_privilege"
                             ]
                           },
-                          "description": "What the test found of the account once it had signed in"
+                          "description": "What the test found of the account once it had signed in: that it may change data, or, on a connection asserting each person's own identity, that it may read data of its own"
                         },
                         "at": {
                           "type": "string"
@@ -20515,7 +20518,8 @@
                               "items": {
                                 "type": "string",
                                 "enum": [
-                                  "account_not_read_only"
+                                  "account_not_read_only",
+                                  "account_holds_privilege"
                                 ]
                               }
                             },
@@ -21033,7 +21037,8 @@
                                   "items": {
                                     "type": "string",
                                     "enum": [
-                                      "account_not_read_only"
+                                      "account_not_read_only",
+                                      "account_holds_privilege"
                                     ]
                                   }
                                 },
@@ -21663,7 +21668,8 @@
                                   "items": {
                                     "type": "string",
                                     "enum": [
-                                      "account_not_read_only"
+                                      "account_not_read_only",
+                                      "account_holds_privilege"
                                     ]
                                   }
                                 },
@@ -26127,15 +26133,54 @@
                                         ]
                                       },
                                       "identity": {
-                                        "type": "object",
-                                        "properties": {
-                                          "kind": {
-                                            "type": "string",
-                                            "const": "service"
+                                        "anyOf": [
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "kind": {
+                                                "type": "string",
+                                                "const": "service"
+                                              }
+                                            },
+                                            "required": [
+                                              "kind"
+                                            ]
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "kind": {
+                                                "type": "string",
+                                                "const": "endUser"
+                                              },
+                                              "mechanism": {
+                                                "type": "string",
+                                                "const": "asserted"
+                                              },
+                                              "principal": {
+                                                "type": "string",
+                                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                              },
+                                              "signInRoute": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "organisation",
+                                                  "google",
+                                                  "token"
+                                                ]
+                                              },
+                                              "asSeen": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "kind",
+                                              "mechanism",
+                                              "principal",
+                                              "signInRoute",
+                                              "asSeen"
+                                            ]
                                           }
-                                        },
-                                        "required": [
-                                          "kind"
                                         ]
                                       },
                                       "at": {
@@ -26885,15 +26930,54 @@
                                         ]
                                       },
                                       "identity": {
-                                        "type": "object",
-                                        "properties": {
-                                          "kind": {
-                                            "type": "string",
-                                            "const": "service"
+                                        "anyOf": [
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "kind": {
+                                                "type": "string",
+                                                "const": "service"
+                                              }
+                                            },
+                                            "required": [
+                                              "kind"
+                                            ]
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "kind": {
+                                                "type": "string",
+                                                "const": "endUser"
+                                              },
+                                              "mechanism": {
+                                                "type": "string",
+                                                "const": "asserted"
+                                              },
+                                              "principal": {
+                                                "type": "string",
+                                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                              },
+                                              "signInRoute": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "organisation",
+                                                  "google",
+                                                  "token"
+                                                ]
+                                              },
+                                              "asSeen": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "kind",
+                                              "mechanism",
+                                              "principal",
+                                              "signInRoute",
+                                              "asSeen"
+                                            ]
                                           }
-                                        },
-                                        "required": [
-                                          "kind"
                                         ]
                                       },
                                       "at": {
@@ -28154,15 +28238,54 @@
                                   ]
                                 },
                                 "identity": {
-                                  "type": "object",
-                                  "properties": {
-                                    "kind": {
-                                      "type": "string",
-                                      "const": "service"
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "service"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "endUser"
+                                        },
+                                        "mechanism": {
+                                          "type": "string",
+                                          "const": "asserted"
+                                        },
+                                        "principal": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                        },
+                                        "signInRoute": {
+                                          "type": "string",
+                                          "enum": [
+                                            "organisation",
+                                            "google",
+                                            "token"
+                                          ]
+                                        },
+                                        "asSeen": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "mechanism",
+                                        "principal",
+                                        "signInRoute",
+                                        "asSeen"
+                                      ]
                                     }
-                                  },
-                                  "required": [
-                                    "kind"
                                   ]
                                 },
                                 "at": {
@@ -28912,15 +29035,54 @@
                                   ]
                                 },
                                 "identity": {
-                                  "type": "object",
-                                  "properties": {
-                                    "kind": {
-                                      "type": "string",
-                                      "const": "service"
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "service"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "endUser"
+                                        },
+                                        "mechanism": {
+                                          "type": "string",
+                                          "const": "asserted"
+                                        },
+                                        "principal": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                        },
+                                        "signInRoute": {
+                                          "type": "string",
+                                          "enum": [
+                                            "organisation",
+                                            "google",
+                                            "token"
+                                          ]
+                                        },
+                                        "asSeen": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "mechanism",
+                                        "principal",
+                                        "signInRoute",
+                                        "asSeen"
+                                      ]
                                     }
-                                  },
-                                  "required": [
-                                    "kind"
                                   ]
                                 },
                                 "at": {
@@ -30152,15 +30314,54 @@
                                       ]
                                     },
                                     "identity": {
-                                      "type": "object",
-                                      "properties": {
-                                        "kind": {
-                                          "type": "string",
-                                          "const": "service"
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "service"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "endUser"
+                                            },
+                                            "mechanism": {
+                                              "type": "string",
+                                              "const": "asserted"
+                                            },
+                                            "principal": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "signInRoute": {
+                                              "type": "string",
+                                              "enum": [
+                                                "organisation",
+                                                "google",
+                                                "token"
+                                              ]
+                                            },
+                                            "asSeen": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "mechanism",
+                                            "principal",
+                                            "signInRoute",
+                                            "asSeen"
+                                          ]
                                         }
-                                      },
-                                      "required": [
-                                        "kind"
                                       ]
                                     },
                                     "at": {
@@ -30910,15 +31111,54 @@
                                       ]
                                     },
                                     "identity": {
-                                      "type": "object",
-                                      "properties": {
-                                        "kind": {
-                                          "type": "string",
-                                          "const": "service"
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "service"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "endUser"
+                                            },
+                                            "mechanism": {
+                                              "type": "string",
+                                              "const": "asserted"
+                                            },
+                                            "principal": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "signInRoute": {
+                                              "type": "string",
+                                              "enum": [
+                                                "organisation",
+                                                "google",
+                                                "token"
+                                              ]
+                                            },
+                                            "asSeen": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "mechanism",
+                                            "principal",
+                                            "signInRoute",
+                                            "asSeen"
+                                          ]
                                         }
-                                      },
-                                      "required": [
-                                        "kind"
                                       ]
                                     },
                                     "at": {
@@ -32142,15 +32382,54 @@
                                       ]
                                     },
                                     "identity": {
-                                      "type": "object",
-                                      "properties": {
-                                        "kind": {
-                                          "type": "string",
-                                          "const": "service"
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "service"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "endUser"
+                                            },
+                                            "mechanism": {
+                                              "type": "string",
+                                              "const": "asserted"
+                                            },
+                                            "principal": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "signInRoute": {
+                                              "type": "string",
+                                              "enum": [
+                                                "organisation",
+                                                "google",
+                                                "token"
+                                              ]
+                                            },
+                                            "asSeen": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "mechanism",
+                                            "principal",
+                                            "signInRoute",
+                                            "asSeen"
+                                          ]
                                         }
-                                      },
-                                      "required": [
-                                        "kind"
                                       ]
                                     },
                                     "at": {
@@ -32900,15 +33179,54 @@
                                       ]
                                     },
                                     "identity": {
-                                      "type": "object",
-                                      "properties": {
-                                        "kind": {
-                                          "type": "string",
-                                          "const": "service"
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "service"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "endUser"
+                                            },
+                                            "mechanism": {
+                                              "type": "string",
+                                              "const": "asserted"
+                                            },
+                                            "principal": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "signInRoute": {
+                                              "type": "string",
+                                              "enum": [
+                                                "organisation",
+                                                "google",
+                                                "token"
+                                              ]
+                                            },
+                                            "asSeen": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "mechanism",
+                                            "principal",
+                                            "signInRoute",
+                                            "asSeen"
+                                          ]
                                         }
-                                      },
-                                      "required": [
-                                        "kind"
                                       ]
                                     },
                                     "at": {
@@ -34684,15 +35002,54 @@
                                       ]
                                     },
                                     "identity": {
-                                      "type": "object",
-                                      "properties": {
-                                        "kind": {
-                                          "type": "string",
-                                          "const": "service"
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "service"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "endUser"
+                                            },
+                                            "mechanism": {
+                                              "type": "string",
+                                              "const": "asserted"
+                                            },
+                                            "principal": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "signInRoute": {
+                                              "type": "string",
+                                              "enum": [
+                                                "organisation",
+                                                "google",
+                                                "token"
+                                              ]
+                                            },
+                                            "asSeen": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "mechanism",
+                                            "principal",
+                                            "signInRoute",
+                                            "asSeen"
+                                          ]
                                         }
-                                      },
-                                      "required": [
-                                        "kind"
                                       ]
                                     },
                                     "at": {
@@ -35442,15 +35799,54 @@
                                       ]
                                     },
                                     "identity": {
-                                      "type": "object",
-                                      "properties": {
-                                        "kind": {
-                                          "type": "string",
-                                          "const": "service"
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "service"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "endUser"
+                                            },
+                                            "mechanism": {
+                                              "type": "string",
+                                              "const": "asserted"
+                                            },
+                                            "principal": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "signInRoute": {
+                                              "type": "string",
+                                              "enum": [
+                                                "organisation",
+                                                "google",
+                                                "token"
+                                              ]
+                                            },
+                                            "asSeen": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "mechanism",
+                                            "principal",
+                                            "signInRoute",
+                                            "asSeen"
+                                          ]
                                         }
-                                      },
-                                      "required": [
-                                        "kind"
                                       ]
                                     },
                                     "at": {
@@ -36551,15 +36947,54 @@
                                       ]
                                     },
                                     "identity": {
-                                      "type": "object",
-                                      "properties": {
-                                        "kind": {
-                                          "type": "string",
-                                          "const": "service"
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "service"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "endUser"
+                                            },
+                                            "mechanism": {
+                                              "type": "string",
+                                              "const": "asserted"
+                                            },
+                                            "principal": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "signInRoute": {
+                                              "type": "string",
+                                              "enum": [
+                                                "organisation",
+                                                "google",
+                                                "token"
+                                              ]
+                                            },
+                                            "asSeen": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "mechanism",
+                                            "principal",
+                                            "signInRoute",
+                                            "asSeen"
+                                          ]
                                         }
-                                      },
-                                      "required": [
-                                        "kind"
                                       ]
                                     },
                                     "at": {
@@ -37309,15 +37744,54 @@
                                       ]
                                     },
                                     "identity": {
-                                      "type": "object",
-                                      "properties": {
-                                        "kind": {
-                                          "type": "string",
-                                          "const": "service"
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "service"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "endUser"
+                                            },
+                                            "mechanism": {
+                                              "type": "string",
+                                              "const": "asserted"
+                                            },
+                                            "principal": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "signInRoute": {
+                                              "type": "string",
+                                              "enum": [
+                                                "organisation",
+                                                "google",
+                                                "token"
+                                              ]
+                                            },
+                                            "asSeen": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "mechanism",
+                                            "principal",
+                                            "signInRoute",
+                                            "asSeen"
+                                          ]
                                         }
-                                      },
-                                      "required": [
-                                        "kind"
                                       ]
                                     },
                                     "at": {
@@ -38454,15 +38928,54 @@
                                   ]
                                 },
                                 "identity": {
-                                  "type": "object",
-                                  "properties": {
-                                    "kind": {
-                                      "type": "string",
-                                      "const": "service"
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "service"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "endUser"
+                                        },
+                                        "mechanism": {
+                                          "type": "string",
+                                          "const": "asserted"
+                                        },
+                                        "principal": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                        },
+                                        "signInRoute": {
+                                          "type": "string",
+                                          "enum": [
+                                            "organisation",
+                                            "google",
+                                            "token"
+                                          ]
+                                        },
+                                        "asSeen": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "mechanism",
+                                        "principal",
+                                        "signInRoute",
+                                        "asSeen"
+                                      ]
                                     }
-                                  },
-                                  "required": [
-                                    "kind"
                                   ]
                                 },
                                 "at": {
@@ -39212,15 +39725,54 @@
                                   ]
                                 },
                                 "identity": {
-                                  "type": "object",
-                                  "properties": {
-                                    "kind": {
-                                      "type": "string",
-                                      "const": "service"
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "service"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "endUser"
+                                        },
+                                        "mechanism": {
+                                          "type": "string",
+                                          "const": "asserted"
+                                        },
+                                        "principal": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                        },
+                                        "signInRoute": {
+                                          "type": "string",
+                                          "enum": [
+                                            "organisation",
+                                            "google",
+                                            "token"
+                                          ]
+                                        },
+                                        "asSeen": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "mechanism",
+                                        "principal",
+                                        "signInRoute",
+                                        "asSeen"
+                                      ]
                                     }
-                                  },
-                                  "required": [
-                                    "kind"
                                   ]
                                 },
                                 "at": {
@@ -40452,15 +41004,54 @@
                                       ]
                                     },
                                     "identity": {
-                                      "type": "object",
-                                      "properties": {
-                                        "kind": {
-                                          "type": "string",
-                                          "const": "service"
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "service"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "endUser"
+                                            },
+                                            "mechanism": {
+                                              "type": "string",
+                                              "const": "asserted"
+                                            },
+                                            "principal": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "signInRoute": {
+                                              "type": "string",
+                                              "enum": [
+                                                "organisation",
+                                                "google",
+                                                "token"
+                                              ]
+                                            },
+                                            "asSeen": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "mechanism",
+                                            "principal",
+                                            "signInRoute",
+                                            "asSeen"
+                                          ]
                                         }
-                                      },
-                                      "required": [
-                                        "kind"
                                       ]
                                     },
                                     "at": {
@@ -41210,15 +41801,54 @@
                                       ]
                                     },
                                     "identity": {
-                                      "type": "object",
-                                      "properties": {
-                                        "kind": {
-                                          "type": "string",
-                                          "const": "service"
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "service"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "endUser"
+                                            },
+                                            "mechanism": {
+                                              "type": "string",
+                                              "const": "asserted"
+                                            },
+                                            "principal": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "signInRoute": {
+                                              "type": "string",
+                                              "enum": [
+                                                "organisation",
+                                                "google",
+                                                "token"
+                                              ]
+                                            },
+                                            "asSeen": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "mechanism",
+                                            "principal",
+                                            "signInRoute",
+                                            "asSeen"
+                                          ]
                                         }
-                                      },
-                                      "required": [
-                                        "kind"
                                       ]
                                     },
                                     "at": {
@@ -42442,15 +43072,54 @@
                                       ]
                                     },
                                     "identity": {
-                                      "type": "object",
-                                      "properties": {
-                                        "kind": {
-                                          "type": "string",
-                                          "const": "service"
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "service"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "endUser"
+                                            },
+                                            "mechanism": {
+                                              "type": "string",
+                                              "const": "asserted"
+                                            },
+                                            "principal": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "signInRoute": {
+                                              "type": "string",
+                                              "enum": [
+                                                "organisation",
+                                                "google",
+                                                "token"
+                                              ]
+                                            },
+                                            "asSeen": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "mechanism",
+                                            "principal",
+                                            "signInRoute",
+                                            "asSeen"
+                                          ]
                                         }
-                                      },
-                                      "required": [
-                                        "kind"
                                       ]
                                     },
                                     "at": {
@@ -43200,15 +43869,54 @@
                                       ]
                                     },
                                     "identity": {
-                                      "type": "object",
-                                      "properties": {
-                                        "kind": {
-                                          "type": "string",
-                                          "const": "service"
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "service"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "endUser"
+                                            },
+                                            "mechanism": {
+                                              "type": "string",
+                                              "const": "asserted"
+                                            },
+                                            "principal": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "signInRoute": {
+                                              "type": "string",
+                                              "enum": [
+                                                "organisation",
+                                                "google",
+                                                "token"
+                                              ]
+                                            },
+                                            "asSeen": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "mechanism",
+                                            "principal",
+                                            "signInRoute",
+                                            "asSeen"
+                                          ]
                                         }
-                                      },
-                                      "required": [
-                                        "kind"
                                       ]
                                     },
                                     "at": {
@@ -44824,15 +45532,54 @@
                                       ]
                                     },
                                     "identity": {
-                                      "type": "object",
-                                      "properties": {
-                                        "kind": {
-                                          "type": "string",
-                                          "const": "service"
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "service"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "endUser"
+                                            },
+                                            "mechanism": {
+                                              "type": "string",
+                                              "const": "asserted"
+                                            },
+                                            "principal": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "signInRoute": {
+                                              "type": "string",
+                                              "enum": [
+                                                "organisation",
+                                                "google",
+                                                "token"
+                                              ]
+                                            },
+                                            "asSeen": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "mechanism",
+                                            "principal",
+                                            "signInRoute",
+                                            "asSeen"
+                                          ]
                                         }
-                                      },
-                                      "required": [
-                                        "kind"
                                       ]
                                     },
                                     "at": {
@@ -45582,15 +46329,54 @@
                                       ]
                                     },
                                     "identity": {
-                                      "type": "object",
-                                      "properties": {
-                                        "kind": {
-                                          "type": "string",
-                                          "const": "service"
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "service"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "endUser"
+                                            },
+                                            "mechanism": {
+                                              "type": "string",
+                                              "const": "asserted"
+                                            },
+                                            "principal": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "signInRoute": {
+                                              "type": "string",
+                                              "enum": [
+                                                "organisation",
+                                                "google",
+                                                "token"
+                                              ]
+                                            },
+                                            "asSeen": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "mechanism",
+                                            "principal",
+                                            "signInRoute",
+                                            "asSeen"
+                                          ]
                                         }
-                                      },
-                                      "required": [
-                                        "kind"
                                       ]
                                     },
                                     "at": {
@@ -46732,15 +47518,54 @@
                                       ]
                                     },
                                     "identity": {
-                                      "type": "object",
-                                      "properties": {
-                                        "kind": {
-                                          "type": "string",
-                                          "const": "service"
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "service"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "endUser"
+                                            },
+                                            "mechanism": {
+                                              "type": "string",
+                                              "const": "asserted"
+                                            },
+                                            "principal": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "signInRoute": {
+                                              "type": "string",
+                                              "enum": [
+                                                "organisation",
+                                                "google",
+                                                "token"
+                                              ]
+                                            },
+                                            "asSeen": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "mechanism",
+                                            "principal",
+                                            "signInRoute",
+                                            "asSeen"
+                                          ]
                                         }
-                                      },
-                                      "required": [
-                                        "kind"
                                       ]
                                     },
                                     "at": {
@@ -47490,15 +48315,54 @@
                                       ]
                                     },
                                     "identity": {
-                                      "type": "object",
-                                      "properties": {
-                                        "kind": {
-                                          "type": "string",
-                                          "const": "service"
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "service"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "endUser"
+                                            },
+                                            "mechanism": {
+                                              "type": "string",
+                                              "const": "asserted"
+                                            },
+                                            "principal": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "signInRoute": {
+                                              "type": "string",
+                                              "enum": [
+                                                "organisation",
+                                                "google",
+                                                "token"
+                                              ]
+                                            },
+                                            "asSeen": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "mechanism",
+                                            "principal",
+                                            "signInRoute",
+                                            "asSeen"
+                                          ]
                                         }
-                                      },
-                                      "required": [
-                                        "kind"
                                       ]
                                     },
                                     "at": {
@@ -48640,15 +49504,54 @@
                                       ]
                                     },
                                     "identity": {
-                                      "type": "object",
-                                      "properties": {
-                                        "kind": {
-                                          "type": "string",
-                                          "const": "service"
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "service"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "endUser"
+                                            },
+                                            "mechanism": {
+                                              "type": "string",
+                                              "const": "asserted"
+                                            },
+                                            "principal": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "signInRoute": {
+                                              "type": "string",
+                                              "enum": [
+                                                "organisation",
+                                                "google",
+                                                "token"
+                                              ]
+                                            },
+                                            "asSeen": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "mechanism",
+                                            "principal",
+                                            "signInRoute",
+                                            "asSeen"
+                                          ]
                                         }
-                                      },
-                                      "required": [
-                                        "kind"
                                       ]
                                     },
                                     "at": {
@@ -49398,15 +50301,54 @@
                                       ]
                                     },
                                     "identity": {
-                                      "type": "object",
-                                      "properties": {
-                                        "kind": {
-                                          "type": "string",
-                                          "const": "service"
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "service"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "endUser"
+                                            },
+                                            "mechanism": {
+                                              "type": "string",
+                                              "const": "asserted"
+                                            },
+                                            "principal": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "signInRoute": {
+                                              "type": "string",
+                                              "enum": [
+                                                "organisation",
+                                                "google",
+                                                "token"
+                                              ]
+                                            },
+                                            "asSeen": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "mechanism",
+                                            "principal",
+                                            "signInRoute",
+                                            "asSeen"
+                                          ]
                                         }
-                                      },
-                                      "required": [
-                                        "kind"
                                       ]
                                     },
                                     "at": {
@@ -50507,15 +51449,54 @@
                                       ]
                                     },
                                     "identity": {
-                                      "type": "object",
-                                      "properties": {
-                                        "kind": {
-                                          "type": "string",
-                                          "const": "service"
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "service"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "endUser"
+                                            },
+                                            "mechanism": {
+                                              "type": "string",
+                                              "const": "asserted"
+                                            },
+                                            "principal": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "signInRoute": {
+                                              "type": "string",
+                                              "enum": [
+                                                "organisation",
+                                                "google",
+                                                "token"
+                                              ]
+                                            },
+                                            "asSeen": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "mechanism",
+                                            "principal",
+                                            "signInRoute",
+                                            "asSeen"
+                                          ]
                                         }
-                                      },
-                                      "required": [
-                                        "kind"
                                       ]
                                     },
                                     "at": {
@@ -51265,15 +52246,54 @@
                                       ]
                                     },
                                     "identity": {
-                                      "type": "object",
-                                      "properties": {
-                                        "kind": {
-                                          "type": "string",
-                                          "const": "service"
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "service"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "endUser"
+                                            },
+                                            "mechanism": {
+                                              "type": "string",
+                                              "const": "asserted"
+                                            },
+                                            "principal": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "signInRoute": {
+                                              "type": "string",
+                                              "enum": [
+                                                "organisation",
+                                                "google",
+                                                "token"
+                                              ]
+                                            },
+                                            "asSeen": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "mechanism",
+                                            "principal",
+                                            "signInRoute",
+                                            "asSeen"
+                                          ]
                                         }
-                                      },
-                                      "required": [
-                                        "kind"
                                       ]
                                     },
                                     "at": {
@@ -52527,15 +53547,54 @@
                           ]
                         },
                         "identity": {
-                          "type": "object",
-                          "properties": {
-                            "kind": {
-                              "type": "string",
-                              "const": "service"
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "service"
+                                }
+                              },
+                              "required": [
+                                "kind"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "endUser"
+                                },
+                                "mechanism": {
+                                  "type": "string",
+                                  "const": "asserted"
+                                },
+                                "principal": {
+                                  "type": "string",
+                                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                },
+                                "signInRoute": {
+                                  "type": "string",
+                                  "enum": [
+                                    "organisation",
+                                    "google",
+                                    "token"
+                                  ]
+                                },
+                                "asSeen": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "mechanism",
+                                "principal",
+                                "signInRoute",
+                                "asSeen"
+                              ]
                             }
-                          },
-                          "required": [
-                            "kind"
                           ]
                         },
                         "at": {
@@ -80041,7 +81100,8 @@
                               "items": {
                                 "type": "string",
                                 "enum": [
-                                  "account_not_read_only"
+                                  "account_not_read_only",
+                                  "account_holds_privilege"
                                 ]
                               }
                             },
@@ -80559,7 +81619,8 @@
                                   "items": {
                                     "type": "string",
                                     "enum": [
-                                      "account_not_read_only"
+                                      "account_not_read_only",
+                                      "account_holds_privilege"
                                     ]
                                   }
                                 },

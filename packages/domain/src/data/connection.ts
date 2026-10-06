@@ -185,16 +185,22 @@ export type ConnectionSettings = z.infer<typeof connectionSettingsSchema>;
 type EndUserMechanism = 'delegated' | 'asserted';
 
 /**
- * The end-user mechanisms each type's connector declares (DAT-078). PostgreSQL declares none in D1;
- * D7 adds `asserted`.
+ * The end-user mechanisms each type's connector declares (DAT-078): PostgreSQL asserts a person's own
+ * role (the D7 plan, D7-A), and has no `assertion` to choose, which is SQL Server's.
  */
 export const connectorIdentities: Readonly<
   Record<ConnectionSettings['type'], readonly EndUserMechanism[]>
-> = Object.freeze({ postgres: Object.freeze([]) });
+> = Object.freeze({ postgres: Object.freeze(['asserted'] as const) });
 
 export type ConnectionProblem =
   | { readonly rule: 'connection_invalid'; readonly path: string; readonly message: string }
-  | { readonly rule: 'identity_not_supported'; readonly type: string; readonly mechanism: string };
+  | {
+      readonly rule: 'identity_not_supported';
+      readonly type: string;
+      readonly mechanism: string;
+      /** The member refused, where the mechanism is declared and a choice of it is not. */
+      readonly path?: string;
+    };
 
 /** A connection's settings refused, with every problem found. */
 export class ConnectionRefused extends Error {
@@ -221,6 +227,10 @@ export function checkConnection(settings: ConnectionSettings): ConnectionProblem
   const { identity: declared, type } = settings;
   if (declared.kind === 'endUser' && !connectorIdentities[type].includes(declared.mechanism)) {
     return [{ rule: 'identity_not_supported', type, mechanism: declared.mechanism }];
+  }
+  if (declared.kind === 'endUser' && declared.mechanism === 'asserted' && declared.assertion) {
+    const path = 'identity.assertion';
+    return [{ rule: 'identity_not_supported', type, mechanism: declared.mechanism, path }];
   }
   return [];
 }

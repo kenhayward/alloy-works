@@ -198,6 +198,73 @@ export async function readOnlyFindings(client: pg.Client): Promise<TestFinding[]
   return result.rows[0]?.may_write === false ? [] : ['account_not_read_only'];
 }
 
+/**
+ * Whether the account may read data of its own (DAT-112; the D7 plan, D7-D): a superuser, a member of
+ * `pg_read_all_data` by any grant, or `SELECT` on any table, view, materialised view, foreign table,
+ * partitioned table or sequence outside the catalogues, or on any column of one - by grant,
+ * ownership, `PUBLIC` or a role it inherits. A role it may only `SET`, as each person's is granted,
+ * counts for nothing until it is set. Asked at every asserted run, so measured in D7.1 against 10,000
+ * tables the account may not read, PostgreSQL 18 in a container: 21 ms the median of 15, 81 ms the
+ * first, cold; `exists` stops at the first relation it may read.
+ */
+const HOLDS_PRIVILEGE = `
+select r.rolsuper
+    or pg_catalog.pg_has_role(current_user, 'pg_read_all_data', 'MEMBER')
+    or exists (select 1 from pg_catalog.pg_class c
+                 join pg_catalog.pg_namespace n on n.oid OPERATOR(pg_catalog.=) c.relnamespace
+               where c.relkind OPERATOR(pg_catalog.=) ANY
+                       (ARRAY['r', 'p', 'v', 'm', 'f', 'S']::pg_catalog."char"[])
+                 and ${OUTSIDE_CATALOGUES}
+                 and (pg_catalog.has_table_privilege(c.oid, 'SELECT')
+                      or pg_catalog.has_any_column_privilege(c.oid, 'SELECT')))
+       as holds
+from pg_catalog.pg_roles r where r.rolname OPERATOR(pg_catalog.=) current_user`;
+
+/** Whether the account holds any privilege on data of its own, as `HOLDS_PRIVILEGE` reads it. */
+export async function accountHoldsPrivilege(client: pg.Client): Promise<boolean> {
+  const result = await client.query<{ holds: boolean }>(HOLDS_PRIVILEGE);
+  return result.rows[0]?.holds !== false;
+}
+
+/**
+ * The assertion (D7-A): the person's role set for the transaction, the name a bound value and never
+ * text, so no name reads as SQL; then `current_user`, the identity as the source saw it.
+ */
+const ASSERT_ROLE = `select pg_catalog.set_config('role', $1, true)`;
+const CURRENT_USER = `select current_user::pg_catalog.text as name`;
+
+/** The SQLSTATEs of a role the source lacks (22023) and one the account may not set (42501). */
+const ROLE_REFUSED = new Set(['22023', '42501']);
+
+/** What an assertion found: the identity as the source saw it, or why it is refused. */
+export type Asserted =
+  | { readonly asSeen: string }
+  | { readonly refused: 'account_holds_privilege' | 'identity_unmatched' };
+
+/**
+ * A person's role asserted, first in the read-only transaction the caller has begun (D7-A, D7-D): the
+ * account refused where it may read data of its own, then the role set, then `current_user` held to
+ * it - so `none`, which sets no role, is refused like a role the source lacks. Never says the role.
+ */
+export async function assertRole(client: pg.Client, role: string): Promise<Asserted> {
+  if (await accountHoldsPrivilege(client)) return { refused: 'account_holds_privilege' };
+  try {
+    await client.query(ASSERT_ROLE, [role]);
+  } catch (error) {
+    const code = (error as { code?: unknown }).code;
+    if (typeof code === 'string' && ROLE_REFUSED.has(code))
+      return { refused: 'identity_unmatched' };
+    throw error;
+  }
+  return (await heldAs(client, role)) ? { asSeen: role } : { refused: 'identity_unmatched' };
+}
+
+/** Whether the source still sees the person's role (D7-E): read again once the rows are read. */
+export async function heldAs(client: pg.Client, role: string): Promise<boolean> {
+  const result = await client.query<{ name: string }>(CURRENT_USER);
+  return result.rows[0]?.name === role;
+}
+
 /** The most relations a describe lists; past it, `truncated`. */
 export const MAX_RELATIONS = 2000;
 
@@ -279,6 +346,9 @@ select u.at::pg_catalog.int4 as at,
 export const CATALOGUE_QUERIES: Readonly<Record<string, string>> = {
   SERVER_VERSION,
   MAY_WRITE,
+  HOLDS_PRIVILEGE,
+  ASSERT_ROLE,
+  CURRENT_USER,
   TYPES_BY_OID,
   RELATIONS,
   COLUMNS,

@@ -1,5 +1,6 @@
 import { canonicalJson } from '../stored/canonical.js';
 import type { ParameterValues } from './parameters.js';
+import type { ProvenanceIdentity } from './provenance.js';
 
 /**
  * A dataset's identity is the question it answers (data.md, "The dataset"): one definition, the same
@@ -7,13 +8,13 @@ import type { ParameterValues } from './parameters.js';
  */
 
 /**
- * The identity a run was made as, as the source sees it: `service` for every service-account run,
- * which is every run in D3. The end-user forms - `asserted:<principal>`, `delegated:<issuer>|<subject>`
- * - arrive with D7 (DAT-084).
+ * The identity a run was made as, as the source sees it: `service` for a run as the connection's
+ * account; `asserted:<principal>` for a person's own role asserted at the source (D7-H, DAT-084), which
+ * migration 0047 admits. `delegated:<issuer>|<subject>` arrives with D6.
  */
-export function identityKey(identity: { readonly kind: 'service' }): 'service' {
-  if (identity.kind !== 'service') throw new Error('An identity key is the service alone in D3');
-  return 'service';
+export function identityKey(identity: ProvenanceIdentity): string {
+  if (identity.kind === 'service') return 'service';
+  return 'asserted:' + identity.principal;
 }
 
 /**

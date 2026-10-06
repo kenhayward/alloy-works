@@ -4,6 +4,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import {
   RUN_REQUEST_MAX_BYTES,
   credentialContext,
+  describeRequestSchema,
   describeSqlRequestSchema,
   runRequestSchema,
   sealRequestSchema,
@@ -170,10 +171,16 @@ export function createConnectorServer(options: {
       const parsed = describeSqlRequestSchema.safeParse(body);
       if (!parsed.success) return send(400, { code: 'request_invalid' });
       answer = await supervisor.run('describeSql', parsed.data);
+    } else if (path === '/v1/describe') {
+      // The relations, as the account or as a person (the D7 plan, D7-G).
+      const parsed = describeRequestSchema.safeParse(body);
+      if (!parsed.success) return send(400, { code: 'request_invalid' });
+      answer = await supervisor.run('describe', parsed.data);
     } else {
+      // A test checks the account, so it never carries a person.
       const parsed = testRequestSchema.safeParse(body);
       if (!parsed.success) return send(400, { code: 'request_invalid' });
-      answer = await supervisor.run(path === '/v1/test' ? 'test' : 'describe', parsed.data);
+      answer = await supervisor.run('test', parsed.data);
     }
     if (answer === 'busy') return send(503, { code: 'connector_busy' });
     const sent = send(200, answer);
