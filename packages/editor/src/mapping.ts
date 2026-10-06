@@ -88,6 +88,10 @@ function namesWithNoNode(blocks: readonly BlockNode[], found: Set<string>): void
         if (block.note !== undefined) marksWithNoType(block.note, found);
         break;
       case 'figure':
+        // A figure taking its image from a binding (B6-A) has no node attribute to hold it until
+        // B6.2: named, so the component opens read-only and its text says it cannot be shown,
+        // rather than a figure with no image crashing the page or a save dropping the binding.
+        if (block.binding !== undefined) found.add('bound figure');
         // Its caption is inline content, walked as a table's is (figures 2).
         marksWithNoType(block.caption, found);
         break;

@@ -43,7 +43,13 @@ export function renderContent(
   } catch {
     return null;
   }
-  const opened = toEditor(parsed);
+  // A document the editor's schema cannot build is one it cannot show, never a page that crashes.
+  let opened: ReturnType<typeof toEditor>;
+  try {
+    opened = toEditor(parsed);
+  } catch {
+    return null;
+  }
   if (!opened.editable) return null;
   const rendered = DOMSerializer.fromSchema(editorSchema).serializeFragment(opened.doc.content, {
     document,
