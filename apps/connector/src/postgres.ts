@@ -198,14 +198,36 @@ export async function readOnlyFindings(client: pg.Client): Promise<TestFinding[]
   return result.rows[0]?.may_write === false ? [] : ['account_not_read_only'];
 }
 
+/** Whether `current_user` may create in any schema, `PUBLIC`'s `CREATE` on `public` among them. */
+const CREATES_IN_A_SCHEMA = `exists (select 1 from pg_catalog.pg_namespace s
+               where pg_catalog.has_schema_privilege(s.oid, 'CREATE'))`;
+
+/**
+ * Whether `current_user` owns, or has the privileges of a role that owns, any function or procedure,
+ * outside the catalogues: SQL that sets another role from inside the query (the review, 2026-10-06).
+ */
+const OWNS_A_ROUTINE = `exists (select 1 from pg_catalog.pg_proc p
+                 join pg_catalog.pg_namespace n on n.oid OPERATOR(pg_catalog.=) p.pronamespace
+               where ${OUTSIDE_CATALOGUES}
+                 and pg_catalog.pg_has_role(p.proowner, 'USAGE'))`;
+
+/** As `OWNS_A_ROUTINE`, any relation of these kinds. */
+const ownsRelation = (kinds: string) => `exists (select 1 from pg_catalog.pg_class c
+                 join pg_catalog.pg_namespace n on n.oid OPERATOR(pg_catalog.=) c.relnamespace
+               where c.relkind OPERATOR(pg_catalog.=) ANY (ARRAY[${kinds}]::pg_catalog."char"[])
+                 and ${OUTSIDE_CATALOGUES}
+                 and pg_catalog.pg_has_role(c.relowner, 'USAGE'))`;
+
 /**
  * Whether the account may read data of its own (DAT-112; the D7 plan, D7-D): a superuser, a member of
  * `pg_read_all_data` by any grant, or `SELECT` on any table, view, materialised view, foreign table,
  * partitioned table or sequence outside the catalogues, or on any column of one - by grant,
  * ownership, `PUBLIC` or a role it inherits. A role it may only `SET`, as each person's is granted,
- * counts for nothing until it is set. Asked at every asserted run, so measured in D7.1 against 10,000
- * tables the account may not read, PostgreSQL 18 in a container: 21 ms the median of 15, 81 ms the
- * first, cold; `exists` stops at the first relation it may read.
+ * counts for nothing until it is set. Nor may it own a function, a procedure or a view, or create in
+ * any schema (the review, 2026-10-06): SQL of its own, in a query's path, could set any person's role.
+ * Asked at every asserted run, so measured in D7.1 against 10,000 tables the account may not read,
+ * PostgreSQL 18 in a container: 21 ms the median of 15, 81 ms the first, cold; `exists` stops at the
+ * first relation it may read.
  */
 const HOLDS_PRIVILEGE = `
 select r.rolsuper
@@ -217,7 +239,27 @@ select r.rolsuper
                  and ${OUTSIDE_CATALOGUES}
                  and (pg_catalog.has_table_privilege(c.oid, 'SELECT')
                       or pg_catalog.has_any_column_privilege(c.oid, 'SELECT')))
+    or ${OWNS_A_ROUTINE}
+    or ${ownsRelation("'v', 'm'")}
+    or ${CREATES_IN_A_SCHEMA}
        as holds
+from pg_catalog.pg_roles r where r.rolname OPERATOR(pg_catalog.=) current_user`;
+
+/**
+ * Whether a person's role, once set, is one the connector will not run as (the review, 2026-10-06):
+ * PostgreSQL checks a later `set_config('role', ...)` against the session's user, the account, which
+ * may set every person's role, so SQL a person owns in a query's path could read as anybody. A
+ * person's role therefore may not log in, create in any schema or database, or own - or have the
+ * privileges of a role that owns - any function, procedure, table, view or materialised view.
+ */
+const ROLE_UNSAFE = `
+select r.rolcanlogin
+    or ${CREATES_IN_A_SCHEMA}
+    or exists (select 1 from pg_catalog.pg_database d
+               where pg_catalog.has_database_privilege(d.oid, 'CREATE'))
+    or ${OWNS_A_ROUTINE}
+    or ${ownsRelation("'r', 'p', 'v', 'm', 'f'")}
+       as unsafe
 from pg_catalog.pg_roles r where r.rolname OPERATOR(pg_catalog.=) current_user`;
 
 /** Whether the account holds any privilege on data of its own, as `HOLDS_PRIVILEGE` reads it. */
@@ -239,7 +281,9 @@ const ROLE_REFUSED = new Set(['22023', '42501']);
 /** What an assertion found: the identity as the source saw it, or why it is refused. */
 export type Asserted =
   | { readonly asSeen: string }
-  | { readonly refused: 'account_holds_privilege' | 'identity_unmatched' };
+  | {
+      readonly refused: 'account_holds_privilege' | 'identity_unmatched' | 'identity_role_unsafe';
+    };
 
 /**
  * A person's role asserted, first in the read-only transaction the caller has begun (D7-A, D7-D): the
@@ -256,7 +300,11 @@ export async function assertRole(client: pg.Client, role: string): Promise<Asser
       return { refused: 'identity_unmatched' };
     throw error;
   }
-  return (await heldAs(client, role)) ? { asSeen: role } : { refused: 'identity_unmatched' };
+  if (!(await heldAs(client, role))) return { refused: 'identity_unmatched' };
+  // Before anything is read: a role that could switch to another person's is not run as.
+  const unsafe = await client.query<{ unsafe: boolean }>(ROLE_UNSAFE);
+  if (unsafe.rows[0]?.unsafe !== false) return { refused: 'identity_role_unsafe' };
+  return { asSeen: role };
 }
 
 /** Whether the source still sees the person's role (D7-E): read again once the rows are read. */
@@ -347,6 +395,7 @@ export const CATALOGUE_QUERIES: Readonly<Record<string, string>> = {
   SERVER_VERSION,
   MAY_WRITE,
   HOLDS_PRIVILEGE,
+  ROLE_UNSAFE,
   ASSERT_ROLE,
   CURRENT_USER,
   TYPES_BY_OID,

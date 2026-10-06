@@ -31,6 +31,7 @@ import {
   type StoredConnection,
   type Tenant,
   type TenantDatabase,
+  type TenantListener,
   type TenantTransaction,
 } from '@alloy-works/db';
 import {
@@ -62,10 +63,12 @@ import type { FastifyRequest } from 'fastify';
 import { administerOrAbove, notFound, type Authorised } from '../access.js';
 import { versionView } from '../components.js';
 import { AfterCommit } from '../after-commit.js';
+import { authorityEnded, watchAuthority, type AuthorityEnded } from '../authority.js';
 import { AppError } from '../errors.js';
 import { cursorFor, pageAsked } from '../listing.js';
 import type { SessionPrincipal } from '../sessions.js';
 import { refused } from '../wire-codes.js';
+import { actingOn, runIdentity } from './acting.js';
 import { checkAct, documentsOnConnection, resolveAct, type RunsThrough } from './bindings.js';
 import { createConnectorClient, type Answered } from './connector.js';
 import { failureView, failureViewFor, type FailureIn } from './failure-words.js';
@@ -293,8 +296,38 @@ export function connectionHandlers(
   principalOf: (request: FastifyRequest) => SessionPrincipal,
   connector?: ConnectorOptions,
   objects?: ObjectStores,
+  events?: TenantListener,
 ) {
   const client = connector ? createConnectorClient(connector) : undefined;
+
+  /**
+   * Does `work` - asking the connector - while the caller's session or token is watched (IAM-082, the
+   * D7 plan's D7-I): signed out or revoked meanwhile, `work`'s signal aborts, which closes every
+   * request it has open, and the act answers `authority_ended`, its reason logged, recording nothing.
+   * `work` throws its signal's reason before it records anything once its signal has aborted, and
+   * what it answered whole stands.
+   */
+  async function whileHeld<T>(
+    request: FastifyRequest,
+    work: (signal: AbortSignal) => Promise<T>,
+  ): Promise<T> {
+    const authority = watchAuthority({
+      db,
+      tenant: tenantOf(request),
+      credential: request.credential,
+      events,
+    });
+    try {
+      return await work(authority.signal);
+    } catch (error) {
+      if (authority.ended() === undefined) throw error;
+      const { reason } = authority.signal.reason as AuthorityEnded;
+      request.log.info({ reason }, 'an act was stopped: the authority it ran by ended');
+      throw authorityEnded(reason);
+    } finally {
+      authority.stop();
+    }
+  }
 
   /** The connection a route names, refused where it cannot run: absent, or retired. */
   async function runnable(trx: TenantTransaction, id: string): Promise<StoredConnection> {
@@ -339,10 +372,19 @@ export function connectionHandlers(
     return client;
   }
 
-  /** What a resolve and a check run through: this connector, and these routes' own refusals. */
-  function runsThrough(): RunsThrough {
+  /**
+   * What a resolve and a check run through: this connector, these routes' own refusals, who the
+   * caller runs as on a connection, and the watch on their authority.
+   */
+  function runsThrough(request: FastifyRequest): RunsThrough {
     const asking = connected();
-    return { run: (request) => asking.run(request), runnable, usableSealed };
+    return {
+      run: (asked, signal) => asking.run(asked, signal),
+      runnable,
+      usableSealed,
+      acting: (trx, connection) => actingOn(trx, request, connection),
+      whileHeld: (work) => whileHeld(request, work),
+    };
   }
 
   function answered<T>(answer: Answered<T>): T {
@@ -363,15 +405,21 @@ export function connectionHandlers(
     connection: StoredConnection,
     { sealed, credentialId }: Usable,
     by: string,
+    signal?: AbortSignal,
   ): Promise<TestView> {
-    const answer = await connected().test({
-      requestId: randomUUID(),
-      tenant: tenant.id,
-      connection: { id: connection.id, version: connection.version.id },
-      settings: connection.settings,
-      sealed,
-      deadlineMs: TEST_DEADLINE_MS,
-    });
+    // As the account, always: a test checks the account (D7-G).
+    const answer = await connected().test(
+      {
+        requestId: randomUUID(),
+        tenant: tenant.id,
+        connection: { id: connection.id, version: connection.version.id },
+        settings: connection.settings,
+        sealed,
+        deadlineMs: TEST_DEADLINE_MS,
+      },
+      signal,
+    );
+    if (signal?.aborted) throw signal.reason;
     const tested: TestAnswer = answered(answer);
     if (tested.outcome === 'failed' && !TEST_FAILURES.includes(tested.failure.code as never)) {
       // A failure a test cannot give is not an answer this service can record.
@@ -556,19 +604,33 @@ export function connectionHandlers(
       return new AfterCommit(async () => {
         let tested: TestView;
         try {
-          tested = await test(
-            tenant,
-            connection,
-            { sealed, credentialId: set.credentialId },
-            principalId,
+          tested = await whileHeld(request, (signal) =>
+            test(
+              tenant,
+              connection,
+              { sealed, credentialId: set.credentialId },
+              principalId,
+              signal,
+            ),
           );
         } catch (error) {
-          if (!(error instanceof AppError) || error.status !== 503) throw error;
-          tested = {
-            outcome: 'failed',
-            failure: failureView(error.code as DataFailureCode),
-            at: new Date().toISOString(),
-          };
+          if (!(error instanceof AppError)) throw error;
+          if (error.code === 'authority_ended') {
+            // The credential is set whatever stopped its test: said as the test's failure (the
+            // review, 2026-10-06), never as a refusal of what was saved.
+            tested = {
+              outcome: 'failed',
+              failure: { code: error.code, attribution: 'product', message: error.message },
+              at: new Date().toISOString(),
+            };
+          } else {
+            if (error.status !== 503) throw error;
+            tested = {
+              outcome: 'failed',
+              failure: failureView(error.code as DataFailureCode),
+              at: new Date().toISOString(),
+            };
+          }
         }
         return tested.outcome === 'failed'
           ? { credential, test: tested, dependents }
@@ -584,7 +646,9 @@ export function connectionHandlers(
       const tenant = tenantOf(request);
       // Decided and read here; the connector is asked once this transaction, and its lock on access,
       // is let go (the D1 fix, C4).
-      return new AfterCommit(() => test(tenant, connection, usable, principalId));
+      return new AfterCommit(() =>
+        whileHeld(request, (signal) => test(tenant, connection, usable, principalId, signal)),
+      );
     },
 
     describeConnection: async (request: FastifyRequest, { trx, facts }: Authorised) => {
@@ -617,6 +681,8 @@ export function connectionHandlers(
       const { sealed } = await usableSealed(trx, id);
       const client = connected();
       const tenant = tenantOf(request);
+      // As the caller, on a connection asserting identity (D7-G): as the account it lists nothing.
+      const acting = await actingOn(trx, request, connection);
       const asked = {
         requestId: randomUUID(),
         tenant: tenant.id,
@@ -624,38 +690,45 @@ export function connectionHandlers(
         settings: connection.settings,
         sealed,
         deadlineMs: DESCRIBE_DEADLINE_MS,
+        ...runIdentity(acting),
       };
       // Decided and read here; the connector is asked once this transaction, and its lock on access,
       // is let go (the D1 fix, C4). A describe records nothing.
       if (sql !== undefined) {
-        return new AfterCommit(async () => {
-          const described = answered(await client.describeSql({ ...asked, sql }));
-          if ('failure' in described)
-            throw dataRefused(describedStatus(described.failure), described.failure);
-          return described;
-        });
+        return new AfterCommit(() =>
+          whileHeld(request, async (signal) => {
+            const described = answered(await client.describeSql({ ...asked, sql }, signal));
+            if ('failure' in described)
+              throw dataRefused(describedStatus(described.failure), described.failure);
+            return described;
+          }),
+        );
       }
       if (builder !== undefined) {
-        return new AfterCommit(async () => {
-          const described = answered(await client.describeSql({ ...asked, builder }));
+        return new AfterCommit(() =>
+          whileHeld(request, async (signal) => {
+            const described = answered(await client.describeSql({ ...asked, builder }, signal));
+            if ('failure' in described) {
+              throw dataRefused(
+                describedStatus(described.failure),
+                described.failure,
+                seesSource,
+                true,
+              );
+            }
+            return described;
+          }),
+        );
+      }
+      return new AfterCommit(() =>
+        whileHeld(request, async (signal) => {
+          const described = answered(await client.describe(asked, signal));
           if ('failure' in described) {
-            throw dataRefused(
-              describedStatus(described.failure),
-              described.failure,
-              seesSource,
-              true,
-            );
+            throw dataRefused(describedStatus(described.failure), described.failure);
           }
           return described;
-        });
-      }
-      return new AfterCommit(async () => {
-        const described = answered(await client.describe(asked));
-        if ('failure' in described) {
-          throw dataRefused(describedStatus(described.failure), described.failure);
-        }
-        return described;
-      });
+        }),
+      );
     },
 
     sampleConnection: async (request: FastifyRequest, { trx, facts }: Authorised) => {
@@ -700,69 +773,78 @@ export function connectionHandlers(
       const tenant = tenantOf(request);
       // The least of the definition's limits and the tenant's (DAT-050), and a deadline of the time.
       const limits = effectiveLimits(draft.limits, await dataPolicy(trx));
+      // As the caller, on a connection asserting identity (D7-G).
+      const acting = await actingOn(trx, request, connection);
       // Decided and read here; the connector is asked once this transaction commits (the D1 fix, C4).
       // Nothing of a sample is stored (D2-I).
-      return new AfterCommit(async (): Promise<SampleView> => {
-        const ran = answered(
-          await client.run({
-            requestId: randomUUID(),
-            tenant: tenant.id,
-            connection: { id: connection.id, version: connection.version.id },
-            settings: connection.settings,
-            sealed,
-            definition: draft,
-            values: body.values,
-            limits,
-            deadlineMs: limits.seconds * 1000,
-          }),
-        );
-        if (ran.outcome === 'failed') {
-          return { outcome: 'failed', failure: failureViewFor(ran.failure, seesSource, built) };
-        }
-        // The checksum is the service's to hold the connector to (D2-K): the rows it answered, in
-        // the canonical form, must hash to what it said.
-        const checksum = createHash('sha256')
-          .update(canonicalResultBytes(ran.result), 'utf8')
-          .digest('hex');
-        if (checksum !== ran.checksum) {
-          return { outcome: 'failed', failure: failureView('connector_error') };
-        }
-        const rows = ran.result.rows.slice(0, SAMPLE_ROWS);
-        // Each image in the rows shown, by its header alone (the D8 plan, D8-G): nothing is stored,
-        // and an image that is not what its hash says is the connector's error, as a resolve's is.
-        const shown = new Set<string>();
-        ran.result.columns.forEach(([, base], at) => {
-          if (base !== 'image') return;
-          for (const row of rows) if (typeof row[at] === 'string') shown.add(row[at]);
-        });
-        const images: Extract<SampleView, { outcome: 'ok' }>['images'] = {};
-        for (const hash of [...shown].sort()) {
-          const encoded = ran.images?.[hash];
-          const image = encoded === undefined ? null : Buffer.from(encoded, 'base64');
-          const read = image === null ? null : readImageHeader(image);
-          if (
-            image === null ||
-            read === null ||
-            !read.ok ||
-            read.header.end !== image.length ||
-            createHash('sha256').update(image).digest('hex') !== hash
-          ) {
+      return new AfterCommit(() =>
+        whileHeld(request, async (signal): Promise<SampleView> => {
+          const ran = answered(
+            await client.run(
+              {
+                requestId: randomUUID(),
+                tenant: tenant.id,
+                connection: { id: connection.id, version: connection.version.id },
+                settings: connection.settings,
+                sealed,
+                definition: draft,
+                values: body.values,
+                limits,
+                deadlineMs: limits.seconds * 1000,
+                ...runIdentity(acting),
+              },
+              signal,
+            ),
+          );
+          if (signal.aborted) throw signal.reason;
+          if (ran.outcome === 'failed') {
+            return { outcome: 'failed', failure: failureViewFor(ran.failure, seesSource, built) };
+          }
+          // The checksum is the service's to hold the connector to (D2-K): the rows it answered, in
+          // the canonical form, must hash to what it said.
+          const checksum = createHash('sha256')
+            .update(canonicalResultBytes(ran.result), 'utf8')
+            .digest('hex');
+          if (checksum !== ran.checksum) {
             return { outcome: 'failed', failure: failureView('connector_error') };
           }
-          const { format, width, height } = read.header;
-          images[hash] = { format, bytes: image.length, width, height };
-        }
-        return {
-          outcome: 'ok',
-          columns: ran.result.columns.map(([name, base]) => [name, base] as [string, string]),
-          rows: rows.map((row) => [...row]),
-          rowCount: ran.rowCount,
-          checksum,
-          ran: { sql: ran.ran.sql },
-          durationMs: ran.durationMs,
-          images,
-        };
-      });
+          const rows = ran.result.rows.slice(0, SAMPLE_ROWS);
+          // Each image in the rows shown, by its header alone (the D8 plan, D8-G): nothing is stored,
+          // and an image that is not what its hash says is the connector's error, as a resolve's is.
+          const shown = new Set<string>();
+          ran.result.columns.forEach(([, base], at) => {
+            if (base !== 'image') return;
+            for (const row of rows) if (typeof row[at] === 'string') shown.add(row[at]);
+          });
+          const images: Extract<SampleView, { outcome: 'ok' }>['images'] = {};
+          for (const hash of [...shown].sort()) {
+            const encoded = ran.images?.[hash];
+            const image = encoded === undefined ? null : Buffer.from(encoded, 'base64');
+            const read = image === null ? null : readImageHeader(image);
+            if (
+              image === null ||
+              read === null ||
+              !read.ok ||
+              read.header.end !== image.length ||
+              createHash('sha256').update(image).digest('hex') !== hash
+            ) {
+              return { outcome: 'failed', failure: failureView('connector_error') };
+            }
+            const { format, width, height } = read.header;
+            images[hash] = { format, bytes: image.length, width, height };
+          }
+          return {
+            outcome: 'ok',
+            columns: ran.result.columns.map(([name, base]) => [name, base] as [string, string]),
+            rows: rows.map((row) => [...row]),
+            rowCount: ran.rowCount,
+            checksum,
+            ran: { sql: ran.ran.sql },
+            durationMs: ran.durationMs,
+            images,
+          };
+        }),
+      );
     },
 
     getConnectionUses: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
@@ -781,13 +863,13 @@ export function connectionHandlers(
     // (data.md, "Resolve" and "Check"): decided and read in the deciding transaction, asked once it
     // commits, and recorded in a second that decides again (D3-H). `bindings.ts` holds the rest.
     resolveBindings: async (request: FastifyRequest, authorised: Authorised) => {
-      const through = runsThrough();
+      const through = runsThrough(request);
       connected();
       return resolveAct(db, tenantOf(request), objects, request, authorised, through);
     },
 
     checkBindings: async (request: FastifyRequest, authorised: Authorised) => {
-      const through = runsThrough();
+      const through = runsThrough(request);
       connected();
       return checkAct(db, tenantOf(request), objects, request, authorised, through);
     },

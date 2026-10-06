@@ -20,6 +20,7 @@ import {
   findApiToken,
   groupNames,
   loadFacts,
+  notifyTenant,
   openSecret,
   SealedSecretRefused,
   syncProviderGroups,
@@ -78,8 +79,8 @@ import type { SecretStore } from './secrets.js';
 import {
   createSession,
   endSession,
-  findSession,
   hashToken,
+  sessionHeld,
   SESSION_POLICY,
   type SessionPrincipal,
 } from './sessions.js';
@@ -110,8 +111,14 @@ declare module 'fastify' {
   }
 }
 
+/**
+ * How the principal was found: a session, by its row and the route it was signed in by, or a personal
+ * token, by its row and its scopes. Each row is what a sign-out or a revocation names to every
+ * replica, so an act still running as it stops (IAM-082, the D7 plan's D7-I).
+ */
 export type Credential =
-  { readonly kind: 'session' } | { readonly kind: 'token'; readonly scopes: readonly Permission[] };
+  | { readonly kind: 'session'; readonly id: string; readonly route: SignInRoute }
+  | { readonly kind: 'token'; readonly id: string; readonly scopes: readonly Permission[] };
 
 export interface AppOptions extends HttpOptions {
   readonly db: TenantDatabase;
@@ -419,7 +426,14 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...componentHandlers(db, tenantOf, principalOf),
     ...documentHandlers(db, tenantOf, principalOf),
     ...templateHandlers(db, tenantOf, principalOf),
-    ...connectionHandlers(db, tenantOf, principalOf, options.connector, options.objects),
+    ...connectionHandlers(
+      db,
+      tenantOf,
+      principalOf,
+      options.connector,
+      options.objects,
+      options.events,
+    ),
     ...queryDefinitionHandlers(db, tenantOf, principalOf),
     ...bindingHandlers(tenantOf, options.objects),
     ...pendingHandlers(db, tenantOf, options.objects),
@@ -623,7 +637,14 @@ export function buildApp(options: AppOptions): FastifyInstance {
 
     signOut: async (request, reply) => {
       const token = request.cookies[SESSION_COOKIE];
-      if (token) await db.withTenant(tenantOf(request), (trx) => endSession(trx, token));
+      // Said in the transaction that ends it: every replica hears the session's row, and stops what
+      // it was doing at the source within two seconds (IAM-082, the D7 plan's D7-I).
+      if (token) {
+        await db.withTenant(tenantOf(request), async (trx) => {
+          const ended = await endSession(trx, token);
+          if (ended) await notifyTenant(trx, { kind: 'credential_ended', session: ended });
+        });
+      }
       reply.clearCookie(SESSION_COOKIE, COOKIE);
       return reply.status(204).send();
     },
@@ -714,7 +735,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
           'This environment cannot stream yet. Try again later.',
         );
       }
-      await streamToViewer({ request, reply, db, events, tenant });
+      await streamToViewer({ request, reply, db, events, tenant, credential: request.credential });
       return reply;
     },
 
@@ -869,16 +890,16 @@ export function buildApp(options: AppOptions): FastifyInstance {
             email: holder.email,
             displayName: holder.displayName,
           };
-          request.credential = { kind: 'token', scopes: holder.scopes };
+          request.credential = { kind: 'token', id: holder.tokenId, scopes: holder.scopes };
           return;
         }
         const token = request.cookies[SESSION_COOKIE];
-        const principal = token
-          ? await db.withTenant(tenantOf(request), (trx) => findSession(trx, token))
+        const held = token
+          ? await db.withTenant(tenantOf(request), (trx) => sessionHeld(trx, token))
           : undefined;
-        if (!principal) throw unauthenticated();
-        request.principal = principal;
-        request.credential = { kind: 'session' };
+        if (!held) throw unauthenticated();
+        request.principal = held.principal;
+        request.credential = { kind: 'session', id: held.id, route: held.route };
       });
     }
     http.route({

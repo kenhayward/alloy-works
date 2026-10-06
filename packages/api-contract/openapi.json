@@ -15669,7 +15669,7 @@
         },
         "responses": {
           "200": {
-            "description": "Set: who set it and when, never the credential, and the test run straight after",
+            "description": "Set: who set it and when, never the credential, and the test run straight after. A test stopped because the session was signed out, or the token revoked, meanwhile fails `authority_ended`, the credential still set",
             "content": {
               "application/json": {
                 "schema": {
@@ -15946,7 +15946,7 @@
             }
           },
           "401": {
-            "description": "No session, or not one this environment issued",
+            "description": "No session, or not one this environment issued; or `authority_ended`: the session was signed out, or the token revoked (`signed_out`, `token_revoked`), while the source answered, which stopped it within two seconds. Nothing is recorded",
             "content": {
               "application/json": {
                 "schema": {
@@ -15967,6 +15967,13 @@
                     "traceId": {
                       "type": "string",
                       "description": "Quote this when reporting a problem"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "enum": [
+                        "signed_out",
+                        "token_revoked"
+                      ]
                     }
                   },
                   "required": [
@@ -17303,7 +17310,7 @@
             }
           },
           "401": {
-            "description": "No session, or not one this environment issued",
+            "description": "No session, or not one this environment issued; or `authority_ended`: the session was signed out, or the token revoked (`signed_out`, `token_revoked`), while the source answered, which stopped it within two seconds. Nothing is recorded",
             "content": {
               "application/json": {
                 "schema": {
@@ -17324,6 +17331,13 @@
                     "traceId": {
                       "type": "string",
                       "description": "Quote this when reporting a problem"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "enum": [
+                        "signed_out",
+                        "token_revoked"
+                      ]
                     }
                   },
                   "required": [
@@ -17426,7 +17440,7 @@
             }
           },
           "409": {
-            "description": "`connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, or it was set before credentials were bound to a target, so the password must be set again; `sql_not_permitted`: for SQL, the connection has not been tested clean at its latest version and credential (`untested`), or its account was found able to write (`not_read_only`). A built query is never refused this way",
+            "description": "`connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, or it was set before credentials were bound to a target, so the password must be set again; `sql_not_permitted`: for SQL, the connection has not been tested clean at its latest version and credential (`untested`), its account was found able to write (`not_read_only`), or it runs as each person (`asserted`). A built query is never refused this way; `identity_unavailable`: the connection runs as each person, and the caller's sign-in has no email or subject it can name them by, or one longer than 63 bytes",
             "content": {
               "application/json": {
                 "schema": {
@@ -17485,7 +17499,8 @@
                       "type": "string",
                       "enum": [
                         "untested",
-                        "not_read_only"
+                        "not_read_only",
+                        "asserted"
                       ]
                     }
                   },
@@ -18851,7 +18866,7 @@
             }
           },
           "401": {
-            "description": "No session, or not one this environment issued",
+            "description": "No session, or not one this environment issued; or `authority_ended`: the session was signed out, or the token revoked (`signed_out`, `token_revoked`), while the source answered, which stopped it within two seconds. Nothing is recorded",
             "content": {
               "application/json": {
                 "schema": {
@@ -18872,6 +18887,13 @@
                     "traceId": {
                       "type": "string",
                       "description": "Quote this when reporting a problem"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "enum": [
+                        "signed_out",
+                        "token_revoked"
+                      ]
                     }
                   },
                   "required": [
@@ -18974,7 +18996,7 @@
             }
           },
           "409": {
-            "description": "`connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, or it was set before credentials were bound to a target, so the password must be set again; `sql_not_permitted`: for SQL, the connection has not been tested clean at its latest version and credential (`untested`), or its account was found able to write (`not_read_only`). A built query is never refused this way",
+            "description": "`connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, or it was set before credentials were bound to a target, so the password must be set again; `sql_not_permitted`: for SQL, the connection has not been tested clean at its latest version and credential (`untested`), its account was found able to write (`not_read_only`), or it runs as each person (`asserted`). A built query is never refused this way; `identity_unavailable`: the connection runs as each person, and the caller's sign-in has no email or subject it can name them by, or one longer than 63 bytes",
             "content": {
               "application/json": {
                 "schema": {
@@ -19033,7 +19055,8 @@
                       "type": "string",
                       "enum": [
                         "untested",
-                        "not_read_only"
+                        "not_read_only",
+                        "asserted"
                       ]
                     }
                   },
@@ -19355,7 +19378,7 @@
             }
           },
           "401": {
-            "description": "No session, or not one this environment issued",
+            "description": "No session, or not one this environment issued; or `authority_ended`: the session was signed out, or the token revoked (`signed_out`, `token_revoked`), while the source answered, which stopped it within two seconds. Nothing is recorded",
             "content": {
               "application/json": {
                 "schema": {
@@ -19376,6 +19399,13 @@
                     "traceId": {
                       "type": "string",
                       "description": "Quote this when reporting a problem"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "enum": [
+                        "signed_out",
+                        "token_revoked"
+                      ]
                     }
                   },
                   "required": [
@@ -22377,9 +22407,10 @@
                                   "enum": [
                                     "limit",
                                     "permission",
-                                    "unresolved"
+                                    "unresolved",
+                                    "identity"
                                   ],
-                                  "description": "`limit`: past the 50 distinct runs a check makes; `permission`: the caller may not use its connection; `unresolved`: it holds nothing to compare, or has changed since it was resolved"
+                                  "description": "`limit`: past the 50 distinct runs a check makes; `permission`: the caller may not use its connection; `unresolved`: it holds nothing to compare, or has changed since it was resolved; `identity`: what it holds is another person's own view, or was fetched as another identity than the caller's run would be, so it is never compared"
                                 }
                               },
                               "required": [
@@ -27924,7 +27955,7 @@
                     "description": "The dataset version the binding holds now, as the caller saw it"
                   },
                   "sharesOwnView": {
-                    "description": "Acknowledges that a result fetched under the caller's own identity is shown to everybody who may read the document. No result is fetched so yet, so it is accepted and not needed",
+                    "description": "Acknowledges that a result fetched under the caller's own identity is shown to everybody who may read the document. Without it such a result is refused `acknowledgement_required`",
                     "type": "boolean"
                   }
                 },
@@ -30022,7 +30053,10 @@
                       "type": "string",
                       "enum": [
                         "untested",
-                        "not_read_only"
+                        "not_read_only",
+                        "asserted",
+                        "signed_out",
+                        "token_revoked"
                       ]
                     },
                     "current": {
@@ -31878,89 +31912,7 @@
             }
           },
           "403": {
-            "description": "The caller may read the document but may not edit it, or may not use the connection the accepted result ran on. Nothing is recorded",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string",
-                      "description": "Stable and machine-readable: branch on this, never on the message"
-                    },
-                    "message": {
-                      "type": "string",
-                      "description": "For people. It may change between releases"
-                    },
-                    "rule": {
-                      "description": "The requirement or rule that refused the request, where one did",
-                      "type": "string"
-                    },
-                    "traceId": {
-                      "type": "string",
-                      "description": "Quote this when reporting a problem"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "traceId"
-                  ]
-                }
-              }
-            },
-            "headers": {
-              "X-Request-Id": {
-                "description": "Trace identifier assigned to this request.",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No such document in this environment, or none the caller may read",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "string",
-                      "description": "Stable and machine-readable: branch on this, never on the message"
-                    },
-                    "message": {
-                      "type": "string",
-                      "description": "For people. It may change between releases"
-                    },
-                    "rule": {
-                      "description": "The requirement or rule that refused the request, where one did",
-                      "type": "string"
-                    },
-                    "traceId": {
-                      "type": "string",
-                      "description": "Quote this when reporting a problem"
-                    }
-                  },
-                  "required": [
-                    "code",
-                    "message",
-                    "traceId"
-                  ]
-                }
-              }
-            },
-            "headers": {
-              "X-Request-Id": {
-                "description": "Trace identifier assigned to this request.",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "`resolution_precondition`: the binding no longer holds what `replaces` names, or the version is not a newer result of what it holds, answered with the binding as it stands",
+            "description": "The caller may read the document but may not edit it, or may not use the connection the accepted result ran on; `identity_differs`: the result is another person's own view, which only they may accept. Nothing is recorded",
             "content": {
               "application/json": {
                 "schema": {
@@ -32090,7 +32042,1999 @@
                       "type": "string",
                       "enum": [
                         "untested",
-                        "not_read_only"
+                        "not_read_only",
+                        "asserted",
+                        "signed_out",
+                        "token_revoked"
+                      ]
+                    },
+                    "current": {
+                      "description": "resolution_precondition: the binding as it now stands",
+                      "type": "object",
+                      "properties": {
+                        "node": {
+                          "type": "string"
+                        },
+                        "binding": {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "binding"
+                            },
+                            "id": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "query": {
+                              "type": "string",
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                            },
+                            "version": {
+                              "type": "string",
+                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                            },
+                            "parameters": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                              },
+                              "additionalProperties": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "literal": {
+                                        "anyOf": [
+                                          {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "maxLength": 1000
+                                              },
+                                              {
+                                                "type": "boolean"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "minItems": 1,
+                                            "maxItems": 50,
+                                            "type": "array",
+                                            "items": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "string",
+                                                  "maxLength": 1000
+                                                },
+                                                {
+                                                  "type": "boolean"
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "literal"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "document": {
+                                        "type": "string",
+                                        "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                                      }
+                                    },
+                                    "required": [
+                                      "document"
+                                    ]
+                                  }
+                                ]
+                              }
+                            },
+                            "mode": {
+                              "type": "string",
+                              "enum": [
+                                "checked",
+                                "pinned"
+                              ]
+                            },
+                            "take": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "column": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "column"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "key": {
+                                      "type": "object",
+                                      "propertyNames": {
+                                        "type": "string"
+                                      },
+                                      "additionalProperties": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 1000
+                                          },
+                                          {
+                                            "type": "boolean"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "column": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "key",
+                                    "column"
+                                  ]
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "id",
+                            "query",
+                            "parameters",
+                            "mode",
+                            "take"
+                          ]
+                        },
+                        "held": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "dataset": {
+                                  "type": "string"
+                                },
+                                "version": {
+                                  "type": "string",
+                                  "description": "The dataset version it holds"
+                                },
+                                "number": {
+                                  "type": "string",
+                                  "description": "`revision.version`, as `0.2`"
+                                },
+                                "provenance": {
+                                  "type": "object",
+                                  "properties": {
+                                    "schemaVersion": {
+                                      "type": "number",
+                                      "const": 1
+                                    },
+                                    "queryDefinition": {
+                                      "type": "object",
+                                      "properties": {
+                                        "artifact": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                        },
+                                        "version": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                        }
+                                      },
+                                      "required": [
+                                        "artifact",
+                                        "version"
+                                      ]
+                                    },
+                                    "connection": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "artifact": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "version": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            }
+                                          },
+                                          "required": [
+                                            "artifact",
+                                            "version"
+                                          ]
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ],
+                                      "description": "The connection version it ran on, or null where the caller may not read the query definition"
+                                    },
+                                    "parameters": {
+                                      "type": "object",
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                                      },
+                                      "additionalProperties": {
+                                        "anyOf": [
+                                          {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "maxLength": 1000
+                                              },
+                                              {
+                                                "type": "boolean"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "minItems": 1,
+                                            "maxItems": 50,
+                                            "type": "array",
+                                            "items": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "string",
+                                                  "maxLength": 1000
+                                                },
+                                                {
+                                                  "type": "boolean"
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "ran": {
+                                      "type": "object",
+                                      "properties": {
+                                        "sql": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "minLength": 1,
+                                              "maxLength": 300000
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ],
+                                          "description": "The SQL that ran, or null where the caller may not read the query definition"
+                                        }
+                                      },
+                                      "required": [
+                                        "sql"
+                                      ]
+                                    },
+                                    "identity": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "service"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "endUser"
+                                            },
+                                            "mechanism": {
+                                              "type": "string",
+                                              "const": "asserted"
+                                            },
+                                            "principal": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "signInRoute": {
+                                              "type": "string",
+                                              "enum": [
+                                                "organisation",
+                                                "google",
+                                                "token"
+                                              ]
+                                            },
+                                            "asSeen": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "mechanism",
+                                            "principal",
+                                            "signInRoute",
+                                            "asSeen"
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    "at": {
+                                      "type": "string",
+                                      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+                                    },
+                                    "durationMs": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "rowCount": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "columns": {
+                                      "minItems": 1,
+                                      "maxItems": 1664,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "from": {
+                                            "anyOf": [
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "column": {
+                                                    "type": "string"
+                                                  }
+                                                },
+                                                "required": [
+                                                  "column"
+                                                ]
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ],
+                                            "description": "The source's column it reads, or null where the caller may not read the query definition"
+                                          },
+                                          "type": {
+                                            "oneOf": [
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "text"
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "integer"
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "decimal"
+                                                  },
+                                                  "precision": {
+                                                    "type": "integer",
+                                                    "minimum": 1,
+                                                    "maximum": 1000
+                                                  },
+                                                  "scale": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 1000
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "precision",
+                                                  "scale"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "date"
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "time"
+                                                  },
+                                                  "fraction": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 6
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "fraction"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "localDateTime"
+                                                  },
+                                                  "fraction": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 6
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "fraction"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "instant"
+                                                  },
+                                                  "fraction": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 6
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "fraction"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "boolean"
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "image"
+                                                  },
+                                                  "encoding": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "base64",
+                                                      "binary"
+                                                    ]
+                                                  },
+                                                  "description": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "column": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "column"
+                                                        ]
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "const": "decorative"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "encoding",
+                                                  "description"
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "name",
+                                          "from",
+                                          "type"
+                                        ]
+                                      },
+                                      "description": "The definition's declared columns: each one's name and type, and where it reads"
+                                    },
+                                    "canonical": {
+                                      "type": "number",
+                                      "const": 1
+                                    },
+                                    "checksum": {
+                                      "type": "string",
+                                      "pattern": "^[0-9a-f]{64}$"
+                                    },
+                                    "images": {
+                                      "type": "object",
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{64}$"
+                                      },
+                                      "additionalProperties": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "schemaVersion",
+                                    "queryDefinition",
+                                    "connection",
+                                    "parameters",
+                                    "ran",
+                                    "identity",
+                                    "at",
+                                    "durationMs",
+                                    "rowCount",
+                                    "columns",
+                                    "canonical",
+                                    "checksum",
+                                    "images"
+                                  ]
+                                },
+                                "name": {
+                                  "description": "The dataset's name, or null where nobody has named it",
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "stale": {
+                                  "type": "boolean",
+                                  "description": "Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again"
+                                },
+                                "taken": {
+                                  "anyOf": [
+                                    {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "value": {
+                                              "description": "The value, in its column's canonical form: a string, or a boolean",
+                                              "type": [
+                                                "string",
+                                                "boolean"
+                                              ]
+                                            },
+                                            "column": {
+                                              "type": "object",
+                                              "properties": {
+                                                "name": {
+                                                  "type": "string",
+                                                  "description": "The declared column it was taken from"
+                                                },
+                                                "type": {
+                                                  "oneOf": [
+                                                    {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "base": {
+                                                          "type": "string",
+                                                          "const": "text"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "base"
+                                                      ]
+                                                    },
+                                                    {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "base": {
+                                                          "type": "string",
+                                                          "const": "integer"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "base"
+                                                      ]
+                                                    },
+                                                    {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "base": {
+                                                          "type": "string",
+                                                          "const": "decimal"
+                                                        },
+                                                        "precision": {
+                                                          "type": "integer",
+                                                          "minimum": 1,
+                                                          "maximum": 1000
+                                                        },
+                                                        "scale": {
+                                                          "type": "integer",
+                                                          "minimum": 0,
+                                                          "maximum": 1000
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "base",
+                                                        "precision",
+                                                        "scale"
+                                                      ]
+                                                    },
+                                                    {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "base": {
+                                                          "type": "string",
+                                                          "const": "date"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "base"
+                                                      ]
+                                                    },
+                                                    {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "base": {
+                                                          "type": "string",
+                                                          "const": "time"
+                                                        },
+                                                        "fraction": {
+                                                          "type": "integer",
+                                                          "minimum": 0,
+                                                          "maximum": 6
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "base",
+                                                        "fraction"
+                                                      ]
+                                                    },
+                                                    {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "base": {
+                                                          "type": "string",
+                                                          "const": "localDateTime"
+                                                        },
+                                                        "fraction": {
+                                                          "type": "integer",
+                                                          "minimum": 0,
+                                                          "maximum": 6
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "base",
+                                                        "fraction"
+                                                      ]
+                                                    },
+                                                    {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "base": {
+                                                          "type": "string",
+                                                          "const": "instant"
+                                                        },
+                                                        "fraction": {
+                                                          "type": "integer",
+                                                          "minimum": 0,
+                                                          "maximum": 6
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "base",
+                                                        "fraction"
+                                                      ]
+                                                    },
+                                                    {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "base": {
+                                                          "type": "string",
+                                                          "const": "boolean"
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "base"
+                                                      ]
+                                                    }
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "name",
+                                                "type"
+                                              ]
+                                            }
+                                          },
+                                          "required": [
+                                            "value",
+                                            "column"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "image": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{64}$",
+                                              "description": "The image's SHA-256, as the result's cell holds it"
+                                            },
+                                            "assetVersion": {
+                                              "type": "string",
+                                              "description": "The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it"
+                                            },
+                                            "description": {
+                                              "type": "string",
+                                              "description": "What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so"
+                                            },
+                                            "column": {
+                                              "type": "object",
+                                              "properties": {
+                                                "name": {
+                                                  "type": "string",
+                                                  "description": "The declared image column it was taken from"
+                                                },
+                                                "type": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "base": {
+                                                      "type": "string",
+                                                      "const": "image"
+                                                    },
+                                                    "encoding": {
+                                                      "type": "string",
+                                                      "enum": [
+                                                        "base64",
+                                                        "binary"
+                                                      ]
+                                                    },
+                                                    "description": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "column": {
+                                                              "type": "string",
+                                                              "minLength": 1
+                                                            }
+                                                          },
+                                                          "required": [
+                                                            "column"
+                                                          ]
+                                                        },
+                                                        {
+                                                          "type": "string",
+                                                          "const": "decorative"
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "base",
+                                                    "encoding",
+                                                    "description"
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "name",
+                                                "type"
+                                              ]
+                                            }
+                                          },
+                                          "required": [
+                                            "image",
+                                            "assetVersion",
+                                            "description",
+                                            "column"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "failure": {
+                                              "type": "string",
+                                              "enum": [
+                                                "take_invalid",
+                                                "value_none",
+                                                "value_many",
+                                                "row_missing",
+                                                "value_null",
+                                                "value_empty",
+                                                "image_description_missing",
+                                                "value_not_image",
+                                                "image_not_placeable"
+                                              ],
+                                              "description": "`take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image"
+                                            },
+                                            "count": {
+                                              "description": "`value_many`: how many rows there were",
+                                              "type": "integer",
+                                              "minimum": 2,
+                                              "maximum": 9007199254740991
+                                            },
+                                            "column": {
+                                              "description": "`take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column",
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "failure"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "unavailable": {
+                                              "type": "boolean",
+                                              "const": true,
+                                              "description": "The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again"
+                                            }
+                                          },
+                                          "required": [
+                                            "unavailable"
+                                          ]
+                                        }
+                                      ],
+                                      "description": "What the binding takes from this dataset version"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "The value the binding takes from the version held, or null where it is stale"
+                                },
+                                "act": {
+                                  "type": "string",
+                                  "enum": [
+                                    "resolve",
+                                    "accept",
+                                    "confirm"
+                                  ],
+                                  "description": "The act that made it what the binding holds"
+                                },
+                                "keepable": {
+                                  "type": "boolean",
+                                  "description": "Whether Keep may hold it under the binding as it now stands: stale, and still asking the question it answers - the same definition, parameters and version - so only the value taken or the mode changed"
+                                },
+                                "by": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "displayName": {
+                                      "description": "Their name, or null where they have none",
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "displayName"
+                                  ],
+                                  "description": "Who resolved or accepted it"
+                                },
+                                "at": {
+                                  "type": "string",
+                                  "description": "When"
+                                }
+                              },
+                              "required": [
+                                "dataset",
+                                "version",
+                                "number",
+                                "provenance",
+                                "name",
+                                "stale",
+                                "taken",
+                                "act",
+                                "keepable",
+                                "by",
+                                "at"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "What it holds, or null where it has never been resolved"
+                        },
+                        "waiting": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "version": {
+                                  "type": "string"
+                                },
+                                "provenance": {
+                                  "type": "object",
+                                  "properties": {
+                                    "schemaVersion": {
+                                      "type": "number",
+                                      "const": 1
+                                    },
+                                    "queryDefinition": {
+                                      "type": "object",
+                                      "properties": {
+                                        "artifact": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                        },
+                                        "version": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                        }
+                                      },
+                                      "required": [
+                                        "artifact",
+                                        "version"
+                                      ]
+                                    },
+                                    "connection": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "artifact": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "version": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            }
+                                          },
+                                          "required": [
+                                            "artifact",
+                                            "version"
+                                          ]
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ],
+                                      "description": "The connection version it ran on, or null where the caller may not read the query definition"
+                                    },
+                                    "parameters": {
+                                      "type": "object",
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                                      },
+                                      "additionalProperties": {
+                                        "anyOf": [
+                                          {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "maxLength": 1000
+                                              },
+                                              {
+                                                "type": "boolean"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "minItems": 1,
+                                            "maxItems": 50,
+                                            "type": "array",
+                                            "items": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "string",
+                                                  "maxLength": 1000
+                                                },
+                                                {
+                                                  "type": "boolean"
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "ran": {
+                                      "type": "object",
+                                      "properties": {
+                                        "sql": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "minLength": 1,
+                                              "maxLength": 300000
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ],
+                                          "description": "The SQL that ran, or null where the caller may not read the query definition"
+                                        }
+                                      },
+                                      "required": [
+                                        "sql"
+                                      ]
+                                    },
+                                    "identity": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "service"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind"
+                                          ]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "endUser"
+                                            },
+                                            "mechanism": {
+                                              "type": "string",
+                                              "const": "asserted"
+                                            },
+                                            "principal": {
+                                              "type": "string",
+                                              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                            },
+                                            "signInRoute": {
+                                              "type": "string",
+                                              "enum": [
+                                                "organisation",
+                                                "google",
+                                                "token"
+                                              ]
+                                            },
+                                            "asSeen": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "mechanism",
+                                            "principal",
+                                            "signInRoute",
+                                            "asSeen"
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    "at": {
+                                      "type": "string",
+                                      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+                                    },
+                                    "durationMs": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "rowCount": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "columns": {
+                                      "minItems": 1,
+                                      "maxItems": 1664,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "from": {
+                                            "anyOf": [
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "column": {
+                                                    "type": "string"
+                                                  }
+                                                },
+                                                "required": [
+                                                  "column"
+                                                ]
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ],
+                                            "description": "The source's column it reads, or null where the caller may not read the query definition"
+                                          },
+                                          "type": {
+                                            "oneOf": [
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "text"
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "integer"
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "decimal"
+                                                  },
+                                                  "precision": {
+                                                    "type": "integer",
+                                                    "minimum": 1,
+                                                    "maximum": 1000
+                                                  },
+                                                  "scale": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 1000
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "precision",
+                                                  "scale"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "date"
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "time"
+                                                  },
+                                                  "fraction": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 6
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "fraction"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "localDateTime"
+                                                  },
+                                                  "fraction": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 6
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "fraction"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "instant"
+                                                  },
+                                                  "fraction": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 6
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "fraction"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "boolean"
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base"
+                                                ]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "base": {
+                                                    "type": "string",
+                                                    "const": "image"
+                                                  },
+                                                  "encoding": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "base64",
+                                                      "binary"
+                                                    ]
+                                                  },
+                                                  "description": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "column": {
+                                                            "type": "string",
+                                                            "minLength": 1
+                                                          }
+                                                        },
+                                                        "required": [
+                                                          "column"
+                                                        ]
+                                                      },
+                                                      {
+                                                        "type": "string",
+                                                        "const": "decorative"
+                                                      }
+                                                    ]
+                                                  }
+                                                },
+                                                "required": [
+                                                  "base",
+                                                  "encoding",
+                                                  "description"
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "name",
+                                          "from",
+                                          "type"
+                                        ]
+                                      },
+                                      "description": "The definition's declared columns: each one's name and type, and where it reads"
+                                    },
+                                    "canonical": {
+                                      "type": "number",
+                                      "const": 1
+                                    },
+                                    "checksum": {
+                                      "type": "string",
+                                      "pattern": "^[0-9a-f]{64}$"
+                                    },
+                                    "images": {
+                                      "type": "object",
+                                      "propertyNames": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{64}$"
+                                      },
+                                      "additionalProperties": {
+                                        "type": "string",
+                                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "schemaVersion",
+                                    "queryDefinition",
+                                    "connection",
+                                    "parameters",
+                                    "ran",
+                                    "identity",
+                                    "at",
+                                    "durationMs",
+                                    "rowCount",
+                                    "columns",
+                                    "canonical",
+                                    "checksum",
+                                    "images"
+                                  ]
+                                },
+                                "taken": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "value": {
+                                          "description": "The value, in its column's canonical form: a string, or a boolean",
+                                          "type": [
+                                            "string",
+                                            "boolean"
+                                          ]
+                                        },
+                                        "column": {
+                                          "type": "object",
+                                          "properties": {
+                                            "name": {
+                                              "type": "string",
+                                              "description": "The declared column it was taken from"
+                                            },
+                                            "type": {
+                                              "oneOf": [
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "base": {
+                                                      "type": "string",
+                                                      "const": "text"
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "base"
+                                                  ]
+                                                },
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "base": {
+                                                      "type": "string",
+                                                      "const": "integer"
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "base"
+                                                  ]
+                                                },
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "base": {
+                                                      "type": "string",
+                                                      "const": "decimal"
+                                                    },
+                                                    "precision": {
+                                                      "type": "integer",
+                                                      "minimum": 1,
+                                                      "maximum": 1000
+                                                    },
+                                                    "scale": {
+                                                      "type": "integer",
+                                                      "minimum": 0,
+                                                      "maximum": 1000
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "base",
+                                                    "precision",
+                                                    "scale"
+                                                  ]
+                                                },
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "base": {
+                                                      "type": "string",
+                                                      "const": "date"
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "base"
+                                                  ]
+                                                },
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "base": {
+                                                      "type": "string",
+                                                      "const": "time"
+                                                    },
+                                                    "fraction": {
+                                                      "type": "integer",
+                                                      "minimum": 0,
+                                                      "maximum": 6
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "base",
+                                                    "fraction"
+                                                  ]
+                                                },
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "base": {
+                                                      "type": "string",
+                                                      "const": "localDateTime"
+                                                    },
+                                                    "fraction": {
+                                                      "type": "integer",
+                                                      "minimum": 0,
+                                                      "maximum": 6
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "base",
+                                                    "fraction"
+                                                  ]
+                                                },
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "base": {
+                                                      "type": "string",
+                                                      "const": "instant"
+                                                    },
+                                                    "fraction": {
+                                                      "type": "integer",
+                                                      "minimum": 0,
+                                                      "maximum": 6
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "base",
+                                                    "fraction"
+                                                  ]
+                                                },
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "base": {
+                                                      "type": "string",
+                                                      "const": "boolean"
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "base"
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          "required": [
+                                            "name",
+                                            "type"
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "value",
+                                        "column"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "image": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-f]{64}$",
+                                          "description": "The image's SHA-256, as the result's cell holds it"
+                                        },
+                                        "assetVersion": {
+                                          "type": "string",
+                                          "description": "The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it"
+                                        },
+                                        "description": {
+                                          "type": "string",
+                                          "description": "What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so"
+                                        },
+                                        "column": {
+                                          "type": "object",
+                                          "properties": {
+                                            "name": {
+                                              "type": "string",
+                                              "description": "The declared image column it was taken from"
+                                            },
+                                            "type": {
+                                              "type": "object",
+                                              "properties": {
+                                                "base": {
+                                                  "type": "string",
+                                                  "const": "image"
+                                                },
+                                                "encoding": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "base64",
+                                                    "binary"
+                                                  ]
+                                                },
+                                                "description": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "column": {
+                                                          "type": "string",
+                                                          "minLength": 1
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "column"
+                                                      ]
+                                                    },
+                                                    {
+                                                      "type": "string",
+                                                      "const": "decorative"
+                                                    }
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "base",
+                                                "encoding",
+                                                "description"
+                                              ]
+                                            }
+                                          },
+                                          "required": [
+                                            "name",
+                                            "type"
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "image",
+                                        "assetVersion",
+                                        "description",
+                                        "column"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "failure": {
+                                          "type": "string",
+                                          "enum": [
+                                            "take_invalid",
+                                            "value_none",
+                                            "value_many",
+                                            "row_missing",
+                                            "value_null",
+                                            "value_empty",
+                                            "image_description_missing",
+                                            "value_not_image",
+                                            "image_not_placeable"
+                                          ],
+                                          "description": "`take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image"
+                                        },
+                                        "count": {
+                                          "description": "`value_many`: how many rows there were",
+                                          "type": "integer",
+                                          "minimum": 2,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "column": {
+                                          "description": "`take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column",
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "failure"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "unavailable": {
+                                          "type": "boolean",
+                                          "const": true,
+                                          "description": "The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again"
+                                        }
+                                      },
+                                      "required": [
+                                        "unavailable"
+                                      ]
+                                    }
+                                  ],
+                                  "description": "The value the binding would take from it"
+                                }
+                              },
+                              "required": [
+                                "version",
+                                "provenance",
+                                "taken"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "A different result a check recorded after the one held, which nothing holds until it is accepted"
+                        },
+                        "definition": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "title": {
+                                  "type": "string"
+                                },
+                                "version": {
+                                  "type": "string",
+                                  "description": "`revision.version`, as `0.2`"
+                                }
+                              },
+                              "required": [
+                                "title",
+                                "version"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition"
+                        },
+                        "connection": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "name"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection"
+                        },
+                        "definitionChanged": {
+                          "type": "boolean",
+                          "description": "Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran"
+                        },
+                        "sincePublished": {
+                          "anyOf": [
+                            {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "new"
+                                },
+                                {
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "digest",
+                                      "dataset",
+                                      "definition"
+                                    ]
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published"
+                        },
+                        "mayCheck": {
+                          "type": "boolean",
+                          "description": "Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on"
+                        },
+                        "mayResolve": {
+                          "type": "boolean",
+                          "description": "Whether the caller may resolve it: they may edit the document and use the connection its definition runs on"
+                        }
+                      },
+                      "required": [
+                        "node",
+                        "binding",
+                        "held",
+                        "waiting",
+                        "definition",
+                        "connection",
+                        "definitionChanged",
+                        "sincePublished",
+                        "mayCheck",
+                        "mayResolve"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such document in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`resolution_precondition`: the binding no longer holds what `replaces` names, or the version is not a newer result of what it holds, answered with the binding as it stands; `acknowledgement_required`: the result is the caller's own view and `sharesOwnView` was not sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    },
+                    "attribution": {
+                      "type": "string",
+                      "enum": [
+                        "connector",
+                        "query",
+                        "product"
+                      ]
+                    },
+                    "source": {
+                      "type": "object",
+                      "properties": {
+                        "sqlstate": {
+                          "type": "string",
+                          "description": "The source's five-character SQLSTATE"
+                        },
+                        "message": {
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "sqlstate"
+                      ],
+                      "description": "What the source said, where it refused the statement: `source_refused` alone"
+                    },
+                    "column": {
+                      "type": "string"
+                    },
+                    "row": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "problems": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "rule": {
+                                "type": "string",
+                                "const": "definition_invalid"
+                              },
+                              "path": {
+                                "type": "string",
+                                "description": "The member refused, dotted, as `columns.2.name`"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "rule",
+                              "path",
+                              "message"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "parameter": {
+                                "type": "string"
+                              },
+                              "rule": {
+                                "type": "string",
+                                "enum": [
+                                  "required",
+                                  "type",
+                                  "permitted",
+                                  "range",
+                                  "list",
+                                  "precision",
+                                  "scale",
+                                  "zone",
+                                  "variation"
+                                ]
+                              },
+                              "value": {
+                                "type": "string",
+                                "description": "The value as sent, cut to 1,000 characters"
+                              }
+                            },
+                            "required": [
+                              "parameter",
+                              "rule",
+                              "value"
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    "definition": {
+                      "type": "string"
+                    },
+                    "binding": {
+                      "type": "string"
+                    },
+                    "node": {
+                      "type": "string"
+                    },
+                    "document": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "enum": [
+                        "untested",
+                        "not_read_only",
+                        "asserted",
+                        "signed_out",
+                        "token_revoked"
                       ]
                     },
                     "current": {
@@ -34082,9 +36026,10 @@
                                 "enum": [
                                   "limit",
                                   "permission",
-                                  "unresolved"
+                                  "unresolved",
+                                  "identity"
                                 ],
-                                "description": "`limit`: past the 50 distinct runs a check makes; `permission`: the caller may not use its connection; `unresolved`: it holds nothing to compare, or has changed since it was resolved"
+                                "description": "`limit`: past the 50 distinct runs a check makes; `permission`: the caller may not use its connection; `unresolved`: it holds nothing to compare, or has changed since it was resolved; `identity`: what it holds is another person's own view, or was fetched as another identity than the caller's run would be, so it is never compared"
                               }
                             },
                             "required": [
@@ -34306,9 +36251,10 @@
                                 "enum": [
                                   "limit",
                                   "permission",
-                                  "unresolved"
+                                  "unresolved",
+                                  "identity"
                                 ],
-                                "description": "`limit`: past the 50 distinct runs a check makes; `permission`: the caller may not use its connection; `unresolved`: it holds nothing to compare, or has changed since it was resolved"
+                                "description": "`limit`: past the 50 distinct runs a check makes; `permission`: the caller may not use its connection; `unresolved`: it holds nothing to compare, or has changed since it was resolved; `identity`: what it holds is another person's own view, or was fetched as another identity than the caller's run would be, so it is never compared"
                               }
                             },
                             "required": [
@@ -34457,7 +36403,7 @@
             }
           },
           "401": {
-            "description": "No session, or not one this environment issued",
+            "description": "No session, or not one this environment issued; or `authority_ended`: the session was signed out, or the token revoked (`signed_out`, `token_revoked`), while the source answered, which stopped it within two seconds. Nothing is recorded",
             "content": {
               "application/json": {
                 "schema": {
@@ -34478,6 +36424,13 @@
                     "traceId": {
                       "type": "string",
                       "description": "Quote this when reporting a problem"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "enum": [
+                        "signed_out",
+                        "token_revoked"
+                      ]
                     }
                   },
                   "required": [
@@ -34710,7 +36663,10 @@
                       "type": "string",
                       "enum": [
                         "untested",
-                        "not_read_only"
+                        "not_read_only",
+                        "asserted",
+                        "signed_out",
+                        "token_revoked"
                       ]
                     },
                     "current": {
@@ -36655,7 +38611,10 @@
                       "type": "string",
                       "enum": [
                         "untested",
-                        "not_read_only"
+                        "not_read_only",
+                        "asserted",
+                        "signed_out",
+                        "token_revoked"
                       ]
                     },
                     "current": {
@@ -40712,7 +42671,10 @@
                       "type": "string",
                       "enum": [
                         "untested",
-                        "not_read_only"
+                        "not_read_only",
+                        "asserted",
+                        "signed_out",
+                        "token_revoked"
                       ]
                     },
                     "current": {
@@ -42780,7 +44742,10 @@
                       "type": "string",
                       "enum": [
                         "untested",
-                        "not_read_only"
+                        "not_read_only",
+                        "asserted",
+                        "signed_out",
+                        "token_revoked"
                       ]
                     },
                     "current": {
@@ -44738,6 +46703,10 @@
                         "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                       }
                     ]
+                  },
+                  "sharesOwnView": {
+                    "description": "Acknowledges that a result fetched under the caller's own identity - a binding on a connection that runs as each person - is shown to everybody who may read the document. Without it such a binding is refused `acknowledgement_required`",
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -45240,7 +47209,10 @@
                       "type": "string",
                       "enum": [
                         "untested",
-                        "not_read_only"
+                        "not_read_only",
+                        "asserted",
+                        "signed_out",
+                        "token_revoked"
                       ]
                     },
                     "current": {
@@ -47055,7 +49027,7 @@
             }
           },
           "401": {
-            "description": "No session, or not one this environment issued",
+            "description": "No session, or not one this environment issued; or `authority_ended`: the session was signed out, or the token revoked (`signed_out`, `token_revoked`), while the source answered, which stopped it within two seconds. Nothing is recorded",
             "content": {
               "application/json": {
                 "schema": {
@@ -47076,6 +49048,13 @@
                     "traceId": {
                       "type": "string",
                       "description": "Quote this when reporting a problem"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "enum": [
+                        "signed_out",
+                        "token_revoked"
+                      ]
                     }
                   },
                   "required": [
@@ -47226,7 +49205,10 @@
                       "type": "string",
                       "enum": [
                         "untested",
-                        "not_read_only"
+                        "not_read_only",
+                        "asserted",
+                        "signed_out",
+                        "token_revoked"
                       ]
                     },
                     "current": {
@@ -49082,7 +51064,7 @@
             }
           },
           "409": {
-            "description": "`definition_retired`, `connection_retired`, `credential_missing`, `credential_target_changed`, `sql_not_permitted`: a run cannot be made; `access_changed`: a permission or the session ended while the source answered; `binding_changed`: the binding changed while the source answered. Nothing is recorded",
+            "description": "`definition_retired`, `connection_retired`, `credential_missing`, `credential_target_changed`, `sql_not_permitted`: a run cannot be made; `identity_unavailable`: a binding's connection runs as each person and the caller's sign-in cannot name them; `acknowledgement_required`: a binding runs as the caller and `sharesOwnView` was not sent; `access_changed`: a permission or the session ended while the source answered; `binding_changed`: the binding changed while the source answered. Nothing is recorded",
             "content": {
               "application/json": {
                 "schema": {
@@ -49212,7 +51194,10 @@
                       "type": "string",
                       "enum": [
                         "untested",
-                        "not_read_only"
+                        "not_read_only",
+                        "asserted",
+                        "signed_out",
+                        "token_revoked"
                       ]
                     },
                     "current": {
@@ -51157,7 +53142,10 @@
                       "type": "string",
                       "enum": [
                         "untested",
-                        "not_read_only"
+                        "not_read_only",
+                        "asserted",
+                        "signed_out",
+                        "token_revoked"
                       ]
                     },
                     "current": {
@@ -73723,7 +75711,8 @@
                       "type": "string",
                       "enum": [
                         "untested",
-                        "not_read_only"
+                        "not_read_only",
+                        "asserted"
                       ]
                     },
                     "problems": {
@@ -74599,7 +76588,7 @@
             }
           },
           "409": {
-            "description": "`version_precondition`: the definition has a newer version than the one named, answered with it; `connection_retired`: the connection it names is retired; `sql_not_permitted`: for SQL, the connection has not been tested clean at its latest version and credential, or its account was found able to write, and SQL is refused on it. A built query is never refused this way",
+            "description": "`version_precondition`: the definition has a newer version than the one named, answered with it; `connection_retired`: the connection it names is retired; `sql_not_permitted`: for SQL, the connection has not been tested clean at its latest version and credential, or its account was found able to write, or it runs as each person (`asserted`), and SQL is refused on it. A built query is never refused this way",
             "content": {
               "application/json": {
                 "schema": {
@@ -74658,7 +76647,8 @@
                       "type": "string",
                       "enum": [
                         "untested",
-                        "not_read_only"
+                        "not_read_only",
+                        "asserted"
                       ]
                     },
                     "problems": {
@@ -84392,7 +86382,8 @@
                       "type": "string",
                       "enum": [
                         "untested",
-                        "not_read_only"
+                        "not_read_only",
+                        "asserted"
                       ]
                     },
                     "problems": {
@@ -85268,7 +87259,7 @@
             }
           },
           "409": {
-            "description": "`connection_retired`: the connection it names is retired; `sql_not_permitted`: for SQL, the connection has not been tested clean at its latest version and credential, or its account was found able to write, and SQL is refused on it. A built query is never refused this way",
+            "description": "`connection_retired`: the connection it names is retired; `sql_not_permitted`: for SQL, the connection has not been tested clean at its latest version and credential, or its account was found able to write, or it runs as each person (`asserted`), and SQL is refused on it. A built query is never refused this way",
             "content": {
               "application/json": {
                 "schema": {
@@ -85327,7 +87318,8 @@
                       "type": "string",
                       "enum": [
                         "untested",
-                        "not_read_only"
+                        "not_read_only",
+                        "asserted"
                       ]
                     },
                     "problems": {

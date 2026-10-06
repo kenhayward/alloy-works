@@ -4,6 +4,10 @@ import {
   BindingRefused,
   RUN_REQUEST_MAX_BYTES,
   bindFetch,
+  describeRequestSchema,
+  describeSqlRequestSchema,
+  runRequestSchema,
+  testRequestSchema,
   type Parameter,
   type Query,
   type DescribeAnswer,
@@ -43,6 +47,15 @@ export interface FakeConnector {
   mostRunning: number;
   /** Where set, a seal waits for it before answering: a connector that is slow to seal. */
   sealHold?: Promise<void> | undefined;
+  /**
+   * Where set, every request but a seal is held at the source until this settles, or until its caller
+   * closes it - as the real connector's child is killed then - which is recorded in `closed`.
+   */
+  held?: Promise<void> | undefined;
+  /** Each request held that its caller closed, and when, by `Date.now()`. */
+  readonly closed: { readonly path: string; readonly at: number }[];
+  /** Each request that reached `held`, and when: a run held at the source. */
+  readonly reached: { readonly path: string; readonly at: number }[];
 }
 
 export function fakeConnector(): FakeConnector {
@@ -56,6 +69,8 @@ export function fakeConnector(): FakeConnector {
     describeSql: { columns: [], parameters: [] },
     run: { outcome: 'failed', failure: { code: 'connector_error', attribution: 'connector' } },
     mostRunning: 0,
+    closed: [],
+    reached: [],
     fetch: (async (url: string | URL | Request, init?: RequestInit) => {
       const path = new URL(String(url)).pathname;
       // A run's and a describe's body are held to the real connector's limit, as its door holds them.
@@ -79,6 +94,21 @@ export function fakeConnector(): FakeConnector {
         case 'nonsense':
           return new Response('<html>', { status: 200 });
       }
+      // Held to the protocol at its door, as the real one is: a person's identity is sent exactly
+      // where the connection asserts it, and only with builder text (D7-G, DAT-113).
+      const door =
+        path === '/v1/run'
+          ? runRequestSchema
+          : path === '/v1/test'
+            ? testRequestSchema
+            : path === '/v1/describe'
+              ? 'sql' in body || 'builder' in body
+                ? describeSqlRequestSchema
+                : describeRequestSchema
+              : undefined;
+      if (door && !door.safeParse(body).success) {
+        return Response.json({ code: 'request_invalid' }, { status: 400 });
+      }
       fake.asked.push({ path, body });
       if (path === '/v1/seal' && fake.sealHold) await fake.sealHold;
       if (path === '/v1/seal') {
@@ -92,6 +122,22 @@ export function fakeConnector(): FakeConnector {
         });
       }
       if (path !== '/v1/seal' && fake.hold) await fake.hold;
+      if (path !== '/v1/seal' && fake.held) {
+        const signal = init?.signal ?? undefined;
+        fake.reached.push({ path, at: Date.now() });
+        await new Promise<void>((resolve, reject) => {
+          const closed = () => {
+            fake.closed.push({ path, at: Date.now() });
+            reject(signal?.reason ?? new Error('closed'));
+          };
+          if (signal?.aborted) closed();
+          signal?.addEventListener('abort', closed, { once: true });
+          void fake.held!.then(() => {
+            signal?.removeEventListener('abort', closed);
+            resolve();
+          });
+        });
+      }
       if (path === '/v1/test') return Response.json(fake.test);
       if (path === '/v1/describe') {
         // A built query is described as SQL is (D4-Q), its shape generated through the one function

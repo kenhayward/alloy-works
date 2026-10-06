@@ -794,8 +794,9 @@ describe('the citations in the committed model', () => {
   // 671 (2026-10-06): B6.1's DAT-097, DAT-098 and DAT-042, bound images in the model and publish.
   // 679 (2026-10-06): B6.2's DAT-097, DAT-098 and DAT-047, bound images in the editor and the page.
   // 682 (2026-10-06): D7.1's DAT-077, DAT-112 and DAT-113, a person's own identity asserted.
+  // 687 (2026-10-06): D7.2's DAT-084, DAT-091 and DAT-102, the acts as the person.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(682);
+    expect(model.citations).toHaveLength(687);
   });
 
   it('cites no identifier the corpus does not hold', () => {

@@ -47,7 +47,11 @@ const MESSAGES: Partial<Record<DataFailureCode, string>> = {
   image_refused:
     'The image is not a complete PNG or JPEG image the product admits, or is too large. Nothing was kept.',
   account_holds_privilege:
-    "This connection's account can read data of its own, so it cannot run as each person. Ask the source's administrator to remove its privileges.",
+    "This connection's account can read data, create objects or owns functions or views of its own, so it cannot run as each person. Ask the source's administrator to remove its privileges.",
+  identity_role_unsafe:
+    "Your role at the source can sign in, create objects or owns objects of its own, so nothing runs as you on it. Ask the source's administrator.",
+  identity_unavailable:
+    'Your sign-in does not name you as this connection asks, so nothing can run as you on it. Ask an administrator of this environment.',
   identity_unmatched:
     "The source has no role for you that this connection may use. Ask the source's administrator.",
 };

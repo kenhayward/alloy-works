@@ -140,7 +140,8 @@ const definitionRefused = {
 const onTheConnection = {
   description:
     '`connection_retired`: the connection it names is retired; `sql_not_permitted`: for SQL, the connection has not been tested clean ' +
-    'at its latest version and credential, or its account was found able to write, and SQL is refused on it. A built query is never refused this way',
+    'at its latest version and credential, or its account was found able to write, or it runs as each person (`asserted`), and SQL is ' +
+    'refused on it. A built query is never refused this way',
   schema: QueryDefinitionRefusal,
 } as const;
 

@@ -6533,7 +6533,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Set: who set it and when, never the credential, and the test run straight after */
+            /** @description Set: who set it and when, never the credential, and the test run straight after. A test stopped because the session was signed out, or the token revoked, meanwhile fails `authority_ended`, the credential still set */
             200: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -6636,7 +6636,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description No session, or not one this environment issued */
+            /** @description No session, or not one this environment issued; or `authority_ended`: the session was signed out, or the token revoked (`signed_out`, `token_revoked`), while the source answered, which stopped it within two seconds. Nothing is recorded */
             401: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -6653,6 +6653,8 @@ export interface operations {
                         rule?: string;
                         /** @description Quote this when reporting a problem */
                         traceId: string;
+                        /** @enum {string} */
+                        reason?: "signed_out" | "token_revoked";
                     };
                 };
             };
@@ -7030,7 +7032,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description No session, or not one this environment issued */
+            /** @description No session, or not one this environment issued; or `authority_ended`: the session was signed out, or the token revoked (`signed_out`, `token_revoked`), while the source answered, which stopped it within two seconds. Nothing is recorded */
             401: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -7047,6 +7049,8 @@ export interface operations {
                         rule?: string;
                         /** @description Quote this when reporting a problem */
                         traceId: string;
+                        /** @enum {string} */
+                        reason?: "signed_out" | "token_revoked";
                     };
                 };
             };
@@ -7090,7 +7094,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, or it was set before credentials were bound to a target, so the password must be set again; `sql_not_permitted`: for SQL, the connection has not been tested clean at its latest version and credential (`untested`), or its account was found able to write (`not_read_only`). A built query is never refused this way */
+            /** @description `connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, or it was set before credentials were bound to a target, so the password must be set again; `sql_not_permitted`: for SQL, the connection has not been tested clean at its latest version and credential (`untested`), its account was found able to write (`not_read_only`), or it runs as each person (`asserted`). A built query is never refused this way; `identity_unavailable`: the connection runs as each person, and the caller's sign-in has no email or subject it can name them by, or one longer than 63 bytes */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -7119,7 +7123,7 @@ export interface operations {
                         column?: string;
                         row?: number;
                         /** @enum {string} */
-                        reason?: "untested" | "not_read_only";
+                        reason?: "untested" | "not_read_only" | "asserted";
                     };
                 };
             };
@@ -7538,7 +7542,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description No session, or not one this environment issued */
+            /** @description No session, or not one this environment issued; or `authority_ended`: the session was signed out, or the token revoked (`signed_out`, `token_revoked`), while the source answered, which stopped it within two seconds. Nothing is recorded */
             401: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -7555,6 +7559,8 @@ export interface operations {
                         rule?: string;
                         /** @description Quote this when reporting a problem */
                         traceId: string;
+                        /** @enum {string} */
+                        reason?: "signed_out" | "token_revoked";
                     };
                 };
             };
@@ -7598,7 +7604,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, or it was set before credentials were bound to a target, so the password must be set again; `sql_not_permitted`: for SQL, the connection has not been tested clean at its latest version and credential (`untested`), or its account was found able to write (`not_read_only`). A built query is never refused this way */
+            /** @description `connection_retired`: a retired connection runs nothing; `credential_missing`: no credential is set; `credential_target_changed`: the host, port, database, account or TLS changed after the credential was set, or it was set before credentials were bound to a target, so the password must be set again; `sql_not_permitted`: for SQL, the connection has not been tested clean at its latest version and credential (`untested`), its account was found able to write (`not_read_only`), or it runs as each person (`asserted`). A built query is never refused this way; `identity_unavailable`: the connection runs as each person, and the caller's sign-in has no email or subject it can name them by, or one longer than 63 bytes */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -7627,7 +7633,7 @@ export interface operations {
                         column?: string;
                         row?: number;
                         /** @enum {string} */
-                        reason?: "untested" | "not_read_only";
+                        reason?: "untested" | "not_read_only" | "asserted";
                     };
                 };
             };
@@ -7752,7 +7758,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description No session, or not one this environment issued */
+            /** @description No session, or not one this environment issued; or `authority_ended`: the session was signed out, or the token revoked (`signed_out`, `token_revoked`), while the source answered, which stopped it within two seconds. Nothing is recorded */
             401: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -7769,6 +7775,8 @@ export interface operations {
                         rule?: string;
                         /** @description Quote this when reporting a problem */
                         traceId: string;
+                        /** @enum {string} */
+                        reason?: "signed_out" | "token_revoked";
                     };
                 };
             };
@@ -8889,10 +8897,10 @@ export interface operations {
                             /** @constant */
                             outcome: "unchecked";
                             /**
-                             * @description `limit`: past the 50 distinct runs a check makes; `permission`: the caller may not use its connection; `unresolved`: it holds nothing to compare, or has changed since it was resolved
+                             * @description `limit`: past the 50 distinct runs a check makes; `permission`: the caller may not use its connection; `unresolved`: it holds nothing to compare, or has changed since it was resolved; `identity`: what it holds is another person's own view, or was fetched as another identity than the caller's run would be, so it is never compared
                              * @enum {string}
                              */
-                            reason: "limit" | "permission" | "unresolved";
+                            reason: "limit" | "permission" | "unresolved" | "identity";
                         } | {
                             node: string;
                             binding: string;
@@ -10767,7 +10775,7 @@ export interface operations {
                     version: string & (unknown & unknown);
                     /** @description The dataset version the binding holds now, as the caller saw it */
                     replaces: string & (unknown & unknown);
-                    /** @description Acknowledges that a result fetched under the caller's own identity is shown to everybody who may read the document. No result is fetched so yet, so it is accepted and not needed */
+                    /** @description Acknowledges that a result fetched under the caller's own identity is shown to everybody who may read the document. Without it such a result is refused `acknowledgement_required` */
                     sharesOwnView?: boolean;
                 };
             };
@@ -11364,7 +11372,7 @@ export interface operations {
                         node?: string;
                         document?: string;
                         /** @enum {string} */
-                        reason?: "untested" | "not_read_only";
+                        reason?: "untested" | "not_read_only" | "asserted" | "signed_out" | "token_revoked";
                         /** @description resolution_precondition: the binding as it now stands */
                         current?: {
                             node: string;
@@ -11791,7 +11799,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may read the document but may not edit it, or may not use the connection the accepted result ran on. Nothing is recorded */
+            /** @description The caller may read the document but may not edit it, or may not use the connection the accepted result ran on; `identity_differs`: the result is another person's own view, which only they may accept. Nothing is recorded */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -11808,6 +11816,439 @@ export interface operations {
                         rule?: string;
                         /** @description Quote this when reporting a problem */
                         traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
+                        };
+                        column?: string;
+                        row?: number;
+                        problems?: ({
+                            /** @constant */
+                            rule: "definition_invalid";
+                            /** @description The member refused, dotted, as `columns.2.name` */
+                            path: string;
+                            message: string;
+                        } | {
+                            parameter: string;
+                            /** @enum {string} */
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            /** @description The value as sent, cut to 1,000 characters */
+                            value: string;
+                        })[];
+                        definition?: string;
+                        binding?: string;
+                        node?: string;
+                        document?: string;
+                        /** @enum {string} */
+                        reason?: "untested" | "not_read_only" | "asserted" | "signed_out" | "token_revoked";
+                        /** @description resolution_precondition: the binding as it now stands */
+                        current?: {
+                            node: string;
+                            binding: {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
+                                take: {
+                                    column: string;
+                                } | {
+                                    key: {
+                                        [key: string]: string | boolean | null;
+                                    };
+                                    column: string;
+                                };
+                            };
+                            /** @description What it holds, or null where it has never been resolved */
+                            held: {
+                                dataset: string;
+                                /** @description The dataset version it holds */
+                                version: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    } | null;
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
+                                    columns: {
+                                        name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
+                                        from: {
+                                            column: string;
+                                        } | null;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: {
+                                        [key: string]: string;
+                                    };
+                                };
+                                /** @description The dataset's name, or null where nobody has named it */
+                                name: string | null;
+                                /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
+                                stale: boolean;
+                                /** @description The value the binding takes from the version held, or null where it is stale */
+                                taken: ({
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                }) | null;
+                                /**
+                                 * @description The act that made it what the binding holds
+                                 * @enum {string}
+                                 */
+                                act: "resolve" | "accept" | "confirm";
+                                /** @description Whether Keep may hold it under the binding as it now stands: stale, and still asking the question it answers - the same definition, parameters and version - so only the value taken or the mode changed */
+                                keepable: boolean;
+                                /** @description Who resolved or accepted it */
+                                by: {
+                                    id: string;
+                                    /** @description Their name, or null where they have none */
+                                    displayName: string | null;
+                                };
+                                /** @description When */
+                                at: string;
+                            } | null;
+                            /** @description A different result a check recorded after the one held, which nothing holds until it is accepted */
+                            waiting: {
+                                version: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    } | null;
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
+                                    columns: {
+                                        name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
+                                        from: {
+                                            column: string;
+                                        } | null;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: {
+                                        [key: string]: string;
+                                    };
+                                };
+                                /** @description The value the binding would take from it */
+                                taken: {
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                };
+                            } | null;
+                            /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
+                            definition: {
+                                title: string;
+                                /** @description `revision.version`, as `0.2` */
+                                version: string;
+                            } | null;
+                            /** @description The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection */
+                            connection: {
+                                name: string;
+                            } | null;
+                            /** @description Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran */
+                            definitionChanged: boolean;
+                            /** @description How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published */
+                            sincePublished: ("new" | ("digest" | "dataset" | "definition")[]) | null;
+                            /** @description Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on */
+                            mayCheck: boolean;
+                            /** @description Whether the caller may resolve it: they may edit the document and use the connection its definition runs on */
+                            mayResolve: boolean;
+                        };
                     };
                 };
             };
@@ -11831,7 +12272,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `resolution_precondition`: the binding no longer holds what `replaces` names, or the version is not a newer result of what it holds, answered with the binding as it stands */
+            /** @description `resolution_precondition`: the binding no longer holds what `replaces` names, or the version is not a newer result of what it holds, answered with the binding as it stands; `acknowledgement_required`: the result is the caller's own view and `sharesOwnView` was not sent */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -11877,7 +12318,7 @@ export interface operations {
                         node?: string;
                         document?: string;
                         /** @enum {string} */
-                        reason?: "untested" | "not_read_only";
+                        reason?: "untested" | "not_read_only" | "asserted" | "signed_out" | "token_revoked";
                         /** @description resolution_precondition: the binding as it now stands */
                         current?: {
                             node: string;
@@ -12357,10 +12798,10 @@ export interface operations {
                             /** @constant */
                             outcome: "unchecked";
                             /**
-                             * @description `limit`: past the 50 distinct runs a check makes; `permission`: the caller may not use its connection; `unresolved`: it holds nothing to compare, or has changed since it was resolved
+                             * @description `limit`: past the 50 distinct runs a check makes; `permission`: the caller may not use its connection; `unresolved`: it holds nothing to compare, or has changed since it was resolved; `identity`: what it holds is another person's own view, or was fetched as another identity than the caller's run would be, so it is never compared
                              * @enum {string}
                              */
-                            reason: "limit" | "permission" | "unresolved";
+                            reason: "limit" | "permission" | "unresolved" | "identity";
                         } | {
                             node: string;
                             binding: string;
@@ -12435,10 +12876,10 @@ export interface operations {
                             /** @constant */
                             outcome: "unchecked";
                             /**
-                             * @description `limit`: past the 50 distinct runs a check makes; `permission`: the caller may not use its connection; `unresolved`: it holds nothing to compare, or has changed since it was resolved
+                             * @description `limit`: past the 50 distinct runs a check makes; `permission`: the caller may not use its connection; `unresolved`: it holds nothing to compare, or has changed since it was resolved; `identity`: what it holds is another person's own view, or was fetched as another identity than the caller's run would be, so it is never compared
                              * @enum {string}
                              */
-                            reason: "limit" | "permission" | "unresolved";
+                            reason: "limit" | "permission" | "unresolved" | "identity";
                         } | {
                             node: string;
                             binding: string;
@@ -12481,7 +12922,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description No session, or not one this environment issued */
+            /** @description No session, or not one this environment issued; or `authority_ended`: the session was signed out, or the token revoked (`signed_out`, `token_revoked`), while the source answered, which stopped it within two seconds. Nothing is recorded */
             401: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -12498,6 +12939,8 @@ export interface operations {
                         rule?: string;
                         /** @description Quote this when reporting a problem */
                         traceId: string;
+                        /** @enum {string} */
+                        reason?: "signed_out" | "token_revoked";
                     };
                 };
             };
@@ -12587,7 +13030,7 @@ export interface operations {
                         node?: string;
                         document?: string;
                         /** @enum {string} */
-                        reason?: "untested" | "not_read_only";
+                        reason?: "untested" | "not_read_only" | "asserted" | "signed_out" | "token_revoked";
                         /** @description resolution_precondition: the binding as it now stands */
                         current?: {
                             node: string;
@@ -13040,7 +13483,7 @@ export interface operations {
                         node?: string;
                         document?: string;
                         /** @enum {string} */
-                        reason?: "untested" | "not_read_only";
+                        reason?: "untested" | "not_read_only" | "asserted" | "signed_out" | "token_revoked";
                         /** @description resolution_precondition: the binding as it now stands */
                         current?: {
                             node: string;
@@ -14101,7 +14544,7 @@ export interface operations {
                         node?: string;
                         document?: string;
                         /** @enum {string} */
-                        reason?: "untested" | "not_read_only";
+                        reason?: "untested" | "not_read_only" | "asserted" | "signed_out" | "token_revoked";
                         /** @description resolution_precondition: the binding as it now stands */
                         current?: {
                             node: string;
@@ -14614,7 +15057,7 @@ export interface operations {
                         node?: string;
                         document?: string;
                         /** @enum {string} */
-                        reason?: "untested" | "not_read_only";
+                        reason?: "untested" | "not_read_only" | "asserted" | "signed_out" | "token_revoked";
                         /** @description resolution_precondition: the binding as it now stands */
                         current?: {
                             node: string;
@@ -15082,6 +15525,8 @@ export interface operations {
                     }[];
                     /** @description The caller's own editing session a binding is read from, for an item that says `session` */
                     session?: string & (unknown & unknown);
+                    /** @description Acknowledges that a result fetched under the caller's own identity - a binding on a connection that runs as each person - is shown to everybody who may read the document. Without it such a binding is refused `acknowledgement_required` */
+                    sharesOwnView?: boolean;
                 };
             };
         };
@@ -15256,7 +15701,7 @@ export interface operations {
                         node?: string;
                         document?: string;
                         /** @enum {string} */
-                        reason?: "untested" | "not_read_only";
+                        reason?: "untested" | "not_read_only" | "asserted" | "signed_out" | "token_revoked";
                         /** @description resolution_precondition: the binding as it now stands */
                         current?: {
                             node: string;
@@ -15663,7 +16108,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description No session, or not one this environment issued */
+            /** @description No session, or not one this environment issued; or `authority_ended`: the session was signed out, or the token revoked (`signed_out`, `token_revoked`), while the source answered, which stopped it within two seconds. Nothing is recorded */
             401: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -15680,6 +16125,8 @@ export interface operations {
                         rule?: string;
                         /** @description Quote this when reporting a problem */
                         traceId: string;
+                        /** @enum {string} */
+                        reason?: "signed_out" | "token_revoked";
                     };
                 };
             };
@@ -15729,7 +16176,7 @@ export interface operations {
                         node?: string;
                         document?: string;
                         /** @enum {string} */
-                        reason?: "untested" | "not_read_only";
+                        reason?: "untested" | "not_read_only" | "asserted" | "signed_out" | "token_revoked";
                         /** @description resolution_precondition: the binding as it now stands */
                         current?: {
                             node: string;
@@ -16156,7 +16603,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `definition_retired`, `connection_retired`, `credential_missing`, `credential_target_changed`, `sql_not_permitted`: a run cannot be made; `access_changed`: a permission or the session ended while the source answered; `binding_changed`: the binding changed while the source answered. Nothing is recorded */
+            /** @description `definition_retired`, `connection_retired`, `credential_missing`, `credential_target_changed`, `sql_not_permitted`: a run cannot be made; `identity_unavailable`: a binding's connection runs as each person and the caller's sign-in cannot name them; `acknowledgement_required`: a binding runs as the caller and `sharesOwnView` was not sent; `access_changed`: a permission or the session ended while the source answered; `binding_changed`: the binding changed while the source answered. Nothing is recorded */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -16202,7 +16649,7 @@ export interface operations {
                         node?: string;
                         document?: string;
                         /** @enum {string} */
-                        reason?: "untested" | "not_read_only";
+                        reason?: "untested" | "not_read_only" | "asserted" | "signed_out" | "token_revoked";
                         /** @description resolution_precondition: the binding as it now stands */
                         current?: {
                             node: string;
@@ -16655,7 +17102,7 @@ export interface operations {
                         node?: string;
                         document?: string;
                         /** @enum {string} */
-                        reason?: "untested" | "not_read_only";
+                        reason?: "untested" | "not_read_only" | "asserted" | "signed_out" | "token_revoked";
                         /** @description resolution_precondition: the binding as it now stands */
                         current?: {
                             node: string;
@@ -24370,7 +24817,7 @@ export interface operations {
                         column?: string;
                         row?: number;
                         /** @enum {string} */
-                        reason?: "untested" | "not_read_only";
+                        reason?: "untested" | "not_read_only" | "asserted";
                         problems?: {
                             /** @constant */
                             rule: "definition_invalid";
@@ -24597,7 +25044,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `version_precondition`: the definition has a newer version than the one named, answered with it; `connection_retired`: the connection it names is retired; `sql_not_permitted`: for SQL, the connection has not been tested clean at its latest version and credential, or its account was found able to write, and SQL is refused on it. A built query is never refused this way */
+            /** @description `version_precondition`: the definition has a newer version than the one named, answered with it; `connection_retired`: the connection it names is retired; `sql_not_permitted`: for SQL, the connection has not been tested clean at its latest version and credential, or its account was found able to write, or it runs as each person (`asserted`), and SQL is refused on it. A built query is never refused this way */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -24626,7 +25073,7 @@ export interface operations {
                         column?: string;
                         row?: number;
                         /** @enum {string} */
-                        reason?: "untested" | "not_read_only";
+                        reason?: "untested" | "not_read_only" | "asserted";
                         problems?: {
                             /** @constant */
                             rule: "definition_invalid";
@@ -28203,7 +28650,7 @@ export interface operations {
                         column?: string;
                         row?: number;
                         /** @enum {string} */
-                        reason?: "untested" | "not_read_only";
+                        reason?: "untested" | "not_read_only" | "asserted";
                         problems?: {
                             /** @constant */
                             rule: "definition_invalid";
@@ -28430,7 +28877,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `connection_retired`: the connection it names is retired; `sql_not_permitted`: for SQL, the connection has not been tested clean at its latest version and credential, or its account was found able to write, and SQL is refused on it. A built query is never refused this way */
+            /** @description `connection_retired`: the connection it names is retired; `sql_not_permitted`: for SQL, the connection has not been tested clean at its latest version and credential, or its account was found able to write, or it runs as each person (`asserted`), and SQL is refused on it. A built query is never refused this way */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -28459,7 +28906,7 @@ export interface operations {
                         column?: string;
                         row?: number;
                         /** @enum {string} */
-                        reason?: "untested" | "not_read_only";
+                        reason?: "untested" | "not_read_only" | "asserted";
                         problems?: {
                             /** @constant */
                             rule: "definition_invalid";

@@ -90,7 +90,7 @@ checksummed result or one named failure.
 | **DAT-015** | Every change to a definition is a version, and a binding names its definition with an optional `version`: present pins it, absent floats at latest                                                                                                                                                                                                                                   |
 | **DAT-016** | Where a definition is used - the bindings naming it and the documents resolving them - is computed when asked, and the definition's editor shows it before a version is saved                                                                                                                                                                                                        |
 | **DAT-025** | `use_connection`, decided at the connection, is needed to run anything against it; reading a document that holds its results needs only `read` on the document                                                                                                                                                                                                                       |
-| **DAT-077** | A query runs at the source as the identity its connection declares, so the source's own rules decide the rows; an `s3` connection's identity may only be `service`                                                                                                                                                                                                                   |
+| **DAT-077** | A query runs at the source as the identity its connection declares, so the source's own rules decide the rows - for an asserted identity, where the source's function, view and policy authors are trusted ([ADR-0040](../decisions/0040-asserted-identity-trusts-the-sources-function-authors.md)); an `s3` connection's identity may only be `service`                             |
 | **DAT-090** | A stored result is read only through a document that resolves to it, on `read` on that document; fetching one - a resolve or a check - and accepting one each ask what the source side asks: `read` on the query definition it ran and `use_connection` on its connection, an accept on top of `edit` on the document ([Accept](#accept))                                            |
 | **DAT-092** | `dataset` is an artifact kind; each recorded result is an immutable version of it, named by an insert-only `dataset_name`, and a resolution names exactly one dataset version                                                                                                                                                                                                        |
 | **DAT-083** | Every binding a document resolves, checked or pinned, is resolved to a dataset version, whose content is its provenance record                                                                                                                                                                                                                                                       |
@@ -185,6 +185,14 @@ are the connector's to apply: in PostgreSQL the role membership is `WITH INHERIT
 and the assertion is `SET LOCAL ROLE` in a transaction the connector opens and ends; in SQL Server a
 `read_only` `SESSION_CONTEXT` key or `EXECUTE AS USER ... WITH COOKIE`, whichever `assertion` names;
 where the source cannot fail loud, the connector refuses an end-user query it has not asserted for.
+**Each person's role is `NOLOGIN`, creates nothing and owns nothing**, and the account owns no
+function, procedure or view and creates in no schema: PostgreSQL checks a later `set_config('role')`
+against the account, which may set every person's role, so SQL a person owned in a query's path could
+read as anybody. The connector refuses otherwise, `identity_role_unsafe` and `account_holds_privilege`
+(the review, 2026-10-06). **Asserted identity trusts the source's authors**: a function any other
+role may create can switch roles the same way, so one person's rows are kept from another only where
+every role that may create functions, views or policies on the source is trusted as much as its
+administrator ([ADR-0040](../decisions/0040-asserted-identity-trusts-the-sources-function-authors.md)).
 
 **Retiring is a version** with `retired: true` and the settings unchanged. A retired connection runs
 nothing and cannot be named by a new definition; everything stored from it still reads, and every
@@ -955,7 +963,8 @@ read answered `binding_missing`, in the words one that is not there is, naming t
 and the document, and a connection they may not use `forbidden`, a plain refusal as the route's 403 is
 for any refusal - recording nothing. It **queries nothing**. Where the version was fetched under the accepting
 person's own identity, the request must carry `sharesOwnView: true`, or it is refused,
-`acknowledgement_required`: the screen's warning that everybody who may read the document will see it
+`acknowledgement_required`: the screen's warning that everybody who may read the document will see it,
+and, once published, everybody who may read the publication, since an accepted own view prints in it,
 is `bindings.md`'s (DAT-091), and the route will not accept without it. **Acts on one binding take turns**: an
 accept, and a resolve's and a check's recording transactions, take a transaction-scoped lock on each
 document, node and binding they read what is held of before reading it, so two accepts each replacing

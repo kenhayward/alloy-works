@@ -39,6 +39,18 @@ connection, which D6 builds; D7 would store a provider token nothing reads.
 | D7-J | **Provenance's identity widens** to `{kind: 'endUser', mechanism: 'asserted', principal, signInRoute: 'organisation' \| 'google' \| 'token', asSeen}`; the provenance panel and the Value dialog say whose view a value is (DAT-022)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Recording the role alone, which a renamed person's next sign-in would leave unexplained                                                                                        |
 | D7-K | **If the delegated token stays in D7** (question 1 answered no): the session row gains `provider_token` sealed with the service's key under a new purpose `provider-token`, context the session's id, and `provider_token_expires_at`; written only by the organisation route; no refresh token; deleted with the session; `identity_expired` once past. Never logged: the sign-in path already strips openid-client's error chain                                                                                                                                                                                                                                                                                                                                            | -                                                                                                                                                                              |
 
+**The review (2026-10-06), on D7-C and D7-E:** each person's role must be `NOLOGIN`, create nothing
+and own nothing, and the account own no function, procedure or view and create in no schema; the
+connector refuses otherwise (`identity_role_unsafe`, `account_holds_privilege`), since a later
+`set_config('role')` is checked against the account, which may set every person's role.
+
+**Ken's answer (2026-10-06), on the re-review's route** - a function any source user may create can
+switch roles too: keep today's checks and trust the source's authors
+([ADR-0040](../decisions/0040-asserted-identity-trusts-the-sources-function-authors.md)). D7.3's guide
+gives the administrator's checklist: person roles `NOLOGIN`, no `CREATE`, owning nothing; `CREATE` on
+`public` revoked from `PUBLIC` on PostgreSQL 14 and 15; only trusted roles may create functions, views
+or policies; views over data people see `security_invoker`, or owned by the administrator.
+
 ## The stored-shape check
 
 - **0054** (tenant, or the next free number): `connection_test_findings` widens to

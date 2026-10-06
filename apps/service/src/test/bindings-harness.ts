@@ -9,9 +9,11 @@ import {
   createTenantDatabase,
   findRole,
   grant,
+  listenToTenants,
   migrate,
   type Tenant,
   type TenantDatabase,
+  type TenantListener,
 } from '@alloy-works/db';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
 import {
@@ -138,10 +140,28 @@ export interface Harness {
   ): Promise<LightMyRequestResponse>;
   /** Calls as `call` does, to a service of the same environment given no object store. */
   callWithout(): Harness['call'];
+  /**
+   * Another replica of the service: the same database, store and connector, and a listener of its
+   * own on the environment's events, as a second instance behind the load balancer has.
+   */
+  replica(options?: { readonly events?: boolean }): Harness['call'];
+  /** Signs `user` in again, a session of its own, and answers the name to `call` it by. */
+  session(user: string): Promise<string>;
+  /** Calls as `call` does, with a personal token in place of a session. */
+  bearer(
+    token: string,
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    url: string,
+    payload?: unknown,
+  ): Promise<LightMyRequestResponse>;
   /** Grants a role, allowed, and answers the grant's id. */
   allow(principal: string, role: string, level: Json): Promise<string>;
   /** A connection Ada makes in a space, its credential set and its test passed clean. */
-  connection(name: string, space?: string): Promise<{ id: string; version: string }>;
+  connection(
+    name: string,
+    space?: string,
+    over?: Partial<ConnectionSettings>,
+  ): Promise<{ id: string; version: string }>;
   /** A query definition Ada makes on a connection. */
   definition(
     connection: string,
@@ -170,6 +190,8 @@ export interface Harness {
 export interface HarnessOptions {
   /** The stores the service is given, made from the real ones: a decorator a test counts through. */
   readonly objects?: (stores: ObjectStores) => ObjectStores;
+  /** Whether the service hears the environment's events, as a deployed one does. */
+  readonly events?: boolean;
 }
 
 export async function startHarness(options: HarnessOptions = {}): Promise<Harness> {
@@ -197,7 +219,13 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
   const tenantDb = createTenantDatabase(db.serviceUrl);
   const connector = fakeConnector();
   const lines: string[] = [];
-  const appWith = (objects: ObjectStores | undefined) =>
+  const listeners: TenantListener[] = [];
+  const listener = () => {
+    const made = listenToTenants(db.serviceUrl);
+    listeners.push(made);
+    return made;
+  };
+  const appWith = (objects: ObjectStores | undefined, events?: TenantListener) =>
     buildApp({
       db: tenantDb,
       logLevel: 'info',
@@ -211,14 +239,19 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
       secrets: environmentSecrets({}),
       sealingKey: TEST_SEALING_KEY,
       ...(objects === undefined ? {} : { objects }),
+      ...(events === undefined ? {} : { events }),
       connector: {
         url: 'http://connector.test:8090',
         key: FAKE_CONNECTOR_KEY,
         fetch: connector.fetch,
       },
     });
-  const app = appWith(options.objects ? options.objects(stores) : stores);
+  const app = appWith(
+    options.objects ? options.objects(stores) : stores,
+    options.events ? listener() : undefined,
+  );
   const others: FastifyInstance[] = [];
+  let sessions = 0;
   const cookies: Record<string, string> = {};
   const ids: Record<string, string> = {};
   const roles: Record<string, string> = {};
@@ -304,9 +337,31 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
       return callOn(other);
     },
 
-    async connection(name, space = general) {
+    replica({ events = true } = {}) {
+      const other = appWith(stores, events ? listener() : undefined);
+      others.push(other);
+      return callOn(other);
+    },
+
+    async session(user) {
+      sessions += 1;
+      const alias = `${user}#${sessions}`;
+      cookies[alias] = await signIn(app, HOST, user, idp.issuer);
+      return alias;
+    },
+
+    bearer(token, method, url, payload) {
+      return app.inject({
+        method,
+        url,
+        headers: { host: HOST, authorization: `Bearer ${token}` },
+        ...(payload === undefined ? {} : { payload: payload as Json }),
+      });
+    },
+
+    async connection(name, space = general, over = {}) {
       const made = await call('ada', 'POST', `/v1/spaces/${space}/connections`, {
-        settings: settings({ name }),
+        settings: settings({ name, ...over }),
       });
       if (made.statusCode !== 200) throw new Error(`${made.statusCode} ${made.body}`);
       const { id, version } = made.json<{ id: string; version: { id: string } }>();
@@ -426,6 +481,7 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
     async close() {
       for (const other of others) await other.close();
       await app.close();
+      for (const each of listeners) await each.close();
       await tenantDb.close();
       await idp.close();
       await store.drop();

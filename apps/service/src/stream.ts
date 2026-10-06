@@ -1,5 +1,6 @@
 import type { Tenant, TenantDatabase, TenantEvent, TenantListener } from '@alloy-works/db';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { Credential } from './app.js';
 import { REQUEST_ID_HEADER } from './http.js';
 
 /** How long a browser waits before coming back, and how often we prove the connection is alive. */
@@ -14,7 +15,8 @@ const SNAPSHOT_SAMPLES = 20;
  * leave the viewer on the snapshot's older state (issue #137). It holds what arrives until the
  * snapshot has gone, because an event committed in between would otherwise reach the viewer first
  * and be undone by the older snapshot (ADR-0018). A subscription that cannot be heard ends the
- * stream, and the browser comes back after STREAM_RETRY_MS.
+ * stream, and the browser comes back after STREAM_RETRY_MS. The credential it was opened with ending
+ * - a sign-out, a token revoked - ends it too, on the notice every replica hears (IAM-082, D7-I).
  */
 export async function streamToViewer(options: {
   readonly request: FastifyRequest;
@@ -22,8 +24,10 @@ export async function streamToViewer(options: {
   readonly db: TenantDatabase;
   readonly events: TenantListener;
   readonly tenant: Tenant;
+  /** What the viewer signed in with: its ending ends the stream. */
+  readonly credential: Credential | null;
 }): Promise<void> {
-  const { request, reply, db, events, tenant } = options;
+  const { request, reply, db, events, tenant, credential } = options;
   reply.hijack();
   const raw = reply.raw;
   raw.writeHead(200, {
@@ -43,17 +47,25 @@ export async function streamToViewer(options: {
   let sent = false;
   const held: TenantEvent[] = [];
   const subscription = events.subscribe(tenant.id, (event) => {
+    if (event.kind === 'credential_ended') {
+      if (credential !== null && endsCredential(event, credential)) {
+        stop();
+        raw.end();
+      }
+      return;
+    }
     if (sent) send('sample', event);
     else held.push(event);
   });
   const beat = setInterval(() => raw.write(': alive\n\n'), HEARTBEAT_MS);
   // Set once the viewer has gone, so nothing is read or written for nobody.
   let gone = false;
-  const stop = () => {
+  function stop() {
+    if (gone) return;
     gone = true;
     clearInterval(beat);
     subscription.stop();
-  };
+  }
   request.raw.on('close', stop);
 
   try {
@@ -79,4 +91,14 @@ export async function streamToViewer(options: {
     raw.end();
     if (!left) request.log.error({ err: error }, 'a stream could not start');
   }
+}
+
+/** Whether a notice that a credential ended names this one. */
+export function endsCredential(
+  event: Extract<TenantEvent, { kind: 'credential_ended' }>,
+  credential: Credential,
+): boolean {
+  return credential.kind === 'session'
+    ? 'session' in event && event.session === credential.id
+    : 'token' in event && event.token === credential.id;
 }

@@ -7,7 +7,12 @@ import {
   valueTypeSchema,
 } from '@alloy-works/domain';
 import { z } from 'zod';
-import { DataFailureView, DataProblemsRefusal, UsesView } from './connections.js';
+import {
+  DataFailureView,
+  DataProblemsRefusal,
+  unauthenticatedOrEnded,
+  UsesView,
+} from './connections.js';
 import type { RouteContract } from './contract.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
 
@@ -272,6 +277,13 @@ export const ResolveBindingsBody = z
       .max(50)
       .describe('The bindings to resolve, 1 to 50'),
     session: SessionNamed,
+    sharesOwnView: z
+      .boolean()
+      .optional()
+      .describe(
+        "Acknowledges that a result fetched under the caller's own identity - a binding on a connection that runs as each person - " +
+          'is shown to everybody who may read the document. Without it such a binding is refused `acknowledgement_required`',
+      ),
   })
   .refine(
     (body) => body.session !== undefined || body.bindings.every((each) => each.from !== 'session'),
@@ -327,9 +339,9 @@ const CheckDone = [
     binding: z.string(),
     outcome: z.literal('unchecked'),
     reason: z
-      .enum(['limit', 'permission', 'unresolved'])
+      .enum(['limit', 'permission', 'unresolved', 'identity'])
       .describe(
-        '`limit`: past the 50 distinct runs a check makes; `permission`: the caller may not use its connection; `unresolved`: it holds nothing to compare, or has changed since it was resolved',
+        "`limit`: past the 50 distinct runs a check makes; `permission`: the caller may not use its connection; `unresolved`: it holds nothing to compare, or has changed since it was resolved; `identity`: what it holds is another person's own view, or was fetched as another identity than the caller's run would be, so it is never compared",
       ),
   }),
   z.object({
@@ -397,7 +409,7 @@ export const AcceptBindingBody = z.strictObject({
     .boolean()
     .optional()
     .describe(
-      "Acknowledges that a result fetched under the caller's own identity is shown to everybody who may read the document. No result is fetched so yet, so it is accepted and not needed",
+      "Acknowledges that a result fetched under the caller's own identity is shown to everybody who may read the document. Without it such a result is refused `acknowledgement_required`",
     ),
 });
 export type AcceptBindingBody = z.infer<typeof AcceptBindingBody>;
@@ -476,7 +488,9 @@ export const BindingRefusal = DataProblemsRefusal.extend({
   binding: z.string().optional(),
   node: z.string().optional(),
   document: z.string().optional(),
-  reason: z.enum(['untested', 'not_read_only']).optional(),
+  reason: z
+    .enum(['untested', 'not_read_only', 'asserted', 'signed_out', 'token_revoked'])
+    .optional(),
   current: BindingStateView.optional().describe(
     'resolution_precondition: the binding as it now stands',
   ),
@@ -546,7 +560,7 @@ export const bindingRoutes = {
           "`binding_missing`: no such binding in the component the node places, a definition that is not there or that the caller may not read, answered alike, or a pinned version that is not its definition's; `take_invalid`: what it takes is not the definition's; `parameter_invalid`: a value fails its parameter, or a parameter is taken from the document, which has none yet",
         schema: BindingRefusal,
       },
-      401: unauthenticated,
+      401: unauthenticatedOrEnded,
       403: {
         description:
           'The caller may read the document but may not edit it, or may not use the connection a binding runs on',
@@ -555,7 +569,7 @@ export const bindingRoutes = {
       404: documentNotFound,
       409: {
         description:
-          '`definition_retired`, `connection_retired`, `credential_missing`, `credential_target_changed`, `sql_not_permitted`: a run cannot be made; `access_changed`: a permission or the session ended while the source answered; `binding_changed`: the binding changed while the source answered. Nothing is recorded',
+          "`definition_retired`, `connection_retired`, `credential_missing`, `credential_target_changed`, `sql_not_permitted`: a run cannot be made; `identity_unavailable`: a binding's connection runs as each person and the caller's sign-in cannot name them; `acknowledgement_required`: a binding runs as the caller and `sharesOwnView` was not sent; `access_changed`: a permission or the session ended while the source answered; `binding_changed`: the binding changed while the source answered. Nothing is recorded",
         schema: BindingRefusal,
       },
       503: unavailable,
@@ -582,7 +596,7 @@ export const bindingRoutes = {
           'As 200, where a different result holds images not yet admitted as assets: each such binding is answered with a pending result, recorded only once every image is admitted',
         schema: CheckBindingsView,
       },
-      401: unauthenticated,
+      401: unauthenticatedOrEnded,
       403: {
         description: 'Never answered: a document the caller may not read is not found',
         schema: ErrorBody,
@@ -614,13 +628,13 @@ export const bindingRoutes = {
       401: unauthenticated,
       403: {
         description:
-          'The caller may read the document but may not edit it, or may not use the connection the accepted result ran on. Nothing is recorded',
-        schema: ErrorBody,
+          "The caller may read the document but may not edit it, or may not use the connection the accepted result ran on; `identity_differs`: the result is another person's own view, which only they may accept. Nothing is recorded",
+        schema: BindingRefusal,
       },
       404: documentNotFound,
       409: {
         description:
-          '`resolution_precondition`: the binding no longer holds what `replaces` names, or the version is not a newer result of what it holds, answered with the binding as it stands',
+          "`resolution_precondition`: the binding no longer holds what `replaces` names, or the version is not a newer result of what it holds, answered with the binding as it stands; `acknowledgement_required`: the result is the caller's own view and `sharesOwnView` was not sent",
         schema: BindingRefusal,
       },
     },

@@ -169,9 +169,10 @@ const person = (role: string) => ({ kind: 'asserted', role }) as const;
 function reading(
   relation = 'reading',
   columns = ['id', 'value'],
+  schema = 'sample',
 ): Omit<DraftDefinition, 'connection'> {
   const query: Query = {
-    sources: [{ alias: 'r', table: { schema: 'sample', name: relation } }],
+    sources: [{ alias: 'r', table: { schema, name: relation } }],
     joins: [],
     select: columns.map((name) => ({ name, of: { source: 'r', column: name } })),
     groupBy: [],
@@ -316,6 +317,142 @@ describe("a person's own identity asserted at the source", { timeout: LOADED_TIM
         findings: ['account_holds_privilege'],
       });
     });
+    ok(await runAs(ADA));
+  });
+
+  /** Runs `sql` as the source's superuser in the asserted database, `undo` once `work` is done. */
+  async function withSource<T>(sql: string, undo: string, work: () => Promise<T>): Promise<T> {
+    const as = (text: string) =>
+      asSuperuser((client) => client.query(text), ASSERTED_DATABASE).then(() => undefined);
+    await as(sql);
+    try {
+      return await work();
+    } finally {
+      await as(undo);
+    }
+  }
+
+  it("refuses a person's role that owns a function and a view which switch to another person's role part way through, before anything is read (the review, 2026-10-06)", async () => {
+    // Ada's own schema, function and view: the function sets Grace's role - which the account, the
+    // session's user, may set - reads, and sets Ada's back, so the recheck at the end sees Ada.
+    const ada = quoted(ADA);
+    await withSource(
+      `create schema ada_s authorization ${ada};
+       set role ${ada};
+       create function ada_s.peek() returns table (id integer, value integer) language plpgsql as $$
+       begin
+         perform pg_catalog.set_config('role', ${literal(GRACE)}, true);
+         return query select r.id, r.value from sample.reading r;
+         perform pg_catalog.set_config('role', ${literal(ADA)}, true);
+       end $$;
+       create view ada_s.v as select p.id, p.value from ada_s.peek() p;
+       reset role;`,
+      'drop schema ada_s cascade',
+      async () => {
+        const answer = await runAs(ADA, 'asserter', reading('v', ['id', 'value'], 'ada_s'));
+        expect(JSON.stringify(answer)).not.toContain('"20"');
+        expect(answer).toEqual(refusedWith('identity_role_unsafe'));
+      },
+    );
+    ok(await runAs(ADA));
+  });
+
+  it("refuses a person's role that may log in, create in a schema or a database, or owns a function, a procedure, a table, a view or a materialised view", async () => {
+    const ada = quoted(ADA);
+    const cases: [string, string, string][] = [
+      ['login', `alter role ${ada} login`, `alter role ${ada} nologin`],
+      [
+        'create in a schema',
+        `grant create on schema public to ${ada}`,
+        `revoke create on schema public from ${ada}`,
+      ],
+      [
+        'create in a database',
+        `grant create on database ${ASSERTED_DATABASE} to ${ada}`,
+        `revoke create on database ${ASSERTED_DATABASE} from ${ada}`,
+      ],
+      [
+        'a function',
+        `create function sample.owned() returns integer language sql as 'select 1';
+         alter function sample.owned() owner to ${ada}`,
+        'drop function sample.owned()',
+      ],
+      [
+        'a procedure',
+        `create procedure sample.owned() language sql as 'select 1';
+         alter procedure sample.owned() owner to ${ada}`,
+        'drop procedure sample.owned()',
+      ],
+      [
+        'a table',
+        `create table sample.owned (id integer); alter table sample.owned owner to ${ada}`,
+        'drop table sample.owned',
+      ],
+      [
+        'a view',
+        `create view sample.owned as select 1 as id; alter view sample.owned owner to ${ada}`,
+        'drop view sample.owned',
+      ],
+      [
+        'a materialised view',
+        `create materialized view sample.owned as select 1 as id;
+         alter materialized view sample.owned owner to ${ada}`,
+        'drop materialized view sample.owned',
+      ],
+    ];
+    for (const [what, sql, undo] of cases) {
+      await withSource(sql, undo, async () => {
+        expect(await runAs(ADA), what).toEqual(refusedWith('identity_role_unsafe'));
+        expect(await describeAs(ADA), what).toEqual({
+          failure: { code: 'identity_role_unsafe', attribution: 'connector' },
+        });
+        // Grace's role is unchanged, and still runs.
+        ok(await runAs(GRACE));
+      });
+    }
+    ok(await runAs(ADA));
+  });
+
+  it('refuses an account that owns a function, a procedure or a view, or may create in a schema, and the test reports it', async () => {
+    const cases: [string, string, string][] = [
+      [
+        'a function',
+        `create function sample.owned() returns integer language sql as 'select 1';
+         alter function sample.owned() owner to asserter`,
+        'drop function sample.owned()',
+      ],
+      [
+        'a procedure',
+        `create procedure sample.owned() language sql as 'select 1';
+         alter procedure sample.owned() owner to asserter`,
+        'drop procedure sample.owned()',
+      ],
+      [
+        'a view',
+        `create view sample.owned as select 1 as id; alter view sample.owned owner to asserter`,
+        'drop view sample.owned',
+      ],
+      [
+        'create in a schema',
+        'grant create on schema public to asserter',
+        'revoke create on schema public from asserter',
+      ],
+      // PostgreSQL 14's default, which every role holds, the account and each person alike.
+      [
+        'create in a schema, through PUBLIC',
+        'grant create on schema public to public',
+        'revoke create on schema public from public',
+      ],
+    ];
+    for (const [what, sql, undo] of cases) {
+      await withSource(sql, undo, async () => {
+        expect(await runAs(ADA), what).toEqual(refusedWith('account_holds_privilege'));
+        const tested = await testAs('asserter');
+        expect(tested.outcome === 'ok' && tested.findings, what).toContain(
+          'account_holds_privilege',
+        );
+      });
+    }
     ok(await runAs(ADA));
   });
 

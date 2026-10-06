@@ -387,11 +387,28 @@ export const DataRefusal = ErrorBody.extend({
 
 /**
  * SQL refused on a connection (DAT-103): `untested` where its latest test is not a pass of its latest
- * version and credential, `not_read_only` where that test found its account able to write.
+ * version and credential, `not_read_only` where that test found its account able to write; and on a
+ * connection that runs as each person (DAT-102), `asserted`.
  */
 export const SqlRefusal = DataRefusal.extend({
-  reason: z.enum(['untested', 'not_read_only']).optional(),
+  reason: z.enum(['untested', 'not_read_only', 'asserted']).optional(),
 });
+
+/**
+ * An act stopped because the session it was asked in was signed out, or the token it was asked with
+ * revoked, while the source answered (IAM-082): `authority_ended`, with which, and nothing recorded.
+ */
+export const AuthorityEndedRefusal = ErrorBody.extend({
+  reason: z.enum(['signed_out', 'token_revoked']).optional(),
+});
+
+/** The 401 of a route that asks the source: no session, or its authority ended meanwhile. */
+export const unauthenticatedOrEnded = {
+  description:
+    'No session, or not one this environment issued; or `authority_ended`: the session was signed out, or the token revoked ' +
+    '(`signed_out`, `token_revoked`), while the source answered, which stopped it within two seconds. Nothing is recorded',
+  schema: AuthorityEndedRefusal,
+} as const;
 
 /** A value refused by its declaration (DAT-020): the parameter, the rule and the value. */
 const ParameterProblem = z.object({
@@ -452,10 +469,16 @@ const retiredOrUnset = {
   schema: DataRefusal,
 } as const;
 
-/** SQL refused on a connection that has not been found read-only (DAT-103). */
+/** SQL refused on a connection that has not been found read-only (DAT-103), or that asserts (DAT-102). */
 const sqlNotPermitted =
   '`sql_not_permitted`: for SQL, the connection has not been tested clean at its latest version and ' +
-  'credential (`untested`), or its account was found able to write (`not_read_only`). A built query is never refused this way';
+  'credential (`untested`), its account was found able to write (`not_read_only`), or it runs as each person (`asserted`). ' +
+  'A built query is never refused this way';
+
+/** A connection that runs as each person, and cannot name the caller (D7-B). */
+const identityUnavailable =
+  "`identity_unavailable`: the connection runs as each person, and the caller's sign-in has no email or subject it can name them by, " +
+  'or one longer than 63 bytes';
 
 /**
  * Connections (data.md, "Routes"): `administer` makes and changes one and sets its credential,
@@ -566,14 +589,14 @@ export const connectionRoutes = {
     responses: {
       200: {
         description:
-          'Set: who set it and when, never the credential, and the test run straight after',
+          'Set: who set it and when, never the credential, and the test run straight after. A test stopped because the session was signed out, or the token revoked, meanwhile fails `authority_ended`, the credential still set',
         schema: CredentialSet,
       },
       400: {
         description: 'The credential is empty, longer than 4,096 bytes, or holds U+0000',
         schema: ErrorBody,
       },
-      401: unauthenticated,
+      401: unauthenticatedOrEnded,
       403: {
         description: 'The caller may read the connection but may not administer it',
         schema: ErrorBody,
@@ -604,7 +627,7 @@ export const connectionRoutes = {
           'Tested, and recorded against the version tested: ok with its findings, or one reason',
         schema: TestView,
       },
-      401: unauthenticated,
+      401: unauthenticatedOrEnded,
       403: {
         description: 'The caller may read the connection but may not use it',
         schema: ErrorBody,
@@ -641,7 +664,7 @@ export const connectionRoutes = {
           'worded by their SQLSTATE; `result_mismatch`: it has no columns to describe',
         schema: DataProblemsRefusal,
       },
-      401: unauthenticated,
+      401: unauthenticatedOrEnded,
       403: {
         description:
           'The caller may read the connection but may not use it, or, for a statement, may not write SQL against it. A built query needs use connection alone',
@@ -649,7 +672,7 @@ export const connectionRoutes = {
       },
       404: notFound,
       409: {
-        description: `${retiredOrUnset.description}; ${sqlNotPermitted}`,
+        description: `${retiredOrUnset.description}; ${sqlNotPermitted}; ${identityUnavailable}`,
         schema: SqlRefusal,
       },
       502: {
@@ -685,7 +708,7 @@ export const connectionRoutes = {
           '`parameter_invalid`: a value fails its declaration, each named with the parameter, the rule and the value',
         schema: DataProblemsRefusal,
       },
-      401: unauthenticated,
+      401: unauthenticatedOrEnded,
       403: {
         description:
           'The caller may read the connection but may not use it, or, for a draft of SQL, may not write SQL against it. A built query needs use connection alone',
@@ -693,7 +716,7 @@ export const connectionRoutes = {
       },
       404: notFound,
       409: {
-        description: `${retiredOrUnset.description}; ${sqlNotPermitted}`,
+        description: `${retiredOrUnset.description}; ${sqlNotPermitted}; ${identityUnavailable}`,
         schema: SqlRefusal,
       },
       503: unavailable,

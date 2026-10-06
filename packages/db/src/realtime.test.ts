@@ -162,6 +162,7 @@ describe('what an environment says has happened', () => {
       });
       const reached = hold.hold('listen ');
       const first = held.subscribe(a.id, (event) => {
+        if (event.kind !== 'sample') return;
         got.push(event.id);
         if (event.id === '11111111-2222-4333-8444-999999999999') heardLate();
       });
@@ -197,7 +198,9 @@ describe('what an environment says has happened', () => {
       const next = new Promise<string>((resolve) => {
         heard = resolve;
       });
-      const after = held.subscribe(a.id, (event) => heard(event.id));
+      const after = held.subscribe(a.id, (event) => {
+        if (event.kind === 'sample') heard(event.id);
+      });
       const afterReady = watch(after.ready);
       await aMoment();
       expect(afterReady.settled).toBe(false);

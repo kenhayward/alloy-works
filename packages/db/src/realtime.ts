@@ -15,12 +15,15 @@ export function tenantChannel(tenantId: string): string {
   return `aw_t_${tenantId}`;
 }
 
-/** What an environment says has happened: a kind, an id, and where it got to. Never content. */
-export interface TenantEvent {
-  readonly kind: 'sample';
-  readonly id: string;
-  readonly state: string;
-}
+/**
+ * What an environment says has happened: a kind, an id, and where it got to. Never content. A
+ * `credential_ended` names the session signed out or the token revoked, by its row's id - never the
+ * secret - so every replica stops what that credential was doing (IAM-082, the D7 plan's D7-I).
+ */
+export type TenantEvent =
+  | { readonly kind: 'sample'; readonly id: string; readonly state: string }
+  | { readonly kind: 'credential_ended'; readonly session: string }
+  | { readonly kind: 'credential_ended'; readonly token: string };
 
 /**
  * Said inside the transaction that changed something, so nothing is announced that did not commit.

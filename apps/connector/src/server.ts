@@ -156,11 +156,18 @@ export function createConnectorServer(options: {
       return send(200, answer);
     }
     const before = stderrBytes;
+    // A caller that closes its request before the answer is sent has stopped waiting - a person signed
+    // out, or a token revoked (IAM-082, the D7 plan's D7-I): the child is killed, and with it its
+    // connection to the source, which sees its client gone within 250 ms.
+    const gone = new AbortController();
+    response.on('close', () => {
+      if (!response.writableFinished) gone.abort();
+    });
     let answer;
     if (path === '/v1/run') {
       const parsed = runRequestSchema.safeParse(body);
       if (!parsed.success) return send(400, { code: 'request_invalid' });
-      answer = await supervisor.run('run', parsed.data);
+      answer = await supervisor.run('run', parsed.data, gone.signal);
     } else if (
       path === '/v1/describe' &&
       typeof body === 'object' &&
@@ -170,17 +177,17 @@ export function createConnectorServer(options: {
       // A describe taking a statement, SQL or a built query's: its columns, never run (D2-G, D4-Q).
       const parsed = describeSqlRequestSchema.safeParse(body);
       if (!parsed.success) return send(400, { code: 'request_invalid' });
-      answer = await supervisor.run('describeSql', parsed.data);
+      answer = await supervisor.run('describeSql', parsed.data, gone.signal);
     } else if (path === '/v1/describe') {
       // The relations, as the account or as a person (the D7 plan, D7-G).
       const parsed = describeRequestSchema.safeParse(body);
       if (!parsed.success) return send(400, { code: 'request_invalid' });
-      answer = await supervisor.run('describe', parsed.data);
+      answer = await supervisor.run('describe', parsed.data, gone.signal);
     } else {
       // A test checks the account, so it never carries a person.
       const parsed = testRequestSchema.safeParse(body);
       if (!parsed.success) return send(400, { code: 'request_invalid' });
-      answer = await supervisor.run('test', parsed.data);
+      answer = await supervisor.run('test', parsed.data, gone.signal);
     }
     if (answer === 'busy') return send(503, { code: 'connector_busy' });
     const sent = send(200, answer);

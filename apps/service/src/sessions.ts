@@ -41,17 +41,35 @@ export async function createSession(
   return token;
 }
 
+/** A live session: whose it is, its row, and the route it was signed in by. */
+export interface HeldSession {
+  readonly principal: SessionPrincipal;
+  /** The session's row, which a sign-out names to every replica (the D7 plan, D7-I). */
+  readonly id: string;
+  readonly route: SignInRoute;
+}
+
 /** The principal a token belongs to, if its session is alive; using it keeps it alive. */
 export async function findSession(
   trx: TenantTransaction,
   token: string,
   now: Date = new Date(),
 ): Promise<SessionPrincipal | undefined> {
+  return (await sessionHeld(trx, token, now))?.principal;
+}
+
+/** The session a token is, if it is alive; using it keeps it alive. */
+export async function sessionHeld(
+  trx: TenantTransaction,
+  token: string,
+  now: Date = new Date(),
+): Promise<HeldSession | undefined> {
   const row = await trx
     .selectFrom('session as s')
     .innerJoin('principal as p', 'p.id', 's.principal_id')
     .select([
       's.id',
+      's.route',
       's.last_seen_at',
       's.expires_at',
       'p.id as principal_id',
@@ -73,9 +91,22 @@ export async function findSession(
       .where('id', '=', row.id)
       .execute();
   }
-  return { principalId: row.principal_id, email: row.email, displayName: row.display_name };
+  return {
+    principal: { principalId: row.principal_id, email: row.email, displayName: row.display_name },
+    id: row.id,
+    route: row.route as SignInRoute,
+  };
 }
 
-export async function endSession(trx: TenantTransaction, token: string): Promise<void> {
-  await trx.deleteFrom('session').where('token_hash', '=', hashToken(token)).execute();
+/** Ends the session a token is, answering its row where there was one. */
+export async function endSession(
+  trx: TenantTransaction,
+  token: string,
+): Promise<string | undefined> {
+  const ended = await trx
+    .deleteFrom('session')
+    .where('token_hash', '=', hashToken(token))
+    .returning('id')
+    .executeTakeFirst();
+  return ended?.id;
 }

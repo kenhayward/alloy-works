@@ -66,6 +66,8 @@ const WIRE_CODES = {
   'resolution.precondition': 'resolution_precondition',
   'confirm.not_possible': 'confirm_not_possible',
   'name.invalid': 'name_invalid',
+  'identity.differs': 'identity_differs',
+  'acknowledgement.required': 'acknowledgement_required',
 } as const satisfies Record<string, string>;
 
 export type DottedCode = keyof typeof WIRE_CODES;
@@ -110,6 +112,8 @@ const RULES: Partial<Record<DottedCode, string>> = {
   'sql.not_permitted': 'DAT-103',
   // A value failing its declaration, before anything runs (data.md, "Parameters").
   'parameter.invalid': 'DAT-020',
+  // One's own view held without the warning that every reader of the document will see it (D7-H).
+  'acknowledgement.required': 'DAT-091',
 };
 
 /** The wire's spelling of a store's dotted answer. */

@@ -14,6 +14,7 @@ import type {
 import {
   issueApiToken,
   listApiTokens,
+  notifyTenant,
   revokeApiToken,
   type StoredApiToken,
   type Tenant,
@@ -139,9 +140,12 @@ export function tokenHandlers(
 
     revokeToken: async (request: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> => {
       const { id } = request.params as TokenParams;
-      const revoked = await db.withTenant(tenantOf(request), (trx) =>
-        revokeApiToken(trx, principalOf(request).principalId, id),
-      );
+      const revoked = await db.withTenant(tenantOf(request), async (trx) => {
+        const removed = await revokeApiToken(trx, principalOf(request).principalId, id);
+        // Every replica stops what the token was doing within two seconds (IAM-082, D7-I).
+        if (removed) await notifyTenant(trx, { kind: 'credential_ended', token: id });
+        return removed;
+      });
       if (!revoked) throw notFound();
       return reply.status(204).send();
     },
@@ -182,6 +186,8 @@ export function administeredTokenHandlers() {
       const { id, token } = request.params as PrincipalTokenParams;
       // The token's row is read on every request, so it is refused at the next (IAM-035).
       if (!(await revokeApiToken(trx, id, token))) throw notFound();
+      // Every replica stops what the token was doing within two seconds (IAM-082, D7-I).
+      await notifyTenant(trx, { kind: 'credential_ended', token });
       return { revoked: token };
     },
   };

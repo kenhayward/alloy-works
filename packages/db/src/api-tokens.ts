@@ -21,6 +21,8 @@ export interface StoredApiToken {
 
 /** Who a token acts as, and the mask its scopes put over their grants (TK-A). */
 export interface ApiTokenHolder {
+  /** The token's row, which its revocation names to every replica (the D7 plan, D7-I). */
+  readonly tokenId: string;
   readonly principalId: string;
   readonly email: string | null;
   readonly displayName: string | null;
@@ -116,6 +118,7 @@ export async function findApiToken(
       .execute();
   }
   return {
+    tokenId: row.id,
     principalId: row.principal_id,
     email: row.email,
     displayName: row.display_name,

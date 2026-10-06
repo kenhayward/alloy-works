@@ -390,8 +390,8 @@ T3's, and the open question below.
 held (D3-K), refused `resolution_precondition` with the binding as it stands where another accept got
 there first. **Where the version was fetched under the accepting person's own identity** - from D7,
 when an end-user connection exists - Accept opens a confirmation first (DAT-091): _Everybody who may
-read this document will see this value, which the source showed to you_, with the document's readers
-counted, and **Share my view** or **Cancel**; only Share sends `sharesOwnView: true`, which the route
+read this document will see this value, which the source showed to you, and so will everybody who
+reads a publication of it_, with the document's readers counted, and **Share my view** or **Cancel**; only Share sends `sharesOwnView: true`, which the route
 otherwise refuses, `acknowledgement_required` (DA-AE). A service-account result asks nothing.
 
 ### A definition moved on, and changed since published

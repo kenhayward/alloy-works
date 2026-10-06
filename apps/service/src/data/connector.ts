@@ -45,12 +45,19 @@ export interface ConnectorClient {
     secret: string,
     settings: ConnectionSettings,
   ): Promise<Answered<SealAnswer>>;
-  test(request: TestRequest): Promise<Answered<TestAnswer>>;
-  describe(request: DescribeRequest): Promise<Answered<DescribeAnswer>>;
+  /*
+   * Each request below is given up on where `signal` aborts - the caller's authority ended (IAM-082,
+   * the D7 plan's D7-I) - which closes it, and the connector kills its child.
+   */
+  test(request: TestRequest, signal?: AbortSignal): Promise<Answered<TestAnswer>>;
+  describe(request: DescribeRequest, signal?: AbortSignal): Promise<Answered<DescribeAnswer>>;
   /** A SQL statement's result columns, never run (D2-G). */
-  describeSql(request: DescribeSqlRequest): Promise<Answered<DescribeSqlAnswer>>;
+  describeSql(
+    request: DescribeSqlRequest,
+    signal?: AbortSignal,
+  ): Promise<Answered<DescribeSqlAnswer>>;
   /** A definition run against values the service has checked (D2-I). */
-  run(request: RunRequest): Promise<Answered<RunAnswer>>;
+  run(request: RunRequest, signal?: AbortSignal): Promise<Answered<RunAnswer>>;
 }
 
 /**
@@ -90,9 +97,13 @@ export function createConnectorClient(options: {
     body: unknown,
     schema: S,
     timeoutMs: number,
+    signal?: AbortSignal,
   ): Promise<Answered<z.infer<S>>> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const abandon = () => controller.abort();
+    if (signal?.aborted) abandon();
+    else signal?.addEventListener('abort', abandon, { once: true });
     try {
       const response = await send(`${base}${path}`, {
         method: 'POST',
@@ -118,18 +129,21 @@ export function createConnectorClient(options: {
       return unavailable();
     } finally {
       clearTimeout(timer);
+      signal?.removeEventListener('abort', abandon);
     }
   }
 
   return {
     seal: (tenant, connection, secret, settings) =>
       ask('/v1/seal', { tenant, connection, secret, settings }, sealAnswerSchema, SEAL_MS),
-    test: (request) => ask('/v1/test', request, testAnswerSchema, request.deadlineMs + SLACK_MS),
-    describe: (request) =>
-      ask('/v1/describe', request, describeAnswerSchema, request.deadlineMs + SLACK_MS),
-    describeSql: (request) =>
-      ask('/v1/describe', request, describeSqlAnswerSchema, request.deadlineMs + SLACK_MS),
-    run: (request) => ask('/v1/run', request, runAnswerSchema, request.deadlineMs + SLACK_MS),
+    test: (request, signal) =>
+      ask('/v1/test', request, testAnswerSchema, request.deadlineMs + SLACK_MS, signal),
+    describe: (request, signal) =>
+      ask('/v1/describe', request, describeAnswerSchema, request.deadlineMs + SLACK_MS, signal),
+    describeSql: (request, signal) =>
+      ask('/v1/describe', request, describeSqlAnswerSchema, request.deadlineMs + SLACK_MS, signal),
+    run: (request, signal) =>
+      ask('/v1/run', request, runAnswerSchema, request.deadlineMs + SLACK_MS, signal),
   };
 }
 

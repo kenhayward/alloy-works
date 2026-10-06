@@ -104,6 +104,8 @@ export type SpawnChild = (
   input: string,
   deadlineMs: number,
   stderr?: (chunk: Buffer) => void,
+  /** Aborted where nobody waits for the answer any more: the child is killed at once (IAM-082). */
+  signal?: AbortSignal,
 ) => Promise<ChildOutcome>;
 
 /** The most a child may answer; a describe stops listing at half of it (`DESCRIBE_BUDGET_BYTES`). */
@@ -112,10 +114,12 @@ const MAX_ANSWER_BYTES = CONNECTOR_ANSWER_MAX_BYTES;
 const GRACE_MS = 1000;
 
 /**
- * Starts a child, writes it one line, reads one line, and kills it a second after the deadline. Its
- * standard error is read, counted and dropped, unless a caller - a test - asks to see it.
+ * Starts a child, writes it one line, reads one line, and kills it a second after the deadline, or at
+ * once where `signal` aborts: its caller has gone, so its answer reaches nobody, and its connection to
+ * the source closes with it (the D7 plan, D7-I). Its standard error is read, counted and dropped,
+ * unless a caller - a test - asks to see it.
  */
-export const runChild: SpawnChild = (spec, input, deadlineMs, stderr) =>
+export const runChild: SpawnChild = (spec, input, deadlineMs, stderr, signal) =>
   new Promise((resolve) => {
     let child;
     try {
@@ -139,6 +143,9 @@ export const runChild: SpawnChild = (spec, input, deadlineMs, stderr) =>
       killed = true;
       child.kill('SIGKILL');
     }, deadlineMs + GRACE_MS);
+    const abandoned = () => child.kill('SIGKILL');
+    if (signal?.aborted) abandoned();
+    else signal?.addEventListener('abort', abandoned, { once: true });
     child.stdout.on('data', (chunk: Buffer) => {
       bytes += chunk.length;
       if (bytes > MAX_ANSWER_BYTES) child.kill('SIGKILL');
@@ -151,6 +158,7 @@ export const runChild: SpawnChild = (spec, input, deadlineMs, stderr) =>
     child.on('error', () => {});
     child.on('close', () => {
       clearTimeout(timer);
+      signal?.removeEventListener('abort', abandoned);
       if (killed) {
         resolve({ kind: 'timeout', pid });
         return;
@@ -205,8 +213,15 @@ export const MAX_RUNS = 4;
 export const CONNECT_TIMEOUT_MS = 5000;
 
 export interface Supervisor {
-  /** The request's answer, or `busy` when the cap of children is running. */
-  run<K extends RequestKind>(kind: K, request: RequestOf<K>): Promise<AnswerOf<K> | 'busy'>;
+  /**
+   * The request's answer, or `busy` when the cap of children is running. Where `signal` aborts, its
+   * caller has gone: the child is killed at once, and what it answers is nobody's.
+   */
+  run<K extends RequestKind>(
+    kind: K,
+    request: RequestOf<K>,
+    signal?: AbortSignal,
+  ): Promise<AnswerOf<K> | 'busy'>;
   /** How many children are running. */
   active(): number;
 }
@@ -259,6 +274,7 @@ export function createSupervisor(options: {
     request: RequestOf<K>,
     slot: number,
     sweeping: (done: Promise<void>) => void,
+    signal: AbortSignal | undefined,
   ): Promise<AnswerOf<K>> {
     const started = Date.now();
     let secret: string;
@@ -289,9 +305,15 @@ export function createSupervisor(options: {
     let stderrBytes = 0;
     let outcome: ChildOutcome;
     try {
-      outcome = await spawnChild(spec, JSON.stringify(input), request.deadlineMs, (chunk) => {
-        stderrBytes += chunk.length;
-      });
+      outcome = await spawnChild(
+        spec,
+        JSON.stringify(input),
+        request.deadlineMs,
+        (chunk) => {
+          stderrBytes += chunk.length;
+        },
+        signal,
+      );
     } finally {
       // Nothing the child started outlives it into the next request its user serves. The sweep reads
       // every process in /proc, so it runs beside the answer rather than before it, and the slot -
@@ -307,16 +329,26 @@ export function createSupervisor(options: {
   }
 
   return {
-    run<K extends RequestKind>(kind: K, request: RequestOf<K>): Promise<AnswerOf<K> | 'busy'> {
+    run<K extends RequestKind>(
+      kind: K,
+      request: RequestOf<K>,
+      signal?: AbortSignal,
+    ): Promise<AnswerOf<K> | 'busy'> {
       if (kind === 'run' && runs >= maxRuns) return Promise.resolve('busy');
       const slot = free.shift();
       if (slot === undefined) return Promise.resolve('busy');
       active += 1;
       if (kind === 'run') runs += 1;
       let swept: Promise<void> = Promise.resolve();
-      const answer = work(kind, request, slot, (done) => {
-        swept = done;
-      }).finally(() => {
+      const answer = work(
+        kind,
+        request,
+        slot,
+        (done) => {
+          swept = done;
+        },
+        signal,
+      ).finally(() => {
         active -= 1;
         if (kind === 'run') runs -= 1;
       });

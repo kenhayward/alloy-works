@@ -143,6 +143,33 @@ export async function holdingAdvisoryLock(url: string, key: string): Promise<() 
 }
 
 /**
+ * Runs `sql` in a transaction of its own and holds it, uncommitted, until the answer is called, which
+ * commits it: what a sign-out deleting its session looks like to an act while it commits.
+ */
+export async function holdingTransaction(
+  url: string,
+  sql: string,
+  values: readonly unknown[] = [],
+): Promise<() => Promise<void>> {
+  const client = new pg.Client({ connectionString: url });
+  await client.connect();
+  try {
+    await client.query('begin');
+    await client.query(sql, [...values]);
+  } catch (error) {
+    await client.end();
+    throw error;
+  }
+  return async () => {
+    try {
+      await client.query('commit');
+    } finally {
+      await client.end();
+    }
+  };
+}
+
+/**
  * The key `holdingAdvisoryLock` takes to hold the lock `lockDatasetQuestions` takes on a question in
  * the tenant whose schema this is: the tenant's schema, a colon and the question's own key, as
  * `lockInTurn` builds it from `current_schema()`.
