@@ -11,7 +11,7 @@ import { dataFailure, type DataFailure } from '@alloy-works/domain';
 import { guardedAddress, normaliseHost, type Lookup } from './guard.js';
 
 /**
- * The one HTTPS client (the D6 plan, D6-B), for an HTTP source now and S3 next: the host guarded and
+ * The one HTTPS client (the D6 plan, D6-B), for an HTTP source and S3 alike: the host guarded and
  * resolved once, the socket's lookup pinned to the address checked, so a rebinding answer is never
  * asked for; HTTPS only, by `node:https` with an agent of its own and no proxy read from anywhere; no
  * redirect followed; one deadline over the whole exchange, headers and body, the request destroyed
@@ -42,6 +42,8 @@ export interface ExchangePolicy {
   readonly connectTimeoutMs: number;
   /** The most bytes the body may be, as it arrives and once decoded. */
   readonly maxBytes: number;
+  /** Shown each chunk of the body as it arrived, before decoding: what S3's checksums are over. */
+  readonly observe?: (chunk: Buffer) => void;
 }
 
 export type Exchanged =
@@ -192,6 +194,13 @@ export async function exchange(asked: Exchange, policy: ExchangePolicy): Promise
         finish(failed(dataFailure('source_refused', { status })));
         return;
       }
+      // A HEAD's answer states the length of a body it does not send: it has none to check.
+      if (asked.method === 'HEAD') {
+        response.resume();
+        response.on('end', () => finish({ ok: true, status, headers: response.headers, body: Buffer.alloc(0) }));
+        response.on('error', () => finish(failed(dataFailure('result_incomplete'))));
+        return;
+      }
       const lengthHeader = response.headers['content-length'];
       const declared =
         lengthHeader !== undefined && /^[0-9]{1,15}$/.test(lengthHeader)
@@ -253,6 +262,7 @@ export async function exchange(asked: Exchange, policy: ExchangePolicy): Promise
           return;
         }
         for (const hash of hashes.values()) hash.update(chunk);
+        policy.observe?.(chunk);
         if (decoder) decoder.write(chunk);
         else keep(chunk);
       });

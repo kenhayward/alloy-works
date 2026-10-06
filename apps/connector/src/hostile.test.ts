@@ -11,6 +11,10 @@ import {
   type Parameter,
   type ParameterValues,
   httpValueProblems,
+  keyPairText,
+  objectKeyProblems,
+  type Column,
+  type DraftDefinition,
   type HttpTemplate,
   type RunAnswer,
 } from '@alloy-works/domain';
@@ -40,6 +44,17 @@ import {
   startFakeApi,
   type FakeApi,
 } from './testing/http.js';
+import {
+  field,
+  fileDraft,
+  keyOf,
+  READER,
+  s3RunRequest,
+  s3Settings,
+  SOURCES_CA,
+  startFakeStore,
+  type FakeStore,
+} from './testing/s3.js';
 
 /**
  * Case 5's attempts for PostgreSQL (spikes/data-connectors/case5.mjs), ported to the product's own
@@ -1005,5 +1020,143 @@ describe('injection through every HTTP position', { timeout: LOADED_TIMEOUT_MS }
       ).toBe(true);
     }
     expect(outcomes.length).toBeGreaterThan(400);
+  });
+});
+
+/** The probe's rows as a CSV object, every text quoted. */
+const PROBE_CSV = [
+  'id,label,amount,day,at,active,region',
+  ...DATA.map(
+    (row) =>
+      `${row.id},"${row.label.replaceAll('"', '""')}",${row.amount},${row.day},${row.at},${row.active},"${row.region}"`,
+  ),
+].join(String.fromCharCode(10));
+
+/** Each filter a value is compared in: the position as SQL's, the parameter, the column, the comparison. */
+const FILTER_POSITIONS: readonly (readonly [string, string, string, Comparison])[] = [
+  ['where-eq', 'label', 'label', 'equal'],
+  ['where-contains-fn', 'label', 'label', 'contains'],
+  ['where-gte-int', 'min_id', 'id', 'greaterOrEqual'],
+  ['where-gte-decimal', 'min_amount', 'amount', 'greaterOrEqual'],
+  ['where-gte-date', 'from_day', 'day', 'greaterOrEqual'],
+  ['where-gte-instant', 'since', 'at', 'greaterOrEqual'],
+  ['where-eq-bool', 'active', 'active', 'equal'],
+  ['where-eq-permitted', 'region', 'region', 'equal'],
+  ['where-in-ints', 'ids', 'id', 'in'],
+  ['where-in-texts', 'labels', 'label', 'in'],
+];
+
+const PROBE_COLUMNS: Column[] = [
+  field('id', { base: 'integer' }),
+  field('label', { base: 'text' }),
+  field('amount', { base: 'decimal', precision: 12, scale: 2 }),
+  field('day', { base: 'date' }),
+  field('at', { base: 'instant', fraction: 6 }),
+  field('active', { base: 'boolean' }),
+  field('region', { base: 'text' }),
+];
+
+describe("injection through a file's key and its filters", { timeout: LOADED_TIMEOUT_MS }, () => {
+  let store: FakeStore;
+  beforeAll(async () => {
+    // Any object is the probe, but one under `echo/`, which answers its own key as it arrived.
+    store = await startFakeStore((request) => {
+      const target = request.url ?? '';
+      if (!target.startsWith('/alloy-readings/echo/')) return { body: PROBE_CSV };
+      const key = decodeURIComponent(target.slice('/alloy-readings/'.length));
+      return { body: `key${String.fromCharCode(10)}"${key.replaceAll('"', '""')}"` };
+    });
+  });
+  afterAll(async () => {
+    await store.close();
+  });
+
+  const runFile = async (
+    definition: Omit<DraftDefinition, 'connection'>,
+    values: ParameterValues,
+  ) =>
+    (await answerRequest(
+      childRequestSchema.parse({
+        kind: 'run',
+        request: s3RunRequest(s3Settings(store.port), definition, values),
+        secret: keyPairText(READER),
+        deny: [...suiteDeny],
+        connectTimeoutMs: CONNECT_TIMEOUT_MS,
+        failureFloorMs: 0,
+        ca: SOURCES_CA,
+      }),
+    )) as RunAnswer;
+
+  it("DAT-021 DAT-081 places every hostile value of every type in a key's segment whole, or refuses it by name", async () => {
+    const names = Object.keys(PARAMETERS).filter(
+      (name) => name !== 'sort' && !PARAMETERS[name]!.list,
+    );
+    const attempts = names.flatMap((name) => valuesFor(name).map((value) => ({ name, value })));
+    const outcomes = await inTurn(attempts, async ({ name, value }) => {
+      const parameter = PARAMETERS[name]!;
+      const values = { [name]: value } as ParameterValues;
+      const key = [{ fixed: 'echo' }, { parameter: name }];
+      const problems = [
+        ...checkParameterValues([parameter], values),
+        ...(checkParameterValues([parameter], values).length === 0
+          ? objectKeyProblems(key, values)
+          : []),
+      ];
+      if (problems.length > 0) {
+        expect(problems).toEqual([
+          { parameter: name, rule: expect.any(String), value: expect.any(String) },
+        ]);
+        return 'refused' as const;
+      }
+      const answer = await runFile(
+        fileDraft(key, [field('key', { base: 'text' })], { parameters: [parameter] }),
+        values,
+      );
+      const read = answer.outcome === 'ok' ? answer.result.rows[0]?.[0] : undefined;
+      return read === `echo/${String(value)}` ? ('inert' as const) : { name, value, answer };
+    });
+    expect(outcomes.filter((each) => each !== 'inert' && each !== 'refused')).toEqual([]);
+    expect(outcomes.filter((each) => each === 'inert').length).toBeGreaterThan(50);
+    expect(outcomes.filter((each) => each === 'refused').length).toBeGreaterThan(50);
+  });
+
+  it('DAT-021 DAT-081 compares every hostile value of every type with a column as a typed filter over canonical rows, or refuses it by name', async () => {
+    const attempts = FILTER_POSITIONS.flatMap(([position, name, column, is]) =>
+      valuesFor(name).map((value) => ({ position, name, column, is, value })),
+    );
+    const outcomes = await inTurn(attempts, async ({ position, name, column, is, value }) => {
+      const parameter = PARAMETERS[name]!;
+      const values = { [name]: value } as ParameterValues;
+      const problems = checkParameterValues([parameter], values);
+      if (problems.length > 0) return { position, outcome: 'refused' as const };
+      const answer = await runFile(
+        fileDraft(keyOf('probe.csv'), PROBE_COLUMNS, {
+          parameters: [parameter],
+          where: { column, is, to: { parameter: name } },
+        }),
+        values,
+      );
+      const expected = POSITIONS.find(([each]) => each === position)![3](value as never);
+      const read = answer.outcome === 'ok' ? answer.result.rows.map((row) => String(row[0])) : [];
+      const inert =
+        answer.outcome === 'ok' && JSON.stringify(read.sort()) === JSON.stringify(expected.sort());
+      return {
+        position,
+        outcome: inert ? ('inert' as const) : ('NOT INERT' as const),
+        ...(inert ? {} : { name, value: String(value).slice(0, 60), answer, expected }),
+      };
+    });
+    expect(outcomes.filter((each) => each.outcome === 'NOT INERT')).toEqual([]);
+    for (const [position] of FILTER_POSITIONS) {
+      const at = outcomes.filter((each) => each.position === position);
+      expect(
+        at.some((each) => each.outcome === 'inert'),
+        position,
+      ).toBe(true);
+      expect(
+        at.some((each) => each.outcome === 'refused'),
+        position,
+      ).toBe(true);
+    }
   });
 });

@@ -239,6 +239,78 @@ const httpSource = z.strictObject({
   }),
 });
 
+/** An S3 region as the stores name one: lower-case words of letters and digits joined by hyphens. */
+const REGION = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/**
+ * A bucket's name as S3 takes one, so the one name is spelled one way at every store: 3 to 63 lower-case
+ * letters, digits, dots and hyphens, a letter or digit at either end, no `..`, and not an address.
+ */
+function isBucketName(value: string): boolean {
+  return (
+    /^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(value) &&
+    !value.includes('..') &&
+    !DOTTED_QUAD.test(value) &&
+    !value.startsWith('xn--')
+  );
+}
+
+/** An S3 endpoint: a base URL with no path, `https` and a canonical host (the D6 plan, D6-C). */
+const isEndpoint = (value: string) => isBaseUrl(value) && !/^https:\/\/[^/]+\//.test(value);
+
+/** The host an endpoint names, without brackets, and whether it is a name rather than an address. */
+export function endpointHost(endpoint: string): { readonly host: string; readonly port: number } {
+  const match = /^https:\/\/(\[[^\]]+\]|[^/:]+)(?::([0-9]+))?$/.exec(endpoint);
+  if (!match) throw new Error('Not an endpoint');
+  const host = match[1]!.startsWith('[') ? match[1]!.slice(1, -1) : match[1]!;
+  return { host, port: match[2] === undefined ? 443 : Number(match[2]) };
+}
+
+/**
+ * Where a bucket is reached (the D6 plan, D6-C): path-style at the endpoint's own host, or
+ * virtual-hosted at the bucket's name before it, which the guard checks as it checks any host.
+ */
+export function bucketHost(source: {
+  readonly endpoint: string;
+  readonly bucket: string;
+  readonly pathStyle: boolean;
+}): { readonly host: string; readonly port: number } {
+  const { host, port } = endpointHost(source.endpoint);
+  return { host: source.pathStyle ? host : `${source.bucket}.${host}`, port };
+}
+
+const s3Source = z
+  .strictObject({
+    endpoint: z.string().refine(isEndpoint, {
+      message:
+        'An endpoint is https, a lower-case host or a canonical address and an optional port: no path, user, query or fragment',
+    }),
+    region: z
+      .string()
+      .min(1)
+      .max(32)
+      .refine((value) => REGION.test(value), {
+        message: 'A region is lower-case letters and digits joined by hyphens, such as us-east-1',
+      }),
+    bucket: z.string().refine(isBucketName, {
+      message:
+        "A bucket is 3 to 63 lower-case letters, digits, dots and hyphens, a letter or digit at either end, and not an address",
+    }),
+    pathStyle: z.boolean(),
+  })
+  // A virtual-hosted bucket is a name before the endpoint's: an address takes none (D6-C).
+  .refine(
+    (source) =>
+      !isEndpoint(source.endpoint) ||
+      source.pathStyle ||
+      isDnsName(bucketHost(source).host),
+    {
+      message:
+        'A virtual-hosted bucket is reached by its name before the endpoint, so the endpoint is a name: use path-style for an address',
+      path: ['pathStyle'],
+    },
+  );
+
 const versionMembers = {
   schemaVersion: z.literal(CONNECTION_SCHEMA_VERSION),
   name,
@@ -250,16 +322,18 @@ const versionMembers = {
 /**
  * A connection version's settings (data.md, "The connection"; D1-C, D1-D): what anybody who may read
  * it sees, and never a secret. A source by type: PostgreSQL from D1, HTTP from D6 (the D6 plan,
- * D6-D); each arm arrives with its slice, which refuses nothing stored.
+ * D6-D), S3 from D6.2 (D6-C); each arm arrives with its slice, which refuses nothing stored.
  */
 export const connectionSettingsSchema = z.discriminatedUnion('type', [
   z.strictObject({ ...versionMembers, type: z.literal('postgres'), source: postgresSource }),
   z.strictObject({ ...versionMembers, type: z.literal('http'), source: httpSource }),
+  z.strictObject({ ...versionMembers, type: z.literal('s3'), source: s3Source }),
 ]);
 
 export type ConnectionSettings = z.infer<typeof connectionSettingsSchema>;
 export type PostgresSettings = Extract<ConnectionSettings, { type: 'postgres' }>;
 export type HttpSettings = Extract<ConnectionSettings, { type: 'http' }>;
+export type S3Settings = Extract<ConnectionSettings, { type: 's3' }>;
 
 type EndUserMechanism = 'delegated' | 'asserted';
 
@@ -273,6 +347,8 @@ export const connectorIdentities: Readonly<
 > = Object.freeze({
   postgres: Object.freeze(['asserted'] as const),
   http: Object.freeze([] as const),
+  // An S3 connection reads as its key pair alone: a store has no person's identity (DAT-077).
+  s3: Object.freeze([] as const),
 });
 
 export type ConnectionProblem =
@@ -335,10 +411,17 @@ export function parseConnectionForWrite(value: unknown): ConnectionSettings {
  */
 export function connectionTarget(settings: Pick<ConnectionSettings, 'type' | 'source'>): string {
   const target = settings as
-    Pick<PostgresSettings, 'type' | 'source'> | Pick<HttpSettings, 'type' | 'source'>;
+    | Pick<PostgresSettings, 'type' | 'source'>
+    | Pick<HttpSettings, 'type' | 'source'>
+    | Pick<S3Settings, 'type' | 'source'>;
   // HTTP's target is where the secret is sent and in which header (the D6 plan's stored-shape check).
   if (target.type === 'http') {
     return JSON.stringify([target.type, target.source.baseUrl, target.source.secretHeader]);
+  }
+  // S3's is the store, its region, the bucket and how it is addressed (the stored-shape check).
+  if (target.type === 's3') {
+    const { endpoint, region, bucket, pathStyle } = target.source;
+    return JSON.stringify([target.type, endpoint, region, bucket, pathStyle]);
   }
   const { host, port, database, account, tls } = target.source;
   return JSON.stringify([target.type, host, port, database, account, tls]);

@@ -9,11 +9,15 @@
     "test": "vitest run",
     "start": "node dist/main.js",
     "source": "node scripts/source.js start",
-    "source:stop": "node scripts/source.js stop"
+    "source:stop": "node scripts/source.js stop",
+    "source-s3": "node scripts/source-s3.js start",
+    "source-s3:stop": "node scripts/source-s3.js stop"
   },
   "dependencies": {
     "@alloy-works/domain": "workspace:^",
     "@alloy-works/sealing": "workspace:^",
+    "@smithy/signature-v4": "^5.7.4",
+    "csv-parse": "^7.0.3",
     "pg": "^8.23.0",
     "zod": "^4.6.1"
   },

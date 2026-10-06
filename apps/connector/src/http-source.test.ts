@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { canonicalResultBytes, type RunAnswer } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { JSON_LINES_MAX_BYTES, JSON_MAX_BYTES } from './http-source.js';
+import { CSV_MAX_BYTES, JSON_LINES_MAX_BYTES, JSON_MAX_BYTES } from './http-source.js';
 import { exchange } from './https.js';
 import { childSpawn, createSupervisor, runChild, type SpawnChild } from './supervisor.js';
 import {
@@ -58,6 +58,7 @@ async function closedPort(): Promise<number> {
 const WIDE_COLUMNS = 15;
 const JSON_ROWS = 16_750;
 const LINES_ROWS = 49_500;
+const CSV_ROWS = 75_000;
 
 const readings = [
   member('id', { base: 'integer' }),
@@ -135,6 +136,30 @@ describe('an HTTP source', { timeout: LOADED_TIMEOUT_MS }, () => {
       ),
     );
     expect(zipped !== 'busy' && zipped.outcome === 'ok' && zipped.checksum).toBe(answer.checksum);
+  });
+
+  it('DAT-074 reads a CSV response into a canonical result, an unquoted empty field null and a quoted one empty text', async () => {
+    const columns = ['id', 'site', 'depth', 'measured', 'taken', 'active'].map(
+      (name, at) => ({ ...readings[at]!, from: { header: name } }),
+    );
+    const answer = await supervisor.run(
+      'run',
+      httpRunRequest(
+        httpSettings(api.port),
+        DEV_KEY,
+        httpDraft(get(['readings.csv']), [...columns, { name: 'note', from: { letter: 'G' }, type: { base: 'text' } }], {
+          key: ['id'],
+          order: [{ column: 'id', direction: 'ascending' }],
+          format: { kind: 'csv', delimiter: 'comma', headerRow: true, null: 'empty' },
+        }),
+      ),
+    );
+    if (answer === 'busy' || answer.outcome !== 'ok') throw new Error(JSON.stringify(answer));
+    expect(answer.result.rows).toEqual([
+      ['1', 'North weir', '12.5', '2026-01-02', '2026-01-02T03:04:05.5Z', true, ''],
+      ['2', 'South weir', '7.25', '2026-01-03', '2026-01-03T04:05:06Z', false, null],
+      ['3', 'East gauge', '0.75', '2026-01-04', '2026-01-04T05:06:07.25Z', true, null],
+    ]);
   });
 
   it('DAT-108 refuses a response whose stated row count disagrees with its rows, result_incomplete', async () => {
@@ -215,7 +240,7 @@ describe('an HTTP source', { timeout: LOADED_TIMEOUT_MS }, () => {
    * A run of the widest body measured, in a child that reports its peak resident set: its body's
    * size, and the peak. D2's run at the ceilings peaked at 371 MiB, which `MAX_RUNS` is sized by.
    */
-  async function measuredRun(rows: number, lines: boolean) {
+  async function measuredRun(rows: number, lines: boolean | 'csv') {
     const peaks: number[] = [];
     const measuring: SpawnChild = (spec, input, deadlineMs) =>
       runChild(spec, input, deadlineMs, (chunk) => {
@@ -239,13 +264,14 @@ describe('an HTTP source', { timeout: LOADED_TIMEOUT_MS }, () => {
     const query = [
       { name: 'rows', value: { fixed: String(rows) } },
       { name: 'columns', value: { fixed: String(WIDE_COLUMNS) } },
-      ...(lines ? [{ name: 'lines', value: { fixed: '' } }] : []),
+      ...(lines === true ? [{ name: 'lines', value: { fixed: '' } }] : []),
+      ...(lines === 'csv' ? [{ name: 'csv', value: { fixed: '' } }] : []),
     ];
     const sized = await exchange(
       {
         host: '127.0.0.1',
         port: api.port,
-        path: `/v1/wide?rows=${rows}&columns=${WIDE_COLUMNS}${lines ? '&lines=' : ''}`,
+        path: `/v1/wide?rows=${rows}&columns=${WIDE_COLUMNS}${lines === true ? '&lines=' : lines === 'csv' ? '&csv=' : ''}`,
         method: 'GET',
         headers: [['x-api-key', DEV_KEY]],
       },
@@ -257,19 +283,30 @@ describe('an HTTP source', { timeout: LOADED_TIMEOUT_MS }, () => {
         maxBytes: 25 * 1024 * 1024,
       },
     );
-    const columns = Array.from({ length: WIDE_COLUMNS }, (_, at) =>
-      member(
-        `c${at}`,
-        at % 2 === 0 ? { base: 'decimal', precision: 20, scale: 2 } : { base: 'text' },
-      ),
-    );
+    const columns = Array.from({ length: WIDE_COLUMNS }, (_, at) => {
+      const type = at % 2 === 0
+        ? ({ base: 'decimal', precision: 20, scale: 2 } as const)
+        : ({ base: 'text' } as const);
+      return lines === 'csv'
+        ? { name: `c${at}`, from: { header: `c${at}` }, type }
+        : member(`c${at}`, type);
+    });
+    const id =
+      lines === 'csv'
+        ? { name: 'id', from: { header: 'id' }, type: { base: 'integer' } as const }
+        : member('id', { base: 'integer' });
     const answer = await measured.run(
       'run',
       httpRunRequest(
         httpSettings(api.port),
         DEV_KEY,
-        httpDraft(get(['wide'], { query }), [member('id', { base: 'integer' }), ...columns], {
-          format: lines ? { kind: 'jsonLines' } : { kind: 'json', rows: '/items' },
+        httpDraft(get(['wide'], { query }), [id, ...columns], {
+          format:
+            lines === 'csv'
+              ? { kind: 'csv', delimiter: 'comma', headerRow: true, null: 'empty' }
+              : lines
+                ? { kind: 'jsonLines' }
+                : { kind: 'json', rows: '/items' },
           // Keyed and ordered, as D2's run at the ceilings was: checked, never sorted.
           key: ['id'],
           order: [{ column: 'id', direction: 'ascending' }],
@@ -303,6 +340,20 @@ describe('an HTTP source', { timeout: LOADED_TIMEOUT_MS }, () => {
     ).toBe(LINES_ROWS);
     expect(jsonLines.peaks).toHaveLength(1);
     expect(jsonLines.peaks[0]).toBeLessThan(371 * 1024 * 1024);
+  });
+
+  it('reads a CSV body at its ceiling, 12 MiB, within the memory a run at the ceilings takes, and refuses one past it', async () => {
+    const csv = await measuredRun(CSV_ROWS, 'csv');
+    expect(csv.bytes).toBeGreaterThan(CSV_MAX_BYTES - 512 * 1024);
+    expect(csv.bytes).toBeLessThanOrEqual(CSV_MAX_BYTES);
+    expect(csv.answer !== 'busy' && csv.answer.outcome === 'ok' && csv.answer.rowCount).toBe(
+      CSV_ROWS,
+    );
+    expect(csv.peaks).toHaveLength(1);
+    expect(csv.peaks[0]).toBeLessThan(371 * 1024 * 1024);
+    const past = await measuredRun(Math.ceil(CSV_ROWS * 1.1), 'csv');
+    expect(past.bytes).toBeGreaterThan(CSV_MAX_BYTES);
+    expect(failure(past.answer)).toEqual({ code: 'byte_limit', attribution: 'query' });
   });
 
   it('refuses a JSON or JSON Lines body past its ceiling, byte_limit, whatever the byte limit says', async () => {

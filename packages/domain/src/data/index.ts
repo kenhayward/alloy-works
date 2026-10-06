@@ -1,6 +1,8 @@
 export {
   CONNECTION_SCHEMA_VERSION,
   ConnectionRefused,
+  bucketHost,
+  endpointHost,
   checkConnection,
   connectionChangeProblems,
   connectionTarget,
@@ -17,6 +19,7 @@ export type {
   ConnectionSettings,
   HttpSettings,
   PostgresSettings,
+  S3Settings,
 } from './connection.js';
 export {
   dataFailure,
@@ -47,9 +50,14 @@ export {
   QUERY_DEFINITION_SCHEMA_VERSION,
   checkQueryDefinition,
   connectionFetchProblems,
+  dataFormatSchema,
   draftDefinitionSchema,
+  fileFetchSchema,
   httpFetchSchema,
+  indexLetter,
+  letterIndex,
   parameterSchema,
+  sampleDraft,
   parseDraftDefinition,
   parseQueryDefinition,
   parseQueryDefinitionForWrite,
@@ -58,8 +66,10 @@ export {
 } from './definition.js';
 export type {
   Column,
+  DataFormat,
   DefinitionProblem,
   DraftDefinition,
+  FileFetch,
   HttpFetch,
   Parameter,
   QueryDefinition,
@@ -115,6 +125,7 @@ export {
   isPaddedBase64,
   canonicalResultSchema,
   ranSchema,
+  ranObjectSchema,
   childRequestSchema,
   describeAnswerSchema,
   describeRequestSchema,
@@ -139,6 +150,7 @@ export type {
   DescribeSqlAnswer,
   DescribeSqlRequest,
   Ran,
+  RanObject,
   Relation,
   RunAnswer,
   RunIdentity,
@@ -189,3 +201,17 @@ export { bindFetch } from './fetch.js';
 export { TAKE_FAILURES, takeDigestInput, takeOutcomeSchema, takeValue } from './take.js';
 export type { TakeFailure, TakeOutcome } from './take.js';
 export { formatsFor, formatValue } from './format.js';
+export {
+  bindObjectKey,
+  checkObjectKey,
+  KEY_MAX_BYTES,
+  keyPairText,
+  objectKeyProblems,
+  ObjectKeyRefused,
+  objectKeySchema,
+  parseKeyPair,
+  s3KeyPairSchema,
+} from './s3.js';
+export type { BoundObjectKey, ObjectKey, S3KeyPair } from './s3.js';
+export { checkFileCondition, fileConditionSchema, fileFilter, sortRows } from './file-filter.js';
+export type { FileCondition, FileOperand } from './file-filter.js';

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { createServer, type AddressInfo, type Server, type Socket } from 'node:net';
 import { fileURLToPath } from 'node:url';
 
+import { keyPairText } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { loadConnectorConfig } from './config.js';
@@ -34,6 +35,17 @@ import {
   member,
   startFakeApi,
 } from './testing/http.js';
+import {
+  CSV,
+  field,
+  fileDraft,
+  s3DescribeRequest,
+  s3RequestFor,
+  s3RunRequest,
+  s3Settings,
+  SOURCES_CA,
+  startFakeStore,
+} from './testing/s3.js';
 
 /** An invented secret, with characters each encoding spells differently. */
 const CANARY = 'Canary+Secret/9=%&ü-7f3a';
@@ -378,6 +390,152 @@ describe("the connector's secrets", { timeout: LOADED_TIMEOUT_MS }, () => {
       }
     } finally {
       await api.close();
+    }
+  });
+
+  it("DAT-005 keeps an S3 connection's key pair, its signatures and every composed URL out of every answer, log line and crash report, raw, URL-encoded or base64", async () => {
+    // The fake store refuses an object under `refused/`, and answers any other as one CSV row.
+    const store = await startFakeStore((request) =>
+      (request.url ?? '').includes('/refused/')
+        ? { status: 403, body: '<Error><Code>AccessDenied</Code></Error>' }
+        : { body: 'site\nNorth weir\n' },
+    );
+    const pair = { accessKeyId: 'source-s3-reader', secretAccessKey: 'Canary+Secret/9=-7f3a' };
+    const placed = 'Placed+Value=9-2c1d';
+    const looked = [pair.secretAccessKey, keyPairText(pair)].flatMap((each) => [
+      each,
+      encodeURIComponent(each),
+      Buffer.from(each, 'utf8').toString('base64'),
+      Buffer.from(each, 'utf8').toString('base64url'),
+    ]);
+    const seen: string[] = [];
+    const stderr: string[] = [];
+    const spawn: SpawnChild = (spec, input, deadlineMs, onStderr) =>
+      runChild(spec, input, deadlineMs, (chunk) => {
+        stderr.push(chunk.toString('utf8'));
+        onStderr?.(chunk);
+      });
+    const withCa = loadConnectorConfig(
+      {
+        CONNECTOR_KEY: KEY,
+        CONNECTOR_SEALING_KEY: SEALING_KEY.toString('base64'),
+        CONNECTOR_DENY: 'none',
+        CONNECTOR_CA_FILE: 'ca.pem',
+      },
+      () => SOURCES_CA,
+    );
+    const start = async (spec: ChildSpec) => {
+      const server = createConnectorServer({
+        config: withCa,
+        deny: suiteDeny,
+        spec,
+        spawn,
+        log: (line) => seen.push(line),
+      });
+      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+      return { server, at: `http://127.0.0.1:${(server.address() as AddressInfo).port}` };
+    };
+    const call = async (at: string, path: string, body: unknown) => {
+      const response = await fetch(`${at}${path}`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${KEY}`, 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const text = await response.text();
+      seen.push(text);
+      return { status: response.status, text };
+    };
+    const source = s3Settings(store.port);
+    const composed = [`https://127.0.0.1:${store.port}`, `127.0.0.1:${store.port}`];
+    try {
+      const real = await start(childSpawn(suiteChild, suiteIsolation));
+      const definition = fileDraft(
+        [{ fixed: 'echo' }, { parameter: 'site' }],
+        [field('site', { base: 'text' })],
+        { parameters: [{ name: 'site', type: { base: 'text' }, required: true, list: false }] },
+      );
+      const refused = fileDraft(
+        [{ fixed: 'refused' }, { parameter: 'site' }],
+        definition.columns,
+        { parameters: definition.parameters },
+      );
+      expect(
+        (await call(real.at, '/v1/run', s3RunRequest(source, refused, { site: placed }, { pair })))
+          .text,
+      ).toBe('{"outcome":"failed","failure":{"code":"connection_failed","attribution":"connector"}}');
+      // Answered: what it read is the bucket and the key, never the URL it was read at.
+      const ran = await call(
+        real.at,
+        '/v1/run',
+        s3RunRequest(source, definition, { site: placed }, { pair }),
+      );
+      expect(JSON.parse(ran.text)).toMatchObject({
+        outcome: 'ok',
+        ran: { object: { bucket: 'alloy-readings', key: `echo/${placed}` } },
+      });
+      expect(
+        (
+          await call(
+            real.at,
+            '/v1/describe',
+            s3DescribeRequest(source, refused.fetch.kind === 'file' ? refused.fetch.key : [], CSV, [
+              ...definition.parameters,
+            ], { site: placed }),
+          )
+        ).status,
+      ).toBe(200);
+      // A seal of something not a key pair refused, and of a key pair taken.
+      expect(
+        await call(real.at, '/v1/seal', {
+          tenant: 'acme',
+          connection: randomUUID(),
+          secret: pair.secretAccessKey,
+          settings: source,
+        }),
+      ).toEqual({ status: 400, text: '{"code":"request_invalid"}' });
+      expect(
+        (
+          await call(real.at, '/v1/seal', {
+            tenant: 'acme',
+            connection: randomUUID(),
+            secret: keyPairText(pair),
+            settings: source,
+          })
+        ).status,
+      ).toBe(200);
+      await new Promise<void>((resolve) => real.server.close(() => resolve()));
+
+      // A child that sends the key pair, then throws an error naming it and the URL it composed.
+      const crashing = await start({
+        file: process.execPath,
+        args: [
+          '--import',
+          'tsx',
+          fileURLToPath(new URL('./testing/throwing-s3-child.ts', import.meta.url)),
+        ],
+        env: {},
+      });
+      expect(
+        (await call(crashing.at, '/v1/test', s3RequestFor(source, pair))).text,
+      ).toBe('{"outcome":"failed","failure":{"code":"connector_error","attribution":"connector"}}');
+      await new Promise<void>((resolve) => crashing.server.close(() => resolve()));
+      // Not vacuous: the store saw signed requests, and the crash wrote the pair and the URL.
+      const signatures = store.seen
+        .map((each) => /Signature=([0-9a-f]{64})/.exec(String(each.headers.authorization))?.[1])
+        .filter((each): each is string => each !== undefined);
+      expect(signatures.length).toBeGreaterThanOrEqual(3);
+      expect(stderr.join('')).toContain(pair.secretAccessKey);
+      expect(stderr.join('')).toContain(composed[0]);
+      for (const text of seen) {
+        for (const each of [...looked, ...composed, ...signatures]) expect(text).not.toContain(each);
+      }
+      // The store itself was never sent the secret: a signature is made of it, never it.
+      for (const request of store.seen) {
+        if (String(request.headers.authorization).startsWith('{')) continue;
+        expect(JSON.stringify(request)).not.toContain(pair.secretAccessKey);
+      }
+    } finally {
+      await store.close();
     }
   });
 });

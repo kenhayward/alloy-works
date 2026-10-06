@@ -52,10 +52,19 @@ describe("the connector's package", () => {
   it("DAT-056 has no dependency that reaches the platform: no database library of the platform's, no object store, no service", () => {
     const manifest = manifestOf(root);
     expect(Object.keys(manifest.dependencies ?? {}).sort()).toEqual(
-      ['@alloy-works/domain', '@alloy-works/sealing', 'pg', 'zod'].sort(),
+      [
+        '@alloy-works/domain',
+        '@alloy-works/sealing',
+        // The S3 source's signer and the CSV reader (the D6 plan, D6-C and D6-H).
+        '@smithy/signature-v4',
+        'csv-parse',
+        'pg',
+        'zod',
+      ].sort(),
     );
 
-    // Nothing the connector ships imports anything but Node's own modules, its own files and the four.
+    // Nothing the connector ships imports anything but Node's own modules, its own files and the six,
+    // or an entry point one of them exports, such as `csv-parse/sync`.
     const allowed = new Set(Object.keys(manifest.dependencies ?? {}));
     const files = sourceFiles(join(root, 'src'));
     expect(files.length).toBeGreaterThan(5);
@@ -69,7 +78,8 @@ describe("the connector's package", () => {
           own ||
           specifier.startsWith('node:') ||
           builtinModules.includes(specifier) ||
-          allowed.has(specifier);
+          allowed.has(specifier) ||
+          allowed.has(specifier.split('/').slice(0, specifier.startsWith('@') ? 2 : 1).join('/'));
         expect(known, `${file} imports ${specifier}`).toBe(true);
       }
     }

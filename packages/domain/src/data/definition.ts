@@ -5,10 +5,12 @@ import { valueProblem, compareCanonical, type CanonicalValue } from './canonical
 import { columnTypeSchema, valueTypeSchema, type ValueType } from './columns.js';
 import { generatedLength } from './generate.js';
 import type { ConnectionSettings } from './connection.js';
+import { checkFileCondition, fileConditionSchema } from './file-filter.js';
 import { checkHttpTemplate, httpTemplateSchema } from './http-template.js';
 import { jsonPointerSchema } from './json-text.js';
 import { limitCeilings } from './limits.js';
 import { MAX_COLUMNS } from './columns.js';
+import { checkObjectKey, objectKeySchema } from './s3.js';
 import {
   canonicalValueSchema,
   characters,
@@ -100,16 +102,44 @@ export const parameterSchema = z.strictObject({
   variation: variation.optional(),
 });
 
+/** A CSV header a column is read by: 1 to 200 characters, no control character. */
+const headerName = storable('A header').refine(
+  (value) => characters(value) >= 1 && characters(value) <= 200 && !CONTROL.test(value),
+  { message: 'A header is 1 to 200 characters, no control character' },
+);
+
+/** A field's index from its letter, as a spreadsheet names a column: A is 0, Z 25, AA 26. */
+export function letterIndex(letter: string): number {
+  let index = 0;
+  for (const character of letter) index = index * 26 + (character.charCodeAt(0) - 64);
+  return index - 1;
+}
+
+/** A field's letter from its index: the inverse of `letterIndex`. */
+export function indexLetter(index: number): string {
+  let letter = '';
+  for (let rest = index + 1; rest > 0; rest = Math.floor((rest - 1) / 26)) {
+    letter = String.fromCharCode(65 + ((rest - 1) % 26)) + letter;
+  }
+  return letter;
+}
+
 /** A declared column (D2): a dataset version's provenance names its columns by the same shape. */
 export const columnSchema = z.strictObject({
   name: sourceName('A column name'),
-  // A database's column by name, or a JSON value by a pointer relative to its row (the D6 plan,
-  // D6-F); a header and a letter arrive with D6.2's files.
+  // A database's column by name, a JSON value by a pointer relative to its row, or a CSV field by
+  // its header or its letter (the D6 plan, D6-F).
   from: z.union([
     z.strictObject({ column: sourceName('A source column') }),
     z.strictObject({
       pointer: jsonPointerSchema.refine((value) => value !== '', {
         message: 'A column reads a member of its row: its pointer is not empty',
+      }),
+    }),
+    z.strictObject({ header: headerName }),
+    z.strictObject({
+      letter: z.string().regex(/^[A-Z]{1,3}$/, {
+        message: 'A letter names a field as a spreadsheet does: A to ZZZ',
       }),
     }),
   ]),
@@ -124,30 +154,57 @@ export const sqlTextSchema = storable('SQL').refine(
 );
 
 /**
+ * The formats a response or an object is read in, whatever carried it (the D6 plan, D6-F): JSON at a
+ * pointer to an array of objects, with a pointer to a row count it states where it states one
+ * (DAT-108); JSON Lines; or CSV, its delimiter named, whether its first record is a header, and its
+ * convention for null - an unquoted empty field, or never (D6-H). XLSX arrives with D6.3.
+ */
+export const dataFormatSchema = z.discriminatedUnion('kind', [
+  z.strictObject({
+    kind: z.literal('json'),
+    rows: jsonPointerSchema,
+    count: jsonPointerSchema.optional(),
+  }),
+  z.strictObject({ kind: z.literal('jsonLines') }),
+  z.strictObject({
+    kind: z.literal('csv'),
+    delimiter: z.enum(['comma', 'semicolon', 'tab', 'pipe']),
+    headerRow: z.boolean(),
+    null: z.enum(['empty', 'never']),
+  }),
+]);
+export type DataFormat = z.infer<typeof dataFormatSchema>;
+
+/**
  * An HTTP fetch (DAT-104; the D6 plan, D6-E and D6-F): a request template and the format its rows are
- * read in - JSON at a pointer to an array of objects, with a pointer to a row count it states where
- * it states one (DAT-108), or JSON Lines.
+ * read in.
  */
 export const httpFetchSchema = z.strictObject({
   kind: z.literal('http'),
   request: httpTemplateSchema,
-  format: z.discriminatedUnion('kind', [
-    z.strictObject({
-      kind: z.literal('json'),
-      rows: jsonPointerSchema,
-      count: jsonPointerSchema.optional(),
-    }),
-    z.strictObject({ kind: z.literal('jsonLines') }),
-  ]),
+  format: dataFormatSchema,
 });
 export type HttpFetch = z.infer<typeof httpFetchSchema>;
 
-// SQL as D2 wrote it, the builder's tree (D4-A), or an HTTP request (D6-E): each arm added refuses
-// nothing stored.
+/**
+ * A file fetch (data.md, "The fetch"; the D6 plan, task 2 and D6-J): one S3 object by a key whose
+ * segments may be parameters, the format it is read in, and a typed filter over its canonical rows.
+ */
+export const fileFetchSchema = z.strictObject({
+  kind: z.literal('file'),
+  key: objectKeySchema,
+  format: dataFormatSchema,
+  where: fileConditionSchema.optional(),
+});
+export type FileFetch = z.infer<typeof fileFetchSchema>;
+
+// SQL as D2 wrote it, the builder's tree (D4-A), an HTTP request (D6-E) or a file (D6.2): each arm
+// added refuses nothing stored.
 const fetchSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('sql'), text: sqlTextSchema }),
   builderFetchSchema,
   httpFetchSchema,
+  fileFetchSchema,
 ]);
 
 const limit = (ceiling: number) => z.number().int().min(1).max(ceiling);
@@ -358,22 +415,37 @@ export function checkQueryDefinition(
     const before = problems.length;
     checkBuilder({ ...definition, fetch }, problem);
     if (problems.length === before) checkGenerated({ ...definition, fetch }, problem);
-  } else {
+  } else if (fetch.kind === 'http') {
     // An HTTP request: its template's rules against the parameters (D6-E).
     checkHttpTemplate(fetch.request, definition.parameters, problem);
+  } else {
+    // A file: its key's rules, its filter's over the declared columns, and every parameter placed
+    // in one or the other (D6-J).
+    const used = checkObjectKey(fetch.key, definition.parameters, problem);
+    if (fetch.where !== undefined) {
+      const filtered = checkFileCondition(
+        fetch.where,
+        definition.columns,
+        definition.parameters,
+        problem,
+      );
+      for (const name of filtered) used.add(name);
+    }
+    for (const [at, parameter] of definition.parameters.entries()) {
+      if (!used.has(parameter.name)) {
+        problem(`parameters.${at}`, `Neither the key nor the filter uses ${parameter.name}`);
+      }
+      if (parameter.variation !== undefined) {
+        problem(`parameters.${at}.variation`, 'A variation chooses SQL; a file filters its rows');
+      }
+    }
   }
 
-  // A column is read as its fetch reads: a database's by its name, JSON's by a pointer (D6-F).
-  const byPointer = fetch.kind === 'http';
+  // A column is read as its fetch reads (D6-F): a database's by its name, JSON's by a pointer, a
+  // CSV field by its letter or, where the first record names them, its header.
   for (const [at, column] of definition.columns.entries()) {
-    if ('pointer' in column.from !== byPointer) {
-      problem(
-        `columns.${at}.from`,
-        byPointer
-          ? 'A column of an HTTP response is read by a pointer into its row'
-          : "A column of a query is read by the query's column name",
-      );
-    }
+    const wrong = fromProblem(fetch, column.from);
+    if (wrong !== undefined) problem(`columns.${at}.from`, wrong);
   }
 
   const columns = new Set<string>();
@@ -419,6 +491,23 @@ export function checkQueryDefinition(
     }
   }
   return problems;
+}
+
+/** Why a column cannot be read from where it says by its fetch, or undefined where it can. */
+function fromProblem(fetch: DraftDefinition['fetch'], from: Column['from']): string | undefined {
+  if (fetch.kind === 'sql' || fetch.kind === 'builder') {
+    return 'column' in from ? undefined : "A column of a query is read by the query's column name";
+  }
+  if (fetch.format.kind !== 'csv') {
+    return 'pointer' in from ? undefined : 'A column of JSON is read by a pointer into its row';
+  }
+  if ('letter' in from) return undefined;
+  if ('header' in from) {
+    return fetch.format.headerRow
+      ? undefined
+      : 'A CSV whose first record is not a header names its fields by letter';
+  }
+  return 'A column of a CSV is read by its header or its letter';
 }
 
 /**
@@ -527,6 +616,29 @@ function checkPermitted(
   }
 }
 
+/**
+ * A fetch alone as a draft, as a sample sends one before its columns are declared (DAT-105): one
+ * placeholder column read as the fetch's format reads, so the fetch's own rules are checked as a
+ * definition's would be. A file's sample reads the object before its filter, which names columns.
+ */
+export function sampleDraft(
+  parameters: readonly Parameter[],
+  fetch: HttpFetch | Omit<FileFetch, 'where'>,
+): DraftDefinition {
+  const from = fetch.format.kind === 'csv' ? { letter: 'A' } : { pointer: '/proposed' };
+  return {
+    schemaVersion: QUERY_DEFINITION_SCHEMA_VERSION,
+    connection: '00000000-0000-4000-8000-000000000000',
+    parameters: [...parameters],
+    fetch: fetch.kind === 'file' ? { kind: 'file', key: fetch.key, format: fetch.format } : fetch,
+    columns: [{ name: 'proposed', from, type: { base: 'text' } }],
+    key: [],
+    order: 'multiset',
+    empty: 'valid',
+    limits: { rows: 1, bytes: 1, seconds: 1 },
+  };
+}
+
 /** The shape, then the checks: what every write path parses a version by. Throws `DefinitionRefused`. */
 export function parseQueryDefinitionForWrite(value: unknown): QueryDefinition {
   const definition = parseQueryDefinition(value);
@@ -546,7 +658,7 @@ export function parseDraftDefinition(value: unknown): DraftDefinition {
 /**
  * Whether a fetch suits the connection it runs on (the D6 plan's stored-shape check): a query on a
  * database, an HTTP request on an HTTP connection, whose template names no header the connection
- * sends its secret in. Checked on save, on a sample's draft and at each run, against the connection
+ * sends its secret in, and a file on an S3 connection. Checked on save, on a sample's draft and at each run, against the connection
  * version it runs on.
  */
 export function connectionFetchProblems(
@@ -556,6 +668,9 @@ export function connectionFetchProblems(
   const problem = (path: string, message: string): DefinitionProblem[] => [
     { rule: 'definition_invalid', path, message },
   ];
+  if (fetch.kind === 'file') {
+    return settings.type === 's3' ? [] : problem('fetch', 'A file is read on an S3 connection');
+  }
   if (fetch.kind === 'http') {
     if (settings.type !== 'http') {
       return problem('fetch', 'An HTTP request is sent on an HTTP connection');

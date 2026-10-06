@@ -4,7 +4,7 @@ import {
   JsonNumber,
   resolvePointer,
   type DataFailure,
-  type HttpFetch,
+  type DataFormat,
   type JsonValue,
 } from '@alloy-works/domain';
 
@@ -14,6 +14,9 @@ import {
  * with, after a scan that refuses nesting deeper than 64 - the reviver recurses, and a hostile body
  * must not take the child's stack. JSON Lines a line at a time.
  */
+
+/** The JSON formats: at a pointer, or a line at a time. */
+export type JsonFormat = Exclude<DataFormat, { kind: 'csv' }>;
 
 /** The deepest a JSON value may nest. */
 export const MAX_JSON_DEPTH = 64;
@@ -92,7 +95,7 @@ const CARRIAGE_RETURN = 13;
  * JSON, a pointer naming no array, or an item that is not an object is `result_mismatch`, naming the
  * row where it names one.
  */
-export function eachRow(body: Buffer, format: HttpFetch['format'], visit: RowVisitor): Visited {
+export function eachRow(body: Buffer, format: JsonFormat, visit: RowVisitor): Visited {
   const mismatch = (row?: number): Visited => ({
     failure: dataFailure('result_mismatch', row === undefined ? {} : { row }),
   });
@@ -143,7 +146,7 @@ export function eachRow(body: Buffer, format: HttpFetch['format'], visit: RowVis
 /** The first rows a body holds, up to `most`, kept: what a sample proposes its columns from. */
 export function firstRows(
   body: Buffer,
-  format: HttpFetch['format'],
+  format: JsonFormat,
   most: number,
 ):
   | { readonly rows: JsonRow[]; readonly count?: JsonValue | undefined }
