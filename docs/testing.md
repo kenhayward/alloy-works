@@ -225,6 +225,10 @@ pnpm --filter @alloy-works/connector source:stop   # removes it
 It listens on `ALLOY_TEST_SOURCE_PORT`, 5434 unless said otherwise, and never 5432 - the port the
 development stack's own database is on. CI's build job starts it in a step before `pnpm test`;
 without it the supervisor, postgres, secrets and server suites fail, having no source to reach.
+The suite's HTTPS source needs no step: `deploy/sources/http/fake-api.mjs`, the fake compose's
+`source-http` runs, is started in the suite's own process on `127.0.0.1`, at a free port or at
+`ALLOY_TEST_HTTP_PORT`, its certificate the development CA's beside it, which the suite's children
+are handed as `CONNECTOR_CA_FILE` hands it to the compose connector.
 
 **Loopback is always refused by the guard**, and the suite's source is on loopback, so the suite
 hands the child a deny list without `127.0.0.0/8` through a function parameter, never through
