@@ -8,6 +8,7 @@ import {
   SEALED,
 } from '@alloy-works/domain';
 import { openSecret } from '@alloy-works/sealing';
+import type pg from 'pg';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { loadConnectorConfig } from './config.js';
@@ -17,6 +18,7 @@ import {
   column,
   describeSqlRequest,
   draft,
+  asSuperuser,
   PASSWORDS,
   requestFor,
   runRequest,
@@ -278,5 +280,51 @@ describe("the connector's interface", () => {
         failure: { code: 'timeout', attribution: 'connector' },
       });
     }
+  });
+
+  it('kills the child of a request its caller closes, and the source sees its query gone within half a second', async () => {
+    const { url } = await started();
+    const marker = 'closed-by-its-caller';
+    const backends = () =>
+      asSuperuser((client: pg.Client) =>
+        client
+          .query<{ n: number }>(
+            `select count(*)::int as n from pg_stat_activity
+              where pid <> pg_backend_pid() and query like '%' || $1 || '%'`,
+            [marker],
+          )
+          .then((result) => result.rows[0]!.n),
+      );
+    const caller = new AbortController();
+    const asked = fetch(`${url}/v1/run`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${KEY}` },
+      body: JSON.stringify(
+        runRequest(
+          settings(),
+          PASSWORDS.reader,
+          draft(`select 1 as id from pg_sleep(20) /* ${marker} */`, [
+            column('id', { base: 'integer' }),
+          ]),
+          {},
+          { limits: { seconds: 30 } },
+        ),
+      ),
+      signal: caller.signal,
+    }).catch(() => 'closed');
+    // Held at the source: the statement is running there.
+    const reached = Date.now();
+    while ((await backends()) === 0) {
+      if (Date.now() - reached > 20_000) throw new Error('The run never reached the source');
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    caller.abort();
+    expect(await asked).toBe('closed');
+    const closed = Date.now();
+    while ((await backends()) > 0) {
+      if (Date.now() - closed > 5_000) break;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    expect(Date.now() - closed).toBeLessThan(500);
   });
 });

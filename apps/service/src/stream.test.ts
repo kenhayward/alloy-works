@@ -37,6 +37,11 @@ function openStream(url: string, cookie: string) {
   const controller = new AbortController();
   const arrived: Frame[] = [];
   const waiting: ((frame: Frame) => void)[] = [];
+  let finished = () => {};
+  /** Settles when the service ends the stream. */
+  const ended = new Promise<void>((resolve) => {
+    finished = resolve;
+  });
   const deliver = (frame: Frame) => {
     const next = waiting.shift();
     if (next) next(frame);
@@ -56,7 +61,10 @@ function openStream(url: string, cookie: string) {
       let buffer = '';
       for (;;) {
         const { value, done } = await reader.read();
-        if (done) return;
+        if (done) {
+          finished();
+          return;
+        }
         buffer += decoder.decode(value, { stream: true });
         let boundary = buffer.indexOf('\n\n');
         while (boundary !== -1) {
@@ -75,6 +83,7 @@ function openStream(url: string, cookie: string) {
 
   return {
     response,
+    ended,
     next: (within = 10_000) =>
       new Promise<Frame>((resolve, reject) => {
         const held = arrived.shift();
@@ -515,6 +524,35 @@ describe('what an environment is doing, as it happens', () => {
     } finally {
       stream.close();
       await gatedApp.close();
+    }
+  });
+
+  it('ends the stream of a session that signs out within two seconds, and no other', async () => {
+    const leaving = await signIn(app, A, 'ada', idp.issuer);
+    const id = await sampleIn(production);
+    const ending = openStream(`${address}/v1/stream`, leaving);
+    const staying = openStream(`${address}/v1/stream`, cookie);
+    try {
+      expect((await ending.next()).event).toBe('snapshot');
+      expect((await staying.next()).event).toBe('snapshot');
+      const signedOut = await app.inject({
+        method: 'POST',
+        url: '/v1/sign-out',
+        headers: { host: A, cookie: leaving },
+      });
+      expect(signedOut.statusCode).toBe(204);
+      const at = Date.now();
+      await ending.ended;
+      expect(Date.now() - at).toBeLessThan(2000);
+      // Nobody else's: another session's stream still hears what happens.
+      await announce(production, id);
+      expect(await staying.next()).toEqual({
+        event: 'sample',
+        data: { kind: 'sample', id, state: 'done' },
+      });
+    } finally {
+      ending.close();
+      staying.close();
     }
   });
 

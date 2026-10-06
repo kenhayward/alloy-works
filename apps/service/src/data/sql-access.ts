@@ -8,7 +8,7 @@ import {
 import { decide, type AccessFacts, type QueryDefinition } from '@alloy-works/domain';
 import type { Caller } from '../access.js';
 import { AppError } from '../errors.js';
-import { refused } from '../wire-codes.js';
+import { refused, wireCode } from '../wire-codes.js';
 
 /**
  * Who may write SQL against a connection, and on which connections SQL may be written at all (the D2
@@ -108,11 +108,15 @@ const SQL_REFUSED = {
   not_read_only:
     "This connection's account can write at the source, so SQL may not run on it. Use an account " +
     'that can only read.',
+  asserted:
+    'This connection runs as each person, so only a query made in the builder may run on it, never SQL.',
 } as const;
 
 /**
- * Refuses SQL on a connection that has not been found read-only (DAT-103), before anything runs. A
- * built query is never refused here (D4-J): it writes only a `SELECT`, in D2's read-only transaction.
+ * Refuses SQL on a connection that has not been found read-only (DAT-103), before anything runs, and
+ * on one asserting a person's identity at all (DAT-102, the D7 plan's D7-F): only builder text runs as
+ * a person (DAT-113), so the version a definition is saved on, or runs on, decides. A built query is
+ * never refused here (D4-J): it writes only a `SELECT`, in D2's read-only transaction.
  */
 export async function requireSqlPermitted(
   trx: TenantTransaction,
@@ -120,6 +124,13 @@ export async function requireSqlPermitted(
   fetch: FetchOf,
 ): Promise<void> {
   if (fetch.kind === 'builder') return;
+  const { identity } = connection.settings;
+  if (identity.kind === 'endUser' && identity.mechanism === 'asserted') {
+    throw new AppError(409, wireCode('sql.not_permitted'), SQL_REFUSED.asserted, 'DAT-102', {
+      reason: 'asserted',
+      attribution: 'product',
+    });
+  }
   const reason = await sqlRefusedOn(trx, connection);
   if (reason !== null) {
     throw refused(409, 'sql.not_permitted', SQL_REFUSED[reason], {

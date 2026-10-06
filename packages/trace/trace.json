@@ -18100,6 +18100,36 @@
       "kind": "title"
     },
     {
+      "id": "DAT-084",
+      "file": "apps/service/src/asserted-acts.test.ts",
+      "line": 235,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-091",
+      "file": "apps/service/src/asserted-acts.test.ts",
+      "line": 298,
+      "kind": "rule"
+    },
+    {
+      "id": "DAT-091",
+      "file": "apps/service/src/asserted-acts.test.ts",
+      "line": 290,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-102",
+      "file": "apps/service/src/asserted-acts.test.ts",
+      "line": 327,
+      "kind": "rule"
+    },
+    {
+      "id": "DAT-102",
+      "file": "apps/service/src/asserted-acts.test.ts",
+      "line": 323,
+      "kind": "title"
+    },
+    {
       "id": "AST-001",
       "file": "apps/service/src/asset-routes.test.ts",
       "line": 222,
@@ -18660,7 +18690,7 @@
     {
       "id": "API-047",
       "file": "apps/service/src/stream.test.ts",
-      "line": 215,
+      "line": 224,
       "kind": "title"
     },
     {

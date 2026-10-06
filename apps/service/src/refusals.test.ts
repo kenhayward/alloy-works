@@ -27,6 +27,7 @@ describe('the rule behind a refusal', () => {
       ['connection.in_use', 'connection_in_use', 'DAT-065'],
       ['sql.not_permitted', 'sql_not_permitted', 'DAT-103'],
       ['parameter.invalid', 'parameter_invalid', 'DAT-020'],
+      ['acknowledgement.required', 'acknowledgement_required', 'DAT-091'],
     ];
     for (const [dotted, code, rule] of ruled) {
       const { body } = toErrorBody(refused(409, dotted, 'Refused.'), 'trace-1');
@@ -93,6 +94,8 @@ describe('the rule behind a refusal', () => {
       'name.invalid',
       // B2's Keep, refused where the binding's question changed (B2-F).
       'confirm.not_possible',
+      // Another person's own view, which only they may accept (the D7 plan, D7-H): the design's.
+      'identity.differs',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),
