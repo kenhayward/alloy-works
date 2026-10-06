@@ -22,7 +22,7 @@ delegated half).
 | D6.1 | The type seam; `http` with a service secret; the guarded HTTPS client; the HTTP binder; JSON and JSON Lines; its screens and source container |
 | D6.2 | `s3` and the `file` fetch: SigV4 over the same client, the key template, typed filters; CSV; its screens and source container                 |
 | D6.3 | The XLSX reader; the cross-source checksum fixture; **the first review** (the clients and the readers)                                        |
-| D6.4 | The delegated token: the session's sealed provider token, the exchange, own views; **the second review**; D6's close                          |
+| D6.4 | **Deferred** (ADR-0041): the delegated token                                                                                                  |
 
 If question 1 defers the token, D6.3 carries the close.
 
@@ -171,6 +171,10 @@ If question 1 defers the token, D6.3 carries the close.
   every composed URL; DAT-005's suite asserts each path, raw, URL-encoded and base64.
 
 ## Questions for Ken
+
+Answered by Ken on 2026-10-06: every one as recommended. The delegated token (D6.4) is deferred by
+[ADR-0041](../decisions/0041-the-delegated-provider-token-is-deferred-past-the-first-release.md);
+D6.3 carries the close and the one review, and D6.1 points data.md's DAT-076 gap at ADR-0041.
 
 1. **Is all of D6 wanted before the first release?** You asked whether anyone needs HTTP, S3 or
    spreadsheets yet; no tenant has. **Recommended: build D6.1 to D6.3, defer the delegated token**
