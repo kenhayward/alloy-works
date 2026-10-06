@@ -43,7 +43,7 @@ export function settleBinding(
   options: SettleOptions = {},
 ): Promise<string | null> {
   // One act at a time for one binding: a Keep asked while a Change settles reads what it left.
-  const key = `//`;
+  const key = `${document}/${node}/${binding}`;
   const before = settling.get(key) ?? Promise.resolve();
   const settled = before
     .catch(() => undefined)
