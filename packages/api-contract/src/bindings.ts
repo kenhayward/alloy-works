@@ -2,6 +2,7 @@ import {
   bindingNodeSchema,
   imageColumnTypeSchema,
   MAX_COLUMNS,
+  httpTemplateSchema,
   provenanceSchema,
   TAKE_FAILURES,
   valueTypeSchema,
@@ -90,11 +91,21 @@ export const ProvenanceView = provenanceSchema.extend({
     .describe(
       'The connection version it ran on, or null where the caller may not read the query definition',
     ),
-  ran: z.strictObject({
-    sql: provenanceSchema.shape.ran.shape.sql
-      .nullable()
-      .describe('The SQL that ran, or null where the caller may not read the query definition'),
-  }),
+  ran: z.union([
+    z.strictObject({
+      sql: z
+        .string()
+        .nullable()
+        .describe('The SQL that ran, or null where the caller may not read the query definition'),
+    }),
+    z.strictObject({
+      request: httpTemplateSchema
+        .nullable()
+        .describe(
+          'The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition',
+        ),
+    }),
+  ]),
 });
 
 /** Why an image a take gave cannot stand where its binding is placed (the B6 plan, B6-D). */

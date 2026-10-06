@@ -4,6 +4,7 @@ import {
   defaultLimits,
   limitCeilings,
   type ConnectionSettings,
+  type PostgresSettings,
   type QueryDefinition,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
@@ -34,7 +35,7 @@ import { createArtifact, latestVersion, recordVersion, substanceOf } from './ver
 
 const ISSUER = 'https://idp.example';
 
-const settings = (over: Partial<ConnectionSettings> = {}): ConnectionSettings => ({
+const settings = (over: Partial<PostgresSettings> = {}): PostgresSettings => ({
   schemaVersion: 1,
   name: 'Readings',
   description: '',
@@ -92,7 +93,7 @@ describe('a query definition', () => {
       .executeTakeFirstOrThrow()
       .then((row) => row.id);
 
-  const newConnection = (over: Partial<ConnectionSettings> = {}, spaceId = general) =>
+  const newConnection = (over: Partial<PostgresSettings> = {}, spaceId = general) =>
     service.withTenant(production, async (trx) => {
       const answer = await createConnection(trx, {
         author: ada,

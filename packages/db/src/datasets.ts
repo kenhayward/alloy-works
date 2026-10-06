@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util';
 import { createHash } from 'node:crypto';
 import {
   identityKey,
@@ -171,7 +172,7 @@ export async function recordDatasetVersion(
   if (
     held.checksum === provenance.checksum &&
     held.queryDefinition.version === provenance.queryDefinition.version &&
-    held.ran.sql === provenance.ran.sql
+    isDeepStrictEqual(held.ran, provenance.ran)
   ) {
     return { dataset: found, version: latest, reused: true };
   }

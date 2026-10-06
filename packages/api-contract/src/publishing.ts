@@ -325,15 +325,22 @@ export const PublicationBindingView = z.object({
         name: z.string(),
         type: z.record(z.string(), z.unknown()),
         from: z
-          .object({ column: z.string() })
+          .union([z.object({ column: z.string() }), z.object({ pointer: z.string() })])
           .optional()
-          .describe("The source's column: to a reader of the query definition alone"),
+          .describe(
+            "The source's column, or a JSON Pointer into an HTTP response's row: to a reader of the query definition alone",
+          ),
       }),
     ),
     ran: z
-      .object({ sql: z.string() })
+      .union([
+        z.object({ sql: z.string() }),
+        z.object({ request: z.record(z.string(), z.unknown()) }),
+      ])
       .optional()
-      .describe('The SQL that ran: to a reader of the query definition alone'),
+      .describe(
+        'The SQL that ran, or the HTTP request template that was sent, never its URL: to a reader of the query definition alone',
+      ),
     connection: Versioned.optional().describe(
       'The connection it ran on: to a reader of the query definition alone',
     ),

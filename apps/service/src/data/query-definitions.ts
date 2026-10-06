@@ -19,7 +19,12 @@ import {
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { decide, type AccessFacts, type QueryDefinition } from '@alloy-works/domain';
+import {
+  connectionFetchProblems,
+  decide,
+  type AccessFacts,
+  type QueryDefinition,
+} from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { callerOf, notFound, type Authorised, type Caller } from '../access.js';
 import { versionView } from '../components.js';
@@ -95,6 +100,13 @@ async function connectionFor(
           message: 'A definition names a connection of this environment, and this is none',
         },
       ],
+    });
+  }
+  // A fetch of the connection's type, never naming its secret's header (the D6 plan, D6-A).
+  const unsuited = connectionFetchProblems(definition.fetch, connection.settings);
+  if (unsuited.length > 0) {
+    throw refused(400, 'definition.invalid', 'The query definition is not valid.', {
+      problems: unsuited,
     });
   }
   if (connection.settings.retired) {

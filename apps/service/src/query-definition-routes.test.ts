@@ -21,6 +21,7 @@ import {
   dataFailures,
   limitCeilings,
   type ConnectionSettings,
+  type PostgresSettings,
   type DataFailureCode,
 } from '@alloy-works/domain';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
@@ -47,7 +48,7 @@ interface DefinitionBody {
   mayRun: boolean;
 }
 
-const settings = (over: Partial<ConnectionSettings> = {}): ConnectionSettings => ({
+const settings = (over: Partial<PostgresSettings> = {}): PostgresSettings => ({
   schemaVersion: 1,
   name: 'Readings',
   description: '',
@@ -1015,6 +1016,60 @@ describe('query definitions through the service', () => {
         `/v1/query-definitions/${made.json<DefinitionBody>().id}`,
       );
       expect(read.json()).toMatchObject({ mayEdit: false, mayRun: false });
+    });
+
+    it('saves an HTTP request only on an HTTP connection, never naming its secret header, by an author holding use_connection alone', async () => {
+      const database = await connection('Not for HTTP');
+      const request = {
+        method: 'GET',
+        path: [{ fixed: 'sites' }, { parameter: 'site' }],
+        query: [],
+        headers: [],
+      };
+      const httpFetch = { kind: 'http', request, format: { kind: 'json', rows: '/items' } };
+      const httpDefinition = (on: string, over: Json = {}) =>
+        definition(on, {
+          title: 'Sites by API',
+          parameters: [{ name: 'site', type: { base: 'text' }, required: true, list: false }],
+          fetch: httpFetch,
+          columns: [
+            { name: 'id', from: { pointer: '/id' }, type: { base: 'integer' } },
+            { name: 'name', from: { pointer: '/name' }, type: { base: 'text' } },
+          ],
+          ...over,
+        });
+      const onDatabase = await create('grace', httpDefinition(database.id));
+      expect(onDatabase.statusCode).toBe(400);
+      expect(onDatabase.json()).toMatchObject({
+        problems: [{ path: 'fetch', message: 'An HTTP request is sent on an HTTP connection' }],
+      });
+      const api = await call('ada', 'POST', `/v1/spaces/${general}/connections`, {
+        settings: {
+          ...settings({ name: 'Sites API' }),
+          type: 'http',
+          source: { baseUrl: 'https://api.example.test/v1', secretHeader: 'x-api-key' },
+        },
+      });
+      expect(api.statusCode, api.body).toBe(200);
+      const apiId = api.json<{ id: string }>().id;
+      const named = await create(
+        'grace',
+        httpDefinition(apiId, {
+          fetch: {
+            ...httpFetch,
+            request: { ...request, headers: [{ name: 'x-api-key', value: { fixed: 'mine' } }] },
+          },
+        }),
+      );
+      expect(named.statusCode).toBe(400);
+      expect(named.json()).toMatchObject({ problems: [{ path: 'fetch.request.headers.0.name' }] });
+      const made = await create('grace', httpDefinition(apiId));
+      expect(made.statusCode, made.body).toBe(200);
+      expect(made.json<DefinitionBody>()).toMatchObject({
+        definition: { fetch: { kind: 'http' } },
+        mayEdit: true,
+        mayRun: true,
+      });
     });
 
     it('runs on a connection whose test found its account able to write, where SQL is refused sql_not_permitted', async () => {

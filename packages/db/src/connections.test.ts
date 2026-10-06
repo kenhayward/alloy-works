@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import type { ConnectionSettings } from '@alloy-works/domain';
+import type { ConnectionSettings, PostgresSettings } from '@alloy-works/domain';
 import { sealSecret } from '@alloy-works/sealing';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -36,7 +36,7 @@ import {
 const ISSUER = 'https://idp.example';
 const SECRET = 'an-invented-source-password';
 
-const settings = (over: Partial<ConnectionSettings> = {}): ConnectionSettings => ({
+const settings = (over: Partial<PostgresSettings> = {}): PostgresSettings => ({
   schemaVersion: 1,
   name: 'Readings',
   description: 'The sites and their readings.',
@@ -135,7 +135,7 @@ describe('a connection', () => {
     await db?.drop();
   });
 
-  const made = (over: Partial<ConnectionSettings> = {}, spaceId = general) =>
+  const made = (over: Partial<PostgresSettings> = {}, spaceId = general) =>
     service.withTenant(production, async (trx) => {
       const answer = await createConnection(trx, {
         author: ada,
@@ -562,6 +562,38 @@ describe('a connection', () => {
       }),
     );
     expect(missing).toEqual({ answer: 'connection.missing' });
+  });
+
+  it("holds an HTTP connection, and refuses a version that changes a connection's type", async () => {
+    const http = {
+      ...settings(),
+      type: 'http',
+      source: { baseUrl: 'https://api.example.test/v1', secretHeader: 'x-api-key' },
+    };
+    const made = await service.withTenant(production, (trx) =>
+      createConnection(trx, { author: ada, spaceId: general, settings: http }),
+    );
+    if (made.answer !== 'created') throw new Error(made.answer);
+    expect(made.connection.settings).toEqual(http);
+    const back = made.connection;
+    const changed = await service.withTenant(production, (trx) =>
+      recordConnectionVersion(trx, {
+        author: ada,
+        id: back.id,
+        openedFrom: back.version.id,
+        settings: settings(),
+      }),
+    );
+    expect(changed).toEqual({
+      answer: 'connection.refused',
+      problems: [
+        {
+          rule: 'connection_invalid',
+          path: 'type',
+          message: "A connection's type never changes: make a connection of the other type",
+        },
+      ],
+    });
   });
 
   it("recomputes a version's digests from the row, and reads a version back by its shape", async () => {

@@ -448,7 +448,7 @@ describe('a run', { timeout: LOADED_TIMEOUT_MS }, () => {
       { n: '5', a: 'minus', b: 'minus' },
     );
     expect(rows(minuses)).toEqual([['6']]);
-    expect(minuses.outcome === 'ok' && minuses.ran.sql).toBe(
+    expect(minuses.outcome === 'ok' && (minuses.ran as { sql: string }).sql).toBe(
       'select 1  /**/ - /**/  /**/ - /**/  ($1::int8)  as id',
     );
 

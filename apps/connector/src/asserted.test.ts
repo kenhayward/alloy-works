@@ -258,7 +258,7 @@ describe("a person's own identity asserted at the source", { timeout: LOADED_TIM
     const hostile = ok(await runAs(HOSTILE));
     expect(hostile.asSeen).toBe(HOSTILE);
     expect(hostile.result.rows).toEqual([['4', '40']]);
-    expect(hostile.ran.sql).not.toContain(HOSTILE);
+    expect((hostile.ran as { sql: string }).sql).not.toContain(HOSTILE);
   });
 
   it('answers identity_unmatched for a role the source lacks, one the account may not set, and none, naming none of them', async () => {

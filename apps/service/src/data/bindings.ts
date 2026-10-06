@@ -129,7 +129,7 @@ const provenanceView = (provenance: Provenance, readsDefinition: boolean) =>
     : {
         ...provenance,
         connection: null,
-        ran: { sql: null },
+        ran: 'sql' in provenance.ran ? { sql: null } : { request: null },
         columns: provenance.columns.map((column) => ({ ...column, from: null })),
       }) as unknown as z.infer<typeof ProvenanceView>;
 
@@ -605,7 +605,7 @@ async function runOnce(
       queryDefinition: { artifact: prepared.definition.id, version: prepared.definition.version },
       connection: { artifact: prepared.connection.id, version: prepared.connection.version.id },
       parameters: prepared.values,
-      ran: { sql: ran.ran.sql },
+      ran: 'sql' in ran.ran ? { sql: ran.ran.sql } : { request: ran.ran.request },
       identity: provenanceIdentity(prepared.acting, ran.asSeen ?? ''),
       at: new Date().toISOString(),
       durationMs: ran.durationMs,

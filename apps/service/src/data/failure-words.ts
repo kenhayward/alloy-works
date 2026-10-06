@@ -9,6 +9,7 @@ import {
 export interface FailureIn {
   readonly code: DataFailureCode;
   readonly source?: SourceRefusal | undefined;
+  readonly status?: number | undefined;
   readonly column?: string | undefined;
   readonly row?: number | undefined;
 }
@@ -52,6 +53,8 @@ const MESSAGES: Partial<Record<DataFailureCode, string>> = {
     "Your role at the source can sign in, create objects or owns objects of its own, so nothing runs as you on it. Ask the source's administrator.",
   identity_unavailable:
     'Your sign-in does not name you as this connection asks, so nothing can run as you on it. Ask an administrator of this environment.',
+  describe_not_supported:
+    'This connection lists no tables. Sample its request to propose the columns of what it answers.',
   identity_unmatched:
     "The source has no role for you that this connection may use. Ask the source's administrator.",
 };
@@ -129,6 +132,9 @@ function builtRefusal(
  */
 export function failureMessage(failure: DataFailure, built = false): string {
   if (failure.code === 'result_mismatch') return mismatch(failure);
+  if (failure.code === 'source_refused' && failure.status !== undefined) {
+    return `The source refused the request with HTTP status ${failure.status}.`;
+  }
   if (failure.code === 'source_refused' && failure.source) {
     const words = built ? builtRefusal(failure.source, failure.column) : undefined;
     if (words !== undefined) return words;
@@ -165,6 +171,7 @@ export function failureView(failure: FailureIn | DataFailureCode, built = false)
       ? dataFailure(failure)
       : dataFailure(failure.code, {
           ...(failure.source === undefined ? {} : { source: failure.source }),
+          ...(failure.status === undefined ? {} : { status: failure.status }),
           ...(failure.column === undefined ? {} : { column: failure.column }),
           ...(failure.row === undefined ? {} : { row: failure.row }),
         });

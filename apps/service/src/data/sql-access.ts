@@ -22,16 +22,17 @@ export function maySqlWith(facts: AccessFacts): boolean {
   return decide('use_connection', facts).allowed && decide('write_sql', facts).allowed;
 }
 
-/** A definition's fetch, or the kind of one: SQL, or a built query. */
+/** A definition's fetch, or the kind of one: SQL, a built query or an HTTP request. */
 type FetchOf = Pick<QueryDefinition['fetch'], 'kind'>;
 
 /**
  * Whether facts at a connection let their principal run a fetch there (the D4 plan, D4-J), the one
  * place a fetch's needs are decided: a built query needs `use_connection` alone, since it writes only
- * a `SELECT` the product generates; SQL needs `write_sql` as well (DAT-101).
+ * a `SELECT` the product generates, and so does an HTTP request, whose every value its builder places
+ * (the D6 plan, D6-E); SQL needs `write_sql` as well (DAT-101).
  */
 export function mayRunFetch(facts: AccessFacts, fetch: FetchOf): boolean {
-  return fetch.kind === 'builder' ? decide('use_connection', facts).allowed : maySqlWith(facts);
+  return fetch.kind === 'sql' ? maySqlWith(facts) : decide('use_connection', facts).allowed;
 }
 
 /** The refusal of a caller who may read a connection but may not use it for a built query. */
@@ -40,7 +41,7 @@ export const useForbidden = () =>
 
 /** The refusal of a caller who may read a connection but may not run this fetch on it. */
 export const fetchForbidden = (fetch: FetchOf) =>
-  fetch.kind === 'builder' ? useForbidden() : sqlForbidden();
+  fetch.kind === 'sql' ? sqlForbidden() : useForbidden();
 
 /** The refusal of a caller who may read a connection but may not write SQL against it. */
 export const sqlForbidden = () =>
@@ -123,7 +124,8 @@ export async function requireSqlPermitted(
   connection: StoredConnection,
   fetch: FetchOf,
 ): Promise<void> {
-  if (fetch.kind === 'builder') return;
+  // Neither a built query nor an HTTP request is SQL an author wrote (D4-J, D6-E).
+  if (fetch.kind !== 'sql') return;
   const { identity } = connection.settings;
   if (identity.kind === 'endUser' && identity.mechanism === 'asserted') {
     throw new AppError(409, wireCode('sql.not_permitted'), SQL_REFUSED.asserted, 'DAT-102', {

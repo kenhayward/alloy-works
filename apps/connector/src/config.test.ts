@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 import { describe, expect, it } from 'vitest';
 
 import { loadConnectorConfig, takeConnectorConfig } from './config.js';
@@ -55,6 +58,31 @@ describe("the connector's configuration", () => {
     expect(() => takeConnectorConfig(refused)).toThrow(/CONNECTOR_DENY/);
     expect(refused).not.toHaveProperty('CONNECTOR_KEY');
     expect(refused).not.toHaveProperty('CONNECTOR_SEALING_KEY');
+  });
+
+  it("reads a development source's certificate authority from a file, and none by default", () => {
+    const pem = readFileSync(
+      fileURLToPath(new URL('../../../deploy/sources/http/ca.pem', import.meta.url)),
+      'utf8',
+    );
+    expect(loadConnectorConfig(base).ca).toBeUndefined();
+    const read = (path: string) => {
+      if (path === '/run/ca.pem') return pem;
+      if (path === '/run/junk.pem') return 'not a certificate';
+      throw new Error('ENOENT');
+    };
+    expect(loadConnectorConfig({ ...base, CONNECTOR_CA_FILE: '/run/ca.pem' }, read).ca).toBe(pem);
+    for (const path of ['/run/junk.pem', '/run/missing.pem']) {
+      const message = (() => {
+        try {
+          loadConnectorConfig({ ...base, CONNECTOR_CA_FILE: path }, read);
+        } catch (error) {
+          return (error as Error).message;
+        }
+        return '';
+      })();
+      expect(message, path).toBe('CONNECTOR_CA_FILE must name a readable file of PEM certificates');
+    }
   });
 
   it('refuses to start without its keys or its deny list, naming the variable and never its value', () => {

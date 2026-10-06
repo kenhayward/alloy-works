@@ -1,4 +1,4 @@
-import { childRequestSchema } from '@alloy-works/domain';
+import { childRequestSchema, type PostgresSettings } from '@alloy-works/domain';
 import pg from 'pg';
 
 /**
@@ -12,7 +12,7 @@ for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
 const request = childRequestSchema.parse(
   JSON.parse(Buffer.concat(chunks).toString('utf8').split('\n')[0] ?? ''),
 );
-const { source } = request.request.settings;
+const source = request.request.settings.source as PostgresSettings['source'];
 const client = new pg.Client({
   host: source.host,
   port: source.port,

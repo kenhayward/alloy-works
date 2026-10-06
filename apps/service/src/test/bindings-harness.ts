@@ -20,6 +20,7 @@ import {
   canonicalResultBytes,
   type CanonicalValue,
   type ConnectionSettings,
+  type PostgresSettings,
   type RunAnswer,
 } from '@alloy-works/domain';
 import { createObjectStores, type ObjectStores } from '@alloy-works/objects';
@@ -45,7 +46,7 @@ export const SECRET = 'an-invented-canary-password';
 type Json = Record<string, unknown>;
 export type Cell = CanonicalValue;
 
-export const settings = (over: Partial<ConnectionSettings> = {}): ConnectionSettings => ({
+export const settings = (over: Partial<PostgresSettings> = {}): PostgresSettings => ({
   schemaVersion: 1,
   name: 'Readings',
   description: '',
@@ -160,7 +161,7 @@ export interface Harness {
   connection(
     name: string,
     space?: string,
-    over?: Partial<ConnectionSettings>,
+    over?: Partial<PostgresSettings>,
   ): Promise<{ id: string; version: string }>;
   /** A query definition Ada makes on a connection. */
   definition(

@@ -10,9 +10,11 @@ import {
   type Condition,
   type Parameter,
   type ParameterValues,
+  httpValueProblems,
+  type HttpTemplate,
   type RunAnswer,
 } from '@alloy-works/domain';
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { CONNECT_TIMEOUT_MS } from './supervisor.js';
 import {
@@ -27,6 +29,17 @@ import {
   suiteDeny,
 } from './testing/source.js';
 import { answerRequest } from './work.js';
+import {
+  DEV_CA,
+  DEV_KEY,
+  get,
+  httpDraft,
+  httpRunRequest,
+  httpSettings,
+  member,
+  startFakeApi,
+  type FakeApi,
+} from './testing/http.js';
 
 /**
  * Case 5's attempts for PostgreSQL (spikes/data-connectors/case5.mjs), ported to the product's own
@@ -456,7 +469,7 @@ describe('injection through every parameter type', { timeout: LOADED_TIMEOUT_MS 
       return {
         position,
         outcome: inert ? ('inert' as const) : ('NOT INERT' as const),
-        ran: answer.outcome === 'ok' ? answer.ran.sql : undefined,
+        ran: answer.outcome === 'ok' ? (answer.ran as { sql: string }).sql : undefined,
         received: rows.length > 0 ? String(rows[0]![1]) : undefined,
         ...(inert ? {} : { value: String(value).slice(0, 60), got, want }),
       };
@@ -525,8 +538,10 @@ describe('injection through every parameter type', { timeout: LOADED_TIMEOUT_MS 
       ),
     );
     if (sorted.outcome !== 'ok') throw new Error(JSON.stringify(sorted));
-    expect(sorted.ran.sql).toContain('order by  /**/ label collate "C", id /**/ ');
-    expect(sorted.ran.sql).not.toContain('by_label');
+    expect((sorted.ran as { sql: string }).sql).toContain(
+      'order by  /**/ label collate "C", id /**/ ',
+    );
+    expect((sorted.ran as { sql: string }).sql).not.toContain('by_label');
     // And a key the definition does not declare runs nothing: the request is not a run.
     expect(() =>
       childRequestSchema.parse({
@@ -800,7 +815,7 @@ describe(
             return {
               position,
               outcome: inert ? ('inert' as const) : ('NOT INERT' as const),
-              ran: answer.outcome === 'ok' ? answer.ran.sql : undefined,
+              ran: answer.outcome === 'ok' ? (answer.ran as { sql: string }).sql : undefined,
               received: rows.length > 0 ? String(rows[0]![0]) : undefined,
               ...(inert ? {} : { value: String(value).slice(0, 60), got, want }),
             };
@@ -841,3 +856,154 @@ describe(
     });
   },
 );
+
+/** Each HTTP position a value is placed in, and the template that places the parameter there. */
+const HTTP_POSITIONS: readonly (readonly [string, (name: string) => HttpTemplate])[] = [
+  ['path', (name) => get(['echo'], { path: [{ fixed: 'echo' }, { parameter: name }] })],
+  ['query', (name) => get(['echo'], { query: [{ name: 'v', value: { parameter: name } }] })],
+  [
+    'header',
+    (name) => get(['echo'], { headers: [{ name: 'x-value', value: { parameter: name } }] }),
+  ],
+  [
+    'body',
+    (name) =>
+      get(['echo'], {
+        method: 'POST',
+        body: { object: [{ name: 'v', value: { parameter: name } }] },
+      }),
+  ],
+];
+
+/** A canonical value as the body writes it: a number by its text, text and times as strings. */
+function asBodyJson(parameter: Parameter, value: unknown): string {
+  const one = (item: unknown) =>
+    parameter.type.base === 'integer' || parameter.type.base === 'decimal'
+      ? String(item)
+      : JSON.stringify(item);
+  return Array.isArray(value) ? `[${value.map(one).join(',')}]` : one(value);
+}
+
+/** Whether what the source received is the value as data, in its position and nowhere else. */
+function receivedInert(
+  position: string,
+  parameter: Parameter,
+  value: unknown,
+  row: readonly unknown[],
+): boolean {
+  const [method, target, headers, body] = row as [string, string, string, string];
+  const text = (item: unknown) => String(item);
+  const sent = JSON.parse(headers) as Record<string, string>;
+  // Nothing but the headers the connector sets and the template names reached the source.
+  const expected = ['accept', 'accept-encoding', 'connection', 'host'];
+  if (position === 'header') expected.push('x-value');
+  if (position === 'body') expected.push('content-length', 'content-type');
+  if (JSON.stringify(Object.keys(sent).sort()) !== JSON.stringify(expected.sort())) return false;
+  switch (position) {
+    case 'path': {
+      const match = /^\/v1\/echo\/([^/?#]+)$/.exec(target);
+      return method === 'GET' && match !== null && decodeURIComponent(match[1]!) === text(value);
+    }
+    case 'query': {
+      // An empty list places no pair, and so no query at all.
+      const match = /^\/v1\/echo(?:\?([^#]*))?$/.exec(target);
+      if (method !== 'GET' || match === null) return false;
+      const query = new URLSearchParams(match[1] ?? '');
+      const items = (Array.isArray(value) ? value : [value]).map(text);
+      return (
+        [...query.keys()].every((key) => key === 'v') &&
+        JSON.stringify(query.getAll('v')) === JSON.stringify(items)
+      );
+    }
+    case 'header':
+      return method === 'GET' && target === '/v1/echo' && sent['x-value'] === text(value);
+    default:
+      return (
+        method === 'POST' &&
+        target === '/v1/echo' &&
+        body === `{"v":${asBodyJson(parameter, value)}}`
+      );
+  }
+}
+
+describe('injection through every HTTP position', { timeout: LOADED_TIMEOUT_MS }, () => {
+  let api: FakeApi;
+  beforeAll(async () => {
+    api = await startFakeApi();
+  });
+  afterAll(async () => {
+    await api.close();
+  });
+
+  it('DAT-021 DAT-081 places every hostile value of every type in a path, a query, a header and a body by its builder, or refuses it by name', async () => {
+    const echoed = [
+      member('method', { base: 'text' }),
+      member('target', { base: 'text' }),
+      member('headers', { base: 'text' }),
+      member('body', { base: 'text' }),
+    ];
+    const names = Object.keys(PARAMETERS).filter((name) => name !== 'sort');
+    const attempts = HTTP_POSITIONS.flatMap(([position, template]) =>
+      names
+        // A path segment and a header take no list: the template's own check refuses one.
+        .filter((name) => !PARAMETERS[name]!.list || position === 'query' || position === 'body')
+        .flatMap((name) =>
+          valuesFor(name).map((value) => ({ position, template: template(name), name, value })),
+        ),
+    );
+    const outcomes = await inTurn(attempts, async ({ position, template, name, value }) => {
+      const parameter = PARAMETERS[name]!;
+      const values = { [name]: value } as ParameterValues;
+      // Refused by name before anything is sent: by the declaration, then by the position.
+      const problems = [
+        ...checkParameterValues([parameter], values),
+        ...(checkParameterValues([parameter], values).length === 0
+          ? httpValueProblems(template, values)
+          : []),
+      ];
+      if (problems.length > 0) {
+        expect(problems, position).toEqual([
+          { parameter: name, rule: expect.any(String), value: expect.any(String) },
+        ]);
+        return { position, outcome: 'refused' as const };
+      }
+      const definition = httpDraft(template, echoed, {
+        parameters: [parameter],
+        format: { kind: 'json', rows: '/items' },
+      });
+      const request = httpRunRequest(httpSettings(api.port), DEV_KEY, definition, values);
+      const answer = (await answerRequest(
+        childRequestSchema.parse({
+          kind: 'run',
+          request,
+          secret: DEV_KEY,
+          deny: [...suiteDeny],
+          connectTimeoutMs: CONNECT_TIMEOUT_MS,
+          failureFloorMs: 0,
+          ca: DEV_CA,
+        }),
+      )) as RunAnswer;
+      const row = answer.outcome === 'ok' ? answer.result.rows[0] : undefined;
+      const inert = row !== undefined && receivedInert(position, parameter, value, row);
+      return {
+        position,
+        outcome: inert ? ('inert' as const) : ('NOT INERT' as const),
+        ...(inert ? {} : { name, value: String(value).slice(0, 60), answer }),
+      };
+    });
+    expect(outcomes.filter((each) => each.outcome === 'NOT INERT')).toEqual([]);
+    // Not vacuous: every position took some values and refused others.
+    for (const [position] of HTTP_POSITIONS) {
+      const at = outcomes.filter((each) => each.position === position);
+      expect(
+        at.some((each) => each.outcome === 'inert'),
+        position,
+      ).toBe(true);
+      expect(
+        at.some((each) => each.outcome === 'refused'),
+        position,
+      ).toBe(true);
+    }
+    expect(outcomes.length).toBeGreaterThan(400);
+  });
+});

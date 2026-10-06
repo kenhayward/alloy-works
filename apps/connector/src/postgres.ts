@@ -5,7 +5,7 @@ import {
   MAX_COLUMNS,
   sourceNameSchema,
   sourceTypeSchema,
-  type ConnectionSettings,
+  type PostgresSettings,
   type ProposedType,
   type Relation,
   type TestFinding,
@@ -53,7 +53,7 @@ class ScramOnlyClient extends pg.Client {
 
 /** Opens a client to the checked address, as the connection's account, over TLS. */
 export async function connectPostgres(
-  settings: ConnectionSettings,
+  settings: PostgresSettings,
   secret: string,
   address: string,
   timing: { readonly connectTimeoutMs: number; readonly statementTimeoutMs: number },

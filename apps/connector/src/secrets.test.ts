@@ -22,6 +22,18 @@ import {
   suiteIsolation,
   LOADED_TIMEOUT_MS,
 } from './testing/source.js';
+import {
+  DEV_CA,
+  DEV_KEY,
+  get,
+  httpDescribeRequest,
+  httpDraft,
+  httpRequestFor,
+  httpRunRequest,
+  httpSettings,
+  member,
+  startFakeApi,
+} from './testing/http.js';
 
 /** An invented secret, with characters each encoding spells differently. */
 const CANARY = 'Canary+Secret/9=%&ü-7f3a';
@@ -216,6 +228,156 @@ describe("the connector's secrets", { timeout: LOADED_TIMEOUT_MS }, () => {
 
     for (const text of [...seen, stderr.join('')]) {
       for (const encoding of encodings) expect(text).not.toContain(encoding);
+    }
+  });
+
+  it("DAT-005 keeps an HTTP connection's secret header and every composed URL out of every answer, log line and crash report, raw, URL-encoded or base64", async () => {
+    const api = await startFakeApi();
+    // A header carries printable ASCII alone, so the canary is that, with what each encoding spells
+    // its own way; and a value placed in the URL, so a composed URL can be looked for by it.
+    const canary = 'Canary+Header/9=%&-7f3a';
+    const placed = 'Placed+Value=9%&-2c1d?#';
+    const url = `https://127.0.0.1:${api.port}/v1`;
+    const looked = [canary, placed].flatMap((each) => [
+      each,
+      encodeURIComponent(each),
+      Buffer.from(each, 'utf8').toString('base64'),
+      Buffer.from(each, 'utf8').toString('base64url'),
+    ]);
+    const seen: string[] = [];
+    const stderr: string[] = [];
+    const spawn: SpawnChild = (spec, input, deadlineMs, onStderr) =>
+      runChild(spec, input, deadlineMs, (chunk) => {
+        stderr.push(chunk.toString('utf8'));
+        onStderr?.(chunk);
+      });
+    const withCa = loadConnectorConfig(
+      {
+        CONNECTOR_KEY: KEY,
+        CONNECTOR_SEALING_KEY: SEALING_KEY.toString('base64'),
+        CONNECTOR_DENY: 'none',
+        CONNECTOR_CA_FILE: 'ca.pem',
+      },
+      () => DEV_CA,
+    );
+    const start = async (spec: ChildSpec) => {
+      const server = createConnectorServer({
+        config: withCa,
+        deny: suiteDeny,
+        spec,
+        spawn,
+        log: (line) => seen.push(line),
+      });
+      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+      return { server, at: `http://127.0.0.1:${(server.address() as AddressInfo).port}` };
+    };
+    const call = async (at: string, path: string, body: unknown) => {
+      const response = await fetch(`${at}${path}`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${KEY}`, 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const text = await response.text();
+      seen.push(text);
+      return { status: response.status, text };
+    };
+    try {
+      const real = await start(childSpawn(suiteChild, suiteIsolation));
+      const failed =
+        '{"outcome":"failed","failure":{"code":"connection_failed","attribution":"connector"}}';
+      const source = httpSettings(api.port);
+      expect((await call(real.at, '/v1/test', httpRequestFor(source, canary))).text).toBe(failed);
+      // A run placing a value in the path, the query and a header: refused, and nothing composed
+      // of it answered.
+      const template = get(['echo'], {
+        path: [{ fixed: 'echo' }, { parameter: 'site' }],
+        query: [{ name: 'site', value: { parameter: 'site' } }],
+        headers: [{ name: 'x-site', value: { parameter: 'site' } }],
+      });
+      const definition = httpDraft(template, [member('method', { base: 'text' })], {
+        parameters: [{ name: 'site', type: { base: 'text' }, required: true, list: false }],
+        format: { kind: 'json', rows: '/items' },
+      });
+      expect(
+        (
+          await call(
+            real.at,
+            '/v1/run',
+            httpRunRequest(source, canary, definition, { site: placed }),
+          )
+        ).text,
+      ).toBe(failed);
+      expect(
+        (
+          await call(
+            real.at,
+            '/v1/describe',
+            httpDescribeRequest(
+              source,
+              canary,
+              template,
+              { kind: 'json', rows: '/items' },
+              definition.parameters,
+              { site: placed },
+            ),
+          )
+        ).text,
+      ).toBe('{"failure":{"code":"connection_failed","attribution":"connector"}}');
+      // The right key, so the run is answered: what it ran is the template, never the URL.
+      const ran = await call(
+        real.at,
+        '/v1/run',
+        httpRunRequest(source, DEV_KEY, definition, { site: placed }),
+      );
+      expect(JSON.parse(ran.text)).toMatchObject({ outcome: 'ok', ran: { request: template } });
+      // Not vacuous: the source received the value where it was placed.
+      expect(api.seen.some((each) => each.rawPath.includes(encodeURIComponent(placed)))).toBe(true);
+      // A seal refused, and one taken.
+      expect(
+        await call(real.at, '/v1/seal', {
+          tenant: 'Not A Tenant',
+          connection: randomUUID(),
+          secret: canary,
+          settings: source,
+        }),
+      ).toEqual({ status: 400, text: '{"code":"request_invalid"}' });
+      expect(
+        (
+          await call(real.at, '/v1/seal', {
+            tenant: 'acme',
+            connection: randomUUID(),
+            secret: canary,
+            settings: source,
+          })
+        ).status,
+      ).toBe(200);
+      await new Promise<void>((resolve) => real.server.close(() => resolve()));
+
+      // A child that sends the secret, then throws an error naming it and the URL it composed.
+      const crashing = await start({
+        file: process.execPath,
+        args: [
+          '--import',
+          'tsx',
+          fileURLToPath(new URL('./testing/throwing-http-child.ts', import.meta.url)),
+        ],
+        env: {},
+      });
+      expect((await call(crashing.at, '/v1/test', httpRequestFor(source, canary))).text).toBe(
+        '{"outcome":"failed","failure":{"code":"connector_error","attribution":"connector"}}',
+      );
+      await new Promise<void>((resolve) => crashing.server.close(() => resolve()));
+      // Not vacuous: the crash wrote the secret and the URL, and the supervisor dropped them.
+      expect(stderr.join('')).toContain(canary);
+      expect(stderr.join('')).toContain(url);
+      for (const text of seen) {
+        expect(text).not.toContain(url);
+        expect(text).not.toContain(`127.0.0.1:${api.port}`);
+        // The ok run's answer is the one that names the value: as the template's parameter, not it.
+        for (const encoding of looked) expect(text).not.toContain(encoding);
+      }
+    } finally {
+      await api.close();
     }
   });
 });

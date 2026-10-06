@@ -455,7 +455,7 @@ describe("a result's images, admitted before it is kept (the D8 plan, D8-D and D
             queryDefinition: { artifact: definition.id, version: defined.version.id },
             connection: { artifact: connection.id, version: connection.version },
             parameters: { site: String(site) },
-            ran: { sql: ran.ran.sql },
+            ran: ran.ran,
             identity: { kind: 'service' },
             at: '2026-10-05T09:00:00.000Z',
             durationMs: 1,
