@@ -1712,6 +1712,57 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
     });
   });
 
+  it('reads a workbook by its sheet, its columns by header from a sample, and saves it as XLSX', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service({
+      bucket: true,
+      sqlWriter: false,
+      describe: () =>
+        json(200, {
+          columns: [
+            { name: 'id', sourceType: 'number', proposed: { base: 'integer' }, header: 'id' },
+            {
+              name: 'measured',
+              sourceType: 'date',
+              proposed: { base: 'date' },
+              header: 'measured',
+            },
+          ],
+          parameters: [],
+        }),
+    });
+    render(<QueryDefinitionPage client={client} id="new" />);
+    const connection = await screen.findByLabelText('Connection');
+    await waitFor(() => expect(connection).toHaveValue(BUCKET));
+    await user.type(screen.getByLabelText('Title'), 'Readings from a workbook');
+    await user.click(screen.getByRole('button', { name: 'Add segment' }));
+    await user.type(screen.getByLabelText('Segment 1'), 'readings.xlsx');
+    await user.selectOptions(screen.getByLabelText('The file is'), 'xlsx');
+    // A workbook's sheet is named; CSV's delimiter and convention for null are not asked.
+    expect(screen.queryByLabelText('An empty field')).toBeNull();
+    await user.type(screen.getByLabelText('Sheet'), 'Readings');
+    await user.click(screen.getByRole('button', { name: 'Sample for columns' }));
+    const columns = await screen.findByRole('table', { name: 'Columns' });
+    const format = { kind: 'xlsx', sheet: 'Readings', headerRow: true };
+    expect(asked.find((each) => each.path.endsWith('/describe'))?.body).toMatchObject({
+      file: { key: [{ fixed: 'readings.xlsx' }], format },
+    });
+    for (const name of ['id', 'measured']) {
+      await user.click(within(columns).getByRole('button', { name: `Confirm ${name}` }));
+    }
+    await user.click(await screen.findByRole('button', { name: 'Save version' }));
+    await waitFor(() => expect(window.location.hash).toBe(`#/query-definitions/${DEFINITION}`));
+    expect(asked.find((each) => each.path.endsWith('/query-definitions'))?.body).toMatchObject({
+      definition: {
+        fetch: { kind: 'file', key: [{ fixed: 'readings.xlsx' }], format },
+        columns: [
+          { name: 'id', from: { header: 'id' }, type: { base: 'integer' } },
+          { name: 'measured', from: { header: 'measured' }, type: { base: 'date' } },
+        ],
+      },
+    });
+  });
+
   it('shows the object a file definition reads to somebody who may only read it', async () => {
     const { client } = service({
       held: {

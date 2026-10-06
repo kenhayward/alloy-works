@@ -53,3 +53,8 @@ apps/worker/tools/ooxml-check/packages.lock.json
 
 # What Word put on the clipboard, as it put it: a capture, not code to format.
 packages/readers/src/fixtures/
+
+# Case 6's table as each file format writes it, compared byte for byte with `testing/typed.ts` in the
+# connector's suite: formatting the JSON would make that comparison fail.
+deploy/sources/http/files/
+deploy/sources/s3/objects/alloy-readings/typed/

@@ -58,12 +58,15 @@ describe("the connector's package", () => {
         // The S3 source's signer and the CSV reader (the D6 plan, D6-C and D6-H).
         '@smithy/signature-v4',
         'csv-parse',
+        // The XLSX reader's inflate and XML parser (D6-I).
+        'fflate',
+        'saxes',
         'pg',
         'zod',
       ].sort(),
     );
 
-    // Nothing the connector ships imports anything but Node's own modules, its own files and the six,
+    // Nothing the connector ships imports anything but Node's own modules, its own files and the eight,
     // or an entry point one of them exports, such as `csv-parse/sync`.
     const allowed = new Set(Object.keys(manifest.dependencies ?? {}));
     const files = sourceFiles(join(root, 'src'));

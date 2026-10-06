@@ -241,6 +241,15 @@ pnpm --filter @alloy-works/connector source-s3        # starts it, seeded, or fi
 pnpm --filter @alloy-works/connector source-s3:stop   # removes it
 ```
 
+**The cross-source fixture** (`cross-source.test.ts`) reads case 6's table from all three sources -
+PostgreSQL, and JSON, JSON Lines, CSV and XLSX over HTTP and from S3 - to one checksum in four zones.
+The files are committed twice, under `deploy/sources/http/files` and the S3 seed's `typed/`, as
+`src/testing/typed.ts` writes them, and the test holds both copies to it byte for byte; after changing
+the table or a format's writing, run it once with `ALLOY_WRITE_FIXTURES=1` to rewrite them, then
+restart the S3 source so it is seeded with them. Hostile files (`hostile-files.test.ts`) - zip bombs,
+an entry flood, mismatched zip headers, an entity, deep JSON, an unterminated CSV record - are served by
+the suite's own fake store and read in a child that reports its peak memory, as the ceilings are.
+
 **Loopback is always refused by the guard**, and the suite's source is on loopback, so the suite
 hands the child a deny list without `127.0.0.0/8` through a function parameter, never through
 configuration; `guard.test.ts` holds the production policy to refusing loopback whatever

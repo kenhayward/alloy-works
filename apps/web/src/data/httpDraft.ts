@@ -26,10 +26,13 @@ export interface PairDraft {
 
 /**
  * The format rows are read in, whatever carried them (the D6 plan, D6-F): JSON at a pointer, JSON
- * Lines, or CSV with its delimiter, whether its first record is a header, and its convention for null.
+ * Lines, CSV with its delimiter, whether its first record is a header, and its convention for null,
+ * or XLSX by its sheet's name and whether its first row is a header.
  */
 export interface FormatDraft {
-  readonly format: 'json' | 'jsonLines' | 'csv';
+  readonly format: 'json' | 'jsonLines' | 'csv' | 'xlsx';
+  /** The sheet a workbook is read from. */
+  readonly sheet: string;
   /** JSON's pointer to its rows, and to the count it states, where it states one. */
   readonly rows: string;
   readonly count: string;
@@ -41,6 +44,7 @@ export interface FormatDraft {
 
 export const NEW_FORMAT: FormatDraft = {
   format: 'json',
+  sheet: '',
   rows: '',
   count: '',
   delimiter: 'comma',
@@ -106,6 +110,9 @@ export function templateOf(http: HttpDraft): HttpTemplate {
 /** The format a draft reads its rows in. */
 export function formatOf(draft: FormatDraft): DataFormat {
   if (draft.format === 'jsonLines') return { kind: 'jsonLines' };
+  if (draft.format === 'xlsx') {
+    return { kind: 'xlsx', sheet: draft.sheet.trim(), headerRow: draft.headerRow };
+  }
   if (draft.format === 'csv') {
     return {
       kind: 'csv',
@@ -131,6 +138,9 @@ export function formatDraftOf(format: DataFormat): FormatDraft {
       headerRow: format.headerRow,
       nulls: format.null,
     };
+  }
+  if (format.kind === 'xlsx') {
+    return { ...NEW_FORMAT, format: 'xlsx', sheet: format.sheet, headerRow: format.headerRow };
   }
   return {
     ...NEW_FORMAT,

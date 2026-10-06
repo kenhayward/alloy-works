@@ -647,7 +647,9 @@ export function generatedSql(draft: DefinitionDraft): { sql: string } | { needs:
 
 /** Where a column is read in its format (the D6 plan, D6-F): by a pointer, a header or a letter. */
 function fromOf(column: ColumnDraft, format: FormatDraft) {
-  if (format.format !== 'csv') return { pointer: column.pointer ?? pointerTo(column.name) };
+  if (format.format !== 'csv' && format.format !== 'xlsx') {
+    return { pointer: column.pointer ?? pointerTo(column.name) };
+  }
   if (column.letter !== undefined) return { letter: column.letter };
   return format.headerRow ? { header: column.header ?? column.name } : { letter: 'A' };
 }

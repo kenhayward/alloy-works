@@ -7852,6 +7852,11 @@ export interface operations {
                             headerRow: boolean;
                             /** @enum {string} */
                             null: "empty" | "never";
+                        } | {
+                            /** @constant */
+                            kind: "xlsx";
+                            sheet: string;
+                            headerRow: boolean;
                         };
                         parameters: {
                             name: string;
@@ -7926,6 +7931,11 @@ export interface operations {
                             headerRow: boolean;
                             /** @enum {string} */
                             null: "empty" | "never";
+                        } | {
+                            /** @constant */
+                            kind: "xlsx";
+                            sheet: string;
+                            headerRow: boolean;
                         };
                         parameters: {
                             name: string;
@@ -8482,6 +8492,11 @@ export interface operations {
                                 headerRow: boolean;
                                 /** @enum {string} */
                                 null: "empty" | "never";
+                            } | {
+                                /** @constant */
+                                kind: "xlsx";
+                                sheet: string;
+                                headerRow: boolean;
                             };
                         } | {
                             /** @constant */
@@ -8507,6 +8522,11 @@ export interface operations {
                                 headerRow: boolean;
                                 /** @enum {string} */
                                 null: "empty" | "never";
+                            } | {
+                                /** @constant */
+                                kind: "xlsx";
+                                sheet: string;
+                                headerRow: boolean;
                             };
                             where?: components["schemas"]["sampleConnectionBody_schema3"];
                         };
@@ -26816,6 +26836,11 @@ export interface operations {
                                     headerRow: boolean;
                                     /** @enum {string} */
                                     null: "empty" | "never";
+                                } | {
+                                    /** @constant */
+                                    kind: "xlsx";
+                                    sheet: string;
+                                    headerRow: boolean;
                                 };
                             } | {
                                 /** @constant */
@@ -26841,6 +26866,11 @@ export interface operations {
                                     headerRow: boolean;
                                     /** @enum {string} */
                                     null: "empty" | "never";
+                                } | {
+                                    /** @constant */
+                                    kind: "xlsx";
+                                    sheet: string;
+                                    headerRow: boolean;
                                 };
                                 where?: components["schemas"]["getQueryDefinition200_schema3"];
                             };
@@ -27311,6 +27341,11 @@ export interface operations {
                                 headerRow: boolean;
                                 /** @enum {string} */
                                 null: "empty" | "never";
+                            } | {
+                                /** @constant */
+                                kind: "xlsx";
+                                sheet: string;
+                                headerRow: boolean;
                             };
                         } | {
                             /** @constant */
@@ -27336,6 +27371,11 @@ export interface operations {
                                 headerRow: boolean;
                                 /** @enum {string} */
                                 null: "empty" | "never";
+                            } | {
+                                /** @constant */
+                                kind: "xlsx";
+                                sheet: string;
+                                headerRow: boolean;
                             };
                             where?: components["schemas"]["recordQueryDefinitionVersionBody_schema3"];
                         };
@@ -27596,6 +27636,11 @@ export interface operations {
                                     headerRow: boolean;
                                     /** @enum {string} */
                                     null: "empty" | "never";
+                                } | {
+                                    /** @constant */
+                                    kind: "xlsx";
+                                    sheet: string;
+                                    headerRow: boolean;
                                 };
                             } | {
                                 /** @constant */
@@ -27621,6 +27666,11 @@ export interface operations {
                                     headerRow: boolean;
                                     /** @enum {string} */
                                     null: "empty" | "never";
+                                } | {
+                                    /** @constant */
+                                    kind: "xlsx";
+                                    sheet: string;
+                                    headerRow: boolean;
                                 };
                                 where?: components["schemas"]["recordQueryDefinitionVersion200_schema3"];
                             };
@@ -27869,6 +27919,11 @@ export interface operations {
                                         headerRow: boolean;
                                         /** @enum {string} */
                                         null: "empty" | "never";
+                                    } | {
+                                        /** @constant */
+                                        kind: "xlsx";
+                                        sheet: string;
+                                        headerRow: boolean;
                                     };
                                 } | {
                                     /** @constant */
@@ -27894,6 +27949,11 @@ export interface operations {
                                         headerRow: boolean;
                                         /** @enum {string} */
                                         null: "empty" | "never";
+                                    } | {
+                                        /** @constant */
+                                        kind: "xlsx";
+                                        sheet: string;
+                                        headerRow: boolean;
                                     };
                                     where?: components["schemas"]["recordQueryDefinitionVersion400_schema3"];
                                 };
@@ -28203,6 +28263,11 @@ export interface operations {
                                         headerRow: boolean;
                                         /** @enum {string} */
                                         null: "empty" | "never";
+                                    } | {
+                                        /** @constant */
+                                        kind: "xlsx";
+                                        sheet: string;
+                                        headerRow: boolean;
                                     };
                                 } | {
                                     /** @constant */
@@ -28228,6 +28293,11 @@ export interface operations {
                                         headerRow: boolean;
                                         /** @enum {string} */
                                         null: "empty" | "never";
+                                    } | {
+                                        /** @constant */
+                                        kind: "xlsx";
+                                        sheet: string;
+                                        headerRow: boolean;
                                     };
                                     where?: components["schemas"]["recordQueryDefinitionVersion409_schema3"];
                                 };
@@ -31658,6 +31728,11 @@ export interface operations {
                                 headerRow: boolean;
                                 /** @enum {string} */
                                 null: "empty" | "never";
+                            } | {
+                                /** @constant */
+                                kind: "xlsx";
+                                sheet: string;
+                                headerRow: boolean;
                             };
                         } | {
                             /** @constant */
@@ -31683,6 +31758,11 @@ export interface operations {
                                 headerRow: boolean;
                                 /** @enum {string} */
                                 null: "empty" | "never";
+                            } | {
+                                /** @constant */
+                                kind: "xlsx";
+                                sheet: string;
+                                headerRow: boolean;
                             };
                             where?: components["schemas"]["createQueryDefinitionBody_schema3"];
                         };
@@ -31943,6 +32023,11 @@ export interface operations {
                                     headerRow: boolean;
                                     /** @enum {string} */
                                     null: "empty" | "never";
+                                } | {
+                                    /** @constant */
+                                    kind: "xlsx";
+                                    sheet: string;
+                                    headerRow: boolean;
                                 };
                             } | {
                                 /** @constant */
@@ -31968,6 +32053,11 @@ export interface operations {
                                     headerRow: boolean;
                                     /** @enum {string} */
                                     null: "empty" | "never";
+                                } | {
+                                    /** @constant */
+                                    kind: "xlsx";
+                                    sheet: string;
+                                    headerRow: boolean;
                                 };
                                 where?: components["schemas"]["createQueryDefinition200_schema3"];
                             };
@@ -32216,6 +32306,11 @@ export interface operations {
                                         headerRow: boolean;
                                         /** @enum {string} */
                                         null: "empty" | "never";
+                                    } | {
+                                        /** @constant */
+                                        kind: "xlsx";
+                                        sheet: string;
+                                        headerRow: boolean;
                                     };
                                 } | {
                                     /** @constant */
@@ -32241,6 +32336,11 @@ export interface operations {
                                         headerRow: boolean;
                                         /** @enum {string} */
                                         null: "empty" | "never";
+                                    } | {
+                                        /** @constant */
+                                        kind: "xlsx";
+                                        sheet: string;
+                                        headerRow: boolean;
                                     };
                                     where?: components["schemas"]["createQueryDefinition400_schema3"];
                                 };
@@ -32550,6 +32650,11 @@ export interface operations {
                                         headerRow: boolean;
                                         /** @enum {string} */
                                         null: "empty" | "never";
+                                    } | {
+                                        /** @constant */
+                                        kind: "xlsx";
+                                        sheet: string;
+                                        headerRow: boolean;
                                     };
                                 } | {
                                     /** @constant */
@@ -32575,6 +32680,11 @@ export interface operations {
                                         headerRow: boolean;
                                         /** @enum {string} */
                                         null: "empty" | "never";
+                                    } | {
+                                        /** @constant */
+                                        kind: "xlsx";
+                                        sheet: string;
+                                        headerRow: boolean;
                                     };
                                     where?: components["schemas"]["createQueryDefinition409_schema3"];
                                 };

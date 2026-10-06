@@ -12,7 +12,7 @@ const DELIMITERS: Readonly<Record<FormatDraft['delimiter'], string>> = {
 
 /**
  * The format rows are read in, whatever carried them (the D6 plan, D6-F): JSON at a pointer, JSON
- * Lines, or CSV with its delimiter, its header and its convention for an empty field.
+ * Lines, CSV with its delimiter, its header and its convention for an empty field, or XLSX by sheet.
  */
 export function FormatFields<Draft extends FormatDraft>({
   draft,
@@ -38,9 +38,35 @@ export function FormatFields<Draft extends FormatDraft>({
             <option value="json">JSON</option>
             <option value="jsonLines">JSON Lines, an object a line</option>
             <option value="csv">CSV</option>
+            <option value="xlsx">XLSX, one sheet of a workbook</option>
           </select>
         )}
       </Choice>
+      {draft.format === 'xlsx' && (
+        <>
+          <label>
+            Sheet
+            <input
+              value={draft.sheet}
+              spellCheck={false}
+              placeholder="Sheet1"
+              onChange={(event) => onChange({ ...draft, sheet: event.target.value })}
+            />
+          </label>
+          <label className={styles['check']}>
+            <input
+              type="checkbox"
+              checked={draft.headerRow}
+              onChange={(event) => onChange({ ...draft, headerRow: event.target.checked })}
+            />
+            The first row names the columns
+          </label>
+          <p className={styles['hint']}>
+            A column is read by its header, or by its letter, A for the first. A date or a time is
+            read from the workbook&apos;s own date system; a formula by the value it last saved.
+          </p>
+        </>
+      )}
       {draft.format === 'json' && (
         <>
           <label>

@@ -39,8 +39,10 @@ import { eachSheetRow, type XlsxCell } from './xlsx.js';
  * about 410 MiB for 20 MiB, 371 for 16 and 272 for 12 - so it takes 12 MiB. CSV, a record at a time
  * by `csv-parse`, is denser in rows than JSON Lines, and peaked on Linux at 375 to 401 MiB for 12 MiB
  * (75,000 rows), 339 to 354 for 8 and 233 for 6 (37,800 rows, three runs alike) - so it takes 6 MiB.
- * XLSX's ceiling holds both the body and every byte inflated from it, across every part read.
- * Past its ceiling a body is `byte_limit`.
+ * XLSX's ceiling holds both the body and every byte inflated from it, across every part read (D6.3):
+ * a workbook of 16 columns, numbers and shared strings in turn, peaked on Linux at 203 to 218 MiB
+ * inflating 15 MiB (18,000 rows), 208 to 221 for 19, 232 to 291 for 23 and 307 to 319 for 24 - so it
+ * takes 16 MiB. Past its ceiling a body is `byte_limit`.
  */
 export const JSON_MAX_BYTES = 4 * 1024 * 1024;
 export const JSON_LINES_MAX_BYTES = 12 * 1024 * 1024;

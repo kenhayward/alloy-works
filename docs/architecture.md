@@ -2766,7 +2766,8 @@ by [the D1 plan](plans/2026-09-30-d1-connections-and-the-connector.md): a connec
 PostgreSQL, its credential set without anybody ever seeing it again, a test and a list of its tables.
 SQL Server is deferred past the first release
 ([ADR-0038](decisions/0038-sql-server-is-deferred-past-the-first-release.md)), so PostgreSQL is the
-one database a connection reaches.
+one database a connection reaches; D6 adds HTTPS APIs and S3 buckets
+([below](#http-and-s3-sources-and-the-file-formats)).
 D2 adds the query definitions written against one and run as a sample
 ([below](#query-definitions-and-the-sample-run)), and D3 the results a document's bindings hold
 ([datasets and resolutions](#datasets-and-resolutions)).
@@ -3477,7 +3478,7 @@ offers image columns alone (`changeFigureBinding`).
 D7 of [data.md](design/data.md), built by [the D7 plan](plans/2026-10-06-d7-end-user-identity.md): a
 PostgreSQL connection may declare `identity: {kind: 'endUser', mechanism: 'asserted', attribute:
 'email' | 'subject'}`, and a run as the person acting is decided by the source's own grants and
-row-level security. The delegated token moved to D6. **Asserted identity trusts the source's
+row-level security. The delegated token moved to D6, which deferred it (ADR-0041). **Asserted identity trusts the source's
 function, view and policy authors**
 ([ADR-0040](decisions/0040-asserted-identity-trusts-the-sources-function-authors.md)); the
 administrator's half is [a guide](guides/asserted-identity-on-postgresql.md).
@@ -3524,6 +3525,69 @@ the ended session's event stream closes (IAM-082).
 | `deploy/sources/postgres.sql`                   | `asserter`, Ada's and Grace's roles, `sample.reading` by site               |
 | `tests/e2e: src/asserted.test.ts`               | Two people's rows; a sign-out and a revocation stopping a run at the source |
 
+## HTTP and S3 sources, and the file formats
+
+D6 of [data.md](design/data.md), built by [the D6 plan](plans/2026-10-06-d6-http-s3-and-files.md)
+(D6.1 to D6.3); its delegated provider token is deferred by
+[ADR-0041](decisions/0041-the-delegated-provider-token-is-deferred-past-the-first-release.md).
+
+**Connections by type.** A connection's `type` is `postgres`, `http` or `s3`, and never changes across
+versions. `http` holds `{baseUrl, secretHeader}`, its secret sent verbatim in that header and never in
+a URL; `s3` holds `{endpoint, region, bucket, pathStyle}` and a static key pair, sealed as JSON of its
+two members (`CredentialBody` is `{secret}` or `{accessKeyId, secretAccessKey}`). Each type declares
+its identity mechanisms: `postgres` asserted, `http` none until the delegated token, `s3` none
+(DAT-077, DAT-078). The connector's `work.ts` chooses a source by type, each answering `test`, `run`
+and a sample's `describe` of a file or a request; a describe of tables is PostgreSQL's alone
+(`describe_not_supported`). A fetch must suit its connection's type - `sql` or `builder` on a
+database, `http` on an API, `file` on a bucket - on save, on a sample and at the connector's door.
+
+**One guarded HTTPS client** (`apps/connector/src/https.ts`, D6-B) carries the API, S3 and, later, the
+token exchange: the host guarded and resolved once and the socket pinned to the checked address
+(`lookup`), `servername` the host, HTTPS only, no agent or proxy, **no redirect followed** - a 3xx,
+401, 403 or 407 is `connection_failed`, so a redirect to loopback reads as a guarded host does - any
+other non-2xx `source_refused` with its status alone. One deadline covers the whole exchange; the
+body is counted raw and again decoded (`gzip`, `deflate`, `br`), `Content-Length` and RFC 9530's
+`Content-Digest` checked, an ETag never. Development's and CI's sources are trusted by
+`CONNECTOR_CA_FILE` (`deploy/sources/ca-bundle.pem`), which production names none of.
+
+**HTTP** (`http-source.ts`): a request template (D6-E) bound position by position by the domain's
+`bindHttp` - path segments, query pairs, headers and a JSON body's leaves, each fixed or a parameter,
+refused per position (DAT-081). **S3** (`s3.ts`): a SigV4 `GET` or `HEAD` by `@smithy/signature-v4`
+through the same client, path-style or virtual-hosted, the bucket's host guarded too; `HeadBucket` is
+the test; `x-amz-checksum-*` checked over raw bytes. A file's key is a template of whole segments,
+its rows filtered by typed comparisons over the declared columns (`file-filter.ts`) and put in the
+declared order by the connector (D6-J). Provenance records the template or the bucket, key and
+version, never a URL (D6-L).
+
+**The readers** (`apps/connector/src/formats/`, in the child, HTTP and S3 alike through `rows.ts`):
+JSON at a pointer and JSON Lines by `JSON.parse` with the reviver's source text after a depth-64 scan,
+every number its text and a nested value its canonical text (D6-G); CSV by `csv-parse`, quoting
+deciding null; XLSX by the product's own reader (`zip.ts`, `xlsx.ts`, `serial.ts`): the central
+directory read and every local header checked against it, overlapping entries and ZIP64 refused, at
+most 10,000 entries, every inflated byte of every part counted by fflate's `Inflate` a 4 KiB slice at
+a time, XML by `saxes` with any `DOCTYPE` refused; one sheet by name, a number by its stored text, a
+serial converted in the workbook's date system, serial 60 `nonexistent_date`, an error or uncached
+formula `cell_error`. **Each format's ceiling, under the byte limit, was measured on Linux** in the
+child against D2's 371 MiB run at the ceilings: JSON 4 MiB, JSON Lines 12 MiB, CSV 6 MiB, XLSX 16 MiB
+of body and inflated bytes (203 to 218 MiB peak).
+
+**Proven together**: `cross-source.test.ts` reads case 6's table from PostgreSQL and from JSON, JSON
+Lines, CSV and XLSX over HTTP and S3 to one checksum in four zones; `hostile-files.test.ts` holds each
+reader to a named failure over a hostile file within the memory bound; `tests/e2e`'s
+`file-sources.test.ts` resolves and publishes an XLSX over HTTP and a CSV from S3.
+
+| Where                                                                | What                                                                             |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `domain: src/data/connection.ts`, `s3.ts`                            | The `http` and `s3` arms, the key pair, mechanisms by type                       |
+| `domain: src/data/http-template.ts`, `json-text.ts`                  | `bindHttp`; JSON by source text, nested values' canonical text                   |
+| `domain: src/data/definition.ts`, `file-filter.ts`                   | The `http` and `file` fetches, formats, `from` by pointer, header or letter      |
+| `connector: src/https.ts`, `http-source.ts`, `s3.ts`                 | The guarded client; the API and the bucket                                       |
+| `connector: src/formats/`                                            | `rows.ts` and each format's reader and ceiling; `zip.ts`, `xlsx.ts`, `serial.ts` |
+| `service: src/data/connections.ts`                                   | Create, test, sample and describe per type; the key pair write-only              |
+| `web: src/data/HttpFields.tsx`, `FileFields.tsx`, `FormatFields.tsx` | A request, a file's key and filters, each format                                 |
+| `deploy/sources/http`, `deploy/sources/s3`                           | `source-http` and `source-s3` in the `sources` profile; case 6's files           |
+| `tests/e2e: src/file-sources.test.ts`                                | An XLSX over HTTP and a CSV from S3 resolved and published                       |
+
 ## Containers and images
 
 One `Dockerfile`, in [`deploy/`](../deploy/) with everything else the system is deployed by, holds
@@ -3537,7 +3601,7 @@ what keeps `node_modules` and the tests out of that context:
 | `tools`     | The whole workspace, `tsx` included                                                                                                                                                                                                                           | The compose stack's setup, and the stand-in provider |
 | `service`   | `apps/service` and its production dependencies, plus the built renderer at `/app/renderer`                                                                                                                                                                    | `node dist/server.js` on 8088                        |
 | `worker`    | The same for `apps/worker`, with its pinned faces and publication template, plus the pinned Typst binary, checked against its hash, Debian's `openjdk-17-jre-headless`, and veraPDF's jars and launcher, copied from the pinned `verapdf/cli` image by digest | `node dist/main.js`                                  |
-| `connector` | `apps/connector` and its production dependencies - the domain, the sealing package, `pg` and `zod` - and nothing of the platform's; `dist/child.js` beside `dist/main.js`                                                                                     | `node dist/main.js` on 8090                          |
+| `connector` | `apps/connector` and its production dependencies - the domain, the sealing package, `pg`, `zod`, `@smithy/signature-v4`, `csv-parse`, `fflate` and `saxes` - and nothing of the platform's; `dist/child.js` beside `dist/main.js`                             | `node dist/main.js` on 8090                          |
 
 Neither image carries development tooling, test files or Electron: the install is filtered to the
 workspaces the containers need, and `pnpm deploy` reduces each app to its own production tree. The
