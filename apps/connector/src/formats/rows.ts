@@ -39,7 +39,7 @@ import { countAgrees, eachRow, firstRows } from './json.js';
  */
 export const JSON_MAX_BYTES = 4 * 1024 * 1024;
 export const JSON_LINES_MAX_BYTES = 12 * 1024 * 1024;
-export const CSV_MAX_BYTES = 12 * 1024 * 1024;
+export const CSV_MAX_BYTES = 8 * 1024 * 1024;
 
 /** The most a body of a format may be, under a run's byte limit. */
 export const bodyLimit = (format: DataFormat, bytes: number) =>
