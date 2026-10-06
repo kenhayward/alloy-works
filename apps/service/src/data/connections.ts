@@ -614,12 +614,23 @@ export function connectionHandlers(
             ),
           );
         } catch (error) {
-          if (!(error instanceof AppError) || error.status !== 503) throw error;
-          tested = {
-            outcome: 'failed',
-            failure: failureView(error.code as DataFailureCode),
-            at: new Date().toISOString(),
-          };
+          if (!(error instanceof AppError)) throw error;
+          if (error.code === 'authority_ended') {
+            // The credential is set whatever stopped its test: said as the test's failure (the
+            // review, 2026-10-06), never as a refusal of what was saved.
+            tested = {
+              outcome: 'failed',
+              failure: { code: error.code, attribution: 'product', message: error.message },
+              at: new Date().toISOString(),
+            };
+          } else {
+            if (error.status !== 503) throw error;
+            tested = {
+              outcome: 'failed',
+              failure: failureView(error.code as DataFailureCode),
+              at: new Date().toISOString(),
+            };
+          }
         }
         return tested.outcome === 'failed'
           ? { credential, test: tested, dependents }

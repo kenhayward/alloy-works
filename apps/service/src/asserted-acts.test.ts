@@ -1,10 +1,14 @@
+import { pendingResult, refusePending, uploadForDatasetImage } from '@alloy-works/db';
 import { queryAs } from '@alloy-works/db/testing';
+import type { Provenance } from '@alloy-works/domain';
+import { tenantPrefix } from '@alloy-works/objects';
 import type { RunAnswer } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   binding,
   definitionBody,
   ranOk,
+  sha256,
   startHarness,
   type Cell,
   type Harness,
@@ -208,6 +212,51 @@ describe('acts on a connection that runs as each person', () => {
     }
   });
 
+  it("never asserts an email its provider did not verify, nor a subject of another provider than the environment's own", async () => {
+    const { document, node } = await placed(binding('b1', built.id));
+    const bySubject = await h.connection('By subject, again', h.general, assertedBy('subject'));
+    const definition = await h.definition(bySubject.id, { title: 'By subject', fetch: builtFetch });
+    const subjects = await placed(binding('b1', definition.id));
+    answersAs([['1', 'North']]);
+    const principal = (set: string, value: unknown) =>
+      queryAs(h.db.adminUrl, `update ${h.tenant.schema}.principal set ${set} = $1 where id = $2`, [
+        value,
+        h.ids.grace,
+      ]);
+    const refused = async (document: string, node: string) => {
+      const before = h.connector.asked.length;
+      const answer = await resolve('grace', document, node, { sharesOwnView: true });
+      expect(answer.statusCode, answer.body).toBe(409);
+      expect(answer.json()).toMatchObject({ code: 'identity_unavailable' });
+      expect(h.connector.asked.length).toBe(before);
+    };
+    // An email the provider did not verify names nobody: anybody could claim it.
+    await principal('email_verified', false);
+    try {
+      await refused(document.id, node);
+    } finally {
+      await principal('email_verified', true);
+    }
+    // A subject means a person only at the environment's own provider: Google's could be anybody's.
+    const issuer = (
+      await queryAs(
+        h.db.adminUrl,
+        `select issuer from ${h.tenant.schema}.principal where id = $1`,
+        [h.ids.grace],
+      )
+    ).rows[0] as { issuer: string };
+    await principal('issuer', 'https://accounts.google.com');
+    try {
+      await refused(subjects.document.id, subjects.node);
+    } finally {
+      await principal('issuer', issuer.issuer);
+    }
+    expect(
+      (await resolve('grace', subjects.document.id, subjects.node, { sharesOwnView: true }))
+        .statusCode,
+    ).toBe(200);
+  });
+
   it('describes and samples as the caller, and tests as the account', async () => {
     h.connector.mode = 'answer';
     answersAs([['1', 'North']]);
@@ -285,6 +334,44 @@ describe('acts on a connection that runs as each person', () => {
     expect(accepted.statusCode, accepted.body).toBe(403);
     expect(accepted.json()).toMatchObject({ code: 'identity_differs', binding: 'b1' });
     expect(await recorded()).toEqual(before);
+  });
+
+  it("finishes a pending result that is a person's own view for them alone, identity_differs for anybody else", async () => {
+    const { document, node } = await placed(binding('b1', built.id));
+    answersAs([['1', 'North']]);
+    await resolve('ada', document.id, node, { sharesOwnView: true });
+    const provenance = (await stateOf('ada', document.id)).held!.provenance as Provenance;
+    // A pending result of Ada's view that names Grace as the one following it: no route makes one,
+    // so it is written here, and refused, as an image refused would leave it.
+    const pending = await h.tenantDb.withTenant(h.tenant, async (trx) => {
+      const { upload } = await uploadForDatasetImage(trx, {
+        spaceId: h.general,
+        uploader: h.ids.grace!,
+        key: `${tenantPrefix(h.tenant)}sha256/${sha256('an image')}`,
+        format: 'png',
+        bytes: 1,
+      });
+      const made = await pendingResult(trx, {
+        act: 'resolve',
+        document: document.id,
+        node,
+        binding: 'b1',
+        digest: sha256('a binding'),
+        holding: null,
+        session: null,
+        provenance,
+        uploads: [upload.id],
+        by: h.ids.grace!,
+      });
+      await refusePending(trx, made.id, { code: 'image_refused', attribution: 'query' });
+      return made.id;
+    });
+    const followed = await h.call('grace', 'GET', `/v1/datasets/pending/${pending}`);
+    expect(followed.statusCode, followed.body).toBe(200);
+    expect(followed.json()).toMatchObject({
+      state: 'done',
+      result: { binding: 'b1', failure: { code: 'identity_differs' } },
+    });
   });
 
   it("DAT-091 holds one's own view only where the caller acknowledges that everybody who may read the document will see it, resolving or accepting", async () => {

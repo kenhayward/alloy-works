@@ -1,4 +1,5 @@
-import { queryAs } from '@alloy-works/db/testing';
+import { holdingTransaction, queryAs, untilWaitingOnLocks } from '@alloy-works/db/testing';
+import { hashToken } from './sessions.js';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { binding, ranOk, startHarness, type Harness } from './test/bindings-harness.js';
 
@@ -101,6 +102,60 @@ describe('an act stops when the authority it runs by ends', () => {
     expect(closed.at - at).toBeLessThan(2000);
     expect(await recorded()).toEqual(before);
     expect(stoppedLines().at(-1)).toMatchObject({ reason: 'signed_out' });
+  });
+
+  it('records nothing once a sign-out that was committing as the result was recorded has committed', async () => {
+    const { document, node } = await placed();
+    const ada = await h.session('ada');
+    holdAtTheSource();
+    const before = await recorded();
+    const reached = h.connector.reached.length;
+    const asked = h.call(ada, 'POST', `/v1/documents/${document.id}/bindings/resolve`, {
+      bindings: [{ node, binding: 'b1' }],
+    });
+    await reaching(reached);
+    // A sign-out under way: its session's row deleted, not yet committed, as the source answers.
+    const commit = await holdingTransaction(
+      h.db.adminUrl,
+      `delete from ${h.tenant.schema}.session where token_hash = $1`,
+      [hashToken(h.cookies[ada]!.split('=')[1]!)],
+    );
+    release();
+    // The recording transaction waits on the row the sign-out holds, rather than read past it.
+    const waited = await untilWaitingOnLocks(h.db.adminUrl, 1).then(
+      () => true,
+      () => false,
+    );
+    await commit();
+    const answer = await asked;
+    expect(waited).toBe(true);
+    // Refused: the session ended as it recorded, or its watch saw it go.
+    expect([401, 409], answer.body).toContain(answer.statusCode);
+    expect(await recorded()).toEqual(before);
+  });
+
+  it('answers a credential set as set, its test stopped by a sign-out as it ran', async () => {
+    // A connection of its own: its last test is left failed, which refuses SQL on it (DAT-103).
+    const connection = await h.connection('Credential');
+    const ada = await h.session('ada');
+    holdAtTheSource();
+    const reached = h.connector.reached.length;
+    const asked = h.call(ada, 'PUT', `/v1/connections/${connection.id}/credential`, {
+      secret: 'another-invented-password',
+    });
+    await reaching(reached);
+    expect((await h.call(ada, 'POST', '/v1/sign-out')).statusCode).toBe(204);
+    const answer = await asked;
+    expect(answer.statusCode, answer.body).toBe(200);
+    expect(answer.json()).toMatchObject({
+      credential: { set: true },
+      test: { outcome: 'failed', failure: { code: 'authority_ended', attribution: 'product' } },
+    });
+    // Set, as answered: the connection's credential is the one just sealed.
+    const read = await h.call('ada', 'GET', `/v1/connections/${connection.id}`);
+    expect(read.json<{ credential: { setAt: string } }>().credential.setAt).toBe(
+      answer.json<{ credential: { setAt: string } }>().credential.setAt,
+    );
   });
 
   it('stops a sample on a replica that missed the notice, by reading its session again each second', async () => {

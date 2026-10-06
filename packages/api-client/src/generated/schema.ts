@@ -6533,7 +6533,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Set: who set it and when, never the credential, and the test run straight after */
+            /** @description Set: who set it and when, never the credential, and the test run straight after. A test stopped because the session was signed out, or the token revoked, meanwhile fails `authority_ended`, the credential still set */
             200: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

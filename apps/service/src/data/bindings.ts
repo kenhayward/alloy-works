@@ -25,7 +25,6 @@ import {
   datasetName,
   documentsHolding,
   documentsResolving,
-  findApiToken,
   finishPending,
   holdObject,
   inSavepoint,
@@ -98,7 +97,7 @@ import type { z } from 'zod';
 import { authoriseAt, callerOf, notFound, type Authorised, type Caller } from '../access.js';
 import { Accepted, AfterCommit } from '../after-commit.js';
 import { AppError, storageUnavailable } from '../errors.js';
-import { findSession, hashToken } from '../sessions.js';
+import { hashToken } from '../sessions.js';
 import { bearerSecret, isBearer } from '../tokens.js';
 import { refused } from '../wire-codes.js';
 import { actingKey, ownViewOf, provenanceIdentity, runIdentity, type Acting } from './acting.js';
@@ -739,19 +738,37 @@ async function inTurn<T, R>(
 /**
  * Whether the request's session or token is still one this environment honours for the same
  * principal: a session that ended, or a token revoked, while the source answered records nothing
- * (D3-H).
+ * (D3-H). Its row is read `FOR SHARE` and held to the commit, so a sign-out or a revocation committing
+ * meanwhile either lands first, and nothing is recorded, or waits until the record has committed (the
+ * review, 2026-10-06).
  */
 async function stillSignedIn(trx: TenantTransaction, request: FastifyRequest): Promise<boolean> {
   const principal = request.principal?.principalId;
   const authorization = request.headers.authorization;
+  const now = new Date();
   if (authorization !== undefined && isBearer(authorization)) {
     const secret = bearerSecret(authorization);
-    const holder = secret === undefined ? undefined : await findApiToken(trx, hashToken(secret));
-    return holder !== undefined && holder.principalId === principal;
+    if (secret === undefined) return false;
+    const held = await trx
+      .selectFrom('api_token')
+      .select('principal_id')
+      .where('token_hash', '=', hashToken(secret))
+      .where('expires_at', '>', now)
+      .forShare()
+      .executeTakeFirst();
+    return held !== undefined && held.principal_id === principal;
   }
   const token = request.cookies[SESSION_COOKIE];
-  const found = token === undefined ? undefined : await findSession(trx, token);
-  return found !== undefined && found.principalId === principal;
+  if (token === undefined) return false;
+  const held = await trx
+    .selectFrom('session')
+    .select('principal_id')
+    .where('token_hash', '=', hashToken(token))
+    .where('expires_at', '>', now)
+    .where('idle_expires_at', '>', now)
+    .forShare()
+    .executeTakeFirst();
+  return held !== undefined && held.principal_id === principal;
 }
 
 /**

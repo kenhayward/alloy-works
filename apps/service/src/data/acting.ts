@@ -32,9 +32,11 @@ export function identityUnavailable(): AppError {
 
 /**
  * Who the caller runs as on this connection version, read in the deciding transaction: the account
- * for a service identity; for an asserted one the principal's email - as verified at sign-in - or
- * subject at its issuer, which must be a PostgreSQL role name, 1 to 63 bytes with no U+0000, or the act
- * is refused `identity_unavailable` before anything runs.
+ * for a service identity; for an asserted one the principal's email, only where its provider verified
+ * it, or its subject, only for a principal of the environment's own organisation provider - a Google
+ * principal's subject could be anybody's there (the review, 2026-10-06). Either must be a PostgreSQL
+ * role name, 1 to 63 bytes with no U+0000, or the act is refused `identity_unavailable` before
+ * anything runs.
  */
 export async function actingOn(
   trx: TenantTransaction,
@@ -49,10 +51,20 @@ export async function actingOn(
   if (principalId === undefined || credential === null) throw identityUnavailable();
   const row = await trx
     .selectFrom('principal')
-    .select(['email', 'subject'])
+    .select(['email', 'email_verified', 'issuer', 'subject'])
     .where('id', '=', principalId)
     .executeTakeFirst();
-  const role = declared.attribute === 'email' ? row?.email : row?.subject;
+  let role: string | null | undefined;
+  if (declared.attribute === 'email') {
+    role = row?.email_verified === true ? row.email : undefined;
+  } else {
+    const organisation = await trx
+      .selectFrom('identity_provider')
+      .select('issuer')
+      .executeTakeFirst();
+    role =
+      organisation !== undefined && row?.issuer === organisation.issuer ? row.subject : undefined;
+  }
   if (role === undefined || role === null || !assertedRoleSchema.safeParse(role).success) {
     throw identityUnavailable();
   }

@@ -185,6 +185,11 @@ are the connector's to apply: in PostgreSQL the role membership is `WITH INHERIT
 and the assertion is `SET LOCAL ROLE` in a transaction the connector opens and ends; in SQL Server a
 `read_only` `SESSION_CONTEXT` key or `EXECUTE AS USER ... WITH COOKIE`, whichever `assertion` names;
 where the source cannot fail loud, the connector refuses an end-user query it has not asserted for.
+**Each person's role is `NOLOGIN`, creates nothing and owns nothing**, and the account owns no
+function, procedure or view and creates in no schema: PostgreSQL checks a later `set_config('role')`
+against the account, which may set every person's role, so SQL a person owned in a query's path could
+read as anybody. The connector refuses otherwise, `identity_role_unsafe` and `account_holds_privilege`
+(the review, 2026-10-06).
 
 **Retiring is a version** with `retired: true` and the settings unchanged. A retired connection runs
 nothing and cannot be named by a new definition; everything stored from it still reads, and every
@@ -955,7 +960,8 @@ read answered `binding_missing`, in the words one that is not there is, naming t
 and the document, and a connection they may not use `forbidden`, a plain refusal as the route's 403 is
 for any refusal - recording nothing. It **queries nothing**. Where the version was fetched under the accepting
 person's own identity, the request must carry `sharesOwnView: true`, or it is refused,
-`acknowledgement_required`: the screen's warning that everybody who may read the document will see it
+`acknowledgement_required`: the screen's warning that everybody who may read the document will see it,
+and, once published, everybody who may read the publication, since an accepted own view prints in it,
 is `bindings.md`'s (DAT-091), and the route will not accept without it. **Acts on one binding take turns**: an
 accept, and a resolve's and a check's recording transactions, take a transaction-scoped lock on each
 document, node and binding they read what is held of before reading it, so two accepts each replacing
