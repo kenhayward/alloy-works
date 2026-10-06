@@ -1,6 +1,7 @@
 import {
   checkTree,
   generatePostgres,
+  pointerTo,
   type AggregateName,
   type CanonicalValue,
   type ColumnType,
@@ -13,6 +14,15 @@ import {
   type SelectItem,
   type ValueType,
 } from '@alloy-works/domain';
+
+import {
+  formatOf,
+  httpDraftOf,
+  NEW_HTTP,
+  requestText,
+  templateOf,
+  type HttpDraft,
+} from './httpDraft.js';
 
 /**
  * A query definition as its page holds it while it is written (the D2 plan, D2-U): every field as the
@@ -86,6 +96,8 @@ export interface ColumnDraft {
   readonly type: TypeDraft;
   /** Whether the author has confirmed its type (DAT-105). */
   readonly confirmed: boolean;
+  /** Where an HTTP response's column is read from its row, as its sample proposed (the D6 plan). */
+  readonly pointer?: string;
 }
 
 /** A column of the table or view the builder reads, returned under a name of the author's. */
@@ -147,9 +159,13 @@ export interface DefinitionDraft {
   readonly title: string;
   readonly description: string;
   readonly connection: string;
-  /** Whether the query is built (D4) or written as SQL, which needs write_sql. */
-  readonly mode: 'builder' | 'sql';
+  /**
+   * Whether the query is built (D4) or written as SQL, which needs write_sql; or, on an HTTP
+   * connection, a request template (the D6 plan).
+   */
+  readonly mode: 'builder' | 'sql' | 'http';
   readonly builder: BuilderDraft;
+  readonly http: HttpDraft;
   readonly sql: string;
   readonly parameters: readonly ParameterDraft[];
   readonly columns: readonly ColumnDraft[];
@@ -205,6 +221,7 @@ export function newDraft(limits: {
     connection: '',
     mode: 'builder',
     builder: NEW_BUILDER,
+    http: NEW_HTTP,
     sql: '',
     parameters: [],
     columns: [],
@@ -563,6 +580,10 @@ export function builderDraftOf(
 export function unshownReason(definition: QueryDefinition): string | null {
   // Read by destructuring: the renderer's API test flags any member named for the network.
   const { fetch: statement } = definition;
+  if (statement.kind === 'http') {
+    const held = httpDraftOf(statement);
+    return 'reason' in held ? held.reason : null;
+  }
   if (statement.kind !== 'builder') return null;
   const draft = builderDraftOf(statement.query, definition.order);
   return 'reason' in draft ? draft.reason : null;
@@ -619,12 +640,19 @@ function parts(draft: DefinitionDraft) {
   for (const column of draft.columns) {
     const type = columnTypeOf(column.type, draft.columns);
     if (typeof type === 'string') return `The column ${column.name}: ${type}`;
-    columns.push({ name: column.name, from: { column: column.name }, type });
+    // An HTTP response's column is read by its pointer into the row (the D6 plan, D6-F).
+    const from =
+      draft.mode === 'http'
+        ? { pointer: column.pointer ?? pointerTo(column.name) }
+        : { column: column.name };
+    columns.push({ name: column.name, from, type });
   }
   if (columns.length === 0) {
     return draft.mode === 'builder'
       ? 'Describe the query to propose its columns first.'
-      : 'Describe the statement to propose its columns first.';
+      : draft.mode === 'http'
+        ? 'Sample the request to propose its columns first.'
+        : 'Describe the statement to propose its columns first.';
   }
   const query = draft.mode === 'builder' ? queryOf(draft.builder, draft.order) : null;
   if (typeof query === 'string') return query;
@@ -643,9 +671,15 @@ function parts(draft: DefinitionDraft) {
     connection: draft.connection,
     parameters,
     fetch:
-      query === null
-        ? { kind: 'sql' as const, text: draft.sql }
-        : { kind: 'builder' as const, format: 1 as const, query },
+      draft.mode === 'http'
+        ? {
+            kind: 'http' as const,
+            request: templateOf(draft.http),
+            format: formatOf(draft.http),
+          }
+        : query === null
+          ? { kind: 'sql' as const, text: draft.sql }
+          : { kind: 'builder' as const, format: 1 as const, query },
     columns,
     key: [...draft.key],
     order:
@@ -679,6 +713,7 @@ export function definitionOf(draft: DefinitionDraft): QueryDefinition | string {
 export function sqlOf(definition: QueryDefinition): string {
   // Read by destructuring: the renderer's API test flags any member named for the network.
   const { fetch: statement } = definition;
+  if (statement.kind === 'http') return requestText(statement.request);
   return statement.kind === 'sql' ? statement.text : generatePostgres(definition, {}, 'run').text;
 }
 
@@ -690,12 +725,14 @@ export function draftOf(definition: QueryDefinition): DefinitionDraft {
   const { fetch: statement } = definition;
   const built =
     statement.kind === 'builder' ? builderDraftOf(statement.query, definition.order) : null;
+  const http = statement.kind === 'http' ? httpDraftOf(statement) : null;
   return {
     title: definition.title,
     description: definition.description,
     connection: definition.connection,
-    mode: statement.kind === 'builder' ? 'builder' : 'sql',
+    mode: statement.kind,
     builder: built === null || 'reason' in built ? NEW_BUILDER : built,
+    http: http === null || 'reason' in http ? NEW_HTTP : http,
     sql: statement.kind === 'sql' ? statement.text : '',
     parameters: definition.parameters.map((parameter) => {
       const permitted = parameter.permitted;
@@ -725,6 +762,7 @@ export function draftOf(definition: QueryDefinition): DefinitionDraft {
       sourceType: null,
       type: typeDraftOf(column.type),
       confirmed: true,
+      ...('pointer' in column.from ? { pointer: column.from.pointer } : {}),
     })),
     key: [...definition.key],
     order:
@@ -771,12 +809,16 @@ export function unconfirmed(columns: readonly ColumnDraft[]): ColumnDraft[] {
  * exactly. A built query's limit is left out: it changes how many rows, never which columns.
  */
 export function statementOf(
-  draft: Pick<DefinitionDraft, 'connection' | 'mode' | 'builder' | 'sql' | 'parameters'>,
+  draft: Pick<DefinitionDraft, 'connection' | 'mode' | 'builder' | 'sql' | 'http' | 'parameters'>,
 ) {
   return JSON.stringify([
     draft.connection,
     draft.mode,
-    draft.mode === 'sql' ? draft.sql : { ...draft.builder, limit: '' },
+    draft.mode === 'sql'
+      ? draft.sql
+      : draft.mode === 'http'
+        ? draft.http
+        : { ...draft.builder, limit: '' },
     draft.parameters,
   ]);
 }
@@ -784,7 +826,7 @@ export function statementOf(
 /** The parts of a draft its columns are confirmed for (DAT-105). */
 export type StatementParts = Pick<
   Partial<DefinitionDraft>,
-  'connection' | 'mode' | 'builder' | 'sql' | 'parameters'
+  'connection' | 'mode' | 'builder' | 'sql' | 'http' | 'parameters'
 >;
 
 /**
@@ -836,18 +878,23 @@ export function proposedColumns(
     readonly name: string;
     readonly sourceType: string;
     readonly proposed: ProposedType | null;
+    readonly pointer?: string;
   }[],
   held: readonly ColumnDraft[],
 ): ColumnDraft[] {
-  return described.map((column) => {
+  return described.map((described) => {
+    // An HTTP response's column keeps the pointer its sample read it by.
+    const column = described;
+    const at = described.pointer === undefined ? {} : { pointer: described.pointer };
     const declared = held.find((each) => each.name === column.name);
     const proposed = column.proposed === null ? null : typeDraftOf(column.proposed);
     if (declared !== undefined && (proposed === null || declared.type.base !== '')) {
       if (proposed !== null && asProposed(proposed, declared.type)) {
-        return { ...declared, sourceType: column.sourceType };
+        return { ...declared, ...at, sourceType: column.sourceType };
       }
       return {
         ...declared,
+        ...at,
         sourceType: column.sourceType,
         type: proposed ?? declared.type,
         confirmed: false,
@@ -858,6 +905,7 @@ export function proposedColumns(
       sourceType: column.sourceType,
       type: column.proposed === null ? NO_TYPE : typeDraftOf(column.proposed),
       confirmed: false,
+      ...at,
     };
   });
 }

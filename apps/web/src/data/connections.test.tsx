@@ -358,6 +358,35 @@ describe('the Connections list', () => {
     });
   });
 
+  it('makes an HTTP connection: a base URL and the header its secret is sent in, running as its own secret', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service({ administers: [QUALITY] });
+    render(<Connections client={client} />);
+    await user.click(await screen.findByRole('button', { name: 'New connection' }));
+    const dialog = screen.getByRole('dialog', { name: 'New connection' });
+    await user.selectOptions(within(dialog).getByLabelText('Type'), 'http');
+    // A database's fields give way to the API's, and no choice of whom it runs as.
+    expect(within(dialog).queryByLabelText('Host')).toBeNull();
+    expect(within(dialog).queryByLabelText('Runs as')).toBeNull();
+    await user.type(within(dialog).getByLabelText('Name'), 'Readings API');
+    await user.type(within(dialog).getByLabelText('Base URL'), 'api.example.test/v1');
+    await user.clear(within(dialog).getByLabelText('Secret header'));
+    await user.type(within(dialog).getByLabelText('Secret header'), 'x-api-key');
+    await user.click(within(dialog).getByRole('button', { name: 'Create' }));
+    await waitFor(() => expect(window.location.hash).toBe(`#/connections/${READINGS}`));
+    expect(asked.find((each) => each.method === 'POST')?.body).toEqual({
+      settings: {
+        schemaVersion: 1,
+        name: 'Readings API',
+        description: '',
+        type: 'http',
+        source: { baseUrl: 'https://api.example.test/v1', secretHeader: 'x-api-key' },
+        identity: { kind: 'service' },
+        retired: false,
+      },
+    });
+  });
+
   it('offers no New connection to somebody who administers no space', async () => {
     const { client, asked } = service({ administers: [] });
     render(<Connections client={client} />);
@@ -365,6 +394,36 @@ describe('the Connections list', () => {
     // Every space has been asked about, and none may be administered.
     await waitFor(() => expect(asked.filter((each) => each.path === '/v1/access')).toHaveLength(2));
     expect(screen.queryByRole('button', { name: 'New connection' })).toBeNull();
+  });
+});
+
+describe('an HTTP connection on its own page', () => {
+  const http = settings({
+    name: 'Readings API',
+    type: 'http',
+    source: { baseUrl: 'https://api.example.test/v1', secretHeader: 'x-api-key' },
+  });
+
+  it('shows its base URL and secret header, sets its secret, and lists no tables', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service({ connection: view({ settings: http }) });
+    render(<ConnectionPage client={client} id={READINGS} />);
+    await screen.findByRole('heading', { name: 'Readings API' });
+    expect(screen.getByText('HTTPS API, in General')).toBeInTheDocument();
+    // Its type is not offered to change; its fields are the API's.
+    expect(screen.queryByLabelText('Type')).toBeNull();
+    expect(screen.getByLabelText('Base URL')).toHaveValue('https://api.example.test/v1');
+    expect(screen.getByLabelText('Secret header')).toHaveValue('x-api-key');
+    expect(screen.queryByRole('button', { name: 'List tables' })).toBeNull();
+    await user.type(screen.getByLabelText('Secret'), CANARY);
+    await user.click(screen.getByRole('button', { name: 'Set' }));
+    await waitFor(() =>
+      expect(asked.some((each) => each.method === 'PUT' && each.path.endsWith('/credential'))).toBe(
+        true,
+      ),
+    );
+    expect(screen.getByLabelText('Secret')).toHaveValue('');
+    expect(document.body.textContent).not.toContain(CANARY);
   });
 });
 

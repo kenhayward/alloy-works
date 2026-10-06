@@ -46,6 +46,8 @@ export interface DefinitionPlaces {
   readonly connections: readonly Place[];
   /** Those of them on which the caller may write SQL as well (DAT-101). */
   readonly sql: ReadonlySet<string>;
+  /** Those of them that reach an HTTPS API, whose query is a request template (the D6 plan). */
+  readonly http: ReadonlySet<string>;
 }
 
 /**
@@ -83,6 +85,11 @@ export function useDefinitionPlaces(client: Client): DefinitionPlaces | null {
           );
         const readableSpaces = named('items' in spaces ? spaces.items : [], false);
         const liveConnections = named('items' in connections ? connections.items : [], true);
+        const httpConnections = new Set(
+          ('items' in connections ? connections.items : []).flatMap((item: unknown) =>
+            isRecord(item) && typeof item.id === 'string' && item.type === 'http' ? [item.id] : [],
+          ),
+        );
         const [editable, atConnections] = await Promise.all([
           Promise.all(
             readableSpaces.map((each) => permitsAt(client, `space:${each.id}`, ['edit'])),
@@ -97,11 +104,16 @@ export function useDefinitionPlaces(client: Client): DefinitionPlaces | null {
           setPlaces({
             spaces: readableSpaces.filter((_, at) => editable[at]),
             connections: liveConnections.filter((_, at) => usable[at]),
-            sql: new Set(liveConnections.filter((_, at) => writable[at]).map((each) => each.id)),
+            sql: new Set(
+              liveConnections
+                .filter((each, at) => writable[at] && !httpConnections.has(each.id))
+                .map((each) => each.id),
+            ),
+            http: httpConnections,
           });
         }
       } catch {
-        if (current) setPlaces({ spaces: [], connections: [], sql: new Set() });
+        if (current) setPlaces({ spaces: [], connections: [], sql: new Set(), http: new Set() });
       }
     })();
     return () => {

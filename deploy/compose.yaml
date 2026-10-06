@@ -169,6 +169,8 @@ services:
       CONNECTOR_SEALING_KEY: ZGV2ZWxvcG1lbnQtb25seS1zZWFsaW5nLWtleS0wMDE=
       CONNECTOR_DENY: none
       LOG_LEVEL: info
+      # The development CA `source-http` is signed by, trusted beside the system's: never in production.
+      CONNECTOR_CA_FILE: /run/alloy/source-ca.pem
     # Root with three capabilities and no others: to run each child as a user of its own, and to kill
     # it (deploy/Dockerfile says why root). Read-only, so neither it nor a child writes a file another
     # child could read. A private IPC namespace (`ipc: none`: no /dev/shm, and /dev/mqueue a read-only
@@ -202,6 +204,8 @@ services:
     # counted at the child's socket and stopped past the run's limit, but a Buffer lives outside the
     # heap `--max-old-space-size` bounds, and eight children at the ceiling hold about 200 MiB each.
     mem_limit: 3g
+    volumes:
+      - ./sources/http/ca.pem:/run/alloy/source-ca.pem:ro
     networks:
       - connector-private
       - connector-egress
@@ -247,6 +251,34 @@ services:
       interval: 2s
       timeout: 5s
       retries: 45
+
+  # Development and CI only, in the `sources` profile: a tenant's own HTTPS API (the D6 plan, task
+  # 1), the fake the connector's suite runs, answering at https://source-http/v1 with the invented key
+  # `source-http-dev-key` in `x-api-key`. Its certificate is the development CA's beside it, which the
+  # connector here trusts (CONNECTOR_CA_FILE) and production never names. On `connector-egress` alone,
+  # publishing no port, so only the connector reaches it.
+  source-http:
+    image: node:24-bookworm-slim
+    profiles: [sources]
+    command: ['node', '/srv/http/fake-api.mjs']
+    environment:
+      PORT: '443'
+      CERT_DIR: /srv/http
+    volumes:
+      - ./sources/http:/srv/http:ro
+    networks:
+      - connector-egress
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('node:net').connect(443, '127.0.0.1').on('connect', () => process.exit(0)).on('error', () => process.exit(1))",
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 30
 
 # The connector's two networks (the D1 plan, D1-I): internal, so nothing on them is routed anywhere
 # else, and with no address for the host on their bridge, so no process the host runs - and no port

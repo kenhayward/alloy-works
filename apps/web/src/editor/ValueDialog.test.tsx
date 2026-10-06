@@ -299,6 +299,7 @@ describe('the Value dialog (the B2 plan, task 4)', () => {
       'scale',
       'zone',
       'variation',
+      'position',
     ]);
     const fancy = new RegExp(`[${String.fromCodePoint(0x2013, 0x2014)}]`);
     for (const words of [...Object.values(RUNS_AS), ...Object.values(PARAMETER_WORDS)]) {
