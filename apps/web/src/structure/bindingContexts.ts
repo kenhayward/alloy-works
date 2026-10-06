@@ -18,8 +18,28 @@ import type { BindingContext, BindingFailureHeld, BindingHeld } from '@alloy-wor
  * member by member, as every body the client hands back is, since its types are `any` underneath.
  */
 
-/** What a take gave, or that the result could not be read to take it (B1-H). */
-export type Taken = TakeOutcome | { readonly unavailable: true };
+/**
+ * An image a take gave, as the view answers it (the B6 plan, B6-G): with the asset version the result's
+ * provenance admitted it as, whose bytes the page draws.
+ */
+export type TakenImage = Extract<TakeOutcome, { readonly image: unknown }> & {
+  readonly assetVersion: string;
+};
+
+/** Why an image cannot stand where its binding is placed, as the view decides it (B6-D). */
+export type PlacementFailure = 'value_not_image' | 'image_not_placeable';
+
+const PLACEMENT_FAILURES: readonly unknown[] = ['value_not_image', 'image_not_placeable'];
+
+/**
+ * What a take gave where its binding is placed - a value, an image with its asset version, or why
+ * there is none, its placement among the reasons - or that the result could not be read (B1-H).
+ */
+export type Taken =
+  | Exclude<TakeOutcome, { readonly image: unknown }>
+  | TakenImage
+  | { readonly failure: PlacementFailure }
+  | { readonly unavailable: true };
 
 /** A provenance record as the view shows it: what only a definition's reader may see is null. */
 export interface ProvenanceShown {
@@ -90,9 +110,17 @@ const text = (value: unknown): string | undefined =>
   typeof value === 'string' ? value : undefined;
 
 function takenIn(value: unknown): Taken | null {
-  if (isRecord(value) && value.unavailable === true) return { unavailable: true };
-  const parsed = takeOutcomeSchema.safeParse(value);
-  return parsed.success ? parsed.data : null;
+  if (!isRecord(value)) return null;
+  if (value.unavailable === true) return { unavailable: true };
+  if (PLACEMENT_FAILURES.includes(value.failure) && Object.keys(value).length === 1) {
+    return { failure: value.failure as PlacementFailure };
+  }
+  // An image is a take's, beside the asset version the view adds to it (B6-G).
+  const { assetVersion, ...outcome } = value;
+  const parsed = takeOutcomeSchema.safeParse(outcome);
+  if (!parsed.success) return null;
+  if (!('image' in parsed.data)) return assetVersion === undefined ? parsed.data : null;
+  return typeof assetVersion === 'string' ? { ...parsed.data, assetVersion } : null;
 }
 
 function provenanceIn(value: unknown): ProvenanceShown | undefined {
@@ -212,19 +240,21 @@ export function holdsBinding(content: unknown): boolean {
 
 /**
  * A taken value as the document shows it: formatted by its theme's formats (B1-G). An image (B6) is
- * said by its description until the page draws it (B6.2).
+ * said by its description, which a copy's plain text and the Value panel write; the page draws it.
  */
 export function shownValue(
   taken: Extract<TakeOutcome, { readonly value: unknown } | { readonly image: unknown }>,
   formats: ValueFormats,
 ): string {
   if ('image' in taken) {
-    return taken.description === 'decorative' && taken.column.type.description === 'decorative'
-      ? 'A decorative image'
-      : `An image: ${taken.description}`;
+    return decorative(taken) ? 'A decorative image' : `An image: ${taken.description}`;
   }
   return formatValue(taken.value, taken.column.type, formats);
 }
+
+/** Whether an image is decorative: by its column's type, never by its words (B6-C). */
+const decorative = (taken: Extract<TakeOutcome, { readonly image: unknown }>): boolean =>
+  taken.column.type.description === 'decorative';
 
 /** A value's type, read where the view gives it. */
 export const typeOf = (type: unknown): ValueType | null => {
@@ -256,10 +286,20 @@ function heldOf(state: BindingState, formats: ValueFormats): BindingHeld | null 
   if (taken === null || 'unavailable' in taken) {
     return { binding, shown: { failure: 'unavailable' } };
   }
-  if ('value' in taken || 'image' in taken) {
+  if ('value' in taken) {
     return {
       binding,
       shown: { value: shownValue(taken, formats), waiting: state.waiting !== null },
+    };
+  }
+  if ('image' in taken) {
+    return {
+      binding,
+      shown: {
+        value: shownValue(taken, formats),
+        waiting: state.waiting !== null,
+        image: { asset: taken.assetVersion, alt: decorative(taken) ? '' : taken.description },
+      },
     };
   }
   return { binding, shown: failureHeld(taken, state.binding) };
@@ -267,17 +307,21 @@ function heldOf(state: BindingState, formats: ValueFormats): BindingHeld | null 
 
 /** A take's failure as the editor's words for it read it: the column from the binding where unsaid. */
 export function failureHeld(
-  taken: Extract<TakeOutcome, { readonly failure: unknown }>,
+  taken: Extract<Taken, { readonly failure: unknown }>,
   binding: Binding,
 ): BindingFailureHeld {
-  if (taken.failure === 'image_description_missing') {
-    return { failure: 'image_description_missing', column: taken.column ?? binding.take.column };
+  if (!('column' in taken || 'count' in taken) && PLACEMENT_FAILURES.includes(taken.failure)) {
+    return { failure: taken.failure as PlacementFailure };
   }
-  return taken.failure === 'take_invalid'
-    ? { failure: 'take_invalid', column: taken.column ?? binding.take.column }
+  const failed = taken as Extract<TakeOutcome, { readonly failure: unknown }>;
+  if (failed.failure === 'image_description_missing') {
+    return { failure: 'image_description_missing', column: failed.column ?? binding.take.column };
+  }
+  return failed.failure === 'take_invalid'
+    ? { failure: 'take_invalid', column: failed.column ?? binding.take.column }
     : {
-        failure: taken.failure,
-        ...(taken.count === undefined ? {} : { count: taken.count }),
+        failure: failed.failure,
+        ...(failed.count === undefined ? {} : { count: failed.count }),
       };
 }
 

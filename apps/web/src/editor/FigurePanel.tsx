@@ -23,7 +23,8 @@ export interface FigurePanelProps {
    */
   readonly figure: {
     readonly pos: number;
-    readonly asset: string;
+    /** The asset version it shows, or null where a binding gives its image (the B6 plan, B6-A). */
+    readonly asset: string | null;
     readonly imageStyle: string;
     readonly alternative: Alternative;
     /** A figure's, as `figureAt` reads it; an inline image takes no number, and has none. */
@@ -91,11 +92,17 @@ export function FigurePanel({
     if (held.kind === 'own') setOwn(held.text);
   }, [figure.alternative]);
 
+  const asset = figure.asset;
+  // A bound figure is described by its definition's column or is decorative, never by its own text
+  // (B6-C), and has no asset of its own to read a description from.
+  const bound = asset === null;
+
   useEffect(() => {
+    if (asset === null) return undefined;
     let current = true;
     setDescribed({ state: 'reading' });
     void client
-      .GET('/v1/asset-versions/{id}', { params: { path: { id: figure.asset } } })
+      .GET('/v1/asset-versions/{id}', { params: { path: { id: asset } } })
       .then(({ data }) => {
         if (!current) return;
         if (!data) setDescribed({ state: 'unknown' });
@@ -106,7 +113,7 @@ export function FigurePanel({
     return () => {
       current = false;
     };
-  }, [client, figure.asset]);
+  }, [client, asset]);
 
   const apply = (alternative: Alternative) => {
     // Nothing to set where the figure holds this already, and nothing the effect would hear about.
@@ -163,10 +170,12 @@ export function FigurePanel({
             checked={choice === 'inherited'}
             onChange={() => choose('inherited')}
           />
-          Use the image&apos;s description
+          {bound ? 'Use the description its data gives' : <>Use the image&apos;s description</>}
         </label>
         <p className={styles['note']}>
-          {described.state === 'described'
+          {bound
+            ? 'Each document shows the description its row holds in the column its query definition names.'
+            : described.state === 'described'
             ? `${described.text} (${described.language})`
             : described.state === 'none'
               ? `The image has no description of its own, so this ${kind} cannot be published until it is given one here.`
@@ -174,15 +183,17 @@ export function FigurePanel({
                 ? 'The image cannot be read, so its description cannot be shown.'
                 : 'Reading the image'}
         </p>
-        <label>
-          <input
-            type="radio"
-            name={`${id}-alternative`}
-            checked={choice === 'own'}
-            onChange={() => choose('own')}
-          />
-          Describe it here
-        </label>
+        {!bound && (
+          <label>
+            <input
+              type="radio"
+              name={`${id}-alternative`}
+              checked={choice === 'own'}
+              onChange={() => choose('own')}
+            />
+            Describe it here
+          </label>
+        )}
         {choice === 'own' && (
           <label>
             Its own description

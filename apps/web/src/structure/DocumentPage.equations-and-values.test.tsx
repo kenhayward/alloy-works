@@ -1266,6 +1266,63 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     expect(within(text).queryByRole('button', { name: /bound value/ })).toBeNull();
   });
 
+  it("DAT-098 draws a bound image in the document's text and as a figure from its asset version, and says in place why one has none", async () => {
+    const ASSET = 'aaaaaaaa-0000-4000-8000-0000000000a1';
+    const described = { base: 'image', encoding: 'binary', description: { column: 'name' } };
+    const image = (description: string) => ({
+      image: 'ab'.repeat(32),
+      assetVersion: ASSET,
+      description,
+      column: { name: 'photo', type: described },
+    });
+    const figure = (id: string, binding: unknown) => ({
+      type: 'figure',
+      id,
+      binding,
+      imageStyle: 'figure',
+      caption: [{ type: 'text', value: `Caption ${id}`, marks: [] }],
+      alternative: { kind: 'inherited' },
+    });
+    const content = {
+      ...withValue(bound('b1', 'photo')),
+      content: [
+        ...withValue(bound('b1', 'photo')).content,
+        figure('f1', bound('b2', 'photo')),
+        figure('f2', bound('b3', 'photo')),
+        figure('f3', bound('b4', 'depth')),
+      ],
+    };
+    openWithValues({
+      content,
+      bindings: [
+        state(bound('b1', 'photo'), image('North gate')),
+        state(bound('b2', 'photo'), image('South gate')),
+        state(bound('b3', 'photo'), { failure: 'image_description_missing', column: 'name' }),
+        // A placement the view decides, never a take's: said by its words, not as unavailable.
+        state(bound('b4', 'depth'), { failure: 'value_not_image' }),
+      ],
+    });
+    const text = await textRegion();
+    const src = `/v1/asset-versions/${ASSET}/content`;
+    await waitFor(() =>
+      expect(within(text).getByRole('img', { name: 'North gate' })).toHaveAttribute('src', src),
+    );
+    // In the line, in its holder, at the inline image style.
+    const inline = within(text).getByRole('img', { name: 'North gate' });
+    expect(inline.closest('p')).toHaveTextContent('The mean was');
+    expect(inline).toHaveAttribute('data-image-style', 'inline');
+    // As a figure, above its caption.
+    const drawn = within(text).getByRole('img', { name: 'South gate' });
+    expect(drawn).toHaveAttribute('src', src);
+    expect(drawn.closest('figure')).toHaveTextContent('Caption f1');
+    // Why the others have none, in place, the rest of the document drawn.
+    expect(
+      within(text).getByText('No image - the row has no description in name'),
+    ).toBeInTheDocument();
+    expect(within(text).getByText('No image - the column is not an image')).toBeInTheDocument();
+    expect(within(text).getByText('Caption f3')).toBeInTheDocument();
+  });
+
   it('shows no values and no error where the values cannot be read', async () => {
     openWithValues({ content: withValue(bound('b1')), bindings: null });
     const text = await textRegion();

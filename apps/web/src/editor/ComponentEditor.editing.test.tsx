@@ -2796,4 +2796,100 @@ describe('a binding in the editor (the B1 plan, task 5)', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Value' });
     expect(await within(dialog).findByRole('button', { name: 'Change' })).toBeInTheDocument();
   });
+
+  /** The definitions the Value dialog offers, Readings with an image column as well (B6-H). */
+  const withPhoto = (): Record<string, Answer> => ({
+    ...definitionRoutes(),
+    [`GET /v1/query-definitions/${READINGS}`]: () =>
+      json(200, {
+        id: READINGS,
+        version: { id: 'abcdef01-0000-4000-8000-0000000000a2', number: '0.2' },
+        definition: {
+          title: 'Readings',
+          parameters: [{ name: 'site', type: { base: 'integer' }, required: true, list: false }],
+          columns: [
+            { name: 'depth', from: { column: 'depth' }, type: decimal },
+            {
+              name: 'photo',
+              from: { column: 'photo' },
+              type: { base: 'image', encoding: 'binary', description: { column: 'name' } },
+            },
+          ],
+          key: [],
+        },
+        connection: { id: 'c', name: null, identity: 'service' },
+        mayUse: true,
+      }),
+  });
+
+  it('DAT-098 places an image column from the Value dialog as a figure, and tells the document once its session has saved it', async () => {
+    const onSettle = vi.fn();
+    const { surface, asked } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened({ content: holding() })),
+        'POST /v1/components/{id}/lock': () => json(200, { lock }),
+        'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+        ...withPhoto(),
+      },
+      quick,
+      false,
+      { ...inDocument(), bindingActs: { pinned: false, onSettle } },
+    );
+    const view = await surface();
+    selectText(view, 4, 4);
+    await userEvent.click(screen.getByRole('button', { name: 'Value' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Value' });
+    await userEvent.click(await within(dialog).findByRole('radio', { name: /Readings/ }));
+    await userEvent.type(await within(dialog).findByLabelText('site'), '1');
+    await userEvent.selectOptions(within(dialog).getByLabelText('Column'), 'photo');
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'As a figure' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Insert' }));
+    await waitFor(() => expect(onSettle).toHaveBeenCalledTimes(1));
+    const placed = JSON.stringify(asked.find((each) => each.route.startsWith('PUT'))!.body);
+    const figure = /"type":"figure"[^]*?"binding":\{"type":"binding","id":"([^"]+)"/.exec(placed);
+    expect(figure).not.toBeNull();
+    expect(placed).toContain('"take":{"column":"photo"}');
+    expect(onSettle).toHaveBeenCalledWith(figure![1], SESSION, 'placed');
+    // The cursor in its caption, its panel shows its binding.
+    expect(await screen.findByRole('region', { name: 'Value' })).toBeInTheDocument();
+  });
+
+  it("shows a bound figure's binding in the Value panel beside the Figure panel, and Change opens the dialog on it offering image columns alone", async () => {
+    const figureContent = {
+      ...content('x'),
+      content: [
+        {
+          type: 'figure',
+          id: 'f1',
+          binding: { ...bound('b1'), take: { column: 'photo' } },
+          imageStyle: 'figure',
+          caption: [{ type: 'text', value: 'The gate', marks: [] }],
+          alternative: { kind: 'inherited' },
+        },
+      ],
+    };
+    const { surface } = open(
+      {
+        'GET /v1/components/{id}': () => json(200, opened({ content: figureContent })),
+        ...withPhoto(),
+      },
+      quick,
+      false,
+      { ...inDocument(), bindingContext: { kind: 'document', held: new Map() } },
+    );
+    const view = await surface();
+    // Into its caption.
+    selectText(view, 3, 3);
+    const panel = await screen.findByRole('region', { name: 'Value' });
+    expect(panel).toHaveTextContent('No value - never resolved');
+    const figurePanel = screen.getByRole('group', { name: 'Figure' });
+    expect(figurePanel).toHaveTextContent('Use the description its data gives');
+    expect(within(figurePanel).queryByRole('radio', { name: 'Describe it here' })).toBeNull();
+    await userEvent.click(within(panel).getByRole('button', { name: 'Change' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Value' });
+    const column = await within(dialog).findByLabelText('Column');
+    expect([...(column as HTMLSelectElement).options].map((each) => each.value)).toEqual([
+      'photo',
+    ]);
+  });
 });
