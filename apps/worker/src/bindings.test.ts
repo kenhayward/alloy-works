@@ -834,16 +834,17 @@ describe('publishing a document holding a value', () => {
       expect(provenance.schemaVersion).toBe(2);
       expect(provenance.values).toMatchObject(
         [
-          ['p1', 'i1'],
-          ['c2', 'i2'],
-          ['f1', 'i3'],
-          ['f2', 'i4'],
-        ].map(([block, binding]) => ({
+          ['p1', 'i1', NORTH_SAYS],
+          ['c2', 'i2', NORTH_SAYS],
+          ['f1', 'i3', NORTH_SAYS],
+          // The figure its author marked decorative is recorded so (Ken, 2026-10-06).
+          ['f2', 'i4', 'decorative'],
+        ].map(([block, binding, description]) => ({
           node: NODE,
           block,
           binding,
           image: { hash: north.hash, assetVersion: north.asset },
-          description: NORTH_SAYS,
+          description,
           column: { name: 'photo', type: PHOTO_TYPE },
           take: { key: { site: 'north' }, column: 'photo' },
         })),
@@ -860,11 +861,11 @@ describe('publishing a document holding a value', () => {
       const preview = await ask(version, ['pdf'], 'preview');
       expect(await work()).toBe('failed');
       expect(await work()).toBe('failed');
+      // Every place nothing marks decorative; the figure its author marked so, f2, needs none (Ken).
       const failures = [
         ['p1', 'i1'],
         ['c2', 'i2'],
         ['f1', 'i3'],
-        ['f2', 'i4'],
       ].map(([block, binding]) => ({
         stage: 'bind',
         code: 'image_description_missing',

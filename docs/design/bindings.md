@@ -582,9 +582,10 @@ starts from it (BI-P):
   schema change B6's plan makes (the D8 plan, D8-H) by its stored-shape check and the footnotes plan's evidence rule. That
   shape is why DAT-098 is not claimed.
 - **The description** (DAT-097): the column the definition names, read from the taken row, or
-  decorative where the definition says so. A null or empty description fails the publish by name,
-  `image_description_missing`, naming the binding, the row's key and the column; in the editor it is
-  shown in place as any failure is.
+  decorative where the definition says so, or where the author marked a bound figure decorative,
+  which needs no description whatever its row holds (Ken, 2026-10-06). Otherwise a null or empty
+  description fails the publish by name, `image_description_missing`, naming the binding, the row's
+  key and the column; in the editor it is shown in place as any failure is.
 
 ## Stored shapes and migrations
 

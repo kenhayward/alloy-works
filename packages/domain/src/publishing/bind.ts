@@ -90,7 +90,8 @@ const describedBy = (description: string): Alternative =>
  * **A bound image is set as an ordinary one** (the B6 plan, B6-E): an inline binding taking an image
  * becomes an `image` inline in the inline image style, `inline`, and a figure's binding gives the
  * figure its `asset`, each the asset version the result's provenance admitted the image as, and each
- * described by the description taken, or decorative (a figure the author marked decorative stays so).
+ * described by the description taken, or decorative (a figure the author marked decorative stays so,
+ * and needs no description: Ken, 2026-10-06).
  * So everything after this stage reads what it reads today. An image in a footnote's text is
  * `image_not_placeable` (CNT-129), and a figure's binding taking anything but an image
  * `value_not_image`; a description missing is `image_description_missing`, its `detail` the binding and
@@ -107,8 +108,13 @@ export function bind(
   const fail = (code: PublishFailure['code'], block: string, detail: string) =>
     failures.push({ stage: 'bind', code, node, block, detail });
 
-  /** The take of one binding, failed by name where it holds nothing, with where it came from. */
-  const take = (binding: Binding, block: string) => {
+  /**
+   * The take of one binding, failed by name where it holds nothing, with where it came from. A figure
+   * its author marked `decorative` (Ken, 2026-10-06) is taken as though its image column were
+   * declared decorative, so its row's description is never required; the column it is recorded
+   * against is still the one the definition declares.
+   */
+  const take = (binding: Binding, block: string, decorative = false) => {
     const result = held.get(binding.id);
     if (result === undefined) {
       fail('binding_unresolved', block, binding.id);
@@ -118,7 +124,20 @@ export function bind(
       fail('result_unreadable', block, binding.id);
       return undefined;
     }
-    const taken = takeValue(binding.take, result.result, result.columns);
+    const declared = result.columns.find((column) => column.name === binding.take.column);
+    const columns =
+      decorative && declared?.type.base === 'image'
+        ? result.columns.map((column) =>
+            column === declared
+              ? { ...column, type: { ...declared.type, description: 'decorative' as const } }
+              : column,
+          )
+        : result.columns;
+    const outcome = takeValue(binding.take, result.result, columns);
+    const taken =
+      'image' in outcome && declared?.type.base === 'image'
+        ? { ...outcome, column: { name: declared.name, type: declared.type } }
+        : outcome;
     if ('failure' in taken) {
       fail(
         taken.failure,
@@ -227,7 +246,7 @@ export function bind(
           // The figure's own binding first, as a reader meets its image before its caption.
           let figure: BlockNode = block;
           if (block.binding !== undefined) {
-            const got = take(block.binding, block.id);
+            const got = take(block.binding, block.id, block.alternative.kind === 'decorative');
             if (got !== undefined && !('image' in got.taken)) {
               fail('value_not_image', block.id, block.binding.id);
             } else if (got !== undefined && 'image' in got.taken) {

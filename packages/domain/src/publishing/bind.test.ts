@@ -333,15 +333,13 @@ describe('bind, a bound image (the B6 plan, B6-D and B6-E)', () => {
   it('DAT-097 fails every bound image whose description is missing by name, naming its binding, its block and the column, and places none', () => {
     const content = component(
       paragraph('p1', binding('i1', at('south'))),
+      // Nothing marks this figure decorative, so the row's description is required.
       figure('f1', binding('i2', at('south'))),
-      // A decorative figure is still taken by its definition's rule, which reads the row's description.
-      figure('f2', binding('i3', at('south')), { kind: 'decorative' }),
     );
-    const results = new Map(['i1', 'i2', 'i3'].map((each) => [each, photos(...ROWS)]));
+    const results = new Map(['i1', 'i2'].map((each) => [each, photos(...ROWS)]));
     const expected = [
       ['p1', 'i1'],
       ['f1', 'i2'],
-      ['f2', 'i3'],
     ].map(([block, binding]) => ({
       stage: 'bind',
       code: 'image_description_missing',
@@ -355,12 +353,53 @@ describe('bind, a bound image (the B6 plan, B6-D and B6-E)', () => {
     expect(bound.content.map((each) => ('asset' in each ? each.asset : undefined))).toEqual([
       undefined,
       undefined,
-      undefined,
     ]);
     const made = assembled(content, results);
     expect(made.ok).toBe(false);
     if (made.ok) return;
     expect(made.failures.filter((each) => each.stage === 'bind')).toEqual(expected);
+  });
+
+  it("DAT-097 publishes a bound figure its author marked decorative as decorative, whatever its row's description holds (Ken, 2026-10-06)", () => {
+    const rows: CanonicalValue[][] = [
+      ['west', NORTH, null],
+      ['south', SOUTH, '  '],
+    ];
+    const content = component(
+      figure('f1', binding('i1', at('west')), { kind: 'decorative' }),
+      figure('f2', binding('i2', at('south')), { kind: 'decorative' }),
+    );
+    const results = new Map(['i1', 'i2'].map((each) => [each, photos(...rows)]));
+    const { bound, failures, values } = bind(NODE, content, results, DEFAULT_VALUE_FORMATS);
+    expect(failures).toEqual([]);
+    expect(bound.content).toMatchObject([
+      { asset: NORTH_ASSET, alternative: { kind: 'decorative' } },
+      { asset: SOUTH_ASSET, alternative: { kind: 'decorative' } },
+    ]);
+    expect(bound.content.every((each) => !('binding' in each))).toBe(true);
+    // Recorded as placed decorative, from the column the definition declares.
+    expect(values).toMatchObject([
+      { binding: 'i1', description: 'decorative', column: { name: 'photo', type: DESCRIBED } },
+      { binding: 'i2', description: 'decorative', column: { name: 'photo', type: DESCRIBED } },
+    ]);
+    const made = assemble({
+      formats: ['pdf', 'docx'],
+      outline,
+      occurrences: new Map([[NODE, content]]),
+      bindings: new Map([[NODE, results]]),
+      refused: [],
+      layout: defaultLayout,
+      theme: resolved(),
+      revision: '0.1',
+      covers: () => true,
+      assets: new Map([
+        [NORTH_ASSET, asset()],
+        [SOUTH_ASSET, asset()],
+      ]),
+    });
+    if (!made.ok) throw new Error(JSON.stringify(made.failures));
+    const figures = blocksOf(made.document.nodes).filter((each) => each.type === 'figure');
+    expect(figures.map((each) => each.alternative)).toEqual([null, null]);
   });
 
   it("fails a figure's binding taking anything but an image, value_not_image, and an image bound in a footnote's text, image_not_placeable", () => {
