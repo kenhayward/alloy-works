@@ -319,8 +319,7 @@ export function ValueDialog({
   const problemOf = (name: string) =>
     problems.find((each) => each.parameter === name && (tried || each.rule !== 'required'));
 
-  const imageColumn =
-    ready?.columns.find((each) => each.name === column)?.type.base === 'image';
+  const imageColumn = ready?.columns.find((each) => each.name === column)?.type.base === 'image';
   const placedAs: PlaceAs =
     place === 'figure' || (place === 'offer' && imageColumn && placeAs === 'figure')
       ? 'figure'

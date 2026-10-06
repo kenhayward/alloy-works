@@ -43,6 +43,14 @@ const bound = (id: string, column = 'photo'): Binding => ({
   take: { column },
 });
 
+/** What the Value dialog chooses for a binding: everything it stores but its kind and identifier. */
+const choiceOf = ({ query, parameters, mode, take }: Binding) => ({
+  query,
+  parameters,
+  mode,
+  take,
+});
+
 const text = (value: string) => ({ type: 'text' as const, value, marks: [] });
 
 const boundFigure = (
@@ -130,13 +138,10 @@ describe('a bound figure in the editor (the B6 plan, B6-A)', () => {
 
   it("DAT-098 places the Value dialog's image column as a figure, its binding newly named and described by its definition", () => {
     const state = stateOf(documentOf({ type: 'paragraph', id: 'p1', style: 'body', content: [] }));
-    const { type: _type, id: _id, ...choice } = bound('unused');
+    const choice = choiceOf(bound('unused'));
     let next = state;
     expect(
-      insertBoundFigure(
-        choice,
-        counter('x'),
-      )(state, (tr) => {
+      insertBoundFigure(choice, counter('x'))(state, (tr) => {
         next = state.apply(tr);
       }),
     ).toBe(true);
@@ -161,7 +166,7 @@ describe('a bound figure in the editor (the B6 plan, B6-A)', () => {
   it("changes a bound figure's binding, keeping its identifier, and replacing its image with an upload drops the binding", () => {
     const state = stateOf(component());
     const pos = figurePos(state);
-    const { type: _type, id: _id, ...choice } = bound('unused', 'site_photo');
+    const choice = choiceOf(bound('unused', 'site_photo'));
     const changed = state.apply(
       (() => {
         let tr = state.tr;
@@ -231,13 +236,16 @@ describe('what a bound image shows (the B6 plan, B6-G)', () => {
       .map((each) => (each as unknown as { spec: Record<string, unknown> }).spec);
     expect(specs).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ bindingText: 'An image: North gate', boundSrc: assetContentPath(PHOTO) }),
+        expect.objectContaining({
+          bindingText: 'An image: North gate',
+          boundSrc: assetContentPath(PHOTO),
+        }),
         expect.objectContaining({ boundText: 'An image: South gate', boundAlt: 'South gate' }),
       ]),
     );
   });
 
-  it("gives a figure the author marked decorative an empty alt, whatever the description", () => {
+  it('gives a figure the author marked decorative an empty alt, whatever the description', () => {
     const doc = opened(component({ kind: 'decorative' }));
     const [figure] = boundFiguresShown(
       doc,
@@ -254,7 +262,11 @@ describe('what a bound image shows (the B6 plan, B6-G)', () => {
       ['k2', held(bound('k2'), missing)],
     ]);
     const words = 'No image - the row has no description in name';
-    expect(bindingsShown(doc, context)[0]).toMatchObject({ text: words, failed: true, image: null });
+    expect(bindingsShown(doc, context)[0]).toMatchObject({
+      text: words,
+      failed: true,
+      image: null,
+    });
     expect(boundFiguresShown(doc, context)[0]).toMatchObject({
       text: words,
       failed: true,
@@ -272,7 +284,10 @@ describe('what a bound image shows (the B6 plan, B6-G)', () => {
       text: 'No image - the column is not an image',
       failed: true,
     });
-    expect(bindingsShown(doc, context)[0]).toMatchObject({ failed: false, image: { alt: 'North gate' } });
+    expect(bindingsShown(doc, context)[0]).toMatchObject({
+      failed: false,
+      image: { alt: 'North gate' },
+    });
     // And one changed since it was resolved says so, as an inline binding does.
     const changed = inDocument([['k2', held(bound('k2', 'other'), pictured(OTHER, 'x'))]]);
     expect(boundFiguresShown(doc, changed)[0]).toMatchObject({ text: CHANGED_SINCE_RESOLVED });
@@ -301,7 +316,10 @@ describe('copying, cutting and pasting a bound figure (BI-D)', () => {
     const outcome = pasteInto(
       state,
       readClipboard(
-        { types: [PRODUCT_CLIPBOARD_TYPE], getData: (type) => (type === PRODUCT_CLIPBOARD_TYPE ? data : '') },
+        {
+          types: [PRODUCT_CLIPBOARD_TYPE],
+          getData: (type) => (type === PRODUCT_CLIPBOARD_TYPE ? data : ''),
+        },
         'blocks',
       ),
       counter('p'),

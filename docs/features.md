@@ -704,6 +704,16 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   where each value came from, without the SQL, the connection or a source column. A value with no result
   in the document is refused before anything is queued, naming it and whether it was never resolved or
   changed since; one whose result holds no value fails the publish by name.
+- **Bound images.** The Value dialog offers a query definition's image columns, and on one asks
+  **Place as**: **In the line**, an image one line high in a paragraph or a table cell, or, where a
+  figure may stand, **As a figure**, a figure whose image is the value, with a caption of its own. In
+  a document each is drawn from the image the document holds, described by its row's description
+  column, or empty where the definition marks it decorative; one whose row has no description says so
+  in its place. A bound figure's panel shows its binding beside the Figure panel, and **Change** opens
+  the dialog on it offering image columns alone; its description comes from its data, or it is marked
+  decorative, which then needs no description. The PDF and Word print each as an image, described to
+  a screen reader by the same words, and a publish fails by name where a bound image has neither a
+  description nor a decorative mark, or stands in a footnote or a caption.
 - **The Data tab.** Beside Contents, in a document holding values: every value you may see, under its
   part of the document, with its definition, its mode and its state - never resolved, changed since
   resolved, failed, revision waiting, definition changed, changed since published, or holding -

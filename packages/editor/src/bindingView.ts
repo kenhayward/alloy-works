@@ -60,7 +60,6 @@ export function bindingDecorations(doc: Node, context: BindingContext | null): D
 const imageSpec = (image: BoundImage | null) =>
   image === null ? {} : { boundAsset: image.asset, boundSrc: image.src, boundAlt: image.alt };
 
-
 /** The classes a binding's decoration puts on its element: failed, and on its own the chip. */
 function classes(failed: boolean, alone: boolean): { class?: string } {
   const named = [...(failed ? [FAILED_CLASS] : []), ...(alone ? [ALONE_CLASS] : [])];

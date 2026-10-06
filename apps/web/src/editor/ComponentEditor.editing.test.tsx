@@ -2888,8 +2888,6 @@ describe('a binding in the editor (the B1 plan, task 5)', () => {
     await userEvent.click(within(panel).getByRole('button', { name: 'Change' }));
     const dialog = await screen.findByRole('dialog', { name: 'Value' });
     const column = await within(dialog).findByLabelText('Column');
-    expect([...(column as HTMLSelectElement).options].map((each) => each.value)).toEqual([
-      'photo',
-    ]);
+    expect([...(column as HTMLSelectElement).options].map((each) => each.value)).toEqual(['photo']);
   });
 });

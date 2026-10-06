@@ -18888,6 +18888,12 @@
       "kind": "title"
     },
     {
+      "id": "DAT-098",
+      "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
+      "line": 2825,
+      "kind": "title"
+    },
+    {
       "id": "SCH-057",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
       "line": 1831,
@@ -19022,13 +19028,31 @@
     {
       "id": "DAT-022",
       "file": "apps/web/src/editor/ValueDialog.test.tsx",
-      "line": 117,
+      "line": 123,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-098",
+      "file": "apps/web/src/editor/ValueDialog.test.tsx",
+      "line": 323,
       "kind": "title"
     },
     {
       "id": "DAT-047",
       "file": "apps/web/src/editor/bindings.test.ts",
       "line": 151,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-097",
+      "file": "apps/web/src/editor/boundImages.test.ts",
+      "line": 108,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-098",
+      "file": "apps/web/src/editor/boundImages.test.ts",
+      "line": 87,
       "kind": "title"
     },
     {
@@ -19220,7 +19244,13 @@
     {
       "id": "DAT-082",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1281,
+      "line": 1338,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-098",
+      "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
+      "line": 1269,
       "kind": "title"
     },
     {
@@ -21672,6 +21702,24 @@
       "kind": "title"
     },
     {
+      "id": "DAT-047",
+      "file": "packages/editor/src/boundImages.test.ts",
+      "line": 277,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-097",
+      "file": "packages/editor/src/boundImages.test.ts",
+      "line": 257,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-098",
+      "file": "packages/editor/src/boundImages.test.ts",
+      "line": 121,
+      "kind": "title"
+    },
+    {
       "id": "CNT-025",
       "file": "packages/editor/src/equations.test.ts",
       "line": 455,
@@ -21680,19 +21728,19 @@
     {
       "id": "AST-013",
       "file": "packages/editor/src/figures.test.ts",
-      "line": 236,
+      "line": 213,
       "kind": "title"
     },
     {
       "id": "AST-015",
       "file": "packages/editor/src/figures.test.ts",
-      "line": 243,
+      "line": 220,
       "kind": "title"
     },
     {
       "id": "CNT-017",
       "file": "packages/editor/src/figures.test.ts",
-      "line": 96,
+      "line": 95,
       "kind": "title"
     },
     {

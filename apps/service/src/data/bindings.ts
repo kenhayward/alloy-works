@@ -1191,7 +1191,6 @@ function viewer(
       const stale = held.digest !== placed.digest;
       const name = await datasetName(trx, held.held.dataset);
       const readsDefinition = await reads(held.held.provenance.queryDefinition.artifact);
-      const take = placed.binding.take;
       out.push({
         node: placed.node,
         binding: placed.binding,

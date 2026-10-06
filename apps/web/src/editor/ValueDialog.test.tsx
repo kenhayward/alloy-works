@@ -354,9 +354,7 @@ describe('an image column in the Value dialog (the B6 plan, B6-H)', () => {
       current: { ...bound, take: { column: 'photo' } },
     });
     const column = await screen.findByLabelText('Column');
-    expect(
-      [...(column as HTMLSelectElement).options].map((each) => each.value),
-    ).toEqual(['photo']);
+    expect([...(column as HTMLSelectElement).options].map((each) => each.value)).toEqual(['photo']);
     expect(screen.queryByRole('radio', { name: 'In the line' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Change' }));
     expect(onDone).toHaveBeenLastCalledWith(

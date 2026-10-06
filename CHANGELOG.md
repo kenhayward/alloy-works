@@ -3,6 +3,31 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.137.0 - 2026-10-06 (PR #0)
+
+### Added
+
+- **Images from a query, in a publication.** An image column taken by a value is printed as an image
+  in a line or a table cell, and a figure can take its image from a query rather than an uploaded
+  image. Each is described by the column its query definition names, or is decorative; a row with no
+  description fails the publish by name. `provenance.json` records each image placed.
+- **Images from a query, in the editor.** The Value dialog offers image columns and asks **Place
+  as**: **In the line** or **As a figure**. Each bound image is drawn in the document from its data,
+  described by its row, or says in its place why it has none; a bound figure's panel shows its value,
+  and **Change** offers image columns alone. A figure marked decorative needs no description.
+
+### Changed
+
+- **Plan B6.** How an image from a query will be placed in a line, a table cell or as a figure,
+  described by the query or marked decorative.
+- **Faster images from a query.** A page holding many images from queries reads each one in
+  milliseconds.
+
+### Fixed
+
+- **Values settle on their own.** Changing, keeping or resolving one value in a document no longer
+  waits for every other value on the page to finish.
+
 ## 0.136.0 - 2026-10-05 (PR #416)
 
 ### Added

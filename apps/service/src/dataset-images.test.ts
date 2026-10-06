@@ -842,7 +842,7 @@ describe("a result's images, admitted before it is kept (the D8 plan, D8-D and D
       expect(await takenIn(document.id)).toMatchObject({ b1: missing, b2: missing, b4: missing });
     });
 
-    it("DAT-097 answers the image of a figure its author marked decorative though its row has no description, as the publish prints it", async () => {
+    it('DAT-097 answers the image of a figure its author marked decorative though its row has no description, as the publish prints it', async () => {
       const image = png(63);
       const first = await placed();
       h.connector.run = ranWithImages([[String(site), 'Quay', image]]);

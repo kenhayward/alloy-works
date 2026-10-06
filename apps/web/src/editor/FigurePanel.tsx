@@ -176,12 +176,12 @@ export function FigurePanel({
           {bound
             ? 'Each document shows the description its row holds in the column its query definition names.'
             : described.state === 'described'
-            ? `${described.text} (${described.language})`
-            : described.state === 'none'
-              ? `The image has no description of its own, so this ${kind} cannot be published until it is given one here.`
-              : described.state === 'unknown'
-                ? 'The image cannot be read, so its description cannot be shown.'
-                : 'Reading the image'}
+              ? `${described.text} (${described.language})`
+              : described.state === 'none'
+                ? `The image has no description of its own, so this ${kind} cannot be published until it is given one here.`
+                : described.state === 'unknown'
+                  ? 'The image cannot be read, so its description cannot be shown.'
+                  : 'Reading the image'}
         </p>
         {!bound && (
           <label>

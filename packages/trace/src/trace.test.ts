@@ -792,8 +792,9 @@ describe('the citations in the committed model', () => {
   // 662 (2026-10-05): D8.2's DAT-096, the service's images admitted before a result is kept.
   // 661 (2026-10-05): ComponentEditor.test.tsx split in four; STR-071 now in two of its files.
   // 671 (2026-10-06): B6.1's DAT-097, DAT-098 and DAT-042, bound images in the model and publish.
+  // 679 (2026-10-06): B6.2's DAT-097, DAT-098 and DAT-047, bound images in the editor and the page.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(671);
+    expect(model.citations).toHaveLength(679);
   });
 
   it('cites no identifier the corpus does not hold', () => {

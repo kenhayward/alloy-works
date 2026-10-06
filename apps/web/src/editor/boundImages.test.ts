@@ -87,7 +87,10 @@ describe('a bound image on the editing surface', () => {
   it('DAT-098 draws an image bound in a line one line high and a bound figure above its caption, each from its asset version route', () => {
     const view = mount({
       kind: 'document',
-      held: new Map([held('k1', pictured(NORTH, 'North gate')), held('k2', pictured(SOUTH, 'South gate'))]),
+      held: new Map([
+        held('k1', pictured(NORTH, 'North gate')),
+        held('k2', pictured(SOUTH, 'South gate')),
+      ]),
     });
     const inline = view.dom.querySelector<HTMLImageElement>('p .aw-binding img')!;
     expect(inline).toHaveAttribute('src', `/v1/asset-versions/${NORTH}/content`);
@@ -120,7 +123,10 @@ describe('a bound image on the editing surface', () => {
 
     setBindingContext(view, {
       kind: 'document',
-      held: new Map([held('k1', pictured(NORTH, 'North gate')), held('k2', pictured(SOUTH, 'South gate'))]),
+      held: new Map([
+        held('k1', pictured(NORTH, 'North gate')),
+        held('k2', pictured(SOUTH, 'South gate')),
+      ]),
     });
     const drawn = view.dom.querySelector('figure .aw-figure-image')!;
     expect(drawn).not.toHaveClass('aw-binding-failed');
