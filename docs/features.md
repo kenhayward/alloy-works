@@ -679,7 +679,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   proposes a column for each member of the first rows, which you confirm. A redirect, a refused
   sign-in, an address the connector may not reach and a refused port read alike; any other refusal
   is its HTTP status alone. One deadline covers the whole exchange, a body is counted as it arrives
-  and once decoded, a JSON body is at most 8 MiB and JSON Lines 20 MiB, and a stated length or
+  and once decoded, a JSON body is at most 4 MiB and JSON Lines 12 MiB, and a stated length or
   digest is checked.
 - **Image columns.** A PostgreSQL `bytea` column is proposed as an **image**, and a text column can be
   declared one held as base64; each image column names the text column that describes it, or is

@@ -41,12 +41,13 @@ import { finishResult } from './result.js';
  * The most a body of each format may be, whatever the byte limit (the D6 plan's measurement): the
  * connector's concurrency is sized by D2's run at the ceilings, which peaked at 371 MiB in its child.
  * `JSON.parse` with a reviver holds many times a body's size while it parses - a JSON body of 25 MiB
- * peaked at 588 MiB, one of 10 MiB at 357 to 399, one of 8 MiB at 318 to 330 - so JSON takes 8 MiB;
- * JSON Lines, a line at a time, peaked at 400 MiB at 25 MiB and 356 to 358 at 20, so it takes 20 MiB
- * (measured under tsx on Windows, as D2's was). Past either a body is `byte_limit`.
+ * peaked at 588 MiB on Windows; on Linux (node:24, as CI) one of 8 MiB peaked at 356, 6 MiB at 332 to
+ * 347 and 4 MiB at 230 to 298 - so JSON takes 4 MiB. JSON Lines, a line at a time, peaked on Linux at
+ * about 410 MiB for 20 MiB, 371 for 16 and 272 for 12 - so it takes 12 MiB. Past either a body is
+ * `byte_limit`.
  */
-export const JSON_MAX_BYTES = 8 * 1024 * 1024;
-export const JSON_LINES_MAX_BYTES = 20 * 1024 * 1024;
+export const JSON_MAX_BYTES = 4 * 1024 * 1024;
+export const JSON_LINES_MAX_BYTES = 12 * 1024 * 1024;
 
 /** The most a body of a format may be, under a run's byte limit. */
 export const bodyLimit = (format: HttpFetch['format'], bytes: number) =>

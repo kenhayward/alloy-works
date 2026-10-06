@@ -813,9 +813,9 @@ definition names, or it is declared decorative (DAT-097's declaration; its failu
   `byte_limit`, and a single value larger than the limit is stopped before the driver holds it
   (DAT-110). **An HTTP body is counted as it arrives and again once decoded** (the D6 plan, D6-B),
   and held to a ceiling of its format's under the byte limit, measured in the child against the run
-  below (D6.1): `JSON.parse` with its source-text reviver peaked at 588 MiB for a 25 MiB JSON body and
-  318 to 330 MiB for 8 MiB, so a JSON body is at most 8 MiB; JSON Lines, a line at a time, peaked at
-  400 MiB for 25 MiB and 356 to 358 MiB for 20 MiB, so it is at most 20 MiB. Past either it is
+  below (D6.1), on Linux as CI runs it: `JSON.parse` with its source-text reviver peaked at 356 MiB for
+  an 8 MiB JSON body and 230 to 298 MiB for 4 MiB, so a JSON body is at most 4 MiB; JSON Lines, a line
+  at a time, peaked at about 410 MiB for 20 MiB and 272 MiB for 12 MiB, so it is at most 12 MiB. Past either it is
   `byte_limit`. **The connector runs at most four definitions at once**, of its eight children: a result
   at the ceilings - 99,999 rows of 39 columns, about 19.9 MB canonical - peaked at 368 to 371 MiB in
   its child, against 88 MiB for a child at rest, and the supervisor held about 87 MiB of heap parsing

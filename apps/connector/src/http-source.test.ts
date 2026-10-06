@@ -56,8 +56,8 @@ async function closedPort(): Promise<number> {
  * JSON Lines just under the byte ceiling, at the row ceiling less one.
  */
 const WIDE_COLUMNS = 15;
-const JSON_ROWS = 33_500;
-const LINES_ROWS = 82_500;
+const JSON_ROWS = 16_750;
+const LINES_ROWS = 49_500;
 
 const readings = [
   member('id', { base: 'integer' }),
@@ -285,7 +285,7 @@ describe('an HTTP source', { timeout: LOADED_TIMEOUT_MS }, () => {
     return { answer, bytes, peaks };
   }
 
-  it('reads a JSON body at its ceiling, 8 MiB, and JSON Lines at its own, 20 MiB, within the memory a run at the ceilings takes', async () => {
+  it('reads a JSON body at its ceiling, 4 MiB, and JSON Lines at its own, 12 MiB, within the memory a run at the ceilings takes', async () => {
     const json = await measuredRun(JSON_ROWS, false);
     const jsonLines = await measuredRun(LINES_ROWS, true);
     // Not vacuous: within a megabyte of its ceiling, every row read.

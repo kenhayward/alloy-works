@@ -104,7 +104,7 @@ const DESCRIBE_DEADLINE_MS = 20_000;
 
 /**
  * How long a sample of an HTTP request for its columns may take: its body is read whole, at most
- * JSON Lines' 20 MiB, so the time of a run at the default limit, rather than a describe's.
+ * JSON Lines' 12 MiB, so the time of a run at the default limit, rather than a describe's.
  */
 const HTTP_SAMPLE_DEADLINE_MS = 30_000;
 
