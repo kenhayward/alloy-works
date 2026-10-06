@@ -19,7 +19,6 @@ import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/d
 import {
   canonicalResultBytes,
   type CanonicalValue,
-  type ConnectionSettings,
   type PostgresSettings,
   type RunAnswer,
 } from '@alloy-works/domain';

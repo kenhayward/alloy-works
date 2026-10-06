@@ -20,7 +20,6 @@ import {
   dataFailureCodes,
   dataFailures,
   limitCeilings,
-  type ConnectionSettings,
   type PostgresSettings,
   type DataFailureCode,
 } from '@alloy-works/domain';

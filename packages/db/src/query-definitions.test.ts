@@ -3,7 +3,6 @@ import {
   canonicaliseVersion,
   defaultLimits,
   limitCeilings,
-  type ConnectionSettings,
   type PostgresSettings,
   type QueryDefinition,
 } from '@alloy-works/domain';

@@ -108,7 +108,9 @@ export const DataFailureView = z.object({
     .number()
     .int()
     .optional()
-    .describe("The HTTP status an HTTP source refused with: `source_refused` alone, never its body"),
+    .describe(
+      'The HTTP status an HTTP source refused with: `source_refused` alone, never its body',
+    ),
 });
 export type DataFailureView = z.infer<typeof DataFailureView>;
 
@@ -263,7 +265,7 @@ export const DescribeBody = z.strictObject({
     "A built query to describe instead of the source's tables and views: the columns its tree returns, from SQL the service generates, never run. Send this or sql, never both",
   ),
   http: HttpSampleBody.optional().describe(
-    'An HTTP connection\'s request, sent and its first rows read to propose its columns, each read by a pointer: an HTTP connection lists no tables. Send one of sql, builder and http',
+    "An HTTP connection's request, sent and its first rows read to propose its columns, each read by a pointer: an HTTP connection lists no tables. Send one of sql, builder and http",
   ),
 });
 export type DescribeBody = z.infer<typeof DescribeBody>;
@@ -282,7 +284,7 @@ export const DescribeSqlView = z.object({
       pointer: z
         .string()
         .optional()
-        .describe("For an HTTP response, the JSON Pointer that reads the column from its row"),
+        .describe('For an HTTP response, the JSON Pointer that reads the column from its row'),
     }),
   ),
   parameters: z

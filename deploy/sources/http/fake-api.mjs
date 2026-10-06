@@ -5,10 +5,13 @@
 // a wrong count. Every value is invented. No dependency but Node.
 //
 //   node fake-api.mjs           listens on PORT (8443), the certificate from CERT_DIR (this folder)
+import { Buffer } from 'node:buffer';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { createServer } from 'node:https';
-import { fileURLToPath } from 'node:url';
+import process from 'node:process';
+import { clearInterval, setInterval, setTimeout } from 'node:timers';
+import { fileURLToPath, URL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
 /** The development key, sent verbatim in `x-api-key`. Invented; it opens nothing but this fake. */

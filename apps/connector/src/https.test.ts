@@ -40,7 +40,7 @@ describe('the guarded HTTPS client', () => {
     const zipped = await exchange(asked('/v1/readings?gzip'), policy());
     expect(zipped.ok && JSON.parse(zipped.body.toString('utf8'))).toMatchObject({ count: 3 });
     // Without the CA the certificate is not trusted: refused as a failure to reach.
-    const { ca: _ca, ...untrusting } = policy();
+    const untrusting: ExchangePolicy = { ...policy(), ca: undefined } as unknown as ExchangePolicy;
     expect(code(await exchange(asked('/v1/readings'), untrusting))).toBe('connection_failed');
   });
 
