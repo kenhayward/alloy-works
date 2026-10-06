@@ -75,8 +75,10 @@ export function checkObjectKey(
       continue;
     }
     used.add(parameter.name);
-    if (parameter.list) problem(path, `${parameter.name} is a list, which a key segment cannot carry`);
-    if (!parameter.required) problem(path, `${parameter.name} stands in the key, so it is required`);
+    if (parameter.list)
+      problem(path, `${parameter.name} is a list, which a key segment cannot carry`);
+    if (!parameter.required)
+      problem(path, `${parameter.name} stands in the key, so it is required`);
   }
   if (fixed > KEY_MAX_BYTES) {
     problem('fetch.key', `A key is at most ${grouped(KEY_MAX_BYTES)} bytes`);
@@ -132,7 +134,9 @@ export function objectKeyProblems(key: ObjectKey, values: ParameterValues): Para
 /** Values a key's segments cannot carry, refused with each problem; nothing is sent. */
 export class ObjectKeyRefused extends Error {
   constructor(readonly problems: readonly ParameterProblem[]) {
-    super(`A value cannot be placed in the key: ${problems.map((each) => each.parameter).join(', ')}`);
+    super(
+      `A value cannot be placed in the key: ${problems.map((each) => each.parameter).join(', ')}`,
+    );
   }
 }
 

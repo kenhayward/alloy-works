@@ -88,7 +88,15 @@ describe('an S3 source', { timeout: LOADED_TIMEOUT_MS }, () => {
     expect(csv.result.rows).toEqual([
       ['1', 'North weir', '12.5', '2026-01-02', '2026-01-02T03:04:05.5Z', true, ''],
       ['2', 'South weir', '7.25', '2026-01-03', '2026-01-03T04:05:06Z', false, null],
-      ['3', 'East gauge', '0.75', '2026-01-04', '2026-01-04T05:06:07.25Z', true, 'Gauge, east bank'],
+      [
+        '3',
+        'East gauge',
+        '0.75',
+        '2026-01-04',
+        '2026-01-04T05:06:07.25Z',
+        true,
+        'Gauge, east bank',
+      ],
     ]);
     expect(csv.ran).toEqual({
       object: { bucket: 'alloy-readings', key: 'readings/2026/readings.csv' },
@@ -144,8 +152,10 @@ describe('an S3 source', { timeout: LOADED_TIMEOUT_MS }, () => {
     );
     expect(seeded.result.rows).toEqual([['Private weir']]);
     // Not vacuous: the reader reads its own bucket.
-    expect(ok(await supervisor.run('run', s3RunRequest(source, draft, {}, { pair: READER })))
-      .result.rows).toHaveLength(3);
+    expect(
+      ok(await supervisor.run('run', s3RunRequest(source, draft, {}, { pair: READER }))).result
+        .rows,
+    ).toHaveLength(3);
   });
 
   it('tests a connection by HeadBucket: its key pair signs in, and a wrong secret reads as a failure to reach', async () => {
@@ -159,9 +169,9 @@ describe('an S3 source', { timeout: LOADED_TIMEOUT_MS }, () => {
         s3RequestFor(source, { accessKeyId: READER.accessKeyId, secretAccessKey: 'not-it' }),
       ),
     ).toEqual(FAILED_TO_REACH);
-    expect(
-      await supervisor.run('describe', s3RequestFor(source)),
-    ).toEqual({ failure: { code: 'describe_not_supported', attribution: 'product' } });
+    expect(await supervisor.run('describe', s3RequestFor(source))).toEqual({
+      failure: { code: 'describe_not_supported', attribution: 'product' },
+    });
   });
 
   it('applies typed filters to the canonical rows and imposes the declared order, a time compared by its value', async () => {
@@ -177,7 +187,10 @@ describe('an S3 source', { timeout: LOADED_TIMEOUT_MS }, () => {
         ],
       },
       key: ['id'],
-      order: [{ column: 'depth', direction: 'ascending' }, { column: 'id', direction: 'ascending' }],
+      order: [
+        { column: 'depth', direction: 'ascending' },
+        { column: 'id', direction: 'ascending' },
+      ],
     });
     const run = ok(
       await supervisor.run('run', s3RunRequest(source, draft, { after: '2026-01-02T03:04:05Z' })),
@@ -244,7 +257,10 @@ describe('an S3 exchange', () => {
     const run = () => answered('run', s3RunRequest(source, draft));
     next = () => 'short';
     expect(code(await run())).toBe('result_incomplete');
-    next = () => ({ body: CSV_BODY, headers: { 'x-amz-checksum-sha256': sha256(Buffer.from('other')) } });
+    next = () => ({
+      body: CSV_BODY,
+      headers: { 'x-amz-checksum-sha256': sha256(Buffer.from('other')) },
+    });
     expect(code(await run())).toBe('result_incomplete');
     next = () => ({ body: CSV_BODY, headers: { 'x-amz-checksum-crc32c': 'AAAAAA==' } });
     expect(code(await run())).toBe('result_incomplete');
@@ -266,7 +282,10 @@ describe('an S3 exchange', () => {
     expect(right.outcome === 'ok' && right.ran).toEqual({
       object: { bucket: 'alloy-readings', key: 'readings/2026/readings.csv', versionId: 'v-3' },
     });
-    next = () => ({ body: CSV_BODY, headers: { 'x-amz-checksum-type': 'COMPOSITE', 'x-amz-checksum-sha256': 'AAAA' } });
+    next = () => ({
+      body: CSV_BODY,
+      headers: { 'x-amz-checksum-type': 'COMPOSITE', 'x-amz-checksum-sha256': 'AAAA' },
+    });
     expect(code(await run())).toBe('ok');
   });
 
@@ -343,15 +362,21 @@ describe("S3's checksums", () => {
     expect(split.digest().toString('hex')).toBe('ae8b14860a799888');
     const all = new ChecksumCheck();
     all.update(check);
-    expect(all.holds({ 'x-amz-checksum-crc64nvme': Buffer.from('ae8b14860a799888', 'hex').toString('base64') })).toBe(true);
+    expect(
+      all.holds({
+        'x-amz-checksum-crc64nvme': Buffer.from('ae8b14860a799888', 'hex').toString('base64'),
+      }),
+    ).toBe(true);
     expect(all.holds({ 'x-amz-checksum-sha1': 'not base64!' })).toBe(false);
   });
 
   it('the compose CA bundle holds both development source CAs', () => {
     const at = (path: string) =>
-      readFileSync(fileURLToPath(new URL(`../../../deploy/sources/${path}`, import.meta.url)), 'utf8');
+      readFileSync(
+        fileURLToPath(new URL(`../../../deploy/sources/${path}`, import.meta.url)),
+        'utf8',
+      );
     expect(at('ca-bundle.pem')).toBe(`${at('http/ca.pem')}${at('s3/ca.pem')}`);
     expect(SOURCES_CA).toBe(at('ca-bundle.pem'));
   });
 });
-

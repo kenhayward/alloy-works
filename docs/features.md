@@ -586,8 +586,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 - **Connections to your own data.** **Connections**, beside Templates, lists the connections you may
   read, by space, with whether each has its password and how its last test went. Somebody who may
   administer a space makes one there with **New connection**: a name, a description, and a PostgreSQL
-  database's host, port, database, account and TLS, or an HTTPS API's base URL and the header its
-  secret is sent in. A connection's page saves a change to its
+  database's host, port, database, account and TLS, an HTTPS API's base URL and the header its
+  secret is sent in, or an S3 bucket's endpoint, region, name and how it is addressed. A connection's page saves a change to its
   settings as a new version, and says so if somebody else saved one first. Its password is typed
   into a field that empties as it is sent and never shows it again, anywhere: the page says only
   whether it is set, by whom and when, and setting or replacing it tests the connection straight
@@ -679,8 +679,23 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   proposes a column for each member of the first rows, which you confirm. A redirect, a refused
   sign-in, an address the connector may not reach and a refused port read alike; any other refusal
   is its HTTP status alone. One deadline covers the whole exchange, a body is counted as it arrives
-  and once decoded, a JSON body is at most 4 MiB and JSON Lines 12 MiB, and a stated length or
-  digest is checked.
+  and once decoded, a JSON body is at most 4 MiB, JSON Lines 12 MiB and CSV 6 MiB, and a stated
+  length or digest is checked. An API may answer CSV too, as a file is read.
+- **S3 buckets.** A connection to an S3 bucket - AWS, or any store that signs as it does, such as
+  MinIO or SeaweedFS - holds its endpoint, its region, the bucket and whether it is addressed by name
+  before the endpoint or in its path, and runs as a static access key pair set on its page, the
+  access key id and the secret access key each typed into a field that empties as it is sent and is
+  never shown again; the store's own policy for that key decides what it may read. **Test** asks the
+  store for the bucket. Its query definition is a file: the object's key, a segment each, fixed text
+  or a parameter placed whole - a segment refuses a slash, `.` and `..` - and the format: JSON, JSON
+  Lines or CSV, with its delimiter, whether its first record names the fields, and whether an empty
+  field is empty or empty text (a quoted `""` is always text). **Sample for columns** reads the
+  object and proposes a column for each field, by its header or its letter, or for each JSON member.
+  Filters compare a confirmed column with a parameter or a fixed value of its type, under **Match
+  all** or **Match any**, and are applied to the file's own rows - a time by its value, text by code
+  point - and a declared order is imposed on them, since a file has no query to order it. What a run
+  read is the bucket, the key and the object's version, never a URL; a checksum the store states is
+  checked, an ETag never, and an object is read whole under the limits.
 - **Image columns.** A PostgreSQL `bytea` column is proposed as an **image**, and a text column can be
   declared one held as base64; each image column names the text column that describes it, or is
   marked decorative, before the definition saves. Only a PNG or a JPEG is admitted, checked by its
@@ -1231,8 +1246,9 @@ Named explicitly so nobody has to read the source to find out:
 - No way to delete a component or a document, including one made by mistake.
 - A document's own parameters do not exist, so a binding taking one cannot be resolved. A connection
   reaches PostgreSQL, as its own account or as each person by a role the database's administrator
-  made, or an HTTPS API by its own secret, answering JSON or JSON Lines; no S3 bucket, CSV or XLSX
-  yet, and no connection runs with a person's own token from their sign-in provider
+  made, an HTTPS API by its own secret or an S3 bucket by a static key pair, each answering JSON,
+  JSON Lines or CSV; no XLSX yet, no S3 role, instance credentials or anonymous bucket, and no
+  connection runs with a person's own token from their sign-in provider
   ([ADR-0041](decisions/0041-the-delegated-provider-token-is-deferred-past-the-first-release.md));
   an API that redirects is not followed;
   the builder's page builds from one table or view - a join or a nested query is written through the

@@ -129,11 +129,12 @@ const provenanceView = (provenance: Provenance, readsDefinition: boolean) =>
     : {
         ...provenance,
         connection: null,
-        ran: 'sql' in provenance.ran
-          ? { sql: null }
-          : 'request' in provenance.ran
-            ? { request: null }
-            : { object: null },
+        ran:
+          'sql' in provenance.ran
+            ? { sql: null }
+            : 'request' in provenance.ran
+              ? { request: null }
+              : { object: null },
         columns: provenance.columns.map((column) => ({ ...column, from: null })),
       }) as unknown as z.infer<typeof ProvenanceView>;
 

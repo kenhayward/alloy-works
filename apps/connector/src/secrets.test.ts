@@ -454,15 +454,15 @@ describe("the connector's secrets", { timeout: LOADED_TIMEOUT_MS }, () => {
         [field('site', { base: 'text' })],
         { parameters: [{ name: 'site', type: { base: 'text' }, required: true, list: false }] },
       );
-      const refused = fileDraft(
-        [{ fixed: 'refused' }, { parameter: 'site' }],
-        definition.columns,
-        { parameters: definition.parameters },
-      );
+      const refused = fileDraft([{ fixed: 'refused' }, { parameter: 'site' }], definition.columns, {
+        parameters: definition.parameters,
+      });
       expect(
         (await call(real.at, '/v1/run', s3RunRequest(source, refused, { site: placed }, { pair })))
           .text,
-      ).toBe('{"outcome":"failed","failure":{"code":"connection_failed","attribution":"connector"}}');
+      ).toBe(
+        '{"outcome":"failed","failure":{"code":"connection_failed","attribution":"connector"}}',
+      );
       // Answered: what it read is the bucket and the key, never the URL it was read at.
       const ran = await call(
         real.at,
@@ -478,9 +478,13 @@ describe("the connector's secrets", { timeout: LOADED_TIMEOUT_MS }, () => {
           await call(
             real.at,
             '/v1/describe',
-            s3DescribeRequest(source, refused.fetch.kind === 'file' ? refused.fetch.key : [], CSV, [
-              ...definition.parameters,
-            ], { site: placed }),
+            s3DescribeRequest(
+              source,
+              refused.fetch.kind === 'file' ? refused.fetch.key : [],
+              CSV,
+              [...definition.parameters],
+              { site: placed },
+            ),
           )
         ).status,
       ).toBe(200);
@@ -515,9 +519,9 @@ describe("the connector's secrets", { timeout: LOADED_TIMEOUT_MS }, () => {
         ],
         env: {},
       });
-      expect(
-        (await call(crashing.at, '/v1/test', s3RequestFor(source, pair))).text,
-      ).toBe('{"outcome":"failed","failure":{"code":"connector_error","attribution":"connector"}}');
+      expect((await call(crashing.at, '/v1/test', s3RequestFor(source, pair))).text).toBe(
+        '{"outcome":"failed","failure":{"code":"connector_error","attribution":"connector"}}',
+      );
       await new Promise<void>((resolve) => crashing.server.close(() => resolve()));
       // Not vacuous: the store saw signed requests, and the crash wrote the pair and the URL.
       const signatures = store.seen
@@ -527,7 +531,8 @@ describe("the connector's secrets", { timeout: LOADED_TIMEOUT_MS }, () => {
       expect(stderr.join('')).toContain(pair.secretAccessKey);
       expect(stderr.join('')).toContain(composed[0]);
       for (const text of seen) {
-        for (const each of [...looked, ...composed, ...signatures]) expect(text).not.toContain(each);
+        for (const each of [...looked, ...composed, ...signatures])
+          expect(text).not.toContain(each);
       }
       // The store itself was never sent the secret: a signature is made of it, never it.
       for (const request of store.seen) {

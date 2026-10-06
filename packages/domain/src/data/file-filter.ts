@@ -23,8 +23,7 @@ import { canonicalValueSchema, sourceName } from './primitives.js';
 
 /** What a comparison compares a column with: a parameter, or a fixed value of a declared type. */
 export type FileOperand =
-  | { parameter: string }
-  | { literal: CanonicalValue | CanonicalValue[]; type: ValueType };
+  { parameter: string } | { literal: CanonicalValue | CanonicalValue[]; type: ValueType };
 
 export type FileCondition =
   | { and: FileCondition[] }
@@ -128,7 +127,10 @@ export function checkFileCondition(
         problem(`${path}.to.literal`, `A list of values holds 1 to ${MAX_LIST_ITEMS}`);
       }
       if (values.some((value) => literalProblem(to.type, value))) {
-        problem(`${path}.to.literal`, "A value is written in its type's canonical form, and is never empty");
+        problem(
+          `${path}.to.literal`,
+          "A value is written in its type's canonical form, and is never empty",
+        );
       }
     }
     if (base !== type.base) {
@@ -153,7 +155,12 @@ export function checkFileCondition(
 type Truth = boolean | null;
 
 /** One comparison of a cell with a value of its column's type. */
-function compared(type: ColumnType, is: Comparison, cell: CanonicalValue, value: CanonicalValue): boolean {
+function compared(
+  type: ColumnType,
+  is: Comparison,
+  cell: CanonicalValue,
+  value: CanonicalValue,
+): boolean {
   const order = () => compareCanonical(type, cell, value);
   switch (is) {
     case 'equal':
@@ -231,7 +238,9 @@ export function fileFilter(
     if (cell === null) return null;
     const type = columns[at]!.type;
     if (node.is === 'in') {
-      return (operand as readonly CanonicalValue[]).some((item) => compared(type, 'equal', cell, item));
+      return (operand as readonly CanonicalValue[]).some((item) =>
+        compared(type, 'equal', cell, item),
+      );
     }
     return compared(type, node.is, cell, operand as CanonicalValue);
   };
@@ -269,4 +278,3 @@ export function sortRows<Row extends readonly CanonicalValue[]>(
     return 0;
   });
 }
-

@@ -837,8 +837,10 @@ describe("the connector's protocol for an S3 connection (the D6 plan)", () => {
     expect(describeSqlRequestSchema.safeParse(describing).success).toBe(true);
     expect(describeSqlRequestSchema.safeParse({ ...describing, settings }).success).toBe(false);
     expect(
-      describeSqlRequestSchema.safeParse({ ...describing, file: { ...describing.file, values: {} } })
-        .success,
+      describeSqlRequestSchema.safeParse({
+        ...describing,
+        file: { ...describing.file, values: {} },
+      }).success,
     ).toBe(false);
     const answer = {
       columns: [{ name: 'id', sourceType: 'text', proposed: { base: 'integer' }, header: 'id' }],

@@ -17966,6 +17966,12 @@
       "kind": "title"
     },
     {
+      "id": "DAT-105",
+      "file": "apps/connector/src/formats/csv.test.ts",
+      "line": 128,
+      "kind": "title"
+    },
+    {
       "id": "DAT-095",
       "file": "apps/connector/src/formats/json.test.ts",
       "line": 18,
@@ -17974,37 +17980,43 @@
     {
       "id": "DAT-018",
       "file": "apps/connector/src/hostile.test.ts",
-      "line": 506,
+      "line": 521,
       "kind": "title"
     },
     {
       "id": "DAT-021",
       "file": "apps/connector/src/hostile.test.ts",
-      "line": 432,
+      "line": 447,
       "kind": "title"
     },
     {
       "id": "DAT-081",
       "file": "apps/connector/src/hostile.test.ts",
-      "line": 938,
+      "line": 953,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-074",
+      "file": "apps/connector/src/http-source.test.ts",
+      "line": 141,
       "kind": "title"
     },
     {
       "id": "DAT-075",
       "file": "apps/connector/src/http-source.test.ts",
-      "line": 157,
+      "line": 187,
       "kind": "title"
     },
     {
       "id": "DAT-105",
       "file": "apps/connector/src/http-source.test.ts",
-      "line": 317,
+      "line": 374,
       "kind": "title"
     },
     {
       "id": "DAT-108",
       "file": "apps/connector/src/http-source.test.ts",
-      "line": 140,
+      "line": 170,
       "kind": "title"
     },
     {
@@ -18104,9 +18116,39 @@
       "kind": "title"
     },
     {
+      "id": "DAT-074",
+      "file": "apps/connector/src/s3.test.ts",
+      "line": 81,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-077",
+      "file": "apps/connector/src/s3.test.ts",
+      "line": 146,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-105",
+      "file": "apps/connector/src/s3.test.ts",
+      "line": 201,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-108",
+      "file": "apps/connector/src/s3.test.ts",
+      "line": 255,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-109",
+      "file": "apps/connector/src/s3.test.ts",
+      "line": 292,
+      "kind": "title"
+    },
+    {
       "id": "DAT-005",
       "file": "apps/connector/src/secrets.test.ts",
-      "line": 83,
+      "line": 95,
       "kind": "title"
     },
     {
@@ -18850,37 +18892,37 @@
     {
       "id": "DAT-004",
       "file": "apps/web/src/data/connections.test.tsx",
-      "line": 483,
+      "line": 558,
       "kind": "title"
     },
     {
       "id": "DAT-064",
       "file": "apps/web/src/data/connections.test.tsx",
-      "line": 736,
+      "line": 811,
       "kind": "title"
     },
     {
       "id": "DAT-075",
       "file": "apps/web/src/data/connections.test.tsx",
-      "line": 431,
+      "line": 506,
       "kind": "title"
     },
     {
       "id": "DAT-014",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 442,
+      "line": 468,
       "kind": "title"
     },
     {
       "id": "DAT-016",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 814,
+      "line": 840,
       "kind": "title"
     },
     {
       "id": "DAT-105",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 371,
+      "line": 397,
       "kind": "title"
     },
     {
@@ -20866,13 +20908,19 @@
     {
       "id": "DAT-001",
       "file": "packages/domain/src/data/connection.test.ts",
-      "line": 55,
+      "line": 56,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-077",
+      "file": "packages/domain/src/data/connection.test.ts",
+      "line": 534,
       "kind": "title"
     },
     {
       "id": "DAT-078",
       "file": "packages/domain/src/data/connection.test.ts",
-      "line": 168,
+      "line": 169,
       "kind": "title"
     },
     {
@@ -20908,7 +20956,13 @@
     {
       "id": "DAT-113",
       "file": "packages/domain/src/data/protocol.test.ts",
-      "line": 621,
+      "line": 622,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-081",
+      "file": "packages/domain/src/data/s3.test.ts",
+      "line": 58,
       "kind": "title"
     },
     {
@@ -20944,7 +20998,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 515,
+      "line": 537,
       "kind": "title"
     },
     {

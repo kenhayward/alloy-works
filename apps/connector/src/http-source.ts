@@ -131,7 +131,6 @@ export async function testHttp(
   return { outcome: 'failed', failure };
 }
 
-
 /** A run (DAT-104): the template bound, sent, read by its format and finished. */
 export async function runHttp(
   request: RunRequest,

@@ -79,7 +79,12 @@ describe("the connector's package", () => {
           specifier.startsWith('node:') ||
           builtinModules.includes(specifier) ||
           allowed.has(specifier) ||
-          allowed.has(specifier.split('/').slice(0, specifier.startsWith('@') ? 2 : 1).join('/'));
+          allowed.has(
+            specifier
+              .split('/')
+              .slice(0, specifier.startsWith('@') ? 2 : 1)
+              .join('/'),
+          );
         expect(known, `${file} imports ${specifier}`).toBe(true);
       }
     }

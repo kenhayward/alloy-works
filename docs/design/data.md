@@ -815,7 +815,9 @@ definition names, or it is declared decorative (DAT-097's declaration; its failu
   and held to a ceiling of its format's under the byte limit, measured in the child against the run
   below (D6.1), on Linux as CI runs it: `JSON.parse` with its source-text reviver peaked at 356 MiB for
   an 8 MiB JSON body and 230 to 298 MiB for 4 MiB, so a JSON body is at most 4 MiB; JSON Lines, a line
-  at a time, peaked at about 410 MiB for 20 MiB and 272 MiB for 12 MiB, so it is at most 12 MiB. Past either it is
+  at a time, peaked at about 410 MiB for 20 MiB and 272 MiB for 12 MiB, so it is at most 12 MiB. CSV,
+  a record at a time by `csv-parse` and denser in rows, peaked at 375 to 401 MiB for 12 MiB, 339 to
+  354 for 8 and 233 for 6 (D6.2), so it is at most 6 MiB, over HTTP or S3 alike. Past any it is
   `byte_limit`. **The connector runs at most four definitions at once**, of its eight children: a result
   at the ceilings - 99,999 rows of 39 columns, about 19.9 MB canonical - peaked at 368 to 371 MiB in
   its child, against 88 MiB for a child at rest, and the supervisor held about 87 MiB of heap parsing
@@ -1059,7 +1061,7 @@ the act has them, the binding and the document (DAT-086). A failed act records n
 | `source_refused`          | query       | The source refused the statement - a syntax error, a permission, a division by zero - with its SQLSTATE and its message, cut to 1,000 characters; an HTTP source's refusal is its status alone, never its body                                      |
 | `value_unrepresentable`   | query       | A value no canonical form of its declared type can hold: `NaN`, an infinity, a date out of range                                                                                                                                                    |
 | `definition_unbindable`   | query       | The binder refused the definition's binding: a fragment, unsound on its own, runs into the SQL around it where it is placed. The definition's checks refuse it when it is written; one reaching a run unchecked is answered so, and nothing is sent |
-| `describe_not_supported`  | product     | A describe of tables asked of a source that lists none: an HTTP connection, whose columns a sample proposes (the D6 plan, D6-A)                                                                                                                     |
+| `describe_not_supported`  | product     | A describe of tables asked of a source that lists none: an HTTP or S3 connection, whose columns a sample proposes (the D6 plan, D6-A)                                                                                                               |
 
 The four before those two were added by the D1 plan (D1-M, D1-Q), and the last two by the D2 plan
 (D2-H), whose `source_refused` is answered with the source's message only to somebody holding

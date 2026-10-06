@@ -35,7 +35,7 @@ const text = (name: string, from: Column['from']): Column => ({
 });
 
 describe('CSV', () => {
-  it("reads null by the declared convention: an unquoted empty field is null under empty, and a quoted one is empty text; under never, both are text", () => {
+  it('reads null by the declared convention: an unquoted empty field is null under empty, and a quoted one is empty text; under never, both are text', () => {
     const bytes = body('id,note', '1,', '2,""', '3,"a, b"');
     expect(records(bytes, csv())).toEqual([
       ['1', null],
@@ -50,14 +50,19 @@ describe('CSV', () => {
   });
 
   it('reads each delimiter, CRLF and a byte order mark, a quote doubled within a quoted field, and a line break in one', () => {
-    expect(records(Buffer.from(`a;b${CR}${LF}1;2${CR}${LF}`), csv({ delimiter: 'semicolon' }))).toEqual([
-      ['1', '2'],
-    ]);
+    expect(
+      records(Buffer.from(`a;b${CR}${LF}1;2${CR}${LF}`), csv({ delimiter: 'semicolon' })),
+    ).toEqual([['1', '2']]);
     expect(records(Buffer.from(`a${TAB}b${LF}1${TAB}2${LF}`), csv({ delimiter: 'tab' }))).toEqual([
       ['1', '2'],
     ]);
-    expect(records(Buffer.from(`a|b${LF}1|2${LF}`), csv({ delimiter: 'pipe' }))).toEqual([['1', '2']]);
-    const bom = Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), body('a', '"say ""hi"""', `"one${LF}two"`)]);
+    expect(records(Buffer.from(`a|b${LF}1|2${LF}`), csv({ delimiter: 'pipe' }))).toEqual([
+      ['1', '2'],
+    ]);
+    const bom = Buffer.concat([
+      Buffer.from([0xef, 0xbb, 0xbf]),
+      body('a', '"say ""hi"""', `"one${LF}two"`),
+    ]);
     expect(records(bom, csv())).toEqual([['say "hi"'], [`one${LF}two`]]);
     // No header: every record is a row.
     expect(records(body('1,2', '3,4'), csv({ headerRow: false }))).toEqual([
@@ -87,7 +92,11 @@ describe('CSV', () => {
     const columns: Column[] = [
       { name: 'id', from: { letter: 'A' }, type: { base: 'integer' } },
       text('site', { header: 'site' }),
-      { name: 'depth', from: { header: 'depth' }, type: { base: 'decimal', precision: 8, scale: 2 } },
+      {
+        name: 'depth',
+        from: { header: 'depth' },
+        type: { base: 'decimal', precision: 8, scale: 2 },
+      },
       { name: 'measured', from: { letter: 'D' }, type: { base: 'date' } },
       { name: 'taken', from: { header: 'taken' }, type: { base: 'instant', fraction: 3 } },
       { name: 'active', from: { header: 'active' }, type: { base: 'boolean' } },

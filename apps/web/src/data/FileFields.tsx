@@ -40,7 +40,9 @@ export function FileFields({
   const typeOf = (name: string) => offered.find((each) => each.name === name)?.type ?? null;
   const listed = (filter: FilterDraft) =>
     'parameter' in filter.to &&
-    parameters.some((each) => 'parameter' in filter.to && each.name === filter.to.parameter && each.list);
+    parameters.some(
+      (each) => 'parameter' in filter.to && each.name === filter.to.parameter && each.list,
+    );
   /** A filter whose comparison its column and operand no longer take takes the first they do. */
   const fitted = (filter: FilterDraft): FilterDraft => {
     const allowed = comparisonsFor(typeOf(filter.column), listed(filter));
@@ -194,7 +196,9 @@ export function FileFields({
           Add a filter
         </button>
       ) : (
-        <p className={styles['hint']}>Sample the file and confirm its columns to filter its rows.</p>
+        <p className={styles['hint']}>
+          Sample the file and confirm its columns to filter its rows.
+        </p>
       )}
       {file.filters.length > 1 && (
         <fieldset>

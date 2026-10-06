@@ -222,7 +222,9 @@ export async function startFakeStore(
         return;
       }
       const body =
-        typeof answered.body === 'string' ? Buffer.from(answered.body) : (answered.body ?? Buffer.alloc(0));
+        typeof answered.body === 'string'
+          ? Buffer.from(answered.body)
+          : (answered.body ?? Buffer.alloc(0));
       response.writeHead(answered.status ?? 200, {
         'content-length': String(body.length),
         ...answered.headers,

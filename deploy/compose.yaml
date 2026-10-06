@@ -169,7 +169,8 @@ services:
       CONNECTOR_SEALING_KEY: ZGV2ZWxvcG1lbnQtb25seS1zZWFsaW5nLWtleS0wMDE=
       CONNECTOR_DENY: none
       LOG_LEVEL: info
-      # The development CA `source-http` is signed by, trusted beside the system's: never in production.
+      # The development CAs `source-http` and `source-s3` are signed by, trusted beside the system's:
+      # never in production.
       CONNECTOR_CA_FILE: /run/alloy/source-ca.pem
     # Root with three capabilities and no others: to run each child as a user of its own, and to kill
     # it (deploy/Dockerfile says why root). Read-only, so neither it nor a child writes a file another
@@ -205,7 +206,7 @@ services:
     # heap `--max-old-space-size` bounds, and eight children at the ceiling hold about 200 MiB each.
     mem_limit: 3g
     volumes:
-      - ./sources/http/ca.pem:/run/alloy/source-ca.pem:ro
+      - ./sources/ca-bundle.pem:/run/alloy/source-ca.pem:ro
     networks:
       - connector-private
       - connector-egress
@@ -279,6 +280,25 @@ services:
       interval: 2s
       timeout: 5s
       retries: 30
+
+  # Development and CI only, in the `sources` profile: a tenant's own S3 bucket (the D6 plan, task
+  # 2), SeaweedFS answering at https://source-s3:8333, path-style, region us-east-1. The invented key
+  # `source-s3-reader` / `source-s3-reader-dev-secret` reads the bucket `alloy-readings` alone; its
+  # objects are seeded from ./sources/s3/objects. Its certificate is the development S3 CA's, in the
+  # bundle the connector here trusts. On `connector-egress` alone, publishing no port.
+  source-s3:
+    image: chrislusf/seaweedfs:4.46
+    profiles: [sources]
+    entrypoint: ['sh', '/srv/s3/start.sh']
+    volumes:
+      - ./sources/s3:/srv/s3:ro
+    networks:
+      - connector-egress
+    healthcheck:
+      test: ['CMD', 'test', '-f', '/tmp/seeded']
+      interval: 2s
+      timeout: 5s
+      retries: 45
 
 # The connector's two networks (the D1 plan, D1-I): internal, so nothing on them is routed anywhere
 # else, and with no address for the host on their bridge, so no process the host runs - and no port

@@ -139,19 +139,24 @@ describe('an HTTP source', { timeout: LOADED_TIMEOUT_MS }, () => {
   });
 
   it('DAT-074 reads a CSV response into a canonical result, an unquoted empty field null and a quoted one empty text', async () => {
-    const columns = ['id', 'site', 'depth', 'measured', 'taken', 'active'].map(
-      (name, at) => ({ ...readings[at]!, from: { header: name } }),
-    );
+    const columns = ['id', 'site', 'depth', 'measured', 'taken', 'active'].map((name, at) => ({
+      ...readings[at]!,
+      from: { header: name },
+    }));
     const answer = await supervisor.run(
       'run',
       httpRunRequest(
         httpSettings(api.port),
         DEV_KEY,
-        httpDraft(get(['readings.csv']), [...columns, { name: 'note', from: { letter: 'G' }, type: { base: 'text' } }], {
-          key: ['id'],
-          order: [{ column: 'id', direction: 'ascending' }],
-          format: { kind: 'csv', delimiter: 'comma', headerRow: true, null: 'empty' },
-        }),
+        httpDraft(
+          get(['readings.csv']),
+          [...columns, { name: 'note', from: { letter: 'G' }, type: { base: 'text' } }],
+          {
+            key: ['id'],
+            order: [{ column: 'id', direction: 'ascending' }],
+            format: { kind: 'csv', delimiter: 'comma', headerRow: true, null: 'empty' },
+          },
+        ),
       ),
     );
     if (answer === 'busy' || answer.outcome !== 'ok') throw new Error(JSON.stringify(answer));
@@ -284,9 +289,10 @@ describe('an HTTP source', { timeout: LOADED_TIMEOUT_MS }, () => {
       },
     );
     const columns = Array.from({ length: WIDE_COLUMNS }, (_, at) => {
-      const type = at % 2 === 0
-        ? ({ base: 'decimal', precision: 20, scale: 2 } as const)
-        : ({ base: 'text' } as const);
+      const type =
+        at % 2 === 0
+          ? ({ base: 'decimal', precision: 20, scale: 2 } as const)
+          : ({ base: 'text' } as const);
       return lines === 'csv'
         ? { name: `c${at}`, from: { header: `c${at}` }, type }
         : member(`c${at}`, type);

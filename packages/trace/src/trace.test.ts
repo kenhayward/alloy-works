@@ -797,8 +797,9 @@ describe('the citations in the committed model', () => {
   // 687 (2026-10-06): D7.2's DAT-084, DAT-091 and DAT-102, the acts as the person.
   // 690 (2026-10-06): D7.3's IAM-082 over the whole system, and DAT-091 and DAT-022 in the Data tab.
   // 699 (2026-10-06): D6.1's HTTP client, binder and JSON: DAT-104, DAT-108 to DAT-110, DAT-095, DAT-075, DAT-105, DAT-081.
+  // 708 (2026-10-06): D6.2's S3 and CSV: DAT-074, DAT-077 and DAT-105 twice each, DAT-081, DAT-108, DAT-109.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(699);
+    expect(model.citations).toHaveLength(708);
   });
 
   it('cites no identifier the corpus does not hold', () => {

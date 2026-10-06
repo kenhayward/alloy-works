@@ -197,7 +197,9 @@ export async function exchange(asked: Exchange, policy: ExchangePolicy): Promise
       // A HEAD's answer states the length of a body it does not send: it has none to check.
       if (asked.method === 'HEAD') {
         response.resume();
-        response.on('end', () => finish({ ok: true, status, headers: response.headers, body: Buffer.alloc(0) }));
+        response.on('end', () =>
+          finish({ ok: true, status, headers: response.headers, body: Buffer.alloc(0) }),
+        );
         response.on('error', () => finish(failed(dataFailure('result_incomplete'))));
         return;
       }

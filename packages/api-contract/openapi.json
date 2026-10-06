@@ -21077,7 +21077,7 @@
       "put": {
         "operationId": "setConnectionCredential",
         "summary": "Set or replace a connection's credential, then test the connection with it",
-        "description": "Sets or replaces the connection credential, then tests the connection with it. The credential is sealed at once and never returned; this route takes no idempotency key.",
+        "description": "Sets or replaces the connection credential, then tests the connection with it: a secret for a PostgreSQL or an HTTP connection, or an access key id and a secret access key for an S3 connection. The credential is sealed at once and never returned; this route takes no idempotency key.",
         "tags": [
           "Connections"
         ],
@@ -21759,7 +21759,7 @@
       "post": {
         "operationId": "describeConnection",
         "summary": "List the tables and views a connection's account may read, or a statement's or a built query's result columns",
-        "description": "Lists the tables and views the connection account may read, with each column and the type proposed for it. Sent a SQL statement instead, it answers the columns the statement would return, each with the type proposed for it, without running it; that needs write SQL on the connection as well, and a connection whose latest test found its account read-only. Sent a built query instead - its tree and its parameters - it answers the columns the query would return in the same way, from SQL the service generates from the tree; that needs use connection alone, on any connection. A source's refusal of a built query is worded by its SQLSTATE, and what the source said is shown only to a caller who may write SQL on the connection.",
+        "description": "Lists the tables and views the connection account may read, with each column and the type proposed for it. Sent a SQL statement instead, it answers the columns the statement would return, each with the type proposed for it, without running it; that needs write SQL on the connection as well, and a connection whose latest test found its account read-only. Sent a built query instead - its tree and its parameters - it answers the columns the query would return in the same way, from SQL the service generates from the tree; that needs use connection alone, on any connection. A source's refusal of a built query is worded by its SQLSTATE, and what the source said is shown only to a caller who may write SQL on the connection. An HTTP or S3 connection lists no tables: sent its request, or its file's key and format, it reads the first rows and proposes a column for each.",
         "tags": [
           "Connections"
         ],

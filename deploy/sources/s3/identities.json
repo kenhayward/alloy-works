@@ -2,12 +2,16 @@
   "identities": [
     {
       "name": "seeder",
-      "credentials": [{ "accessKey": "source-s3-seeder", "secretKey": "source-s3-seeder-dev-secret" }],
+      "credentials": [
+        { "accessKey": "source-s3-seeder", "secretKey": "source-s3-seeder-dev-secret" }
+      ],
       "actions": ["Admin", "Read", "List", "Write", "Tagging"]
     },
     {
       "name": "reader",
-      "credentials": [{ "accessKey": "source-s3-reader", "secretKey": "source-s3-reader-dev-secret" }],
+      "credentials": [
+        { "accessKey": "source-s3-reader", "secretKey": "source-s3-reader-dev-secret" }
+      ],
       "actions": ["Read:alloy-readings", "List:alloy-readings"]
     }
   ]

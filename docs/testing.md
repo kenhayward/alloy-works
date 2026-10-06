@@ -230,6 +230,17 @@ The suite's HTTPS source needs no step: `deploy/sources/http/fake-api.mjs`, the 
 `ALLOY_TEST_HTTP_PORT`, its certificate the development CA's beside it, which the suite's children
 are handed as `CONNECTOR_CA_FILE` hands it to the compose connector.
 
+**Its S3 source** is SeaweedFS with the identities and objects of compose's `source-s3`
+(`deploy/sources/s3`), HTTPS by the development S3 CA, on `127.0.0.1` at `ALLOY_TEST_S3_SOURCE_PORT`
+(8489 unless said otherwise). CI starts it beside the PostgreSQL source; without it the S3 suite fails.
+The compose connector trusts both development CAs, `deploy/sources/ca-bundle.pem`; a test holds the
+bundle to the two.
+
+```bash
+pnpm --filter @alloy-works/connector source-s3        # starts it, seeded, or finds it running
+pnpm --filter @alloy-works/connector source-s3:stop   # removes it
+```
+
 **Loopback is always refused by the guard**, and the suite's source is on loopback, so the suite
 hands the child a deny list without `127.0.0.0/8` through a function parameter, never through
 configuration; `guard.test.ts` holds the production policy to refusing loopback whatever

@@ -93,7 +93,9 @@ describe("a file's object key", () => {
     expect(objectKeyProblems(one, { site: ['a'] })).toEqual([
       { parameter: 'site', rule: 'position', value: '["a"]' },
     ]);
-    expect(objectKeyProblems(one, {})).toEqual([{ parameter: 'site', rule: 'required', value: '' }]);
+    expect(objectKeyProblems(one, {})).toEqual([
+      { parameter: 'site', rule: 'required', value: '' },
+    ]);
   });
 
   it("checks a key's fixed segments and its parameters as a path's, and every parameter placed in the key or the filter", () => {
@@ -169,10 +171,12 @@ describe("a file's object key", () => {
     ]);
     expect(connectionFetchProblems({ kind: 'sql', text: 'select 1' }, s3)).toHaveLength(1);
     // A sample's draft holds the fetch and a placeholder its format reads.
-    expect(checkQueryDefinition(sampleDraft(draft().parameters, { kind: 'file', key, format: CSV })))
-      .toEqual([]);
-    expect(() => parseDraftDefinition({ ...draft(), fetch: { kind: 'file', key: [], format: CSV } }))
-      .toThrow();
+    expect(
+      checkQueryDefinition(sampleDraft(draft().parameters, { kind: 'file', key, format: CSV })),
+    ).toEqual([]);
+    expect(() =>
+      parseDraftDefinition({ ...draft(), fetch: { kind: 'file', key: [], format: CSV } }),
+    ).toThrow();
   });
 });
 

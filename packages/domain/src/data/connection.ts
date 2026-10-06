@@ -294,16 +294,14 @@ const s3Source = z
       }),
     bucket: z.string().refine(isBucketName, {
       message:
-        "A bucket is 3 to 63 lower-case letters, digits, dots and hyphens, a letter or digit at either end, and not an address",
+        'A bucket is 3 to 63 lower-case letters, digits, dots and hyphens, a letter or digit at either end, and not an address',
     }),
     pathStyle: z.boolean(),
   })
   // A virtual-hosted bucket is a name before the endpoint's: an address takes none (D6-C).
   .refine(
     (source) =>
-      !isEndpoint(source.endpoint) ||
-      source.pathStyle ||
-      isDnsName(bucketHost(source).host),
+      !isEndpoint(source.endpoint) || source.pathStyle || isDnsName(bucketHost(source).host),
     {
       message:
         'A virtual-hosted bucket is reached by its name before the endpoint, so the endpoint is a name: use path-style for an address',

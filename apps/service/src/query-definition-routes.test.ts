@@ -1117,7 +1117,10 @@ describe('query definitions through the service', () => {
       const unfiltered = await create(
         'grace',
         fileDefinition(bucketId, {
-          fetch: { ...fileFetch, where: { column: 'river', is: 'equal', to: { parameter: 'prefix' } } },
+          fetch: {
+            ...fileFetch,
+            where: { column: 'river', is: 'equal', to: { parameter: 'prefix' } },
+          },
         }),
       );
       expect(unfiltered.statusCode).toBe(400);

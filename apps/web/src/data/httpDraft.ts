@@ -184,7 +184,8 @@ export function httpDraftOf(
 }
 
 /** A part as a reader is shown it: fixed text as it is, a parameter by its name in braces. */
-export const shownPart = (part: HttpPart) => ('parameter' in part ? `{${part.parameter}}` : part.fixed);
+export const shownPart = (part: HttpPart) =>
+  'parameter' in part ? `{${part.parameter}}` : part.fixed;
 
 /**
  * A template as its reader is shown it, a line each: the method and the path with its query, then

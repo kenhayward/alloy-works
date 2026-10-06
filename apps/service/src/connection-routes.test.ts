@@ -1292,7 +1292,11 @@ describe('connections through the service', () => {
         kind: 'file',
         key,
         format,
-        where: { column: 'site', is: 'startsWith', to: { literal: 'North', type: { base: 'text' } } },
+        where: {
+          column: 'site',
+          is: 'startsWith',
+          to: { literal: 'North', type: { base: 'text' } },
+        },
       },
       columns: [{ name: 'site', from: { header: 'site' }, type: { base: 'text' } }],
       key: [],

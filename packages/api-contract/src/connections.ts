@@ -47,16 +47,16 @@ const utf8Bytes = (value: string) => new TextEncoder().encode(value).length;
  */
 export const CredentialBody = z
   .strictObject({
-  secret: z
-    .string()
-    .refine((value) => utf8Bytes(value) >= 1 && utf8Bytes(value) <= SECRET_MAX_BYTES, {
-      message: `A credential is 1 to ${SECRET_MAX_BYTES} bytes of UTF-8`,
-    })
-    .refine((value) => !value.includes('\u0000'), { message: 'A credential holds no U+0000' })
-    .describe(
-      "The credential: a PostgreSQL source's password, or the value an HTTP connection sends in its secret header. Never answered by any route",
-    )
-    .optional(),
+    secret: z
+      .string()
+      .refine((value) => utf8Bytes(value) >= 1 && utf8Bytes(value) <= SECRET_MAX_BYTES, {
+        message: `A credential is 1 to ${SECRET_MAX_BYTES} bytes of UTF-8`,
+      })
+      .refine((value) => !value.includes('\u0000'), { message: 'A credential holds no U+0000' })
+      .describe(
+        "The credential: a PostgreSQL source's password, or the value an HTTP connection sends in its secret header. Never answered by any route",
+      )
+      .optional(),
     accessKeyId: s3KeyPairSchema.shape.accessKeyId
       .optional()
       .describe("An S3 connection's access key id, sent with its secret access key"),
@@ -328,7 +328,9 @@ export const DescribeSqlView = z.object({
       header: z
         .string()
         .optional()
-        .describe("For a CSV whose first record is a header, the header that names the column's field"),
+        .describe(
+          "For a CSV whose first record is a header, the header that names the column's field",
+        ),
       letter: z
         .string()
         .optional()

@@ -880,18 +880,18 @@ export function QueryDefinitionPage({
                   },
                 }
               : draft.mode === 'http'
-              ? {
-                  // An HTTP response is described by its rows: it is sent with the sample's values.
-                  http: {
-                    request: templateOf(draft.http) as never,
-                    format: formatOf(draft.http) as never,
-                    parameters: parameters as never,
-                    values: sampleValues(draft.parameters, typed) as never,
-                  },
-                }
-              : query === null
-                ? { sql: { text: draft.sql, parameters: parameters as never } }
-                : { builder: { query: query as never, parameters: parameters as never } },
+                ? {
+                    // An HTTP response is described by its rows: it is sent with the sample's values.
+                    http: {
+                      request: templateOf(draft.http) as never,
+                      format: formatOf(draft.http) as never,
+                      parameters: parameters as never,
+                      values: sampleValues(draft.parameters, typed) as never,
+                    },
+                  }
+                : query === null
+                  ? { sql: { text: draft.sql, parameters: parameters as never } }
+                  : { builder: { query: query as never, parameters: parameters as never } },
         });
         const answer: unknown = data;
         if (isRecord(answer) && Array.isArray(answer.columns)) {
@@ -1266,8 +1266,8 @@ export function QueryDefinitionPage({
               {draft.mode === 'file'
                 ? "Sample for columns reads the file with the sample values below and proposes a column, and a type, for each field or member of its first rows. A sample cannot prove a decimal's digits: nothing is saved until you have confirmed every one."
                 : draft.mode === 'http'
-                ? "Sample for columns sends the request with the sample values below and proposes a column, and a type, for each member of the first rows. A sample cannot prove a decimal's digits: nothing is saved until you have confirmed every one."
-                : 'Describe asks the source what the query returns, without running it, and proposes a type for each column. Nothing is saved until you have confirmed every one.'}
+                  ? "Sample for columns sends the request with the sample values below and proposes a column, and a type, for each member of the first rows. A sample cannot prove a decimal's digits: nothing is saved until you have confirmed every one."
+                  : 'Describe asks the source what the query returns, without running it, and proposes a type for each column. Nothing is saved until you have confirmed every one.'}
             </p>
             <Status lines={described} />
             {draft.columns.length > 0 && (

@@ -732,12 +732,12 @@ export function connectionHandlers(
         file !== undefined
           ? { kind: 'file' as const, key: file.key, format: file.format }
           : http !== undefined
-          ? { kind: 'http' as const, request: http.request, format: http.format }
-          : sql !== undefined
-            ? { kind: 'sql' as const, text: sql.text }
-            : builder !== undefined
-              ? { kind: 'builder' as const, format: 1 as const, query: builder.query }
-              : undefined;
+            ? { kind: 'http' as const, request: http.request, format: http.format }
+            : sql !== undefined
+              ? { kind: 'sql' as const, text: sql.text }
+              : builder !== undefined
+                ? { kind: 'builder' as const, format: 1 as const, query: builder.query }
+                : undefined;
       if (asked === undefined && connection.settings.type !== 'postgres') {
         throw dataRefused(409, 'describe_not_supported');
       }

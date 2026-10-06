@@ -8,7 +8,6 @@ import {
   type Comparison,
   type Condition,
   type FileCondition,
-  type FileFetch,
   type Parameter,
   type ProposedType,
   type Query,
@@ -670,7 +669,11 @@ function whereOf(
     if (filter.is === 'isNull' || filter.is === 'isNotNull') {
       comparisons.push({ column: filter.column, is: filter.is });
     } else if ('parameter' in filter.to) {
-      comparisons.push({ column: filter.column, is: filter.is, to: { parameter: filter.to.parameter } });
+      comparisons.push({
+        column: filter.column,
+        is: filter.is,
+        to: { parameter: filter.to.parameter },
+      });
     } else {
       const type = declared.type as ValueType;
       const { value } = filter.to;
@@ -736,14 +739,14 @@ function parts(draft: DefinitionDraft) {
             ...(where === undefined ? {} : { where }),
           }
         : draft.mode === 'http'
-        ? {
-            kind: 'http' as const,
-            request: templateOf(draft.http),
-            format: formatOf(draft.http),
-          }
-        : query === null
-          ? { kind: 'sql' as const, text: draft.sql }
-          : { kind: 'builder' as const, format: 1 as const, query },
+          ? {
+              kind: 'http' as const,
+              request: templateOf(draft.http),
+              format: formatOf(draft.http),
+            }
+          : query === null
+            ? { kind: 'sql' as const, text: draft.sql }
+            : { kind: 'builder' as const, format: 1 as const, query },
     columns,
     key: [...draft.key],
     order:

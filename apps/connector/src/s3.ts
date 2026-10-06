@@ -350,7 +350,11 @@ async function readObject(
     typeof version === 'string' && version !== 'null' && /^[\x21-\x7e]{1,1024}$/.test(version)
       ? version
       : undefined;
-  return { body: exchanged.body, key: bound.key, ...(versionId === undefined ? {} : { versionId }) };
+  return {
+    body: exchanged.body,
+    key: bound.key,
+    ...(versionId === undefined ? {} : { versionId }),
+  };
 }
 
 /**
@@ -387,7 +391,12 @@ export async function runS3(
     const read = readRows(body, fetch.format, definition.columns, limits, keep);
     body = undefined;
     if ('failure' in read) return { outcome: 'failed', failure: read.failure };
-    const finished = finishResult(sortRows(read.rows, definition), definition, limits, read.imageBytes);
+    const finished = finishResult(
+      sortRows(read.rows, definition),
+      definition,
+      limits,
+      read.imageBytes,
+    );
     if ('failure' in finished) return { outcome: 'failed', failure: finished.failure };
     return {
       outcome: 'ok',

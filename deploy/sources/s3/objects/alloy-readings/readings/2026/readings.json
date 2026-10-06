@@ -1,1 +1,32 @@
-{"items":[{"id":1,"site":"North weir","depth":12.5,"measured":"2026-01-02","taken":"2026-01-02T03:04:05.5Z","active":true,"note":""},{"id":2,"site":"South weir","depth":7.25,"measured":"2026-01-03","taken":"2026-01-03T04:05:06Z","active":false,"note":null},{"id":3,"site":"East gauge","depth":0.75,"measured":"2026-01-04","taken":"2026-01-04T05:06:07.25Z","active":true,"note":"Gauge, east bank"}],"count":3}
+{
+  "items": [
+    {
+      "id": 1,
+      "site": "North weir",
+      "depth": 12.5,
+      "measured": "2026-01-02",
+      "taken": "2026-01-02T03:04:05.5Z",
+      "active": true,
+      "note": ""
+    },
+    {
+      "id": 2,
+      "site": "South weir",
+      "depth": 7.25,
+      "measured": "2026-01-03",
+      "taken": "2026-01-03T04:05:06Z",
+      "active": false,
+      "note": null
+    },
+    {
+      "id": 3,
+      "site": "East gauge",
+      "depth": 0.75,
+      "measured": "2026-01-04",
+      "taken": "2026-01-04T05:06:07.25Z",
+      "active": true,
+      "note": "Gauge, east bank"
+    }
+  ],
+  "count": 3
+}

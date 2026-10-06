@@ -100,9 +100,7 @@ export type Provenance = {
   readonly connection: { readonly artifact: string; readonly version: string };
   readonly parameters: ParameterValues;
   readonly ran:
-    | { readonly sql: string }
-    | { readonly request: HttpTemplate }
-    | { readonly object: RanObject };
+    { readonly sql: string } | { readonly request: HttpTemplate } | { readonly object: RanObject };
   readonly identity: ProvenanceIdentity;
   readonly at: string;
   readonly durationMs: number;
