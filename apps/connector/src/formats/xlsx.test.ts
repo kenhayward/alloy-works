@@ -326,6 +326,57 @@ describe('a hostile workbook', () => {
     });
   });
 
+  it('reads a sheet whose every row holds a cell in its last column quickly, its rows never padded out', () => {
+    const rows = Array.from({ length: 50_000 }, (_, at) =>
+      row(at + 1, [cell.number(`A${at + 1}`, String(at)), cell.number(`XFD${at + 1}`, '1')]),
+    );
+    const body = book(rows.join(''));
+    const started = performance.now();
+    const answer = readRows(
+      body,
+      plain,
+      [
+        col('id', { base: 'integer' }, { letter: 'A' }),
+        col('far', { base: 'integer' }, { letter: 'XFD' }),
+      ],
+      { rows: 100_000, bytes: 25 * 1024 * 1024, seconds: 30 },
+    );
+    const took = performance.now() - started;
+    expect('rows' in answer && answer.rows.length).toBe(50_000);
+    expect('rows' in answer && answer.rows[49_999]).toEqual(['49999', '1']);
+    expect(took).toBeLessThan(2000);
+  });
+
+  it('refuses XML nested deeper than 32 or a tag with more than 64 attributes, in any part, result_mismatch', () => {
+    const sheet = (rows: string) =>
+      book('', { replace: { 'xl/worksheets/sheet1.xml': Buffer.from(sheetXml(rows)) } });
+    const deep = (levels: number) => `${'<x>'.repeat(levels)}${'</x>'.repeat(levels)}`;
+    const attributes = (count: number) =>
+      `<row r="1"><c r="A1" ${Array.from({ length: count }, (_, at) => `a${at}="1"`).join(' ')}><v>1</v></c></row>`;
+    // A sheet's own nesting, and attributes enough for any writer, read.
+    expect(read(sheet(attributes(60)), site, plain)).toEqual([['1']]);
+    expect(read(sheet(`<row r="1"><c r="A1"><v>1</v></c></row>${deep(20)}`), site, plain)).toEqual([
+      ['1'],
+    ]);
+    expect(read(sheet(deep(40)), site, plain)).toEqual({ refused: 'result_mismatch' });
+    // Unclosed, as a bomb is: refused at the 33rd level, not at the end.
+    expect(read(sheet('<x>'.repeat(100_000)), site, plain)).toEqual({ refused: 'result_mismatch' });
+    expect(read(sheet(attributes(65)), site, plain)).toEqual({ refused: 'result_mismatch' });
+    expect(
+      read(
+        book('', {
+          replace: {
+            'xl/sharedStrings.xml': Buffer.from(
+              `<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${deep(40)}</sst>`,
+            ),
+          },
+        }),
+        site,
+        plain,
+      ),
+    ).toEqual({ refused: 'result_mismatch' });
+  });
+
   it('refuses a DOCTYPE in any part, an entity declared in it or not, result_mismatch', () => {
     const LT = '<';
     const entity = `${LT}!DOCTYPE sst [${LT}!ENTITY x "${'y'.repeat(10)}">]>`;

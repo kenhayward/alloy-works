@@ -24,7 +24,10 @@ export type XlsxCell =
   | { readonly kind: 'boolean'; readonly value: boolean }
   | { readonly kind: 'error' };
 
-/** What a visitor answers of a row: nothing where it took it, or the failure that stops the read. */
+/**
+ * What a visitor answers of a row - each cell at its column's index, an absent one a hole - nothing
+ * where it took it, or the failure that stops the read.
+ */
 export type RowVisitor = (
   row: readonly XlsxCell[],
   index: number,
@@ -55,9 +58,38 @@ interface Handlers {
   text?(text: string): void;
 }
 
-/** A parser that refuses any document type declaration, and whose every error is the workbook's. */
+/**
+ * The deepest a part's XML may nest, and the most attributes one tag may carry: a sheet nests seven
+ * deep and a cell carries three, while the parser keeps every open tag and builds every attribute, so
+ * a few kilobytes of unclosed tags or one tag of a million attributes would hold the child's memory
+ * however the inflated bytes are counted (the D6 review).
+ */
+export const MAX_XML_DEPTH = 32;
+export const MAX_XML_ATTRIBUTES = 64;
+
+/**
+ * A parser that refuses any document type declaration, XML nested past `MAX_XML_DEPTH` and a tag
+ * past `MAX_XML_ATTRIBUTES`, as each is met; and whose every error is the workbook's.
+ */
 function parser(handlers: Handlers): SaxesParser {
   const parse = new SaxesParser({ position: false });
+  let depth = 0;
+  let attributes = 0;
+  parse.on('opentagstart', () => {
+    depth += 1;
+    attributes = 0;
+    if (depth > MAX_XML_DEPTH) throw mismatch();
+  });
+  parse.on('attribute', () => {
+    attributes += 1;
+    if (attributes > MAX_XML_ATTRIBUTES) throw mismatch();
+  });
+  // A parser takes one handler an event, so the close is counted and handed on in one.
+  const close = handlers.close;
+  parse.on('closetag', (tag) => {
+    depth -= 1;
+    close?.(local(tag.name));
+  });
   parse.on('doctype', () => {
     throw mismatch();
   });
@@ -68,7 +100,6 @@ function parser(handlers: Handlers): SaxesParser {
     const open = handlers.open;
     parse.on('opentag', (tag) => open(local(tag.name), tag as SaxesTagPlain));
   }
-  if (handlers.close) parse.on('closetag', (tag) => handlers.close!(local(tag.name)));
   if (handlers.text) {
     const text = handlers.text;
     parse.on('text', text);
@@ -380,7 +411,8 @@ export function eachSheetRow(
         else if (name === 'c') {
           const read = endCell();
           if (read !== null) {
-            while (cells!.length < at) cells!.push(null);
+            // Kept where it stands and nothing padded before it: a cell in the last column would
+            // otherwise cost every row 16,384 places (the D6 review). An absent place reads null.
             cells![at] = read;
             valued = true;
           }
