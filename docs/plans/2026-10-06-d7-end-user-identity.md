@@ -129,6 +129,8 @@ connection, which D6 builds; D7 would store a provider token nothing reads.
 
 ## Questions for Ken
 
+Answered by Ken on 2026-10-06: every one as recommended; the delegated token moves to D6.
+
 1. Delegated identity (the session holding the provider's token, RFC 8693 exchange, DAT-076's
    delegated half) moves to D6, where `http` gives it a consumer? **Recommended: yes**; D7-K is the
    shape if not. Waiting for D6 to build D7 whole delays asserted identity for nothing.
