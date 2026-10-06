@@ -3,7 +3,8 @@ import { fileURLToPath } from 'node:url';
 import type { Column, DataFormat, RunAnswer } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { XLSX_MAX_BYTES } from './formats/rows.js';
+import { MAX_JSON_LINE_BYTES } from './formats/json.js';
+import { JSON_MAX_BYTES, XLSX_MAX_BYTES } from './formats/rows.js';
 import { childSpawn, createSupervisor, runChild, type SpawnChild } from './supervisor.js';
 import {
   field,
@@ -321,5 +322,28 @@ describe('a hostile file', { timeout: LOADED_TIMEOUT_MS }, () => {
     const past = await wideWorkbook(Math.ceil(XLSX_ROWS * 1.1), WIDE_COLUMNS);
     expect(past.inflated).toBeGreaterThan(XLSX_MAX_BYTES);
     expect(failure((await measured(past.zipped, XLSX, wideColumns())).answer)).toBe('byte_limit');
+  });
+
+  /** JSON's densest shape: one array of single-digit numbers, `bytes` long with what holds it. */
+  const numbers = (bytes: number, before: string, after: string) => {
+    const count = Math.floor((bytes - before.length - after.length) / 2);
+    return Buffer.from(`${before}${'0,'.repeat(count - 1)}0${after}`);
+  };
+
+  it('reads JSON at its ceiling as one array of numbers, its densest shape, and a JSON line of it at the most a line may be, within the memory a run at the ceilings takes', async () => {
+    const asText = [{ name: 'a', from: { pointer: '/a' }, type: { base: 'text' } } as Column];
+    const body = numbers(JSON_MAX_BYTES, '{"items":[{"a":[', ']}]}');
+    expect(body.length).toBeGreaterThan(JSON_MAX_BYTES - 4);
+    const json = await measured(body, { kind: 'json', rows: '/items' }, asText);
+    expect(json.answer !== 'busy' && json.answer.outcome).toBe('ok');
+    expect(json.peak).toBeLessThan(RUN_AT_THE_CEILINGS);
+    const line = numbers(MAX_JSON_LINE_BYTES, '{"a":[', ']}');
+    const lines = await measured(
+      Buffer.concat([line, Buffer.from('\n')]),
+      { kind: 'jsonLines' },
+      asText,
+    );
+    expect(lines.answer !== 'busy' && lines.answer.outcome).toBe('ok');
+    expect(lines.peak).toBeLessThan(RUN_AT_THE_CEILINGS);
   });
 });
