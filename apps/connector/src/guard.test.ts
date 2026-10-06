@@ -121,6 +121,26 @@ describe('the address guard', () => {
     });
   });
 
+  it('refuses a platform or loopback address carried by 6to4 or Teredo, and dials a permitted one as given', async () => {
+    for (const host of [
+      // 6to4 (2002::/16): the IPv4 address in bits 16 to 47.
+      '2002:7f00:1::',
+      '2002:7f00:1:ffff::1',
+      '2002:a9fe:a9fe::1',
+      '2002:ac1f:a0b::',
+      // Teredo (2001::/32): the server in bits 32 to 63, the client in the last 32, inverted.
+      '2001:0:4136:e378:8000:63bf:80ff:fffe',
+      '2001:0:7f00:1:8000:63bf:3fff:fdd2',
+      '2001:0:4136:e378:8000:63bf:5601:5601',
+    ]) {
+      expect(await guardedAddress(host, policy), host).toBe('refused');
+    }
+    expect(await guardedAddress('2002:ac1f:1415::', policy)).toEqual({
+      address: '2002:ac1f:1415::',
+      family: 6,
+    });
+  });
+
   it('normalises a host to what the operating system would dial', () => {
     expect(normaliseHost('2887715339')).toEqual({
       kind: 'address',

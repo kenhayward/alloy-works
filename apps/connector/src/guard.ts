@@ -112,7 +112,8 @@ function localUseCarried(all: readonly number[]): string[] {
  * normalised to it. The others are dialled as given, and the IPv4 addresses they carry are checked
  * beside them: IPv4-compatible (`::/96`, deprecated, but a second spelling of `::7f00:1` for
  * 127.0.0.1), the well-known NAT64 prefix (`64:ff9b::/96`, RFC 6052), and RFC 8215's local-use one
- * (`64:ff9b:1::/48`), through which a translator reaches the IPv4 address it names. On an IPv6-only
+ * (`64:ff9b:1::/48`), through which a translator reaches the IPv4 address it names, and 6to4
+ * (`2002::/16`) and Teredo (`2001::/32`, the client inverted), through which a relay does. On an IPv6-only
  * network a NAT64 address is the only way to an IPv4 source, so dialling what it carries instead
  * would reach nothing. `::` and `::1` are IPv6's own, and the ranges deny them as such.
  */
@@ -130,6 +131,17 @@ function embedded(
   }
   if (all[0] === 0x64 && all[1] === 0xff9b && all[2] === 1) {
     return { carries: localUseCarried(all) };
+  }
+  // 6to4 (RFC 3056): the relay reaches the IPv4 address in bits 16 to 47.
+  if (all[0] === 0x2002) return { carries: [dotted(((all[1]! << 16) | all[2]!) >>> 0)] };
+  // Teredo (RFC 4380): the server in bits 32 to 63, and the client in the last 32, inverted.
+  if (all[0] === 0x2001 && all[1] === 0) {
+    return {
+      carries: [
+        dotted(((all[2]! << 16) | all[3]!) >>> 0),
+        dotted(~((all[6]! << 16) | all[7]!) >>> 0),
+      ],
+    };
   }
   return undefined;
 }
