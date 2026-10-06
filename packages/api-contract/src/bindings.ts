@@ -3,6 +3,7 @@ import {
   imageColumnTypeSchema,
   MAX_COLUMNS,
   httpTemplateSchema,
+  ranObjectSchema,
   provenanceSchema,
   TAKE_FAILURES,
   valueTypeSchema,
@@ -103,6 +104,13 @@ export const ProvenanceView = provenanceSchema.extend({
         .nullable()
         .describe(
           'The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition',
+        ),
+    }),
+    z.strictObject({
+      object: ranObjectSchema
+        .nullable()
+        .describe(
+          'The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition',
         ),
     }),
   ]),

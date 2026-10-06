@@ -1071,6 +1071,69 @@ describe('query definitions through the service', () => {
       });
     });
 
+    it('saves a file only on an S3 connection, its key, format and filter whole, by an author holding use_connection alone', async () => {
+      const database = await connection('Not for files');
+      const fileFetch = {
+        kind: 'file',
+        key: [{ fixed: 'sites' }, { parameter: 'region' }, { fixed: 'sites.csv' }],
+        format: { kind: 'csv', delimiter: 'semicolon', headerRow: true, null: 'never' },
+        where: { column: 'name', is: 'startsWith', to: { parameter: 'prefix' } },
+      };
+      const fileDefinition = (on: string, over: Json = {}) =>
+        definition(on, {
+          title: 'Sites from a file',
+          parameters: [
+            { name: 'region', type: { base: 'text' }, required: true, list: false },
+            { name: 'prefix', type: { base: 'text' }, required: false, list: false },
+          ],
+          fetch: fileFetch,
+          columns: [
+            { name: 'id', from: { letter: 'A' }, type: { base: 'integer' } },
+            { name: 'name', from: { header: 'name' }, type: { base: 'text' } },
+          ],
+          key: ['id'],
+          order: [{ column: 'id', direction: 'ascending' }],
+          ...over,
+        });
+      const onDatabase = await create('grace', fileDefinition(database.id));
+      expect(onDatabase.statusCode).toBe(400);
+      expect(onDatabase.json()).toMatchObject({
+        problems: [{ path: 'fetch', message: 'A file is read on an S3 connection' }],
+      });
+      const bucket = await call('ada', 'POST', `/v1/spaces/${general}/connections`, {
+        settings: {
+          ...settings({ name: 'Sites bucket' }),
+          type: 's3',
+          source: {
+            endpoint: 'https://s3.example.test',
+            region: 'eu-west-2',
+            bucket: 'alloy-sites',
+            pathStyle: true,
+          },
+        },
+      });
+      expect(bucket.statusCode, bucket.body).toBe(200);
+      const bucketId = bucket.json<{ id: string }>().id;
+      const unfiltered = await create(
+        'grace',
+        fileDefinition(bucketId, {
+          fetch: {
+            ...fileFetch,
+            where: { column: 'river', is: 'equal', to: { parameter: 'prefix' } },
+          },
+        }),
+      );
+      expect(unfiltered.statusCode).toBe(400);
+      expect(unfiltered.json()).toMatchObject({ problems: [{ path: 'fetch.where.column' }] });
+      const made = await create('grace', fileDefinition(bucketId));
+      expect(made.statusCode, made.body).toBe(200);
+      expect(made.json<DefinitionBody>()).toMatchObject({
+        definition: { fetch: fileFetch },
+        mayEdit: true,
+        mayRun: true,
+      });
+    });
+
     it('runs on a connection whose test found its account able to write, where SQL is refused sql_not_permitted', async () => {
       const writable = await connection('Writable', 'finding');
       connector.mode = 'answer';

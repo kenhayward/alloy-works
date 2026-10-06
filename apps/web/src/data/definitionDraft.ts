@@ -7,6 +7,7 @@ import {
   type ColumnType,
   type Comparison,
   type Condition,
+  type FileCondition,
   type Parameter,
   type ProposedType,
   type Query,
@@ -15,12 +16,15 @@ import {
   type ValueType,
 } from '@alloy-works/domain';
 
+import { fileDraftOf, fileText, NEW_FILE, type FileDraft } from './fileDraft.js';
 import {
   formatOf,
   httpDraftOf,
   NEW_HTTP,
+  partOf,
   requestText,
   templateOf,
+  type FormatDraft,
   type HttpDraft,
 } from './httpDraft.js';
 
@@ -98,6 +102,9 @@ export interface ColumnDraft {
   readonly confirmed: boolean;
   /** Where an HTTP response's column is read from its row, as its sample proposed (the D6 plan). */
   readonly pointer?: string;
+  /** Where a CSV's column is read from its record: its header, or its letter (the D6 plan, D6-F). */
+  readonly header?: string;
+  readonly letter?: string;
 }
 
 /** A column of the table or view the builder reads, returned under a name of the author's. */
@@ -161,11 +168,12 @@ export interface DefinitionDraft {
   readonly connection: string;
   /**
    * Whether the query is built (D4) or written as SQL, which needs write_sql; or, on an HTTP
-   * connection, a request template (the D6 plan).
+   * connection, a request template, and on an S3 connection a file (the D6 plan).
    */
-  readonly mode: 'builder' | 'sql' | 'http';
+  readonly mode: 'builder' | 'sql' | 'http' | 'file';
   readonly builder: BuilderDraft;
   readonly http: HttpDraft;
+  readonly file: FileDraft;
   readonly sql: string;
   readonly parameters: readonly ParameterDraft[];
   readonly columns: readonly ColumnDraft[];
@@ -222,6 +230,7 @@ export function newDraft(limits: {
     mode: 'builder',
     builder: NEW_BUILDER,
     http: NEW_HTTP,
+    file: NEW_FILE,
     sql: '',
     parameters: [],
     columns: [],
@@ -584,6 +593,10 @@ export function unshownReason(definition: QueryDefinition): string | null {
     const held = httpDraftOf(statement);
     return 'reason' in held ? held.reason : null;
   }
+  if (statement.kind === 'file') {
+    const held = fileDraftOf(statement);
+    return 'reason' in held ? held.reason : null;
+  }
   if (statement.kind !== 'builder') return null;
   const draft = builderDraftOf(statement.query, definition.order);
   return 'reason' in draft ? draft.reason : null;
@@ -632,6 +645,47 @@ export function generatedSql(draft: DefinitionDraft): { sql: string } | { needs:
   }
 }
 
+/** Where a column is read in its format (the D6 plan, D6-F): by a pointer, a header or a letter. */
+function fromOf(column: ColumnDraft, format: FormatDraft) {
+  if (format.format !== 'csv') return { pointer: column.pointer ?? pointerTo(column.name) };
+  if (column.letter !== undefined) return { letter: column.letter };
+  return format.headerRow ? { header: column.header ?? column.name } : { letter: 'A' };
+}
+
+/**
+ * A file's filters as the connector applies them (the D6 plan, D6-J), or the first reason not: each a
+ * comparison of a declared column, a fixed value typed as its column is, joined by all or any.
+ */
+function whereOf(
+  file: FileDraft,
+  columns: readonly { readonly name: string; readonly type: ColumnType }[],
+): FileCondition | undefined | string {
+  const comparisons: FileCondition[] = [];
+  for (const filter of file.filters) {
+    const declared = columns.find((each) => each.name === filter.column);
+    if (declared === undefined || declared.type.base === 'image') {
+      return `A filter compares a declared column, and ${filter.column} is not one.`;
+    }
+    if (filter.is === 'isNull' || filter.is === 'isNotNull') {
+      comparisons.push({ column: filter.column, is: filter.is });
+    } else if ('parameter' in filter.to) {
+      comparisons.push({
+        column: filter.column,
+        is: filter.is,
+        to: { parameter: filter.to.parameter },
+      });
+    } else {
+      const type = declared.type as ValueType;
+      const { value } = filter.to;
+      const literal = canonical(type.base, type.base === 'text' ? value : value.trim());
+      comparisons.push({ column: filter.column, is: filter.is, to: { literal, type } });
+    }
+  }
+  if (comparisons.length === 0) return undefined;
+  if (comparisons.length === 1) return comparisons[0];
+  return file.match === 'any' ? { or: comparisons } : { and: comparisons };
+}
+
 /** One draft's parameters, columns and the rest as the service takes them, or the first reason not. */
 function parts(draft: DefinitionDraft) {
   const parameters = parametersOf(draft);
@@ -640,11 +694,13 @@ function parts(draft: DefinitionDraft) {
   for (const column of draft.columns) {
     const type = columnTypeOf(column.type, draft.columns);
     if (typeof type === 'string') return `The column ${column.name}: ${type}`;
-    // An HTTP response's column is read by its pointer into the row (the D6 plan, D6-F).
+    // An HTTP response's or a file's column is read as its format reads (the D6 plan, D6-F).
     const from =
       draft.mode === 'http'
-        ? { pointer: column.pointer ?? pointerTo(column.name) }
-        : { column: column.name };
+        ? fromOf(column, draft.http)
+        : draft.mode === 'file'
+          ? fromOf(column, draft.file)
+          : { column: column.name };
     columns.push({ name: column.name, from, type });
   }
   if (columns.length === 0) {
@@ -652,7 +708,9 @@ function parts(draft: DefinitionDraft) {
       ? 'Describe the query to propose its columns first.'
       : draft.mode === 'http'
         ? 'Sample the request to propose its columns first.'
-        : 'Describe the statement to propose its columns first.';
+        : draft.mode === 'file'
+          ? 'Sample the file to propose its columns first.'
+          : 'Describe the statement to propose its columns first.';
   }
   const query = draft.mode === 'builder' ? queryOf(draft.builder, draft.order) : null;
   if (typeof query === 'string') return query;
@@ -666,20 +724,29 @@ function parts(draft: DefinitionDraft) {
   ) {
     return 'Each limit is a whole number.';
   }
+  const where = draft.mode === 'file' ? whereOf(draft.file, columns) : undefined;
+  if (typeof where === 'string') return where;
   return {
     schemaVersion: 1 as const,
     connection: draft.connection,
     parameters,
     fetch:
-      draft.mode === 'http'
+      draft.mode === 'file'
         ? {
-            kind: 'http' as const,
-            request: templateOf(draft.http),
-            format: formatOf(draft.http),
+            kind: 'file' as const,
+            key: draft.file.key.map(partOf),
+            format: formatOf(draft.file),
+            ...(where === undefined ? {} : { where }),
           }
-        : query === null
-          ? { kind: 'sql' as const, text: draft.sql }
-          : { kind: 'builder' as const, format: 1 as const, query },
+        : draft.mode === 'http'
+          ? {
+              kind: 'http' as const,
+              request: templateOf(draft.http),
+              format: formatOf(draft.http),
+            }
+          : query === null
+            ? { kind: 'sql' as const, text: draft.sql }
+            : { kind: 'builder' as const, format: 1 as const, query },
     columns,
     key: [...draft.key],
     order:
@@ -687,6 +754,19 @@ function parts(draft: DefinitionDraft) {
     empty: draft.empty,
     limits,
   };
+}
+
+/**
+ * The parameters a file's key names: what a sample of the file is sent, its filter waiting for the
+ * columns the sample proposes (the D6 plan, task 2).
+ */
+export function keyNamed<T extends { readonly name: string }>(
+  draft: Pick<DefinitionDraft, 'file'>,
+  parameters: readonly T[],
+): T[] {
+  return parameters.filter((each) =>
+    draft.file.key.some((part) => part.kind === 'parameter' && part.text.trim() === each.name),
+  );
 }
 
 /** The draft a sample runs: the definition less its title, description and retired (D2-I). */
@@ -714,6 +794,7 @@ export function sqlOf(definition: QueryDefinition): string {
   // Read by destructuring: the renderer's API test flags any member named for the network.
   const { fetch: statement } = definition;
   if (statement.kind === 'http') return requestText(statement.request);
+  if (statement.kind === 'file') return fileText(statement);
   return statement.kind === 'sql' ? statement.text : generatePostgres(definition, {}, 'run').text;
 }
 
@@ -726,6 +807,7 @@ export function draftOf(definition: QueryDefinition): DefinitionDraft {
   const built =
     statement.kind === 'builder' ? builderDraftOf(statement.query, definition.order) : null;
   const http = statement.kind === 'http' ? httpDraftOf(statement) : null;
+  const file = statement.kind === 'file' ? fileDraftOf(statement) : null;
   return {
     title: definition.title,
     description: definition.description,
@@ -733,6 +815,7 @@ export function draftOf(definition: QueryDefinition): DefinitionDraft {
     mode: statement.kind,
     builder: built === null || 'reason' in built ? NEW_BUILDER : built,
     http: http === null || 'reason' in http ? NEW_HTTP : http,
+    file: file === null || 'reason' in file ? NEW_FILE : file,
     sql: statement.kind === 'sql' ? statement.text : '',
     parameters: definition.parameters.map((parameter) => {
       const permitted = parameter.permitted;
@@ -763,6 +846,8 @@ export function draftOf(definition: QueryDefinition): DefinitionDraft {
       type: typeDraftOf(column.type),
       confirmed: true,
       ...('pointer' in column.from ? { pointer: column.from.pointer } : {}),
+      ...('header' in column.from ? { header: column.from.header } : {}),
+      ...('letter' in column.from ? { letter: column.from.letter } : {}),
     })),
     key: [...definition.key],
     order:
@@ -809,7 +894,10 @@ export function unconfirmed(columns: readonly ColumnDraft[]): ColumnDraft[] {
  * exactly. A built query's limit is left out: it changes how many rows, never which columns.
  */
 export function statementOf(
-  draft: Pick<DefinitionDraft, 'connection' | 'mode' | 'builder' | 'sql' | 'http' | 'parameters'>,
+  draft: Pick<
+    DefinitionDraft,
+    'connection' | 'mode' | 'builder' | 'sql' | 'http' | 'file' | 'parameters'
+  >,
 ) {
   return JSON.stringify([
     draft.connection,
@@ -818,7 +906,10 @@ export function statementOf(
       ? draft.sql
       : draft.mode === 'http'
         ? draft.http
-        : { ...draft.builder, limit: '' },
+        : // A file's filters change which rows, never which columns.
+          draft.mode === 'file'
+          ? { ...draft.file, filters: [], match: 'all' }
+          : { ...draft.builder, limit: '' },
     draft.parameters,
   ]);
 }
@@ -826,7 +917,7 @@ export function statementOf(
 /** The parts of a draft its columns are confirmed for (DAT-105). */
 export type StatementParts = Pick<
   Partial<DefinitionDraft>,
-  'connection' | 'mode' | 'builder' | 'sql' | 'http' | 'parameters'
+  'connection' | 'mode' | 'builder' | 'sql' | 'http' | 'file' | 'parameters'
 >;
 
 /**
@@ -879,13 +970,19 @@ export function proposedColumns(
     readonly sourceType: string;
     readonly proposed: ProposedType | null;
     readonly pointer?: string;
+    readonly header?: string;
+    readonly letter?: string;
   }[],
   held: readonly ColumnDraft[],
 ): ColumnDraft[] {
   return described.map((described) => {
     // An HTTP response's column keeps the pointer its sample read it by.
     const column = described;
-    const at = described.pointer === undefined ? {} : { pointer: described.pointer };
+    const at = {
+      ...(described.pointer === undefined ? {} : { pointer: described.pointer }),
+      ...(described.header === undefined ? {} : { header: described.header }),
+      ...(described.letter === undefined ? {} : { letter: described.letter }),
+    };
     const declared = held.find((each) => each.name === column.name);
     const proposed = column.proposed === null ? null : typeDraftOf(column.proposed);
     if (declared !== undefined && (proposed === null || declared.type.base !== '')) {

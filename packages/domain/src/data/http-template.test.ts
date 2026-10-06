@@ -209,7 +209,7 @@ describe('an HTTP request template', () => {
     expect(byColumn).toContainEqual({
       rule: 'definition_invalid',
       path: 'columns.0.from',
-      message: 'A column of an HTTP response is read by a pointer into its row',
+      message: 'A column of JSON is read by a pointer into its row',
     });
     const sql = checkQueryDefinition(
       draft({

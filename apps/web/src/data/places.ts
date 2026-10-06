@@ -48,6 +48,8 @@ export interface DefinitionPlaces {
   readonly sql: ReadonlySet<string>;
   /** Those of them that reach an HTTPS API, whose query is a request template (the D6 plan). */
   readonly http: ReadonlySet<string>;
+  /** The S3 connections among them, whose query is a file read by its key (the D6 plan, task 2). */
+  readonly s3: ReadonlySet<string>;
 }
 
 /**
@@ -85,11 +87,14 @@ export function useDefinitionPlaces(client: Client): DefinitionPlaces | null {
           );
         const readableSpaces = named('items' in spaces ? spaces.items : [], false);
         const liveConnections = named('items' in connections ? connections.items : [], true);
-        const httpConnections = new Set(
-          ('items' in connections ? connections.items : []).flatMap((item: unknown) =>
-            isRecord(item) && typeof item.id === 'string' && item.type === 'http' ? [item.id] : [],
-          ),
-        );
+        const ofType = (type: string) =>
+          new Set(
+            ('items' in connections ? connections.items : []).flatMap((item: unknown) =>
+              isRecord(item) && typeof item.id === 'string' && item.type === type ? [item.id] : [],
+            ),
+          );
+        const httpConnections = ofType('http');
+        const s3Connections = ofType('s3');
         const [editable, atConnections] = await Promise.all([
           Promise.all(
             readableSpaces.map((each) => permitsAt(client, `space:${each.id}`, ['edit'])),
@@ -106,14 +111,26 @@ export function useDefinitionPlaces(client: Client): DefinitionPlaces | null {
             connections: liveConnections.filter((_, at) => usable[at]),
             sql: new Set(
               liveConnections
-                .filter((each, at) => writable[at] && !httpConnections.has(each.id))
+                .filter(
+                  (each, at) =>
+                    writable[at] && !httpConnections.has(each.id) && !s3Connections.has(each.id),
+                )
                 .map((each) => each.id),
             ),
             http: httpConnections,
+            s3: s3Connections,
           });
         }
       } catch {
-        if (current) setPlaces({ spaces: [], connections: [], sql: new Set(), http: new Set() });
+        if (current) {
+          setPlaces({
+            spaces: [],
+            connections: [],
+            sql: new Set(),
+            http: new Set(),
+            s3: new Set(),
+          });
+        }
       }
     })();
     return () => {

@@ -7,13 +7,16 @@ import { builderQuerySchema, checkTree, type Query } from './builder.js';
 import {
   checkQueryDefinition,
   connectionFetchProblems,
+  dataFormatSchema,
   draftDefinitionSchema,
   httpFetchSchema,
+  sampleDraft,
   parameterSchema,
   sqlTextSchema,
   type Parameter,
 } from './definition.js';
 import { headerValueProblem, httpTemplateSchema } from './http-template.js';
+import { keyPairText, objectKeySchema, parseKeyPair } from './s3.js';
 import { generatePostgres } from './generate.js';
 import { dataFailureSchema } from './failures.js';
 import { limitCeilings } from './limits.js';
@@ -85,6 +88,14 @@ export const sealRequestSchema = z
     (request) =>
       request.settings.type !== 'http' || headerValueProblem(request.secret) === undefined,
     { message: 'A secret sent in a header is printable ASCII, with no space before or after it' },
+  )
+  // An S3 secret is its key pair, sealed together as JSON (the stored-shape check).
+  .refine(
+    (request) =>
+      request.settings.type !== 's3' ||
+      (parseKeyPair(request.secret) !== undefined &&
+        keyPairText(parseKeyPair(request.secret)!) === request.secret),
+    { message: "An S3 connection's secret is its key pair, as the service writes it" },
   );
 export type SealRequest = z.infer<typeof sealRequestSchema>;
 
@@ -331,6 +342,17 @@ export const canonicalResultSchema = z
     message: 'Every row has a cell for each column',
   });
 
+/** An S3 object as a run reports it read one: never a URL, an endpoint or a signature. */
+export const ranObjectSchema = z.strictObject({
+  bucket: z.string().min(3).max(63),
+  key: z.string().min(1).max(1024).refine(storableText),
+  versionId: z
+    .string()
+    .regex(/^[\x21-\x7e]{1,1024}$/)
+    .optional(),
+});
+export type RanObject = z.infer<typeof ranObjectSchema>;
+
 /**
  * What a run reports it ran (D2-K; the D6 plan, D6-L): a database's SQL, its values bound apart from
  * it, or an HTTP request's template, its values placed apart from it. Never a composed URL, which no
@@ -339,6 +361,8 @@ export const canonicalResultSchema = z
 export const ranSchema = z.union([
   z.strictObject({ sql: z.string().max(RAN_MAX_CHARACTERS) }),
   z.strictObject({ request: httpTemplateSchema }),
+  // An object read: its bucket, its key bound, and its version where the store names one (D6-L).
+  z.strictObject({ object: ranObjectSchema }),
 ]);
 export type Ran = z.infer<typeof ranSchema>;
 
@@ -460,17 +484,13 @@ const httpDescribe = z
   })
   .refine(
     (http) =>
-      checkQueryDefinition({
-        connection: '00000000-0000-4000-8000-000000000000',
-        schemaVersion: 1,
-        parameters: http.parameters,
-        fetch: { kind: 'http', request: http.request, format: http.format },
-        columns: [{ name: 'proposed', from: { pointer: '/proposed' }, type: { base: 'text' } }],
-        key: [],
-        order: 'multiset',
-        empty: 'valid',
-        limits: { rows: 1, bytes: 1, seconds: 1 },
-      }).length === 0 &&
+      checkQueryDefinition(
+        sampleDraft(http.parameters, {
+          kind: 'http',
+          request: http.request,
+          format: http.format,
+        }),
+      ).length === 0 &&
       checkParameterValues(http.parameters, http.values as ParameterValues).length === 0,
     { message: 'A request passes its checks, and its values their declarations' },
   );
@@ -486,6 +506,37 @@ const httpDescribeRequest = testRequestSchema
   );
 
 /**
+ * An S3 object sampled for its columns (DAT-105; the D6 plan, task 2): its key, its format, the
+ * parameters the key names and their values. The object is read, and each column of its first rows
+ * proposed by its pointer, its header or its letter; a file's filter waits for its columns.
+ */
+const fileDescribe = z
+  .strictObject({
+    key: objectKeySchema,
+    format: dataFormatSchema,
+    parameters: z.array(parameterSchema).max(50),
+    values: parameterValuesSchema,
+  })
+  .refine(
+    (file) =>
+      checkQueryDefinition(
+        sampleDraft(file.parameters, { kind: 'file', key: file.key, format: file.format }),
+      ).length === 0 &&
+      checkParameterValues(file.parameters, file.values as ParameterValues).length === 0,
+    { message: 'A key passes its checks, and its values their declarations' },
+  );
+const fileDescribeRequest = testRequestSchema
+  .extend({ file: fileDescribe })
+  .refine(
+    (request) =>
+      connectionFetchProblems(
+        { kind: 'file', key: request.file.key, format: request.file.format },
+        request.settings,
+      ).length === 0,
+    { message: "A file suits its connection's type" },
+  );
+
+/**
  * A describe of SQL or of a built query, chosen by its key rather than by trying each: a union that
  * tried each would answer a refusal of either in its own words, "Invalid input", and never the
  * walk's or the builder's. A body holding `builder` and no `sql` is a built query's; any other is
@@ -495,14 +546,22 @@ export const describeSqlRequestSchema = z.unknown().transform((value, context) =
   const has = (key: string) => typeof value === 'object' && value !== null && key in value;
   const built = has('builder') && !has('sql');
   const http = has('http') && !has('sql') && !has('builder');
+  const file = has('file') && !has('sql') && !has('builder') && !has('http');
   const parsed = (
-    http ? httpDescribeRequest : built ? builderDescribeRequest : sqlDescribeRequest
+    file
+      ? fileDescribeRequest
+      : http
+        ? httpDescribeRequest
+        : built
+          ? builderDescribeRequest
+          : sqlDescribeRequest
   ).safeParse(value);
   if (parsed.success) {
     return parsed.data as
       | z.infer<typeof sqlDescribeRequest>
       | z.infer<typeof builderDescribeRequest>
-      | z.infer<typeof httpDescribeRequest>;
+      | z.infer<typeof httpDescribeRequest>
+      | z.infer<typeof fileDescribeRequest>;
   }
   for (const issue of parsed.error.issues) context.addIssue({ ...issue } as never);
   return z.NEVER;
@@ -566,6 +625,12 @@ export const describeSqlAnswerSchema = z.union([
           proposed: proposedTypeSchema.nullable(),
           // Where a JSON response's column is read from its row (the D6 plan, D6-F).
           pointer: z.string().max(1024).optional(),
+          // Where a CSV's column is read from its record: its header, or its letter (D6-F).
+          header: z.string().max(1000).optional(),
+          letter: z
+            .string()
+            .regex(/^[A-Z]{1,3}$/)
+            .optional(),
         }),
       )
       .max(MAX_COLUMNS),

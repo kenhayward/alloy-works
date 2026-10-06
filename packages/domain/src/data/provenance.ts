@@ -6,7 +6,7 @@ import { canonicalValueSchema, columnSchema, PARAMETER_NAME, type Column } from 
 import { MAX_LIST_ITEMS, type ParameterValues } from './parameters.js';
 import { RAN_MAX_CHARACTERS } from './sql.js';
 import { httpTemplateSchema, type HttpTemplate } from './http-template.js';
-import { sourceNameSchema } from './protocol.js';
+import { ranObjectSchema, sourceNameSchema, type RanObject } from './protocol.js';
 
 /**
  * A dataset version's content: its provenance record (data.md, "Storage of results and provenance";
@@ -65,10 +65,12 @@ export const provenanceSchema = z.strictObject({
     ]),
   ),
   // The SQL the connector reports it ran, its values bound apart from it, or an HTTP request's
-  // template, its values placed apart from it (the D6 plan, D6-L): never a secret, never a URL.
+  // template, its values placed apart from it, or an S3 object's bucket, bound key and version (the
+  // D6 plan, D6-L): never a secret, never a URL.
   ran: z.union([
     z.strictObject({ sql: z.string().min(1).max(RAN_MAX_CHARACTERS) }),
     z.strictObject({ request: httpTemplateSchema }),
+    z.strictObject({ object: ranObjectSchema }),
   ]),
   identity: z.union([
     z.strictObject({ kind: z.literal('service') }),
@@ -97,7 +99,8 @@ export type Provenance = {
   readonly queryDefinition: { readonly artifact: string; readonly version: string };
   readonly connection: { readonly artifact: string; readonly version: string };
   readonly parameters: ParameterValues;
-  readonly ran: { readonly sql: string } | { readonly request: HttpTemplate };
+  readonly ran:
+    { readonly sql: string } | { readonly request: HttpTemplate } | { readonly object: RanObject };
   readonly identity: ProvenanceIdentity;
   readonly at: string;
   readonly durationMs: number;

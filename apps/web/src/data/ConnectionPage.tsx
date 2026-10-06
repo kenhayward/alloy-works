@@ -7,6 +7,8 @@ import { documentLink } from '../structure/links.js';
 import styles from './ConnectionPage.module.css';
 import { connectionAccessLink, queryDefinitionLink } from './links.js';
 import {
+  KEY_PAIR_HINT,
+  PATH_STYLE_LABELS,
   RUNS_AS_LABELS,
   runsAsOf,
   SettingsFields,
@@ -127,16 +129,22 @@ function TestAnswer({ tested }: { readonly tested: Tested | string | null }) {
  * Whether the credential is set, by whom and when - and, where the connection has since been pointed
  * somewhere else to sign in, that it will not be used until it is set again (the D1 fix, C3).
  */
-function credentialText(credential: ConnectionView['credential'], http = false): string {
+function credentialText(
+  credential: ConnectionView['credential'],
+  type: Settings['type'] = 'postgres',
+): string {
   if (!credential.set) return 'Not set.';
   const set = `Set by ${nameOf(credential.setBy)} on ${longDate(credential.setAt)}`;
-  const what = http ? 'secret' : 'password';
+  const what = type === 'http' ? 'secret' : type === 's3' ? 'key pair' : 'password';
   if (credential.setBeforeBinding) {
     return `${set}, before this version of the product. Set the ${what} again to use this connection.`;
   }
-  const moved = http
-    ? 'the base URL or the secret header'
-    : 'the host, port, database, account or TLS';
+  const moved =
+    type === 'http'
+      ? 'the base URL or the secret header'
+      : type === 's3'
+        ? 'the endpoint, the region, the bucket or how it is addressed'
+        : 'the host, port, database, account or TLS';
   return credential.targetChanged
     ? `${set}, before ${moved} changed. Set the ${what} again to use this connection.`
     : `${set}.`;
@@ -218,6 +226,24 @@ function Part({ title, children }: { readonly title: string; readonly children: 
 }
 
 function SettingsList({ settings }: { readonly settings: Settings }) {
+  if (settings.type === 's3') {
+    return (
+      <dl className={styles['settings']}>
+        <dt>Description</dt>
+        <dd>{settings.description === '' ? 'None' : settings.description}</dd>
+        <dt>Endpoint</dt>
+        <dd>{settings.source.endpoint}</dd>
+        <dt>Region</dt>
+        <dd>{settings.source.region}</dd>
+        <dt>Bucket</dt>
+        <dd>{settings.source.bucket}</dd>
+        <dt>Addressed</dt>
+        <dd>{PATH_STYLE_LABELS[settings.source.pathStyle ? 'path' : 'virtual']}</dd>
+        <dt>Runs as</dt>
+        <dd>{RUNS_AS_LABELS.service}</dd>
+      </dl>
+    );
+  }
   if (settings.type === 'http') {
     return (
       <dl className={styles['settings']}>
@@ -263,6 +289,8 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
   const [secret, setSecret] = useState('');
+  // An S3 connection's access key id, sent with its secret access key (the D6 plan, D6-C).
+  const [keyId, setKeyId] = useState('');
   const [rotation, setRotation] = useState<Tested | string | null>(null);
   const [tested, setTested] = useState<Tested | string | null>(null);
   const [tables, setTables] = useState<Described | string | null>(null);
@@ -384,7 +412,10 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
 
   const view = connection;
   const retired = view.settings.retired;
-  const http = view.settings.type === 'http';
+  const { type } = view.settings;
+  const http = type === 'http';
+  const s3 = type === 's3';
+  const secretWord = http ? 'secret' : s3 ? 'key pair' : 'password';
 
   /**
    * Cuts the next version from the one shown, and shows what the service answered. Retiring and
@@ -459,16 +490,22 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
   const setCredential = () =>
     act('credential', async () => {
       const sent = secret;
+      const sentId = keyId.trim();
       // Emptied as it is sent, whatever the answer: the field never holds it longer than it must.
       setSecret('');
-      if (sent === '') {
-        setRotation(http ? 'Type the secret first.' : 'Type the password first.');
+      setKeyId('');
+      if (sent === '' || (s3 && sentId === '')) {
+        setRotation(
+          s3
+            ? 'Type the access key id and the secret access key first.'
+            : `Type the ${secretWord} first.`,
+        );
         return;
       }
       try {
         const { data, error, response } = await client.PUT('/v1/connections/{id}/credential', {
           params: { path: { id } },
-          body: { secret: sent },
+          body: s3 ? { accessKeyId: sentId, secretAccessKey: sent } : { secret: sent },
         });
         if (isRecord(data) && isTested(data.test)) {
           setRotation(data.test);
@@ -477,11 +514,11 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
         }
         setRotation(
           response.status === 401
-            ? 'You are signed out. Sign in again to set the password.'
-            : refusalText(error, 'The password could not be set. Try again.'),
+            ? `You are signed out. Sign in again to set the ${secretWord}.`
+            : refusalText(error, `The ${secretWord} could not be set. Try again.`),
         );
       } catch {
-        setRotation('The password could not be set. Try again.');
+        setRotation(`The ${secretWord} could not be set. Try again.`);
       }
     });
 
@@ -535,7 +572,7 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
       <h1>{view.settings.name}</h1>
       <p className={styles['meta']}>
         <span>
-          {http ? 'HTTPS API' : 'PostgreSQL'}, in {view.space.name}
+          {http ? 'HTTPS API' : s3 ? 'S3 bucket' : 'PostgreSQL'}, in {view.space.name}
         </span>
         <span>Version {view.version.number}</span>
         {retired && <span className={styles['retired']}>Retired</span>}
@@ -556,11 +593,25 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
       </Part>
 
       <Part title="Credential">
-        <p>{credentialText(view.credential, http)}</p>
+        <p>{credentialText(view.credential, type)}</p>
         {view.mayAdminister && !retired && (
           <div className={styles['form']}>
+            {s3 && (
+              <>
+                <p className={styles['hint']}>{KEY_PAIR_HINT}</p>
+                <label>
+                  Access key id
+                  <input
+                    autoComplete="off"
+                    spellCheck={false}
+                    value={keyId}
+                    onChange={(event) => setKeyId(event.target.value)}
+                  />
+                </label>
+              </>
+            )}
             <label>
-              {http ? 'Secret' : 'Password'}
+              {http ? 'Secret' : s3 ? 'Secret access key' : 'Password'}
               <input
                 type="password"
                 autoComplete="new-password"
@@ -594,7 +645,7 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
         </Part>
       )}
 
-      {view.mayUse && !retired && !http && (
+      {view.mayUse && !retired && type === 'postgres' && (
         <Part title="Tables">
           <button type="button" disabled={busy !== null} onClick={describe}>
             List tables

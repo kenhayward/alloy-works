@@ -173,10 +173,10 @@ export function createConnectorServer(options: {
       path === '/v1/describe' &&
       typeof body === 'object' &&
       body !== null &&
-      ('sql' in body || 'builder' in body || 'http' in body)
+      ('sql' in body || 'builder' in body || 'http' in body || 'file' in body)
     ) {
       // A describe taking a statement, SQL or a built query's: its columns, never run (D2-G, D4-Q);
-      // or an HTTP request's, sampled for its columns (the D6 plan, D6-A).
+      // or an HTTP request's or an object's, sampled for its columns (the D6 plan, D6-A).
       const parsed = describeSqlRequestSchema.safeParse(body);
       if (!parsed.success) return send(400, { code: 'request_invalid' });
       answer = await supervisor.run('describeSql', parsed.data, gone.signal);

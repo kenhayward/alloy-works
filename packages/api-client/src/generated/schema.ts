@@ -357,7 +357,7 @@ export interface paths {
         get?: never;
         /**
          * Set or replace a connection's credential, then test the connection with it
-         * @description Sets or replaces the connection credential, then tests the connection with it. The credential is sealed at once and never returned; this route takes no idempotency key.
+         * @description Sets or replaces the connection credential, then tests the connection with it: a secret for a PostgreSQL or an HTTP connection, or an access key id and a secret access key for an S3 connection. The credential is sealed at once and never returned; this route takes no idempotency key.
          */
         put: operations["setConnectionCredential"];
         post?: never;
@@ -378,7 +378,7 @@ export interface paths {
         put?: never;
         /**
          * List the tables and views a connection's account may read, or a statement's or a built query's result columns
-         * @description Lists the tables and views the connection account may read, with each column and the type proposed for it. Sent a SQL statement instead, it answers the columns the statement would return, each with the type proposed for it, without running it; that needs write SQL on the connection as well, and a connection whose latest test found its account read-only. Sent a built query instead - its tree and its parameters - it answers the columns the query would return in the same way, from SQL the service generates from the tree; that needs use connection alone, on any connection. A source's refusal of a built query is worded by its SQLSTATE, and what the source said is shown only to a caller who may write SQL on the connection.
+         * @description Lists the tables and views the connection account may read, with each column and the type proposed for it. Sent a SQL statement instead, it answers the columns the statement would return, each with the type proposed for it, without running it; that needs write SQL on the connection as well, and a connection whose latest test found its account read-only. Sent a built query instead - its tree and its parameters - it answers the columns the query would return in the same way, from SQL the service generates from the tree; that needs use connection alone, on any connection. A source's refusal of a built query is worded by its SQLSTATE, and what the source said is shown only to a caller who may write SQL on the connection. An HTTP or S3 connection lists no tables: sent its request, or its file's key and format, it reads the first rows and proposes a column for each.
          */
         post: operations["describeConnection"];
         delete?: never;
@@ -2111,6 +2111,52 @@ export interface components {
         } | {
             array: components["schemas"]["sampleConnectionBody_schema2"][];
         };
+        sampleConnectionBody_schema3: {
+            and: components["schemas"]["sampleConnectionBody_schema3"][];
+        } | {
+            or: components["schemas"]["sampleConnectionBody_schema3"][];
+        } | {
+            not: components["schemas"]["sampleConnectionBody_schema3"];
+        } | {
+            column: string;
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            };
+        };
         getDocumentBindings200_schema0: {
             fixed: string | boolean | null;
         } | {
@@ -2428,6 +2474,52 @@ export interface components {
         } | {
             array: components["schemas"]["getQueryDefinition200_schema2"][];
         };
+        getQueryDefinition200_schema3: {
+            and: components["schemas"]["getQueryDefinition200_schema3"][];
+        } | {
+            or: components["schemas"]["getQueryDefinition200_schema3"][];
+        } | {
+            not: components["schemas"]["getQueryDefinition200_schema3"];
+        } | {
+            column: string;
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            };
+        };
         recordQueryDefinitionVersion200_schema0: {
             sources: ({
                 alias: string;
@@ -2534,6 +2626,52 @@ export interface components {
             }[];
         } | {
             array: components["schemas"]["recordQueryDefinitionVersion200_schema2"][];
+        };
+        recordQueryDefinitionVersion200_schema3: {
+            and: components["schemas"]["recordQueryDefinitionVersion200_schema3"][];
+        } | {
+            or: components["schemas"]["recordQueryDefinitionVersion200_schema3"][];
+        } | {
+            not: components["schemas"]["recordQueryDefinitionVersion200_schema3"];
+        } | {
+            column: string;
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            };
         };
         recordQueryDefinitionVersion400_schema0: {
             sources: ({
@@ -2642,6 +2780,52 @@ export interface components {
         } | {
             array: components["schemas"]["recordQueryDefinitionVersion400_schema2"][];
         };
+        recordQueryDefinitionVersion400_schema3: {
+            and: components["schemas"]["recordQueryDefinitionVersion400_schema3"][];
+        } | {
+            or: components["schemas"]["recordQueryDefinitionVersion400_schema3"][];
+        } | {
+            not: components["schemas"]["recordQueryDefinitionVersion400_schema3"];
+        } | {
+            column: string;
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            };
+        };
         recordQueryDefinitionVersion409_schema0: {
             sources: ({
                 alias: string;
@@ -2748,6 +2932,52 @@ export interface components {
             }[];
         } | {
             array: components["schemas"]["recordQueryDefinitionVersion409_schema2"][];
+        };
+        recordQueryDefinitionVersion409_schema3: {
+            and: components["schemas"]["recordQueryDefinitionVersion409_schema3"][];
+        } | {
+            or: components["schemas"]["recordQueryDefinitionVersion409_schema3"][];
+        } | {
+            not: components["schemas"]["recordQueryDefinitionVersion409_schema3"];
+        } | {
+            column: string;
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            };
         };
         recordQueryDefinitionVersionBody_schema0: {
             sources: ({
@@ -2856,6 +3086,52 @@ export interface components {
         } | {
             array: components["schemas"]["recordQueryDefinitionVersionBody_schema2"][];
         };
+        recordQueryDefinitionVersionBody_schema3: {
+            and: components["schemas"]["recordQueryDefinitionVersionBody_schema3"][];
+        } | {
+            or: components["schemas"]["recordQueryDefinitionVersionBody_schema3"][];
+        } | {
+            not: components["schemas"]["recordQueryDefinitionVersionBody_schema3"];
+        } | {
+            column: string;
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            };
+        };
         createQueryDefinition200_schema0: {
             sources: ({
                 alias: string;
@@ -2962,6 +3238,52 @@ export interface components {
             }[];
         } | {
             array: components["schemas"]["createQueryDefinition200_schema2"][];
+        };
+        createQueryDefinition200_schema3: {
+            and: components["schemas"]["createQueryDefinition200_schema3"][];
+        } | {
+            or: components["schemas"]["createQueryDefinition200_schema3"][];
+        } | {
+            not: components["schemas"]["createQueryDefinition200_schema3"];
+        } | {
+            column: string;
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            };
         };
         createQueryDefinition400_schema0: {
             sources: ({
@@ -3070,6 +3392,52 @@ export interface components {
         } | {
             array: components["schemas"]["createQueryDefinition400_schema2"][];
         };
+        createQueryDefinition400_schema3: {
+            and: components["schemas"]["createQueryDefinition400_schema3"][];
+        } | {
+            or: components["schemas"]["createQueryDefinition400_schema3"][];
+        } | {
+            not: components["schemas"]["createQueryDefinition400_schema3"];
+        } | {
+            column: string;
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            };
+        };
         createQueryDefinition409_schema0: {
             sources: ({
                 alias: string;
@@ -3177,6 +3545,52 @@ export interface components {
         } | {
             array: components["schemas"]["createQueryDefinition409_schema2"][];
         };
+        createQueryDefinition409_schema3: {
+            and: components["schemas"]["createQueryDefinition409_schema3"][];
+        } | {
+            or: components["schemas"]["createQueryDefinition409_schema3"][];
+        } | {
+            not: components["schemas"]["createQueryDefinition409_schema3"];
+        } | {
+            column: string;
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            };
+        };
         createQueryDefinitionBody_schema0: {
             sources: ({
                 alias: string;
@@ -3283,6 +3697,52 @@ export interface components {
             }[];
         } | {
             array: components["schemas"]["createQueryDefinitionBody_schema2"][];
+        };
+        createQueryDefinitionBody_schema3: {
+            and: components["schemas"]["createQueryDefinitionBody_schema3"][];
+        } | {
+            or: components["schemas"]["createQueryDefinitionBody_schema3"][];
+        } | {
+            not: components["schemas"]["createQueryDefinitionBody_schema3"];
+        } | {
+            column: string;
+            /** @enum {string} */
+            is: "equal" | "notEqual" | "less" | "lessOrEqual" | "greater" | "greaterOrEqual" | "in" | "contains" | "startsWith" | "isNull" | "isNotNull";
+            to?: {
+                parameter: string;
+            } | {
+                literal: (string | boolean | null) | (string | boolean | null)[];
+                type: {
+                    /** @constant */
+                    base: "text";
+                } | {
+                    /** @constant */
+                    base: "integer";
+                } | {
+                    /** @constant */
+                    base: "decimal";
+                    precision: number;
+                    scale: number;
+                } | {
+                    /** @constant */
+                    base: "date";
+                } | {
+                    /** @constant */
+                    base: "time";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "localDateTime";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "instant";
+                    fraction: number;
+                } | {
+                    /** @constant */
+                    base: "boolean";
+                };
+            };
         };
         createTemplateBody_schema0: {
             key: string;
@@ -6522,7 +6982,7 @@ export interface operations {
                                 name: string;
                             };
                             /** @enum {string} */
-                            type: "postgres" | "http";
+                            type: "postgres" | "http" | "s3";
                             retired: boolean;
                             version: {
                                 id: string;
@@ -6774,6 +7234,40 @@ export interface operations {
                                 baseUrl: string;
                                 secretHeader: string;
                             };
+                        } | {
+                            /** @constant */
+                            schemaVersion: 1;
+                            name: string;
+                            description: string;
+                            identity: {
+                                /** @constant */
+                                kind: "service";
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "delegated";
+                                tokenEndpoint: string;
+                                audience: string;
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "asserted";
+                                /** @enum {string} */
+                                attribute: "email" | "subject";
+                                /** @enum {string} */
+                                assertion?: "sessionContext" | "executeAs";
+                            };
+                            retired: boolean;
+                            /** @constant */
+                            type: "s3";
+                            source: {
+                                endpoint: string;
+                                region: string;
+                                bucket: string;
+                                pathStyle: boolean;
+                            };
                         };
                         credential: {
                             /** @constant */
@@ -6935,12 +7429,16 @@ export interface operations {
             content: {
                 /**
                  * @example {
-                 *       "secret": "example"
+                 *       "secret": "an-invented-password"
                  *     }
                  */
                 "application/json": {
                     /** @description The credential: a PostgreSQL source's password, or the value an HTTP connection sends in its secret header. Never answered by any route */
-                    secret: string;
+                    secret?: string;
+                    /** @description An S3 connection's access key id, sent with its secret access key */
+                    accessKeyId?: string;
+                    /** @description An S3 connection's secret access key. Never answered by any route */
+                    secretAccessKey?: string;
                 };
             };
         };
@@ -7310,7 +7808,7 @@ export interface operations {
                             }[];
                         }[];
                     };
-                    /** @description An HTTP connection's request, sent and its first rows read to propose its columns, each read by a pointer: an HTTP connection lists no tables. Send one of sql, builder and http */
+                    /** @description An HTTP connection's request, sent and its first rows read to propose its columns, each read by a pointer: an HTTP connection lists no tables. Send one of sql, builder, http and file */
                     http?: {
                         request: {
                             /** @enum {string} */
@@ -7346,6 +7844,88 @@ export interface operations {
                         } | {
                             /** @constant */
                             kind: "jsonLines";
+                        } | {
+                            /** @constant */
+                            kind: "csv";
+                            /** @enum {string} */
+                            delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                            headerRow: boolean;
+                            /** @enum {string} */
+                            null: "empty" | "never";
+                        };
+                        parameters: {
+                            name: string;
+                            type: {
+                                /** @constant */
+                                base: "text";
+                            } | {
+                                /** @constant */
+                                base: "integer";
+                            } | {
+                                /** @constant */
+                                base: "decimal";
+                                precision: number;
+                                scale: number;
+                            } | {
+                                /** @constant */
+                                base: "date";
+                            } | {
+                                /** @constant */
+                                base: "time";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "localDateTime";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "instant";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "boolean";
+                            };
+                            required: boolean;
+                            list: boolean;
+                            permitted?: {
+                                values: (string | boolean | null)[];
+                            } | {
+                                minimum?: string | boolean | null;
+                                maximum?: string | boolean | null;
+                            };
+                            variation?: {
+                                key: string;
+                                sql: string;
+                            }[];
+                        }[];
+                        /** @description Each parameter's value by name, in its type's canonical form */
+                        values: {
+                            [key: string]: string | boolean | null | string[];
+                        };
+                    };
+                    /** @description An S3 connection's object, read and its first rows read to propose its columns, each by a pointer, a header or a letter: an S3 connection lists no tables. Send one of sql, builder, http and file */
+                    file?: {
+                        key: ({
+                            fixed: string;
+                        } | {
+                            parameter: string;
+                        })[];
+                        format: {
+                            /** @constant */
+                            kind: "json";
+                            rows: string;
+                            count?: string;
+                        } | {
+                            /** @constant */
+                            kind: "jsonLines";
+                        } | {
+                            /** @constant */
+                            kind: "csv";
+                            /** @enum {string} */
+                            delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                            headerRow: boolean;
+                            /** @enum {string} */
+                            null: "empty" | "never";
                         };
                         parameters: {
                             name: string;
@@ -7483,8 +8063,12 @@ export interface operations {
                                 /** @constant */
                                 encoding: "binary";
                             }) | null;
-                            /** @description For an HTTP response, the JSON Pointer that reads the column from its row */
+                            /** @description For JSON, the JSON Pointer that reads the column from its row */
                             pointer?: string;
+                            /** @description For a CSV whose first record is a header, the header that names the column's field */
+                            header?: string;
+                            /** @description For a CSV, the letter of the column's field, A for the first */
+                            letter?: string;
                         }[];
                         /** @description Each parameter's type as the source reads it, in the order they are bound */
                         parameters: string[];
@@ -7890,7 +8474,41 @@ export interface operations {
                             } | {
                                 /** @constant */
                                 kind: "jsonLines";
+                            } | {
+                                /** @constant */
+                                kind: "csv";
+                                /** @enum {string} */
+                                delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                                headerRow: boolean;
+                                /** @enum {string} */
+                                null: "empty" | "never";
                             };
+                        } | {
+                            /** @constant */
+                            kind: "file";
+                            key: ({
+                                fixed: string;
+                            } | {
+                                parameter: string;
+                            })[];
+                            format: {
+                                /** @constant */
+                                kind: "json";
+                                rows: string;
+                                count?: string;
+                            } | {
+                                /** @constant */
+                                kind: "jsonLines";
+                            } | {
+                                /** @constant */
+                                kind: "csv";
+                                /** @enum {string} */
+                                delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                                headerRow: boolean;
+                                /** @enum {string} */
+                                null: "empty" | "never";
+                            };
+                            where?: components["schemas"]["sampleConnectionBody_schema3"];
                         };
                         columns: {
                             name: string;
@@ -7898,6 +8516,10 @@ export interface operations {
                                 column: string;
                             } | {
                                 pointer: string;
+                            } | {
+                                header: string;
+                            } | {
+                                letter: string;
                             };
                             type: {
                                 /** @constant */
@@ -7996,7 +8618,7 @@ export interface operations {
                         rowCount: number;
                         /** @description The SHA-256 of the whole result in canonical form, in hexadecimal */
                         checksum: string;
-                        /** @description What ran: SQL for a database, the request template for an HTTP connection */
+                        /** @description What ran: SQL for a database, the request template for an HTTP connection, the object for an S3 one */
                         ran: {
                             /** @description The SQL that ran, each value a bound parameter */
                             sql: string;
@@ -8027,6 +8649,13 @@ export interface operations {
                                     };
                                 }[];
                                 body?: components["schemas"]["sampleConnection200_schema0"];
+                            };
+                        } | {
+                            /** @description The S3 object read: its bucket, its key as bound and its version where the store names one; never a URL */
+                            object: {
+                                bucket: string;
+                                key: string;
+                                versionId?: string;
                             };
                         };
                         durationMs: number;
@@ -8726,6 +9355,40 @@ export interface operations {
                             baseUrl: string;
                             secretHeader: string;
                         };
+                    } | {
+                        /** @constant */
+                        schemaVersion: 1;
+                        name: string;
+                        description: string;
+                        identity: {
+                            /** @constant */
+                            kind: "service";
+                        } | {
+                            /** @constant */
+                            kind: "endUser";
+                            /** @constant */
+                            mechanism: "delegated";
+                            tokenEndpoint: string;
+                            audience: string;
+                        } | {
+                            /** @constant */
+                            kind: "endUser";
+                            /** @constant */
+                            mechanism: "asserted";
+                            /** @enum {string} */
+                            attribute: "email" | "subject";
+                            /** @enum {string} */
+                            assertion?: "sessionContext" | "executeAs";
+                        };
+                        retired: boolean;
+                        /** @constant */
+                        type: "s3";
+                        source: {
+                            endpoint: string;
+                            region: string;
+                            bucket: string;
+                            pathStyle: boolean;
+                        };
                     };
                 };
             };
@@ -8872,6 +9535,40 @@ export interface operations {
                             source: {
                                 baseUrl: string;
                                 secretHeader: string;
+                            };
+                        } | {
+                            /** @constant */
+                            schemaVersion: 1;
+                            name: string;
+                            description: string;
+                            identity: {
+                                /** @constant */
+                                kind: "service";
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "delegated";
+                                tokenEndpoint: string;
+                                audience: string;
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "asserted";
+                                /** @enum {string} */
+                                attribute: "email" | "subject";
+                                /** @enum {string} */
+                                assertion?: "sessionContext" | "executeAs";
+                            };
+                            retired: boolean;
+                            /** @constant */
+                            type: "s3";
+                            source: {
+                                endpoint: string;
+                                region: string;
+                                bucket: string;
+                                pathStyle: boolean;
                             };
                         };
                         credential: {
@@ -9043,6 +9740,40 @@ export interface operations {
                                 source: {
                                     baseUrl: string;
                                     secretHeader: string;
+                                };
+                            } | {
+                                /** @constant */
+                                schemaVersion: 1;
+                                name: string;
+                                description: string;
+                                identity: {
+                                    /** @constant */
+                                    kind: "service";
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "delegated";
+                                    tokenEndpoint: string;
+                                    audience: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "asserted";
+                                    /** @enum {string} */
+                                    attribute: "email" | "subject";
+                                    /** @enum {string} */
+                                    assertion?: "sessionContext" | "executeAs";
+                                };
+                                retired: boolean;
+                                /** @constant */
+                                type: "s3";
+                                source: {
+                                    endpoint: string;
+                                    region: string;
+                                    bucket: string;
+                                    pathStyle: boolean;
                                 };
                             };
                             credential: {
@@ -9285,6 +10016,40 @@ export interface operations {
                                 source: {
                                     baseUrl: string;
                                     secretHeader: string;
+                                };
+                            } | {
+                                /** @constant */
+                                schemaVersion: 1;
+                                name: string;
+                                description: string;
+                                identity: {
+                                    /** @constant */
+                                    kind: "service";
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "delegated";
+                                    tokenEndpoint: string;
+                                    audience: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "asserted";
+                                    /** @enum {string} */
+                                    attribute: "email" | "subject";
+                                    /** @enum {string} */
+                                    assertion?: "sessionContext" | "executeAs";
+                                };
+                                retired: boolean;
+                                /** @constant */
+                                type: "s3";
+                                source: {
+                                    endpoint: string;
+                                    region: string;
+                                    bucket: string;
+                                    pathStyle: boolean;
                                 };
                             };
                             credential: {
@@ -11048,6 +11813,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["getDocumentBindings200_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -11073,6 +11845,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -11264,6 +12040,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["getDocumentBindings200_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -11289,6 +12072,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -11775,6 +12562,13 @@ export interface operations {
                                         }[];
                                         body?: components["schemas"]["acceptBinding200_schema0"];
                                     } | null;
+                                } | {
+                                    /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                    object: {
+                                        bucket: string;
+                                        key: string;
+                                        versionId?: string;
+                                    } | null;
                                 };
                                 identity: {
                                     /** @constant */
@@ -11800,6 +12594,10 @@ export interface operations {
                                         column: string;
                                     } | {
                                         pointer: string;
+                                    } | {
+                                        header: string;
+                                    } | {
+                                        letter: string;
                                     }) | null;
                                     type: {
                                         /** @constant */
@@ -11991,6 +12789,13 @@ export interface operations {
                                         }[];
                                         body?: components["schemas"]["acceptBinding200_schema0"];
                                     } | null;
+                                } | {
+                                    /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                    object: {
+                                        bucket: string;
+                                        key: string;
+                                        versionId?: string;
+                                    } | null;
                                 };
                                 identity: {
                                     /** @constant */
@@ -12016,6 +12821,10 @@ export interface operations {
                                         column: string;
                                     } | {
                                         pointer: string;
+                                    } | {
+                                        header: string;
+                                    } | {
+                                        letter: string;
                                     }) | null;
                                     type: {
                                         /** @constant */
@@ -12287,6 +13096,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["acceptBinding400_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -12312,6 +13128,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -12503,6 +13323,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["acceptBinding400_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -12528,6 +13355,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -12820,6 +13651,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["acceptBinding403_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -12845,6 +13683,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -13036,6 +13878,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["acceptBinding403_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -13061,6 +13910,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -13353,6 +14206,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["acceptBinding409_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -13378,6 +14238,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -13569,6 +14433,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["acceptBinding409_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -13594,6 +14465,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -14129,6 +15004,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["checkBindings409_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -14154,6 +15036,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -14345,6 +15231,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["checkBindings409_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -14370,6 +15263,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -14642,6 +15539,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["checkBindings503_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -14667,6 +15571,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -14858,6 +15766,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["checkBindings503_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -14883,6 +15798,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -15311,6 +16230,13 @@ export interface operations {
                                         }[];
                                         body?: components["schemas"]["confirmBinding200_schema0"];
                                     } | null;
+                                } | {
+                                    /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                    object: {
+                                        bucket: string;
+                                        key: string;
+                                        versionId?: string;
+                                    } | null;
                                 };
                                 identity: {
                                     /** @constant */
@@ -15336,6 +16262,10 @@ export interface operations {
                                         column: string;
                                     } | {
                                         pointer: string;
+                                    } | {
+                                        header: string;
+                                    } | {
+                                        letter: string;
                                     }) | null;
                                     type: {
                                         /** @constant */
@@ -15527,6 +16457,13 @@ export interface operations {
                                         }[];
                                         body?: components["schemas"]["confirmBinding200_schema0"];
                                     } | null;
+                                } | {
+                                    /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                    object: {
+                                        bucket: string;
+                                        key: string;
+                                        versionId?: string;
+                                    } | null;
                                 };
                                 identity: {
                                     /** @constant */
@@ -15552,6 +16489,10 @@ export interface operations {
                                         column: string;
                                     } | {
                                         pointer: string;
+                                    } | {
+                                        header: string;
+                                    } | {
+                                        letter: string;
                                     }) | null;
                                     type: {
                                         /** @constant */
@@ -15823,6 +16764,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["confirmBinding400_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -15848,6 +16796,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -16039,6 +16991,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["confirmBinding400_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -16064,6 +17023,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -16396,6 +17359,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["confirmBinding409_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -16421,6 +17391,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -16612,6 +17586,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["confirmBinding409_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -16637,6 +17618,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -17104,6 +18089,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["resolveBindings400_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -17129,6 +18121,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -17320,6 +18316,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["resolveBindings400_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -17345,6 +18348,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -17639,6 +18646,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["resolveBindings403_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -17664,6 +18678,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -17855,6 +18873,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["resolveBindings403_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -17880,6 +18905,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -18172,6 +19201,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["resolveBindings409_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -18197,6 +19233,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -18388,6 +19428,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["resolveBindings409_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -18413,6 +19460,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -18685,6 +19736,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["resolveBindings503_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -18710,6 +19768,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -18901,6 +19963,13 @@ export interface operations {
                                             }[];
                                             body?: components["schemas"]["resolveBindings503_schema0"];
                                         } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -18926,6 +19995,10 @@ export interface operations {
                                             column: string;
                                         } | {
                                             pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
                                         }) | null;
                                         type: {
                                             /** @constant */
@@ -19352,6 +20425,13 @@ export interface operations {
                                     }[];
                                     body?: components["schemas"]["getDocumentDataset200_schema0"];
                                 } | null;
+                            } | {
+                                /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                object: {
+                                    bucket: string;
+                                    key: string;
+                                    versionId?: string;
+                                } | null;
                             };
                             identity: {
                                 /** @constant */
@@ -19377,6 +20457,10 @@ export interface operations {
                                     column: string;
                                 } | {
                                     pointer: string;
+                                } | {
+                                    header: string;
+                                } | {
+                                    letter: string;
                                 }) | null;
                                 type: {
                                     /** @constant */
@@ -25273,18 +26357,26 @@ export interface operations {
                                     type: {
                                         [key: string]: unknown;
                                     };
-                                    /** @description The source's column, or a JSON Pointer into an HTTP response's row: to a reader of the query definition alone */
+                                    /** @description The source's column, a JSON Pointer into a row, or a CSV field's header or letter: to a reader of the query definition alone */
                                     from?: {
                                         column: string;
                                     } | {
                                         pointer: string;
+                                    } | {
+                                        header: string;
+                                    } | {
+                                        letter: string;
                                     };
                                 }[];
-                                /** @description The SQL that ran, or the HTTP request template that was sent, never its URL: to a reader of the query definition alone */
+                                /** @description The SQL that ran, the HTTP request template that was sent or the S3 object read, never a URL: to a reader of the query definition alone */
                                 ran?: {
                                     sql: string;
                                 } | {
                                     request: {
+                                        [key: string]: unknown;
+                                    };
+                                } | {
+                                    object: {
                                         [key: string]: unknown;
                                     };
                                 };
@@ -25716,7 +26808,41 @@ export interface operations {
                                 } | {
                                     /** @constant */
                                     kind: "jsonLines";
+                                } | {
+                                    /** @constant */
+                                    kind: "csv";
+                                    /** @enum {string} */
+                                    delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                                    headerRow: boolean;
+                                    /** @enum {string} */
+                                    null: "empty" | "never";
                                 };
+                            } | {
+                                /** @constant */
+                                kind: "file";
+                                key: ({
+                                    fixed: string;
+                                } | {
+                                    parameter: string;
+                                })[];
+                                format: {
+                                    /** @constant */
+                                    kind: "json";
+                                    rows: string;
+                                    count?: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "jsonLines";
+                                } | {
+                                    /** @constant */
+                                    kind: "csv";
+                                    /** @enum {string} */
+                                    delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                                    headerRow: boolean;
+                                    /** @enum {string} */
+                                    null: "empty" | "never";
+                                };
+                                where?: components["schemas"]["getQueryDefinition200_schema3"];
                             };
                             columns: {
                                 name: string;
@@ -25724,6 +26850,10 @@ export interface operations {
                                     column: string;
                                 } | {
                                     pointer: string;
+                                } | {
+                                    header: string;
+                                } | {
+                                    letter: string;
                                 };
                                 type: {
                                     /** @constant */
@@ -26173,7 +27303,41 @@ export interface operations {
                             } | {
                                 /** @constant */
                                 kind: "jsonLines";
+                            } | {
+                                /** @constant */
+                                kind: "csv";
+                                /** @enum {string} */
+                                delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                                headerRow: boolean;
+                                /** @enum {string} */
+                                null: "empty" | "never";
                             };
+                        } | {
+                            /** @constant */
+                            kind: "file";
+                            key: ({
+                                fixed: string;
+                            } | {
+                                parameter: string;
+                            })[];
+                            format: {
+                                /** @constant */
+                                kind: "json";
+                                rows: string;
+                                count?: string;
+                            } | {
+                                /** @constant */
+                                kind: "jsonLines";
+                            } | {
+                                /** @constant */
+                                kind: "csv";
+                                /** @enum {string} */
+                                delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                                headerRow: boolean;
+                                /** @enum {string} */
+                                null: "empty" | "never";
+                            };
+                            where?: components["schemas"]["recordQueryDefinitionVersionBody_schema3"];
                         };
                         columns: {
                             name: string;
@@ -26181,6 +27345,10 @@ export interface operations {
                                 column: string;
                             } | {
                                 pointer: string;
+                            } | {
+                                header: string;
+                            } | {
+                                letter: string;
                             };
                             type: {
                                 /** @constant */
@@ -26420,7 +27588,41 @@ export interface operations {
                                 } | {
                                     /** @constant */
                                     kind: "jsonLines";
+                                } | {
+                                    /** @constant */
+                                    kind: "csv";
+                                    /** @enum {string} */
+                                    delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                                    headerRow: boolean;
+                                    /** @enum {string} */
+                                    null: "empty" | "never";
                                 };
+                            } | {
+                                /** @constant */
+                                kind: "file";
+                                key: ({
+                                    fixed: string;
+                                } | {
+                                    parameter: string;
+                                })[];
+                                format: {
+                                    /** @constant */
+                                    kind: "json";
+                                    rows: string;
+                                    count?: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "jsonLines";
+                                } | {
+                                    /** @constant */
+                                    kind: "csv";
+                                    /** @enum {string} */
+                                    delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                                    headerRow: boolean;
+                                    /** @enum {string} */
+                                    null: "empty" | "never";
+                                };
+                                where?: components["schemas"]["recordQueryDefinitionVersion200_schema3"];
                             };
                             columns: {
                                 name: string;
@@ -26428,6 +27630,10 @@ export interface operations {
                                     column: string;
                                 } | {
                                     pointer: string;
+                                } | {
+                                    header: string;
+                                } | {
+                                    letter: string;
                                 };
                                 type: {
                                     /** @constant */
@@ -26655,7 +27861,41 @@ export interface operations {
                                     } | {
                                         /** @constant */
                                         kind: "jsonLines";
+                                    } | {
+                                        /** @constant */
+                                        kind: "csv";
+                                        /** @enum {string} */
+                                        delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                                        headerRow: boolean;
+                                        /** @enum {string} */
+                                        null: "empty" | "never";
                                     };
+                                } | {
+                                    /** @constant */
+                                    kind: "file";
+                                    key: ({
+                                        fixed: string;
+                                    } | {
+                                        parameter: string;
+                                    })[];
+                                    format: {
+                                        /** @constant */
+                                        kind: "json";
+                                        rows: string;
+                                        count?: string;
+                                    } | {
+                                        /** @constant */
+                                        kind: "jsonLines";
+                                    } | {
+                                        /** @constant */
+                                        kind: "csv";
+                                        /** @enum {string} */
+                                        delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                                        headerRow: boolean;
+                                        /** @enum {string} */
+                                        null: "empty" | "never";
+                                    };
+                                    where?: components["schemas"]["recordQueryDefinitionVersion400_schema3"];
                                 };
                                 columns: {
                                     name: string;
@@ -26663,6 +27903,10 @@ export interface operations {
                                         column: string;
                                     } | {
                                         pointer: string;
+                                    } | {
+                                        header: string;
+                                    } | {
+                                        letter: string;
                                     };
                                     type: {
                                         /** @constant */
@@ -26951,7 +28195,41 @@ export interface operations {
                                     } | {
                                         /** @constant */
                                         kind: "jsonLines";
+                                    } | {
+                                        /** @constant */
+                                        kind: "csv";
+                                        /** @enum {string} */
+                                        delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                                        headerRow: boolean;
+                                        /** @enum {string} */
+                                        null: "empty" | "never";
                                     };
+                                } | {
+                                    /** @constant */
+                                    kind: "file";
+                                    key: ({
+                                        fixed: string;
+                                    } | {
+                                        parameter: string;
+                                    })[];
+                                    format: {
+                                        /** @constant */
+                                        kind: "json";
+                                        rows: string;
+                                        count?: string;
+                                    } | {
+                                        /** @constant */
+                                        kind: "jsonLines";
+                                    } | {
+                                        /** @constant */
+                                        kind: "csv";
+                                        /** @enum {string} */
+                                        delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                                        headerRow: boolean;
+                                        /** @enum {string} */
+                                        null: "empty" | "never";
+                                    };
+                                    where?: components["schemas"]["recordQueryDefinitionVersion409_schema3"];
                                 };
                                 columns: {
                                     name: string;
@@ -26959,6 +28237,10 @@ export interface operations {
                                         column: string;
                                     } | {
                                         pointer: string;
+                                    } | {
+                                        header: string;
+                                    } | {
+                                        letter: string;
                                     };
                                     type: {
                                         /** @constant */
@@ -29318,6 +30600,40 @@ export interface operations {
                             baseUrl: string;
                             secretHeader: string;
                         };
+                    } | {
+                        /** @constant */
+                        schemaVersion: 1;
+                        name: string;
+                        description: string;
+                        identity: {
+                            /** @constant */
+                            kind: "service";
+                        } | {
+                            /** @constant */
+                            kind: "endUser";
+                            /** @constant */
+                            mechanism: "delegated";
+                            tokenEndpoint: string;
+                            audience: string;
+                        } | {
+                            /** @constant */
+                            kind: "endUser";
+                            /** @constant */
+                            mechanism: "asserted";
+                            /** @enum {string} */
+                            attribute: "email" | "subject";
+                            /** @enum {string} */
+                            assertion?: "sessionContext" | "executeAs";
+                        };
+                        retired: boolean;
+                        /** @constant */
+                        type: "s3";
+                        source: {
+                            endpoint: string;
+                            region: string;
+                            bucket: string;
+                            pathStyle: boolean;
+                        };
                     };
                 };
             };
@@ -29464,6 +30780,40 @@ export interface operations {
                             source: {
                                 baseUrl: string;
                                 secretHeader: string;
+                            };
+                        } | {
+                            /** @constant */
+                            schemaVersion: 1;
+                            name: string;
+                            description: string;
+                            identity: {
+                                /** @constant */
+                                kind: "service";
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "delegated";
+                                tokenEndpoint: string;
+                                audience: string;
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "asserted";
+                                /** @enum {string} */
+                                attribute: "email" | "subject";
+                                /** @enum {string} */
+                                assertion?: "sessionContext" | "executeAs";
+                            };
+                            retired: boolean;
+                            /** @constant */
+                            type: "s3";
+                            source: {
+                                endpoint: string;
+                                region: string;
+                                bucket: string;
+                                pathStyle: boolean;
                             };
                         };
                         credential: {
@@ -29635,6 +30985,40 @@ export interface operations {
                                 source: {
                                     baseUrl: string;
                                     secretHeader: string;
+                                };
+                            } | {
+                                /** @constant */
+                                schemaVersion: 1;
+                                name: string;
+                                description: string;
+                                identity: {
+                                    /** @constant */
+                                    kind: "service";
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "delegated";
+                                    tokenEndpoint: string;
+                                    audience: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "asserted";
+                                    /** @enum {string} */
+                                    attribute: "email" | "subject";
+                                    /** @enum {string} */
+                                    assertion?: "sessionContext" | "executeAs";
+                                };
+                                retired: boolean;
+                                /** @constant */
+                                type: "s3";
+                                source: {
+                                    endpoint: string;
+                                    region: string;
+                                    bucket: string;
+                                    pathStyle: boolean;
                                 };
                             };
                             credential: {
@@ -30266,7 +31650,41 @@ export interface operations {
                             } | {
                                 /** @constant */
                                 kind: "jsonLines";
+                            } | {
+                                /** @constant */
+                                kind: "csv";
+                                /** @enum {string} */
+                                delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                                headerRow: boolean;
+                                /** @enum {string} */
+                                null: "empty" | "never";
                             };
+                        } | {
+                            /** @constant */
+                            kind: "file";
+                            key: ({
+                                fixed: string;
+                            } | {
+                                parameter: string;
+                            })[];
+                            format: {
+                                /** @constant */
+                                kind: "json";
+                                rows: string;
+                                count?: string;
+                            } | {
+                                /** @constant */
+                                kind: "jsonLines";
+                            } | {
+                                /** @constant */
+                                kind: "csv";
+                                /** @enum {string} */
+                                delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                                headerRow: boolean;
+                                /** @enum {string} */
+                                null: "empty" | "never";
+                            };
+                            where?: components["schemas"]["createQueryDefinitionBody_schema3"];
                         };
                         columns: {
                             name: string;
@@ -30274,6 +31692,10 @@ export interface operations {
                                 column: string;
                             } | {
                                 pointer: string;
+                            } | {
+                                header: string;
+                            } | {
+                                letter: string;
                             };
                             type: {
                                 /** @constant */
@@ -30513,7 +31935,41 @@ export interface operations {
                                 } | {
                                     /** @constant */
                                     kind: "jsonLines";
+                                } | {
+                                    /** @constant */
+                                    kind: "csv";
+                                    /** @enum {string} */
+                                    delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                                    headerRow: boolean;
+                                    /** @enum {string} */
+                                    null: "empty" | "never";
                                 };
+                            } | {
+                                /** @constant */
+                                kind: "file";
+                                key: ({
+                                    fixed: string;
+                                } | {
+                                    parameter: string;
+                                })[];
+                                format: {
+                                    /** @constant */
+                                    kind: "json";
+                                    rows: string;
+                                    count?: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "jsonLines";
+                                } | {
+                                    /** @constant */
+                                    kind: "csv";
+                                    /** @enum {string} */
+                                    delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                                    headerRow: boolean;
+                                    /** @enum {string} */
+                                    null: "empty" | "never";
+                                };
+                                where?: components["schemas"]["createQueryDefinition200_schema3"];
                             };
                             columns: {
                                 name: string;
@@ -30521,6 +31977,10 @@ export interface operations {
                                     column: string;
                                 } | {
                                     pointer: string;
+                                } | {
+                                    header: string;
+                                } | {
+                                    letter: string;
                                 };
                                 type: {
                                     /** @constant */
@@ -30748,7 +32208,41 @@ export interface operations {
                                     } | {
                                         /** @constant */
                                         kind: "jsonLines";
+                                    } | {
+                                        /** @constant */
+                                        kind: "csv";
+                                        /** @enum {string} */
+                                        delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                                        headerRow: boolean;
+                                        /** @enum {string} */
+                                        null: "empty" | "never";
                                     };
+                                } | {
+                                    /** @constant */
+                                    kind: "file";
+                                    key: ({
+                                        fixed: string;
+                                    } | {
+                                        parameter: string;
+                                    })[];
+                                    format: {
+                                        /** @constant */
+                                        kind: "json";
+                                        rows: string;
+                                        count?: string;
+                                    } | {
+                                        /** @constant */
+                                        kind: "jsonLines";
+                                    } | {
+                                        /** @constant */
+                                        kind: "csv";
+                                        /** @enum {string} */
+                                        delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                                        headerRow: boolean;
+                                        /** @enum {string} */
+                                        null: "empty" | "never";
+                                    };
+                                    where?: components["schemas"]["createQueryDefinition400_schema3"];
                                 };
                                 columns: {
                                     name: string;
@@ -30756,6 +32250,10 @@ export interface operations {
                                         column: string;
                                     } | {
                                         pointer: string;
+                                    } | {
+                                        header: string;
+                                    } | {
+                                        letter: string;
                                     };
                                     type: {
                                         /** @constant */
@@ -31044,7 +32542,41 @@ export interface operations {
                                     } | {
                                         /** @constant */
                                         kind: "jsonLines";
+                                    } | {
+                                        /** @constant */
+                                        kind: "csv";
+                                        /** @enum {string} */
+                                        delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                                        headerRow: boolean;
+                                        /** @enum {string} */
+                                        null: "empty" | "never";
                                     };
+                                } | {
+                                    /** @constant */
+                                    kind: "file";
+                                    key: ({
+                                        fixed: string;
+                                    } | {
+                                        parameter: string;
+                                    })[];
+                                    format: {
+                                        /** @constant */
+                                        kind: "json";
+                                        rows: string;
+                                        count?: string;
+                                    } | {
+                                        /** @constant */
+                                        kind: "jsonLines";
+                                    } | {
+                                        /** @constant */
+                                        kind: "csv";
+                                        /** @enum {string} */
+                                        delimiter: "comma" | "semicolon" | "tab" | "pipe";
+                                        headerRow: boolean;
+                                        /** @enum {string} */
+                                        null: "empty" | "never";
+                                    };
+                                    where?: components["schemas"]["createQueryDefinition409_schema3"];
                                 };
                                 columns: {
                                     name: string;
@@ -31052,6 +32584,10 @@ export interface operations {
                                         column: string;
                                     } | {
                                         pointer: string;
+                                    } | {
+                                        header: string;
+                                    } | {
+                                        letter: string;
                                     };
                                     type: {
                                         /** @constant */

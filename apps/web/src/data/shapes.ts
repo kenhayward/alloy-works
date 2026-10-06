@@ -100,6 +100,15 @@ function isSettings(value: unknown): value is Settings {
   if (value.type === 'http') {
     return common && typeof source.baseUrl === 'string' && typeof source.secretHeader === 'string';
   }
+  if (value.type === 's3') {
+    return (
+      common &&
+      typeof source.endpoint === 'string' &&
+      typeof source.region === 'string' &&
+      typeof source.bucket === 'string' &&
+      typeof source.pathStyle === 'boolean'
+    );
+  }
   return (
     common &&
     typeof source.host === 'string' &&

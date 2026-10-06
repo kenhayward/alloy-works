@@ -6,6 +6,7 @@ import {
   type ConnectionSettings,
   type HttpSettings,
   type PostgresSettings,
+  type S3Settings,
   limitCeilings,
   type DataFailure,
   type DataFailureCode,
@@ -39,6 +40,7 @@ import {
   serverVersion,
 } from './postgres.js';
 import { runStatement } from './run.js';
+import { describeS3, runS3, testS3 } from './s3.js';
 
 /** A failure the child answers with, thrown inside it and caught once. */
 class Failed extends Error {
@@ -104,8 +106,9 @@ async function describeSql(
   client: pg.Client,
   request: Extract<ChildRequest, { kind: 'describeSql' }>['request'],
 ): Promise<DescribeSqlAnswer> {
-  // A sample of an HTTP request is HTTP's, never sent to a database (`connectionFetchProblems`).
-  if ('http' in request) throw failedWith('describe_not_supported');
+  // A sample of an HTTP request or a file is its own source's, never sent to a database
+  // (`connectionFetchProblems`).
+  if ('http' in request || 'file' in request) throw failedWith('describe_not_supported');
   const { parameters } = 'sql' in request ? request.sql : request.builder;
   const values: ParameterValues = Object.fromEntries(
     parameters.map((parameter) => [parameter.name, parameter.variation?.[0]?.key ?? null]),
@@ -149,7 +152,8 @@ export async function answerRequest(
   options: { readonly lookup?: Lookup; readonly startedAt?: number } = {},
 ): Promise<Answer> {
   // The source is chosen by the connection's type (the D6 plan, D6-A); PostgreSQL's is as it was.
-  return request.request.settings.type === 'http'
+  const { type } = request.request.settings;
+  return type === 'http' || type === 's3'
     ? answerHttp(request, options)
     : answerPostgres(request, options);
 }
@@ -159,9 +163,9 @@ const deadlineOf = (request: ChildRequest, started: number, startedAt?: number) 
   (startedAt ?? started) + request.request.deadlineMs;
 
 /**
- * An HTTP request (the D6 plan, D6-A): a test, a run, or a sample for columns; a describe of
- * relations is `describe_not_supported`, since an HTTP source lists none. A failure to reach or sign
- * in is answered no sooner than the failure floor, as a database's is (DAT-075).
+ * An HTTP or an S3 request (the D6 plan, D6-A): a test, a run, or a sample for columns; a describe of
+ * relations is `describe_not_supported`, since neither lists any. A failure to reach or sign in is
+ * answered no sooner than the failure floor, as a database's is (DAT-075).
  */
 async function answerHttp(
   request: ChildRequest,
@@ -169,7 +173,7 @@ async function answerHttp(
 ): Promise<Answer> {
   const started = Date.now();
   const deadline = deadlineOf(request, started, options.startedAt);
-  const settings = request.request.settings as HttpSettings;
+  const settings = request.request.settings as HttpSettings | S3Settings;
   const policy: HttpPolicy = {
     deny: request.deny,
     connectTimeoutMs: request.connectTimeoutMs,
@@ -178,25 +182,28 @@ async function answerHttp(
   };
   let answer: Answer;
   try {
+    const s3 = settings.type === 's3';
     switch (request.kind) {
       case 'test':
-        answer = await testHttp(settings, request.secret, policy, deadline);
+        answer = s3
+          ? await testS3(settings, request.secret, policy, deadline)
+          : await testHttp(settings, request.secret, policy, deadline);
         break;
       case 'run':
-        answer = await runHttp(request.request, request.secret, policy, deadline);
+        answer = s3
+          ? await runS3(request.request, request.secret, policy, deadline)
+          : await runHttp(request.request, request.secret, policy, deadline);
         break;
-      case 'describeSql':
+      case 'describeSql': {
+        const asked = request.request;
         answer =
-          'http' in request.request
-            ? await describeHttp(
-                request.request,
-                request.secret,
-                policy,
-                deadline,
-                limitCeilings.bytes,
-              )
-            : { failure: dataFailure('describe_not_supported') };
+          'http' in asked && !s3
+            ? await describeHttp(asked, request.secret, policy, deadline, limitCeilings.bytes)
+            : 'file' in asked && s3
+              ? await describeS3(asked, request.secret, policy, deadline, limitCeilings.bytes)
+              : { failure: dataFailure('describe_not_supported') };
         break;
+      }
       default:
         answer = { failure: dataFailure('describe_not_supported') };
     }

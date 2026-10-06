@@ -46,6 +46,9 @@ import {
   connectionFetchProblems,
   headerValueProblem,
   httpValueProblems,
+  keyPairText,
+  objectKeyProblems,
+  sampleDraft,
   dataFailures,
   decide,
   effectiveLimits,
@@ -103,29 +106,33 @@ const TEST_DEADLINE_MS = 10_000;
 const DESCRIBE_DEADLINE_MS = 20_000;
 
 /**
- * How long a sample of an HTTP request for its columns may take: its body is read whole, at most
- * JSON Lines' 12 MiB, so the time of a run at the default limit, rather than a describe's.
+ * How long a sample of an HTTP request or an object for its columns may take: its body is read
+ * whole, at most JSON Lines' 12 MiB, so the time of a run at the default limit, rather than a
+ * describe's.
  */
 const HTTP_SAMPLE_DEADLINE_MS = 30_000;
 
 /**
- * The problems of an HTTP request a describe is sent to sample (the D6 plan, D6-E): its template's
- * rules against its parameters, as a definition's, so the connector never meets one it refuses.
+ * The problems of an HTTP request or an object a describe is sent to sample (the D6 plan, D6-E and
+ * task 2): its template's or its key's rules against its parameters, as a definition's, so the
+ * connector never meets one it refuses.
  */
-function httpProblems(http: NonNullable<DescribeBody['http']>): DefinitionProblem[] {
-  return checkQueryDefinition({
-    schemaVersion: 1,
-    connection: '00000000-0000-4000-8000-000000000000',
-    parameters: http.parameters,
-    fetch: { kind: 'http', request: http.request, format: http.format },
-    columns: [{ name: 'proposed', from: { pointer: '/proposed' }, type: { base: 'text' } }],
-    key: [],
-    order: 'multiset',
-    empty: 'valid',
-    limits: { rows: 1, bytes: 1, seconds: 1 },
-  }).map((problem) => ({
+function sampleProblems(
+  sampled: NonNullable<DescribeBody['http']> | NonNullable<DescribeBody['file']>,
+): DefinitionProblem[] {
+  const http = 'request' in sampled;
+  return checkQueryDefinition(
+    sampleDraft(
+      sampled.parameters,
+      http
+        ? { kind: 'http', request: sampled.request, format: sampled.format }
+        : { kind: 'file', key: sampled.key, format: sampled.format },
+    ),
+  ).map((problem) => ({
     ...problem,
-    path: problem.path.replace(/^fetch\.request/, 'http.request'),
+    path: problem.path
+      .replace(/^fetch\.request/, 'http.request')
+      .replace(/^fetch\.key/, 'file.key'),
   }));
 }
 
@@ -600,7 +607,20 @@ export function connectionHandlers(
     setConnectionCredential: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
       const { id } = request.params as ConnectionParams;
       const connection = await runnable(trx, id);
-      const { secret } = request.body as CredentialBody;
+      const body = request.body as CredentialBody;
+      // An S3 connection's credential is its key pair, sealed together; any other's is one secret.
+      if ((body.secret !== undefined) !== (connection.settings.type !== 's3')) {
+        throw new AppError(
+          400,
+          'invalid_request',
+          connection.settings.type === 's3'
+            ? "An S3 connection's credential is its access key id and its secret access key."
+            : "This connection's credential is one secret.",
+        );
+      }
+      const secret =
+        body.secret ??
+        keyPairText({ accessKeyId: body.accessKeyId!, secretAccessKey: body.secretAccessKey! });
       // An HTTP connection's secret is sent as a header's value, so it is one a header carries (D6-D).
       if (connection.settings.type === 'http' && headerValueProblem(secret) !== undefined) {
         throw new AppError(
@@ -692,29 +712,32 @@ export function connectionHandlers(
 
     describeConnection: async (request: FastifyRequest, { trx, facts }: Authorised) => {
       const { id } = request.params as ConnectionParams;
-      const { sql, builder, http } = request.body as DescribeBody;
-      if ([sql, builder, http].filter((each) => each !== undefined).length > 1) {
+      const { sql, builder, http, file } = request.body as DescribeBody;
+      if ([sql, builder, http, file].filter((each) => each !== undefined).length > 1) {
         throw definitionRefused([
           {
             rule: 'definition_invalid',
-            path: http === undefined ? 'builder' : 'http',
-            message: 'A describe is sent SQL, a built query or an HTTP request, one alone',
+            path: file !== undefined ? 'file' : http === undefined ? 'builder' : 'http',
+            message: 'A describe is sent SQL, a built query, an HTTP request or a file, one alone',
           },
         ]);
       }
       // A statement is SQL against the connection: write_sql there as well as use_connection (D2-G).
-      // A built query and an HTTP request need use_connection alone, the route's own (D4-J, D6-A).
+      // A built query, an HTTP request and a file need use_connection alone, the route's own (D4-J,
+      // D6-A).
       if (sql !== undefined && !maySqlWith(facts)) throw sqlForbidden();
       const connection = await runnable(trx, id);
-      // What is described suits the connection's type, and an HTTP connection lists no tables (D6-A).
+      // What is described suits the connection's type; neither HTTP nor S3 lists tables (D6-A).
       const asked =
-        http !== undefined
-          ? { kind: 'http' as const, request: http.request, format: http.format }
-          : sql !== undefined
-            ? { kind: 'sql' as const, text: sql.text }
-            : builder !== undefined
-              ? { kind: 'builder' as const, format: 1 as const, query: builder.query }
-              : undefined;
+        file !== undefined
+          ? { kind: 'file' as const, key: file.key, format: file.format }
+          : http !== undefined
+            ? { kind: 'http' as const, request: http.request, format: http.format }
+            : sql !== undefined
+              ? { kind: 'sql' as const, text: sql.text }
+              : builder !== undefined
+                ? { kind: 'builder' as const, format: 1 as const, query: builder.query }
+                : undefined;
       if (asked === undefined && connection.settings.type !== 'postgres') {
         throw dataRefused(409, 'describe_not_supported');
       }
@@ -722,13 +745,19 @@ export function connectionHandlers(
         const unsuited = connectionFetchProblems(asked, connection.settings);
         if (unsuited.length > 0) throw definitionRefused(unsuited);
       }
-      if (http !== undefined) {
-        const problems = httpProblems(http);
+      const sampled = http ?? file;
+      if (sampled !== undefined) {
+        const problems = sampleProblems(sampled);
         if (problems.length > 0) throw definitionRefused(problems);
-        const values = http.values as ParameterValues;
+        const values = sampled.values as ParameterValues;
+        const typed = checkParameterValues(sampled.parameters, values);
         const invalid = [
-          ...checkParameterValues(http.parameters, values),
-          ...httpValueProblems(http.request, values),
+          ...typed,
+          ...(typed.length > 0
+            ? []
+            : 'request' in sampled
+              ? httpValueProblems(sampled.request, values)
+              : objectKeyProblems(sampled.key, values)),
         ];
         if (invalid.length > 0) {
           throw refused(400, 'parameter.invalid', 'A value does not fit its parameter.', {
@@ -764,8 +793,10 @@ export function connectionHandlers(
       };
       // Decided and read here; the connector is asked once this transaction, and its lock on access,
       // is let go (the D1 fix, C4). A describe records nothing.
-      if (http !== undefined) {
-        // An HTTP request is sent to sample its columns, as the account: no person runs it (ADR-0041).
+      if (sampled !== undefined) {
+        // An HTTP request is sent, or an object read, to sample its columns, as the account: no
+        // person runs either (ADR-0041; an S3 connection declares no person, DAT-077).
+        const values = sampled.values as Record<string, string>;
         return new AfterCommit(() =>
           whileHeld(request, async (signal) => {
             const described = answered(
@@ -773,7 +804,9 @@ export function connectionHandlers(
                 {
                   ...describing,
                   deadlineMs: HTTP_SAMPLE_DEADLINE_MS,
-                  http: { ...http, values: http.values as Record<string, string> },
+                  ...(http !== undefined
+                    ? { http: { ...http, values } }
+                    : { file: { ...file!, values } }),
                 },
                 signal,
               ),
@@ -852,15 +885,19 @@ export function connectionHandlers(
       // A fetch of the connection's type, by the version it runs on (D6-A).
       const unsuited = connectionFetchProblems(draft.fetch, connection.settings);
       if (unsuited.length > 0) throw definitionRefused(unsuited);
-      // Every value against its declaration, and an HTTP value against its position, before the
-      // connector is asked (DAT-020, DAT-081).
+      // Every value against its declaration, and an HTTP value or a key's against its position,
+      // before the connector is asked (DAT-020, DAT-081).
       const values = body.values as ParameterValues;
+      const typed = checkParameterValues(draft.parameters, values);
       const problems = [
-        ...checkParameterValues(draft.parameters, values),
-        ...(draft.fetch.kind === 'http' &&
-        checkParameterValues(draft.parameters, values).length === 0
-          ? httpValueProblems(draft.fetch.request, values)
-          : []),
+        ...typed,
+        ...(typed.length > 0
+          ? []
+          : draft.fetch.kind === 'http'
+            ? httpValueProblems(draft.fetch.request, values)
+            : draft.fetch.kind === 'file'
+              ? objectKeyProblems(draft.fetch.key, values)
+              : []),
       ];
       if (problems.length > 0) {
         throw refused(400, 'parameter.invalid', 'A value does not fit its parameter.', {
@@ -941,7 +978,7 @@ export function connectionHandlers(
             rows: rows.map((row) => [...row]),
             rowCount: ran.rowCount,
             checksum,
-            ran: 'sql' in ran.ran ? { sql: ran.ran.sql } : { request: ran.ran.request },
+            ran: ran.ran,
             durationMs: ran.durationMs,
             images,
           };

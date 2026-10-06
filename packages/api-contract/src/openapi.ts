@@ -92,7 +92,10 @@ function exampleFor(schema: z.ZodType, io: 'input' | 'output', name = ''): unkno
             openedFrom: '00000000-0000-4000-8000-000000000001',
             operation: { operation: 'remove', node: 'a'.repeat(26) },
           }
-        : value(root, new Set());
+        : // A credential is one secret or an S3 key pair, each optional alone (the D6 plan).
+          name === 'setConnectionCredentialBody'
+          ? { secret: 'an-invented-password' }
+          : value(root, new Set());
   const checked = schema.safeParse(candidate);
   if (!checked.success) {
     throw new Error(

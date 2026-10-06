@@ -175,9 +175,12 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
  * follows only the members that recurse, takes whatever it is given, and stops at the first bound
  * passed, so a hostile body nested 100,000 deep is refused by name rather than throwing.
  */
-export function treeProblem(value: unknown): string | undefined {
+export function treeProblem(
+  value: unknown,
+  start: 'query' | 'condition' = 'query',
+): string | undefined {
   type Visit = { kind: 'query' | 'condition'; value: unknown; depth: number };
-  const stack: Visit[] = [{ kind: 'query', value, depth: 1 }];
+  const stack: Visit[] = [{ kind: start, value, depth: 1 }];
   let compared = 0;
   for (let visit = stack.pop(); visit !== undefined; visit = stack.pop()) {
     const { kind, depth } = visit;
@@ -275,7 +278,7 @@ const INT8_MAX = 2n ** 63n - 1n;
 type InScope = { readonly table: true } | { readonly names: ReadonlySet<string> };
 
 /** Why a value of this type cannot be compared this way, or undefined where it can (D4-C, D4-G). */
-function typeProblem(is: Comparison, type: ValueType): string | undefined {
+export function typeProblem(is: Comparison, type: ValueType): string | undefined {
   if (RANGES.includes(is) && !ORDERED.has(type.base)) {
     return 'Less and greater compare a number, a date or a time; text is compared by equal, contains or starts with';
   }
@@ -289,7 +292,7 @@ function typeProblem(is: Comparison, type: ValueType): string | undefined {
 }
 
 /** A fixed value's problem against its type: canonical, never null, an integer within 64 bits. */
-function literalProblem(type: ValueType, value: CanonicalValue): boolean {
+export function literalProblem(type: ValueType, value: CanonicalValue): boolean {
   if (value === null || valueProblem(type, value) !== null) return true;
   if (type.base === 'integer') {
     const number = BigInt(value as string);

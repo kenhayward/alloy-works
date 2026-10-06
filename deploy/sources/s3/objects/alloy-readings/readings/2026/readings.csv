@@ -1,0 +1,4 @@
+id,site,depth,measured,taken,active,note
+1,North weir,12.5,2026-01-02,2026-01-02T03:04:05.5Z,true,""
+2,South weir,7.25,2026-01-03,2026-01-03T04:05:06Z,false,
+3,East gauge,0.75,2026-01-04,2026-01-04T05:06:07.25Z,true,"Gauge, east bank"

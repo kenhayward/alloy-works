@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { canonicalJson } from '../stored/canonical.js';
 import {
+  bucketHost,
   checkConnection,
   connectionChangeProblems,
   connectionTarget,
@@ -450,5 +451,110 @@ describe('an http connection version', () => {
     ]);
     const renamed: ConnectionSettings = { ...whole, name: 'Other' };
     expect(connectionChangeProblems(whole, renamed)).toEqual([]);
+  });
+});
+
+describe('an s3 connection version', () => {
+  const s3 = {
+    schemaVersion: 1,
+    name: 'Readings bucket',
+    description: '',
+    type: 's3',
+    source: {
+      endpoint: 'https://s3.example.test',
+      region: 'eu-west-2',
+      bucket: 'alloy-readings',
+      pathStyle: false,
+    },
+    identity: { kind: 'service' },
+    retired: false,
+  } as const;
+  const withSource = (source: Record<string, unknown>) => ({
+    ...s3,
+    source: { ...s3.source, ...source },
+  });
+
+  it('holds an endpoint, a region, a bucket and how it is addressed, whole', () => {
+    expect(parseConnectionForWrite(s3)).toEqual(s3);
+    for (const source of [
+      { endpoint: 'https://s3.example.test:8443' },
+      { endpoint: 'https://172.31.20.21:8333', pathStyle: true },
+      { endpoint: 'https://[2001:db8::1]', pathStyle: true },
+      { bucket: 'a.b-c' },
+      { region: 'us-east-1' },
+    ]) {
+      expect(refusal(withSource(source)), JSON.stringify(source)).toEqual([]);
+    }
+    expect(bucketHost(s3.source)).toEqual({ host: 'alloy-readings.s3.example.test', port: 443 });
+    expect(
+      bucketHost({ ...s3.source, endpoint: 'https://s3.example.test:8443', pathStyle: true }),
+    ).toEqual({ host: 's3.example.test', port: 8443 });
+  });
+
+  it('refuses an endpoint with a path, a bucket S3 would not name, a region that is not one, and an address virtual-hosted', () => {
+    const refusedAt = (source: Record<string, unknown>, path: string) =>
+      expect(refusal(withSource(source))[0], JSON.stringify(source)).toMatchObject({
+        rule: 'connection_invalid',
+        path,
+      });
+    for (const endpoint of [
+      'http://s3.example.test',
+      'https://s3.example.test/',
+      'https://s3.example.test/bucket',
+      'https://key:secret@s3.example.test',
+      'https://s3.example.test?x=1',
+      'https://S3.example.test',
+      'https://2130706433',
+      '',
+    ]) {
+      refusedAt({ endpoint }, 'source.endpoint');
+    }
+    for (const bucket of [
+      'ab',
+      'a'.repeat(64),
+      'Readings',
+      'readings_2026',
+      '-readings',
+      'readings-',
+      'a..b',
+      '192.168.1.1',
+      'xn--readings',
+      'readings/2026',
+      '../readings',
+    ]) {
+      refusedAt({ bucket }, 'source.bucket');
+    }
+    for (const region of ['', 'EU-WEST-2', 'eu west 2', 'eu-west-2-', 'r'.repeat(33)]) {
+      refusedAt({ region }, 'source.region');
+    }
+    refusedAt({ endpoint: 'https://172.31.20.21' }, 'source.pathStyle');
+    refusedAt({ endpoint: 'https://[2001:db8::1]' }, 'source.pathStyle');
+  });
+
+  it('DAT-077 refuses an s3 connection declaring an end user: a store reads as its key pair alone', () => {
+    expect(connectorIdentities.s3).toEqual([]);
+    expect(
+      refusal({
+        ...s3,
+        identity: {
+          kind: 'endUser',
+          mechanism: 'delegated',
+          tokenEndpoint: 'https://idp.example.test/token',
+          audience: 'readings',
+        },
+      }),
+    ).toEqual([{ rule: 'identity_not_supported', type: 's3', mechanism: 'delegated' }]);
+    expect(
+      refusal({ ...s3, identity: { kind: 'endUser', mechanism: 'asserted', attribute: 'email' } }),
+    ).toEqual([{ rule: 'identity_not_supported', type: 's3', mechanism: 'asserted' }]);
+  });
+
+  it('binds a credential to the endpoint, the region, the bucket and its addressing', () => {
+    expect(connectionTarget(parseConnection(s3))).toBe(
+      JSON.stringify(['s3', 'https://s3.example.test', 'eu-west-2', 'alloy-readings', false]),
+    );
+    expect(connectionTarget(parseConnection(withSource({ pathStyle: true })))).not.toBe(
+      connectionTarget(parseConnection(s3)),
+    );
   });
 });

@@ -122,6 +122,21 @@ export function createFakeApi(options = {}) {
             200,
             Buffer.from(READINGS.map((each) => JSON.stringify(each)).join('\n') + '\n'),
           );
+        case '/v1/readings.csv':
+          // As CSV, its header first: a quoted empty note is empty text, an unquoted one null.
+          return send(
+            200,
+            Buffer.from(
+              [
+                'id,site,depth,measured,taken,active,note',
+                ...READINGS.map(
+                  (each, at) =>
+                    `${each.id},"${each.site}",${each.depth},${each.measured},${each.taken},${each.active},${at === 0 ? '""' : ''}`,
+                ),
+              ].join(LF) + LF,
+            ),
+            { 'content-type': 'text/csv' },
+          );
         case '/v1/echo':
           // What the connector sent, as one row: the method, the path and query as they arrived, the
           // headers but the key, and the body.
@@ -170,6 +185,23 @@ export function createFakeApi(options = {}) {
           const rows = Number(url.searchParams.get('rows') ?? '10');
           const columns = Number(url.searchParams.get('columns') ?? '10');
           const parts = [];
+          if (url.searchParams.has('csv')) {
+            // As CSV where `csv` is asked: a header, then a record a row, every text quoted.
+            const names = ['id', ...Array.from({ length: columns }, (_, at) => `c${at}`)];
+            parts.push(names.join(','));
+            for (let row = 0; row < rows; row += 1) {
+              const fields = [String(row)];
+              for (let at = 0; at < columns; at += 1) {
+                fields.push(
+                  at % 2 === 0
+                    ? `${row + 1}${at}.${String(row % 100).padStart(2, '0')}`
+                    : `"r${row}c${at}"`,
+                );
+              }
+              parts.push(fields.join(','));
+            }
+            return send(200, Buffer.from(`${parts.join(LF)}${LF}`, 'utf8'));
+          }
           for (let row = 0; row < rows; row += 1) {
             const members = [];
             for (let at = 0; at < columns; at += 1) {

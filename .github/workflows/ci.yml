@@ -92,6 +92,7 @@ jobs:
       # looked like a hang. Streamed, every line arrives as it is printed, prefixed with its task.
       TURBO_LOG_ORDER: stream
       ALLOY_TEST_SOURCE_PORT: '5434'
+      ALLOY_TEST_S3_SOURCE_PORT: '8489'
       FULL: ${{ needs.changes.outputs.full }}
       DOCS: ${{ needs.changes.outputs.docs }}
     steps:
@@ -254,6 +255,7 @@ jobs:
       TURBO_LOG_ORDER: stream
       ALLOY_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres
       ALLOY_TEST_SOURCE_PORT: '5434'
+      ALLOY_TEST_S3_SOURCE_PORT: '8489'
     steps:
       - uses: actions/checkout@v5
 
@@ -283,6 +285,12 @@ jobs:
       - name: Connector source
         if: ${{ matrix.suite == 'connector' }}
         run: pnpm --filter @alloy-works/connector source
+
+      # And its S3 source: SeaweedFS over HTTPS with the identities and objects of the compose
+      # file's `source-s3`, on 127.0.0.1:8489 (the D6 plan, task 2).
+      - name: Connector S3 source
+        if: ${{ matrix.suite == 'connector' }}
+        run: pnpm --filter @alloy-works/connector source-s3
 
       # The worker's own tools: the pinned Typst, checked against its hash; veraPDF by digest, the
       # checker the regression corpus answers to (PUB-087); and the Word validator every .docx a

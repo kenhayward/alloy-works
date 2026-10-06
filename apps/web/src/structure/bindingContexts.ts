@@ -128,7 +128,15 @@ function takenIn(value: unknown): Taken | null {
 function provenanceIn(value: unknown): ProvenanceShown | undefined {
   if (!isRecord(value) || !isRecord(value.ran) || !isRecord(value.identity)) return undefined;
   const { at, rowCount, checksum, parameters } = value;
-  const sql = value.ran.sql;
+  // What ran, in words: SQL as it ran, or an S3 object by its bucket and key; an HTTP request's
+  // template is the definition's to show (the D6 plan, D6-L). Null where the caller may not read it.
+  const { object } = value.ran;
+  const sql =
+    isRecord(object) && typeof object.bucket === 'string' && typeof object.key === 'string'
+      ? `${object.bucket}/${object.key}`
+      : 'request' in value.ran
+        ? null
+        : value.ran.sql;
   const identity = text(value.identity.kind);
   if (typeof at !== 'string' || typeof rowCount !== 'number' || typeof checksum !== 'string') {
     return undefined;
