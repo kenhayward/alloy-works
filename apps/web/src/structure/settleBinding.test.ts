@@ -131,6 +131,27 @@ describe("a binding placed or changed in a document's editor (the B2 plan, B2-C,
     expect(order).toEqual(['GET bindings', 'POST confirm', 'GET bindings', 'POST confirm']);
   });
 
+  it('settles an act on one binding while an act on another binding is still pending', async () => {
+    let release = () => {};
+    const held = new Promise<void>((resolve) => (release = resolve));
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const body = (await request.text()) as string;
+      if (body.includes('"binding":"b1"')) await held;
+      return json(200, { results: [] });
+    }) as unknown as typeof fetch;
+    const client = createApiClient({ baseUrl: 'http://settle.test', fetch: fetching });
+    const a = settleBinding(client, DOCUMENT, NODE, 'b1', SESSION, 'resolve');
+    const b = settleBinding(client, DOCUMENT, NODE, 'b2', SESSION, 'resolve');
+    const later = new Promise<string>((resolve) => setTimeout(() => resolve('still waiting'), 50));
+    try {
+      expect(await Promise.race([b, later])).toBeNull();
+    } finally {
+      release();
+    }
+    expect(await a).toBeNull();
+  });
+
   it('says the value changed meanwhile where the service answers that it moved on', async () => {
     const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
       const request = input instanceof Request ? input : new Request(String(input), init);
