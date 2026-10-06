@@ -9,6 +9,7 @@ import {
   type BindingState,
   type Taken,
 } from '../structure/bindingContexts.js';
+import { whoseView } from '../structure/ownView.js';
 import { usePresentation } from '../theme/presentation.js';
 import { longDate } from './shapes.js';
 import styles from './ProvenancePanel.module.css';
@@ -187,7 +188,11 @@ export function ProvenancePanel({
             : parameters.map(([name, value]) => `${name}: ${String(value)}`).join(', ')}
         </dd>
         <dt>Whose view</dt>
-        <dd>{provenance.identity === 'service' ? 'The service account' : provenance.identity}</dd>
+        <dd>
+          {provenance.identity === 'service'
+            ? 'The service account'
+            : `${whoseView(provenance, held.by) ?? "A person's own view"}, as the source showed it to them`}
+        </dd>
         <dt>Fetched</dt>
         <dd>{longDate(provenance.at)}</dd>
         <dt>Rows</dt>

@@ -275,3 +275,56 @@ describe('a resolve whose result waits on its images (the D8 plan, D8-F)', () =>
     ).toBe('The value could not be fetched. Try again.');
   });
 });
+
+/** A client whose resolves answer in turn from `answers`, recording each body sent. */
+function resolving(answers: readonly (() => Response)[]) {
+  const bodies: unknown[] = [];
+  let at = 0;
+  const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+    const request = input instanceof Request ? input : new Request(String(input), init);
+    bodies.push(JSON.parse(await request.text()));
+    return answers[at++]?.() ?? json(500, {});
+  }) as unknown as typeof fetch;
+  return { client: createApiClient({ baseUrl: 'http://settle.test', fetch: fetching }), bodies };
+}
+
+const acknowledge = () =>
+  json(409, {
+    code: 'acknowledgement_required',
+    message: 'The binding b1 runs as you.',
+    traceId: 't',
+  });
+
+describe('a binding that runs as the person resolving it (the D7 plan, D7.3)', () => {
+  it('asks before holding a resolved own view, sends the acknowledgement once given, and resolves nothing once declined', async () => {
+    const given = resolving([acknowledge, () => json(200, { results: [] })]);
+    const ask = vi.fn(async () => true);
+    expect(
+      await settleBinding(given.client, DOCUMENT, NODE, 'b1', null, 'resolve', { ask }),
+    ).toBeNull();
+    expect(ask).toHaveBeenCalledTimes(1);
+    expect(given.bodies).toEqual([
+      { bindings: [{ node: NODE, binding: 'b1' }] },
+      { bindings: [{ node: NODE, binding: 'b1' }], sharesOwnView: true },
+    ]);
+
+    const declined = resolving([acknowledge]);
+    expect(
+      await settleBinding(declined.client, DOCUMENT, NODE, 'b1', null, 'resolve', {
+        ask: async () => false,
+      }),
+    ).toBe('Your own view was not held, so this value holds nothing new.');
+    expect(declined.bodies).toHaveLength(1);
+  });
+
+  it("says a refusal of the person's identity, or of their ended sign-in, in the service's own words", async () => {
+    for (const [status, code, message] of [
+      [409, 'identity_unavailable', 'Your sign-in does not name you as this connection asks.'],
+      [401, 'authority_ended', 'You signed out while the source was answering, so it was stopped.'],
+      [403, 'identity_differs', "The result waiting is another person's own view."],
+    ] as const) {
+      const { client } = resolving([() => json(status, { code, message, traceId: 't' })]);
+      expect(await settleBinding(client, DOCUMENT, NODE, 'b1', null, 'resolve')).toBe(message);
+    }
+  });
+});

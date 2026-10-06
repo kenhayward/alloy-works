@@ -30,6 +30,7 @@ import { ProvenancePanel } from '../data/ProvenancePanel.js';
 import { bindingStatesIn, holdsBinding, type BindingState } from './bindingContexts.js';
 import { followPending, WAITING_ON_IMAGES } from './pendingResult.js';
 import { settleBinding, type SettleAct } from './settleBinding.js';
+import { useOwnViewAsk } from './OwnViewAsk.js';
 import { DocumentText, type Editable, type Place } from './DocumentText.js';
 import { GeneratedLists, type Known } from './GeneratedLists.js';
 import { documentAccessLink, nodeLink } from './links.js';
@@ -542,6 +543,8 @@ export function DocumentPage({
   // The editing session of the editor open in place once it has placed or changed a binding, whose
   // bindings the view is read with until it closes (B2-C), and a count read again by.
   const [bindingSession, setBindingSession] = useState<string | null>(null);
+  // DAT-091's warning, asked before a binding placed or resolved here holds one's own view (D7-H).
+  const { ask: askOwnView, prompt: ownViewPrompt } = useOwnViewAsk();
   const [bindingsRead, setBindingsRead] = useState(0);
   useEffect(() => {
     if (!holdsBindings && bindingSession === null) {
@@ -636,7 +639,10 @@ export function DocumentPage({
     act: SettleAct,
   ) => {
     if (session !== null) setBindingSession(session);
-    void settleBinding(client, id, node, binding, session, act, { onWaiting: setNotice })
+    void settleBinding(client, id, node, binding, session, act, {
+      onWaiting: setNotice,
+      ask: askOwnView,
+    })
       // What it says replaces the waiting it said meanwhile, which goes once nothing is to be said.
       .then((said) => setNotice((held) => said ?? (held === WAITING_ON_IMAGES ? null : held)))
       .catch(() => undefined)
@@ -1455,6 +1461,7 @@ export function DocumentPage({
             />
           </div>
         </div>
+        {ownViewPrompt}
         {status === null && <StatusBar notice={notice} context={context} />}
       </article>
     </PresentationProvider>

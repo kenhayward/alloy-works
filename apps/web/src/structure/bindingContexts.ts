@@ -46,6 +46,8 @@ export interface ProvenanceShown {
   readonly parameters: Readonly<Record<string, unknown>>;
   readonly sql: string | null;
   readonly identity: string;
+  /** Whose own view it is, where it ran as a person (the D7 plan, D7-J); else null. */
+  readonly principal?: string | null;
   readonly at: string;
   readonly rowCount: number;
   readonly checksum: string;
@@ -136,6 +138,7 @@ function provenanceIn(value: unknown): ProvenanceShown | undefined {
     parameters: isRecord(parameters) ? parameters : {},
     sql,
     identity,
+    principal: text(value.identity.principal) ?? null,
     at,
     rowCount,
     checksum,

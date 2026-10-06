@@ -863,3 +863,97 @@ describe('a connection on its own page', () => {
     expect(screen.queryByLabelText('Password')).toBeNull();
   });
 });
+
+describe('a connection that runs as each person (the D7 plan, D7.3)', () => {
+  const asserted = (attribute: 'email' | 'subject') => ({
+    kind: 'endUser',
+    mechanism: 'asserted',
+    attribute,
+  });
+
+  it('declares on its page that it runs as each person, by email or by subject, and saves that as a version', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service();
+    render(<ConnectionPage client={client} id={READINGS} />);
+    const saving = await screen.findByRole('region', { name: 'Settings' });
+    const runsAs = within(saving).getByLabelText('Runs as');
+    expect(runsAs).toHaveValue('service');
+    await user.selectOptions(runsAs, 'email');
+    expect(
+      within(saving).getByText(/Each person's role at the source is named by this/),
+    ).toBeInTheDocument();
+    await user.click(within(saving).getByRole('button', { name: 'Save version' }));
+    await waitFor(() =>
+      expect(asked.find((each) => each.path.endsWith('/versions'))?.body).toMatchObject({
+        settings: { identity: asserted('email') },
+      }),
+    );
+
+    await user.selectOptions(within(saving).getByLabelText('Runs as'), 'subject');
+    await user.click(within(saving).getByRole('button', { name: 'Save version' }));
+    await waitFor(() =>
+      expect(asked.filter((each) => each.path.endsWith('/versions')).at(-1)?.body).toMatchObject({
+        settings: { identity: asserted('subject') },
+      }),
+    );
+  });
+
+  it('says to a reader whom the connection runs as', async () => {
+    const { client } = service({
+      connection: view({
+        mayAdminister: false,
+        settings: settings({ identity: asserted('subject') }),
+      }),
+    });
+    render(<ConnectionPage client={client} id={READINGS} />);
+    const shown = await screen.findByRole('region', { name: 'Settings' });
+    expect(shown).toHaveTextContent(
+      "Runs asEach person, by their identifier at the organisation's sign-in",
+    );
+  });
+
+  it("words the account check's findings, and a person's unsafe role, for the source's administrator", async () => {
+    const user = userEvent.setup();
+    const { client } = service({
+      connection: view({
+        settings: settings({ identity: asserted('email') }),
+        credential: {
+          set: true,
+          setBy: { id: 'ada', name: 'Ada' },
+          setAt: '2026-09-30T09:00:00Z',
+          targetChanged: false,
+        },
+      }),
+      test: () =>
+        json(200, {
+          outcome: 'ok',
+          findings: ['account_holds_privilege'],
+          at: '2026-09-30T10:00:00.000Z',
+        }),
+      describe: () =>
+        json(409, {
+          code: 'identity_role_unsafe',
+          attribution: 'connector',
+          message:
+            "Your role at the source can sign in, create objects or owns objects of its own, so nothing runs as you on it. Ask the source's administrator.",
+          traceId: 't',
+        }),
+    });
+    render(<ConnectionPage client={client} id={READINGS} />);
+    await user.click(await screen.findByRole('button', { name: 'Test' }));
+    expect(
+      await screen.findByText(
+        "This account can read data, create objects, or owns functions, procedures or views of its own, so nothing runs as each person until the source's administrator removes those privileges.",
+      ),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'List tables' }));
+    expect(
+      await screen.findByText(/Your role at the source can sign in, create objects/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "For the source's administrator: each person's role must be NOLOGIN, create in no schema or database, and own nothing.",
+      ),
+    ).toBeInTheDocument();
+  });
+});
