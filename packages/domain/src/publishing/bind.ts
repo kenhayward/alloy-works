@@ -74,9 +74,15 @@ export type PrintedValue =
 /** An image a take gave, with the asset version its result's provenance admitted it as. */
 type TakenImage = Extract<TakeOutcome, { image: string }> & { readonly assetVersion: string };
 
-/** A described image's text as its own, or decorative: what a bound image is described by (B6-C). */
-const describedBy = (description: string): Alternative =>
-  description === 'decorative' ? { kind: 'decorative' } : { kind: 'own', text: description };
+/**
+ * What a bound image is described by (B6-C): decorative where its column's type says so, and otherwise
+ * the words its row holds as its own text - words that read "decorative" among them. Decided by the
+ * type, never by the text. An author's decorative on a figure is the figure's, applied where it is set.
+ */
+const describedBy = (image: TakenImage): Alternative =>
+  image.column.type.description === 'decorative'
+    ? { kind: 'decorative' }
+    : { kind: 'own', text: image.description };
 
 /**
  * **The binding stage** (bindings.md; the B3 plan, B3-D): every binding in one occurrence's content
@@ -199,7 +205,7 @@ export function bind(
           type: 'image',
           asset: taken.assetVersion,
           imageStyle: 'inline',
-          alternative: describedBy(taken.description),
+          alternative: describedBy(taken),
         };
       }
       const printed = formatValue(taken.value, taken.column.type, formats);
@@ -261,7 +267,7 @@ export function bind(
                 alternative:
                   block.alternative.kind === 'decorative'
                     ? block.alternative
-                    : describedBy(got.taken.description),
+                    : describedBy(got.taken),
               };
             }
           }

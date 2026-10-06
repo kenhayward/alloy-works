@@ -402,6 +402,22 @@ describe('bind, a bound image (the B6 plan, B6-D and B6-E)', () => {
     expect(figures.map((each) => each.alternative)).toEqual([null, null]);
   });
 
+  it('DAT-097 describes an image by the words its row holds, though they read "decorative": only the column or the author makes one decorative', () => {
+    const content = component(
+      paragraph('p1', binding('i1', at('east'))),
+      figure('f1', binding('i2', at('east'))),
+    );
+    const rows: CanonicalValue[][] = [['east', NORTH, 'decorative']];
+    const results = new Map(['i1', 'i2'].map((each) => [each, photos(...rows)]));
+    const { bound, failures } = bind(NODE, content, results, DEFAULT_VALUE_FORMATS);
+    expect(failures).toEqual([]);
+    const said = { kind: 'own', text: 'decorative' };
+    expect(bound.content).toMatchObject([
+      { content: [{ type: 'image', alternative: said }] },
+      { asset: NORTH_ASSET, alternative: said },
+    ]);
+  });
+
   it("fails a figure's binding taking anything but an image, value_not_image, and an image bound in a footnote's text, image_not_placeable", () => {
     const content = component(
       figure('f1', binding('v1', at('north', 'caption'))),
