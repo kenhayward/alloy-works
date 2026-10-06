@@ -18,6 +18,12 @@ import {
 /** The JSON formats: at a pointer, or a line at a time. */
 export type JsonFormat = Extract<DataFormat, { kind: 'json' | 'jsonLines' }>;
 
+/**
+ * The most a JSON body may be, and so the most one JSON line may be (the D6 review): `JSON.parse`
+ * with its reviver holds many times the text it parses, whether it is a body or one line of a body.
+ */
+export const MAX_JSON_LINE_BYTES = 4 * 1024 * 1024;
+
 /** The deepest a JSON value may nest. */
 export const MAX_JSON_DEPTH = 64;
 
@@ -108,6 +114,10 @@ export function eachRow(body: Buffer, format: JsonFormat, visit: RowVisitor): Vi
       let end = found < 0 ? body.length : found;
       const next = found < 0 ? body.length : found + 1;
       if (end > from && body[end - 1] === CARRIAGE_RETURN) end -= 1;
+      // A line is parsed as a JSON body is, so it is held to the most a JSON body may be.
+      if (end - from > MAX_JSON_LINE_BYTES) {
+        return { failure: dataFailure('byte_limit', { row: rows + 1 }) };
+      }
       let line: string;
       try {
         line = decoder.decode(body.subarray(from, end));

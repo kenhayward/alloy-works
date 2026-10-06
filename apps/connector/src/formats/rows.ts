@@ -20,7 +20,7 @@ import {
 import { readImage } from '../image.js';
 import { fromJson, type Cell } from './cells.js';
 import { eachRecord, type CsvField } from './csv.js';
-import { countAgrees, eachRow, firstRows } from './json.js';
+import { countAgrees, eachRow, firstRows, MAX_JSON_LINE_BYTES } from './json.js';
 import { fromSerial } from './serial.js';
 import { eachSheetRow, type XlsxCell } from './xlsx.js';
 
@@ -44,7 +44,7 @@ import { eachSheetRow, type XlsxCell } from './xlsx.js';
  * inflating 15 MiB (18,000 rows), 208 to 221 for 19, 232 to 291 for 23 and 307 to 319 for 24 - so it
  * takes 16 MiB. Past its ceiling a body is `byte_limit`.
  */
-export const JSON_MAX_BYTES = 4 * 1024 * 1024;
+export const JSON_MAX_BYTES = MAX_JSON_LINE_BYTES;
 export const JSON_LINES_MAX_BYTES = 12 * 1024 * 1024;
 export const CSV_MAX_BYTES = 6 * 1024 * 1024;
 export const XLSX_MAX_BYTES = 16 * 1024 * 1024;

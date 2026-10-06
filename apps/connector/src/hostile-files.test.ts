@@ -110,7 +110,7 @@ describe('a hostile file', { timeout: LOADED_TIMEOUT_MS }, () => {
   const replacing = (name: string, deflated: { bytes: Buffer; size: number; crc: number }) =>
     makeZip(sheetEntries().map((entry) => (entry.name === name ? { name, deflated } : entry)));
 
-  it('DAT-110 holds each reader to a named failure over a hostile file, in a child within the memory a run at the ceilings takes: a sheet bomb, a shared string past the limit, an entry flood, mismatched zip headers, an entity, deep JSON and an unterminated CSV record', async () => {
+  it('DAT-110 holds each reader to a named failure over a hostile file, in a child within the memory a run at the ceilings takes: a sheet bomb, a shared string past the limit, an entry flood, mismatched zip headers, an entity, unclosed tags, a tag of a million attributes, a 12 MiB JSON line, deep JSON and an unterminated CSV record', async () => {
     const cases: [string, Buffer, DataFormat, Column[], string][] = [
       [
         'a sheet inflating to 64 MiB',
@@ -167,6 +167,51 @@ describe('a hostile file', { timeout: LOADED_TIMEOUT_MS }, () => {
         XLSX,
         site,
         'result_mismatch',
+      ],
+      [
+        'a sheet of 15 MiB of unclosed tags',
+        replacing(
+          'xl/worksheets/sheet1.xml',
+          await deflateFrom(
+            (function* () {
+              yield Buffer.from(sheetXml('').replace('</sheetData></worksheet>', ''));
+              const block = Buffer.from('<a>'.repeat(1 << 18));
+              for (let at = 0; at < 20; at += 1) yield block;
+            })(),
+          ),
+        ),
+        XLSX,
+        site,
+        'result_mismatch',
+      ],
+      [
+        'one cell of 1,750,000 attributes',
+        replacing(
+          'xl/worksheets/sheet1.xml',
+          await deflateFrom(
+            (function* () {
+              yield Buffer.from(
+                sheetXml('').replace('</sheetData></worksheet>', '<row r="1"><c r="A1"'),
+              );
+              for (let at = 0; at < 1_750_000; at += 50_000) {
+                yield Buffer.from(
+                  Array.from({ length: 50_000 }, (_, each) => ` a${at + each}="1"`).join(''),
+                );
+              }
+              yield Buffer.from('><v>1</v></c></row></sheetData></worksheet>');
+            })(),
+          ),
+        ),
+        XLSX,
+        site,
+        'result_mismatch',
+      ],
+      [
+        'one JSON line of 12 MiB, one array of numbers',
+        Buffer.from(`{"a":[${'0,'.repeat(6 * 1024 * 1024 - 8)}0]}\n`),
+        { kind: 'jsonLines' },
+        [{ name: 'a', from: { pointer: '/a' }, type: { base: 'text' } }],
+        'byte_limit',
       ],
       [
         'JSON nested 1,000,000 deep',
