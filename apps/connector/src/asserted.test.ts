@@ -36,7 +36,7 @@ const ASSERTED_DATABASE = 'asserted';
 
 /** Each login's invented password. */
 const ASSERTED_PASSWORDS = {
-  asserter: 'asserter-dev-password',
+  suite_asserter: 'suite-asserter-dev-password',
   holder_table: 'holder-table-dev-password',
   holder_column: 'holder-column-dev-password',
   holder_all: 'holder-all-dev-password',
@@ -182,7 +182,7 @@ function reading(
 
 async function runAs(
   role: string,
-  account: Account = 'asserter',
+  account: Account = 'suite_asserter',
   definition = reading(),
 ): Promise<RunAnswer> {
   const request = runRequest(assertedSettings(account), password(account), definition);
@@ -200,7 +200,10 @@ async function testAs(account: Account): Promise<TestAnswer> {
   return answer;
 }
 
-async function describeAs(role: string, account: Account = 'asserter'): Promise<DescribeAnswer> {
+async function describeAs(
+  role: string,
+  account: Account = 'suite_asserter',
+): Promise<DescribeAnswer> {
   const request = requestFor(assertedSettings(account), password(account));
   const answer = await supervisor.run('describe', { ...request, identity: person(role) });
   if (answer === 'busy') throw new Error('busy');
@@ -209,7 +212,7 @@ async function describeAs(role: string, account: Account = 'asserter'): Promise<
 
 async function describeBuiltAs(
   role: string,
-  account: Account = 'asserter',
+  account: Account = 'suite_asserter',
 ): Promise<DescribeSqlAnswer> {
   const definition = reading();
   if (definition.fetch.kind !== 'builder') throw new Error('Not a built query');
@@ -271,7 +274,7 @@ describe("a person's own identity asserted at the source", { timeout: LOADED_TIM
 
   it('refuses a result read under any role but the one asserted, identity_unmatched, nothing returned (D7-E)', async () => {
     // A view whose function sets the role back to the account part way through its rows.
-    const answer = await runAs(ADA, 'asserter', reading('reset', ['id', 'value', 'reset']));
+    const answer = await runAs(ADA, 'suite_asserter', reading('reset', ['id', 'value', 'reset']));
     expect(answer).toEqual(refusedWith('identity_unmatched'));
   });
 
@@ -289,7 +292,7 @@ describe("a person's own identity asserted at the source", { timeout: LOADED_TIM
 
   it('DAT-112 refuses a run and a describe as a person where the account may read data of its own, by a table, a column, PUBLIC, pg_read_all_data, an inherited role or as superuser, and the test reports it', async () => {
     // The account that holds nothing: nothing found, and it runs.
-    expect(await testAs('asserter')).toEqual({ outcome: 'ok', findings: [] });
+    expect(await testAs('suite_asserter')).toEqual({ outcome: 'ok', findings: [] });
     for (const account of [
       'holder_table',
       'holder_column',
@@ -312,7 +315,7 @@ describe("a person's own identity asserted at the source", { timeout: LOADED_TIM
     // A grant made after the test is found at the run, and by the next test.
     await withPublicGrant(async () => {
       expect(await runAs(ADA)).toEqual(refusedWith('account_holds_privilege'));
-      expect(await testAs('asserter')).toEqual({
+      expect(await testAs('suite_asserter')).toEqual({
         outcome: 'ok',
         findings: ['account_holds_privilege'],
       });
@@ -349,7 +352,7 @@ describe("a person's own identity asserted at the source", { timeout: LOADED_TIM
        reset role;`,
       'drop schema ada_s cascade',
       async () => {
-        const answer = await runAs(ADA, 'asserter', reading('v', ['id', 'value'], 'ada_s'));
+        const answer = await runAs(ADA, 'suite_asserter', reading('v', ['id', 'value'], 'ada_s'));
         expect(JSON.stringify(answer)).not.toContain('"20"');
         expect(answer).toEqual(refusedWith('identity_role_unsafe'));
       },
@@ -418,24 +421,24 @@ describe("a person's own identity asserted at the source", { timeout: LOADED_TIM
       [
         'a function',
         `create function sample.owned() returns integer language sql as 'select 1';
-         alter function sample.owned() owner to asserter`,
+         alter function sample.owned() owner to suite_asserter`,
         'drop function sample.owned()',
       ],
       [
         'a procedure',
         `create procedure sample.owned() language sql as 'select 1';
-         alter procedure sample.owned() owner to asserter`,
+         alter procedure sample.owned() owner to suite_asserter`,
         'drop procedure sample.owned()',
       ],
       [
         'a view',
-        `create view sample.owned as select 1 as id; alter view sample.owned owner to asserter`,
+        `create view sample.owned as select 1 as id; alter view sample.owned owner to suite_asserter`,
         'drop view sample.owned',
       ],
       [
         'create in a schema',
-        'grant create on schema public to asserter',
-        'revoke create on schema public from asserter',
+        'grant create on schema public to suite_asserter',
+        'revoke create on schema public from suite_asserter',
       ],
       // PostgreSQL 14's default, which every role holds, the account and each person alike.
       [
@@ -447,7 +450,7 @@ describe("a person's own identity asserted at the source", { timeout: LOADED_TIM
     for (const [what, sql, undo] of cases) {
       await withSource(sql, undo, async () => {
         expect(await runAs(ADA), what).toEqual(refusedWith('account_holds_privilege'));
-        const tested = await testAs('asserter');
+        const tested = await testAs('suite_asserter');
         expect(tested.outcome === 'ok' && tested.findings, what).toContain(
           'account_holds_privilege',
         );

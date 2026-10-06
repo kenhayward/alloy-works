@@ -7,6 +7,8 @@ import { usePresentation } from '../theme/presentation.js';
 import type { BindingState, SinceDiffers } from './bindingContexts.js';
 import { DATA_STATE_WORDS, dataState, type DataState } from './dataStates.js';
 import styles from './DataTab.module.css';
+import { codeOf, identityRefusal, NOT_HELD, whoseView } from './ownView.js';
+import { useOwnViewAsk } from './OwnViewAsk.js';
 import { settleBinding } from './settleBinding.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -79,6 +81,7 @@ export function DataTab({
   const filterId = useId();
   const [filter, setFilter] = useState<DataState | 'all'>('all');
   const [acting, setActing] = useState(false);
+  const { ask, prompt } = useOwnViewAsk();
   const presentation = usePresentation();
   const theme = presentation?.state === 'ready' ? presentation.theme : null;
   const formats = formatsFor(theme?.valueCatalogue ?? null, language);
@@ -115,6 +118,7 @@ export function DataTab({
       // A result waiting on its images is said while it waits, and unsaid once it is held.
       let waited = false;
       const said = await settleBinding(client, document, state.node, state.binding.id, null, how, {
+        ask,
         onWaiting: (words) => {
           waited = true;
           onNotice(words);
@@ -123,18 +127,33 @@ export function DataTab({
       if (said === null && waited) onNotice(null);
       return said;
     });
+  /**
+   * Accepts what waits. One's own view is held only past DAT-091's warning, asked before anything is
+   * sent where the waiting result says whose it is, and where the service asks for it besides.
+   */
   const accept = (state: BindingState) =>
     act(async () => {
-      const { response } = await client.POST('/v1/documents/{id}/bindings/accept', {
-        params: { path: { id: document } },
-        body: {
-          node: state.node,
-          binding: state.binding.id,
-          version: state.waiting!.version,
-          replaces: state.held!.version,
-        },
-      });
+      const send = (sharesOwnView: boolean) =>
+        client.POST('/v1/documents/{id}/bindings/accept', {
+          params: { path: { id: document } },
+          body: {
+            node: state.node,
+            binding: state.binding.id,
+            version: state.waiting!.version,
+            replaces: state.held!.version,
+            ...(sharesOwnView ? { sharesOwnView } : {}),
+          },
+        });
+      const own = state.waiting!.provenance.identity === 'endUser';
+      if (own && !(await ask())) return NOT_HELD;
+      let { error, response } = await send(own);
+      if (!own && codeOf(error) === 'acknowledgement_required') {
+        if (!(await ask())) return NOT_HELD;
+        ({ error, response } = await send(true));
+      }
       if (response.ok) return null;
+      const refused = identityRefusal(error);
+      if (refused !== null) return refused;
       return response.status === 403 || response.status === 409
         ? REFUSED[response.status]
         : 'The value could not be accepted. Try again.';
@@ -166,6 +185,7 @@ export function DataTab({
         )}
       </div>
       {!mayCheck && <p className={styles['note']}>Values were not checked for you.</p>}
+      {prompt}
       {groups.map((group) => (
         <section key={group.node} className={styles['group']}>
           <h3 className={styles['heading']}>{headingOf(group.node)}</h3>
@@ -175,6 +195,7 @@ export function DataTab({
               const value =
                 held === null ? 'No value' : said(held.taken, formats, state.binding, held.stale);
               const since = sinceWords(state.sincePublished);
+              const whose = held === null ? null : whoseView(held.provenance, held.by);
               const resolvable =
                 state.mayResolve && (shown === 'never' || shown === 'stale' || shown === 'failed');
               return (
@@ -199,6 +220,7 @@ export function DataTab({
                   <span className={styles['state']} data-state={shown}>
                     {DATA_STATE_WORDS[shown]}
                   </span>
+                  {whose !== null && <span className={styles['facts']}>{whose}</span>}
                   {failure !== undefined && <span className={styles['facts']}>{failure}</span>}
                   {state.definitionChanged && shown !== 'definition' && (
                     <span className={styles['facts']}>{DATA_STATE_WORDS.definition}</span>

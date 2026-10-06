@@ -1,6 +1,7 @@
 import type { createApiClient } from '@alloy-works/api-client';
 
 import { bindingStatesIn } from './bindingContexts.js';
+import { codeOf, identityRefusal, NOT_HELD } from './ownView.js';
 import { followPending, WAITING_ON_IMAGES } from './pendingResult.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -19,6 +20,11 @@ const WHY = {
 export interface SettleOptions {
   readonly onWaiting?: (words: string) => void;
   readonly wait?: (ms: number) => Promise<void>;
+  /**
+   * Asks the person, before their own view is held, whether everybody who may read the document may
+   * see it (DAT-091); answers whether they agreed. Without it, one's own view is never held.
+   */
+  readonly ask?: () => Promise<boolean>;
 }
 
 /** The act settling each binding now, by document, node and binding, which the next one waits for. */
@@ -78,16 +84,29 @@ async function settleNow(
     )?.held;
     if (held?.keepable === true) replaces = held.version;
   }
-  const { data, response } =
+  const resolve = (sharesOwnView: boolean) =>
+    client.POST('/v1/documents/{id}/bindings/resolve', {
+      params: { path: { id: document } },
+      body: {
+        bindings: [{ node, binding, ...from }],
+        ...named,
+        ...(sharesOwnView ? { sharesOwnView } : {}),
+      },
+    });
+  let { data, error, response } =
     replaces !== null
       ? await client.POST('/v1/documents/{id}/bindings/confirm', {
           params: { path: { id: document } },
           body: { node, binding, replaces, ...from, ...named },
         })
-      : await client.POST('/v1/documents/{id}/bindings/resolve', {
-          params: { path: { id: document } },
-          body: { bindings: [{ node, binding, ...from }], ...named },
-        });
+      : await resolve(false);
+  // It runs as the person asking: their own view is held only once they agree to share it (D7-H).
+  if (replaces === null && codeOf(error) === 'acknowledgement_required') {
+    if (options.ask === undefined || !(await options.ask())) return NOT_HELD;
+    ({ data, error, response } = await resolve(true));
+  }
+  const refused = identityRefusal(error);
+  if (refused !== null) return refused;
   if (response.status === 403) return WHY.forbidden;
   if (response.status === 409) return WHY.moved;
   if (!response.ok) return WHY.failed;

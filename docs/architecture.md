@@ -2774,8 +2774,8 @@ D2 adds the query definitions written against one and run as a sample
 **A connection is an artifact in a space** whose versions hold its visible settings - its name, a
 description, `type: 'postgres'`, the source's host, port, database, account and TLS, its identity and
 whether it is retired - checked by `parseConnectionForWrite` in `packages/domain/src/data/` on every
-write, and read back by the shape alone. Only `service` identity can be written in D1: PostgreSQL's
-connector declares no end-user mechanism until D7 (DAT-078). A connection is made in service -
+write, and read back by the shape alone. PostgreSQL's connector declares `asserted` since D7, and
+refuses `delegated` (DAT-078; [end-user identity](#end-user-identity)). A connection is made in service -
 `createArtifact` refuses one made retired - and retired and reinstated by versions. `administer` makes
 and changes one and sets its credential; `use_connection`, a permission no starting role holds, tests
 and describes it; `read` shows it.
@@ -3471,6 +3471,58 @@ offers image columns alone (`changeFigureBinding`).
 | `editor: src/bindings.ts`, `figures.ts`  | `boundFiguresShown`, `insertBoundFigure`, `changeFigureBinding`         |
 | `web: src/editor/ValueDialog.tsx`        | **Place as**, and image columns alone for a figure                      |
 | `tests/e2e: src/bound-images.test.ts`    | Placed, drawn and published, and refused for a missing description      |
+
+## End-user identity
+
+D7 of [data.md](design/data.md), built by [the D7 plan](plans/2026-10-06-d7-end-user-identity.md): a
+PostgreSQL connection may declare `identity: {kind: 'endUser', mechanism: 'asserted', attribute:
+'email' | 'subject'}`, and a run as the person acting is decided by the source's own grants and
+row-level security. The delegated token moved to D6. **Asserted identity trusts the source's
+function, view and policy authors**
+([ADR-0040](decisions/0040-asserted-identity-trusts-the-sources-function-authors.md)); the
+administrator's half is [a guide](guides/asserted-identity-on-postgresql.md).
+
+**The assertion** (`apps/connector/src/postgres.ts`): in the run's read-only transaction the
+connector first refuses an account that may read, own or create anything of its own,
+`account_holds_privilege` (DAT-112, one catalogue query, 21 ms over 10,000 tables); then
+`select pg_catalog.set_config('role', $1, true)`, the role a bound value, 22023 and 42501 read as
+`identity_unmatched`; then refuses a person's role that may log in, create, or owns SQL,
+`identity_role_unsafe`; and reads `current_user` again after the rows (D7-E). `runRequestSchema`
+refuses an asserted run whose fetch is not `builder` (DAT-113); the test runs as the account and
+reports `account_holds_privilege` as a finding.
+
+**Acting** (`apps/service/src/data/acting.ts`): resolve, check, sample and describe on an asserted
+connection send `identity: {kind: 'asserted', role}` - a verified email, or the subject of a principal
+of the environment's own organisation provider, 1 to 63 bytes - else `identity_unavailable`; a
+personal token acts as its creator. SQL is refused `sql_not_permitted`, reason `asserted`, when saved
+and at every run (DAT-102). Provenance's identity is `{kind: 'endUser', mechanism: 'asserted',
+principal, signInRoute, asSeen}`, and the dataset's identity key `asserted:<principal>`.
+
+**Own views** (`data/bindings.ts`): another person's own view is never checked for, offered to,
+read by the waiting route, accepted or finished by anybody else (`identity_differs`, DAT-084);
+resolve and accept of one's own view need `sharesOwnView`, else `acknowledgement_required` (DAT-091).
+The page asks the warning on that answer, or before an Accept of a waiting own view, through
+`useOwnViewAsk`, and says whose own view a value holds.
+
+**The stop** (`apps/service/src/authority.ts`): sign-out and token revocation notify
+`credential_ended` on the tenant's channel; an act waiting on the connector watches for it and reads
+its credential again each second (`AUTHORITY_POLL_MS`), so any replica aborts the connector request
+within two seconds; the connector kills the child of a closed request, and the source loses its
+client within 250 ms (`client_connection_check_interval`). The act answers 401 `authority_ended` with
+`reason`, logged, recording nothing - the recording transaction reads the credential `FOR SHARE` - and
+the ended session's event stream closes (IAM-082).
+
+| Where                                           | What                                                                        |
+| ----------------------------------------------- | --------------------------------------------------------------------------- |
+| `domain: src/data/connection.ts`, `protocol.ts` | `asserted` declared for `postgres`; the run's `identity`, builder alone     |
+| `db: migrations/tenant/0054`                    | A test's finding `account_holds_privilege`                                  |
+| `connector: src/postgres.ts`                    | `accountHoldsPrivilege`, `assertRole`, `heldAs`                             |
+| `service: src/data/acting.ts`                   | Whom an act runs as, its provenance identity and key, `ownViewOf`           |
+| `service: src/authority.ts`, `stream.ts`        | `watchAuthority`, `authorityEnded`; the stream ending with its credential   |
+| `web: src/data/SettingsFields.tsx`              | **Runs as**; the administrator's words beside a refusal on the connection   |
+| `web: src/structure/OwnViewAsk.tsx`             | DAT-091's warning before one's own view is held                             |
+| `deploy/sources/postgres.sql`                   | `asserter`, Ada's and Grace's roles, `sample.reading` by site               |
+| `tests/e2e: src/asserted.test.ts`               | Two people's rows; a sign-out and a revocation stopping a run at the source |
 
 ## Containers and images
 

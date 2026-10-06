@@ -3,6 +3,33 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.138.0 - 2026-10-06 (PR #429)
+
+### Added
+
+- **A connection can run as each person.** A PostgreSQL connection may now assert the person's own
+  identity, by a role their database administrator made for them, so the database's own permissions
+  and row-level rules decide what each person sees. Only queries built in the product run this way,
+  and a connection whose own account can read data is refused at every run and named by its test.
+- **Runs as, on a connection's page.** A connection says whether it runs as its account or as each
+  person, by the email they sign in with or their identifier at the organisation's sign-in, and says
+  what the database's administrator must change when the account or a person's role is unsafe.
+- **Resolving, checking, sampling and listing tables run as you** on a connection that runs as each
+  person, and a stored result records whose view it is. Your own view is checked, offered and
+  accepted by you alone, and holding it in a document first warns that everybody who may read the
+  document will see it, and that it prints in its publications; a value says whose own view it is.
+- **Signing out or revoking a token stops what it was doing at the source within two seconds**, on
+  every server, and closes your live updates; nothing it was fetching is kept.
+- **A guide for the database's administrator**, setting PostgreSQL up to run as each person, with
+  the checklist of what the product trusts the administrator for.
+
+### Changed
+
+- **Plan D7.** How a query will run as the person asking, by a role at their own database, and how
+  signing out stops one in flight.
+- **SQL is refused on a connection that runs as each person**, when a definition is saved and every
+  time one runs, including one saved before the connection changed.
+
 ## 0.137.0 - 2026-10-06 (PR #421)
 
 ### Added

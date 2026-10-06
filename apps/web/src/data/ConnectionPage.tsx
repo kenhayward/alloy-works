@@ -7,6 +7,8 @@ import { documentLink } from '../structure/links.js';
 import styles from './ConnectionPage.module.css';
 import { connectionAccessLink, queryDefinitionLink } from './links.js';
 import {
+  RUNS_AS_LABELS,
+  runsAsOf,
   SettingsFields,
   TLS_LABELS,
   draftOf,
@@ -36,8 +38,37 @@ const FINDINGS: Readonly<Record<string, string>> = {
   account_not_read_only:
     'This account can change data at the source, so SQL written by hand will not be allowed on this connection.',
   account_holds_privilege:
-    'This account can read data of its own at the source, so nothing will run as each person until its privileges are removed.',
+    "This account can read data, create objects, or owns functions, procedures or views of its own, so nothing runs as each person until the source's administrator removes those privileges.",
 };
+
+/**
+ * What the source's administrator must change, said beneath a refusal that names the account or a
+ * person's role on a connection running as each person (the D7 plan, D7-C, D7-D; ADR-0040).
+ */
+const FOR_THE_ADMINISTRATOR: Readonly<Record<string, string>> = {
+  account_holds_privilege:
+    "For the source's administrator: the connection's account must read no table, view or sequence, own no function, procedure or view, and create in no schema.",
+  identity_role_unsafe:
+    "For the source's administrator: each person's role must be NOLOGIN, create in no schema or database, and own nothing.",
+  identity_unmatched:
+    "For the source's administrator: make a role named as the person signs in, NOLOGIN, and grant it to the connection's account with SET.",
+};
+
+/** Between the lines of an answer shown as several paragraphs. */
+const LINE = String.fromCharCode(10);
+
+/** A refusal in the service's words, and what the administrator must change where it says so. */
+function refusalLines(error: unknown, fallback: string): string {
+  const said = refusalText(error, fallback);
+  const code = isRecord(error) && typeof error.code === 'string' ? error.code : undefined;
+  const more = code === undefined ? undefined : FOR_THE_ADMINISTRATOR[code];
+  return more === undefined ? said : `${said}${LINE}${more}`;
+}
+
+/** An answer's lines, each a paragraph. */
+function Lines({ text }: { readonly text: string }) {
+  return text.split(LINE).map((line) => <p key={line}>{line}</p>);
+}
 
 const KINDS: Readonly<Record<string, string>> = {
   table: 'Table',
@@ -70,7 +101,7 @@ function TestAnswer({ tested }: { readonly tested: Tested | string | null }) {
   if (typeof tested === 'string') {
     return (
       <div role="status">
-        <p>{tested}</p>
+        <Lines text={tested} />
       </div>
     );
   }
@@ -197,6 +228,8 @@ function SettingsList({ settings }: { readonly settings: Settings }) {
       <dd>{settings.source.account}</dd>
       <dt>TLS</dt>
       <dd>{TLS_LABELS[settings.source.tls]}</dd>
+      <dt>Runs as</dt>
+      <dd>{RUNS_AS_LABELS[runsAsOf(settings.identity)]}</dd>
     </dl>
   );
 }
@@ -446,7 +479,7 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
           await refresh();
           return;
         }
-        setTested(refusalText(error, 'The connection could not be tested. Try again.'));
+        setTested(refusalLines(error, 'The connection could not be tested. Try again.'));
       } catch {
         setTested('The connection could not be tested. Try again.');
       }
@@ -463,7 +496,7 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
         setTables(
           isRelations(data)
             ? data
-            : refusalText(error, 'The tables could not be listed. Try again.'),
+            : refusalLines(error, 'The tables could not be listed. Try again.'),
         );
       } catch {
         setTables('The tables could not be listed. Try again.');
@@ -547,7 +580,7 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
           </button>
           {typeof tables === 'string' && (
             <div role="status">
-              <p>{tables}</p>
+              <Lines text={tables} />
             </div>
           )}
           {tables !== null && typeof tables !== 'string' && (

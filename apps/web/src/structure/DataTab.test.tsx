@@ -78,6 +78,8 @@ function drawn(
     answer?: number;
     /** A resolve answered as pending, and what following it answers (the D8 plan, D8-F). */
     pending?: unknown;
+    /** Answers in turn for each accept or resolve, where given, in place of `answer`. */
+    answers?: (() => Response)[];
   } = {},
 ) {
   const asked: { path: string; body: unknown }[] = [];
@@ -86,6 +88,8 @@ function drawn(
     const body = request.method === 'GET' ? null : JSON.parse(await request.text());
     const path = new URL(request.url).pathname;
     asked.push({ path, body });
+    const next = request.method === 'POST' ? options.answers?.shift() : undefined;
+    if (next !== undefined) return next();
     if (options.pending !== undefined && path.endsWith('/resolve')) {
       return json(202, { results: [{ node: SECOND, binding: 'never', pending: PENDING }] });
     }
@@ -254,5 +258,128 @@ describe('the Data tab (the B4 plan, task 3)', () => {
     expect(onCheckNow).toHaveBeenCalledTimes(1);
     await user.click(within(rowOf('holds')).getByRole('button', { name: 'Go to' }));
     expect(onGoTo).toHaveBeenCalledWith(FIRST, 'holds');
+  });
+});
+
+const ADA = '12121212-1212-4121-8121-121212121212';
+const ownView = { ...provenance, identity: { kind: 'endUser', principal: ADA } };
+
+describe("a person's own view in the Data tab (the D7 plan, D7.3)", () => {
+  it("DAT-091 warns before accepting one's own view that everybody who may read the document sees it and it prints, and sends the acknowledgement only once given, by keyboard", async () => {
+    const user = userEvent.setup();
+    const { asked, onNotice } = drawn(
+      states(
+        view(FIRST, 'mine', 'North', {
+          waiting: { version: 'next', provenance: ownView, taken: value('North Quay') },
+        }),
+      ),
+    );
+    within(rowOf('mine')).getByRole('button', { name: 'Accept' }).focus();
+    await user.keyboard('{Enter}');
+    const asking = await screen.findByRole('dialog', { name: 'Hold your own view?' });
+    expect(asking).toHaveTextContent(
+      'This value runs as you, so it is your own view of the source. Once it is held, everybody who may read this document will see it, and it prints in the publications made of the document.',
+    );
+    expect(asked).toEqual([]);
+
+    // Declined: nothing is sent, and the focus goes back to Accept.
+    await user.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(onNotice).toHaveBeenCalledWith(
+        'Your own view was not held, so this value holds nothing new.',
+      ),
+    );
+    expect(asked).toEqual([]);
+    expect(within(rowOf('mine')).getByRole('button', { name: 'Accept' })).toHaveFocus();
+
+    // Agreed, by Tab and Enter alone.
+    await user.keyboard('{Enter}');
+    await screen.findByRole('dialog', { name: 'Hold your own view?' });
+    await user.tab();
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'Hold my own view' })).toHaveFocus();
+    await user.keyboard('{Enter}');
+    await waitFor(() => expect(asked).toHaveLength(1));
+    expect(asked[0]).toEqual({
+      path: `/v1/documents/${DOCUMENT}/bindings/accept`,
+      body: {
+        node: FIRST,
+        binding: 'mine',
+        version: 'next',
+        replaces: 'held-mine',
+        sharesOwnView: true,
+      },
+    });
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it("asks before holding one's own view resolved, and resolves it again with the acknowledgement", async () => {
+    const user = userEvent.setup();
+    const { asked } = drawn(states(view(SECOND, 'never', null)), {
+      answers: [
+        () =>
+          json(409, {
+            code: 'acknowledgement_required',
+            message: 'The binding never runs as you.',
+            traceId: 't',
+          }),
+        () => json(200, { results: [] }),
+      ],
+    });
+    await user.click(within(rowOf('never')).getByRole('button', { name: 'Resolve' }));
+    await user.click(await screen.findByRole('button', { name: 'Hold my own view' }));
+    await waitFor(() => expect(asked).toHaveLength(2));
+    expect(asked.map((each) => each.body)).toEqual([
+      { bindings: [{ node: SECOND, binding: 'never' }] },
+      { bindings: [{ node: SECOND, binding: 'never' }], sharesOwnView: true },
+    ]);
+  });
+
+  it('DAT-022 says whose own view a binding holds beside its value', () => {
+    drawn(
+      states(
+        view(FIRST, 'hers', 'North', {
+          held: {
+            ...(view(FIRST, 'hers', 'North').held as object),
+            provenance: ownView,
+            by: { id: ADA, displayName: 'Ada' },
+          },
+        }),
+        view(FIRST, 'service', 'South'),
+      ),
+    );
+    expect(rowOf('hers')).toHaveTextContent("Ada's own view");
+    expect(rowOf('service')).not.toHaveTextContent('own view');
+  });
+
+  it("says in place why another person's own view could not be accepted, or why a sign-out stopped it", async () => {
+    const user = userEvent.setup();
+    const differs =
+      "The result waiting for the binding waits is another person's own view: only they may accept it.";
+    const ended =
+      'You signed out while the source was answering, so it was stopped. Nothing was recorded.';
+    const { onNotice } = drawn(
+      states(
+        view(FIRST, 'waits', 'North', {
+          waiting: { version: 'next', provenance, taken: value('North Quay') },
+        }),
+      ),
+      {
+        answers: [
+          () => json(403, { code: 'identity_differs', message: differs, traceId: 't' }),
+          () =>
+            json(401, {
+              code: 'authority_ended',
+              message: ended,
+              traceId: 't',
+              reason: 'signed_out',
+            }),
+        ],
+      },
+    );
+    await user.click(within(rowOf('waits')).getByRole('button', { name: 'Accept' }));
+    await waitFor(() => expect(onNotice).toHaveBeenCalledWith(differs));
+    await user.click(within(rowOf('waits')).getByRole('button', { name: 'Accept' }));
+    await waitFor(() => expect(onNotice).toHaveBeenCalledWith(ended));
   });
 });

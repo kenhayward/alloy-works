@@ -9,6 +9,22 @@ export interface Draft {
   readonly database: string;
   readonly account: string;
   readonly tls: 'require' | 'verifyFull';
+  /** Whom it runs as: its own account, or each person by the attribute naming their role (D7-B). */
+  readonly runsAs: RunsAs;
+}
+
+export type RunsAs = 'service' | 'email' | 'subject';
+
+export const RUNS_AS_LABELS: Readonly<Record<RunsAs, string>> = {
+  service: "The connection's account",
+  email: 'Each person, by the email they sign in with',
+  subject: "Each person, by their identifier at the organisation's sign-in",
+};
+
+export function runsAsOf(identity: Settings['identity']): RunsAs {
+  return identity.kind === 'endUser' && identity.mechanism === 'asserted'
+    ? identity.attribute
+    : 'service';
 }
 
 export const EMPTY_DRAFT: Draft = {
@@ -19,6 +35,7 @@ export const EMPTY_DRAFT: Draft = {
   database: '',
   account: '',
   tls: 'require',
+  runsAs: 'service',
 };
 
 export function draftOf(settings: Settings): Draft {
@@ -30,12 +47,13 @@ export function draftOf(settings: Settings): Draft {
     database: settings.source.database,
     account: settings.source.account,
     tls: settings.source.tls,
+    runsAs: runsAsOf(settings.identity),
   };
 }
 
 /**
- * The settings a draft stands for, keeping what the form does not show - the identity - from the
- * version it was opened at, and whether it is retired. The service checks every rule again.
+ * The settings a draft stands for, keeping whether it is retired from the version it was opened at,
+ * and its identity where the form's choice still names it. The service checks every rule again.
  */
 export function settingsOf(
   draft: Draft,
@@ -53,7 +71,12 @@ export function settingsOf(
       account: draft.account,
       tls: draft.tls,
     },
-    identity: kept.identity,
+    identity:
+      runsAsOf(kept.identity) === draft.runsAs
+        ? kept.identity
+        : draft.runsAs === 'service'
+          ? { kind: 'service' }
+          : { kind: 'endUser', mechanism: 'asserted', attribute: draft.runsAs },
     retired: kept.retired,
   };
 }
@@ -69,6 +92,10 @@ export function draftProblem(draft: Draft): string | null {
   if (draft.account === '') return 'A connection needs the account it signs in as.';
   return null;
 }
+
+/** What running as each person asks of the source, said beside the choice (the D7 plan, D7-C, D7-D). */
+export const RUNS_AS_HINT =
+  "Each person's role at the source is named by this, and made by the source's administrator, who grants it to the connection's account. The account must read nothing of its own, and SQL written by hand is not allowed on the connection.";
 
 export const TLS_LABELS: Readonly<Record<Draft['tls'], string>> = {
   require: 'Required',
@@ -86,7 +113,7 @@ export function SettingsFields({
   readonly draft: Draft;
   readonly onChange: (draft: Draft) => void;
 }) {
-  const field = (key: Exclude<keyof Draft, 'tls'>) => ({
+  const field = (key: Exclude<keyof Draft, 'tls' | 'runsAs'>) => ({
     value: draft[key],
     onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       onChange({ ...draft, [key]: event.target.value }),
@@ -130,6 +157,20 @@ export function SettingsFields({
           ))}
         </select>
       </label>
+      <label>
+        Runs as
+        <select
+          value={draft.runsAs}
+          onChange={(event) => onChange({ ...draft, runsAs: event.target.value as RunsAs })}
+        >
+          {(Object.keys(RUNS_AS_LABELS) as RunsAs[]).map((runsAs) => (
+            <option key={runsAs} value={runsAs}>
+              {RUNS_AS_LABELS[runsAs]}
+            </option>
+          ))}
+        </select>
+      </label>
+      {draft.runsAs !== 'service' && <p>{RUNS_AS_HINT}</p>}
     </>
   );
 }
