@@ -3,6 +3,42 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.139.0 - 2026-10-06 (PR #n)
+
+### Added
+
+- **HTTPS API connections.** A connection can reach an HTTPS API: its base URL and the header its
+  secret is sent in, never in a URL. Testing it reads a refused sign-in, a redirect and an
+  unreachable address alike.
+- **Query definitions over an API.** A definition on an API connection is a request: path segments,
+  query pairs, headers and a POST body, each fixed or a parameter placed and checked for where it
+  stands. Its answer is read as JSON at a pointer or as JSON Lines, numbers exactly as written, and
+  **Sample for columns** proposes each column from the first rows.
+- **S3 bucket connections.** A connection can reach an S3 bucket on AWS or any store that signs as it
+  does: its endpoint, region, bucket and whether it is addressed by name or by path, with a static
+  access key pair set on its page and never shown again. The store's own policy for the key decides
+  what it may read.
+- **Query definitions over a file.** A definition on an S3 connection reads one object by a key whose
+  segments are fixed or a parameter placed whole. Its rows are read as JSON, JSON Lines, CSV or XLSX,
+  filtered by typed comparisons of its columns and put in the declared order, and **Sample for
+  columns** proposes each column by its header, letter or pointer.
+- **CSV.** A file or an API's answer can be CSV, with its delimiter, whether its first record names
+  the fields, and whether an empty field is empty or empty text; a quoted empty field is always text.
+- **XLSX.** A file or an API's answer can be a workbook, read from one sheet by its name, each column
+  by its header or its letter. Numbers are read exactly as the workbook stores them, and dates and
+  times from the workbook's own date system; a date that never existed, an error cell, a formula
+  saved without its value or a time finer than the workbook can hold is refused by name, never
+  rounded.
+- **Hostile files refused.** A workbook that expands past its limit, holds thousands of parts,
+  disagrees with itself about its parts or declares entities is refused, as is JSON nested too deep;
+  one table read from a database, JSON, JSON Lines, CSV or a workbook, over an API or from a bucket,
+  gives one checksum.
+
+### Changed
+
+- **Plan D6.** How queries will read from web APIs and S3 storage, as JSON, CSV or spreadsheets, and
+  run as the person asking.
+
 ## 0.138.0 - 2026-10-06 (PR #429)
 
 ### Added

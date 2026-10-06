@@ -1,4 +1,4 @@
-import { defaultLimits, type Column, type DataFormat } from '@alloy-works/domain';
+import { defaultLimits, type Column, type DataFormat, type Limits } from '@alloy-works/domain';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -30,7 +30,7 @@ function read(
   body: Buffer,
   columns: Column[],
   format: DataFormat = XLSX,
-  limits = { ...defaultLimits },
+  limits: Limits = { ...defaultLimits },
 ) {
   const answer = readRows(body, format, columns, limits);
   if ('failure' in answer) {

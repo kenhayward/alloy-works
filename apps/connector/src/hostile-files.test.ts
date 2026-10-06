@@ -47,7 +47,7 @@ const XLSX: DataFormat = { kind: 'xlsx', sheet: 'Readings', headerRow: false };
 
 describe('a hostile file', { timeout: LOADED_TIMEOUT_MS }, () => {
   let store: FakeStore;
-  let body = Buffer.alloc(0);
+  let body: Buffer = Buffer.alloc(0);
   beforeAll(async () => {
     store = await startFakeStore(() => ({ body }));
   });

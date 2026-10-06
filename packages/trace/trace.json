@@ -17966,6 +17966,12 @@
       "kind": "title"
     },
     {
+      "id": "DAT-074",
+      "file": "apps/connector/src/cross-source.test.ts",
+      "line": 110,
+      "kind": "title"
+    },
+    {
       "id": "DAT-105",
       "file": "apps/connector/src/formats/csv.test.ts",
       "line": 128,
@@ -17975,6 +17981,24 @@
       "id": "DAT-095",
       "file": "apps/connector/src/formats/json.test.ts",
       "line": 18,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-080",
+      "file": "apps/connector/src/formats/xlsx.test.ts",
+      "line": 191,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-110",
+      "file": "apps/connector/src/formats/xlsx.test.ts",
+      "line": 272,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-110",
+      "file": "apps/connector/src/hostile-files.test.ts",
+      "line": 113,
       "kind": "title"
     },
     {
