@@ -303,7 +303,7 @@ conditional resolution, translation and three output formats.
 | `paragraph`    | Inline content, and a style name                                                                                                                                                                                                                                             |
 | `list`         | A kind - ordered, unordered, definition - and items holding block content, each item on a definition list also carrying the `term` it defines as inline content. An ordered list carries start and format                                                                    |
 | `table`        | Rows and cells, declared header rows and columns, cell spans, a caption, optional key columns, an optional note, and `numbered: false` where its author marked it unnumbered. [Tables, before the first is stored](#tables-before-the-first-is-stored) proposes what changes |
-| `figure`       | An asset reference, an image style name, a caption, an alternative-text state, and `numbered: false` where its author marked it unnumbered                                                                                                                                   |
+| `figure`       | An asset reference or a binding taking an image column (the B6 plan, B6-A), an image style name, a caption, an alternative-text state, and `numbered: false` where its author marked it unnumbered                                                                           |
 | `preformatted` | Text with whitespace significant, and an optional language label                                                                                                                                                                                                             |
 | `blockquote`   | Block content, and an optional attribution that may carry a citation                                                                                                                                                                                                         |
 | `equation`     | MathML, and numbered or explicitly unnumbered                                                                                                                                                                                                                                |
@@ -566,6 +566,10 @@ spike's chain was LaTeX to MathML to the tree, and the measured part - MathML to
 untouched. [word-output.md](word-output.md) is corrected to match.
 
 ## Figures, and three states of alternative text
+
+A figure takes its image from an asset version, or from a binding (the B6 plan, B6-A): exactly one,
+`figure_image`. A bound figure is described by its definition's column or is decorative, never by
+its own text (B6-C, `figure_bound_alternative`), since one text cannot describe each document's row.
 
 CNT-022 requires alternative text and fails a publish without it. AST-012 lets an asset carry a
 default, AST-013 lets a figure override it "because the same photograph means different things in two

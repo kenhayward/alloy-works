@@ -5,10 +5,14 @@ import { Decoration, DecorationSet, type NodeView } from 'prosemirror-view';
 import {
   ALONE_CLASS,
   bindingsShown,
+  boundFiguresShown,
   FAILED_CLASS,
+  imageOfSpec,
   type BindingContext,
   type BindingShown,
+  type BoundImage,
 } from './bindings.js';
+import { MISSING_IMAGE } from './figureView.js';
 
 /** Where a surface's state keeps its host's binding context (the B1 plan, B1-D). */
 export const bindingsKey = new PluginKey<BindingContext | null>('bindings');
@@ -29,16 +33,32 @@ export const MARKER_CLASS = 'aw-binding-marker';
  */
 export function bindingDecorations(doc: Node, context: BindingContext | null): DecorationSet {
   const alone = context?.kind === 'alone';
-  const decorations = bindingsShown(doc, context).map(({ pos, text, hidden, marker, failed }) =>
-    Decoration.node(pos, pos + 1, classes(failed, alone), {
-      bindingText: text,
-      bindingHidden: hidden,
-      bindingMarker: marker,
-      bindingFailed: failed,
-    }),
+  const decorations = bindingsShown(doc, context).map(
+    ({ pos, text, hidden, marker, failed, image }) =>
+      Decoration.node(pos, pos + 1, classes(failed, alone), {
+        bindingText: text,
+        bindingHidden: hidden,
+        bindingMarker: marker,
+        bindingFailed: failed,
+        ...imageSpec(image),
+      }),
   );
-  return DecorationSet.create(doc, decorations);
+  // A bound figure (B6.2): what its image shows, carried the same way, on the figure, which
+  // `figureView` draws its image from. Its classes are its holder's, put on by the view.
+  const figures = boundFiguresShown(doc, context).map(({ pos, text, failed, image }) =>
+    Decoration.node(
+      pos,
+      pos + doc.nodeAt(pos)!.nodeSize,
+      {},
+      { boundText: text, boundFailed: failed, ...imageSpec(image) },
+    ),
+  );
+  return DecorationSet.create(doc, [...decorations, ...figures]);
 }
+
+/** An image a binding shows, flat in a decoration's spec as primitives (B6.2); nothing for none. */
+const imageSpec = (image: BoundImage | null) =>
+  image === null ? {} : { boundAsset: image.asset, boundSrc: image.src, boundAlt: image.alt };
 
 /** The classes a binding's decoration puts on its element: failed, and on its own the chip. */
 function classes(failed: boolean, alone: boolean): { class?: string } {
@@ -91,10 +111,16 @@ export function setBindingContext(
  */
 export function fillBinding(
   element: HTMLElement,
-  shown: Pick<BindingShown, 'text' | 'hidden' | 'marker'>,
+  shown: Pick<BindingShown, 'text' | 'hidden' | 'marker'> & {
+    readonly image?: BindingShown['image'];
+  },
 ): void {
   const document = element.ownerDocument;
-  element.replaceChildren(document.createTextNode(shown.text));
+  // An image in place of its words (B6.2), one line high as an inline image is, in the holder the
+  // theme holds a line open by.
+  element.replaceChildren(
+    shown.image ? boundImageHolder(document, shown.image) : document.createTextNode(shown.text),
+  );
   if (shown.hidden !== '') {
     const hidden = document.createElement('span');
     hidden.className = HIDDEN_CLASS;
@@ -110,6 +136,28 @@ export function fillBinding(
     marker.append(icon, ` ${shown.marker}`);
     element.append(marker);
   }
+}
+
+/**
+ * A bound image in a line (B6.2), as `imageView` draws an inline image: the holder, and in it the
+ * image from its asset version's route, at the `inline` image style, its `alt` the description or
+ * empty. One that does not load is marked in its place, as an uploaded one is.
+ */
+export function boundImageHolder(document: Document, image: BoundImage): HTMLElement {
+  const holder = document.createElement('span');
+  holder.className = 'aw-inline-image-holder';
+  const element = document.createElement('img');
+  element.className = 'aw-inline-image';
+  element.setAttribute('src', image.src);
+  element.setAttribute('alt', image.alt);
+  element.setAttribute('data-asset', image.asset);
+  element.setAttribute('data-image-style', 'inline');
+  element.addEventListener('error', () => {
+    holder.classList.add('aw-image-missing');
+    holder.setAttribute('data-missing', MISSING_IMAGE);
+  });
+  holder.append(element);
+  return holder;
 }
 
 /**
@@ -139,9 +187,12 @@ export function bindingView(
           text: carried.spec.bindingText as string,
           hidden: carried.spec.bindingHidden as string,
           marker: carried.spec.bindingMarker as string | null,
+          image: imageOfSpec(carried.spec),
         }
-      : { text: words, hidden: '', marker: null };
-    const key = `${next.text}\u{0}${next.hidden}\u{0}${next.marker ?? ''}`;
+      : { text: words, hidden: '', marker: null, image: null };
+    const key = [next.text, next.hidden, next.marker ?? '', next.image?.src ?? '', next.image?.alt]
+      .map(String)
+      .join('\u{0}');
     if (key === drawn) return;
     drawn = key;
     fillBinding(dom, next);

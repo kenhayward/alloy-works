@@ -3,14 +3,17 @@ import {
   bindingsIn,
   parseContentDocument,
   readContent,
+  type Binding,
   type ReportEntry,
 } from '@alloy-works/domain';
 import {
   bindingContextOf,
   bindingSelected,
   bindingsShown,
+  boundFiguresShown,
   changeEquation,
   changeBinding,
+  changeFigureBinding,
   changeReference,
   createEditorState,
   EDITOR_COMMANDS,
@@ -23,6 +26,8 @@ import {
   insertFigure,
   insertImage,
   insertBinding,
+  insertBoundFigure,
+  type BindingChoice,
   insertReference,
   insertSymbol,
   textWhereAt,
@@ -269,6 +274,9 @@ const KEPT_UNREADABLE = 'What you typed before this page opened could not be bro
 const isEditablePhase = (phase: SessionView['phase']) =>
   phase === 'reading' || phase === 'claiming' || phase === 'editing';
 
+/** A binding choice asked of `insertBoundFigure` only to learn whether a figure could go there. */
+const PROBE: BindingChoice = { query: '', parameters: {}, mode: 'checked', take: { column: '' } };
+
 /** What the status bar says after a paste: the report's own last sentence says why one was refused. */
 const PASTED = 'Pasted.';
 const PASTED_WITH_REPORT =
@@ -458,6 +466,11 @@ export function ComponentEditor({
   const [valuing, setValuing] = useState<{
     readonly view: EditorView;
     readonly current: ReturnType<typeof bindingSelected>;
+    /**
+     * Where an image column's value may stand (B6-H): offered as a figure where one may go, the
+     * figure's own where it changes a bound figure's binding, and in the line otherwise.
+     */
+    readonly place: 'line' | 'offer' | 'figure';
   } | null>(null);
   const valueOpener = useRef<HTMLElement | null>(null);
   // The editing session this page saves under, which a binding placed here is read from (B2-C).
@@ -707,8 +720,17 @@ export function ComponentEditor({
   const openValue = (editing: EditorView): boolean => {
     valueOpener.current ??=
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    setValuing({ view: editing, current: bindingSelected(editing.state) });
+    const current = bindingSelected(editing.state);
+    const mayFigure = current === null && insertBoundFigure(PROBE, () => '')(editing.state);
+    setValuing({ view: editing, current, place: mayFigure ? 'offer' : 'line' });
     return true;
+  };
+
+  /** Opens the Value dialog on a bound figure's binding, to change it (B6-H). */
+  const openFigureValue = (editing: EditorView, at: { pos: number; binding: Binding }) => {
+    valueOpener.current ??=
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setValuing({ view: editing, current: at, place: 'figure' });
   };
 
   useEffect(() => {
@@ -1562,6 +1584,20 @@ export function ComponentEditor({
       : (bindingsShown(surface.state.doc, bindingContextOf(surface.state)).find(
           (each) => each.pos === selectedBinding.pos,
         ) ?? null);
+  // A bound figure the cursor stands in, and what its image shows (B6.2): the Value panel's too.
+  const figureShown =
+    figure?.binding == null || surface === null
+      ? null
+      : (boundFiguresShown(surface.state.doc, bindingContextOf(surface.state)).find(
+          (each) => each.pos === figure.pos,
+        ) ?? null);
+  // What the Value panel is about: a binding selected whole, or a bound figure's.
+  const valued =
+    selectedBinding !== null && selectedShown !== null
+      ? { ...selectedBinding, shown: selectedShown, figure: false }
+      : figure?.binding != null && figureShown !== null
+        ? { pos: figure.pos, binding: figure.binding, shown: figureShown, figure: true }
+        : null;
   const mayFormat = shown.mayEdit && isEditablePhase(phase);
   // What the toolbar acts on: the footnote's own text while one is open, and the surface otherwise
   // (footnotes 1, ruling R9). Every button is asked of that state, so a mark applies in the footnote
@@ -1911,30 +1947,36 @@ export function ComponentEditor({
                 onReplace={() => setFigureDialog('Replace image')}
               />
             )}
-            {/* And while a binding is selected whole: what it shows, and its provenance (B1-M). */}
-            {selectedBinding !== null && selectedShown !== null && (
+            {/* And while a binding is selected whole, or the cursor stands in a bound figure (B6.2):
+                what it shows, and its provenance (B1-M). */}
+            {valued !== null && (
               <ValuePanel
-                key={`value-${selectedBinding.pos}`}
+                key={`value-${valued.pos}`}
                 ref={valueRegion}
-                binding={selectedBinding.binding}
-                shown={selectedShown.text}
-                resolved={selectedShown.resolved}
-                state={bindingStates?.get(selectedBinding.binding.id)}
+                binding={valued.binding}
+                shown={valued.shown.text}
+                resolved={valued.shown.resolved}
+                state={bindingStates?.get(valued.binding.id)}
                 // Undefined until the title is answered, so the panel says nothing of it yet.
-                {...(alone ? { title: titles.get(selectedBinding.binding.query) } : {})}
+                {...(alone ? { title: titles.get(valued.binding.query) } : {})}
                 {...(onProvenance
                   ? {
                       onProvenance: (opener: HTMLElement) =>
-                        onProvenance(selectedBinding.binding.id, opener),
+                        onProvenance(valued.binding.id, opener),
                     }
                   : {})}
                 {...(mayFormat && surface !== null
-                  ? { onChange: () => openValue(openFootnote(surface) ?? surface) }
+                  ? {
+                      onChange: () =>
+                        valued.figure
+                          ? openFigureValue(surface, valued)
+                          : openValue(openFootnote(surface) ?? surface),
+                    }
                   : {})}
                 {...(bindingActs !== undefined && !bindingActs.pinned
                   ? {
-                      onKeep: () => settle(selectedBinding.binding.id, 'keep'),
-                      onResolve: () => settle(selectedBinding.binding.id, 'resolve'),
+                      onKeep: () => settle(valued.binding.id, 'keep'),
+                      onResolve: () => settle(valued.binding.id, 'resolve'),
                     }
                   : {})}
               />
@@ -2107,7 +2149,8 @@ export function ComponentEditor({
             inDocument={
               bindingContext === undefined ? null : { pinned: bindingActs?.pinned ?? false }
             }
-            onDone={(choice) => {
+            place={valuing.place}
+            onDone={(choice, placeAs) => {
               const now = controls.current?.view().phase;
               const into = valuing.view;
               if (
@@ -2119,15 +2162,25 @@ export function ComponentEditor({
                 return 'This component can no longer be edited here, so the value was not placed.';
               }
               const changing = valuing.current;
+              const asFigure = valuing.place === 'figure' || placeAs === 'figure';
               const command =
-                changing === null ? insertBinding(choice) : changeBinding(changing.pos, choice);
+                changing === null
+                  ? asFigure
+                    ? insertBoundFigure(choice, newBlockIdentifier)
+                    : insertBinding(choice)
+                  : valuing.place === 'figure'
+                    ? changeFigureBinding(changing.pos, choice)
+                    : changeBinding(changing.pos, choice);
               if (!command(into.state, into.dispatch.bind(into))) {
                 return changing === null
                   ? 'A value cannot be placed where the cursor is.'
                   : 'That value is not there any more.';
               }
               setValuing(null);
-              const placed = bindingSelected(into.state)?.binding.id;
+              // A figure's binding is the figure's, which the cursor stands in (B6-H).
+              const placed = asFigure
+                ? figureAt(into.state)?.binding?.id
+                : bindingSelected(into.state)?.binding.id;
               if (placed) settle(placed, changing === null ? 'placed' : 'changed');
               return null;
             }}

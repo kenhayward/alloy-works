@@ -3381,7 +3381,7 @@ waiting or the caller may not edit the document.
 D8 of [data.md](design/data.md), built by [the D8 plan](plans/2026-10-05-d8-image-columns.md): a
 query definition's column can be an image, read from a PostgreSQL `bytea` or base64 text, and a
 result holding images is recorded only once every image is an asset. Placing one in a document is
-B6's; `takeValue` still refuses an image column (D8-H).
+[bound images](#bound-images)'.
 
 **The column** (`packages/domain/src/data/columns.ts`): `columnTypeSchema` adds
 `{ base: 'image', encoding: 'binary' | 'base64', description: { column } | 'decorative' }`, the
@@ -3426,6 +3426,51 @@ that the images are being checked, then show the value as any other, or the refu
 | `worker: src/jobs/ingest.ts`          | A dataset's upload recorded as an asset                        |
 | `web: src/structure/pendingResult.ts` | Following a pending result                                     |
 | `tests/e2e: src/images.test.ts`       | Through `ingest` to assets, then reused, over the whole system |
+
+## Bound images
+
+B6 of [bindings.md](design/bindings.md), built by [the B6 plan](plans/2026-10-06-b6-bound-images.md):
+an image column bound in a line, in a table's cell or as a figure's image, described by its row or
+decorative, drawn on the page and printed as an ordinary image.
+
+**The model** (`packages/domain`): a figure gains an optional `binding` beside an optional `asset`, at
+content schema 1 (B6-A, B6-B); the walk requires exactly one, `figure_image`, refuses a bound figure's
+own alternative text, `figure_bound_alternative`, and claims its binding's identifier, so `bindingsIn`
+finds it at `content.N.binding`, placed `figure` and `decorative` where the author marked the figure so.
+`takeValue` answers an image column's cell as `{ image, description, column }`, its description read
+from the same row by the column type's `description`, or `image_description_missing`; migration 0052
+widens `dataset_take` to both.
+
+**The stage** (`publishing/bind.ts`) sets an inline image binding as an `image` inline and a bound
+figure as one with its `asset`, each the asset version the dataset version's provenance `images`
+names, described by the taken description or decorative - an author's decorative standing whatever
+the row holds (Ken, 2026-10-06) - and fails `image_not_placeable` in a footnote or a caption and
+`value_not_image` for a figure taking another type. Typst, Word and the PDF/UA tagging read what they
+read already; `provenance.json` is at schema 2, a value gaining an image arm. The worker loads every
+asset version the held results name and reads the bytes of those placed.
+
+**The view and the page**: the bindings view answers an image with its asset version and the two
+placement failures, and takes a decorative figure's binding again from its result where its row has
+no description, never recorded, so the page agrees with the publish. The editor holds a figure's
+binding as an attribute, mapped losslessly (`packages/editor/src/mapping.ts`); `boundFiguresShown` and
+`bindingsShown` say what each draws, and `figureView` and `bindingView` draw an image from
+`/v1/asset-versions/{id}/content` - one line high in its line - or why there is none, in place. D8-I's
+gate answers that route to a reader of a document holding the image, read from the asset to the dataset
+versions naming it by 0053's partial GIN index, then to the latest resolutions holding those. The
+**Value** dialog marks image columns and asks **Place as**, _In the line_ or _As a figure_
+(`insertBoundFigure`); a bound figure's panel shows its binding in the Value panel, whose **Change**
+offers image columns alone (`changeFigureBinding`).
+
+| Where                                    | What                                                                    |
+| ---------------------------------------- | ----------------------------------------------------------------------- |
+| `domain: src/content/model/`             | The figure's `binding`, `figure_image`, `figure_bound_alternative`      |
+| `domain: src/data/take.ts`, `binding.ts` | The image take; `bindingsIn`'s place and `decorative`                   |
+| `domain: src/publishing/bind.ts`         | The stage's images and their two placement failures                     |
+| `db: migrations/tenant/0052`, `0053`     | `dataset_take`'s image; the index of the images a dataset version names |
+| `service: src/data/bindings.ts`          | The view's asset version, placement and an author's decorative          |
+| `editor: src/bindings.ts`, `figures.ts`  | `boundFiguresShown`, `insertBoundFigure`, `changeFigureBinding`         |
+| `web: src/editor/ValueDialog.tsx`        | **Place as**, and image columns alone for a figure                      |
+| `tests/e2e: src/bound-images.test.ts`    | Placed, drawn and published, and refused for a missing description      |
 
 ## Containers and images
 

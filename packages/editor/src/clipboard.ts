@@ -24,6 +24,7 @@ export const PRODUCT_CLIPBOARD_TYPE = 'application/vnd.alloy-works.content+json'
 const crossReferenceNode = editorSchema.nodes.crossReference!;
 const equationNode = editorSchema.nodes.equation!;
 const bindingNode = editorSchema.nodes.binding!;
+const figureNode = editorSchema.nodes.figure!;
 
 /** What a paste event's `clipboardData` offers: the types it holds, and each one's text. */
 export interface ClipboardSource {
@@ -239,27 +240,34 @@ function bindingsGivenBack(
   renamed: ReadonlyMap<string, string>,
 ): { kept: number; copied: number } {
   const doc = placed.doc;
+  // A figure's binding (the B6 plan, B6-A) is an attribute holding its own identifier, which is
+  // given back as an inline binding's is.
+  const figureBinding = (node: Node) =>
+    node.type === figureNode ? (node.attrs.binding as { id: string } | null) : null;
   const held = new Map<string, number>();
   doc.descendants((node) => {
-    if (typeof node.attrs.id === 'string')
-      held.set(node.attrs.id, (held.get(node.attrs.id) ?? 0) + 1);
+    for (const id of [node.attrs.id, figureBinding(node)?.id]) {
+      if (typeof id === 'string') held.set(id, (held.get(id) ?? 0) + 1);
+    }
   });
   const original = new Map<string, string>();
   for (const [from, to] of renamed) original.set(to, from);
   let kept = 0;
   let copied = 0;
   doc.descendants((node, pos) => {
-    if (node.type !== bindingNode) return true;
-    const from = original.get(node.attrs.id as string);
-    if (from === undefined) return false;
+    const bound = figureBinding(node);
+    if (node.type !== bindingNode && bound === null) return true;
+    const from = original.get(bound === null ? (node.attrs.id as string) : bound.id);
+    if (from === undefined) return bound !== null;
     if (held.has(from)) {
       copied += 1;
-      return false;
+      return bound !== null;
     }
-    placed.setNodeAttribute(pos, 'id', from);
+    if (bound === null) placed.setNodeAttribute(pos, 'id', from);
+    else placed.setNodeAttribute(pos, 'binding', { ...bound, id: from });
     held.set(from, 1);
     kept += 1;
-    return false;
+    return bound !== null;
   });
   return { kept, copied };
 }

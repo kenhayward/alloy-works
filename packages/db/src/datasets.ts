@@ -683,38 +683,35 @@ export async function assetHolding(
  * The documents holding an asset a dataset's image made (the D8 plan, D8-I): each whose latest
  * resolution for some node and binding holds a dataset version whose provenance names a version of
  * the asset. Undefined for any other asset - one a person uploaded - which is read as its space is.
- * One query, its search of the resolutions run only for such an asset. Who may read which document is
- * the caller's to decide.
+ * One query, by 0053's index of the asset versions each dataset version names. Who may read which
+ * document is the caller's to decide.
  */
 export async function documentsHoldingAsset(
   trx: TenantTransaction,
   assetId: string,
 ): Promise<readonly string[] | undefined> {
   if (!UUID.test(assetId)) return undefined;
+  // From the asset's versions to the dataset versions naming one - by 0053's index, whose expression
+  // this repeats - and on to the resolutions holding those that are their binding's latest (B6.2).
   const { rows } = await sql<{ from_dataset: boolean; documents: string[] | null }>`
-    select origin.from_dataset, holding.documents
-      from (
-        select exists (
-          select 1 from asset_upload u where u.asset_id = ${assetId} and u.origin = 'dataset'
-        ) as from_dataset
-      ) origin
-      left join lateral (
-        select array_agg(distinct latest.document_id) as documents
-          from (
-            select distinct on (r.document_id, r.node_id, r.binding_id)
-                   r.document_id, r.dataset_version
-              from binding_resolution r
-             order by r.document_id, r.node_id, r.binding_id, r.id desc
-          ) latest
-          join artifact_version held on held.id = latest.dataset_version
-         where origin.from_dataset
-           and exists (
-             select 1
-               from jsonb_each_text(held.content -> 'images') image
-               join artifact_version named on named.id = image.value::uuid
-              where named.artifact_id = ${assetId}
-           )
-      ) holding on true`.execute(trx);
+    select exists (
+             select 1 from asset_upload u where u.asset_id = ${assetId} and u.origin = 'dataset'
+           ) as from_dataset,
+           (select array_agg(distinct r.document_id)
+              from artifact_version held
+              join binding_resolution r on r.dataset_version = held.id
+             where held.kind = 'dataset'
+               and jsonb_path_query_array(held.content -> 'images', '$.*') ?| array(
+                 select named.id::text from artifact_version named
+                  where named.artifact_id = ${assetId}
+               )
+               and not exists (
+                 select 1 from binding_resolution later
+                  where later.document_id = r.document_id
+                    and later.node_id = r.node_id
+                    and later.binding_id = r.binding_id
+                    and later.id > r.id
+               )) as documents`.execute(trx);
   const row = rows[0]!;
   return row.from_dataset ? (row.documents ?? []) : undefined;
 }

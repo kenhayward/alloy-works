@@ -122,6 +122,15 @@ function holdersSaid({ readable, others }: Holders): string {
   return names.length === 1 ? names[0]! : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
 }
 
+/** Where an image column's value is placed (B6-H): in the line, or as a figure's image. */
+export type PlaceAs = 'line' | 'figure';
+
+/** The words each place is offered by. */
+export const PLACE_AS = {
+  line: 'In the line',
+  figure: 'As a figure',
+} as const satisfies Record<PlaceAs, string>;
+
 export interface ValueDialogProps {
   readonly client: Client;
   /** The component the binding stands in, for its holders. */
@@ -130,8 +139,17 @@ export interface ValueDialogProps {
   readonly current: Binding | null;
   /** Where it is placed: in a document, whether the node is pinned; null on the component's own. */
   readonly inDocument: { readonly pinned: boolean } | null;
-  /** The binding chosen; answers why it could not be placed, which the dialog says, or null. */
-  readonly onDone: (choice: BindingChoice) => string | null;
+  /**
+   * Where an image column's value may stand (the B6 plan, B6-H): `offer` asks _In the line_ or _As a
+   * figure_, where a figure may go; `figure` changes a figure's binding, and so offers image columns
+   * alone; `line`, the default, places it in the line.
+   */
+  readonly place?: 'line' | 'offer' | 'figure';
+  /**
+   * The binding chosen, and where an image column's is placed; answers why it could not be placed,
+   * which the dialog says, or null.
+   */
+  readonly onDone: (choice: BindingChoice, placeAs: PlaceAs) => string | null;
   readonly onCancel: () => void;
 }
 
@@ -141,13 +159,16 @@ export interface ValueDialogProps {
  * identity it runs as (DAT-022); the version; its parameters, checked as typed by D2's own rule; the
  * value it takes; and its mode. Opened on a binding selected whole it changes it, keeping its
  * identifier, and says first which documents will hold no value until resolved again, unless only
- * what it takes or its mode changed (BI-J). Nothing is placed on Cancel, Close or Escape.
+ * what it takes or its mode changed (BI-J). Nothing is placed on Cancel, Close or Escape. An image
+ * column is offered as any other, and on one it asks **Place as**: _In the line_ or, where a figure
+ * may go, _As a figure_ (the B6 plan, B6-H).
  */
 export function ValueDialog({
   client,
   componentId,
   current,
   inDocument,
+  place = 'line',
   onDone,
   onCancel,
 }: ValueDialogProps) {
@@ -177,6 +198,7 @@ export function ValueDialog({
       : {},
   );
   const [mode, setMode] = useState<Binding['mode']>(current?.mode ?? 'checked');
+  const [placeAs, setPlaceAs] = useState<PlaceAs>(place === 'figure' ? 'figure' : 'line');
   const [holders, setHolders] = useState<Holders | null>(null);
   const [tried, setTried] = useState(false);
   const [said, setSaid] = useState<string | null>(null);
@@ -236,7 +258,10 @@ export function ValueDialog({
             identity: identityOf(data.connection),
           });
         }
-        const columns = (definition.columns ?? []) as Column[];
+        const declared = (definition.columns ?? []) as Column[];
+        // A figure's binding takes an image, so it is offered image columns alone (B6-H).
+        const columns =
+          place === 'figure' ? declared.filter((each) => each.type.base === 'image') : declared;
         setChosen({
           id: chosenId,
           version: { id: String(data.version.id), number: String(data.version.number) },
@@ -258,7 +283,7 @@ export function ValueDialog({
     return () => {
       live = false;
     };
-  }, [client, chosenId, current?.query]);
+  }, [client, chosenId, current?.query, place]);
 
   useEffect(() => {
     if (current === null) return undefined;
@@ -294,6 +319,11 @@ export function ValueDialog({
   const problemOf = (name: string) =>
     problems.find((each) => each.parameter === name && (tried || each.rule !== 'required'));
 
+  const imageColumn = ready?.columns.find((each) => each.name === column)?.type.base === 'image';
+  const placedAs: PlaceAs =
+    place === 'figure' || (place === 'offer' && imageColumn && placeAs === 'figure')
+      ? 'figure'
+      : 'line';
   const choice: BindingChoice | null =
     ready === null || column === ''
       ? null
@@ -418,7 +448,7 @@ export function ValueDialog({
               setSaid('A value does not fit its parameter.');
               return;
             }
-            setSaid(onDone(choice));
+            setSaid(onDone(choice, placedAs));
           }}
         >
           <h2 id={`${id}-heading`} className={styles['heading']}>
@@ -555,10 +585,16 @@ export function ValueDialog({
                     {ready.columns.map((each) => (
                       <option key={each.name} value={each.name}>
                         {each.name}
+                        {each.type.base === 'image' ? ', an image' : ''}
                       </option>
                     ))}
                   </select>
                 </div>
+                {place === 'figure' && ready.columns.length === 0 && (
+                  <p className={styles['note']}>
+                    This query definition has no image column, so it cannot give a figure its image.
+                  </p>
+                )}
                 <div className={own['forms']}>
                   <label className={own['choice']}>
                     {radio('row', 'only', row === 'only' || ready.key.length === 0, () =>
@@ -587,6 +623,19 @@ export function ValueDialog({
                     </div>
                   ))}
               </fieldset>
+              {place === 'offer' && imageColumn && (
+                <fieldset className={own['group']}>
+                  <legend>Place as</legend>
+                  <div className={own['forms']}>
+                    {(['line', 'figure'] as const).map((each) => (
+                      <label key={each} className={own['choice']}>
+                        {radio('place', each, placeAs === each, () => setPlaceAs(each))}
+                        {PLACE_AS[each]}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
               <fieldset className={own['group']}>
                 <legend>Mode</legend>
                 <div className={own['forms']}>

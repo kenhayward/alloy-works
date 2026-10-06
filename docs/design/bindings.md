@@ -25,7 +25,7 @@ nearest thing the editor already has to a binding; the one scroll, its modes and
 [themes.md](themes.md)'s. A bound table's presentation is `tables.md`'s, not designed; a template's
 parameters feeding a binding are the `templates.md` additions'.
 
-> **B1 to B4 built; B5 and B6 not built.** D3 built the binding's stored shape, datasets, resolutions
+> **B1 to B4 and B6 built; B5 not built.** D3 built the binding's stored shape, datasets, resolutions
 > and the resolve, check and accept routes. [B1](../plans/2026-10-04-b1-the-value-shown.md) built the
 > editor's node - a component holding a binding opens for editing - `takeValue`, `formatValue` and the
 > value catalogue, `dataset_take`, the bindings view's values, and each value, its failure and its
@@ -36,6 +36,9 @@ parameters feeding a binding are the `templates.md` additions'.
 > PDF, Word and a preview, `publication_binding`, and `provenance.json` with its route (0050).
 > [B4](../plans/2026-10-05-b4-the-data-tab.md) built the Data tab, the check on opening and the
 > waiting rule decided against the definition version a binding asks; DAT-091's warning waits for D7.
+> [B6](../plans/2026-10-06-b6-bound-images.md) built bound images: a figure's `binding` member, the
+> image take and its description, the stage setting each as an ordinary image, the view's asset
+> version, the page drawing them, the Value dialog's **Place as**, and 0052 and 0053.
 
 ## The shape in one paragraph
 
@@ -576,11 +579,14 @@ starts from it (BI-P):
 - **In a line of text and in a table's cell** (DAT-098's two): an inline binding whose take names an
   image column. It is drawn and printed as an inline image is - one line high in its paragraph or
   cell, by the theme's inline image style - from the asset the dataset version's provenance `images`
-  map gives the cell's hash. The Value dialog offers image columns with B6; D8 built them.
-- **As a figure**: the figure node's image is an asset version today; taking it from a binding
-  instead needs a member beside `asset` that holds a `BindingCore` and a take, which is a content
-  schema change B6's plan makes (the D8 plan, D8-H) by its stored-shape check and the footnotes plan's evidence rule. That
-  shape is why DAT-098 is not claimed.
+  map gives the cell's hash. The Value dialog offers image columns and asks **Place as**: _In the
+  line_ or, where a figure may go, _As a figure_ (B6-H).
+- **As a figure**: a figure's optional `binding` member, a whole binding node, in place of its
+  `asset` - exactly one of the two, `figure_image` - added at content schema 1 (B6-A, B6-B). The
+  editor holds it as the figure's attribute; its panel shows it in the Value panel, whose **Change**
+  opens the dialog offering image columns alone. The page draws it from
+  `/v1/asset-versions/{id}/content`, which D8-I's gate answers to a reader of a document holding it
+  (B6-G), indexed by 0053.
 - **The description** (DAT-097): the column the definition names, read from the taken row, or
   decorative where the definition says so, or where the author marked a bound figure decorative,
   which needs no description whatever its row holds (Ken, 2026-10-06). Otherwise a null or empty
@@ -602,10 +608,12 @@ since every version, resolution, revision and publication row is immutable once 
 | `publication_request_binding`                  | `requestPublication` and the preview's request, while queued     | A trigger refusing a row once the request is not queued, as 0022's; node and binding spelled as the outline's and NFC; digest 64 hex                                                                                                                              | The request; the resolution; its dataset version by `(id, artifact_id, kind)`; a revision or null                   | B3    |
 | `publication_binding`                          | The worker's recording transaction                               | 0017's while-queued check, and `publication_recorded_whole` widened: exactly the request's rows                                                                                                                                                                   | The publication; as above                                                                                           | B3    |
 | `publication_output.format` gains `provenance` | The worker                                                       | 0027's format, standard, producer and report checks widened - no standard, the product as producer at the pipeline's version, an empty report; the whole-publication check gaining one exactly where the publication holds a binding, never asked for as a format | The publication                                                                                                     | B3    |
+| A figure's `binding` (B6-A)                    | Every content write path                                         | `figureNodeSchema`: `binding` beside an optional `asset`, the walk's exactly-one (`figure_image`) and no own alternative (`figure_bound_alternative`); the editor's attribute mapped losslessly; admission renews its identifier                                  | As an inline binding, by `bindingsIn` at `content.N.binding`                                                        | B6    |
+| `dataset_take` gains an image (0052)           | `recordTake`                                                     | The outcome's strict schema widened: an image's hash, its description or `decorative` by its column's type, and `image_description_missing` naming the column; every `take_invalid` row deleted as derived                                                        | As before                                                                                                           | B6    |
 | `binding_revision`                             | `recordRevision`, from revise, withdraw and an accept that keeps | The value canonical in the column the dataset version declares; the reason; `replaces` of the same document, node, binding and cell; withdraw exactly with a null value                                                                                           | The document and the dataset version by `(id, artifact_id, kind)`; the node's existence is the service's at the act | B5    |
 
-**No content schema change before D8**, and no change to a stored binding: `bindingNodeSchema` is
-what D3 left it. Every new table's text is held to NFC and its spellings by a constraint as well as by
+**No content schema change but B6's**, additive at schema 1, and no change to a stored binding:
+`bindingNodeSchema` is what D3 left it, and a figure holds one whole (B6-B). Every new table's text is held to NFC and its spellings by a constraint as well as by
 its one writer, as 0047's `dataset_name` is, so a direct insert cannot pass what the writer would
 refuse; and every trigger reads its table by `tg_table_schema`.
 
@@ -784,7 +792,6 @@ Answered by Ken on 2026-10-04: every one as recommended. The corpus changes they
 | A revised value's printing                                                                                                                               | Answered, question 2: not marked in print; marked in the product and in `provenance.json` (DAT-115) |
 | The shortcut for **Value**                                                                                                                               | B2's plan, by the registry's check                                                                  |
 | Resolving from the session where the node is pinned to an older version: the value placed shows in no document until the node takes a version holding it | B2's plan, which says so in the dialog                                                              |
-| The figure's binding member                                                                                                                              | D8's plan (BI-P)                                                                                    |
 
 ## Build order
 

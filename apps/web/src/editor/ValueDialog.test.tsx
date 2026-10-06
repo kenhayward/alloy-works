@@ -4,7 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
-import { PARAMETER_WORDS, RUNS_AS, ValueDialog } from './ValueDialog.js';
+import { PARAMETER_WORDS, PLACE_AS, RUNS_AS, ValueDialog } from './ValueDialog.js';
 
 const SITES = '44444444-4444-4444-8444-444444444441';
 const VISITS = '44444444-4444-4444-8444-444444444442';
@@ -42,6 +42,12 @@ const view = (mayUse = true, id = SITES, title = 'Site by id', version = LATEST)
     columns: [
       { name: 'id', from: { column: 'id' }, type: { base: 'integer' } },
       { name: 'name', from: { column: 'name' }, type: { base: 'text' } },
+      // An image column (the B6 plan, B6-H), described by the name in its row.
+      {
+        name: 'photo',
+        from: { column: 'photo' },
+        type: { base: 'image', encoding: 'binary', description: { column: 'name' } },
+      },
     ],
     key: ['id'],
   },
@@ -145,12 +151,15 @@ describe('the Value dialog (the B2 plan, task 4)', () => {
     expect(await screen.findByText('site is not of its type.')).toBeInTheDocument();
     await user.clear(site);
     await user.keyboard('7{Enter}');
-    expect(onDone).toHaveBeenCalledWith({
-      query: SITES,
-      parameters: { site: { literal: '7' } },
-      mode: 'checked',
-      take: { column: 'id' },
-    });
+    expect(onDone).toHaveBeenCalledWith(
+      {
+        query: SITES,
+        parameters: { site: { literal: '7' } },
+        mode: 'checked',
+        take: { column: 'id' },
+      },
+      'line',
+    );
   });
 
   it('places nothing on Cancel or Escape', async () => {
@@ -195,12 +204,10 @@ describe('the Value dialog (the B2 plan, task 4)', () => {
     expect(await screen.findByRole('radio', { name: 'Always the latest' })).toBeChecked();
     expect(screen.queryByRole('radio', { name: 'The version it pins now' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Change' }));
-    expect(onDone).toHaveBeenCalledWith({
-      query: VISITS,
-      parameters: {},
-      mode: 'checked',
-      take: { column: 'name' },
-    });
+    expect(onDone).toHaveBeenCalledWith(
+      { query: VISITS, parameters: {}, mode: 'checked', take: { column: 'name' } },
+      'line',
+    );
     // Back to the definition it binds: the version it pins is its own again.
     await user.click(screen.getByRole('radio', { name: /Site by id/ }));
     expect(await screen.findByRole('radio', { name: 'The version it pins now' })).toBeChecked();
@@ -249,7 +256,7 @@ describe('the Value dialog (the B2 plan, task 4)', () => {
     await user.type(await screen.findByLabelText('site'), '7');
     await user.click(screen.getByRole('radio', { name: /Pinned/ }));
     await user.click(screen.getByRole('button', { name: 'Insert' }));
-    expect(onDone).toHaveBeenCalledWith(expect.objectContaining({ mode: 'pinned' }));
+    expect(onDone).toHaveBeenCalledWith(expect.objectContaining({ mode: 'pinned' }), 'line');
   });
 
   it('says who may resolve a value an author may not resolve themselves', async () => {
@@ -297,5 +304,68 @@ describe('the Value dialog (the B2 plan, task 4)', () => {
     for (const words of [...Object.values(RUNS_AS), ...Object.values(PARAMETER_WORDS)]) {
       expect(words).not.toMatch(fancy);
     }
+  });
+});
+
+describe('an image column in the Value dialog (the B6 plan, B6-H)', () => {
+  const choosePhoto = async (user: ReturnType<typeof userEvent.setup>) => {
+    await user.click(await screen.findByRole('radio', { name: /Site by id/ }));
+    await user.type(await screen.findByLabelText('site'), '7');
+    await user.selectOptions(screen.getByLabelText('Column'), 'photo');
+  };
+  const photo = {
+    query: SITES,
+    parameters: { site: { literal: '7' } },
+    mode: 'checked',
+    take: { column: 'photo' },
+  };
+
+  it('DAT-098 offers an image column, and places it in the line or as a figure, as the author answers Place as', async () => {
+    const user = userEvent.setup();
+    const { onDone } = dialog({ place: 'offer' });
+    await user.click(await screen.findByRole('radio', { name: /Site by id/ }));
+    await screen.findByLabelText('site');
+    // Asked only of an image column.
+    expect(screen.queryByRole('group', { name: 'Place as' })).toBeNull();
+    expect(screen.getByRole('option', { name: 'photo, an image' })).toBeInTheDocument();
+    await user.type(screen.getByLabelText('site'), '7');
+    await user.selectOptions(screen.getByLabelText('Column'), 'photo');
+    expect(screen.getByRole('radio', { name: 'In the line' })).toBeChecked();
+    await user.click(screen.getByRole('button', { name: 'Insert' }));
+    expect(onDone).toHaveBeenLastCalledWith(photo, 'line');
+    await user.click(screen.getByRole('radio', { name: 'As a figure' }));
+    await user.click(screen.getByRole('button', { name: 'Insert' }));
+    expect(onDone).toHaveBeenLastCalledWith(photo, 'figure');
+  });
+
+  it('places an image column in the line, asking nothing, where no figure may go', async () => {
+    const user = userEvent.setup();
+    const { onDone } = dialog({ place: 'line' });
+    await choosePhoto(user);
+    expect(screen.queryByRole('radio', { name: 'As a figure' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Insert' }));
+    expect(onDone).toHaveBeenLastCalledWith(photo, 'line');
+  });
+
+  it("offers image columns alone when it changes a bound figure's binding", async () => {
+    const user = userEvent.setup();
+    const { onDone } = dialog({
+      place: 'figure',
+      current: { ...bound, take: { column: 'photo' } },
+    });
+    const column = await screen.findByLabelText('Column');
+    expect([...(column as HTMLSelectElement).options].map((each) => each.value)).toEqual(['photo']);
+    expect(screen.queryByRole('radio', { name: 'In the line' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Change' }));
+    expect(onDone).toHaveBeenLastCalledWith(
+      expect.objectContaining({ take: { column: 'photo' } }),
+      'figure',
+    );
+  });
+
+  it('has words for each place with no fancy dash', () => {
+    const fancy = new RegExp(`[${String.fromCodePoint(0x2013, 0x2014)}]`);
+    expect(Object.values(PLACE_AS)).toEqual(['In the line', 'As a figure']);
+    for (const words of Object.values(PLACE_AS)) expect(words).not.toMatch(fancy);
   });
 });

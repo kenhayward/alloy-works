@@ -180,6 +180,8 @@ interface Placed {
   readonly digest: string;
   /** In a line, in a footnote's line, or as a figure's image: where an image may stand (B6-D). */
   readonly place: BindingPlace;
+  /** A figure's binding whose figure its author marked decorative (Ken, 2026-10-06). */
+  readonly decorative?: true;
 }
 
 const key = (node: string, binding: string) => `${node} ${binding}`;
@@ -248,13 +250,14 @@ async function bindingsPlaced(
       version: occurrence.version,
     });
     if (!content.ok) throw new Error(`The component version ${occurrence.version} does not read`);
-    for (const { binding, place } of bindingsIn(content.document)) {
+    for (const { binding, place, decorative } of bindingsIn(content.document)) {
       placed.push({
         node: occurrence.node,
         component: occurrence.component,
         binding,
         digest: sha256(bindingDigestInput(binding)),
         place,
+        ...(decorative ? { decorative } : {}),
       });
     }
   }
@@ -863,9 +866,20 @@ interface TakeAsked {
   readonly version: string;
   readonly take: Take;
   readonly provenance: Provenance;
+  /** Asked for a figure its author marked decorative, which needs no description (Ken, 2026-10-06). */
+  readonly decorative?: true;
 }
 
-const takeKey = (version: string, take: Take) => `${version} ${takeDigest(take)}`;
+const takeKey = (version: string, take: Take, decorative?: true) =>
+  `${version} ${takeDigest(take)}${decorative ? ' decorative' : ''}`;
+
+/** The declared columns with `column`, where it is an image, declared decorative instead. */
+const decorativeColumns = (columns: readonly Column[], column: string): Column[] =>
+  columns.map((each) =>
+    each.name === column && each.type.base === 'image'
+      ? { ...each, type: { ...each.type, description: 'decorative' as const } }
+      : each,
+  );
 
 /** What a take gave, or that its result could not be read to take it. */
 type Taken = TakeOutcome | { readonly unavailable: true };
@@ -932,8 +946,33 @@ async function takenOf(
       taken.set(takeKey(version, each.take), outcome);
     }
   }
+  // **An author's decorative overrides a missing description** (Ken, 2026-10-06), as the publish's
+  // stage takes it (`bind`): a decorative figure whose take failed only for its row's description is
+  // taken again from the result as though its column were declared decorative, so the page shows the
+  // image the publish prints. Never recorded, since `dataset_take` keys an outcome by the take alone.
+  const again = new Map<string, TakeAsked[]>();
+  for (const each of asked) {
+    const outcome = taken.get(takeKey(each.version, each.take));
+    if (!each.decorative || outcome === undefined || !('failure' in outcome)) continue;
+    if (outcome.failure !== 'image_description_missing') continue;
+    again.set(each.version, [...(again.get(each.version) ?? []), each]);
+  }
+  for (const [version, misses] of again) {
+    const { provenance } = misses[0]!;
+    const result = store === undefined ? undefined : await readResult(store, keyFor, provenance);
+    for (const each of misses) {
+      const columns = decorativeColumns(provenance.columns, each.take.column);
+      const outcome = result === undefined ? undefined : takeHeld(each.take, result, columns);
+      taken.set(takeKey(version, each.take, true), outcome ?? { unavailable: true });
+    }
+  }
   return taken;
 }
+
+/** What a take asked gave: the decorative take where one was made for it, else the take's own. */
+const takenAs = (taken: ReadonlyMap<string, Taken>, version: string, placed: Placed): Taken =>
+  (placed.decorative ? taken.get(takeKey(version, placed.binding.take, true)) : undefined) ??
+  taken.get(takeKey(version, placed.binding.take))!;
 
 /** A stored result, held to its checksum and its shape, or undefined where it cannot be read. */
 async function readResult(
@@ -955,10 +994,18 @@ async function readResult(
 function takesAsked(placed: Placed, held: HeldResolution | undefined): TakeAsked[] {
   if (!held || held.digest !== placed.digest) return [];
   const take = placed.binding.take;
+  const decorative = placed.decorative ? { decorative: placed.decorative } : {};
   return [
-    { version: held.held.version, take, provenance: held.held.provenance },
+    { version: held.held.version, take, provenance: held.held.provenance, ...decorative },
     ...(held.waiting
-      ? [{ version: held.waiting.version, take, provenance: held.waiting.provenance }]
+      ? [
+          {
+            version: held.waiting.version,
+            take,
+            provenance: held.waiting.provenance,
+            ...decorative,
+          },
+        ]
       : []),
   ];
 }
@@ -1144,7 +1191,6 @@ function viewer(
       const stale = held.digest !== placed.digest;
       const name = await datasetName(trx, held.held.dataset);
       const readsDefinition = await reads(held.held.provenance.queryDefinition.artifact);
-      const take = placed.binding.take;
       out.push({
         node: placed.node,
         binding: placed.binding,
@@ -1159,7 +1205,7 @@ function viewer(
             ? null
             : placedTaken(
                 placed.place,
-                taken.get(takeKey(held.held.version, take))!,
+                takenAs(taken, held.held.version, placed),
                 held.held.provenance,
               ),
           act: held.act,
@@ -1177,7 +1223,7 @@ function viewer(
                 ),
                 taken: placedTaken(
                   placed.place,
-                  taken.get(takeKey(held.waiting.version, take))!,
+                  takenAs(taken, held.waiting.version, placed),
                   held.waiting.provenance,
                 ),
               }

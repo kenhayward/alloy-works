@@ -2,9 +2,10 @@ import { bindingDigestInput, type Binding, type TakeFailure } from '@alloy-works
 import type { Node } from 'prosemirror-model';
 import { NodeSelection, type Command, type EditorState } from 'prosemirror-state';
 
-import { editorSchema } from './schema.js';
+import { assetContentPath, BOUND_IMAGE, editorSchema } from './schema.js';
 
 const bindingNode = editorSchema.nodes.binding!;
+const figureNode = editorSchema.nodes.figure!;
 
 /**
  * Why a binding holds no value where the view answered for it: a take's failure (`takeValue`), or a
@@ -41,7 +42,18 @@ export interface BindingHeld {
    * provenance to open.
    */
   readonly unread?: true;
-  readonly shown: { readonly value: string; readonly waiting: boolean } | BindingFailureHeld;
+  readonly shown:
+    | {
+        readonly value: string;
+        readonly waiting: boolean;
+        /**
+         * Where the value is an image (the B6 plan, B6-G): the asset version its bytes are read from,
+         * and its `alt` - the description, or empty where it is decorative. `value` is then its words,
+         * which a copy's plain text writes.
+         */
+        readonly image?: { readonly asset: string; readonly alt: string };
+      }
+    | BindingFailureHeld;
 }
 
 /**
@@ -72,10 +84,29 @@ export interface BindingShown {
   /** Whether it holds no value, drawn apart by its words and more than colour (DAT-047). */
   readonly failed: boolean;
   /**
+   * The image it shows in place of its words, where its value is one (B6.2): the asset version, the
+   * route its bytes are read from and its `alt`; null otherwise.
+   */
+  readonly image: BoundImage | null;
+  /**
    * Whether the document holds a resolution for it as it stands, so it has a provenance to open: in
    * the read text it is then a button (B1-L, B1-M).
    */
   readonly resolved: boolean;
+}
+
+/** An image a binding shows: its asset version, where its bytes are read from, and its `alt`. */
+export interface BoundImage {
+  readonly asset: string;
+  readonly src: string;
+  readonly alt: string;
+}
+
+/** The image a decoration's spec carries, flat as `bindingDecorations` puts it, or null. */
+export function imageOfSpec(spec: Record<string, unknown>): BoundImage | null {
+  return typeof spec.boundSrc === 'string'
+    ? { asset: spec.boundAsset as string, src: spec.boundSrc, alt: spec.boundAlt as string }
+    : null;
 }
 
 /** A binding selected whole, as the Value panel reads it. */
@@ -177,7 +208,14 @@ function shownFor(
   context: BindingContext | null,
 ): Omit<BindingShown, 'pos' | 'id'> {
   if (context === null) {
-    return { text: BOUND_VALUE, hidden: '', marker: null, failed: false, resolved: false };
+    return {
+      text: BOUND_VALUE,
+      hidden: '',
+      marker: null,
+      failed: false,
+      resolved: false,
+      image: null,
+    };
   }
   if (context.kind === 'alone') {
     const title = context.titles.get(binding.query) ?? null;
@@ -187,6 +225,7 @@ function shownFor(
       marker: null,
       failed: false,
       resolved: false,
+      image: null,
     };
   }
   const failed = (text: string, resolved = false) => ({
@@ -195,6 +234,7 @@ function shownFor(
     marker: null,
     failed: true,
     resolved,
+    image: null,
   });
   const held = context.held.get(binding.id);
   if (held === undefined) return failed(NEVER_RESOLVED);
@@ -202,6 +242,14 @@ function shownFor(
   if ('failure' in held.shown) {
     return failed(bindingFailureWords(binding, held.shown), held.unread !== true);
   }
+  const image =
+    held.shown.image === undefined
+      ? null
+      : {
+          asset: held.shown.image.asset,
+          src: assetContentPath(held.shown.image.asset),
+          alt: held.shown.image.alt,
+        };
   return held.shown.waiting
     ? {
         text: held.shown.value,
@@ -209,8 +257,9 @@ function shownFor(
         marker: REVISION_WAITING,
         failed: false,
         resolved: true,
+        image,
       }
-    : { text: held.shown.value, hidden: KIND, marker: null, failed: false, resolved: true };
+    : { text: held.shown.value, hidden: KIND, marker: null, failed: false, resolved: true, image };
 }
 
 /**
@@ -232,6 +281,37 @@ export function bindingsShown(doc: Node, context: BindingContext | null): readon
     if (node.type !== bindingNode) return true;
     const id = typeof node.attrs.id === 'string' ? node.attrs.id : null;
     shown.push({ pos, id, ...shownFor(storedBinding(node), context) });
+    return false;
+  });
+  return shown;
+}
+
+/**
+ * **What each bound figure in `doc` shows** (the B6 plan, B6-A, B6-G), in document order, by the rule
+ * `bindingsShown` shows an inline binding by: its image where the document holds one for its binding
+ * as it stands, or why there is none, in place. Its `alt` is the figure's: empty where the author
+ * marked it decorative (B6-C), and otherwise the description the document holds. `pos` is the
+ * figure's own.
+ */
+export function boundFiguresShown(
+  doc: Node,
+  context: BindingContext | null,
+): readonly BindingShown[] {
+  const shown: BindingShown[] = [];
+  doc.descendants((node, pos) => {
+    if (node.type !== figureNode) return true;
+    const binding = node.attrs.binding as Binding | null;
+    if (binding === null) return false;
+    const each = shownFor(binding, context);
+    const decorative = (node.attrs.alternative as { kind: string }).kind === 'decorative';
+    shown.push({
+      pos,
+      id: binding.id,
+      ...each,
+      // With nothing to tell it more, what the node says: `toDOM`'s words.
+      ...(context === null ? { text: BOUND_IMAGE } : {}),
+      image: each.image === null || !decorative ? each.image : { ...each.image, alt: '' },
+    });
     return false;
   });
   return shown;

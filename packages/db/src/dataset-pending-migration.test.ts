@@ -136,6 +136,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
     expect((await migrate(db.migratorUrl)).tenants[upgraded.id]).toEqual([
       '0051_dataset_pending',
       '0052_bound_images',
+      '0053_dataset_image_index',
     ]);
     const kept = await queryAs(
       db.adminUrl,

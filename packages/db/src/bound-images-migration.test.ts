@@ -150,7 +150,10 @@ describe('migration 0052, which widens dataset_take to an image', () => {
   });
 
   it('deletes every take_invalid row, keeps every other, and leaves dataset_take as a fresh environment has it', async () => {
-    expect((await migrate(db.migratorUrl)).tenants[upgraded.id]).toEqual(['0052_bound_images']);
+    expect((await migrate(db.migratorUrl)).tenants[upgraded.id]).toEqual([
+      '0052_bound_images',
+      '0053_dataset_image_index',
+    ]);
     const kept = await queryAs(
       db.adminUrl,
       `select take_digest, outcome from ${upgraded.schema}.dataset_take where dataset_version = $1`,
