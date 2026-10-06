@@ -6,6 +6,7 @@ import {
   defaultLimits,
   type Column,
   type ConnectionSettings,
+  type PostgresSettings,
   type DescribeSqlRequest,
   type DraftDefinition,
   type Limits,
@@ -63,9 +64,9 @@ export const TENANT = 'acme';
 export const SEALING_KEY = Buffer.alloc(32, 7);
 
 export function settings(
-  over: Partial<ConnectionSettings['source']> = {},
-  rest: Partial<ConnectionSettings> = {},
-): ConnectionSettings {
+  over: Partial<PostgresSettings['source']> = {},
+  rest: Partial<PostgresSettings> = {},
+): PostgresSettings {
   return {
     schemaVersion: 1,
     name: 'Readings',

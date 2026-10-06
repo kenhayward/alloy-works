@@ -4,6 +4,9 @@ import {
   dataFailure,
   type ChildRequest,
   type ConnectionSettings,
+  type HttpSettings,
+  type PostgresSettings,
+  limitCeilings,
   type DataFailure,
   type DataFailureCode,
   type DescribeAnswer,
@@ -23,6 +26,7 @@ import {
   withRefusedColumn,
 } from './describe.js';
 import { guardedAddress, type Lookup } from './guard.js';
+import { describeHttp, runHttp, testHttp, type HttpPolicy } from './http-source.js';
 import {
   accountHoldsPrivilege,
   assertRole,
@@ -72,7 +76,7 @@ function failureAnswer(kind: ChildRequest['kind'], failure: DataFailure): Answer
 
 /** The person's role a request asserts (D7-G), or undefined for one run as the account. */
 function assertedRole(request: ChildRequest): string | undefined {
-  if (request.kind === 'test') return undefined;
+  if (request.kind === 'test' || !('identity' in request.request)) return undefined;
   const identity = request.request.identity;
   return identity?.kind === 'asserted' ? identity.role : undefined;
 }
@@ -100,6 +104,8 @@ async function describeSql(
   client: pg.Client,
   request: Extract<ChildRequest, { kind: 'describeSql' }>['request'],
 ): Promise<DescribeSqlAnswer> {
+  // A sample of an HTTP request is HTTP's, never sent to a database (`connectionFetchProblems`).
+  if ('http' in request) throw failedWith('describe_not_supported');
   const { parameters } = 'sql' in request ? request.sql : request.builder;
   const values: ParameterValues = Object.fromEntries(
     parameters.map((parameter) => [parameter.name, parameter.variation?.[0]?.key ?? null]),
@@ -142,19 +148,87 @@ export async function answerRequest(
   request: ChildRequest,
   options: { readonly lookup?: Lookup; readonly startedAt?: number } = {},
 ): Promise<Answer> {
+  // The source is chosen by the connection's type (the D6 plan, D6-A); PostgreSQL's is as it was.
+  return request.request.settings.type === 'http'
+    ? answerHttp(request, options)
+    : answerPostgres(request, options);
+}
+
+/** The deadline a request runs to: from when the child's process started (DAT-109). */
+const deadlineOf = (request: ChildRequest, started: number, startedAt?: number) =>
+  (startedAt ?? started) + request.request.deadlineMs;
+
+/**
+ * An HTTP request (the D6 plan, D6-A): a test, a run, or a sample for columns; a describe of
+ * relations is `describe_not_supported`, since an HTTP source lists none. A failure to reach or sign
+ * in is answered no sooner than the failure floor, as a database's is (DAT-075).
+ */
+async function answerHttp(
+  request: ChildRequest,
+  options: { readonly lookup?: Lookup; readonly startedAt?: number },
+): Promise<Answer> {
+  const started = Date.now();
+  const deadline = deadlineOf(request, started, options.startedAt);
+  const settings = request.request.settings as HttpSettings;
+  const policy: HttpPolicy = {
+    deny: request.deny,
+    connectTimeoutMs: request.connectTimeoutMs,
+    ...(options.lookup ? { lookup: options.lookup } : {}),
+    ...(request.ca === undefined ? {} : { ca: request.ca }),
+  };
+  let answer: Answer;
+  try {
+    switch (request.kind) {
+      case 'test':
+        answer = await testHttp(settings, request.secret, policy, deadline);
+        break;
+      case 'run':
+        answer = await runHttp(request.request, request.secret, policy, deadline);
+        break;
+      case 'describeSql':
+        answer =
+          'http' in request.request
+            ? await describeHttp(
+                request.request,
+                request.secret,
+                policy,
+                deadline,
+                limitCeilings.bytes,
+              )
+            : { failure: dataFailure('describe_not_supported') };
+        break;
+      default:
+        answer = { failure: dataFailure('describe_not_supported') };
+    }
+  } catch {
+    answer = failureAnswer(request.kind, dataFailure('connector_error'));
+  }
+  const failure = 'failure' in answer ? answer.failure : undefined;
+  if (failure?.code === 'connection_failed') {
+    await pause(started + request.failureFloorMs - Date.now());
+  }
+  return answer;
+}
+
+/** A PostgreSQL request, as D1 to D7 built it. */
+async function answerPostgres(
+  request: ChildRequest,
+  options: { readonly lookup?: Lookup; readonly startedAt?: number },
+): Promise<Answer> {
   const started = Date.now();
   // The child's deadline runs from when its process started, as the supervisor's does from the spawn,
   // so it stops a run and cancels it before the supervisor's kill a second after (DAT-109).
-  const deadline = (options.startedAt ?? started) + request.request.deadlineMs;
+  const deadline = deadlineOf(request, started, options.startedAt);
+  const settings = request.request.settings as PostgresSettings;
   let client: pg.Client | undefined;
   try {
-    const address = await guardedAddress(request.request.settings.source.host, {
+    const address = await guardedAddress(settings.source.host, {
       deny: request.deny,
       ...(options.lookup ? { lookup: options.lookup } : {}),
     });
     if (address === 'refused') throw failedWith('connection_failed');
     try {
-      client = await connectPostgres(request.request.settings, request.secret, address.address, {
+      client = await connectPostgres(settings, request.secret, address.address, {
         connectTimeoutMs: Math.min(request.connectTimeoutMs, Math.max(1, deadline - Date.now())),
         statementTimeoutMs: Math.max(1, deadline - Date.now()),
       });
@@ -183,7 +257,7 @@ export async function answerRequest(
             request.request.values as ParameterValues,
             request.request.limits,
             deadline,
-            () => cancelBackend(address.address, request.request.settings.source.port, client!),
+            () => cancelBackend(address.address, settings.source.port, client!),
             role,
           );
         default:

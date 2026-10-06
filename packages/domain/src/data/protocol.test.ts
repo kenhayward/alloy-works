@@ -673,3 +673,98 @@ describe("the connector's protocol for a person's own identity (the D7 plan)", (
     });
   });
 });
+
+describe("the connector's protocol for an HTTP connection (the D6 plan)", () => {
+  const http: ConnectionSettings = {
+    schemaVersion: 1,
+    name: 'Readings API',
+    description: '',
+    type: 'http',
+    source: { baseUrl: 'https://api.example.test/v1', secretHeader: 'x-api-key' },
+    identity: { kind: 'service' },
+    retired: false,
+  };
+  const request = {
+    method: 'GET' as const,
+    path: [{ fixed: 'sites' }, { parameter: 'site' }],
+    query: [],
+    headers: [],
+  };
+  const httpDraft: DraftDefinition = {
+    ...draft,
+    parameters: [{ name: 'site', type: { base: 'text' }, required: true, list: false }],
+    fetch: { kind: 'http', request, format: { kind: 'json', rows: '/items' } },
+    columns: [{ name: 'id', from: { pointer: '/id' }, type: { base: 'integer' } }],
+  };
+  const httpRun = {
+    ...runRequest,
+    settings: http,
+    definition: httpDraft,
+    values: { site: 'north' },
+  };
+
+  it('takes a run of an HTTP request on an HTTP connection, and refuses one on a database, or a query on HTTP', () => {
+    expect(runRequestSchema.safeParse(httpRun).success).toBe(true);
+    expect(runRequestSchema.safeParse({ ...httpRun, settings }).success).toBe(false);
+    expect(runRequestSchema.safeParse({ ...runRequest, settings: http }).success).toBe(false);
+  });
+
+  it('reports the template it ran, never a URL, and seals a secret a header can carry', () => {
+    const answer = {
+      outcome: 'ok',
+      result: { columns: [['id', 'integer']], rows: [['1']] },
+      checksum,
+      rowCount: 1,
+      ran: { request },
+      durationMs: 4,
+    };
+    expect(runAnswerSchema.parse(answer)).toEqual(answer);
+    expect(
+      runAnswerSchema.safeParse({ ...answer, ran: { url: 'https://api.example.test' } }).success,
+    ).toBe(false);
+    const seal = { tenant: 'acme', connection: CONNECTION, secret: 'invented-key', settings: http };
+    expect(sealRequestSchema.safeParse(seal).success).toBe(true);
+    const lineBreak = `two${String.fromCharCode(13, 10)}lines`;
+    for (const secret of [lineBreak, ' padded', 'ünï']) {
+      expect(sealRequestSchema.safeParse({ ...seal, secret }).success, secret).toBe(false);
+    }
+    // A database's password is not a header's, and may hold what a header cannot.
+    expect(sealRequestSchema.safeParse({ ...seal, settings, secret: ' padded' }).success).toBe(
+      true,
+    );
+  });
+
+  it('takes a sample of an HTTP request for its columns, with its values, and refuses one that fails its checks', () => {
+    const describing = {
+      ...testRequest,
+      settings: http,
+      http: {
+        request,
+        format: { kind: 'json', rows: '/items' },
+        parameters: httpDraft.parameters,
+        values: { site: 'north' },
+      },
+    };
+    expect(describeSqlRequestSchema.safeParse(describing).success).toBe(true);
+    expect(describeSqlRequestSchema.safeParse({ ...describing, settings }).success).toBe(false);
+    const unvalued = { ...describing, http: { ...describing.http, values: {} } };
+    expect(describeSqlRequestSchema.safeParse(unvalued).success).toBe(false);
+    const answer = {
+      columns: [
+        { name: 'id', sourceType: 'number', proposed: { base: 'integer' }, pointer: '/id' },
+      ],
+      parameters: [],
+    };
+    expect(describeSqlAnswerSchema.parse(answer)).toEqual(answer);
+    const child = {
+      kind: 'run',
+      request: httpRun,
+      secret: 'invented-key',
+      deny: [],
+      connectTimeoutMs: 1000,
+      failureFloorMs: 0,
+      ca: '-----BEGIN CERTIFICATE-----',
+    };
+    expect(childRequestSchema.safeParse(child).success).toBe(true);
+  });
+});

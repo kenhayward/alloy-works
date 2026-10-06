@@ -93,10 +93,15 @@ const isFailure = (value: unknown): value is Failure =>
 function isSettings(value: unknown): value is Settings {
   if (!isRecord(value) || !isRecord(value.source) || !isRecord(value.identity)) return false;
   const { source } = value;
-  return (
+  const common =
     typeof value.name === 'string' &&
     typeof value.description === 'string' &&
-    typeof value.retired === 'boolean' &&
+    typeof value.retired === 'boolean';
+  if (value.type === 'http') {
+    return common && typeof source.baseUrl === 'string' && typeof source.secretHeader === 'string';
+  }
+  return (
+    common &&
     typeof source.host === 'string' &&
     typeof source.port === 'number' &&
     typeof source.database === 'string' &&

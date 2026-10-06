@@ -251,6 +251,8 @@ export function createSupervisor(options: {
   readonly failureFloorMs?: number;
   /** Told how many bytes each child wrote to its standard error, which is otherwise dropped. */
   readonly onStderrBytes?: (bytes: number) => void;
+  /** A development or CI source's certificate authority, handed to each child (the D6 plan). */
+  readonly ca?: string;
 }): Supervisor {
   const given = options.spec;
   const specFor =
@@ -300,6 +302,7 @@ export function createSupervisor(options: {
       deny: [...options.deny],
       connectTimeoutMs,
       failureFloorMs,
+      ...(options.ca === undefined ? {} : { ca: options.ca }),
     } as ChildRequest;
     const spec = specFor(slot);
     let stderrBytes = 0;

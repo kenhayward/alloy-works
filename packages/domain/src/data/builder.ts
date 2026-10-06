@@ -534,19 +534,22 @@ export function checkBuilder(
   const items = new Map(query.select.map((item) => [item.name, item]));
   const declaredBy = new Map<string, number>();
   for (const [at, column] of definition.columns.entries()) {
-    const item = items.get(column.from.column);
+    // A column read by a pointer is refused as the wrong source for a query (`checkQueryDefinition`).
+    if (!('column' in column.from)) continue;
+    const read = column.from.column;
+    const item = items.get(read);
     if (item === undefined) {
       problem(
         `columns.${at}.from.column`,
-        `The column reads ${column.from.column}, which the query does not select`,
+        `The column reads ${read}, which the query does not select`,
       );
       continue;
     }
-    if (declaredBy.has(column.from.column)) {
-      problem(`columns.${at}.from.column`, `${column.from.column} is declared as one column alone`);
+    if (declaredBy.has(read)) {
+      problem(`columns.${at}.from.column`, `${read} is declared as one column alone`);
       continue;
     }
-    declaredBy.set(column.from.column, at);
+    declaredBy.set(read, at);
     if ('aggregate' in item.of && item.of.aggregate === 'average' && item.of.places !== undefined) {
       const { places } = item.of;
       const { type } = column;

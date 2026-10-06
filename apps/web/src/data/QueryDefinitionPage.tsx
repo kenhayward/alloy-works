@@ -32,6 +32,8 @@ import {
   type StatementParts,
   type TypeDraft,
 } from './definitionDraft.js';
+import { HttpFields } from './HttpFields.js';
+import { formatOf, requestText, templateOf } from './httpDraft.js';
 import { connectionLink, queryDefinitionLink } from './links.js';
 import { useDefinitionPlaces, type Place } from './places.js';
 import styles from './QueryDefinitionPage.module.css';
@@ -77,7 +79,8 @@ function isDefinitionView(value: unknown): value is DefinitionView {
     typeof definition.connection === 'string' &&
     isRecord(statement) &&
     (typeof statement.text === 'string' ||
-      (statement.kind === 'builder' && isRecord(statement.query))) &&
+      (statement.kind === 'builder' && isRecord(statement.query)) ||
+      (statement.kind === 'http' && isRecord(statement.request) && isRecord(statement.format))) &&
     Array.isArray(definition.parameters) &&
     Array.isArray(definition.columns) &&
     (connection === null ||
@@ -101,7 +104,8 @@ type Sampled =
       readonly rows: readonly (readonly (string | boolean | null)[])[];
       readonly rowCount: number;
       readonly checksum: string;
-      readonly ran: { readonly sql: string };
+      /** The SQL that ran, or an HTTP request's template that was sent (the D6 plan, D6-L). */
+      readonly ran: { readonly sql: string } | { readonly request: Record<string, unknown> };
       /** Each image in the rows, by its hash, as its header says (D8-G); none before D8. */
       readonly images?: Readonly<Record<string, SampledImage>>;
     }
@@ -148,7 +152,7 @@ function isSampled(value: unknown): value is Sampled {
     typeof value.rowCount === 'number' &&
     typeof value.checksum === 'string' &&
     isRecord(value.ran) &&
-    typeof value.ran.sql === 'string'
+    (typeof value.ran.sql === 'string' || isRecord(value.ran.request))
   );
 }
 
@@ -162,6 +166,7 @@ const PARAMETER_RULES: Readonly<Record<string, string>> = {
   scale: 'has more places than its type holds',
   zone: 'needs its time zone',
   variation: 'is not one of its keys',
+  position: 'cannot stand where the request places it',
 };
 
 /**
@@ -582,7 +587,12 @@ function ReadOnly({ definition }: { readonly definition: QueryDefinition }) {
   return (
     <>
       <p>{definition.description === '' ? 'No description.' : definition.description}</p>
-      {statement.kind === 'builder' ? (
+      {statement.kind === 'http' ? (
+        <figure className={styles['generated']}>
+          <figcaption>The request it sends, after the connection&apos;s base URL</figcaption>
+          <pre className={styles['sql']}>{sqlOf(definition)}</pre>
+        </figure>
+      ) : statement.kind === 'builder' ? (
         <GeneratedSql shown={{ sql: sqlOf(definition) }} />
       ) : (
         <pre className={styles['sql']}>{sqlOf(definition)}</pre>
@@ -712,9 +722,12 @@ export function QueryDefinitionPage({
   useEffect(() => {
     if (!isNew || places === null) return;
     setSpace((held) => held || (places.spaces[0]?.id ?? ''));
-    setDraft((held) =>
-      held.connection === '' ? { ...held, connection: places.connections[0]?.id ?? '' } : held,
-    );
+    setDraft((held) => {
+      if (held.connection !== '') return held;
+      const first = places.connections[0]?.id ?? '';
+      // An HTTP connection's query is a request template (the D6 plan).
+      return { ...held, connection: first, mode: places.http.has(first) ? 'http' : held.mode };
+    });
   }, [isNew, places]);
 
   /** Runs one act at a time: a second click while one is in flight sends nothing. */
@@ -833,9 +846,19 @@ export function QueryDefinitionPage({
         const { data, error } = await client.POST('/v1/connections/{id}/describe', {
           params: { path: { id: draft.connection } },
           body:
-            query === null
-              ? { sql: { text: draft.sql, parameters: parameters as never } }
-              : { builder: { query: query as never, parameters: parameters as never } },
+            draft.mode === 'http'
+              ? {
+                  // An HTTP response is described by its rows: it is sent with the sample's values.
+                  http: {
+                    request: templateOf(draft.http) as never,
+                    format: formatOf(draft.http) as never,
+                    parameters: parameters as never,
+                    values: sampleValues(draft.parameters, typed) as never,
+                  },
+                }
+              : query === null
+                ? { sql: { text: draft.sql, parameters: parameters as never } }
+                : { builder: { query: query as never, parameters: parameters as never } },
         });
         const answer: unknown = data;
         if (isRecord(answer) && Array.isArray(answer.columns)) {
@@ -1049,7 +1072,18 @@ export function QueryDefinitionPage({
                     onChange={(event) => {
                       setSource(null);
                       setSourceLines(null);
-                      changeStatement({ connection: event.target.value });
+                      const chosen = event.target.value;
+                      // An HTTP connection's query is a request template; a database's is built
+                      // or written (the D6 plan).
+                      changeStatement({
+                        connection: chosen,
+                        mode:
+                          places?.http.has(chosen) === true
+                            ? 'http'
+                            : draft.mode === 'http'
+                              ? 'builder'
+                              : draft.mode,
+                      });
                     }}
                   >
                     {draft.connection === '' && <option value="">Choose a connection</option>}
@@ -1087,7 +1121,13 @@ export function QueryDefinitionPage({
 
           <Step title="Query">
             <div className={styles['form']}>
-              {sqlOffered ? (
+              {draft.mode === 'http' ? (
+                <HttpFields
+                  http={draft.http}
+                  parameters={draft.parameters}
+                  onChange={(http) => changeStatement({ http })}
+                />
+              ) : sqlOffered ? (
                 <fieldset>
                   <legend>Write the query with</legend>
                   <label className={styles['check']}>
@@ -1115,7 +1155,7 @@ export function QueryDefinitionPage({
                   SQL on the connection.
                 </p>
               )}
-              {draft.mode === 'builder' ? (
+              {draft.mode === 'http' ? null : draft.mode === 'builder' ? (
                 <BuilderFields
                   builder={draft.builder}
                   parameters={draft.parameters}
@@ -1149,7 +1189,7 @@ export function QueryDefinitionPage({
                 <ParameterFields
                   key={at}
                   index={at}
-                  built={draft.mode === 'builder'}
+                  built={draft.mode !== 'sql'}
                   parameter={parameter}
                   onChange={(changed) => setParameter(at, changed)}
                   onRemove={() =>
@@ -1174,12 +1214,13 @@ export function QueryDefinitionPage({
           <Step title="Columns">
             {mayRun && (
               <button type="button" disabled={busy !== null} onClick={describe}>
-                Describe
+                {draft.mode === 'http' ? 'Sample for columns' : 'Describe'}
               </button>
             )}
             <p className={styles['hint']}>
-              Describe asks the source what the query returns, without running it, and proposes a
-              type for each column. Nothing is saved until you have confirmed every one.
+              {draft.mode === 'http'
+                ? "Sample for columns sends the request with the sample values below and proposes a column, and a type, for each member of the first rows. A sample cannot prove a decimal's digits: nothing is saved until you have confirmed every one."
+                : 'Describe asks the source what the query returns, without running it, and proposes a type for each column. Nothing is saved until you have confirmed every one.'}
             </p>
             <Status lines={described} />
             {draft.columns.length > 0 && (
@@ -1469,8 +1510,10 @@ export function QueryDefinitionPage({
                   ))}
                 </tbody>
               </table>
-              <p>The SQL that ran</p>
-              <pre className={styles['sql']}>{sampled.ran.sql}</pre>
+              <p>{'sql' in sampled.ran ? 'The SQL that ran' : 'The request that was sent'}</p>
+              <pre className={styles['sql']}>
+                {'sql' in sampled.ran ? sampled.ran.sql : requestText(sampled.ran.request as never)}
+              </pre>
             </div>
           )}
         </Step>

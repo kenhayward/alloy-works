@@ -282,7 +282,10 @@ export function generatePostgres(
         const byItem = new Map(node.select.map((item) => [item.name, item]));
         const keys = order.map(({ column, direction }) => {
           const declaredColumn = byName.get(column);
-          const item = declaredColumn && byItem.get(declaredColumn.from.column);
+          const item =
+            declaredColumn && 'column' in declaredColumn.from
+              ? byItem.get(declaredColumn.from.column)
+              : undefined;
           if (declaredColumn === undefined || item === undefined) {
             throw new Error(`The order names ${column}, which the query does not select`);
           }
@@ -300,9 +303,9 @@ export function generatePostgres(
   };
 
   const textual = new Set(
-    definition.columns
-      .filter((column) => column.type.base === 'text')
-      .map((column) => column.from.column),
+    definition.columns.flatMap((column) =>
+      column.type.base === 'text' && 'column' in column.from ? [column.from.column] : [],
+    ),
   );
   const text = query(fetch.query, textual, true).join('\n');
 

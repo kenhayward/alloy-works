@@ -157,13 +157,16 @@ async function admittedColumns(
   );
   const places: number[] = [];
   for (const column of definition.columns) {
-    const matching = fields.flatMap((field, at) => (field.name === column.from.column ? [at] : []));
+    const read = 'column' in column.from ? column.from.column : undefined;
+    const matching = fields.flatMap((field, at) => (field.name === read ? [at] : []));
     if (matching.length !== 1 || !admits(column.type, types[matching[0]!]!)) {
       return { failure: dataFailure('result_mismatch', { column: column.name }) };
     }
     places.push(matching[0]!);
   }
-  const declared = new Set(definition.columns.map((column) => column.from.column));
+  const declared = new Set(
+    definition.columns.flatMap((column) => ('column' in column.from ? [column.from.column] : [])),
+  );
   const extra = fields.find((field) => !declared.has(field.name));
   if (extra !== undefined) {
     return {

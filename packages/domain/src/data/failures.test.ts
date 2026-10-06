@@ -47,6 +47,8 @@ describe('a data failure', () => {
       value_unrepresentable: 'query',
       // The re-review's: a binding the binder refused, never sent.
       definition_unbindable: 'query',
+      // The D6 plan's D6-A: a source whose type lists no relations.
+      describe_not_supported: 'product',
     });
     expect(new Set(dataFailureCodes).size).toBe(dataFailureCodes.length);
     for (const code of dataFailureCodes) {
@@ -90,6 +92,24 @@ describe('a failure as it crosses the interface', () => {
     expect(dataFailureSchema.parse(mismatch)).toEqual(mismatch);
     expect(dataFailureSchema.safeParse({ ...mismatch, row: 0 }).success).toBe(false);
     expect(dataFailureSchema.safeParse({ ...mismatch, column: '' }).success).toBe(false);
+  });
+
+  it("carries an HTTP source's refusal as its status alone, never its body", () => {
+    const status = { code: 'source_refused', attribution: 'query', status: 404 };
+    expect(dataFailureSchema.parse(status)).toEqual(status);
+    expect(dataFailure('source_refused', { status: 503 })).toEqual({
+      code: 'source_refused',
+      attribution: 'query',
+      status: 503,
+    });
+    for (const bad of [
+      { ...status, status: 99 },
+      { ...status, status: 600 },
+      { ...status, source: { sqlstate: '42P01', message: 'x' } },
+      { code: 'timeout', attribution: 'connector', status: 404 },
+    ]) {
+      expect(dataFailureSchema.safeParse(bad).success, JSON.stringify(bad)).toBe(false);
+    }
   });
 
   it('cuts a source message to 1,000 characters, a whole character at a time', () => {

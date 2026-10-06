@@ -1,4 +1,5 @@
-import { createHash } from 'node:crypto';
+import { createHash, X509Certificate } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { BlockList } from 'node:net';
 
 import { sealingKey } from '@alloy-works/sealing';
@@ -33,6 +34,11 @@ export interface ConnectorConfig {
   readonly deny: readonly string[];
   readonly maxChildren: number;
   readonly logLevel: LogLevel;
+  /**
+   * A development or CI source's certificate authority, as PEM, trusted beside the system's (the D6
+   * plan, task 1). Production names none.
+   */
+  readonly ca?: string;
 }
 
 /** A configuration refused, naming the variable and never its value. */
@@ -88,6 +94,7 @@ function integer(
  */
 export function loadConnectorConfig(
   env: Readonly<Record<string, string | undefined>>,
+  read: (path: string) => string = (path) => readFileSync(path, 'utf8'),
 ): ConnectorConfig {
   const service = key(env, 'CONNECTOR_KEY');
   const sealing = key(env, 'CONNECTOR_SEALING_KEY');
@@ -107,7 +114,10 @@ export function loadConnectorConfig(
   if (!['silent', 'error', 'info'].includes(logLevel))
     refuse('LOG_LEVEL', 'must be silent, error or info');
 
+  const ca = certificates(env.CONNECTOR_CA_FILE, read);
+
   return {
+    ...(ca === undefined ? {} : { ca }),
     port: integer(env, 'CONNECTOR_PORT', 8090, [1, 65535]),
     host: env.CONNECTOR_HOST || '0.0.0.0',
     keyDigest: createHash('sha256').update(env.CONNECTOR_KEY!, 'utf8').digest(),
@@ -116,6 +126,23 @@ export function loadConnectorConfig(
     maxChildren: integer(env, 'CONNECTOR_MAX_CHILDREN', 8, [1, 64]),
     logLevel: logLevel as LogLevel,
   };
+}
+
+/** The PEM a CA file holds, each certificate in it read, or none where no file is named. */
+function certificates(
+  path: string | undefined,
+  read: (path: string) => string,
+): string | undefined {
+  if (path === undefined || path === '') return undefined;
+  try {
+    const pem = read(path);
+    const blocks = pem.match(/-----BEGIN CERTIFICATE-----[^-]+-----END CERTIFICATE-----/g) ?? [];
+    if (blocks.length === 0) throw new Error('No certificate');
+    for (const block of blocks) new X509Certificate(block);
+    return pem;
+  } catch {
+    return refuse('CONNECTOR_CA_FILE', 'must name a readable file of PEM certificates');
+  }
 }
 
 /**

@@ -93,6 +93,7 @@ export function createConnectorServer(options: {
       sealingKey: config.sealingKey,
       deny: options.deny ?? productionDeny(config, readNetworkDeny()),
       maxChildren: config.maxChildren,
+      ...(config.ca === undefined ? {} : { ca: config.ca }),
       // Production's children, each as its slot's own user, unless a test hands another.
       ...(options.spec ? { spec: options.spec } : {}),
       ...(options.spawn ? { spawn: options.spawn } : {}),
@@ -172,9 +173,10 @@ export function createConnectorServer(options: {
       path === '/v1/describe' &&
       typeof body === 'object' &&
       body !== null &&
-      ('sql' in body || 'builder' in body)
+      ('sql' in body || 'builder' in body || 'http' in body)
     ) {
-      // A describe taking a statement, SQL or a built query's: its columns, never run (D2-G, D4-Q).
+      // A describe taking a statement, SQL or a built query's: its columns, never run (D2-G, D4-Q);
+      // or an HTTP request's, sampled for its columns (the D6 plan, D6-A).
       const parsed = describeSqlRequestSchema.safeParse(body);
       if (!parsed.success) return send(400, { code: 'request_invalid' });
       answer = await supervisor.run('describeSql', parsed.data, gone.signal);

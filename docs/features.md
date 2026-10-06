@@ -586,7 +586,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 - **Connections to your own data.** **Connections**, beside Templates, lists the connections you may
   read, by space, with whether each has its password and how its last test went. Somebody who may
   administer a space makes one there with **New connection**: a name, a description, and a PostgreSQL
-  database's host, port, database, account and TLS. A connection's page saves a change to its
+  database's host, port, database, account and TLS, or an HTTPS API's base URL and the header its
+  secret is sent in. A connection's page saves a change to its
   settings as a new version, and says so if somebody else saved one first. Its password is typed
   into a field that empties as it is sent and never shows it again, anywhere: the page says only
   whether it is set, by whom and when, and setting or replacing it tests the connection straight
@@ -666,6 +667,20 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   only to somebody who may read the connection. A definition's page shows, under **Used by** and
   before **Save version**, the components that bind it and the documents holding a result of it -
   those you may read linked, and how many more. A sample keeps nothing.
+- **HTTPS APIs.** A connection to an HTTPS API holds its base URL and the header its secret is sent
+  in, exactly as set - write `Bearer` and a space before a token where the API asks for one - never
+  in a URL; it runs as its own secret alone. Its query definition is a request: GET or POST, path
+  segments, query pairs, headers and, for a POST, a JSON body's members, each fixed text or a
+  parameter, placed and encoded for where it stands - a path segment refuses a slash, `.` and `..`,
+  a header a line break - and refused by name before anything is sent. The answer is JSON, its rows
+  at a JSON Pointer and a row count it states checked against them, or JSON Lines; every number is
+  read from its text, exactly, and a nested object or array is kept as text in one canonical form,
+  or refused for any other type. **Sample for columns** sends the request with the sample values and
+  proposes a column for each member of the first rows, which you confirm. A redirect, a refused
+  sign-in, an address the connector may not reach and a refused port read alike; any other refusal
+  is its HTTP status alone. One deadline covers the whole exchange, a body is counted as it arrives
+  and once decoded, a JSON body is at most 4 MiB and JSON Lines 12 MiB, and a stated length or
+  digest is checked.
 - **Image columns.** A PostgreSQL `bytea` column is proposed as an **image**, and a text column can be
   declared one held as base64; each image column names the text column that describes it, or is
   marked decorative, before the definition saves. Only a PNG or a JPEG is admitted, checked by its
@@ -1215,8 +1230,11 @@ Named explicitly so nobody has to read the source to find out:
   and nothing yet changes which one is the environment's default.
 - No way to delete a component or a document, including one made by mistake.
 - A document's own parameters do not exist, so a binding taking one cannot be resolved. A connection
-  reaches PostgreSQL alone, as its own account or as each person by a role the database's
-  administrator made; no connection yet runs with a person's own token from their sign-in provider;
+  reaches PostgreSQL, as its own account or as each person by a role the database's administrator
+  made, or an HTTPS API by its own secret, answering JSON or JSON Lines; no S3 bucket, CSV or XLSX
+  yet, and no connection runs with a person's own token from their sign-in provider
+  ([ADR-0041](decisions/0041-the-delegated-provider-token-is-deferred-past-the-first-release.md));
+  an API that redirects is not followed;
   the builder's page builds from one table or view - a join or a nested query is written through the
   API, or as a view at the database - and no page shows or changes the environment's lowered run
   limits, which the API alone sets. An image column cannot yet be placed in a document: a binding

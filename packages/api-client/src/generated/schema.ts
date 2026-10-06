@@ -1976,6 +1976,34 @@ export interface components {
                 };
             };
         };
+        describeConnectionBody_schema2: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["describeConnectionBody_schema2"];
+            }[];
+        } | {
+            array: components["schemas"]["describeConnectionBody_schema2"][];
+        };
+        sampleConnection200_schema0: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["sampleConnection200_schema0"];
+            }[];
+        } | {
+            array: components["schemas"]["sampleConnection200_schema0"][];
+        };
         sampleConnectionBody_schema0: {
             sources: ({
                 alias: string;
@@ -2068,6 +2096,230 @@ export interface components {
                     column: string;
                 };
             };
+        };
+        sampleConnectionBody_schema2: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["sampleConnectionBody_schema2"];
+            }[];
+        } | {
+            array: components["schemas"]["sampleConnectionBody_schema2"][];
+        };
+        getDocumentBindings200_schema0: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["getDocumentBindings200_schema0"];
+            }[];
+        } | {
+            array: components["schemas"]["getDocumentBindings200_schema0"][];
+        };
+        acceptBinding200_schema0: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["acceptBinding200_schema0"];
+            }[];
+        } | {
+            array: components["schemas"]["acceptBinding200_schema0"][];
+        };
+        acceptBinding400_schema0: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["acceptBinding400_schema0"];
+            }[];
+        } | {
+            array: components["schemas"]["acceptBinding400_schema0"][];
+        };
+        acceptBinding403_schema0: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["acceptBinding403_schema0"];
+            }[];
+        } | {
+            array: components["schemas"]["acceptBinding403_schema0"][];
+        };
+        acceptBinding409_schema0: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["acceptBinding409_schema0"];
+            }[];
+        } | {
+            array: components["schemas"]["acceptBinding409_schema0"][];
+        };
+        checkBindings409_schema0: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["checkBindings409_schema0"];
+            }[];
+        } | {
+            array: components["schemas"]["checkBindings409_schema0"][];
+        };
+        checkBindings503_schema0: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["checkBindings503_schema0"];
+            }[];
+        } | {
+            array: components["schemas"]["checkBindings503_schema0"][];
+        };
+        confirmBinding200_schema0: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["confirmBinding200_schema0"];
+            }[];
+        } | {
+            array: components["schemas"]["confirmBinding200_schema0"][];
+        };
+        confirmBinding400_schema0: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["confirmBinding400_schema0"];
+            }[];
+        } | {
+            array: components["schemas"]["confirmBinding400_schema0"][];
+        };
+        confirmBinding409_schema0: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["confirmBinding409_schema0"];
+            }[];
+        } | {
+            array: components["schemas"]["confirmBinding409_schema0"][];
+        };
+        resolveBindings400_schema0: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["resolveBindings400_schema0"];
+            }[];
+        } | {
+            array: components["schemas"]["resolveBindings400_schema0"][];
+        };
+        resolveBindings403_schema0: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["resolveBindings403_schema0"];
+            }[];
+        } | {
+            array: components["schemas"]["resolveBindings403_schema0"][];
+        };
+        resolveBindings409_schema0: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["resolveBindings409_schema0"];
+            }[];
+        } | {
+            array: components["schemas"]["resolveBindings409_schema0"][];
+        };
+        resolveBindings503_schema0: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["resolveBindings503_schema0"];
+            }[];
+        } | {
+            array: components["schemas"]["resolveBindings503_schema0"][];
+        };
+        getDocumentDataset200_schema0: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["getDocumentDataset200_schema0"];
+            }[];
+        } | {
+            array: components["schemas"]["getDocumentDataset200_schema0"][];
         };
         getQueryDefinition200_schema0: {
             sources: ({
@@ -2162,6 +2414,20 @@ export interface components {
                 };
             };
         };
+        getQueryDefinition200_schema2: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["getQueryDefinition200_schema2"];
+            }[];
+        } | {
+            array: components["schemas"]["getQueryDefinition200_schema2"][];
+        };
         recordQueryDefinitionVersion200_schema0: {
             sources: ({
                 alias: string;
@@ -2254,6 +2520,20 @@ export interface components {
                     column: string;
                 };
             };
+        };
+        recordQueryDefinitionVersion200_schema2: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["recordQueryDefinitionVersion200_schema2"];
+            }[];
+        } | {
+            array: components["schemas"]["recordQueryDefinitionVersion200_schema2"][];
         };
         recordQueryDefinitionVersion400_schema0: {
             sources: ({
@@ -2348,6 +2628,20 @@ export interface components {
                 };
             };
         };
+        recordQueryDefinitionVersion400_schema2: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["recordQueryDefinitionVersion400_schema2"];
+            }[];
+        } | {
+            array: components["schemas"]["recordQueryDefinitionVersion400_schema2"][];
+        };
         recordQueryDefinitionVersion409_schema0: {
             sources: ({
                 alias: string;
@@ -2440,6 +2734,20 @@ export interface components {
                     column: string;
                 };
             };
+        };
+        recordQueryDefinitionVersion409_schema2: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["recordQueryDefinitionVersion409_schema2"];
+            }[];
+        } | {
+            array: components["schemas"]["recordQueryDefinitionVersion409_schema2"][];
         };
         recordQueryDefinitionVersionBody_schema0: {
             sources: ({
@@ -2534,6 +2842,20 @@ export interface components {
                 };
             };
         };
+        recordQueryDefinitionVersionBody_schema2: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["recordQueryDefinitionVersionBody_schema2"];
+            }[];
+        } | {
+            array: components["schemas"]["recordQueryDefinitionVersionBody_schema2"][];
+        };
         createQueryDefinition200_schema0: {
             sources: ({
                 alias: string;
@@ -2626,6 +2948,20 @@ export interface components {
                     column: string;
                 };
             };
+        };
+        createQueryDefinition200_schema2: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["createQueryDefinition200_schema2"];
+            }[];
+        } | {
+            array: components["schemas"]["createQueryDefinition200_schema2"][];
         };
         createQueryDefinition400_schema0: {
             sources: ({
@@ -2720,6 +3056,20 @@ export interface components {
                 };
             };
         };
+        createQueryDefinition400_schema2: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["createQueryDefinition400_schema2"];
+            }[];
+        } | {
+            array: components["schemas"]["createQueryDefinition400_schema2"][];
+        };
         createQueryDefinition409_schema0: {
             sources: ({
                 alias: string;
@@ -2813,6 +3163,20 @@ export interface components {
                 };
             };
         };
+        createQueryDefinition409_schema2: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["createQueryDefinition409_schema2"];
+            }[];
+        } | {
+            array: components["schemas"]["createQueryDefinition409_schema2"][];
+        };
         createQueryDefinitionBody_schema0: {
             sources: ({
                 alias: string;
@@ -2905,6 +3269,20 @@ export interface components {
                     column: string;
                 };
             };
+        };
+        createQueryDefinitionBody_schema2: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["createQueryDefinitionBody_schema2"];
+            }[];
+        } | {
+            array: components["schemas"]["createQueryDefinitionBody_schema2"][];
         };
         createTemplateBody_schema0: {
             key: string;
@@ -6144,7 +6522,7 @@ export interface operations {
                                 name: string;
                             };
                             /** @enum {string} */
-                            type: "postgres";
+                            type: "postgres" | "http";
                             retired: boolean;
                             version: {
                                 id: string;
@@ -6282,6 +6660,10 @@ export interface operations {
                      *         "schemaVersion": 1,
                      *         "name": "example",
                      *         "description": "example",
+                     *         "identity": {
+                     *           "kind": "service"
+                     *         },
+                     *         "retired": false,
                      *         "type": "postgres",
                      *         "source": {
                      *           "host": "example",
@@ -6289,11 +6671,7 @@ export interface operations {
                      *           "database": "example",
                      *           "account": "example",
                      *           "tls": "require"
-                     *         },
-                     *         "identity": {
-                     *           "kind": "service"
-                     *         },
-                     *         "retired": false
+                     *         }
                      *       },
                      *       "credential": {
                      *         "set": false
@@ -6333,16 +6711,6 @@ export interface operations {
                             schemaVersion: 1;
                             name: string;
                             description: string;
-                            /** @constant */
-                            type: "postgres";
-                            source: {
-                                host: string;
-                                port: number;
-                                database: string;
-                                account: string;
-                                /** @enum {string} */
-                                tls: "require" | "verifyFull";
-                            };
                             identity: {
                                 /** @constant */
                                 kind: "service";
@@ -6364,6 +6732,48 @@ export interface operations {
                                 assertion?: "sessionContext" | "executeAs";
                             };
                             retired: boolean;
+                            /** @constant */
+                            type: "postgres";
+                            source: {
+                                host: string;
+                                port: number;
+                                database: string;
+                                account: string;
+                                /** @enum {string} */
+                                tls: "require" | "verifyFull";
+                            };
+                        } | {
+                            /** @constant */
+                            schemaVersion: 1;
+                            name: string;
+                            description: string;
+                            identity: {
+                                /** @constant */
+                                kind: "service";
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "delegated";
+                                tokenEndpoint: string;
+                                audience: string;
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "asserted";
+                                /** @enum {string} */
+                                attribute: "email" | "subject";
+                                /** @enum {string} */
+                                assertion?: "sessionContext" | "executeAs";
+                            };
+                            retired: boolean;
+                            /** @constant */
+                            type: "http";
+                            source: {
+                                baseUrl: string;
+                                secretHeader: string;
+                            };
                         };
                         credential: {
                             /** @constant */
@@ -6406,6 +6816,8 @@ export interface operations {
                                 column?: string;
                                 /** @description The row the failure names, counted from 1 */
                                 row?: number;
+                                /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
+                                status?: number;
                             };
                             at: string;
                             by: {
@@ -6527,7 +6939,7 @@ export interface operations {
                  *     }
                  */
                 "application/json": {
-                    /** @description The credential, a password for a PostgreSQL source. Never answered by any route */
+                    /** @description The credential: a PostgreSQL source's password, or the value an HTTP connection sends in its secret header. Never answered by any route */
                     secret: string;
                 };
             };
@@ -6600,6 +7012,8 @@ export interface operations {
                                 column?: string;
                                 /** @description The row the failure names, counted from 1 */
                                 row?: number;
+                                /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
+                                status?: number;
                             };
                             at: string;
                         };
@@ -6896,6 +7310,93 @@ export interface operations {
                             }[];
                         }[];
                     };
+                    /** @description An HTTP connection's request, sent and its first rows read to propose its columns, each read by a pointer: an HTTP connection lists no tables. Send one of sql, builder and http */
+                    http?: {
+                        request: {
+                            /** @enum {string} */
+                            method: "GET" | "POST";
+                            path: ({
+                                fixed: string;
+                            } | {
+                                parameter: string;
+                            })[];
+                            query: {
+                                name: string;
+                                value: {
+                                    fixed: string;
+                                } | {
+                                    parameter: string;
+                                };
+                            }[];
+                            headers: {
+                                name: string;
+                                value: {
+                                    fixed: string;
+                                } | {
+                                    parameter: string;
+                                };
+                            }[];
+                            body?: components["schemas"]["describeConnectionBody_schema2"];
+                        };
+                        format: {
+                            /** @constant */
+                            kind: "json";
+                            rows: string;
+                            count?: string;
+                        } | {
+                            /** @constant */
+                            kind: "jsonLines";
+                        };
+                        parameters: {
+                            name: string;
+                            type: {
+                                /** @constant */
+                                base: "text";
+                            } | {
+                                /** @constant */
+                                base: "integer";
+                            } | {
+                                /** @constant */
+                                base: "decimal";
+                                precision: number;
+                                scale: number;
+                            } | {
+                                /** @constant */
+                                base: "date";
+                            } | {
+                                /** @constant */
+                                base: "time";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "localDateTime";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "instant";
+                                fraction: number;
+                            } | {
+                                /** @constant */
+                                base: "boolean";
+                            };
+                            required: boolean;
+                            list: boolean;
+                            permitted?: {
+                                values: (string | boolean | null)[];
+                            } | {
+                                minimum?: string | boolean | null;
+                                maximum?: string | boolean | null;
+                            };
+                            variation?: {
+                                key: string;
+                                sql: string;
+                            }[];
+                        }[];
+                        /** @description Each parameter's value by name, in its type's canonical form */
+                        values: {
+                            [key: string]: string | boolean | null | string[];
+                        };
+                    };
                 };
             };
         };
@@ -6982,6 +7483,8 @@ export interface operations {
                                 /** @constant */
                                 encoding: "binary";
                             }) | null;
+                            /** @description For an HTTP response, the JSON Pointer that reads the column from its row */
+                            pointer?: string;
                         }[];
                         /** @description Each parameter's type as the source reads it, in the order they are bound */
                         parameters: string[];
@@ -7025,7 +7528,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -7350,11 +7853,51 @@ export interface operations {
                             /** @constant */
                             format: 1;
                             query: components["schemas"]["sampleConnectionBody_schema0"];
+                        } | {
+                            /** @constant */
+                            kind: "http";
+                            request: {
+                                /** @enum {string} */
+                                method: "GET" | "POST";
+                                path: ({
+                                    fixed: string;
+                                } | {
+                                    parameter: string;
+                                })[];
+                                query: {
+                                    name: string;
+                                    value: {
+                                        fixed: string;
+                                    } | {
+                                        parameter: string;
+                                    };
+                                }[];
+                                headers: {
+                                    name: string;
+                                    value: {
+                                        fixed: string;
+                                    } | {
+                                        parameter: string;
+                                    };
+                                }[];
+                                body?: components["schemas"]["sampleConnectionBody_schema2"];
+                            };
+                            format: {
+                                /** @constant */
+                                kind: "json";
+                                rows: string;
+                                count?: string;
+                            } | {
+                                /** @constant */
+                                kind: "jsonLines";
+                            };
                         };
                         columns: {
                             name: string;
                             from: {
                                 column: string;
+                            } | {
+                                pointer: string;
                             };
                             type: {
                                 /** @constant */
@@ -7453,9 +7996,38 @@ export interface operations {
                         rowCount: number;
                         /** @description The SHA-256 of the whole result in canonical form, in hexadecimal */
                         checksum: string;
+                        /** @description What ran: SQL for a database, the request template for an HTTP connection */
                         ran: {
                             /** @description The SQL that ran, each value a bound parameter */
                             sql: string;
+                        } | {
+                            /** @description The HTTP request template that was sent, each value placed by position; never its URL */
+                            request: {
+                                /** @enum {string} */
+                                method: "GET" | "POST";
+                                path: ({
+                                    fixed: string;
+                                } | {
+                                    parameter: string;
+                                })[];
+                                query: {
+                                    name: string;
+                                    value: {
+                                        fixed: string;
+                                    } | {
+                                        parameter: string;
+                                    };
+                                }[];
+                                headers: {
+                                    name: string;
+                                    value: {
+                                        fixed: string;
+                                    } | {
+                                        parameter: string;
+                                    };
+                                }[];
+                                body?: components["schemas"]["sampleConnection200_schema0"];
+                            };
                         };
                         durationMs: number;
                         /** @description Each image in the first rows, by the hash its cell holds: its format, size and pixels, read from its header. A sample stores no image and makes no asset of one */
@@ -7494,6 +8066,8 @@ export interface operations {
                             column?: string;
                             /** @description The row the failure names, counted from 1 */
                             row?: number;
+                            /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
+                            status?: number;
                         };
                     };
                 };
@@ -7535,7 +8109,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -7753,6 +8327,8 @@ export interface operations {
                             column?: string;
                             /** @description The row the failure names, counted from 1 */
                             row?: number;
+                            /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
+                            status?: number;
                         };
                         at: string;
                     };
@@ -8065,6 +8641,10 @@ export interface operations {
                  *         "schemaVersion": 1,
                  *         "name": "example",
                  *         "description": "example",
+                 *         "identity": {
+                 *           "kind": "service"
+                 *         },
+                 *         "retired": false,
                  *         "type": "postgres",
                  *         "source": {
                  *           "host": "example",
@@ -8072,11 +8652,7 @@ export interface operations {
                  *           "database": "example",
                  *           "account": "example",
                  *           "tls": "require"
-                 *         },
-                 *         "identity": {
-                 *           "kind": "service"
-                 *         },
-                 *         "retired": false
+                 *         }
                  *       }
                  *     }
                  */
@@ -8087,16 +8663,6 @@ export interface operations {
                         schemaVersion: 1;
                         name: string;
                         description: string;
-                        /** @constant */
-                        type: "postgres";
-                        source: {
-                            host: string;
-                            port: number;
-                            database: string;
-                            account: string;
-                            /** @enum {string} */
-                            tls: "require" | "verifyFull";
-                        };
                         identity: {
                             /** @constant */
                             kind: "service";
@@ -8118,6 +8684,48 @@ export interface operations {
                             assertion?: "sessionContext" | "executeAs";
                         };
                         retired: boolean;
+                        /** @constant */
+                        type: "postgres";
+                        source: {
+                            host: string;
+                            port: number;
+                            database: string;
+                            account: string;
+                            /** @enum {string} */
+                            tls: "require" | "verifyFull";
+                        };
+                    } | {
+                        /** @constant */
+                        schemaVersion: 1;
+                        name: string;
+                        description: string;
+                        identity: {
+                            /** @constant */
+                            kind: "service";
+                        } | {
+                            /** @constant */
+                            kind: "endUser";
+                            /** @constant */
+                            mechanism: "delegated";
+                            tokenEndpoint: string;
+                            audience: string;
+                        } | {
+                            /** @constant */
+                            kind: "endUser";
+                            /** @constant */
+                            mechanism: "asserted";
+                            /** @enum {string} */
+                            attribute: "email" | "subject";
+                            /** @enum {string} */
+                            assertion?: "sessionContext" | "executeAs";
+                        };
+                        retired: boolean;
+                        /** @constant */
+                        type: "http";
+                        source: {
+                            baseUrl: string;
+                            secretHeader: string;
+                        };
                     };
                 };
             };
@@ -8151,6 +8759,10 @@ export interface operations {
                      *         "schemaVersion": 1,
                      *         "name": "example",
                      *         "description": "example",
+                     *         "identity": {
+                     *           "kind": "service"
+                     *         },
+                     *         "retired": false,
                      *         "type": "postgres",
                      *         "source": {
                      *           "host": "example",
@@ -8158,11 +8770,7 @@ export interface operations {
                      *           "database": "example",
                      *           "account": "example",
                      *           "tls": "require"
-                     *         },
-                     *         "identity": {
-                     *           "kind": "service"
-                     *         },
-                     *         "retired": false
+                     *         }
                      *       },
                      *       "credential": {
                      *         "set": false
@@ -8202,16 +8810,6 @@ export interface operations {
                             schemaVersion: 1;
                             name: string;
                             description: string;
-                            /** @constant */
-                            type: "postgres";
-                            source: {
-                                host: string;
-                                port: number;
-                                database: string;
-                                account: string;
-                                /** @enum {string} */
-                                tls: "require" | "verifyFull";
-                            };
                             identity: {
                                 /** @constant */
                                 kind: "service";
@@ -8233,6 +8831,48 @@ export interface operations {
                                 assertion?: "sessionContext" | "executeAs";
                             };
                             retired: boolean;
+                            /** @constant */
+                            type: "postgres";
+                            source: {
+                                host: string;
+                                port: number;
+                                database: string;
+                                account: string;
+                                /** @enum {string} */
+                                tls: "require" | "verifyFull";
+                            };
+                        } | {
+                            /** @constant */
+                            schemaVersion: 1;
+                            name: string;
+                            description: string;
+                            identity: {
+                                /** @constant */
+                                kind: "service";
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "delegated";
+                                tokenEndpoint: string;
+                                audience: string;
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "asserted";
+                                /** @enum {string} */
+                                attribute: "email" | "subject";
+                                /** @enum {string} */
+                                assertion?: "sessionContext" | "executeAs";
+                            };
+                            retired: boolean;
+                            /** @constant */
+                            type: "http";
+                            source: {
+                                baseUrl: string;
+                                secretHeader: string;
+                            };
                         };
                         credential: {
                             /** @constant */
@@ -8275,6 +8915,8 @@ export interface operations {
                                 column?: string;
                                 /** @description The row the failure names, counted from 1 */
                                 row?: number;
+                                /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
+                                status?: number;
                             };
                             at: string;
                             by: {
@@ -8339,16 +8981,6 @@ export interface operations {
                                 schemaVersion: 1;
                                 name: string;
                                 description: string;
-                                /** @constant */
-                                type: "postgres";
-                                source: {
-                                    host: string;
-                                    port: number;
-                                    database: string;
-                                    account: string;
-                                    /** @enum {string} */
-                                    tls: "require" | "verifyFull";
-                                };
                                 identity: {
                                     /** @constant */
                                     kind: "service";
@@ -8370,6 +9002,48 @@ export interface operations {
                                     assertion?: "sessionContext" | "executeAs";
                                 };
                                 retired: boolean;
+                                /** @constant */
+                                type: "postgres";
+                                source: {
+                                    host: string;
+                                    port: number;
+                                    database: string;
+                                    account: string;
+                                    /** @enum {string} */
+                                    tls: "require" | "verifyFull";
+                                };
+                            } | {
+                                /** @constant */
+                                schemaVersion: 1;
+                                name: string;
+                                description: string;
+                                identity: {
+                                    /** @constant */
+                                    kind: "service";
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "delegated";
+                                    tokenEndpoint: string;
+                                    audience: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "asserted";
+                                    /** @enum {string} */
+                                    attribute: "email" | "subject";
+                                    /** @enum {string} */
+                                    assertion?: "sessionContext" | "executeAs";
+                                };
+                                retired: boolean;
+                                /** @constant */
+                                type: "http";
+                                source: {
+                                    baseUrl: string;
+                                    secretHeader: string;
+                                };
                             };
                             credential: {
                                 /** @constant */
@@ -8412,6 +9086,8 @@ export interface operations {
                                     column?: string;
                                     /** @description The row the failure names, counted from 1 */
                                     row?: number;
+                                    /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
+                                    status?: number;
                                 };
                                 at: string;
                                 by: {
@@ -8547,16 +9223,6 @@ export interface operations {
                                 schemaVersion: 1;
                                 name: string;
                                 description: string;
-                                /** @constant */
-                                type: "postgres";
-                                source: {
-                                    host: string;
-                                    port: number;
-                                    database: string;
-                                    account: string;
-                                    /** @enum {string} */
-                                    tls: "require" | "verifyFull";
-                                };
                                 identity: {
                                     /** @constant */
                                     kind: "service";
@@ -8578,6 +9244,48 @@ export interface operations {
                                     assertion?: "sessionContext" | "executeAs";
                                 };
                                 retired: boolean;
+                                /** @constant */
+                                type: "postgres";
+                                source: {
+                                    host: string;
+                                    port: number;
+                                    database: string;
+                                    account: string;
+                                    /** @enum {string} */
+                                    tls: "require" | "verifyFull";
+                                };
+                            } | {
+                                /** @constant */
+                                schemaVersion: 1;
+                                name: string;
+                                description: string;
+                                identity: {
+                                    /** @constant */
+                                    kind: "service";
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "delegated";
+                                    tokenEndpoint: string;
+                                    audience: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "asserted";
+                                    /** @enum {string} */
+                                    attribute: "email" | "subject";
+                                    /** @enum {string} */
+                                    assertion?: "sessionContext" | "executeAs";
+                                };
+                                retired: boolean;
+                                /** @constant */
+                                type: "http";
+                                source: {
+                                    baseUrl: string;
+                                    secretHeader: string;
+                                };
                             };
                             credential: {
                                 /** @constant */
@@ -8620,6 +9328,8 @@ export interface operations {
                                     column?: string;
                                     /** @description The row the failure names, counted from 1 */
                                     row?: number;
+                                    /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
+                                    status?: number;
                                 };
                                 at: string;
                                 by: {
@@ -8926,6 +9636,8 @@ export interface operations {
                                 column?: string;
                                 /** @description The row the failure names, counted from 1 */
                                 row?: number;
+                                /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
+                                status?: number;
                                 /** @description The query definition the binding names */
                                 definition: string;
                                 binding: string;
@@ -8965,6 +9677,8 @@ export interface operations {
                                 column?: string;
                                 /** @description The row the failure names, counted from 1 */
                                 row?: number;
+                                /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
+                                status?: number;
                                 /** @description The query definition the binding names */
                                 definition: string;
                                 binding: string;
@@ -10306,6 +11020,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["getDocumentBindings200_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -10327,9 +11069,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -10492,6 +11236,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["getDocumentBindings200_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -10513,9 +11285,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -10973,6 +11747,34 @@ export interface operations {
                                 ran: {
                                     /** @description The SQL that ran, or null where the caller may not read the query definition */
                                     sql: string | null;
+                                } | {
+                                    /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                    request: {
+                                        /** @enum {string} */
+                                        method: "GET" | "POST";
+                                        path: ({
+                                            fixed: string;
+                                        } | {
+                                            parameter: string;
+                                        })[];
+                                        query: {
+                                            name: string;
+                                            value: {
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            };
+                                        }[];
+                                        headers: {
+                                            name: string;
+                                            value: {
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            };
+                                        }[];
+                                        body?: components["schemas"]["acceptBinding200_schema0"];
+                                    } | null;
                                 };
                                 identity: {
                                     /** @constant */
@@ -10994,9 +11796,11 @@ export interface operations {
                                 columns: {
                                     name: string;
                                     /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                    from: {
+                                    from: ({
                                         column: string;
-                                    } | null;
+                                    } | {
+                                        pointer: string;
+                                    }) | null;
                                     type: {
                                         /** @constant */
                                         base: "text";
@@ -11159,6 +11963,34 @@ export interface operations {
                                 ran: {
                                     /** @description The SQL that ran, or null where the caller may not read the query definition */
                                     sql: string | null;
+                                } | {
+                                    /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                    request: {
+                                        /** @enum {string} */
+                                        method: "GET" | "POST";
+                                        path: ({
+                                            fixed: string;
+                                        } | {
+                                            parameter: string;
+                                        })[];
+                                        query: {
+                                            name: string;
+                                            value: {
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            };
+                                        }[];
+                                        headers: {
+                                            name: string;
+                                            value: {
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            };
+                                        }[];
+                                        body?: components["schemas"]["acceptBinding200_schema0"];
+                                    } | null;
                                 };
                                 identity: {
                                     /** @constant */
@@ -11180,9 +12012,11 @@ export interface operations {
                                 columns: {
                                     name: string;
                                     /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                    from: {
+                                    from: ({
                                         column: string;
-                                    } | null;
+                                    } | {
+                                        pointer: string;
+                                    }) | null;
                                     type: {
                                         /** @constant */
                                         base: "text";
@@ -11363,7 +12197,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -11425,6 +12259,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["acceptBinding400_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -11446,9 +12308,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -11611,6 +12475,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["acceptBinding400_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -11632,9 +12524,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -11836,7 +12730,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -11898,6 +12792,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["acceptBinding403_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -11919,9 +12841,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -12084,6 +13008,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["acceptBinding403_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -12105,9 +13057,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -12309,7 +13263,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -12371,6 +13325,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["acceptBinding409_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -12392,9 +13374,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -12557,6 +13541,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["acceptBinding409_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -12578,9 +13590,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -12827,6 +13841,8 @@ export interface operations {
                                 column?: string;
                                 /** @description The row the failure names, counted from 1 */
                                 row?: number;
+                                /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
+                                status?: number;
                                 /** @description The query definition the binding names */
                                 definition: string;
                                 binding: string;
@@ -12905,6 +13921,8 @@ export interface operations {
                                 column?: string;
                                 /** @description The row the failure names, counted from 1 */
                                 row?: number;
+                                /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
+                                status?: number;
                                 /** @description The query definition the binding names */
                                 definition: string;
                                 binding: string;
@@ -13021,7 +14039,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -13083,6 +14101,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["checkBindings409_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -13104,9 +14150,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -13269,6 +14317,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["checkBindings409_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -13290,9 +14366,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -13474,7 +14552,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -13536,6 +14614,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["checkBindings503_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -13557,9 +14663,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -13722,6 +14830,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["checkBindings503_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -13743,9 +14879,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -14145,6 +15283,34 @@ export interface operations {
                                 ran: {
                                     /** @description The SQL that ran, or null where the caller may not read the query definition */
                                     sql: string | null;
+                                } | {
+                                    /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                    request: {
+                                        /** @enum {string} */
+                                        method: "GET" | "POST";
+                                        path: ({
+                                            fixed: string;
+                                        } | {
+                                            parameter: string;
+                                        })[];
+                                        query: {
+                                            name: string;
+                                            value: {
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            };
+                                        }[];
+                                        headers: {
+                                            name: string;
+                                            value: {
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            };
+                                        }[];
+                                        body?: components["schemas"]["confirmBinding200_schema0"];
+                                    } | null;
                                 };
                                 identity: {
                                     /** @constant */
@@ -14166,9 +15332,11 @@ export interface operations {
                                 columns: {
                                     name: string;
                                     /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                    from: {
+                                    from: ({
                                         column: string;
-                                    } | null;
+                                    } | {
+                                        pointer: string;
+                                    }) | null;
                                     type: {
                                         /** @constant */
                                         base: "text";
@@ -14331,6 +15499,34 @@ export interface operations {
                                 ran: {
                                     /** @description The SQL that ran, or null where the caller may not read the query definition */
                                     sql: string | null;
+                                } | {
+                                    /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                    request: {
+                                        /** @enum {string} */
+                                        method: "GET" | "POST";
+                                        path: ({
+                                            fixed: string;
+                                        } | {
+                                            parameter: string;
+                                        })[];
+                                        query: {
+                                            name: string;
+                                            value: {
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            };
+                                        }[];
+                                        headers: {
+                                            name: string;
+                                            value: {
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            };
+                                        }[];
+                                        body?: components["schemas"]["confirmBinding200_schema0"];
+                                    } | null;
                                 };
                                 identity: {
                                     /** @constant */
@@ -14352,9 +15548,11 @@ export interface operations {
                                 columns: {
                                     name: string;
                                     /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                    from: {
+                                    from: ({
                                         column: string;
-                                    } | null;
+                                    } | {
+                                        pointer: string;
+                                    }) | null;
                                     type: {
                                         /** @constant */
                                         base: "text";
@@ -14535,7 +15733,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -14597,6 +15795,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["confirmBinding400_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -14618,9 +15844,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -14783,6 +16011,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["confirmBinding400_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -14804,9 +16060,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -15048,7 +16306,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -15110,6 +16368,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["confirmBinding409_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -15131,9 +16417,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -15296,6 +16584,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["confirmBinding409_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -15317,9 +16633,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -15578,6 +16896,8 @@ export interface operations {
                                 column?: string;
                                 /** @description The row the failure names, counted from 1 */
                                 row?: number;
+                                /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
+                                status?: number;
                                 /** @description The query definition the binding names */
                                 definition: string;
                                 binding: string;
@@ -15640,6 +16960,8 @@ export interface operations {
                                 column?: string;
                                 /** @description The row the failure names, counted from 1 */
                                 row?: number;
+                                /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
+                                status?: number;
                                 /** @description The query definition the binding names */
                                 definition: string;
                                 binding: string;
@@ -15692,7 +17014,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -15754,6 +17076,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["resolveBindings400_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -15775,9 +17125,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -15940,6 +17292,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["resolveBindings400_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -15961,9 +17341,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -16167,7 +17549,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -16229,6 +17611,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["resolveBindings403_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -16250,9 +17660,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -16415,6 +17827,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["resolveBindings403_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -16436,9 +17876,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -16640,7 +18082,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -16702,6 +18144,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["resolveBindings409_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -16723,9 +18193,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -16888,6 +18360,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["resolveBindings409_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -16909,9 +18409,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -17093,7 +18595,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -17155,6 +18657,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["resolveBindings503_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -17176,9 +18706,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -17341,6 +18873,34 @@ export interface operations {
                                     ran: {
                                         /** @description The SQL that ran, or null where the caller may not read the query definition */
                                         sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["resolveBindings503_schema0"];
+                                        } | null;
                                     };
                                     identity: {
                                         /** @constant */
@@ -17362,9 +18922,11 @@ export interface operations {
                                     columns: {
                                         name: string;
                                         /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                        from: {
+                                        from: ({
                                             column: string;
-                                        } | null;
+                                        } | {
+                                            pointer: string;
+                                        }) | null;
                                         type: {
                                             /** @constant */
                                             base: "text";
@@ -17762,6 +19324,34 @@ export interface operations {
                             ran: {
                                 /** @description The SQL that ran, or null where the caller may not read the query definition */
                                 sql: string | null;
+                            } | {
+                                /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                request: {
+                                    /** @enum {string} */
+                                    method: "GET" | "POST";
+                                    path: ({
+                                        fixed: string;
+                                    } | {
+                                        parameter: string;
+                                    })[];
+                                    query: {
+                                        name: string;
+                                        value: {
+                                            fixed: string;
+                                        } | {
+                                            parameter: string;
+                                        };
+                                    }[];
+                                    headers: {
+                                        name: string;
+                                        value: {
+                                            fixed: string;
+                                        } | {
+                                            parameter: string;
+                                        };
+                                    }[];
+                                    body?: components["schemas"]["getDocumentDataset200_schema0"];
+                                } | null;
                             };
                             identity: {
                                 /** @constant */
@@ -17783,9 +19373,11 @@ export interface operations {
                             columns: {
                                 name: string;
                                 /** @description The source's column it reads, or null where the caller may not read the query definition */
-                                from: {
+                                from: ({
                                     column: string;
-                                } | null;
+                                } | {
+                                    pointer: string;
+                                }) | null;
                                 type: {
                                     /** @constant */
                                     base: "text";
@@ -23681,14 +25273,20 @@ export interface operations {
                                     type: {
                                         [key: string]: unknown;
                                     };
-                                    /** @description The source's column: to a reader of the query definition alone */
+                                    /** @description The source's column, or a JSON Pointer into an HTTP response's row: to a reader of the query definition alone */
                                     from?: {
                                         column: string;
+                                    } | {
+                                        pointer: string;
                                     };
                                 }[];
-                                /** @description The SQL that ran: to a reader of the query definition alone */
+                                /** @description The SQL that ran, or the HTTP request template that was sent, never its URL: to a reader of the query definition alone */
                                 ran?: {
                                     sql: string;
+                                } | {
+                                    request: {
+                                        [key: string]: unknown;
+                                    };
                                 };
                                 /** @description The connection it ran on: to a reader of the query definition alone */
                                 connection?: {
@@ -24081,11 +25679,51 @@ export interface operations {
                                 /** @constant */
                                 format: 1;
                                 query: components["schemas"]["getQueryDefinition200_schema0"];
+                            } | {
+                                /** @constant */
+                                kind: "http";
+                                request: {
+                                    /** @enum {string} */
+                                    method: "GET" | "POST";
+                                    path: ({
+                                        fixed: string;
+                                    } | {
+                                        parameter: string;
+                                    })[];
+                                    query: {
+                                        name: string;
+                                        value: {
+                                            fixed: string;
+                                        } | {
+                                            parameter: string;
+                                        };
+                                    }[];
+                                    headers: {
+                                        name: string;
+                                        value: {
+                                            fixed: string;
+                                        } | {
+                                            parameter: string;
+                                        };
+                                    }[];
+                                    body?: components["schemas"]["getQueryDefinition200_schema2"];
+                                };
+                                format: {
+                                    /** @constant */
+                                    kind: "json";
+                                    rows: string;
+                                    count?: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "jsonLines";
+                                };
                             };
                             columns: {
                                 name: string;
                                 from: {
                                     column: string;
+                                } | {
+                                    pointer: string;
                                 };
                                 type: {
                                     /** @constant */
@@ -24498,11 +26136,51 @@ export interface operations {
                             /** @constant */
                             format: 1;
                             query: components["schemas"]["recordQueryDefinitionVersionBody_schema0"];
+                        } | {
+                            /** @constant */
+                            kind: "http";
+                            request: {
+                                /** @enum {string} */
+                                method: "GET" | "POST";
+                                path: ({
+                                    fixed: string;
+                                } | {
+                                    parameter: string;
+                                })[];
+                                query: {
+                                    name: string;
+                                    value: {
+                                        fixed: string;
+                                    } | {
+                                        parameter: string;
+                                    };
+                                }[];
+                                headers: {
+                                    name: string;
+                                    value: {
+                                        fixed: string;
+                                    } | {
+                                        parameter: string;
+                                    };
+                                }[];
+                                body?: components["schemas"]["recordQueryDefinitionVersionBody_schema2"];
+                            };
+                            format: {
+                                /** @constant */
+                                kind: "json";
+                                rows: string;
+                                count?: string;
+                            } | {
+                                /** @constant */
+                                kind: "jsonLines";
+                            };
                         };
                         columns: {
                             name: string;
                             from: {
                                 column: string;
+                            } | {
+                                pointer: string;
                             };
                             type: {
                                 /** @constant */
@@ -24705,11 +26383,51 @@ export interface operations {
                                 /** @constant */
                                 format: 1;
                                 query: components["schemas"]["recordQueryDefinitionVersion200_schema0"];
+                            } | {
+                                /** @constant */
+                                kind: "http";
+                                request: {
+                                    /** @enum {string} */
+                                    method: "GET" | "POST";
+                                    path: ({
+                                        fixed: string;
+                                    } | {
+                                        parameter: string;
+                                    })[];
+                                    query: {
+                                        name: string;
+                                        value: {
+                                            fixed: string;
+                                        } | {
+                                            parameter: string;
+                                        };
+                                    }[];
+                                    headers: {
+                                        name: string;
+                                        value: {
+                                            fixed: string;
+                                        } | {
+                                            parameter: string;
+                                        };
+                                    }[];
+                                    body?: components["schemas"]["recordQueryDefinitionVersion200_schema2"];
+                                };
+                                format: {
+                                    /** @constant */
+                                    kind: "json";
+                                    rows: string;
+                                    count?: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "jsonLines";
+                                };
                             };
                             columns: {
                                 name: string;
                                 from: {
                                     column: string;
+                                } | {
+                                    pointer: string;
                                 };
                                 type: {
                                     /** @constant */
@@ -24900,11 +26618,51 @@ export interface operations {
                                     /** @constant */
                                     format: 1;
                                     query: components["schemas"]["recordQueryDefinitionVersion400_schema0"];
+                                } | {
+                                    /** @constant */
+                                    kind: "http";
+                                    request: {
+                                        /** @enum {string} */
+                                        method: "GET" | "POST";
+                                        path: ({
+                                            fixed: string;
+                                        } | {
+                                            parameter: string;
+                                        })[];
+                                        query: {
+                                            name: string;
+                                            value: {
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            };
+                                        }[];
+                                        headers: {
+                                            name: string;
+                                            value: {
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            };
+                                        }[];
+                                        body?: components["schemas"]["recordQueryDefinitionVersion400_schema2"];
+                                    };
+                                    format: {
+                                        /** @constant */
+                                        kind: "json";
+                                        rows: string;
+                                        count?: string;
+                                    } | {
+                                        /** @constant */
+                                        kind: "jsonLines";
+                                    };
                                 };
                                 columns: {
                                     name: string;
                                     from: {
                                         column: string;
+                                    } | {
+                                        pointer: string;
                                     };
                                     type: {
                                         /** @constant */
@@ -25156,11 +26914,51 @@ export interface operations {
                                     /** @constant */
                                     format: 1;
                                     query: components["schemas"]["recordQueryDefinitionVersion409_schema0"];
+                                } | {
+                                    /** @constant */
+                                    kind: "http";
+                                    request: {
+                                        /** @enum {string} */
+                                        method: "GET" | "POST";
+                                        path: ({
+                                            fixed: string;
+                                        } | {
+                                            parameter: string;
+                                        })[];
+                                        query: {
+                                            name: string;
+                                            value: {
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            };
+                                        }[];
+                                        headers: {
+                                            name: string;
+                                            value: {
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            };
+                                        }[];
+                                        body?: components["schemas"]["recordQueryDefinitionVersion409_schema2"];
+                                    };
+                                    format: {
+                                        /** @constant */
+                                        kind: "json";
+                                        rows: string;
+                                        count?: string;
+                                    } | {
+                                        /** @constant */
+                                        kind: "jsonLines";
+                                    };
                                 };
                                 columns: {
                                     name: string;
                                     from: {
                                         column: string;
+                                    } | {
+                                        pointer: string;
                                     };
                                     type: {
                                         /** @constant */
@@ -27436,6 +29234,10 @@ export interface operations {
                  *         "schemaVersion": 1,
                  *         "name": "example",
                  *         "description": "example",
+                 *         "identity": {
+                 *           "kind": "service"
+                 *         },
+                 *         "retired": false,
                  *         "type": "postgres",
                  *         "source": {
                  *           "host": "example",
@@ -27443,11 +29245,7 @@ export interface operations {
                  *           "database": "example",
                  *           "account": "example",
                  *           "tls": "require"
-                 *         },
-                 *         "identity": {
-                 *           "kind": "service"
-                 *         },
-                 *         "retired": false
+                 *         }
                  *       }
                  *     }
                  */
@@ -27457,16 +29255,6 @@ export interface operations {
                         schemaVersion: 1;
                         name: string;
                         description: string;
-                        /** @constant */
-                        type: "postgres";
-                        source: {
-                            host: string;
-                            port: number;
-                            database: string;
-                            account: string;
-                            /** @enum {string} */
-                            tls: "require" | "verifyFull";
-                        };
                         identity: {
                             /** @constant */
                             kind: "service";
@@ -27488,6 +29276,48 @@ export interface operations {
                             assertion?: "sessionContext" | "executeAs";
                         };
                         retired: boolean;
+                        /** @constant */
+                        type: "postgres";
+                        source: {
+                            host: string;
+                            port: number;
+                            database: string;
+                            account: string;
+                            /** @enum {string} */
+                            tls: "require" | "verifyFull";
+                        };
+                    } | {
+                        /** @constant */
+                        schemaVersion: 1;
+                        name: string;
+                        description: string;
+                        identity: {
+                            /** @constant */
+                            kind: "service";
+                        } | {
+                            /** @constant */
+                            kind: "endUser";
+                            /** @constant */
+                            mechanism: "delegated";
+                            tokenEndpoint: string;
+                            audience: string;
+                        } | {
+                            /** @constant */
+                            kind: "endUser";
+                            /** @constant */
+                            mechanism: "asserted";
+                            /** @enum {string} */
+                            attribute: "email" | "subject";
+                            /** @enum {string} */
+                            assertion?: "sessionContext" | "executeAs";
+                        };
+                        retired: boolean;
+                        /** @constant */
+                        type: "http";
+                        source: {
+                            baseUrl: string;
+                            secretHeader: string;
+                        };
                     };
                 };
             };
@@ -27521,6 +29351,10 @@ export interface operations {
                      *         "schemaVersion": 1,
                      *         "name": "example",
                      *         "description": "example",
+                     *         "identity": {
+                     *           "kind": "service"
+                     *         },
+                     *         "retired": false,
                      *         "type": "postgres",
                      *         "source": {
                      *           "host": "example",
@@ -27528,11 +29362,7 @@ export interface operations {
                      *           "database": "example",
                      *           "account": "example",
                      *           "tls": "require"
-                     *         },
-                     *         "identity": {
-                     *           "kind": "service"
-                     *         },
-                     *         "retired": false
+                     *         }
                      *       },
                      *       "credential": {
                      *         "set": false
@@ -27572,16 +29402,6 @@ export interface operations {
                             schemaVersion: 1;
                             name: string;
                             description: string;
-                            /** @constant */
-                            type: "postgres";
-                            source: {
-                                host: string;
-                                port: number;
-                                database: string;
-                                account: string;
-                                /** @enum {string} */
-                                tls: "require" | "verifyFull";
-                            };
                             identity: {
                                 /** @constant */
                                 kind: "service";
@@ -27603,6 +29423,48 @@ export interface operations {
                                 assertion?: "sessionContext" | "executeAs";
                             };
                             retired: boolean;
+                            /** @constant */
+                            type: "postgres";
+                            source: {
+                                host: string;
+                                port: number;
+                                database: string;
+                                account: string;
+                                /** @enum {string} */
+                                tls: "require" | "verifyFull";
+                            };
+                        } | {
+                            /** @constant */
+                            schemaVersion: 1;
+                            name: string;
+                            description: string;
+                            identity: {
+                                /** @constant */
+                                kind: "service";
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "delegated";
+                                tokenEndpoint: string;
+                                audience: string;
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "asserted";
+                                /** @enum {string} */
+                                attribute: "email" | "subject";
+                                /** @enum {string} */
+                                assertion?: "sessionContext" | "executeAs";
+                            };
+                            retired: boolean;
+                            /** @constant */
+                            type: "http";
+                            source: {
+                                baseUrl: string;
+                                secretHeader: string;
+                            };
                         };
                         credential: {
                             /** @constant */
@@ -27645,6 +29507,8 @@ export interface operations {
                                 column?: string;
                                 /** @description The row the failure names, counted from 1 */
                                 row?: number;
+                                /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
+                                status?: number;
                             };
                             at: string;
                             by: {
@@ -27709,16 +29573,6 @@ export interface operations {
                                 schemaVersion: 1;
                                 name: string;
                                 description: string;
-                                /** @constant */
-                                type: "postgres";
-                                source: {
-                                    host: string;
-                                    port: number;
-                                    database: string;
-                                    account: string;
-                                    /** @enum {string} */
-                                    tls: "require" | "verifyFull";
-                                };
                                 identity: {
                                     /** @constant */
                                     kind: "service";
@@ -27740,6 +29594,48 @@ export interface operations {
                                     assertion?: "sessionContext" | "executeAs";
                                 };
                                 retired: boolean;
+                                /** @constant */
+                                type: "postgres";
+                                source: {
+                                    host: string;
+                                    port: number;
+                                    database: string;
+                                    account: string;
+                                    /** @enum {string} */
+                                    tls: "require" | "verifyFull";
+                                };
+                            } | {
+                                /** @constant */
+                                schemaVersion: 1;
+                                name: string;
+                                description: string;
+                                identity: {
+                                    /** @constant */
+                                    kind: "service";
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "delegated";
+                                    tokenEndpoint: string;
+                                    audience: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "asserted";
+                                    /** @enum {string} */
+                                    attribute: "email" | "subject";
+                                    /** @enum {string} */
+                                    assertion?: "sessionContext" | "executeAs";
+                                };
+                                retired: boolean;
+                                /** @constant */
+                                type: "http";
+                                source: {
+                                    baseUrl: string;
+                                    secretHeader: string;
+                                };
                             };
                             credential: {
                                 /** @constant */
@@ -27782,6 +29678,8 @@ export interface operations {
                                     column?: string;
                                     /** @description The row the failure names, counted from 1 */
                                     row?: number;
+                                    /** @description The HTTP status an HTTP source refused with: `source_refused` alone, never its body */
+                                    status?: number;
                                 };
                                 at: string;
                                 by: {
@@ -28331,11 +30229,51 @@ export interface operations {
                             /** @constant */
                             format: 1;
                             query: components["schemas"]["createQueryDefinitionBody_schema0"];
+                        } | {
+                            /** @constant */
+                            kind: "http";
+                            request: {
+                                /** @enum {string} */
+                                method: "GET" | "POST";
+                                path: ({
+                                    fixed: string;
+                                } | {
+                                    parameter: string;
+                                })[];
+                                query: {
+                                    name: string;
+                                    value: {
+                                        fixed: string;
+                                    } | {
+                                        parameter: string;
+                                    };
+                                }[];
+                                headers: {
+                                    name: string;
+                                    value: {
+                                        fixed: string;
+                                    } | {
+                                        parameter: string;
+                                    };
+                                }[];
+                                body?: components["schemas"]["createQueryDefinitionBody_schema2"];
+                            };
+                            format: {
+                                /** @constant */
+                                kind: "json";
+                                rows: string;
+                                count?: string;
+                            } | {
+                                /** @constant */
+                                kind: "jsonLines";
+                            };
                         };
                         columns: {
                             name: string;
                             from: {
                                 column: string;
+                            } | {
+                                pointer: string;
                             };
                             type: {
                                 /** @constant */
@@ -28538,11 +30476,51 @@ export interface operations {
                                 /** @constant */
                                 format: 1;
                                 query: components["schemas"]["createQueryDefinition200_schema0"];
+                            } | {
+                                /** @constant */
+                                kind: "http";
+                                request: {
+                                    /** @enum {string} */
+                                    method: "GET" | "POST";
+                                    path: ({
+                                        fixed: string;
+                                    } | {
+                                        parameter: string;
+                                    })[];
+                                    query: {
+                                        name: string;
+                                        value: {
+                                            fixed: string;
+                                        } | {
+                                            parameter: string;
+                                        };
+                                    }[];
+                                    headers: {
+                                        name: string;
+                                        value: {
+                                            fixed: string;
+                                        } | {
+                                            parameter: string;
+                                        };
+                                    }[];
+                                    body?: components["schemas"]["createQueryDefinition200_schema2"];
+                                };
+                                format: {
+                                    /** @constant */
+                                    kind: "json";
+                                    rows: string;
+                                    count?: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "jsonLines";
+                                };
                             };
                             columns: {
                                 name: string;
                                 from: {
                                     column: string;
+                                } | {
+                                    pointer: string;
                                 };
                                 type: {
                                     /** @constant */
@@ -28733,11 +30711,51 @@ export interface operations {
                                     /** @constant */
                                     format: 1;
                                     query: components["schemas"]["createQueryDefinition400_schema0"];
+                                } | {
+                                    /** @constant */
+                                    kind: "http";
+                                    request: {
+                                        /** @enum {string} */
+                                        method: "GET" | "POST";
+                                        path: ({
+                                            fixed: string;
+                                        } | {
+                                            parameter: string;
+                                        })[];
+                                        query: {
+                                            name: string;
+                                            value: {
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            };
+                                        }[];
+                                        headers: {
+                                            name: string;
+                                            value: {
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            };
+                                        }[];
+                                        body?: components["schemas"]["createQueryDefinition400_schema2"];
+                                    };
+                                    format: {
+                                        /** @constant */
+                                        kind: "json";
+                                        rows: string;
+                                        count?: string;
+                                    } | {
+                                        /** @constant */
+                                        kind: "jsonLines";
+                                    };
                                 };
                                 columns: {
                                     name: string;
                                     from: {
                                         column: string;
+                                    } | {
+                                        pointer: string;
                                     };
                                     type: {
                                         /** @constant */
@@ -28989,11 +31007,51 @@ export interface operations {
                                     /** @constant */
                                     format: 1;
                                     query: components["schemas"]["createQueryDefinition409_schema0"];
+                                } | {
+                                    /** @constant */
+                                    kind: "http";
+                                    request: {
+                                        /** @enum {string} */
+                                        method: "GET" | "POST";
+                                        path: ({
+                                            fixed: string;
+                                        } | {
+                                            parameter: string;
+                                        })[];
+                                        query: {
+                                            name: string;
+                                            value: {
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            };
+                                        }[];
+                                        headers: {
+                                            name: string;
+                                            value: {
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            };
+                                        }[];
+                                        body?: components["schemas"]["createQueryDefinition409_schema2"];
+                                    };
+                                    format: {
+                                        /** @constant */
+                                        kind: "json";
+                                        rows: string;
+                                        count?: string;
+                                    } | {
+                                        /** @constant */
+                                        kind: "jsonLines";
+                                    };
                                 };
                                 columns: {
                                     name: string;
                                     from: {
                                         column: string;
+                                    } | {
+                                        pointer: string;
                                     };
                                     type: {
                                         /** @constant */

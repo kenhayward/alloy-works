@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import {
   bootstrapCluster,
   createRole,
@@ -14,7 +16,13 @@ import {
   type TenantDatabase,
 } from '@alloy-works/db';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from '@alloy-works/db/testing';
-import { dataFailureCodes, dataFailures, type ConnectionSettings } from '@alloy-works/domain';
+import {
+  canonicalResultBytes,
+  dataFailureCodes,
+  dataFailures,
+  type ConnectionSettings,
+  type PostgresSettings,
+} from '@alloy-works/domain';
 import { startStandInProvider, type StandInProvider } from '@alloy-works/stand-in-idp';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -55,7 +63,7 @@ interface ConnectionBody {
   mayUse: boolean;
 }
 
-const settings = (over: Partial<ConnectionSettings> = {}): ConnectionSettings => ({
+const settings = (over: Partial<PostgresSettings> = {}): PostgresSettings => ({
   schemaVersion: 1,
   name: 'Readings',
   description: 'The sites and their readings.',
@@ -100,7 +108,7 @@ describe('connections through the service', () => {
       headers: { host: HOST, cookie: cookies[as]! },
       ...(payload ? { payload } : {}),
     });
-  const make = async (over: Partial<ConnectionSettings> = {}, space = general) => {
+  const make = async (over: Partial<PostgresSettings> = {}, space = general) => {
     const made = await call('ada', 'POST', `/v1/spaces/${space}/connections`, {
       settings: settings(over),
     });
@@ -809,7 +817,7 @@ describe('connections through the service', () => {
       ['settings.source.account', { source: { ...settings().source, account: 'rea\uDC00der' } }],
     ] as const) {
       const unstorable = await call('ada', 'POST', `/v1/spaces/${general}/connections`, {
-        settings: settings(over as Partial<ConnectionSettings>),
+        settings: settings(over as Partial<PostgresSettings>),
       });
       expect(unstorable.statusCode, member).toBe(400);
       expect(unstorable.json<{ message: string }>().message, member).toContain(member);
@@ -1029,5 +1037,183 @@ describe('connections through the service', () => {
         others: 1,
       },
     });
+  });
+
+  it('makes, tests, samples and runs an HTTP connection, and refuses what does not suit its type', async () => {
+    const http = {
+      ...settings({ name: 'Readings API' }),
+      type: 'http',
+      source: { baseUrl: 'https://api.example.test/v1', secretHeader: 'x-api-key' },
+    };
+    const made = await call('ada', 'POST', `/v1/spaces/${general}/connections`, {
+      settings: http,
+    });
+    expect(made.statusCode, made.body).toBe(200);
+    const connection = made.json<ConnectionBody>();
+    await allow(ids.ada!, connectionUser, { kind: 'artifact', id: connection.id });
+    connector.mode = 'answer';
+    connector.test = { outcome: 'ok', findings: [] };
+    // A secret a header cannot carry is refused by the connector's door before it is sealed.
+    const lineBreak = `key${String.fromCharCode(13, 10)}x-admin: yes`;
+    expect(
+      (
+        await call('ada', 'PUT', `/v1/connections/${connection.id}/credential`, {
+          secret: lineBreak,
+        })
+      ).statusCode,
+    ).not.toBe(200);
+    const set = await call('ada', 'PUT', `/v1/connections/${connection.id}/credential`, {
+      secret: SECRET,
+    });
+    expect(set.statusCode, set.body).toBe(200);
+    expect(set.json()).toMatchObject({ test: { outcome: 'ok', findings: [] } });
+    // Its type never changes.
+    const retyped = await call('ada', 'POST', `/v1/connections/${connection.id}/versions`, {
+      openedFrom: connection.version.id,
+      settings: settings({ name: 'Readings API' }),
+    });
+    expect(retyped.statusCode).toBe(400);
+    expect(retyped.json()).toMatchObject({
+      code: 'connection_invalid',
+      problems: [{ rule: 'connection_invalid', path: 'type' }],
+    });
+
+    // A describe of tables is not an HTTP connection's, and the connector is not asked.
+    const before = connector.asked.length;
+    const tables = await call('ada', 'POST', `/v1/connections/${connection.id}/describe`, {});
+    expect(tables.statusCode).toBe(409);
+    expect(tables.json()).toMatchObject({ code: 'describe_not_supported' });
+    const sql = await call('ada', 'POST', `/v1/connections/${connection.id}/describe`, {
+      builder: {
+        query: {
+          sources: [{ alias: 's', table: { schema: 'sample', name: 'site' } }],
+          joins: [],
+          select: [{ name: 'id', of: { source: 's', column: 'id' } }],
+          groupBy: [],
+        },
+        parameters: [],
+      },
+    });
+    expect(sql.statusCode).toBe(400);
+    expect(sql.json()).toMatchObject({ problems: [{ path: 'fetch' }] });
+    expect(connector.asked.length).toBe(before);
+
+    // A sample of its request proposes columns, sent with the values given.
+    const request = {
+      method: 'GET',
+      path: [{ fixed: 'sites' }, { parameter: 'site' }],
+      query: [],
+      headers: [],
+    };
+    const parameters = [{ name: 'site', type: { base: 'text' }, required: true, list: false }];
+    connector.describeSql = {
+      columns: [
+        { name: 'id', sourceType: 'number', proposed: { base: 'integer' }, pointer: '/id' },
+      ],
+      parameters: [],
+    };
+    const sampled = await call('ada', 'POST', `/v1/connections/${connection.id}/describe`, {
+      http: {
+        request,
+        format: { kind: 'json', rows: '/items' },
+        parameters,
+        values: { site: 'north' },
+      },
+    });
+    expect(sampled.statusCode, sampled.body).toBe(200);
+    expect(sampled.json()).toEqual(connector.describeSql);
+    expect(connector.asked.at(-1)).toMatchObject({
+      path: '/v1/describe',
+      body: { http: { values: { site: 'north' } } },
+    });
+    // A value its position cannot carry is refused by name, and the connector is not asked.
+    const asked = connector.asked.length;
+    const dotted = await call('ada', 'POST', `/v1/connections/${connection.id}/describe`, {
+      http: {
+        request,
+        format: { kind: 'json', rows: '/items' },
+        parameters,
+        values: { site: '..' },
+      },
+    });
+    expect(dotted.statusCode).toBe(400);
+    expect(dotted.json()).toMatchObject({
+      code: 'parameter_invalid',
+      problems: [{ parameter: 'site', rule: 'position', value: '..' }],
+    });
+    const draft = {
+      schemaVersion: 1,
+      connection: connection.id,
+      parameters,
+      fetch: { kind: 'http', request, format: { kind: 'json', rows: '/items' } },
+      columns: [{ name: 'id', from: { pointer: '/id' }, type: { base: 'integer' } }],
+      key: [],
+      order: 'multiset',
+      empty: 'valid',
+      limits: { rows: 100, bytes: 1_000_000, seconds: 10 },
+    };
+    const slashed = await call('ada', 'POST', `/v1/connections/${connection.id}/sample`, {
+      definition: draft,
+      values: { site: 'a/b' },
+    });
+    expect(slashed.statusCode).toBe(400);
+    expect(slashed.json()).toMatchObject({ problems: [{ parameter: 'site', rule: 'position' }] });
+    expect(connector.asked.length).toBe(asked);
+
+    // A sample runs the request, and says the template it ran, never a URL.
+    const result = { columns: [['id', 'integer']], rows: [['1']] } as const;
+    connector.run = {
+      outcome: 'ok',
+      result: { columns: [['id', 'integer']], rows: [['1']] },
+      checksum: createHash('sha256').update(canonicalResultBytes(result), 'utf8').digest('hex'),
+      rowCount: 1,
+      ran: { request: request as never },
+      durationMs: 3,
+    };
+    const ran = await call('ada', 'POST', `/v1/connections/${connection.id}/sample`, {
+      definition: draft,
+      values: { site: 'north' },
+    });
+    expect(ran.statusCode, ran.body).toBe(200);
+    expect(ran.json()).toMatchObject({ outcome: 'ok', rows: [['1']], ran: { request } });
+    // And a status the source refused with is that status, alone.
+    connector.run = {
+      outcome: 'failed',
+      failure: { code: 'source_refused', attribution: 'query', status: 404 },
+    };
+    const refused = await call('ada', 'POST', `/v1/connections/${connection.id}/sample`, {
+      definition: draft,
+      values: { site: 'north' },
+    });
+    expect(refused.json()).toEqual({
+      outcome: 'failed',
+      failure: {
+        code: 'source_refused',
+        attribution: 'query',
+        status: 404,
+        message: 'The source refused the request with HTTP status 404.',
+      },
+    });
+    // A query, which needs no more than use_connection when built, is not sent on an HTTP connection.
+    const query = await call('ada', 'POST', `/v1/connections/${connection.id}/sample`, {
+      definition: {
+        ...draft,
+        parameters: [],
+        fetch: {
+          kind: 'builder',
+          format: 1,
+          query: {
+            sources: [{ alias: 's', table: { schema: 'sample', name: 'site' } }],
+            joins: [],
+            select: [{ name: 'id', of: { source: 's', column: 'id' } }],
+            groupBy: [],
+          },
+        },
+        columns: [{ name: 'id', from: { column: 'id' }, type: { base: 'integer' } }],
+      },
+      values: {},
+    });
+    expect(query.statusCode, query.body).toBe(400);
+    expect(query.json()).toMatchObject({ problems: [{ path: 'fetch' }] });
   });
 });

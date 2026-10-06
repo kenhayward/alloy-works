@@ -172,9 +172,9 @@ describe('a built query run against the source', { timeout: LOADED_TIMEOUT_MS },
     });
     // Checksummed as any result is, and what ran is the generator's run statement.
     expect(answer.checksum).toBe(checksumOf(answer));
-    expect(answer.ran.sql).toBe(generatePostgres(definition, {}, 'run').text);
-    expect(answer.ran.sql).toContain('INNER JOIN (SELECT');
-    expect(answer.ran.sql).toContain(
+    expect((answer.ran as { sql: string }).sql).toBe(generatePostgres(definition, {}, 'run').text);
+    expect((answer.ran as { sql: string }).sql).toContain('INNER JOIN (SELECT');
+    expect((answer.ran as { sql: string }).sql).toContain(
       'LEFT JOIN (SELECT "id", "flag", "value", "taken", "site" FROM "sample"."reading") AS "x"',
     );
   });
@@ -320,7 +320,7 @@ describe('a built query run against the source', { timeout: LOADED_TIMEOUT_MS },
       ),
     );
     expect(answer.result.rows).toEqual([['1']]);
-    expect(answer.ran.sql).toMatch(/LIMIT 1$/);
+    expect((answer.ran as { sql: string }).sql).toMatch(/LIMIT 1$/);
   });
 });
 
@@ -826,7 +826,7 @@ describe(
         ),
       );
       expect(counted.result.rows).toEqual([['1']]);
-      expect(counted.ran.sql).toBe(
+      expect((counted.ran as { sql: string }).sql).toBe(
         `SELECT pg_catalog.count(*) AS "n"\nFROM (SELECT FROM "${PLANTED.schema}"."counter") AS "q"`,
       );
       const last = ok(

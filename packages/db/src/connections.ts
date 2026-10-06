@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import {
   ConnectionRefused,
+  connectionChangeProblems,
   connectionTarget,
   parseConnection,
   parseConnectionForWrite,
@@ -158,6 +159,9 @@ export async function recordConnectionVersion(
   if (!current) return { answer: 'connection.missing' };
   const parsed = forWrite(input.settings);
   if ('problems' in parsed) return { answer: 'connection.refused', problems: parsed.problems };
+  // A connection's type never changes: every definition naming it was written for it (D6-A).
+  const changed = connectionChangeProblems(current.settings, parsed.settings);
+  if (changed.length > 0) return { answer: 'connection.refused', problems: changed };
   let answer;
   try {
     answer = await recordVersion(trx, {

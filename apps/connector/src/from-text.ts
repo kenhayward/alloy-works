@@ -49,7 +49,7 @@ const DATE = /^([0-9]{4})-([0-9]{2})-([0-9]{2})$/;
 const TIME = /^([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.([0-9]+))?$/;
 
 /** A number's canonical text, or why it has none: integer digits and places, trailing zeros gone. */
-function number(
+export function number(
   text: string,
   bound: { readonly places: number; readonly digits: number | null },
 ): Taken {
@@ -67,7 +67,7 @@ function number(
 }
 
 /** A time of day's canonical text within a declared fraction: its trailing zeros gone. */
-function timeOfDay(text: string, fraction: number): Taken {
+export function timeOfDay(text: string, fraction: number): Taken {
   const match = TIME.exec(text);
   if (!match) return { refused: 'value_unrepresentable' };
   // PostgreSQL's time admits 24:00:00, which no canonical time of day is.

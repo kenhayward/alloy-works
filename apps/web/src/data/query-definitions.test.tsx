@@ -13,6 +13,7 @@ const DEFINITION = '44444444-4444-4444-8444-444444444444';
 const FIRST = '55555555-5555-4555-8555-555555555555';
 const SECOND = '66666666-6666-4666-8666-666666666666';
 const WAREHOUSE = '77777777-7777-4777-8777-777777777777';
+const API = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const COMPONENT = '88888888-8888-4888-8888-888888888888';
 const DOCUMENT = '99999999-9999-4999-8999-999999999999';
 
@@ -126,6 +127,8 @@ function service(
     user?: boolean;
     /** A second connection the person may write SQL against, Warehouse. */
     warehouse?: boolean;
+    /** An HTTP connection the person may use, Readings API, listed first (the D6 plan). */
+    api?: boolean;
     /** The definition the service holds at first. */
     held?: ReturnType<typeof view>;
     describe?: (body: unknown) => Response | Promise<Response>;
@@ -151,6 +154,21 @@ function service(
     if (request.method === 'GET' && path === '/v1/connections') {
       return json(200, {
         items: [
+          ...(options.api
+            ? [
+                {
+                  id: API,
+                  name: 'Readings API',
+                  space: { id: GENERAL, name: 'General' },
+                  type: 'http',
+                  retired: false,
+                  version: { id: FIRST, number: '0.1' },
+                  credentialSet: true,
+                  lastTest: null,
+                  changedAt: '2026-09-30T09:00:00.000Z',
+                },
+              ]
+            : []),
           {
             id: READINGS,
             name: 'Readings',
@@ -195,7 +213,10 @@ function service(
           {
             permission: 'use_connection',
             allowed:
-              uses && (target === `artifact:${READINGS}` || target === `artifact:${WAREHOUSE}`),
+              uses &&
+              (target === `artifact:${READINGS}` ||
+                target === `artifact:${WAREHOUSE}` ||
+                target === `artifact:${API}`),
           },
           {
             permission: 'write_sql',
@@ -251,10 +272,11 @@ function service(
     if (
       request.method === 'POST' &&
       (path === `/v1/connections/${READINGS}/describe` ||
-        path === `/v1/connections/${WAREHOUSE}/describe`)
+        path === `/v1/connections/${WAREHOUSE}/describe` ||
+        path === `/v1/connections/${API}/describe`)
     ) {
       // Sent nothing, a describe lists the source's tables and views (D1).
-      if (isRecord(body) && !('sql' in body) && !('builder' in body)) {
+      if (isRecord(body) && !('sql' in body) && !('builder' in body) && !('http' in body)) {
         return json(200, RELATIONS);
       }
       return (
@@ -1475,6 +1497,109 @@ describe('the builder (D4)', () => {
       screen.getByText(
         `Not offered, as its name is not in the composed form a query definition holds: sample.${DECOMPOSED}. A view at the source under a composed name reaches it.`,
       ),
+    ).toBeInTheDocument();
+  });
+});
+
+describe('a query definition on an HTTP connection (the D6 plan)', () => {
+  it('DAT-105 writes a request template, proposes its columns by pointer from a sample, and saves them only once each is confirmed', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service({
+      api: true,
+      sqlWriter: false,
+      describe: () =>
+        json(200, {
+          columns: [
+            { name: 'id', sourceType: 'number', proposed: { base: 'integer' }, pointer: '/id' },
+            {
+              name: 'site/name',
+              sourceType: 'string',
+              proposed: { base: 'text' },
+              pointer: '/site~1name',
+            },
+          ],
+          parameters: [],
+        }),
+    });
+    render(<QueryDefinitionPage client={client} id="new" />);
+    const connection = await screen.findByLabelText('Connection');
+    await waitFor(() => expect(connection).toHaveValue(API));
+    // An HTTP connection's query is a request: no builder, no SQL.
+    expect(screen.queryByRole('button', { name: 'Describe the source' })).toBeNull();
+    expect(screen.queryByLabelText('SQL text')).toBeNull();
+    await user.type(screen.getByLabelText('Title'), 'Sites by API');
+    await user.click(screen.getByRole('button', { name: 'Add parameter' }));
+    await user.type(
+      within(screen.getByRole('group', { name: 'Parameter 1' })).getByLabelText('Name'),
+      'site',
+    );
+    await user.click(screen.getByRole('button', { name: 'Add segment' }));
+    await user.type(screen.getByLabelText('Segment 1'), 'sites');
+    await user.click(screen.getByRole('button', { name: 'Add segment' }));
+    await user.selectOptions(screen.getByLabelText('Segment 2: fixed or a parameter'), 'parameter');
+    await user.selectOptions(screen.getByLabelText('Segment 2 parameter'), 'site');
+    await user.type(screen.getByLabelText('Rows at'), '/items');
+    await user.type(screen.getByLabelText('site'), 'north');
+    await user.click(screen.getByRole('button', { name: 'Sample for columns' }));
+    const columns = await screen.findByRole('table', { name: 'Columns' });
+    const request = {
+      method: 'GET',
+      path: [{ fixed: 'sites' }, { parameter: 'site' }],
+      query: [],
+      headers: [],
+    };
+    // The request is sent with the sample's values, its rows read to propose the columns.
+    expect(asked.find((each) => each.path.endsWith('/describe'))?.body).toEqual({
+      http: {
+        request,
+        format: { kind: 'json', rows: '/items' },
+        parameters: [{ name: 'site', type: { base: 'text' }, required: true, list: false }],
+        values: { site: 'north' },
+      },
+    });
+    expect(screen.queryByRole('button', { name: 'Save version' })).toBeNull();
+    for (const name of ['id', 'site/name']) {
+      await user.click(within(columns).getByRole('button', { name: `Confirm ${name}` }));
+    }
+    await user.click(await screen.findByRole('button', { name: 'Save version' }));
+    await waitFor(() => expect(window.location.hash).toBe(`#/query-definitions/${DEFINITION}`));
+    expect(asked.find((each) => each.path.endsWith('/query-definitions'))?.body).toMatchObject({
+      definition: {
+        connection: API,
+        fetch: { kind: 'http', request, format: { kind: 'json', rows: '/items' } },
+        columns: [
+          { name: 'id', from: { pointer: '/id' }, type: { base: 'integer' } },
+          { name: 'site/name', from: { pointer: '/site~1name' }, type: { base: 'text' } },
+        ],
+      },
+    });
+  });
+
+  it('shows the request an HTTP definition sends to somebody who may only read it, never a URL', async () => {
+    const { client } = service({
+      held: {
+        ...view({
+          parameters: [{ name: 'site', type: { base: 'text' }, required: true, list: false }],
+          fetch: {
+            kind: 'http',
+            request: {
+              method: 'GET',
+              path: [{ fixed: 'sites' }, { parameter: 'site' }],
+              query: [{ name: 'since', value: { fixed: '2026-01-01' } }],
+              headers: [],
+            },
+            format: { kind: 'jsonLines' },
+          },
+          columns: [{ name: 'id', from: { pointer: '/id' }, type: { base: 'integer' } }],
+          key: [],
+          order: 'multiset',
+        }),
+        mayEdit: false,
+      },
+    });
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    expect(
+      await screen.findByText('GET /sites/{site}?since=2026-01-01', { exact: false }),
     ).toBeInTheDocument();
   });
 });

@@ -16211,7 +16211,7 @@
         },
         {
           "id": "DAT-076",
-          "howItIsMet": "`identity` is `service`, or `endUser` by `delegated` or `asserted`; a delegated act needs the provider access token a session through the tenant's own provider holds, so a Google-route session or a personal API token is refused, `identity_unavailable`. The asserted half is built (D7); the delegated half with D6"
+          "howItIsMet": "`identity` is `service`, or `endUser` by `delegated` or `asserted`; a delegated act needs the provider access token a session through the tenant's own provider holds, so a Google-route session or a personal API token is refused, `identity_unavailable`. The asserted half is built (D7); the delegated half is a gap, deferred by [ADR-0041](../decisions/0041-the-delegated-provider-token-is-deferred-past-the-first-release.md)"
         },
         {
           "id": "DAT-078",
@@ -17966,15 +17966,63 @@
       "kind": "title"
     },
     {
+      "id": "DAT-095",
+      "file": "apps/connector/src/formats/json.test.ts",
+      "line": 18,
+      "kind": "title"
+    },
+    {
       "id": "DAT-018",
       "file": "apps/connector/src/hostile.test.ts",
-      "line": 493,
+      "line": 506,
       "kind": "title"
     },
     {
       "id": "DAT-021",
       "file": "apps/connector/src/hostile.test.ts",
-      "line": 419,
+      "line": 432,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-081",
+      "file": "apps/connector/src/hostile.test.ts",
+      "line": 938,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-075",
+      "file": "apps/connector/src/http-source.test.ts",
+      "line": 157,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-105",
+      "file": "apps/connector/src/http-source.test.ts",
+      "line": 317,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-108",
+      "file": "apps/connector/src/http-source.test.ts",
+      "line": 140,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-108",
+      "file": "apps/connector/src/https.test.ts",
+      "line": 75,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-109",
+      "file": "apps/connector/src/https.test.ts",
+      "line": 47,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-110",
+      "file": "apps/connector/src/https.test.ts",
+      "line": 65,
       "kind": "title"
     },
     {
@@ -18058,7 +18106,7 @@
     {
       "id": "DAT-005",
       "file": "apps/connector/src/secrets.test.ts",
-      "line": 71,
+      "line": 83,
       "kind": "title"
     },
     {
@@ -18250,37 +18298,37 @@
     {
       "id": "DAT-004",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 202,
+      "line": 210,
       "kind": "title"
     },
     {
       "id": "DAT-049",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 324,
+      "line": 332,
       "kind": "title"
     },
     {
       "id": "DAT-065",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 956,
+      "line": 964,
       "kind": "rule"
     },
     {
       "id": "DAT-065",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 944,
+      "line": 952,
       "kind": "title"
     },
     {
       "id": "DAT-075",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 245,
+      "line": 253,
       "kind": "title"
     },
     {
       "id": "DAT-078",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 832,
+      "line": 840,
       "kind": "rule"
     },
     {
@@ -18802,37 +18850,37 @@
     {
       "id": "DAT-004",
       "file": "apps/web/src/data/connections.test.tsx",
-      "line": 424,
+      "line": 483,
       "kind": "title"
     },
     {
       "id": "DAT-064",
       "file": "apps/web/src/data/connections.test.tsx",
-      "line": 677,
+      "line": 736,
       "kind": "title"
     },
     {
       "id": "DAT-075",
       "file": "apps/web/src/data/connections.test.tsx",
-      "line": 372,
+      "line": 431,
       "kind": "title"
     },
     {
       "id": "DAT-014",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 420,
+      "line": 442,
       "kind": "title"
     },
     {
       "id": "DAT-016",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 792,
+      "line": 814,
       "kind": "title"
     },
     {
       "id": "DAT-105",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 349,
+      "line": 371,
       "kind": "title"
     },
     {
@@ -19084,7 +19132,7 @@
     {
       "id": "DAT-098",
       "file": "apps/web/src/editor/ValueDialog.test.tsx",
-      "line": 323,
+      "line": 324,
       "kind": "title"
     },
     {
@@ -19906,7 +19954,7 @@
     {
       "id": "DAT-065",
       "file": "packages/db/src/connections.test.ts",
-      "line": 760,
+      "line": 792,
       "kind": "title"
     },
     {
@@ -20818,13 +20866,13 @@
     {
       "id": "DAT-001",
       "file": "packages/domain/src/data/connection.test.ts",
-      "line": 53,
+      "line": 55,
       "kind": "title"
     },
     {
       "id": "DAT-078",
       "file": "packages/domain/src/data/connection.test.ts",
-      "line": 166,
+      "line": 168,
       "kind": "title"
     },
     {
@@ -20849,6 +20897,12 @@
       "id": "DAT-081",
       "file": "packages/domain/src/data/generate.test.ts",
       "line": 101,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-104",
+      "file": "packages/domain/src/data/http-template.test.ts",
+      "line": 74,
       "kind": "title"
     },
     {
@@ -20890,7 +20944,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 489,
+      "line": 515,
       "kind": "title"
     },
     {

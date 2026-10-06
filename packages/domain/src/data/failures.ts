@@ -17,7 +17,8 @@ export type Attribution = 'connector' | 'query' | 'product';
  * should one reach a run unchecked, and never sent; and the D7 plan's `account_holds_privilege`, an
  * account that may read data of its own where a person's identity is asserted (DAT-112, D7-D), and the
  * review's `identity_role_unsafe`, a person's role that could log in, create, or own SQL that sets
- * another role.
+ * another role; and the D6 plan's `describe_not_supported`, a describe of a source whose type lists no
+ * relations (D6-A).
  */
 export const dataFailures = Object.freeze({
   connection_failed: 'connector',
@@ -50,6 +51,7 @@ export const dataFailures = Object.freeze({
   source_refused: 'query',
   value_unrepresentable: 'query',
   definition_unbindable: 'query',
+  describe_not_supported: 'product',
 } as const satisfies Record<string, Attribution>);
 
 export type DataFailureCode = keyof typeof dataFailures;
@@ -70,6 +72,8 @@ export type DataFailure = {
   readonly code: DataFailureCode;
   readonly attribution: Attribution;
   readonly source?: SourceRefusal;
+  /** An HTTP source's refusal: its status alone, never its body (the D6 plan, D6-D). */
+  readonly status?: number;
   readonly column?: string;
   readonly row?: number;
 };
@@ -88,7 +92,12 @@ export function sourceMessage(message: string): string {
 /** A failure made from its code alone, so nothing can attribute it otherwise. */
 export function dataFailure(
   code: DataFailureCode,
-  detail: { readonly source?: SourceRefusal; readonly column?: string; readonly row?: number } = {},
+  detail: {
+    readonly source?: SourceRefusal;
+    readonly status?: number;
+    readonly column?: string;
+    readonly row?: number;
+  } = {},
 ): DataFailure {
   return { code, attribution: dataFailures[code], ...detail };
 }
@@ -120,10 +129,18 @@ export const dataFailureSchema = z
       })
       .optional(),
     row: z.number().int().min(1).optional(),
+    status: z.number().int().min(100).max(599).optional(),
   })
   .refine((failure) => dataFailures[failure.code] === failure.attribution, {
     message: 'A failure carries the attribution its code fixes',
   })
-  .refine((failure) => (failure.source !== undefined) === (failure.code === 'source_refused'), {
-    message: 'A failure carries what the source said exactly when the source refused',
-  });
+  .refine(
+    (failure) =>
+      (failure.source !== undefined || failure.status !== undefined) ===
+        (failure.code === 'source_refused') &&
+      !(failure.source !== undefined && failure.status !== undefined),
+    {
+      message:
+        "A failure carries what the source said, or an HTTP source's status, exactly when the source refused",
+    },
+  );

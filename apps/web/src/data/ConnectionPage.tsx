@@ -127,14 +127,18 @@ function TestAnswer({ tested }: { readonly tested: Tested | string | null }) {
  * Whether the credential is set, by whom and when - and, where the connection has since been pointed
  * somewhere else to sign in, that it will not be used until it is set again (the D1 fix, C3).
  */
-function credentialText(credential: ConnectionView['credential']): string {
+function credentialText(credential: ConnectionView['credential'], http = false): string {
   if (!credential.set) return 'Not set.';
   const set = `Set by ${nameOf(credential.setBy)} on ${longDate(credential.setAt)}`;
+  const what = http ? 'secret' : 'password';
   if (credential.setBeforeBinding) {
-    return `${set}, before this version of the product. Set the password again to use this connection.`;
+    return `${set}, before this version of the product. Set the ${what} again to use this connection.`;
   }
+  const moved = http
+    ? 'the base URL or the secret header'
+    : 'the host, port, database, account or TLS';
   return credential.targetChanged
-    ? `${set}, before the host, port, database, account or TLS changed. Set the password again to use this connection.`
+    ? `${set}, before ${moved} changed. Set the ${what} again to use this connection.`
     : `${set}.`;
 }
 
@@ -214,6 +218,20 @@ function Part({ title, children }: { readonly title: string; readonly children: 
 }
 
 function SettingsList({ settings }: { readonly settings: Settings }) {
+  if (settings.type === 'http') {
+    return (
+      <dl className={styles['settings']}>
+        <dt>Description</dt>
+        <dd>{settings.description === '' ? 'None' : settings.description}</dd>
+        <dt>Base URL</dt>
+        <dd>{settings.source.baseUrl}</dd>
+        <dt>Secret header</dt>
+        <dd>{settings.source.secretHeader}</dd>
+        <dt>Runs as</dt>
+        <dd>{RUNS_AS_LABELS.service}</dd>
+      </dl>
+    );
+  }
   return (
     <dl className={styles['settings']}>
       <dt>Description</dt>
@@ -366,6 +384,7 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
 
   const view = connection;
   const retired = view.settings.retired;
+  const http = view.settings.type === 'http';
 
   /**
    * Cuts the next version from the one shown, and shows what the service answered. Retiring and
@@ -443,7 +462,7 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
       // Emptied as it is sent, whatever the answer: the field never holds it longer than it must.
       setSecret('');
       if (sent === '') {
-        setRotation('Type the password first.');
+        setRotation(http ? 'Type the secret first.' : 'Type the password first.');
         return;
       }
       try {
@@ -515,7 +534,9 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
       </p>
       <h1>{view.settings.name}</h1>
       <p className={styles['meta']}>
-        <span>PostgreSQL, in {view.space.name}</span>
+        <span>
+          {http ? 'HTTPS API' : 'PostgreSQL'}, in {view.space.name}
+        </span>
         <span>Version {view.version.number}</span>
         {retired && <span className={styles['retired']}>Retired</span>}
       </p>
@@ -523,7 +544,7 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
       <Part title="Settings">
         {view.mayAdminister && draft !== null ? (
           <div className={styles['form']}>
-            <SettingsFields draft={draft} onChange={setDraft} />
+            <SettingsFields draft={draft} onChange={setDraft} typeFixed />
             <button type="button" className="primary" disabled={busy !== null} onClick={save}>
               Save version
             </button>
@@ -535,11 +556,11 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
       </Part>
 
       <Part title="Credential">
-        <p>{credentialText(view.credential)}</p>
+        <p>{credentialText(view.credential, http)}</p>
         {view.mayAdminister && !retired && (
           <div className={styles['form']}>
             <label>
-              Password
+              {http ? 'Secret' : 'Password'}
               <input
                 type="password"
                 autoComplete="new-password"
@@ -573,7 +594,7 @@ export function ConnectionPage({ client, id }: { readonly client: Client; readon
         </Part>
       )}
 
-      {view.mayUse && !retired && (
+      {view.mayUse && !retired && !http && (
         <Part title="Tables">
           <button type="button" disabled={busy !== null} onClick={describe}>
             List tables

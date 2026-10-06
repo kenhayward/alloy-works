@@ -157,7 +157,10 @@ function NewConnection({
   return (
     <section aria-labelledby="new-connection-heading">
       <h2 id="new-connection-heading">New connection</h2>
-      <p>A connection reaches one PostgreSQL database. Its password is set once it is made.</p>
+      <p>
+        A connection reaches one PostgreSQL database or one HTTPS API. Its password or secret is set
+        once it is made.
+      </p>
       <label>
         Space
         <select value={where} onChange={(event) => setWhere(event.target.value)}>

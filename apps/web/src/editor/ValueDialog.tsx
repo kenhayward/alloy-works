@@ -38,6 +38,7 @@ export const PARAMETER_WORDS = {
   scale: 'has more places than its type holds',
   zone: 'needs its time zone',
   variation: 'is not one of its keys',
+  position: 'cannot stand where the request places it',
 } as const satisfies Record<ParameterRule, string>;
 
 const MODES = {

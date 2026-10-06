@@ -17,7 +17,9 @@ export type ParameterRule =
   | 'precision'
   | 'scale'
   | 'zone'
-  | 'variation';
+  | 'variation'
+  // A value its HTTP position cannot carry (DAT-081; the D6 plan, D6-E).
+  | 'position';
 
 /** A value refused by its declaration, named with its parameter, the rule and the value (DAT-020). */
 export interface ParameterProblem {

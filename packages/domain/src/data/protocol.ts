@@ -6,11 +6,14 @@ import { connectionSettingsSchema } from './connection.js';
 import { builderQuerySchema, checkTree, type Query } from './builder.js';
 import {
   checkQueryDefinition,
+  connectionFetchProblems,
   draftDefinitionSchema,
+  httpFetchSchema,
   parameterSchema,
   sqlTextSchema,
   type Parameter,
 } from './definition.js';
+import { headerValueProblem, httpTemplateSchema } from './http-template.js';
 import { generatePostgres } from './generate.js';
 import { dataFailureSchema } from './failures.js';
 import { limitCeilings } from './limits.js';
@@ -70,12 +73,19 @@ const sealed = z
  * sealed to (the D1 fix, C3 and round two): it opens only for a request naming that connection, whose
  * settings name the same type, host, port, database, account and TLS.
  */
-export const sealRequestSchema = z.strictObject({
-  tenant,
-  connection: z.uuid(),
-  secret,
-  settings: connectionSettingsSchema,
-});
+export const sealRequestSchema = z
+  .strictObject({
+    tenant,
+    connection: z.uuid(),
+    secret,
+    settings: connectionSettingsSchema,
+  })
+  // An HTTP secret is sent as a header's value, so it is one a header can carry (the D6 plan, D6-D).
+  .refine(
+    (request) =>
+      request.settings.type !== 'http' || headerValueProblem(request.secret) === undefined,
+    { message: 'A secret sent in a header is printable ASCII, with no space before or after it' },
+  );
 export type SealRequest = z.infer<typeof sealRequestSchema>;
 
 export const sealAnswerSchema = z.strictObject({ sealed });
@@ -270,6 +280,11 @@ export const runRequestSchema = testRequestSchema
   .refine((request) => request.definition.connection === request.connection.id, {
     message: 'A run runs a definition of the connection it is sent for',
   })
+  // A fetch of the connection's type, by the version it runs on (the D6 plan's stored-shape check).
+  .refine(
+    (request) => connectionFetchProblems(request.definition.fetch, request.settings).length === 0,
+    { message: "A run's fetch suits its connection's type" },
+  )
   .refine(assertsAsDeclared, AS_DECLARED)
   // Only text the product generated runs as a person (DAT-113, the D7 plan's D7-F).
   .refine(
@@ -315,6 +330,17 @@ export const canonicalResultSchema = z
   .refine((result) => result.rows.every((row) => row.length === result.columns.length), {
     message: 'Every row has a cell for each column',
   });
+
+/**
+ * What a run reports it ran (D2-K; the D6 plan, D6-L): a database's SQL, its values bound apart from
+ * it, or an HTTP request's template, its values placed apart from it. Never a composed URL, which no
+ * answer carries.
+ */
+export const ranSchema = z.union([
+  z.strictObject({ sql: z.string().max(RAN_MAX_CHARACTERS) }),
+  z.strictObject({ request: httpTemplateSchema }),
+]);
+export type Ran = z.infer<typeof ranSchema>;
 
 /**
  * Whether text is base64 as the connector writes it: the standard alphabet, padded to a multiple of
@@ -366,7 +392,8 @@ export const runAnswerSchema = z.discriminatedUnion('outcome', [
       result: canonicalResultSchema,
       checksum: z.string().regex(/^[0-9a-f]{64}$/),
       rowCount: z.number().int().min(0),
-      ran: z.strictObject({ sql: z.string().max(RAN_MAX_CHARACTERS) }),
+      // The SQL that ran, or an HTTP request's template: never a URL (the D6 plan, D6-L).
+      ran: ranSchema,
       durationMs: z.number().int().min(0),
       // Absent where a result holds no image, as every answer before D8.
       images: imagesSchema.optional(),
@@ -420,18 +447,62 @@ const builderDescribeRequest = testRequestSchema
   .refine(assertsAsDeclared, AS_DECLARED);
 
 /**
+ * An HTTP request sampled for its columns (DAT-105; the D6 plan, D6-A): its template, its format, the
+ * parameters it declares and the values to sample it with. A response is described by its rows, so it
+ * is sent, and each member of the first rows proposed as a column by its pointer.
+ */
+const httpDescribe = z
+  .strictObject({
+    request: httpTemplateSchema,
+    format: httpFetchSchema.shape.format,
+    parameters: z.array(parameterSchema).max(50),
+    values: parameterValuesSchema,
+  })
+  .refine(
+    (http) =>
+      checkQueryDefinition({
+        connection: '00000000-0000-4000-8000-000000000000',
+        schemaVersion: 1,
+        parameters: http.parameters,
+        fetch: { kind: 'http', request: http.request, format: http.format },
+        columns: [{ name: 'proposed', from: { pointer: '/proposed' }, type: { base: 'text' } }],
+        key: [],
+        order: 'multiset',
+        empty: 'valid',
+        limits: { rows: 1, bytes: 1, seconds: 1 },
+      }).length === 0 &&
+      checkParameterValues(http.parameters, http.values as ParameterValues).length === 0,
+    { message: 'A request passes its checks, and its values their declarations' },
+  );
+const httpDescribeRequest = testRequestSchema
+  .extend({ http: httpDescribe })
+  .refine(
+    (request) =>
+      connectionFetchProblems(
+        { kind: 'http', request: request.http.request, format: request.http.format },
+        request.settings,
+      ).length === 0,
+    { message: "A request suits its connection's type" },
+  );
+
+/**
  * A describe of SQL or of a built query, chosen by its key rather than by trying each: a union that
  * tried each would answer a refusal of either in its own words, "Invalid input", and never the
  * walk's or the builder's. A body holding `builder` and no `sql` is a built query's; any other is
  * SQL's, whose strict shape refuses a `builder` beside it.
  */
 export const describeSqlRequestSchema = z.unknown().transform((value, context) => {
-  const built =
-    typeof value === 'object' && value !== null && 'builder' in value && !('sql' in value);
-  const parsed = (built ? builderDescribeRequest : sqlDescribeRequest).safeParse(value);
+  const has = (key: string) => typeof value === 'object' && value !== null && key in value;
+  const built = has('builder') && !has('sql');
+  const http = has('http') && !has('sql') && !has('builder');
+  const parsed = (
+    http ? httpDescribeRequest : built ? builderDescribeRequest : sqlDescribeRequest
+  ).safeParse(value);
   if (parsed.success) {
     return parsed.data as
-      z.infer<typeof sqlDescribeRequest> | z.infer<typeof builderDescribeRequest>;
+      | z.infer<typeof sqlDescribeRequest>
+      | z.infer<typeof builderDescribeRequest>
+      | z.infer<typeof httpDescribeRequest>;
   }
   for (const issue of parsed.error.issues) context.addIssue({ ...issue } as never);
   return z.NEVER;
@@ -493,6 +564,8 @@ export const describeSqlAnswerSchema = z.union([
           name: sourceName,
           sourceType: sourceTypeSchema,
           proposed: proposedTypeSchema.nullable(),
+          // Where a JSON response's column is read from its row (the D6 plan, D6-F).
+          pointer: z.string().max(1024).optional(),
         }),
       )
       .max(MAX_COLUMNS),
@@ -504,6 +577,12 @@ export type DescribeSqlAnswer = z.infer<typeof describeSqlAnswerSchema>;
 
 const childMembers = {
   secret,
+  // The certificate authorities a development or CI source is signed by, as PEM, beside the
+  // system's; production names none (the D6 plan, task 1).
+  ca: z
+    .string()
+    .max(256 * 1024)
+    .optional(),
   deny: z.array(z.string()),
   connectTimeoutMs: z.number().int().min(1).max(60_000),
   failureFloorMs: z.number().int().min(0).max(60_000),

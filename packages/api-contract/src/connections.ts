@@ -2,6 +2,8 @@ import {
   SECRET_MAX_BYTES,
   builderFetchSchema,
   connectionSettingsSchema,
+  httpFetchSchema,
+  httpTemplateSchema,
   draftDefinitionSchema,
   sqlTextSchema,
   parameterSchema,
@@ -42,7 +44,9 @@ export const CredentialBody = z.strictObject({
       message: `A credential is 1 to ${SECRET_MAX_BYTES} bytes of UTF-8`,
     })
     .refine((value) => !value.includes('\u0000'), { message: 'A credential holds no U+0000' })
-    .describe('The credential, a password for a PostgreSQL source. Never answered by any route'),
+    .describe(
+      "The credential: a PostgreSQL source's password, or the value an HTTP connection sends in its secret header. Never answered by any route",
+    ),
 });
 export type CredentialBody = z.infer<typeof CredentialBody>;
 
@@ -100,6 +104,13 @@ export const DataFailureView = z.object({
   source: SourceRefusalView.optional(),
   column: z.string().optional().describe('The column the failure names, where it names one'),
   row: z.number().int().optional().describe('The row the failure names, counted from 1'),
+  status: z
+    .number()
+    .int()
+    .optional()
+    .describe(
+      'The HTTP status an HTTP source refused with: `source_refused` alone, never its body',
+    ),
 });
 export type DataFailureView = z.infer<typeof DataFailureView>;
 
@@ -232,12 +243,29 @@ export const BuiltQueryBody = z.strictObject({
   parameters: z.array(parameterSchema).max(50),
 });
 
+/**
+ * An HTTP request sampled for its columns (DAT-105; the D6 plan, D6-A): its template and format, the
+ * parameters it declares and a value for each. It is sent, and each member of its first rows is
+ * proposed as a column read by its pointer.
+ */
+export const HttpSampleBody = z.strictObject({
+  request: httpTemplateSchema,
+  format: httpFetchSchema.shape.format,
+  parameters: z.array(parameterSchema).max(50),
+  values: z
+    .record(z.string(), z.union([z.string(), z.boolean(), z.null(), z.array(z.string())]))
+    .describe("Each parameter's value by name, in its type's canonical form"),
+});
+
 export const DescribeBody = z.strictObject({
   sql: SqlStatementBody.optional().describe(
     "A statement to describe instead of the source's tables and views: its result's columns, never run",
   ),
   builder: BuiltQueryBody.optional().describe(
     "A built query to describe instead of the source's tables and views: the columns its tree returns, from SQL the service generates, never run. Send this or sql, never both",
+  ),
+  http: HttpSampleBody.optional().describe(
+    "An HTTP connection's request, sent and its first rows read to propose its columns, each read by a pointer: an HTTP connection lists no tables. Send one of sql, builder and http",
   ),
 });
 export type DescribeBody = z.infer<typeof DescribeBody>;
@@ -253,6 +281,10 @@ export const DescribeSqlView = z.object({
         .describe(
           "The column type proposed for it, or null where the author must declare one. A binary column is proposed as an image, its description the author's to declare",
         ),
+      pointer: z
+        .string()
+        .optional()
+        .describe('For an HTTP response, the JSON Pointer that reads the column from its row'),
     }),
   ),
   parameters: z
@@ -295,7 +327,16 @@ export const SampleView = z.discriminatedUnion('outcome', [
     checksum: z
       .string()
       .describe('The SHA-256 of the whole result in canonical form, in hexadecimal'),
-    ran: z.object({ sql: z.string().describe('The SQL that ran, each value a bound parameter') }),
+    ran: z
+      .union([
+        z.object({ sql: z.string().describe('The SQL that ran, each value a bound parameter') }),
+        z.object({
+          request: httpTemplateSchema.describe(
+            'The HTTP request template that was sent, each value placed by position; never its URL',
+          ),
+        }),
+      ])
+      .describe('What ran: SQL for a database, the request template for an HTTP connection'),
     durationMs: z.number().int(),
     images: z
       .record(
@@ -319,7 +360,7 @@ export const ConnectionSummary = z.object({
   id: z.string(),
   name: z.string(),
   space: z.object({ id: z.string(), name: z.string() }),
-  type: z.enum(['postgres']),
+  type: z.enum(['postgres', 'http']),
   retired: z.boolean(),
   version: z.object({ id: z.string(), number: z.string() }),
   credentialSet: z
@@ -423,6 +464,7 @@ const ParameterProblem = z.object({
     'scale',
     'zone',
     'variation',
+    'position',
   ]),
   value: z.string().describe('The value as sent, cut to 1,000 characters'),
 });

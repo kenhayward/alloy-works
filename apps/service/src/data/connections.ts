@@ -41,7 +41,11 @@ import {
   bindFetch,
   canonicalResultBytes,
   checkParameterValues,
+  checkQueryDefinition,
   checkTree,
+  connectionFetchProblems,
+  headerValueProblem,
+  httpValueProblems,
   dataFailures,
   decide,
   effectiveLimits,
@@ -97,6 +101,33 @@ interface Usable {
 const TEST_DEADLINE_MS = 10_000;
 /** A describe's deadline. */
 const DESCRIBE_DEADLINE_MS = 20_000;
+
+/**
+ * How long a sample of an HTTP request for its columns may take: its body is read whole, at most
+ * JSON Lines' 12 MiB, so the time of a run at the default limit, rather than a describe's.
+ */
+const HTTP_SAMPLE_DEADLINE_MS = 30_000;
+
+/**
+ * The problems of an HTTP request a describe is sent to sample (the D6 plan, D6-E): its template's
+ * rules against its parameters, as a definition's, so the connector never meets one it refuses.
+ */
+function httpProblems(http: NonNullable<DescribeBody['http']>): DefinitionProblem[] {
+  return checkQueryDefinition({
+    schemaVersion: 1,
+    connection: '00000000-0000-4000-8000-000000000000',
+    parameters: http.parameters,
+    fetch: { kind: 'http', request: http.request, format: http.format },
+    columns: [{ name: 'proposed', from: { pointer: '/proposed' }, type: { base: 'text' } }],
+    key: [],
+    order: 'multiset',
+    empty: 'valid',
+    limits: { rows: 1, bytes: 1, seconds: 1 },
+  }).map((problem) => ({
+    ...problem,
+    path: problem.path.replace(/^fetch\.request/, 'http.request'),
+  }));
+}
 
 /** The failures a test is recorded with (the stored-shape check, row 13). */
 const TEST_FAILURES: readonly ConnectionTestFailure[] = [
@@ -570,6 +601,14 @@ export function connectionHandlers(
       const { id } = request.params as ConnectionParams;
       const connection = await runnable(trx, id);
       const { secret } = request.body as CredentialBody;
+      // An HTTP connection's secret is sent as a header's value, so it is one a header carries (D6-D).
+      if (connection.settings.type === 'http' && headerValueProblem(secret) !== undefined) {
+        throw new AppError(
+          400,
+          'invalid_request',
+          'A secret sent in a header is printable ASCII, with no space before or after it.',
+        );
+      }
       // Sealed by the connector with a key the service never holds; the service keeps only what
       // comes back, and no record of the request is kept (D1-S). Sealed for where this version signs
       // in, and stored beside that target's digest: a later version pointing anywhere else leaves it
@@ -653,20 +692,51 @@ export function connectionHandlers(
 
     describeConnection: async (request: FastifyRequest, { trx, facts }: Authorised) => {
       const { id } = request.params as ConnectionParams;
-      const { sql, builder } = request.body as DescribeBody;
-      if (sql !== undefined && builder !== undefined) {
+      const { sql, builder, http } = request.body as DescribeBody;
+      if ([sql, builder, http].filter((each) => each !== undefined).length > 1) {
         throw definitionRefused([
           {
             rule: 'definition_invalid',
-            path: 'builder',
-            message: 'A describe is sent SQL or a built query, never both',
+            path: http === undefined ? 'builder' : 'http',
+            message: 'A describe is sent SQL, a built query or an HTTP request, one alone',
           },
         ]);
       }
       // A statement is SQL against the connection: write_sql there as well as use_connection (D2-G).
-      // A built query needs use_connection alone, the route's own (D4-J).
+      // A built query and an HTTP request need use_connection alone, the route's own (D4-J, D6-A).
       if (sql !== undefined && !maySqlWith(facts)) throw sqlForbidden();
       const connection = await runnable(trx, id);
+      // What is described suits the connection's type, and an HTTP connection lists no tables (D6-A).
+      const asked =
+        http !== undefined
+          ? { kind: 'http' as const, request: http.request, format: http.format }
+          : sql !== undefined
+            ? { kind: 'sql' as const, text: sql.text }
+            : builder !== undefined
+              ? { kind: 'builder' as const, format: 1 as const, query: builder.query }
+              : undefined;
+      if (asked === undefined && connection.settings.type !== 'postgres') {
+        throw dataRefused(409, 'describe_not_supported');
+      }
+      if (asked !== undefined) {
+        const unsuited = connectionFetchProblems(asked, connection.settings);
+        if (unsuited.length > 0) throw definitionRefused(unsuited);
+      }
+      if (http !== undefined) {
+        const problems = httpProblems(http);
+        if (problems.length > 0) throw definitionRefused(problems);
+        const values = http.values as ParameterValues;
+        const invalid = [
+          ...checkParameterValues(http.parameters, values),
+          ...httpValueProblems(http.request, values),
+        ];
+        if (invalid.length > 0) {
+          throw refused(400, 'parameter.invalid', 'A value does not fit its parameter.', {
+            attribution: 'product',
+            problems: invalid,
+          });
+        }
+      }
       if (sql !== undefined) {
         const problems = statementProblems(sql);
         if (problems.length > 0) throw definitionRefused(problems);
@@ -683,7 +753,7 @@ export function connectionHandlers(
       const tenant = tenantOf(request);
       // As the caller, on a connection asserting identity (D7-G): as the account it lists nothing.
       const acting = await actingOn(trx, request, connection);
-      const asked = {
+      const describing = {
         requestId: randomUUID(),
         tenant: tenant.id,
         connection: { id: connection.id, version: connection.version.id },
@@ -694,10 +764,30 @@ export function connectionHandlers(
       };
       // Decided and read here; the connector is asked once this transaction, and its lock on access,
       // is let go (the D1 fix, C4). A describe records nothing.
+      if (http !== undefined) {
+        // An HTTP request is sent to sample its columns, as the account: no person runs it (ADR-0041).
+        return new AfterCommit(() =>
+          whileHeld(request, async (signal) => {
+            const described = answered(
+              await client.describeSql(
+                {
+                  ...describing,
+                  deadlineMs: HTTP_SAMPLE_DEADLINE_MS,
+                  http: { ...http, values: http.values as Record<string, string> },
+                },
+                signal,
+              ),
+            );
+            if ('failure' in described)
+              throw dataRefused(describedStatus(described.failure), described.failure);
+            return described;
+          }),
+        );
+      }
       if (sql !== undefined) {
         return new AfterCommit(() =>
           whileHeld(request, async (signal) => {
-            const described = answered(await client.describeSql({ ...asked, sql }, signal));
+            const described = answered(await client.describeSql({ ...describing, sql }, signal));
             if ('failure' in described)
               throw dataRefused(describedStatus(described.failure), described.failure);
             return described;
@@ -707,7 +797,9 @@ export function connectionHandlers(
       if (builder !== undefined) {
         return new AfterCommit(() =>
           whileHeld(request, async (signal) => {
-            const described = answered(await client.describeSql({ ...asked, builder }, signal));
+            const described = answered(
+              await client.describeSql({ ...describing, builder }, signal),
+            );
             if ('failure' in described) {
               throw dataRefused(
                 describedStatus(described.failure),
@@ -722,7 +814,7 @@ export function connectionHandlers(
       }
       return new AfterCommit(() =>
         whileHeld(request, async (signal) => {
-          const described = answered(await client.describe(asked, signal));
+          const described = answered(await client.describe(describing, signal));
           if ('failure' in described) {
             throw dataRefused(describedStatus(described.failure), described.failure);
           }
@@ -757,9 +849,19 @@ export function connectionHandlers(
           },
         ]);
       }
-      // Every value against its declaration, before the connector is asked (DAT-020).
+      // A fetch of the connection's type, by the version it runs on (D6-A).
+      const unsuited = connectionFetchProblems(draft.fetch, connection.settings);
+      if (unsuited.length > 0) throw definitionRefused(unsuited);
+      // Every value against its declaration, and an HTTP value against its position, before the
+      // connector is asked (DAT-020, DAT-081).
       const values = body.values as ParameterValues;
-      const problems = checkParameterValues(draft.parameters, values);
+      const problems = [
+        ...checkParameterValues(draft.parameters, values),
+        ...(draft.fetch.kind === 'http' &&
+        checkParameterValues(draft.parameters, values).length === 0
+          ? httpValueProblems(draft.fetch.request, values)
+          : []),
+      ];
       if (problems.length > 0) {
         throw refused(400, 'parameter.invalid', 'A value does not fit its parameter.', {
           attribution: 'product',
@@ -839,7 +941,7 @@ export function connectionHandlers(
             rows: rows.map((row) => [...row]),
             rowCount: ran.rowCount,
             checksum,
-            ran: { sql: ran.ran.sql },
+            ran: 'sql' in ran.ran ? { sql: ran.ran.sql } : { request: ran.ran.request },
             durationMs: ran.durationMs,
             images,
           };

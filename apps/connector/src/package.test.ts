@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { builtinModules } from 'node:module';
-import { join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
@@ -61,8 +61,12 @@ describe("the connector's package", () => {
     expect(files.length).toBeGreaterThan(5);
     for (const file of files) {
       for (const specifier of importsOf(file)) {
+        // Its own files: relative, and inside its source, a reader in a folder of its own among them.
+        const own =
+          (specifier.startsWith('./') || specifier.startsWith('../')) &&
+          resolve(dirname(file), specifier).startsWith(join(root, 'src'));
         const known =
-          specifier.startsWith('./') ||
+          own ||
           specifier.startsWith('node:') ||
           builtinModules.includes(specifier) ||
           allowed.has(specifier);

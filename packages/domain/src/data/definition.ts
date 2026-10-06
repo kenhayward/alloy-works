@@ -4,6 +4,9 @@ import { builderFetchSchema, checkBuilder, type BuilderFetch } from './builder.j
 import { valueProblem, compareCanonical, type CanonicalValue } from './canonical.js';
 import { columnTypeSchema, valueTypeSchema, type ValueType } from './columns.js';
 import { generatedLength } from './generate.js';
+import type { ConnectionSettings } from './connection.js';
+import { checkHttpTemplate, httpTemplateSchema } from './http-template.js';
+import { jsonPointerSchema } from './json-text.js';
 import { limitCeilings } from './limits.js';
 import { MAX_COLUMNS } from './columns.js';
 import {
@@ -100,8 +103,16 @@ export const parameterSchema = z.strictObject({
 /** A declared column (D2): a dataset version's provenance names its columns by the same shape. */
 export const columnSchema = z.strictObject({
   name: sourceName('A column name'),
-  // A source's column by name; a pointer, a header and a letter arrive with D6's sources.
-  from: z.strictObject({ column: sourceName('A source column') }),
+  // A database's column by name, or a JSON value by a pointer relative to its row (the D6 plan,
+  // D6-F); a header and a letter arrive with D6.2's files.
+  from: z.union([
+    z.strictObject({ column: sourceName('A source column') }),
+    z.strictObject({
+      pointer: jsonPointerSchema.refine((value) => value !== '', {
+        message: 'A column reads a member of its row: its pointer is not empty',
+      }),
+    }),
+  ]),
   // Any of the nine; an image's description is checked against the columns (`checkQueryDefinition`).
   type: columnTypeSchema,
 });
@@ -112,10 +123,31 @@ export const sqlTextSchema = storable('SQL').refine(
   { message: 'SQL is 1 to 100,000 characters' },
 );
 
-// SQL as D2 wrote it, or the builder's tree (D4-A): a second arm, which refuses nothing stored.
+/**
+ * An HTTP fetch (DAT-104; the D6 plan, D6-E and D6-F): a request template and the format its rows are
+ * read in - JSON at a pointer to an array of objects, with a pointer to a row count it states where
+ * it states one (DAT-108), or JSON Lines.
+ */
+export const httpFetchSchema = z.strictObject({
+  kind: z.literal('http'),
+  request: httpTemplateSchema,
+  format: z.discriminatedUnion('kind', [
+    z.strictObject({
+      kind: z.literal('json'),
+      rows: jsonPointerSchema,
+      count: jsonPointerSchema.optional(),
+    }),
+    z.strictObject({ kind: z.literal('jsonLines') }),
+  ]),
+});
+export type HttpFetch = z.infer<typeof httpFetchSchema>;
+
+// SQL as D2 wrote it, the builder's tree (D4-A), or an HTTP request (D6-E): each arm added refuses
+// nothing stored.
 const fetchSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('sql'), text: sqlTextSchema }),
   builderFetchSchema,
+  httpFetchSchema,
 ]);
 
 const limit = (ceiling: number) => z.number().int().min(1).max(ceiling);
@@ -321,11 +353,27 @@ export function checkQueryDefinition(
         checkBindings({ parameters: definition.parameters, fetch }, problem);
       }
     }
-  } else {
+  } else if (fetch.kind === 'builder') {
     // A built query: the builder's rules, then both statements it generates, once the tree is sound.
     const before = problems.length;
     checkBuilder({ ...definition, fetch }, problem);
     if (problems.length === before) checkGenerated({ ...definition, fetch }, problem);
+  } else {
+    // An HTTP request: its template's rules against the parameters (D6-E).
+    checkHttpTemplate(fetch.request, definition.parameters, problem);
+  }
+
+  // A column is read as its fetch reads: a database's by its name, JSON's by a pointer (D6-F).
+  const byPointer = fetch.kind === 'http';
+  for (const [at, column] of definition.columns.entries()) {
+    if ('pointer' in column.from !== byPointer) {
+      problem(
+        `columns.${at}.from`,
+        byPointer
+          ? 'A column of an HTTP response is read by a pointer into its row'
+          : "A column of a query is read by the query's column name",
+      );
+    }
   }
 
   const columns = new Set<string>();
@@ -493,4 +541,35 @@ export function parseDraftDefinition(value: unknown): DraftDefinition {
   const problems = checkQueryDefinition(draft);
   if (problems.length > 0) throw new DefinitionRefused(problems);
   return draft;
+}
+
+/**
+ * Whether a fetch suits the connection it runs on (the D6 plan's stored-shape check): a query on a
+ * database, an HTTP request on an HTTP connection, whose template names no header the connection
+ * sends its secret in. Checked on save, on a sample's draft and at each run, against the connection
+ * version it runs on.
+ */
+export function connectionFetchProblems(
+  fetch: DraftDefinition['fetch'],
+  settings: Pick<ConnectionSettings, 'type' | 'source'>,
+): DefinitionProblem[] {
+  const problem = (path: string, message: string): DefinitionProblem[] => [
+    { rule: 'definition_invalid', path, message },
+  ];
+  if (fetch.kind === 'http') {
+    if (settings.type !== 'http') {
+      return problem('fetch', 'An HTTP request is sent on an HTTP connection');
+    }
+    const secret = (settings.source as { readonly secretHeader: string }).secretHeader;
+    const at = fetch.request.headers.findIndex((header) => header.name === secret);
+    return at < 0
+      ? []
+      : problem(
+          `fetch.request.headers.${at}.name`,
+          'The connection sends its secret in this header, so the template may not name it',
+        );
+  }
+  return settings.type === 'postgres'
+    ? []
+    : problem('fetch', 'A query, written or built, runs on a database connection');
 }
