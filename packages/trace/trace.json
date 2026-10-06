@@ -21680,19 +21680,19 @@
     {
       "id": "AST-013",
       "file": "packages/editor/src/figures.test.ts",
-      "line": 213,
+      "line": 236,
       "kind": "title"
     },
     {
       "id": "AST-015",
       "file": "packages/editor/src/figures.test.ts",
-      "line": 220,
+      "line": 243,
       "kind": "title"
     },
     {
       "id": "CNT-017",
       "file": "packages/editor/src/figures.test.ts",
-      "line": 95,
+      "line": 96,
       "kind": "title"
     },
     {
