@@ -299,6 +299,38 @@ describe('a binding in a component', () => {
       ['in-table-note', 'content.3.note.0'],
       ['in-cell', 'content.3.rows.0.cells.0.content.0.content.0'],
     ]);
+    // Placed in a line everywhere but a footnote's text, where an image may not stand (B6-D).
+    expect(bindingsIn(stored).map(({ place }) => place)).toEqual([
+      'line',
+      'footnote',
+      'line',
+      'line',
+      'line',
+      'line',
+      'line',
+      'line',
+    ]);
+  });
+
+  it("DAT-098 finds a figure's binding, placed as its image, before its caption's", () => {
+    const stored = parseContentDocument(
+      doc([
+        {
+          type: 'figure',
+          id: 'f1',
+          binding: binding({ id: 'as-figure', take: { column: 'site_photo' } }),
+          imageStyle: 'figure',
+          caption: [words('Site '), binding({ id: 'in-figure-caption' })],
+          alternative: { kind: 'inherited' },
+        },
+      ]),
+    );
+    expect(bindingsIn(stored).map(({ binding, path, place }) => [binding.id, path, place])).toEqual(
+      [
+        ['as-figure', 'content.0.binding', 'figure'],
+        ['in-figure-caption', 'content.0.caption.1', 'line'],
+      ],
+    );
   });
 });
 

@@ -307,6 +307,10 @@ function reidentifyBlock(value: unknown, state: State): unknown[] {
     });
     if ('note' in block) out.note = inlines(block.note);
   }
+  // A figure's binding (the B6 plan, B6-A) is renewed as an inline one is, and counted with them.
+  if (block.type === 'figure' && 'binding' in block) {
+    out.binding = reidentifyInline(block.binding, state)[0];
+  }
   return [out];
 }
 

@@ -361,6 +361,7 @@ describe('the binding stage in the resolution order', () => {
         result: { columns: [['site', 'text']], rows: [['York']] },
         columns: [{ name: 'site', from: { column: 'site' }, type: { base: 'text' } }],
         datasetVersion: '00000000-0000-4000-8000-0000000000d1',
+        images: {},
       },
     ],
   ]);

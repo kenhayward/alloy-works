@@ -59,7 +59,7 @@ const PHOTO_COLUMNS = [
 ];
 
 /** A run's answer holding these rows, each with a photograph, and each image carried once. */
-const ranWithImages = (rows: [string, string, Buffer | null][]): RunAnswer => {
+const ranWithImages = (rows: [string, string | null, Buffer | null][]): RunAnswer => {
   const result = {
     columns: [
       ['id', 'integer'],
@@ -719,5 +719,125 @@ describe("a result's images, admitted before it is kept (the D8 plan, D8-D and D
       results: [{ node, binding: 'b1', failure: { code: 'connector_error' } }],
     });
     expect(await resolutionsOf(document.id)).toBe(0);
+  });
+
+  describe('a bound image in the bindings view (the B6 plan, task 3)', () => {
+    const DESCRIBED = { base: 'image', encoding: 'binary', description: { column: 'name' } };
+    let described: { id: string; version: string };
+
+    beforeAll(async () => {
+      described = await h.definition(connection.id, {
+        columns: PHOTO_COLUMNS.map((column) =>
+          column.name === 'photo' ? { ...column, type: DESCRIBED } : column,
+        ),
+      });
+    });
+
+    const photo = (id: string) =>
+      binding(id, described.id, {
+        parameters: { site: { literal: String(site) } },
+        take: { column: 'photo' },
+      });
+    const words = (value: string) => ({ type: 'text', value, marks: [] });
+    /**
+     * A component placing the photograph in a line, as a figure, as a figure taking a text column,
+     * and in a footnote's text: four bindings asking one question, at a new site.
+     */
+    const placedFour = async () => {
+      site += 1;
+      const component = await h.component(h.general, 'Sites');
+      await h.placeBlocks(
+        component,
+        { type: 'paragraph', id: 'p1', style: 'body', content: [words('Gate '), photo('b1')] },
+        {
+          type: 'figure',
+          id: 'f1',
+          binding: photo('b2'),
+          imageStyle: 'figure',
+          caption: [words('The gate')],
+          alternative: { kind: 'inherited' },
+        },
+        {
+          type: 'figure',
+          id: 'f2',
+          binding: { ...photo('b3'), take: { column: 'name' } },
+          imageStyle: 'figure',
+          caption: [words('Its name')],
+          alternative: { kind: 'inherited' },
+        },
+        {
+          type: 'paragraph',
+          id: 'p2',
+          style: 'body',
+          content: [
+            words('Noted.'),
+            {
+              type: 'footnote',
+              id: 'n1',
+              anchor: { kind: 'span' },
+              content: [{ type: 'paragraph', id: 'np1', style: 'body', content: [photo('b4')] }],
+            },
+          ],
+        },
+      );
+      const document = await h.documentReferencing([component.id]);
+      return { document, node: document.nodes[0]! };
+    };
+    const resolveAll = (document: string, node: string) =>
+      h.call('ada', 'POST', `/v1/documents/${document}/bindings/resolve`, {
+        bindings: ['b1', 'b2', 'b3', 'b4'].map((each) => ({ node, binding: each })),
+      });
+    const takenIn = async (document: string) =>
+      Object.fromEntries(
+        (await h.call('ada', 'GET', `/v1/documents/${document}/bindings`))
+          .json<{ bindings: { binding: { id: string }; held: { taken: unknown } | null }[] }>()
+          .bindings.map((each) => [each.binding.id, each.held?.taken ?? null]),
+      );
+
+    it("DAT-097 answers a bound image's asset version and its description, read from its definition's column, and why one cannot stand where it is placed", async () => {
+      const image = png(61);
+      // Admitted once, by a first question, so the four below are held at once (DAT-096).
+      const first = await placed();
+      h.connector.run = ranWithImages([[String(site), 'North gate', image]]);
+      const id = pendingOf(await resolve(first.document.id, first.node));
+      const asset = await admit((await uploadsOf(image))[0]!.id, image);
+      expect((await followed(id)).state).toBe('done');
+
+      const { document, node } = await placedFour();
+      h.connector.run = ranWithImages([[String(site), 'North gate', image]]);
+      const answer = await resolveAll(document.id, node);
+      expect(answer.statusCode, answer.body).toBe(200);
+      const shown = {
+        image: hashOf(image),
+        assetVersion: asset.id,
+        description: 'North gate',
+        column: { name: 'photo', type: DESCRIBED },
+      };
+      expect(await takenIn(document.id)).toEqual({
+        b1: shown,
+        b2: shown,
+        b3: { failure: 'value_not_image' },
+        b4: { failure: 'image_not_placeable' },
+      });
+      // The bytes, to a reader of the document holding it (D8-I).
+      expect(
+        (await h.call('ada', 'GET', `/v1/asset-versions/${asset.id}/content`)).statusCode,
+      ).toBe(200);
+    });
+
+    it('DAT-097 answers a bound image whose description is null image_description_missing in place, naming the column', async () => {
+      const image = png(62);
+      const first = await placed();
+      h.connector.run = ranWithImages([[String(site), 'Harbour', image]]);
+      const id = pendingOf(await resolve(first.document.id, first.node));
+      await admit((await uploadsOf(image))[0]!.id, image);
+      expect((await followed(id)).state).toBe('done');
+
+      const { document, node } = await placedFour();
+      h.connector.run = ranWithImages([[String(site), null, image]]);
+      expect((await resolveAll(document.id, node)).statusCode).toBe(200);
+      const missing = { failure: 'image_description_missing', column: 'name' };
+      expect(await takenIn(document.id)).toMatchObject({ b1: missing, b2: missing, b4: missing });
+    });
   });
 });

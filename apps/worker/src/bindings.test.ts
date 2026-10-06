@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import {
   addCatalogueVersion,
   addThemeVersion,
+  createArtifact,
   createComponent,
   createConnection,
   createDocument,
@@ -43,11 +44,13 @@ import {
 import { createObjectStores, tenantPrefix, type ObjectStores } from '@alloy-works/objects';
 import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
 import { strFromU8, unzipSync } from 'fflate';
+import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadPinnedFonts, type PinnedFonts } from './fonts.js';
 import { publishJob } from './jobs/publish.js';
 import { checkOoxml } from './testing/ooxml.js';
 import { readPdf } from './testing/pdf.js';
+import { checkPdfUa1 } from './testing/verapdf.js';
 import { processNextBesideChecks } from './testing/work.js';
 import { createTypst, typstBinaryPath, type Typst } from './typst.js';
 import type { JobHandler, WorkerLog } from './worker.js';
@@ -446,9 +449,9 @@ describe('publishing a document holding a value', () => {
     expect(await work()).toBe('done');
     const outputs = await outputsOf(request);
     expect(outputs.map((each) => [each.format, each.producer, each.producer_version])).toEqual(
-      expect.arrayContaining([['provenance', 'pipeline', '16']]),
+      expect.arrayContaining([['provenance', 'pipeline', '17']]),
     );
-    expect(outputs[0]!.pipeline_version).toBe('16');
+    expect(outputs[0]!.pipeline_version).toBe('17');
     const kept = outputs.find((each) => each.format === 'provenance')!;
     const text = (await bytesOf(kept.object_key)).toString('utf8');
     const provenance = JSON.parse(text);
@@ -542,5 +545,336 @@ describe('publishing a document holding a value', () => {
     expect(wordText(docx)).toContain(`The depth is ${printed} metres.`);
     // And Word's own schema finds nothing wrong with a document holding one.
     expect(await checkOoxml(docx)).toEqual([]);
+  });
+
+  describe('a bound image (the B6 plan, task 2)', () => {
+    const PHOTO_TYPE = {
+      base: 'image',
+      encoding: 'binary',
+      description: { column: 'caption' },
+    } as const;
+    const IMAGE_COLUMNS = [
+      { name: 'site', from: { column: 'site_code' }, type: { base: 'text' } },
+      { name: 'photo', from: { column: 'photo_bytes' }, type: PHOTO_TYPE },
+      { name: 'caption', from: { column: 'caption_text' }, type: { base: 'text' } },
+    ] as const;
+    const NORTH_SAYS = 'The north gate, open';
+    let photos: { id: string; version: { id: string } };
+    let north: { bytes: Buffer; hash: string; asset: string; key: string };
+    let south: { bytes: Buffer; hash: string; asset: string; key: string };
+
+    /** A PNG of one colour, kept in the store and admitted as an asset version, as D8 admits one. */
+    const admitted = (trx: TenantTransaction, colour: { r: number; g: number; b: number }) =>
+      (async () => {
+        const bytes = await sharp({
+          create: { width: 80, height: 60, channels: 3, background: colour },
+        })
+          .png()
+          .toBuffer();
+        const kept = await (await stores.forTenant(trx, tenant)).put(bytes, 'image/png');
+        const asset = await createArtifact(trx, {
+          spaceId: general,
+          author: ada,
+          substance: {
+            kind: 'asset',
+            content: {
+              schemaVersion: 1,
+              object: kept.key,
+              format: 'png',
+              bytes: bytes.length,
+              width: 80,
+              height: 60,
+              orientation: 1,
+              colour: 'rgb',
+              alpha: false,
+              depth: 8,
+              resolution: null,
+              // A dataset's image carries no description: its definition's column gives one (DAT-097).
+              alternative: null,
+            },
+          },
+        });
+        return { bytes, hash: kept.sha256, asset: asset.id, key: kept.key };
+      })();
+
+    const bound = (id: string, site: string): Binding =>
+      ({
+        type: 'binding',
+        id,
+        query: photos.id,
+        parameters: {},
+        mode: 'checked',
+        take: { key: { site }, column: 'photo' },
+      }) as Binding;
+
+    /**
+     * A document whose one component places `site`'s photo in a line, in a table's cell, as a figure
+     * described by its definition and as one its author marked decorative, every binding resolved to
+     * one dataset version whose provenance names both photos' asset versions.
+     */
+    const documentPlacingPhotos = (site: string) =>
+      within(async (trx) => {
+        const bindings = ['i1', 'i2', 'i3', 'i4'].map((id) => bound(id, site));
+        const [inLine, inCell, asFigure, decorative] = bindings as [
+          Binding,
+          Binding,
+          Binding,
+          Binding,
+        ];
+        const made = await createComponent(trx, {
+          spaceId: general,
+          title: 'Gates',
+          language: 'en-GB',
+          direction: 'ltr',
+          author: ada,
+        });
+        if (made.answer !== 'created') throw new Error(made.answer);
+        const substance = substanceOf(made.version);
+        if (substance.kind !== 'component') throw new Error('not a component');
+        const words = (value: string) => ({ type: 'text', value, marks: [] });
+        const paragraph = (id: string, ...content: unknown[]) => ({
+          type: 'paragraph',
+          id,
+          style: 'body',
+          content,
+        });
+        const figure = (id: string, binding: Binding, kind: string) => ({
+          type: 'figure',
+          id,
+          binding,
+          imageStyle: 'figure',
+          caption: [words(`The gate, ${id}`)],
+          alternative: { kind },
+        });
+        const content = {
+          ...(made.version.content as ContentDocument),
+          content: [
+            paragraph('p1', words('The gate: '), inLine, words('.')),
+            {
+              type: 'table',
+              id: 't1',
+              style: 'table',
+              caption: [words('Gates')],
+              headerRows: 0,
+              headerColumns: 0,
+              rows: [
+                {
+                  cells: [
+                    { content: [paragraph('c1', words('Gate'))], colspan: 1, rowspan: 1 },
+                    { content: [paragraph('c2', inCell)], colspan: 1, rowspan: 1 },
+                  ],
+                },
+              ],
+            },
+            figure('f1', asFigure, 'inherited'),
+            figure('f2', decorative, 'decorative'),
+          ],
+        } as ContentDocument;
+        const component = await recordVersion(trx, {
+          artifactId: made.version.artifactId,
+          openedFrom: made.version.id,
+          author: ada,
+          substance: { ...substance, content },
+        });
+        if (component.answer !== 'recorded') throw new Error(component.answer);
+        const document = await createDocument(trx, {
+          spaceId: general,
+          title: 'The gate report',
+          language: 'en-GB',
+          direction: 'ltr',
+          author: ada,
+        });
+        if (document.answer !== 'created') throw new Error(document.answer);
+        const outline: OutlineDocument = {
+          ...(document.version.content as OutlineDocument),
+          nodes: [
+            {
+              type: 'reference',
+              id: NODE,
+              component: made.version.artifactId,
+              mode: { kind: 'latest' },
+              numbered: true,
+              matter: 'body',
+              pageBreak: 'none',
+              values: {},
+              children: [],
+            },
+          ],
+        };
+        const version = await recordVersion(trx, {
+          artifactId: document.version.artifactId,
+          openedFrom: document.version.id,
+          author: ada,
+          substance: { kind: 'document', content: outline },
+        });
+        if (version.answer !== 'recorded') throw new Error(version.answer);
+        const result: CanonicalResult = {
+          columns: [
+            ['site', 'text'],
+            ['photo', 'image'],
+            ['caption', 'text'],
+          ],
+          rows: [
+            ['north', north.hash, NORTH_SAYS],
+            ['south', south.hash, null],
+          ],
+        };
+        const bytes = Buffer.from(canonicalResultBytes(result), 'utf8');
+        await (await stores.forTenant(trx, tenant)).put(bytes, 'application/json');
+        const dataset = await recordDatasetVersion(trx, {
+          author: ada,
+          images: [north.hash, south.hash],
+          provenance: {
+            schemaVersion: 1,
+            queryDefinition: { artifact: photos.id, version: photos.version.id },
+            connection: { artifact: connection.id, version: connection.version.id },
+            parameters: {},
+            ran: { sql: 'select site_code, photo_bytes, caption_text from secret_schema.gate' },
+            identity: { kind: 'service' },
+            at: '2026-10-06T09:00:00.000Z',
+            durationMs: 9,
+            rowCount: 2,
+            columns: IMAGE_COLUMNS.map((column) => ({ ...column })),
+            canonical: 1,
+            checksum: createHash('sha256').update(bytes).digest('hex'),
+            images: { [north.hash]: north.asset, [south.hash]: south.asset },
+          },
+        });
+        for (const binding of bindings) {
+          await recordResolution(trx, {
+            document: document.version.artifactId,
+            node: NODE,
+            binding: binding.id,
+            digest: sha256Hex(bindingDigestInput(binding)),
+            version: dataset.version.id,
+            replaces: null,
+            act: 'resolve',
+            by: ada,
+          });
+        }
+        return version.version;
+      });
+
+    beforeAll(async () => {
+      await within(async (trx) => {
+        north = await admitted(trx, { r: 20, g: 120, b: 40 });
+        south = await admitted(trx, { r: 120, g: 20, b: 140 });
+        const defined = await createQueryDefinition(trx, {
+          author: ada,
+          spaceId: general,
+          definition: {
+            schemaVersion: 1,
+            title: 'Gate photos',
+            description: '',
+            connection: connection.id,
+            parameters: [],
+            fetch: {
+              kind: 'sql',
+              text: 'select site_code, photo_bytes, caption_text from secret_schema.gate',
+            },
+            columns: IMAGE_COLUMNS.map((column) => ({ ...column })),
+            key: ['site'],
+            order: 'multiset',
+            empty: 'valid',
+            limits: { ...defaultLimits },
+            retired: false,
+          },
+        });
+        if (defined.answer !== 'created') throw new Error(defined.answer);
+        photos = defined.definition;
+      });
+    });
+
+    it("DAT-098 DAT-097 places a bound image in a line, in a table's cell and as a figure, printed from its asset version's bytes and described by its definition's column, a decorative one an artifact, in the PDF and in Word", async () => {
+      const version = await documentPlacingPhotos('north');
+      const request = await ask(version, ['pdf', 'docx']);
+      // Every object the job reads, so it can be seen that the photo it did not place is never read.
+      const read: string[] = [];
+      const watched: ObjectStores = {
+        forTenant: async (trx, owner) => {
+          const store = await stores.forTenant(trx, owner);
+          return { ...store, get: async (key) => (read.push(key), store.get(key)) };
+        },
+      };
+      expect(await work(watched)).toBe('done');
+      expect(read).toContain(north.key);
+      expect(read).not.toContain(south.key);
+      const outputs = await outputsOf(request);
+      const pdf = await bytesOf(outputs.find((each) => each.format === 'pdf')!.object_key);
+      const docx = await bytesOf(outputs.find((each) => each.format === 'docx')!.object_key);
+
+      // The PDF: three `Figure`s - the image in its line, the one in its cell and the figure - each
+      // read as the row's description; the decorative figure is an artifact, no `Figure` at all.
+      expect(await checkPdfUa1(pdf)).toMatchObject({ compliant: true, failedRules: 0 });
+      const tagged = await readPdf(pdf);
+      expect(tagged.figures.map(({ alt }) => alt)).toEqual([NORTH_SAYS, NORTH_SAYS, NORTH_SAYS]);
+
+      // Word: four pictures, each the asset's own bytes; three described by the row's description,
+      // and the decorative one flagged so and described by nothing.
+      const parts = unzipSync(docx);
+      const media = Object.keys(parts).filter((name) => name.startsWith('word/media/'));
+      expect(media.length).toBeGreaterThan(0);
+      for (const name of media)
+        expect(Buffer.from(parts[name]!).equals(north.bytes), name).toBe(true);
+      const body = strFromU8(parts['word/document.xml']!);
+      const pictures = [...body.matchAll(/<wp:docPr [^>]*>/g)].map((match) => match[0]);
+      expect(pictures).toHaveLength(4);
+      expect(pictures.filter((each) => each.includes(`descr="${NORTH_SAYS}"`))).toHaveLength(3);
+      expect(pictures.filter((each) => !each.includes('descr='))).toHaveLength(1);
+      expect(body.match(/adec:decorative/g)).toHaveLength(1);
+      expect(await checkOoxml(docx)).toEqual([]);
+    }, 120_000);
+
+    it('DAT-042 records each bound image in provenance.json at its schema 2: its hash, its asset version and its description', async () => {
+      const version = await documentPlacingPhotos('north');
+      const request = await ask(version, ['pdf']);
+      expect(await work()).toBe('done');
+      const kept = (await outputsOf(request)).find((each) => each.format === 'provenance')!;
+      const provenance = JSON.parse((await bytesOf(kept.object_key)).toString('utf8'));
+      expect(provenance.schemaVersion).toBe(2);
+      expect(provenance.values).toMatchObject(
+        [
+          ['p1', 'i1'],
+          ['c2', 'i2'],
+          ['f1', 'i3'],
+          ['f2', 'i4'],
+        ].map(([block, binding]) => ({
+          node: NODE,
+          block,
+          binding,
+          image: { hash: north.hash, assetVersion: north.asset },
+          description: NORTH_SAYS,
+          column: { name: 'photo', type: PHOTO_TYPE },
+          take: { key: { site: 'north' }, column: 'photo' },
+        })),
+      );
+      for (const value of provenance.values) {
+        expect(value).not.toHaveProperty('printed');
+        expect(value).not.toHaveProperty('value');
+      }
+    }, 120_000);
+
+    it('DAT-097 fails a publish and a preview of a bound image whose description is missing by name, naming every binding, its block and the column, and makes neither', async () => {
+      const version = await documentPlacingPhotos('south');
+      const publish = await ask(version, ['pdf', 'docx']);
+      const preview = await ask(version, ['pdf'], 'preview');
+      expect(await work()).toBe('failed');
+      expect(await work()).toBe('failed');
+      const failures = [
+        ['p1', 'i1'],
+        ['c2', 'i2'],
+        ['f1', 'i3'],
+        ['f2', 'i4'],
+      ].map(([block, binding]) => ({
+        stage: 'bind',
+        code: 'image_description_missing',
+        node: NODE,
+        block,
+        detail: `${binding}: caption`,
+      }));
+      expect(await requestOf(publish)).toEqual({ state: 'failed', failures });
+      expect(await requestOf(preview)).toEqual({ state: 'failed', failures });
+      expect(await outputsOf(publish)).toEqual([]);
+    }, 120_000);
   });
 });

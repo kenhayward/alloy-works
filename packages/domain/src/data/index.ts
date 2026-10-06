@@ -19,8 +19,19 @@ export {
   sourceMessage,
 } from './failures.js';
 export type { Attribution, DataFailure, DataFailureCode, SourceRefusal } from './failures.js';
-export { columnTypeSchema, proposedTypeSchema, valueTypeSchema } from './columns.js';
-export type { ColumnBase, ColumnType, ProposedType, ValueType } from './columns.js';
+export {
+  columnTypeSchema,
+  imageColumnTypeSchema,
+  proposedTypeSchema,
+  valueTypeSchema,
+} from './columns.js';
+export type {
+  ColumnBase,
+  ColumnType,
+  ImageColumnType,
+  ProposedType,
+  ValueType,
+} from './columns.js';
 export {
   DEFINITION_MAX_BYTES,
   DefinitionRefused,
@@ -101,7 +112,7 @@ export type {
 export { defaultLimits, effectiveLimits, limitCeilings } from './limits.js';
 export type { Limits, TenantLimits } from './limits.js';
 export { bindingDigestInput, bindingsIn, checkTake, literalValues } from './binding.js';
-export type { Binding, BindingAt } from './binding.js';
+export type { Binding, BindingAt, BindingPlace } from './binding.js';
 export {
   PROVENANCE_SCHEMA_VERSION,
   provenanceSchema,

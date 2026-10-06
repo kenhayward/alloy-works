@@ -38,7 +38,7 @@ export function said(
 ): string {
   if (stale) return CHANGED_SINCE_RESOLVED;
   if (taken === null || 'unavailable' in taken) return 'The result cannot be read';
-  if ('value' in taken) return shownValue(taken, formats);
+  if ('value' in taken || 'image' in taken) return shownValue(taken, formats);
   return bindingFailureWords(binding, failureHeld(taken, binding));
 }
 

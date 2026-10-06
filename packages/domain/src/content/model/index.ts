@@ -12,7 +12,12 @@ export type {
 export { blockNodeSchema } from './blocks.js';
 export type { BlockNode } from './blocks.js';
 
-export { contentDocumentSchema, parseContentDocument, CURRENT_SCHEMA_VERSION } from './document.js';
+export {
+  contentDocumentSchema,
+  parseContentDocument,
+  CURRENT_SCHEMA_VERSION,
+  FigureRefused,
+} from './document.js';
 export type { ContentDocument } from './document.js';
 
 export { blockIdentifierFrom } from './identifier.js';

@@ -177,6 +177,7 @@ export {
   ResolveBindingsBody,
   ResolveBindingsView,
   TakeOutcomeView,
+  PLACEMENT_FAILURES,
 } from './bindings.js';
 export {
   CreateQueryDefinitionBody,

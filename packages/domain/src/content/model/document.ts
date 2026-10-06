@@ -545,6 +545,20 @@ function checkBlock(block: BlockNode, claimed: Claimed): BlockNode {
       };
     }
     case 'figure':
+      // **Exactly one image** (the B6 plan, B6-A, `figure_image`): an asset version, or a binding
+      // taking an image column. **A bound figure is described by its definition, or is decorative**
+      // (B6-C, `figure_bound_alternative`): one fixed text cannot describe each document's row
+      // (DAT-097). Its binding's identifier is claimed as an inline one's is, before the caption,
+      // which is the order a reader meets the two in.
+      if ((block.asset === undefined) === (block.binding === undefined)) {
+        throw new FigureRefused('figure_image', block.id);
+      }
+      if (block.binding !== undefined) {
+        if (block.alternative.kind === 'own') {
+          throw new FigureRefused('figure_bound_alternative', block.id);
+        }
+        claim(block.binding.id, claimed.ids);
+      }
       return { ...block, caption: checkInlineContent(block.caption, 'component', claimed) };
     default:
       return block;
@@ -629,6 +643,24 @@ function shownInATitle(reference: { display: string; withoutPages?: string | und
 export class BindingInTitle extends Error {
   constructor(readonly binding: string) {
     super(`Binding ${binding} stands in a title, which belongs to no component`);
+  }
+}
+
+/**
+ * A figure the walk refuses (the B6 plan): `figure_image`, placing both an asset and a binding or
+ * neither (B6-A); `figure_bound_alternative`, a bound figure carrying its own text (B6-C). Names the
+ * figure and nothing of the author's text.
+ */
+export class FigureRefused extends Error {
+  constructor(
+    readonly code: 'figure_image' | 'figure_bound_alternative',
+    readonly figure: string,
+  ) {
+    super(
+      code === 'figure_image'
+        ? `Figure ${figure} places an asset or a binding, never both or neither (figure_image)`
+        : `Figure ${figure} takes its image from a binding, and so carries no text of its own (figure_bound_alternative)`,
+    );
   }
 }
 

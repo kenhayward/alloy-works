@@ -1,5 +1,6 @@
 import {
   bindingNodeSchema,
+  imageColumnTypeSchema,
   MAX_COLUMNS,
   provenanceSchema,
   TAKE_FAILURES,
@@ -91,10 +92,15 @@ export const ProvenanceView = provenanceSchema.extend({
   }),
 });
 
+/** Why an image a take gave cannot stand where its binding is placed (the B6 plan, B6-D). */
+export const PLACEMENT_FAILURES = ['value_not_image', 'image_not_placeable'] as const;
+
 /**
  * What a binding's take gave from a dataset version (B1-H): the value, in its column's canonical form,
- * with the column it was declared as - its name and type, never the source's column it reads - or why
- * there is none, by code; or `unavailable` where the stored result could not be read to take it.
+ * with the column it was declared as - its name and type, never the source's column it reads - or an
+ * image (B6-D), with the asset version it was admitted as and its description; or why there is none,
+ * by code, its placement among them; or `unavailable` where the stored result could not be read to
+ * take it.
  */
 export const TakeOutcomeView = z
   .union([
@@ -108,16 +114,38 @@ export const TakeOutcomeView = z
       }),
     }),
     z.strictObject({
-      failure: z
-        .enum(TAKE_FAILURES)
+      image: z
+        .string()
+        .regex(/^[0-9a-f]{64}$/)
+        .describe("The image's SHA-256, as the result's cell holds it"),
+      assetVersion: z
+        .string()
         .describe(
-          '`take_invalid`: the result has no such column, taken or key; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone',
+          "The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it",
+        ),
+      description: z
+        .string()
+        .describe(
+          "What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so",
+        ),
+      column: z.strictObject({
+        name: z.string().describe('The declared image column it was taken from'),
+        type: imageColumnTypeSchema,
+      }),
+    }),
+    z.strictObject({
+      failure: z
+        .enum([...TAKE_FAILURES, ...PLACEMENT_FAILURES])
+        .describe(
+          "`take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image",
         ),
       count: z.number().int().min(2).optional().describe('`value_many`: how many rows there were'),
       column: z
         .string()
         .optional()
-        .describe('`take_invalid`: the column, taken or key, the result does not have'),
+        .describe(
+          "`take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column",
+        ),
     }),
     z.strictObject({
       unavailable: z

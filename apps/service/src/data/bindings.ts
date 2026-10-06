@@ -79,6 +79,7 @@ import {
   takeValue,
   type AssetFormat,
   type Binding,
+  type BindingPlace,
   type CanonicalResult,
   type Column,
   type DraftDefinition,
@@ -177,6 +178,8 @@ interface Placed {
   readonly component: string;
   readonly binding: Binding;
   readonly digest: string;
+  /** In a line, in a footnote's line, or as a figure's image: where an image may stand (B6-D). */
+  readonly place: BindingPlace;
 }
 
 const key = (node: string, binding: string) => `${node} ${binding}`;
@@ -245,12 +248,13 @@ async function bindingsPlaced(
       version: occurrence.version,
     });
     if (!content.ok) throw new Error(`The component version ${occurrence.version} does not read`);
-    for (const { binding } of bindingsIn(content.document)) {
+    for (const { binding, place } of bindingsIn(content.document)) {
       placed.push({
         node: occurrence.node,
         component: occurrence.component,
         binding,
         digest: sha256(bindingDigestInput(binding)),
+        place,
       });
     }
   }
@@ -863,6 +867,24 @@ interface TakeAsked {
 
 const takeKey = (version: string, take: Take) => `${version} ${takeDigest(take)}`;
 
+/** What a take gave, or that its result could not be read to take it. */
+type Taken = TakeOutcome | { readonly unavailable: true };
+
+/**
+ * **What a take gives where its binding is placed** (the B6 plan, B6-D), as the view answers it: an
+ * image with the asset version its dataset version's provenance admitted it as, or `unavailable` where
+ * that names none; an image in a footnote's text `image_not_placeable` (CNT-129), and a figure's
+ * binding taking anything but an image `value_not_image` - decided here and by the publish's stage,
+ * never recorded, since `dataset_take` keys an outcome by the version and the take alone.
+ */
+function placedTaken(place: BindingPlace, taken: Taken, provenance: Provenance): TakeOutcomeView {
+  if ('unavailable' in taken || 'failure' in taken) return taken;
+  if ('value' in taken) return place === 'figure' ? { failure: 'value_not_image' } : taken;
+  if (place === 'footnote') return { failure: 'image_not_placeable' };
+  const assetVersion = provenance.images[taken.image];
+  return assetVersion === undefined ? { unavailable: true } : { ...taken, assetVersion };
+}
+
 /**
  * What each take asked gives (B1-H), by `takeKey`: what `dataset_take` holds, read first; and for a
  * miss, the stored result read once per version by its checksum, held to it and to the canonical
@@ -876,11 +898,11 @@ async function takenOf(
   store: (() => Promise<TenantStore>) | undefined,
   keyFor: (checksum: string) => string,
   asked: readonly TakeAsked[],
-): Promise<Map<string, TakeOutcomeView>> {
+): Promise<Map<string, Taken>> {
   const unique = [
     ...new Map(asked.map((each) => [takeKey(each.version, each.take), each])).values(),
   ];
-  const taken = new Map<string, TakeOutcomeView>(
+  const taken = new Map<string, Taken>(
     (
       await takesOf(
         trx,
@@ -1133,7 +1155,13 @@ function viewer(
           provenance: provenanceView(held.held.provenance, readsDefinition),
           name: name?.name ?? null,
           stale,
-          taken: stale ? null : taken.get(takeKey(held.held.version, take))!,
+          taken: stale
+            ? null
+            : placedTaken(
+                placed.place,
+                taken.get(takeKey(held.held.version, take))!,
+                held.held.provenance,
+              ),
           act: held.act,
           keepable: await keepable(placed, held),
           by: { id: held.by, displayName: await nameOf(held.by) },
@@ -1147,7 +1175,11 @@ function viewer(
                   held.waiting.provenance,
                   await reads(held.waiting.provenance.queryDefinition.artifact),
                 ),
-                taken: taken.get(takeKey(held.waiting.version, take))!,
+                taken: placedTaken(
+                  placed.place,
+                  taken.get(takeKey(held.waiting.version, take))!,
+                  held.waiting.provenance,
+                ),
               }
             : null,
         ...shown,

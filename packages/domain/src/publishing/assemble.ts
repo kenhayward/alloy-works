@@ -1349,6 +1349,17 @@ export function assemble(given: AssembleInput): Assembled {
         const label = entry?.label ?? null;
         if (label !== null) check(label, node, block.id, captionFamilies('figure'));
 
+        // **A figure still without an asset after the binding stage** (the B6 plan, B6-E): one whose
+        // binding the stage failed by name, which prints nothing. A backstop beside it: one the stage
+        // named nothing for is refused as unresolved, so no figure is ever set without its image.
+        if (block.asset === undefined) {
+          if (!bindFailures.some((each) => each.node === node && each.block === block.id)) {
+            failures.push(
+              failure('bind', 'binding_unresolved', node, block.id, block.binding?.id ?? null),
+            );
+          }
+          return [];
+        }
         const asset = input.assets.get(block.asset);
         if (asset === undefined) {
           // The request resolved every image as the publisher and recorded why one is missing; one it

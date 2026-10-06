@@ -337,6 +337,11 @@ export const PublicationBindingView = z.object({
     connection: Versioned.optional().describe(
       'The connection it ran on: to a reader of the query definition alone',
     ),
+    images: z
+      .record(z.string(), z.string())
+      .describe(
+        "Each image the result holds, by its SHA-256, to the asset version it was admitted as: an image a binding placed is printed from that asset version's bytes",
+      ),
   }),
 });
 export type PublicationBindingView = z.infer<typeof PublicationBindingView>;

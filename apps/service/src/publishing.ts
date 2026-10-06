@@ -509,6 +509,7 @@ export function publishingHandlers(
               ...(disclosed ? { from: { ...column.from } } : {}),
             })),
             ...(disclosed ? { ran: { ...p.ran }, connection: { ...p.connection } } : {}),
+            images: { ...p.images },
           },
         });
       }

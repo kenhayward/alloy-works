@@ -415,6 +415,14 @@ export function failureWords(failure: Failure, wordOffered = false): string {
       return `This value names a column its result does not have. ${CHANGE_THE_VALUE}`;
     case 'result_unreadable':
       return "This value's stored result could not be read. Resolve it again, then publish again.";
+    // B6: a bound image with no description in its row, one in a footnote, and a figure's binding
+    // taking a column that holds no image.
+    case 'image_description_missing':
+      return `This image's row has no description in the column its query definition names. ${CHANGE_THE_VALUE}`;
+    case 'image_not_placeable':
+      return 'This image stands in a footnote, which cannot hold one. Move it out of the footnote.';
+    case 'value_not_image':
+      return "This figure's value is not an image. Change it to an image column.";
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:

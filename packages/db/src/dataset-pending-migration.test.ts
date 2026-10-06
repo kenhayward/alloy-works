@@ -133,7 +133,10 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
   });
 
   it('migrates every environment made before it, its uploads a person made, to what a fresh environment is', async () => {
-    expect((await migrate(db.migratorUrl)).tenants[upgraded.id]).toEqual(['0051_dataset_pending']);
+    expect((await migrate(db.migratorUrl)).tenants[upgraded.id]).toEqual([
+      '0051_dataset_pending',
+      '0052_bound_images',
+    ]);
     const kept = await queryAs(
       db.adminUrl,
       `select origin, alternative from ${upgraded.schema}.asset_upload where id = $1`,

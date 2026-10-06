@@ -138,6 +138,8 @@ describe('publishing a document holding values, through the routes', () => {
             { name: 'id', from: { column: 'id' } },
             { name: 'name', from: { column: 'name' } },
           ],
+          // Each image the result holds, by its hash, to its asset version (B6): none here.
+          images: {},
         },
       },
     ]);

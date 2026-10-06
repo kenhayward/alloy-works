@@ -316,6 +316,23 @@
       "alternative": { "kind": "own", "text": "A bar chart of throughput by measure" }
     },
     {
+      "type": "figure",
+      "id": "b9-bound",
+      "binding": {
+        "type": "binding",
+        "id": "k-figure",
+        "query": "00000000-0000-4000-8000-00000000d001",
+        "parameters": { "site": { "literal": "north" } },
+        "mode": "checked",
+        "take": { "column": "site_photo" }
+      },
+      "imageStyle": "column-width",
+      "caption": [
+        { "type": "text", "value": "A figure taking its image from a binding", "marks": [] }
+      ],
+      "alternative": { "kind": "inherited" }
+    },
+    {
       "type": "preformatted",
       "id": "b10",
       "text": "select 1\n\tfrom nothing",

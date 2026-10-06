@@ -61,6 +61,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0049_binding_confirm',
       '0050_publication_bindings',
       '0051_dataset_pending',
+      '0052_bound_images',
     ]);
 
     const read = async () =>

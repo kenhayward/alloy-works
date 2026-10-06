@@ -668,6 +668,9 @@ describe('publishing from the document page', () => {
         'value_empty',
         'take_invalid',
         'result_unreadable',
+        'image_description_missing',
+        'image_not_placeable',
+        'value_not_image',
       ].map(failed),
     );
     open(fake.fetch);
@@ -682,6 +685,9 @@ describe('publishing from the document page', () => {
       "This value's cell in its result holds only spaces. Change the value, or resolve it again.",
       'This value names a column its result does not have. Change the value, or resolve it again.',
       "This value's stored result could not be read. Resolve it again, then publish again.",
+      "This image's row has no description in the column its query definition names. Change the value, or resolve it again.",
+      'This image stands in a footnote, which cannot hold one. Move it out of the footnote.',
+      "This figure's value is not an image. Change it to an image column.",
     ]) {
       expect(why).toHaveTextContent(words);
     }

@@ -157,6 +157,8 @@ export interface Harness {
    * paragraph `p1` holding these inlines. Answers the version cut, and moves `component.version`.
    */
   place(component: { id: string; version: string }, ...inlines: unknown[]): Promise<string>;
+  /** As `place`, the component's content these blocks rather than one paragraph. */
+  placeBlocks(component: { id: string; version: string }, ...blocks: unknown[]): Promise<string>;
   /** A document in a space referencing these components, made by Ada through the routes. */
   documentReferencing(
     components: readonly string[],
@@ -351,7 +353,16 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
       return { id: made.version.artifactId, version: made.version.id };
     },
 
-    async place(component, ...inlines) {
+    place(component, ...inlines) {
+      return harness.placeBlocks(component, {
+        type: 'paragraph',
+        id: 'p1',
+        style: 'body',
+        content: inlines,
+      });
+    },
+
+    async placeBlocks(component, ...blocks) {
       const session = randomUUID();
       const claimed = await call('ada', 'POST', `/v1/components/${component.id}/lock`, {
         session,
@@ -369,7 +380,7 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
             title: 'Readings',
             language: 'en-GB',
             direction: 'ltr',
-            content: [{ type: 'paragraph', id: 'p1', style: 'body', content: inlines }],
+            content: blocks,
           },
         },
       );

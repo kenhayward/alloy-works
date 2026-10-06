@@ -70,7 +70,7 @@ const numbering = {
 describe('publishedProvenance', () => {
   it('records each value: where, what was printed and from what, and the result it was taken from', () => {
     expect(publishedProvenance([value], datasets, numbering)).toEqual({
-      schemaVersion: 1,
+      schemaVersion: 2,
       values: [
         {
           node: NODE,
@@ -101,6 +101,33 @@ describe('publishedProvenance', () => {
         },
       ],
     });
+  });
+
+  it('records a bound image at schema 2 by its hash, the asset version it was placed as and its description, and no printed value', () => {
+    const type = { base: 'image', encoding: 'binary', description: { column: 'caption' } } as const;
+    const image: PrintedValue = {
+      node: NODE,
+      block: 'f1',
+      binding: 'i1',
+      take: { column: 'photo' },
+      image: { hash: 'a1'.repeat(32), assetVersion: '00000000-0000-4000-8000-00000000a501' },
+      description: 'The north gate',
+      column: { name: 'photo', type },
+      datasetVersion: VERSION,
+    };
+    const made = publishedProvenance([value, image], datasets, numbering);
+    expect(made.schemaVersion).toBe(2);
+    const [, recorded] = made.values;
+    expect(recorded).toMatchObject({
+      block: 'f1',
+      binding: 'i1',
+      image: { hash: 'a1'.repeat(32), assetVersion: '00000000-0000-4000-8000-00000000a501' },
+      description: 'The north gate',
+      column: { name: 'photo', type },
+      dataset: { version: VERSION },
+    });
+    expect(recorded).not.toHaveProperty('printed');
+    expect(recorded).not.toHaveProperty('value');
   });
 
   it('holds no SQL, no connection and no column source, whatever the stored provenance carries beside them', () => {

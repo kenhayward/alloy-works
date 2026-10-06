@@ -39,14 +39,24 @@ export const columnTypeSchema = z.discriminatedUnion('base', [
   localDateTime,
   instant,
   boolean,
-  z.strictObject({
+  imageTypeSchema(),
+]);
+
+/** An image column's type (D8-A): its encoding, and its description's column or `decorative`. */
+function imageTypeSchema() {
+  return z.strictObject({
     base: z.literal('image'),
     encoding: z.enum(['base64', 'binary']),
     description: z.union([z.strictObject({ column: z.string().min(1) }), z.literal('decorative')]),
-  }),
-]);
+  });
+}
 
 export type ColumnType = z.infer<typeof columnTypeSchema>;
+
+/** An image column's type alone, as a take of one answers it (the B6 plan, B6-D). */
+export const imageColumnTypeSchema = imageTypeSchema();
+
+export type ImageColumnType = Extract<ColumnType, { base: 'image' }>;
 
 /** The eight bases a value can have: a parameter's type, and a D2 column's (the D2 plan, rows 5 and 9). */
 export const valueTypeSchema = z.discriminatedUnion('base', [

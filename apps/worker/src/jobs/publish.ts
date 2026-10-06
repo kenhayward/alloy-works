@@ -55,8 +55,9 @@ import type { JobHandler } from '../worker.js';
  * first to resolve and print a cross-reference, 11 the first to set an equation, 12 the first to
  * be set from the theme the request was made under, 13 the first to set a table and an image from
  * their styles, 14 the first to leave a table or a figure marked unnumbered out of the list of its
- * kind, 15 the first to set a table's or a figure's caption where its style places it, and 16 the
- * first to set a bound value, read from its stored result, and make `provenance.json` beside it.
+ * kind, 15 the first to set a table's or a figure's caption where its style places it, 16 the
+ * first to set a bound value, read from its stored result, and make `provenance.json` beside it, and
+ * 17 the first to set a bound image and write `provenance.json` at its schema 2 (the B6 plan).
  *
  * **Both keys are frozen.** Keyed by `PUBLISHING_SCHEMA` itself, a repoint moved the key while the
  * value stayed behind, and the `satisfies` clause could not catch it because `PublishedSchema`
@@ -68,7 +69,7 @@ import type { JobHandler } from '../worker.js';
  */
 export const PIPELINE_VERSION = {
   [PUBLISHING_SCHEMA_1]: '1',
-  [PUBLISHING_SCHEMA_CURRENT]: '16',
+  [PUBLISHING_SCHEMA_CURRENT]: '17',
 } as const satisfies Record<PublishedSchema, string>;
 
 /** The document's own failures, every one at once: the job is finished, never tried again. */
@@ -146,7 +147,12 @@ export async function heldResults(
             JSON.parse(Buffer.from(bytes).toString('utf8')),
           );
           if (!parsed.success) return 'unreadable';
-          return { result: parsed.data, columns, datasetVersion: version };
+          return {
+            result: parsed.data,
+            columns,
+            datasetVersion: version,
+            images: dataset.provenance.images,
+          };
         } catch {
           return 'unreadable';
         }
@@ -217,8 +223,18 @@ export function publishJob(deps: {
       }));
       // Nothing to do: finished by another attempt.
       if (!read.inputs) return;
-      const { request, outline, occurrences, refused, layout, theme, revision, assets, bindings } =
-        read.inputs;
+      const {
+        request,
+        outline,
+        occurrences,
+        refused,
+        layout,
+        theme,
+        revision,
+        assets,
+        bindings,
+        boundAssets,
+      } = read.inputs;
 
       // The theme's faces held to the pinned files before anything is composed (themes 1, ruling R5,
       // and the final review's M1): a typeface the worker does not hold exactly - its files, their
@@ -266,7 +282,9 @@ export function publishJob(deps: {
         theme: theme?.theme ?? null,
         revision,
         covers: deps.fonts.covers,
-        assets,
+        // The request's own images, and every one a held result could place (B6-F): the binding
+        // stage sets a bound image as an ordinary one, naming its asset version, sized from these.
+        assets: new Map([...boundAssets, ...assets]),
         ...(deps.conditionContent ? { conditionContent: deps.conditionContent } : {}),
       });
       if (!assembled.ok) throw new PublishRefused(assembled.failures);
@@ -280,8 +298,15 @@ export function publishJob(deps: {
       // from too.
       const data = JSON.stringify(assembled.document);
       const outputs: NewPublicationOutput[] = [];
-      // Read once, for whichever outputs are asked for: the same bytes by the same paths.
-      const images = await rootImages(assets, (key) => read.store.get(key));
+      // Read once, for whichever outputs are asked for: the same bytes by the same paths. Of a held
+      // result's images, only those the binding stage placed (B6-F), never every one a result holds.
+      const placed = new Map(assets);
+      for (const value of assembled.values) {
+        if (!('image' in value)) continue;
+        const bound = boundAssets.get(value.image.assetVersion);
+        if (bound !== undefined) placed.set(value.image.assetVersion, bound);
+      }
+      const images = await rootImages(placed, (key) => read.store.get(key));
       if (formats.includes('pdf')) {
         const template = PUBLICATION_TEMPLATE[TEMPLATE_READING[schema]];
         const pdf = await deps.typst.compile(template.file, data, request.requestedAt, images);
