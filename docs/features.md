@@ -610,6 +610,20 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   **Used by**, the query definitions that name it and the documents holding results from it - those
   you may read by title, and how many more - and a connection a query definition still uses cannot be retired: the page names what to retire
   first.
+- **Running as each person.** A PostgreSQL connection's **Runs as** is the connection's account, or
+  each person, by the email they sign in with or by their identifier at the organisation's sign-in.
+  Running as each person, a resolve, a check, a sample and **List tables** run as the person asking,
+  by a role the database's administrator made for them, so the database's own permissions and
+  row-level rules decide what each sees; **Test** still runs as the account. Only queries built in
+  the product run so; SQL written by hand is refused, when saved and at every run. The account must
+  read, create and own nothing itself, and a person's role must not sign in, create or own anything:
+  both are checked at every run, and the connection's page says what the database's administrator
+  must change. Holding your own view in a document first warns that everybody who may read the
+  document will see it, and that it prints in its publications; a value says whose own view it is,
+  and nobody else may accept or check it. Signing out, or revoking the token a query was asked with,
+  stops it at the database within two seconds, records nothing and says why, and closes your live
+  updates. [The administrator's guide](guides/asserted-identity-on-postgresql.md) says how to set the
+  database up, and what it trusts.
 - **Query definitions.** **Query definitions**, beside Connections, lists the query definitions you may
   read, by space, each with its connection. Somebody who may edit in a space and use a connection
   writes one there with **New query definition**, in steps: the connection, a title and a description;
@@ -675,7 +689,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   already hold it - a cut and paste, or a paste into another component - so its value is kept, and
   takes a new one, holding no value until a document resolves it, only where its original still
   stands. **Resolving** a binding in a
-  document runs its query against the database now, as the connection's own account, through the
+  document runs its query against the database now, as the connection's own account or as you,
+  through the
   connector, and keeps the result as a version of a **dataset** - the rows once, under their
   checksum, with what ran, as whom, when and how many rows - which the binding then holds in that
   document alone. **Checking** a document runs its checked bindings again, each distinct question
@@ -1199,9 +1214,9 @@ Named explicitly so nobody has to read the source to find out:
 - No page for component types: a Definitions manager makes and changes them through the API alone,
   and nothing yet changes which one is the environment's default.
 - No way to delete a component or a document, including one made by mistake.
-- A value fetched as the person who accepts it does not exist yet, so Accept never warns that it
-  shows that person's view to every reader. A document's own parameters do not exist, so a binding
-  taking one cannot be resolved. A connection reaches PostgreSQL alone, as its own service account;
+- A document's own parameters do not exist, so a binding taking one cannot be resolved. A connection
+  reaches PostgreSQL alone, as its own account or as each person by a role the database's
+  administrator made; no connection yet runs with a person's own token from their sign-in provider;
   the builder's page builds from one table or view - a join or a nested query is written through the
   API, or as a view at the database - and no page shows or changes the environment's lowered run
   limits, which the API alone sets. An image column cannot yet be placed in a document: a binding

@@ -270,6 +270,17 @@ table of its own in schema `sample`, `d3_sites_<time>`, as the source's superuse
 drops the table afterwards. The seed is never changed, so a rerun against the same stack starts
 from the same rows.
 
+**The seed runs as each person too** (the D7 plan): `asserter`, an account that reads, owns and
+creates nothing, and the stand-in's `ada@example.com` and `grace@example.com` as `NOLOGIN` roles
+granted to it to `SET` alone; `sample.reading` shows each only their own site's rows, while `reader`
+and `writer` keep every row by a policy of their own. `tests/e2e/src/asserted.test.ts` resolves one
+question as each of them, and holds a run at the source by locking a table of its own from a `psql`
+session in the source's container, then signs Grace out and revokes Ada's token mid-run. The
+connector's own `asserted.test.ts` makes its people in a database of its own, under an account named
+`suite_asserter`, so it never touches the seed's. The suite runs four files at a time
+(`tests/e2e/vitest.config.ts`): the stack's connector runs eight children, and every file starting at
+once on a machine of many cores asks for more.
+
 ## The regression corpus and veraPDF
 
 `apps/worker/src/regression.test.ts` holds the corpus, one suite (W14's decision W-F): the publishing

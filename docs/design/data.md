@@ -49,7 +49,7 @@ checksummed result or one named failure.
 | **DAT-005** | The secret is opened only in the connector's per-request child, goes in a header never a URL, and is kept out of every log, telemetry event, export, crash report and error; the spike's case 2 matrix becomes a test for each path, in the service and in the connector                                                                                                             |
 | **DAT-075** | `test` answers `ok`, or `connection_failed` alike for a refused or filtered port, an unknown host, a guarded address and a wrong credential, naming no address and echoing no credential; checks of the authenticated account are reported after it by name ([The connection test](#the-connection-test))                                                                            |
 | **DAT-007** | Every change to a connection's settings is a version, so what changed is a comparison of two versions; every credential set or replaced is a row naming who and when and never the value; a connection is never deleted, and retiring it is a version                                                                                                                                |
-| **DAT-076** | `identity` is `service`, or `endUser` by `delegated` or `asserted`; a delegated act needs the provider access token a session through the tenant's own provider holds, so a Google-route session or a personal API token is refused, `identity_unavailable`                                                                                                                          |
+| **DAT-076** | `identity` is `service`, or `endUser` by `delegated` or `asserted`; a delegated act needs the provider access token a session through the tenant's own provider holds, so a Google-route session or a personal API token is refused, `identity_unavailable`. The asserted half is built (D7); the delegated half with D6                                                             |
 | **DAT-078** | Each connection type's connector declares the mechanisms it supports - `postgres` and `sqlServer` (once built, ADR-0038) asserted, `http` delegated, `s3` none - and a connection version declaring another is refused, `identity_not_supported`                                                                                                                                     |
 | **DAT-064** | Where a connection is used - the definitions naming it and, through their bindings and resolutions, the documents - is computed when asked, `GET /v1/connections/{id}/uses`, and the retire screen shows it before it proceeds                                                                                                                                                       |
 | **DAT-065** | Nothing deletes a connection; retiring one is refused, `connection_in_use`, naming each definition that is not itself retired and names it, so no definition is left pointing at nothing and nothing cascades                                                                                                                                                                        |
@@ -58,6 +58,7 @@ checksummed result or one named failure.
 | **DAT-112** | Under asserted identity the account is checked at every run, describe and sample, in the transaction before the assertion, and refused, `account_holds_privilege`, if it may `SELECT` any relation or column outside the catalogues by grant, ownership, `PUBLIC`, `pg_read_all_data` or an inherited role, or is a superuser; the test reports the same finding (the D7 plan, D7-D) |
 | **DAT-113** | On PostgreSQL an asserted identity runs only builder-generated text, the SQL fallback refused; on SQL Server, once built (ADR-0038), the assertion is a `read_only` `SESSION_CONTEXT` key or `EXECUTE AS USER ... WITH COOKIE` with the cookie held by the connector                                                                                                                 |
 | **DAT-114** | No source connection is reused: the child process that opened it closes it and exits with its one request, so a connection that carried a user's identity is always discarded                                                                                                                                                                                                        |
+| **IAM-082** | Within two seconds of a sign-out or a token's revocation committing, every connector call of that session or token is closed and its child killed, the source losing the query within 250 ms; the act answers `authority_ended` naming why, logged, recording nothing; the session's event stream closes (the D7 plan, D7-I)                                                         |
 | **DAT-009** | `queryDefinition` is an artifact kind in one space whose version carries a `title` and exactly one `connection`, a connection artifact's identifier                                                                                                                                                                                                                                  |
 | **VER-057** | A query definition versions through `artifact_version` by `recordVersion`, with an author, `schemaVersion`, the digest and the insert-only grant every artifact has; a change is a new version from `openedFrom`                                                                                                                                                                     |
 | **SCH-055** | `queryDefinition` is a search kind, its entry written with each version from its title, description and column names                                                                                                                                                                                                                                                                 |
@@ -130,7 +131,6 @@ checksummed result or one named failure.
 | DAT-026, DAT-111                   | Nothing caches a result in T2 (ADR-0035), so neither has anything to apply to. A dataset reused is one the same identity key asked for, and is reused only after the source answered with its checksum                                                                           |
 | DAT-052, DAT-094, IAM-083, IAM-084 | A declared cache life is T7; querying a stored dataset is T4; a dataset's own read grant and publishing only by one who sees every value are T7                                                                                                                                  |
 | DAT-053, DAT-071                   | Execution attributed and throttled per tenant are T3                                                                                                                                                                                                                             |
-| IAM-082                            | Sign-out stopping data flowing on a connection that carries the person's authority is D7's, where a run first carries a person's own identity (D3-Q). In D3 every run is the service account's, and an act whose session ends while the source answers records nothing (D3-H)    |
 | TPL-063, TPL-065, TPL-019, TPL-041 | Establishing a document's bindings when it is made, and a template's parameters feeding them, are the `templates.md` additions'; they call resolve, below                                                                                                                        |
 | CNT-039                            | `tables.md`'s                                                                                                                                                                                                                                                                    |
 | PUB-049, PUB-108                   | `bindings.md`'s                                                                                                                                                                                                                                                                  |
@@ -172,7 +172,7 @@ In `packages/domain/src/data/connection.ts`, a zod schema and a check:
 
 **D1 admits `type: 'postgres'` alone** (the D1 plan, D1-C): `sqlServer`, `http` and `s3` each arrive
 as an arm with their slice, which refuses nothing stored, and every write refuses an identity its
-type's connector does not declare, so only `service` can be written until D7 declares `asserted`.
+type's connector does not declare, so only `service` could be written until D7 declared `asserted` for `postgres`.
 
 **What a version holds is what anybody who may read it sees**: never a secret. A database source
 names its `account`, the login it runs as, beside its host, so the connection's readers see what it
@@ -182,7 +182,9 @@ names a local path or a socket, and an `identity` the type's connector does not 
 `postgres` and `sqlServer` declare `asserted`, `http` declares `delegated`, and `s3` declares none,
 so its identity is `service` (DAT-077). **Asserted identity's rules** (DAT-112 to DAT-114, ADR-0035)
 are the connector's to apply: in PostgreSQL the role membership is `WITH INHERIT FALSE, SET TRUE`
-and the assertion is `SET LOCAL ROLE` in a transaction the connector opens and ends; in SQL Server a
+and the assertion is `set_config('role', $1, true)`, the role a bound value, in a read-only
+transaction the connector opens and ends, `current_user` read again after the rows (the D7 plan,
+D7-A, D7-E); in SQL Server a
 `read_only` `SESSION_CONTEXT` key or `EXECUTE AS USER ... WITH COOKIE`, whichever `assertion` names;
 where the source cannot fail loud, the connector refuses an end-user query it has not asserted for.
 **Each person's role is `NOLOGIN`, creates nothing and owns nothing**, and the account owns no
@@ -424,7 +426,12 @@ if an act comes to run hundreds of queries, as a document made from a large temp
 - **Asserted identity**: the connection declares which sign-in attribute names the person at the
   source, `email` or `subject`; the service passes that value, and the connector asserts it by the
   source's mechanism. A person the source does not know is refused, `identity_unmatched`, by name
-  rather than answered with nothing.
+  rather than answered with nothing. Built by D7: the email only where the provider verified it, the
+  subject only for the environment's own organisation provider, else `identity_unavailable`; resolve,
+  check, sample and describe run as the caller, by session or personal token, and `test` as the
+  account; a result is that person's own view, checked, offered and accepted by them alone
+  (`identity_differs`) and held only past DAT-091's warning (`acknowledgement_required`). The source's
+  administrator makes the roles: [the guide](../guides/asserted-identity-on-postgresql.md).
 
 ### The address guard
 
@@ -482,7 +489,8 @@ token, sealed with the service's key under a purpose of its own, for the session
 at sign-out**. No refresh token is held: an expired token fails the next data act by name,
 `identity_expired`, and signing in again cures it. This is the session model change ADR-0035 names;
 [service-foundations.md](service-foundations.md), under which the service keeps no provider token, is
-changed by the slice that builds it (D7), not before.
+changed by the slice that builds it, not before. **Not built**: Ken moved the delegated token to D6,
+where `http` first reads it (the D7 plan, question 1).
 
 ### Deployment
 
@@ -1031,9 +1039,11 @@ the act has them, the binding and the document (DAT-086). A failed act records n
 | `nested_value`            | query       | A nested JSON value in a column not declared text (DAT-095)                                                                                                                                                                                         |
 | `image_refused`           | query       | An image was not a PNG or a JPEG, or `ingest` refused it (DAT-096)                                                                                                                                                                                  |
 | `empty_result`            | query       | No rows, where the definition says empty is invalid (DAT-068)                                                                                                                                                                                       |
-| `identity_unavailable`    | product     | A delegated act by a person with no provider token (DAT-076)                                                                                                                                                                                        |
+| `identity_unavailable`    | product     | A delegated act with no provider token (DAT-076), or an asserted one whose sign-in names no role                                                                                                                                                    |
 | `identity_expired`        | connector   | The provider token has expired; sign in again                                                                                                                                                                                                       |
 | `identity_unmatched`      | connector   | The source does not know the asserted person                                                                                                                                                                                                        |
+| `account_holds_privilege` | connector   | The account may read, create or own SQL of its own under asserted identity (DAT-112)                                                                                                                                                                |
+| `identity_role_unsafe`    | connector   | The person's role may log in, create, or owns SQL that could set another role                                                                                                                                                                       |
 | `sql_not_permitted`       | product     | A SQL fetch on a connection that refuses one (DAT-102, DAT-103)                                                                                                                                                                                     |
 | `parameter_invalid`       | product     | A value failed its declaration before anything ran (DAT-020)                                                                                                                                                                                        |
 | `binding_unresolved`      | product     | A publish met a binding with no stored result - raised by the publish (DAT-087, `bindings.md`)                                                                                                                                                      |
@@ -1232,6 +1242,17 @@ anything is queued, `binding_unresolved`, naming each binding by its node and th
 `assemble` refuses one by the same code should a request reach it. DAT-046 and DAT-087 stay
 unclaimed: their answer is the binding stage, `bindings.md`'s.
 
+### Settled by the D7 plan, approved by Ken on 2026-10-06
+
+| #    | Decision                                                                                                                                               |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| D7-B | **The role is the person's declared attribute, verbatim**; the product provisions nothing at the source and keeps no mapping                           |
+| D7-D | **The account's privilege is checked at every asserted run and describe**, strictly, `PUBLIC` grants included                                          |
+| D7-F | **SQL is refused on an asserted connection** when saved and at every run, by the connection version it runs on                                         |
+| D7-H | **A person's own view stays theirs**: identity key `asserted:<principal>`; checked, offered and accepted by them alone; held only with `sharesOwnView` |
+| D7-I | **IAM-082's bound is two seconds**, for every connector call of an ended session or token and for the event stream                                     |
+| D7-J | **Provenance's identity names whose view a result is**: principal, sign-in route and the role the source saw                                           |
+
 ## What was ruled out
 
 - **The rows as JSONB in the version row**, which would put every result in the chain's own table,
@@ -1257,7 +1278,6 @@ unclaimed: their answer is the binding stage, `bindings.md`'s.
 | Mutual TLS between the service and the connector in production                                                                                                                                                     | Hosting, which is open (system.md) |
 | The concurrency of a creation's resolves (case 4: 1.4 to 1.8 s for 440 at 8). A check's is answered by D3-I: each distinct question once, two at a time, fifty a check                                             | The `templates.md` additions       |
 | When a screen asks for a check - on opening a document, or on request                                                                                                                                              | `bindings.md`                      |
-| IAM-082's stated bound for data flowing on the person's authority after a sign-out                                                                                                                                 | D7's plan                          |
 | Comparison and order under each source's collation, where two keys compare equal: answered for PostgreSQL's SQL by D2-M - checked by code point, ordered `COLLATE "C"` - and for the builder on PostgreSQL by D4-G | D5's plan, for SQL Server          |
 | A nested JSON value kept as text: its source text or a canonical form, which decides whether reformatting at the source moves a checksum                                                                           | D6's plan                          |
 | How a new definition version a floating binding would take, or a changed parameter value, is offered                                                                                                               | `bindings.md` (DAT-070)            |
@@ -1273,8 +1293,8 @@ Each slice has a plan of its own, written when its turn comes.
 | **D3** | Datasets and resolutions: the dataset kind, objects keyed by checksum, provenance, resolve, check and accept; the binding inline widened after the evidence query. Built by [the D3 plan](../plans/2026-10-03-d3-datasets-and-resolutions.md). **[`bindings.md`](bindings.md) is designed after D4** |
 | **D4** | The builder: the saved query tree, PostgreSQL's SQL generated from it, its screens. Built by [the D4 plan](../plans/2026-10-03-d4-the-builder.md), before `bindings.md` by Ken's choice                                                                                                              |
 | **D5** | **Deferred past the first release** ([ADR-0038](../decisions/0038-sql-server-is-deferred-past-the-first-release.md)): SQL Server - `tedious`, its dialect, `NVARCHAR` and `CAST`                                                                                                                     |
-| **D6** | HTTP and S3 connections and the file formats: the product's own XLSX reader, CSV and JSON                                                                                                                                                                                                            |
-| **D7** | End-user identity: the delegated token, with the session holding the provider's token, and asserted identity on PostgreSQL (SQL Server's with D5); IAM-082, sign-out stopping data flowing on the person's authority                                                                                 |
+| **D6** | HTTP and S3 connections and the file formats: the product's own XLSX reader, CSV and JSON; the delegated token, with the session holding the provider's token (moved from D7)                                                                                                                        |
+| **D7** | End-user identity: asserted identity on PostgreSQL (SQL Server's with D5); IAM-082, sign-out stopping data flowing on the person's authority. Built by [the D7 plan](../plans/2026-10-06-d7-end-user-identity.md); the delegated token moved to D6                                                   |
 | **D8** | Image columns through `ingest`. Built by [the D8 plan](../plans/2026-10-05-d8-image-columns.md)                                                                                                                                                                                                      |
 
 Then `tables.md`, and the `templates.md` additions: a template's parameters, and a document's
