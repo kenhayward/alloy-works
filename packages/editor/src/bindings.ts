@@ -135,7 +135,7 @@ export const BINDING_FAILURE_WORDS = {
   image_description_missing: (_binding, held) =>
     `No image - the row has no description in ${held.column}`,
   value_not_image: () => 'No image - the column is not an image',
-  image_not_placeable: () => 'No image - a footnote cannot hold one',
+  image_not_placeable: () => 'No image - a footnote or a caption cannot hold one',
 } satisfies {
   readonly [K in BindingFailureShown]: (
     binding: Binding,

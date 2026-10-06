@@ -27,8 +27,8 @@ export function bindingDigestInput(binding: Binding): string {
 
 /**
  * A binding in a component, and where it stands: the members walked to it, joined by dots, and how it
- * is placed - in a line, in a footnote's line, or as a figure's image (the B6 plan, B6-D), which decides
- * whether an image it takes can stand there.
+ * is placed - in a line, in a footnote's line, in a caption, or as a figure's image (the B6 plan, B6-D),
+ * which decides whether an image it takes can stand there.
  */
 export interface BindingAt {
   readonly binding: Binding;
@@ -36,8 +36,11 @@ export interface BindingAt {
   readonly place: BindingPlace;
 }
 
-/** How a binding is placed: `figure` a figure's image, `footnote` in a footnote's text, else `line`. */
-export type BindingPlace = 'line' | 'footnote' | 'figure';
+/**
+ * How a binding is placed: `figure` a figure's image, `footnote` in a footnote's text, `caption` in a
+ * table's or a figure's caption - where no image stands (`image_in_caption`) - else `line`.
+ */
+export type BindingPlace = 'line' | 'footnote' | 'caption' | 'figure';
 
 /**
  * Every binding in a component, in reading order, wherever its content admits an inline (D3-D): a
@@ -74,7 +77,7 @@ function blocks(
         if (block.attribution) inlines(block.attribution, `${here}.attribution`, found, place);
         break;
       case 'table':
-        inlines(block.caption, `${here}.caption`, found, place);
+        inlines(block.caption, `${here}.caption`, found, 'caption');
         if (block.note) inlines(block.note, `${here}.note`, found, place);
         block.rows.forEach((row, rowAt) =>
           row.cells.forEach((cell, cellAt) =>
@@ -86,7 +89,7 @@ function blocks(
         if (block.binding) {
           found.push({ binding: block.binding, path: `${here}.binding`, place: 'figure' });
         }
-        inlines(block.caption, `${here}.caption`, found, place);
+        inlines(block.caption, `${here}.caption`, found, 'caption');
         break;
       default:
         break;
@@ -98,7 +101,7 @@ function inlines(
   sequence: readonly InlineNode[],
   path: string,
   found: BindingAt[],
-  place: 'line' | 'footnote',
+  place: 'line' | 'footnote' | 'caption',
 ): void {
   sequence.forEach((inline, at) => {
     const here = `${path}.${at}`;

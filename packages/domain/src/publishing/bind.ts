@@ -181,11 +181,7 @@ export function bind(
       column: image.column,
     });
 
-  const inlines = (
-    sequence: readonly InlineNode[],
-    block: string,
-    inFootnote = false,
-  ): InlineNode[] =>
+  const inlines = (sequence: readonly InlineNode[], block: string, noImage = false): InlineNode[] =>
     sequence.map((inline): InlineNode => {
       if (inline.type === 'footnote') {
         return { ...inline, content: blocks(inline.content as BlockNode[], true) };
@@ -195,8 +191,9 @@ export function bind(
       if (got === undefined) return inline;
       const { placed, taken } = got;
       if ('image' in taken) {
-        // A footnote holds no image (CNT-129), so a bound one is not placed there either (B6-D).
-        if (inFootnote) {
+        // A footnote holds no image (CNT-129), and a caption sets none (`image_in_caption`), so a bound
+        // one is placed in neither (B6-D), as the bindings view says.
+        if (noImage) {
           fail('image_not_placeable', block, inline.id);
           return inline;
         }
@@ -238,7 +235,7 @@ export function bind(
         case 'table':
           return {
             ...block,
-            caption: inlines(block.caption, block.id, inFootnote),
+            caption: inlines(block.caption, block.id, true),
             ...(block.note ? { note: inlines(block.note, block.id, inFootnote) } : {}),
             rows: block.rows.map((row) => ({
               ...row,
@@ -271,7 +268,7 @@ export function bind(
               };
             }
           }
-          return { ...figure, caption: inlines(block.caption, block.id, inFootnote) };
+          return { ...figure, caption: inlines(block.caption, block.id, true) };
         }
         default:
           return block;

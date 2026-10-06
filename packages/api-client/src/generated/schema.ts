@@ -10423,7 +10423,7 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
                                     failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -10596,7 +10596,7 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
                                     failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -11072,7 +11072,7 @@ export interface operations {
                                 };
                             } | {
                                 /**
-                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                  * @enum {string}
                                  */
                                 failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -11245,7 +11245,7 @@ export interface operations {
                                 };
                             } | {
                                 /**
-                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                  * @enum {string}
                                  */
                                 failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -11506,7 +11506,7 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
                                     failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -11679,7 +11679,7 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
                                     failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -12001,7 +12001,7 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
                                     failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -12174,7 +12174,7 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
                                     failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -12693,7 +12693,7 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
                                     failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -12866,7 +12866,7 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
                                     failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -13128,7 +13128,7 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
                                     failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -13301,7 +13301,7 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
                                     failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -13719,7 +13719,7 @@ export interface operations {
                                 };
                             } | {
                                 /**
-                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                  * @enum {string}
                                  */
                                 failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -13892,7 +13892,7 @@ export interface operations {
                                 };
                             } | {
                                 /**
-                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                  * @enum {string}
                                  */
                                 failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -14153,7 +14153,7 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
                                     failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -14326,7 +14326,7 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
                                     failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -14648,7 +14648,7 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
                                     failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -14821,7 +14821,7 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
                                     failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -15272,7 +15272,7 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
                                     failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -15445,7 +15445,7 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
                                     failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -15727,7 +15727,7 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
                                     failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -15900,7 +15900,7 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
                                     failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -16182,7 +16182,7 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
                                     failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -16355,7 +16355,7 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
                                     failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -16617,7 +16617,7 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
                                     failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
@@ -16790,7 +16790,7 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
                                      * @enum {string}
                                      */
                                     failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";

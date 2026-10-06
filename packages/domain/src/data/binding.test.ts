@@ -299,14 +299,14 @@ describe('a binding in a component', () => {
       ['in-table-note', 'content.3.note.0'],
       ['in-cell', 'content.3.rows.0.cells.0.content.0.content.0'],
     ]);
-    // Placed in a line everywhere but a footnote's text, where an image may not stand (B6-D).
+    // Placed in a line everywhere but a footnote's text and a caption, where no image stands (B6-D).
     expect(bindingsIn(stored).map(({ place }) => place)).toEqual([
       'line',
       'footnote',
       'line',
       'line',
       'line',
-      'line',
+      'caption',
       'line',
       'line',
     ]);
@@ -328,7 +328,7 @@ describe('a binding in a component', () => {
     expect(bindingsIn(stored).map(({ binding, path, place }) => [binding.id, path, place])).toEqual(
       [
         ['as-figure', 'content.0.binding', 'figure'],
-        ['in-figure-caption', 'content.0.caption.1', 'line'],
+        ['in-figure-caption', 'content.0.caption.1', 'caption'],
       ],
     );
   });

@@ -880,7 +880,7 @@ type Taken = TakeOutcome | { readonly unavailable: true };
 function placedTaken(place: BindingPlace, taken: Taken, provenance: Provenance): TakeOutcomeView {
   if ('unavailable' in taken || 'failure' in taken) return taken;
   if ('value' in taken) return place === 'figure' ? { failure: 'value_not_image' } : taken;
-  if (place === 'footnote') return { failure: 'image_not_placeable' };
+  if (place === 'footnote' || place === 'caption') return { failure: 'image_not_placeable' };
   const assetVersion = provenance.images[taken.image];
   return assetVersion === undefined ? { unavailable: true } : { ...taken, assetVersion };
 }

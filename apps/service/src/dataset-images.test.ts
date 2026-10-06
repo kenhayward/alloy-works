@@ -740,8 +740,8 @@ describe("a result's images, admitted before it is kept (the D8 plan, D8-D and D
       });
     const words = (value: string) => ({ type: 'text', value, marks: [] });
     /**
-     * A component placing the photograph in a line, as a figure, as a figure taking a text column,
-     * and in a footnote's text: four bindings asking one question, at a new site.
+     * A component placing the photograph in a line, as a figure, in its caption, as a figure taking a text column,
+     * and in a footnote's text: five bindings asking one question, at a new site.
      */
     const placedFour = async () => {
       site += 1;
@@ -754,7 +754,7 @@ describe("a result's images, admitted before it is kept (the D8 plan, D8-D and D
           id: 'f1',
           binding: photo('b2'),
           imageStyle: 'figure',
-          caption: [words('The gate')],
+          caption: [words('The gate '), photo('b5')],
           alternative: { kind: 'inherited' },
         },
         {
@@ -785,7 +785,7 @@ describe("a result's images, admitted before it is kept (the D8 plan, D8-D and D
     };
     const resolveAll = (document: string, node: string) =>
       h.call('ada', 'POST', `/v1/documents/${document}/bindings/resolve`, {
-        bindings: ['b1', 'b2', 'b3', 'b4'].map((each) => ({ node, binding: each })),
+        bindings: ['b1', 'b2', 'b3', 'b4', 'b5'].map((each) => ({ node, binding: each })),
       });
     const takenIn = async (document: string) =>
       Object.fromEntries(
@@ -818,6 +818,8 @@ describe("a result's images, admitted before it is kept (the D8 plan, D8-D and D
         b2: shown,
         b3: { failure: 'value_not_image' },
         b4: { failure: 'image_not_placeable' },
+        // An image in a caption, which the publish refuses too.
+        b5: { failure: 'image_not_placeable' },
       });
       // The bytes, to a reader of the document holding it (D8-I).
       expect(

@@ -686,7 +686,7 @@ describe('publishing from the document page', () => {
       'This value names a column its result does not have. Change the value, or resolve it again.',
       "This value's stored result could not be read. Resolve it again, then publish again.",
       "This image's row has no description in the column its query definition names. Change the value, or resolve it again.",
-      'This image stands in a footnote, which cannot hold one. Move it out of the footnote.',
+      'This image stands in a footnote or a caption, which cannot hold one. Move it into the text.',
       "This figure's value is not an image. Change it to an image column.",
     ]) {
       expect(why).toHaveTextContent(words);

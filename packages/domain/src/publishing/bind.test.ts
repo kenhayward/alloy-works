@@ -418,7 +418,7 @@ describe('bind, a bound image (the B6 plan, B6-D and B6-E)', () => {
     ]);
   });
 
-  it("fails a figure's binding taking anything but an image, value_not_image, and an image bound in a footnote's text, image_not_placeable", () => {
+  it("fails a figure's binding taking anything but an image, value_not_image, and an image bound in a footnote's text or a caption, image_not_placeable", () => {
     const content = component(
       figure('f1', binding('v1', at('north', 'caption'))),
       paragraph('p1', text('Gate'), {
@@ -427,12 +427,14 @@ describe('bind, a bound image (the B6 plan, B6-D and B6-E)', () => {
         anchor: { kind: 'span' },
         content: [paragraph('np1', binding('i1', at('north')))],
       }),
+      { ...figure('f2', binding('i2', at('north'))), caption: [binding('i3', at('north'))] },
     );
-    const results = new Map(['v1', 'i1'].map((each) => [each, photos(...ROWS)]));
+    const results = new Map(['v1', 'i1', 'i2', 'i3'].map((each) => [each, photos(...ROWS)]));
     const { failures } = bind(NODE, content, results, DEFAULT_VALUE_FORMATS);
     expect(failures).toEqual([
       { stage: 'bind', code: 'value_not_image', node: NODE, block: 'f1', detail: 'v1' },
       { stage: 'bind', code: 'image_not_placeable', node: NODE, block: 'np1', detail: 'i1' },
+      { stage: 'bind', code: 'image_not_placeable', node: NODE, block: 'f2', detail: 'i3' },
     ]);
   });
 });

@@ -420,7 +420,7 @@ export function failureWords(failure: Failure, wordOffered = false): string {
     case 'image_description_missing':
       return `This image's row has no description in the column its query definition names. ${CHANGE_THE_VALUE}`;
     case 'image_not_placeable':
-      return 'This image stands in a footnote, which cannot hold one. Move it out of the footnote.';
+      return 'This image stands in a footnote or a caption, which cannot hold one. Move it into the text.';
     case 'value_not_image':
       return "This figure's value is not an image. Change it to an image column.";
     case 'store_failed':
