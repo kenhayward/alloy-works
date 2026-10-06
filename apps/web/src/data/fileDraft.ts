@@ -65,6 +65,6 @@ export function fileDraftOf(stored: FileFetch): FileDraft | { readonly reason: s
 }
 
 /** A file's key as its reader is shown it: its segments, a parameter by its name in braces. */
-export function fileText(fetch: FileFetch): string {
-  return fetch.key.map(shownPart).join('/');
+export function fileText(file: FileFetch): string {
+  return file.key.map(shownPart).join('/');
 }
