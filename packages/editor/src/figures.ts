@@ -1,5 +1,7 @@
-import type { Alternative } from '@alloy-works/domain';
+import type { Alternative, Binding } from '@alloy-works/domain';
 import { TextSelection, type Command, type EditorState } from 'prosemirror-state';
+
+import type { BindingChoice } from './bindings.js';
 
 import { editorSchema } from './schema.js';
 
@@ -14,7 +16,10 @@ export interface FigureAt {
   /** Where the `figure` node starts. */
   readonly pos: number;
   readonly id: string | null;
-  readonly asset: string;
+  /** The asset version it shows, or null where a binding gives its image (the B6 plan, B6-A). */
+  readonly asset: string | null;
+  /** The binding it takes its image from, as stored, or null where it shows an asset version. */
+  readonly binding: Binding | null;
   /** Its image style, which the Figure panel's Image style list shows. */
   readonly imageStyle: string;
   readonly alternative: Alternative;
@@ -31,7 +36,8 @@ export function figureAt(state: EditorState): FigureAt | null {
     return {
       pos: $from.before(depth),
       id: (node.attrs.id as string | null) ?? null,
-      asset: node.attrs.asset as string,
+      asset: (node.attrs.asset as string | null) ?? null,
+      binding: (node.attrs.binding as Binding | null) ?? null,
       imageStyle: node.attrs.imageStyle as string,
       alternative: node.attrs.alternative as Alternative,
       numbered: node.attrs.numbered !== false,
@@ -45,7 +51,8 @@ export function figureAt(state: EditorState): FigureAt | null {
     return {
       pos: state.selection.from,
       id: (selected.attrs.id as string | null) ?? null,
-      asset: selected.attrs.asset as string,
+      asset: (selected.attrs.asset as string | null) ?? null,
+      binding: (selected.attrs.binding as Binding | null) ?? null,
       imageStyle: selected.attrs.imageStyle as string,
       alternative: selected.attrs.alternative as Alternative,
       numbered: selected.attrs.numbered !== false,
@@ -119,6 +126,82 @@ export function insertFigure(
 }
 
 /**
+ * **A bound figure** (the B6 plan, B6-H): the Value dialog's choice placed _As a figure_, where a figure
+ * may go, its binding given a fresh identifier as a placed binding is, and described by its
+ * definition's column - never by text of its own (B6-C). The cursor is left in its caption, as
+ * **Figure** leaves it.
+ */
+export function insertBoundFigure(
+  choice: BindingChoice,
+  newIdentifier: () => string,
+  imageStyle = 'figure',
+): Command {
+  return (state, dispatch) => {
+    if (nowhereForAFigure(state)) return false;
+    const { $from } = state.selection;
+    const depth = $from.depth;
+    const index = $from.index(depth - 1);
+    const parent = $from.node(depth - 1);
+    const empty = $from.parent.content.size === 0;
+    const at = empty ? index : index + 1;
+    if (!parent.canReplaceWith(at, empty ? index + 1 : at, figureNode)) return false;
+    if (dispatch) {
+      const binding: Binding = {
+        type: 'binding',
+        id: newIdentifier(),
+        query: choice.query,
+        ...(choice.version === undefined ? {} : { version: choice.version }),
+        parameters: choice.parameters,
+        mode: choice.mode,
+        take: choice.take,
+      };
+      const figure = figureNode.create(
+        {
+          id: newIdentifier(),
+          asset: null,
+          binding,
+          imageStyle,
+          alternative: { kind: 'inherited' },
+        },
+        [figureCaptionNode.create()],
+      );
+      const start = empty ? $from.before(depth) : $from.after(depth);
+      const tr = empty
+        ? state.tr.replaceWith(start, $from.after(depth), figure)
+        : state.tr.insert(start, figure);
+      dispatch(tr.setSelection(TextSelection.create(tr.doc, start + 2)).scrollIntoView());
+    }
+    return true;
+  };
+}
+
+/**
+ * Changes the binding of the figure at `pos`, keeping its identifier - the same binding, changed, as
+ * `changeBinding` keeps an inline one's - and the figure's caption, number, alternative and the
+ * selection. False where no bound figure stands there.
+ */
+export function changeFigureBinding(pos: number, choice: BindingChoice): Command {
+  return (state, dispatch) => {
+    const node = state.doc.nodeAt(pos);
+    const held = node?.type === figureNode ? (node.attrs.binding as Binding | null) : null;
+    if (node === null || held === null) return false;
+    if (dispatch) {
+      const binding: Binding = {
+        type: 'binding',
+        id: held.id,
+        query: choice.query,
+        ...(choice.version === undefined ? {} : { version: choice.version }),
+        parameters: choice.parameters,
+        mode: choice.mode,
+        take: choice.take,
+      };
+      dispatch(state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, binding }));
+    }
+    return true;
+  };
+}
+
+/**
  * Sets how the figure's alternative text is given: the image's own description, its own text - in
  * the component's language, which is why the model stores no tag with it - or decorative. An own
  * text that says nothing is not stored, and the state stays as it was (figures 2, ruling R5).
@@ -154,6 +237,8 @@ export function replaceFigureImage(asset: string, alternative: Alternative): Com
         state.tr.setNodeMarkup(figure.pos, undefined, {
           ...node.attrs,
           asset,
+          // An uploaded image in place of a bound one: the figure holds one or the other (B6-A).
+          binding: null,
           alternative: given,
         }),
       );

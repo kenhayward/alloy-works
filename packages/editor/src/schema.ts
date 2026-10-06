@@ -139,6 +139,9 @@ function altOf(alternative: { kind: string; text?: string }): string {
 export const assetContentPath = (asset: string): string =>
   `/v1/asset-versions/${encodeURIComponent(asset)}/content`;
 
+/** What a bound figure's image says with nothing to tell it what the binding holds (B6.2). */
+export const BOUND_IMAGE = 'Bound image';
+
 export const editorSchema = new Schema({
   nodes: {
     doc: {
@@ -423,7 +426,11 @@ export const editorSchema = new Schema({
       isolating: true,
       attrs: {
         id: { default: null },
-        asset: {},
+        // The asset version it shows, or null where its image is a binding's (the B6 plan, B6-A).
+        asset: { default: null },
+        // **Or the whole binding** it takes its image from, as the component stores it, its own
+        // identifier inside: a figure's binding is an attribute, not a node, as the model's is a member.
+        binding: { default: null },
         imageStyle: { default: 'figure' },
         alternative: { default: { kind: 'decorative' } },
         // STR-071: false where the author marked the figure unnumbered, as a table's is.
@@ -431,6 +438,26 @@ export const editorSchema = new Schema({
       },
       toDOM: (node) => {
         const alt = altOf(node.attrs.alternative as { kind: string; text?: string });
+        const binding = node.attrs.binding as { id: string } | null;
+        if (binding !== null) {
+          // A bound figure (B6.2): what its image is, the host's to say; with nothing to tell it, the
+          // node says only that it is bound, as a binding's own `toDOM` does.
+          return [
+            'figure',
+            {
+              'data-figure': '',
+              'data-figure-binding': binding.id,
+              'data-image-style': node.attrs.imageStyle as string,
+              class: 'aw-figure',
+            },
+            [
+              'div',
+              { class: 'aw-figure-image', contenteditable: 'false' },
+              ['span', { class: 'aw-bound-image', 'data-bound-image': '' }, BOUND_IMAGE],
+            ],
+            ['div', { class: 'aw-figure-body' }, 0],
+          ];
+        }
         return [
           'figure',
           {

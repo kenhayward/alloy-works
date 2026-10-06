@@ -5,12 +5,14 @@ import type { EditorView } from 'prosemirror-view';
 import {
   ALONE_CLASS,
   bindingsShown,
+  boundFiguresShown,
   FAILED_CLASS,
   type BindingContext,
   type BindingShown,
 } from './bindings.js';
 import { fillBinding } from './bindingView.js';
 import { drawEquation } from './equationView.js';
+import { fillBoundFigure } from './figureView.js';
 import { toEditor } from './mapping.js';
 import { BROKEN_CLASS, referencesShown, type ReferenceContext } from './referenceText.js';
 import { editorSchema } from './schema.js';
@@ -56,6 +58,7 @@ export function renderContent(
   });
   drawReferences(rendered, referencesShown(opened.doc, context));
   drawBindings(rendered, bindingsShown(opened.doc, bindings), bindings);
+  drawBoundFigures(rendered, boundFiguresShown(opened.doc, bindings));
   drawEquations(rendered, opened.doc);
   drawImages(rendered);
   drawPlaces(rendered, opened.doc);
@@ -156,6 +159,24 @@ export function drawBindings(
     if (each.failed) element.classList.add(FAILED_CLASS);
     if (context?.kind === 'alone') element.classList.add(ALONE_CLASS);
     fillBinding(element, each);
+  });
+}
+
+/**
+ * Each bound figure's image as the surface draws it (B6.2), by `figureView`'s own `fillBoundFigure`:
+ * the image the document holds for its binding, or why there is none, in place. The serializer writes
+ * the figures in the order `boundFiguresShown` walks the document in.
+ */
+export function drawBoundFigures(
+  rendered: HTMLElement | DocumentFragment,
+  shown: readonly BindingShown[],
+): void {
+  const holders = rendered.querySelectorAll<HTMLElement>(
+    'figure[data-figure-binding] > .aw-figure-image',
+  );
+  shown.forEach((each, index) => {
+    const holder = holders[index];
+    if (holder !== undefined) fillBoundFigure(holder, each);
   });
 }
 

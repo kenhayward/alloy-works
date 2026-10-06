@@ -34,6 +34,11 @@ export interface BindingAt {
   readonly binding: Binding;
   readonly path: string;
   readonly place: BindingPlace;
+  /**
+   * A figure's binding whose figure the author marked decorative (Ken, 2026-10-06): its image needs
+   * no description, so its row's missing one fails nothing. Absent everywhere else.
+   */
+  readonly decorative?: true;
 }
 
 /**
@@ -87,7 +92,12 @@ function blocks(
         break;
       case 'figure':
         if (block.binding) {
-          found.push({ binding: block.binding, path: `${here}.binding`, place: 'figure' });
+          found.push({
+            binding: block.binding,
+            path: `${here}.binding`,
+            place: 'figure',
+            ...(block.alternative.kind === 'decorative' ? { decorative: true as const } : {}),
+          });
         }
         inlines(block.caption, `${here}.caption`, found, 'caption');
         break;

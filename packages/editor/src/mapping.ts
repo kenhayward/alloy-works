@@ -88,10 +88,6 @@ function namesWithNoNode(blocks: readonly BlockNode[], found: Set<string>): void
         if (block.note !== undefined) marksWithNoType(block.note, found);
         break;
       case 'figure':
-        // A figure taking its image from a binding (B6-A) has no node attribute to hold it until
-        // B6.2: named, so the component opens read-only and its text says it cannot be shown,
-        // rather than a figure with no image crashing the page or a save dropping the binding.
-        if (block.binding !== undefined) found.add('bound figure');
         // Its caption is inline content, walked as a table's is (figures 2).
         marksWithNoType(block.caption, found);
         break;
@@ -320,7 +316,9 @@ function nodeOf(block: BlockNode): Node {
         'figure',
         {
           id: block.id,
-          asset: block.asset,
+          // An asset version, or the binding its image is taken from (B6-A): whichever is stored.
+          asset: block.asset ?? null,
+          binding: block.binding ?? null,
           imageStyle: block.imageStyle,
           alternative: block.alternative,
           numbered: block.numbered !== false,
@@ -670,7 +668,10 @@ function storedBlock(node: Node, at: string): unknown {
       return {
         type: 'figure',
         id,
-        asset: node.attrs.asset as string,
+        // The one it holds, as stored: never both, and the walk refuses neither (B6-A).
+        ...(node.attrs.binding === null
+          ? { asset: node.attrs.asset as string }
+          : { binding: node.attrs.binding as object }),
         imageStyle: node.attrs.imageStyle as string,
         caption: runsOf(node.child(0), id),
         alternative: node.attrs.alternative as object,

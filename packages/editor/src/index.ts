@@ -28,9 +28,11 @@ export {
 } from './tables.js';
 export {
   assetContentPath,
+  changeFigureBinding,
   deleteFigure,
   figureAt,
   IMAGE_OWN_DESCRIPTION,
+  insertBoundFigure,
   insertFigure,
   replaceFigureImage,
   setFigureAlternative,
@@ -72,6 +74,7 @@ export {
   bindingFailureWords,
   bindingSelected,
   bindingsShown,
+  boundFiguresShown,
   BOUND_VALUE,
   bindingPlaceable,
   changeBinding,
@@ -87,6 +90,7 @@ export {
   type BindingHeld,
   type BindingSelected,
   type BindingShown,
+  type BoundImage,
 } from './bindings.js';
 export { bindingContextOf, setBindingContext } from './bindingView.js';
 export { pasteIntoOpenFootnote } from './footnoteView.js';

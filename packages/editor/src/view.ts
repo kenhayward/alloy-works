@@ -92,7 +92,9 @@ export function mountEditor(place: HTMLElement, options: MountOptions): EditorVi
     dispatchTransaction: (transaction) => options.dispatch(transaction, view),
     // A figure marks an image that does not load in its place (figures 2, ruling R6).
     nodeViews: {
-      figure: (node, owner) => figureView(node, owner.dom.ownerDocument),
+      // And a bound figure's image, drawn with what its decoration carries (B6.2).
+      figure: (node, owner, _getPos, decorations) =>
+        figureView(node, owner.dom.ownerDocument, decorations),
       image: (node, owner) => imageView(node, owner.dom.ownerDocument),
       // A footnote's mark, and its own editor while it is selected (footnotes 1, ruling R8).
       footnote: (node, owner, getPos) =>

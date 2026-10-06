@@ -332,6 +332,26 @@ describe('a binding in a component', () => {
       ],
     );
   });
+
+  it("says a figure's binding is decorative where its author marked the figure so, and no other", () => {
+    const figure = (id: string, kind: 'inherited' | 'decorative') => ({
+      type: 'figure',
+      id,
+      binding: binding({ id: `${id}-image`, take: { column: 'site_photo' } }),
+      imageStyle: 'figure',
+      caption: [binding({ id: `${id}-caption` })],
+      alternative: { kind },
+    });
+    const stored = parseContentDocument(
+      doc([figure('f1', 'decorative'), figure('f2', 'inherited')]),
+    );
+    expect(bindingsIn(stored).map(({ binding, decorative }) => [binding.id, decorative])).toEqual([
+      ['f1-image', true],
+      ['f1-caption', undefined],
+      ['f2-image', undefined],
+      ['f2-caption', undefined],
+    ]);
+  });
 });
 
 describe('what a binding takes, against the definition it resolves to', () => {

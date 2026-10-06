@@ -841,5 +841,46 @@ describe("a result's images, admitted before it is kept (the D8 plan, D8-D and D
       const missing = { failure: 'image_description_missing', column: 'name' };
       expect(await takenIn(document.id)).toMatchObject({ b1: missing, b2: missing, b4: missing });
     });
+
+    it("DAT-097 answers the image of a figure its author marked decorative though its row has no description, as the publish prints it", async () => {
+      const image = png(63);
+      const first = await placed();
+      h.connector.run = ranWithImages([[String(site), 'Quay', image]]);
+      const id = pendingOf(await resolve(first.document.id, first.node));
+      const asset = await admit((await uploadsOf(image))[0]!.id, image);
+      expect((await followed(id)).state).toBe('done');
+
+      site += 1;
+      const component = await h.component(h.general, 'Sites');
+      await h.placeBlocks(
+        component,
+        { type: 'paragraph', id: 'p1', style: 'body', content: [words('Quay '), photo('b1')] },
+        {
+          type: 'figure',
+          id: 'f1',
+          binding: photo('b2'),
+          imageStyle: 'figure',
+          caption: [words('The quay')],
+          alternative: { kind: 'decorative' },
+        },
+      );
+      const document = await h.documentReferencing([component.id]);
+      h.connector.run = ranWithImages([[String(site), null, image]]);
+      const answer = await h.call('ada', 'POST', `/v1/documents/${document.id}/bindings/resolve`, {
+        bindings: ['b1', 'b2'].map((each) => ({ node: document.nodes[0]!, binding: each })),
+      });
+      expect(answer.statusCode, answer.body).toBe(200);
+      expect(await takenIn(document.id)).toEqual({
+        // In a line the description is still required.
+        b1: { failure: 'image_description_missing', column: 'name' },
+        // The decorative figure shows its image, taken as though its column were declared decorative.
+        b2: {
+          image: hashOf(image),
+          assetVersion: asset.id,
+          description: 'decorative',
+          column: { name: 'photo', type: { ...DESCRIBED, description: 'decorative' } },
+        },
+      });
+    });
   });
 });
