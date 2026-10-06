@@ -238,7 +238,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(594); // 594 (2026-10-06): data.md claims DAT-112 (D7.1).
+    ).toBe(595); // 595 (2026-10-06): data.md claims IAM-082 (D7.3).
   });
 });
 
@@ -795,8 +795,9 @@ describe('the citations in the committed model', () => {
   // 679 (2026-10-06): B6.2's DAT-097, DAT-098 and DAT-047, bound images in the editor and the page.
   // 682 (2026-10-06): D7.1's DAT-077, DAT-112 and DAT-113, a person's own identity asserted.
   // 687 (2026-10-06): D7.2's DAT-084, DAT-091 and DAT-102, the acts as the person.
+  // 690 (2026-10-06): D7.3's IAM-082 over the whole system, and DAT-091 and DAT-022 in the Data tab.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(687);
+    expect(model.citations).toHaveLength(690);
   });
 
   it('cites no identifier the corpus does not hold', () => {

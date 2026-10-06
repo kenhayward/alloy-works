@@ -16211,7 +16211,7 @@
         },
         {
           "id": "DAT-076",
-          "howItIsMet": "`identity` is `service`, or `endUser` by `delegated` or `asserted`; a delegated act needs the provider access token a session through the tenant's own provider holds, so a Google-route session or a personal API token is refused, `identity_unavailable`"
+          "howItIsMet": "`identity` is `service`, or `endUser` by `delegated` or `asserted`; a delegated act needs the provider access token a session through the tenant's own provider holds, so a Google-route session or a personal API token is refused, `identity_unavailable`. The asserted half is built (D7); the delegated half with D6"
         },
         {
           "id": "DAT-078",
@@ -16244,6 +16244,10 @@
         {
           "id": "DAT-114",
           "howItIsMet": "No source connection is reused: the child process that opened it closes it and exits with its one request, so a connection that carried a user's identity is always discarded"
+        },
+        {
+          "id": "IAM-082",
+          "howItIsMet": "Within two seconds of a sign-out or a token's revocation committing, every connector call of that session or token is closed and its child killed, the source losing the query within 250 ms; the act answers `authority_ended` naming why, logged, recording nothing; the session's event stream closes (the D7 plan, D7-I)"
         },
         {
           "id": "DAT-009",
@@ -17946,13 +17950,13 @@
     {
       "id": "DAT-077",
       "file": "apps/connector/src/asserted.test.ts",
-      "line": 240,
+      "line": 243,
       "kind": "title"
     },
     {
       "id": "DAT-112",
       "file": "apps/connector/src/asserted.test.ts",
-      "line": 290,
+      "line": 293,
       "kind": "title"
     },
     {
@@ -19144,15 +19148,27 @@
       "kind": "title"
     },
     {
+      "id": "DAT-022",
+      "file": "apps/web/src/structure/DataTab.test.tsx",
+      "line": 338,
+      "kind": "title"
+    },
+    {
       "id": "DAT-039",
       "file": "apps/web/src/structure/DataTab.test.tsx",
-      "line": 125,
+      "line": 129,
       "kind": "title"
     },
     {
       "id": "DAT-070",
       "file": "apps/web/src/structure/DataTab.test.tsx",
-      "line": 162,
+      "line": 166,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-091",
+      "file": "apps/web/src/structure/DataTab.test.tsx",
+      "line": 268,
       "kind": "title"
     },
     {
@@ -22015,6 +22031,12 @@
       "id": "STY-080",
       "file": "tests/browser/src/styles.test.ts",
       "line": 273,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-082",
+      "file": "tests/e2e/src/asserted.test.ts",
+      "line": 232,
       "kind": "title"
     },
     {
