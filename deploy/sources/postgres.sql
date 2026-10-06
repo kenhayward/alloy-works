@@ -128,3 +128,22 @@ insert into sample.site_photo values
       '\x89504e470d0a1a0a0000000d49484452000000030000000208020000001216f14d000000104944415478da63a8986603410c7016004ed407bd2d00b3fe0000000049454e44ae426082');
 
 grant select on sample.site_photo to reader, writer;
+
+-- Asserted identity (the D7 plan, D7-C; ADR-0040; docs/guides/asserted-identity-on-postgresql.md).
+-- `asserter` is the account a connection running as each person signs in as: it owns and creates
+-- nothing and reads nothing itself (DAT-112). Each person's role is named as they sign in - the
+-- stand-in's invented people - may not log in, creates and owns nothing, and is granted to the account
+-- to SET alone, never inherited. `sample.reading` shows each person only their own site's rows.
+revoke create on schema public from public;
+create role asserter login noinherit password 'source-asserter-dev-password';
+create role "ada@example.com" nologin;
+create role "grace@example.com" nologin;
+grant "ada@example.com", "grace@example.com" to asserter with inherit false, set true;
+grant usage on schema sample to "ada@example.com", "grace@example.com";
+grant select on sample.site, sample.reading to "ada@example.com", "grace@example.com";
+
+-- The accounts keep every row; Ada sees the North weir's readings and Grace the South bank's.
+alter table sample.reading enable row level security;
+create policy accounts on sample.reading to reader, writer using (true) with check (true);
+create policy own_site on sample.reading for select to "ada@example.com", "grace@example.com"
+  using (site = case current_user when 'ada@example.com' then 1 when 'grace@example.com' then 2 end);
