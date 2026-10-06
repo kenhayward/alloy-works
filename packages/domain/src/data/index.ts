@@ -2,14 +2,22 @@ export {
   CONNECTION_SCHEMA_VERSION,
   ConnectionRefused,
   checkConnection,
+  connectionChangeProblems,
   connectionTarget,
   credentialContext,
   connectionSettingsSchema,
   connectorIdentities,
+  isBaseUrl,
+  isFreeHeaderName,
   parseConnection,
   parseConnectionForWrite,
 } from './connection.js';
-export type { ConnectionProblem, ConnectionSettings } from './connection.js';
+export type {
+  ConnectionProblem,
+  ConnectionSettings,
+  HttpSettings,
+  PostgresSettings,
+} from './connection.js';
 export {
   dataFailure,
   dataFailureCodes,
@@ -38,7 +46,9 @@ export {
   PARAMETER_NAME,
   QUERY_DEFINITION_SCHEMA_VERSION,
   checkQueryDefinition,
+  connectionFetchProblems,
   draftDefinitionSchema,
+  httpFetchSchema,
   parameterSchema,
   parseDraftDefinition,
   parseQueryDefinition,
@@ -50,9 +60,34 @@ export type {
   Column,
   DefinitionProblem,
   DraftDefinition,
+  HttpFetch,
   Parameter,
   QueryDefinition,
 } from './definition.js';
+export {
+  BODY_MAX_DEPTH,
+  BODY_MAX_NODES,
+  bindHttp,
+  checkHttpTemplate,
+  headerValueProblem,
+  httpPartSchema,
+  httpTemplateSchema,
+  httpValueProblems,
+  HttpValueRefused,
+  percentEncode,
+  segmentProblem,
+} from './http-template.js';
+export type { BoundHttpRequest, HttpBodyNode, HttpPart, HttpTemplate } from './http-template.js';
+export {
+  canonicalJsonText,
+  isJsonObject,
+  JsonNumber,
+  jsonPointerSchema,
+  pointerTo,
+  pointerTokens,
+  resolvePointer,
+} from './json-text.js';
+export type { JsonValue } from './json-text.js';
 export { BindingRefused, bindPostgres, lexPostgres, RAN_MAX_CHARACTERS } from './sql.js';
 export type { BoundStatement, BoundValue, LexProblem, SqlPiece } from './sql.js';
 export { checkParameterValues, MAX_LIST_ITEMS, MAX_TEXT_VALUE } from './parameters.js';
@@ -79,6 +114,7 @@ export {
   RUN_REQUEST_MAX_BYTES,
   isPaddedBase64,
   canonicalResultSchema,
+  ranSchema,
   childRequestSchema,
   describeAnswerSchema,
   describeRequestSchema,
@@ -102,6 +138,7 @@ export type {
   DescribeRequest,
   DescribeSqlAnswer,
   DescribeSqlRequest,
+  Ran,
   Relation,
   RunAnswer,
   RunIdentity,

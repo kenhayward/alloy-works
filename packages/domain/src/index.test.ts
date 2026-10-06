@@ -482,6 +482,32 @@ describe('the domain package', () => {
         // D7: who a request runs as, and a person's role at the source (the D7 plan, D7-G).
         'assertedRoleSchema',
         'runIdentitySchema',
+        // D6.1: an HTTP connection's rules, a fetch suiting its connection, the HTTP template and its
+        // binder, JSON by its source text, and what a run reports it ran (the D6 plan, task 1).
+        'connectionChangeProblems',
+        'isBaseUrl',
+        'isFreeHeaderName',
+        'connectionFetchProblems',
+        'httpFetchSchema',
+        'BODY_MAX_DEPTH',
+        'BODY_MAX_NODES',
+        'bindHttp',
+        'checkHttpTemplate',
+        'headerValueProblem',
+        'httpPartSchema',
+        'httpTemplateSchema',
+        'httpValueProblems',
+        'HttpValueRefused',
+        'percentEncode',
+        'segmentProblem',
+        'canonicalJsonText',
+        'isJsonObject',
+        'JsonNumber',
+        'jsonPointerSchema',
+        'pointerTo',
+        'pointerTokens',
+        'resolvePointer',
+        'ranSchema',
       ].sort(),
     );
   });

@@ -1,7 +1,7 @@
 import type { DraftDefinition } from './definition.js';
 import { generatePostgres } from './generate.js';
 import type { ParameterValues } from './parameters.js';
-import { bindPostgres, type BoundStatement } from './sql.js';
+import { BindingRefused, bindPostgres, type BoundStatement } from './sql.js';
 
 /**
  * A definition's fetch bound to its values, by its kind (the D4 plan, D4-H, D4-Q): SQL by D2's binder,
@@ -17,5 +17,7 @@ export function bindFetch(
   const { fetch } = definition;
   if (fetch.kind === 'sql')
     return bindPostgres({ parameters: definition.parameters, fetch }, values);
+  // An HTTP request is a database's never: it is placed by `bindHttp`, position by position (D6-A).
+  if (fetch.kind === 'http') throw new BindingRefused();
   return generatePostgres({ ...definition, fetch }, values, statement);
 }

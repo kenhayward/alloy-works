@@ -5,12 +5,13 @@ import { MAX_COLUMNS } from './columns.js';
 import { canonicalValueSchema, columnSchema, PARAMETER_NAME, type Column } from './definition.js';
 import { MAX_LIST_ITEMS, type ParameterValues } from './parameters.js';
 import { RAN_MAX_CHARACTERS } from './sql.js';
+import { httpTemplateSchema, type HttpTemplate } from './http-template.js';
 import { sourceNameSchema } from './protocol.js';
 
 /**
  * A dataset version's content: its provenance record (data.md, "Storage of results and provenance";
- * DAT-085), in the arms D3 writes, D8's images and D7's person. The request form of `ran` arrives with
- * D6, an arm added, refusing nothing stored. The result itself is an
+ * DAT-085), in the arms D3 writes, D8's images, D7's person and D6's request: the request form of
+ * `ran` arrived with D6, an arm added, refusing nothing stored. The result itself is an
  * object in the tenant's store under `checksum`, never in the record.
  */
 export const PROVENANCE_SCHEMA_VERSION = 1;
@@ -63,8 +64,12 @@ export const provenanceSchema = z.strictObject({
         .max(MAX_LIST_ITEMS),
     ]),
   ),
-  // The SQL the connector reports it ran, its values bound apart from it: never a secret.
-  ran: z.strictObject({ sql: z.string().min(1).max(RAN_MAX_CHARACTERS) }),
+  // The SQL the connector reports it ran, its values bound apart from it, or an HTTP request's
+  // template, its values placed apart from it (the D6 plan, D6-L): never a secret, never a URL.
+  ran: z.union([
+    z.strictObject({ sql: z.string().min(1).max(RAN_MAX_CHARACTERS) }),
+    z.strictObject({ request: httpTemplateSchema }),
+  ]),
   identity: z.union([
     z.strictObject({ kind: z.literal('service') }),
     // A person's own view (the D7 plan, D7-J): whose, how they signed in, and the role the source saw.
@@ -92,7 +97,7 @@ export type Provenance = {
   readonly queryDefinition: { readonly artifact: string; readonly version: string };
   readonly connection: { readonly artifact: string; readonly version: string };
   readonly parameters: ParameterValues;
-  readonly ran: { readonly sql: string };
+  readonly ran: { readonly sql: string } | { readonly request: HttpTemplate };
   readonly identity: ProvenanceIdentity;
   readonly at: string;
   readonly durationMs: number;

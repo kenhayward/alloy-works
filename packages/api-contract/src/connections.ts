@@ -423,6 +423,7 @@ const ParameterProblem = z.object({
     'scale',
     'zone',
     'variation',
+    'position',
   ]),
   value: z.string().describe('The value as sent, cut to 1,000 characters'),
 });

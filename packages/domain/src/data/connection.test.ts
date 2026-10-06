@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { canonicalJson } from '../stored/canonical.js';
 import {
   checkConnection,
+  connectionChangeProblems,
+  connectionTarget,
   ConnectionRefused,
   connectorIdentities,
   parseConnection,
@@ -302,5 +304,151 @@ describe('a connection version', () => {
       schemaVersion: 1,
     };
     expect(canonicalJson(parseConnectionForWrite(reordered))).toBe(canonicalJson(whole));
+  });
+});
+
+describe('an http connection version', () => {
+  const http = {
+    schemaVersion: 1,
+    name: 'Readings API',
+    description: '',
+    type: 'http',
+    source: { baseUrl: 'https://api.example.test/v1', secretHeader: 'x-api-key' },
+    identity: { kind: 'service' },
+    retired: false,
+  } as const;
+  const withSource = (source: Record<string, unknown>) => ({
+    ...http,
+    source: { ...http.source, ...source },
+  });
+  const BACKSLASH = String.fromCharCode(92);
+
+  it('holds a base URL and the header its secret is sent in, whole', () => {
+    expect(parseConnectionForWrite(http)).toEqual(http);
+    for (const baseUrl of [
+      'https://api.example.test',
+      'https://api.example.test:8443/v1/readings',
+      'https://172.31.20.21/api',
+      'https://[2001:db8::1]:8443',
+      'https://api.example.test/a%2Fb/~user',
+    ]) {
+      expect(refusal(withSource({ baseUrl })), baseUrl).toEqual([]);
+    }
+    for (const secretHeader of ['authorization', 'x-api-key', 'api_key']) {
+      expect(refusal(withSource({ secretHeader })), secretHeader).toEqual([]);
+    }
+  });
+
+  it('refuses a base URL that is not https, holds a user, a query or a fragment, or is not written one way', () => {
+    for (const baseUrl of [
+      'http://api.example.test',
+      'ftp://api.example.test',
+      'https://reader:pw@api.example.test',
+      'https://api.example.test/v1?key=1',
+      'https://api.example.test/v1#top',
+      'https://api.example.test/',
+      'https://api.example.test/v1/',
+      'https://api.example.test//v1',
+      'https://api.example.test/./v1',
+      'https://api.example.test/../v1',
+      'https://API.example.test',
+      'https://2130706433',
+      'https://0177.0.0.1',
+      'https://[::ffff:127.0.0.1]',
+      'https://[2001:DB8::1]',
+      'https://api.example.test:0',
+      'https://api.example.test:080',
+      'https://api.example.test:65536',
+      'https://api.example.test/a b',
+      'https://api.example.test/a%2fb',
+      'https://api.example.test/a%zz',
+      `https://api.example.test/a${BACKSLASH}b`,
+      'https://api.example.test/é',
+      `https://api.example.test/${'a'.repeat(2048)}`,
+      'https://',
+      '',
+    ]) {
+      const problems = refusal(withSource({ baseUrl }));
+      expect(problems[0], baseUrl).toMatchObject({
+        rule: 'connection_invalid',
+        path: 'source.baseUrl',
+      });
+    }
+  });
+
+  it('refuses a secret header that is not a lower-case token, or is the host, a framing header or a cookie', () => {
+    for (const secretHeader of [
+      '',
+      'X-Api-Key',
+      'x api key',
+      'x-api-key:',
+      'host',
+      'cookie',
+      'content-length',
+      'transfer-encoding',
+      'connection',
+      'te',
+      'upgrade',
+      'proxy-authorization',
+      'content-encoding',
+      'a'.repeat(65),
+    ]) {
+      const problems = refusal(withSource({ secretHeader }));
+      expect(problems[0], secretHeader).toMatchObject({
+        rule: 'connection_invalid',
+        path: 'source.secretHeader',
+      });
+    }
+  });
+
+  it("refuses another type's source, and declares no end user: delegated is refused, as ADR-0041 leaves it", () => {
+    expect(refusal({ ...http, source: whole.source })[0]).toMatchObject({
+      rule: 'connection_invalid',
+    });
+    expect(refusal({ ...whole, source: http.source })[0]).toMatchObject({
+      rule: 'connection_invalid',
+    });
+    expect(connectorIdentities.http).toEqual([]);
+    const delegated = {
+      ...http,
+      identity: {
+        kind: 'endUser',
+        mechanism: 'delegated',
+        tokenEndpoint: 'https://idp.example.test/token',
+        audience: 'readings',
+      },
+    };
+    expect(refusal(delegated)).toEqual([
+      { rule: 'identity_not_supported', type: 'http', mechanism: 'delegated' },
+    ]);
+    const asserted = {
+      ...http,
+      identity: { kind: 'endUser', mechanism: 'asserted', attribute: 'email' },
+    };
+    expect(refusal(asserted)).toEqual([
+      { rule: 'identity_not_supported', type: 'http', mechanism: 'asserted' },
+    ]);
+  });
+
+  it('binds a credential to the base URL and the secret header, and a database target as it was', () => {
+    expect(connectionTarget(parseConnection(http))).toBe(
+      JSON.stringify(['http', 'https://api.example.test/v1', 'x-api-key']),
+    );
+    // A database's target is spelled as every stored digest was taken over.
+    expect(connectionTarget(whole)).toBe(
+      JSON.stringify(['postgres', 'source-postgres', 5432, 'readings', 'reader', 'require']),
+    );
+  });
+
+  it("refuses a version that changes a connection's type", () => {
+    expect(connectionChangeProblems(whole, parseConnection(http))).toEqual([
+      {
+        rule: 'connection_invalid',
+        path: 'type',
+        message: "A connection's type never changes: make a connection of the other type",
+      },
+    ]);
+    const renamed: ConnectionSettings = { ...whole, name: 'Other' };
+    expect(connectionChangeProblems(whole, renamed)).toEqual([]);
   });
 });

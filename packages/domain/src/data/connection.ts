@@ -165,32 +165,115 @@ const identity = z.union([
   }),
 ]);
 
+/** A port as a URL writes it: 1 to 65535, no leading zero. */
+const URL_PORT = /^[1-9][0-9]{0,4}$/;
+/** A path segment of RFC 3986's `pchar`s, each escape upper case, so a path is spelled one way. */
+const URL_SEGMENT = /^(?:[A-Za-z0-9._~!$&'()*+,;=:@-]|%[0-9A-F]{2})+$/;
+
 /**
- * A connection version's settings (data.md, "The connection"; D1-C, D1-D): what anybody who may read
- * it sees, and never a secret. PostgreSQL alone in D1; each other type arrives as an arm with its
- * slice, which refuses nothing stored.
+ * Whether a base URL is one the stored shape takes (the D6 plan, D6-D): `https`, a canonical host - a
+ * name, a dotted quad or a bracketed IPv6 address, as a database's - an optional port, and path
+ * segments, none empty, `.` or `..`; no user, query or fragment, and no trailing slash, so one
+ * address has one spelling. Whether the host may be dialled is the guard's, at each request.
  */
-export const connectionSettingsSchema = z.strictObject({
+export function isBaseUrl(value: string): boolean {
+  if (value.length > 2048) return false;
+  const match = /^https:\/\/([^/?#@]+)((?:\/[^/?#]*)*)$/.exec(value);
+  if (!match) return false;
+  const authority = match[1]!;
+  const path = match[2]!;
+  const bracketed = /^\[([^\]]+)\](?::([^:]*))?$/.exec(authority);
+  const plain = /^([^:[\]]+)(?::([^:]*))?$/.exec(authority);
+  const [host, port] = bracketed
+    ? [bracketed[1]!, bracketed[2]]
+    : plain
+      ? [plain[1]!, plain[2]]
+      : [undefined, undefined];
+  if (host === undefined || !isCanonicalHost(host)) return false;
+  if (bracketed && !host.includes(':')) return false;
+  if (!bracketed && host.includes(':')) return false;
+  if (port !== undefined && !(URL_PORT.test(port) && Number(port) <= 65535)) return false;
+  if (path === '') return true;
+  return path
+    .slice(1)
+    .split('/')
+    .every((segment) => URL_SEGMENT.test(segment) && segment !== '.' && segment !== '..');
+}
+
+/** An HTTP field name as RFC 9110's `token`, written in lower case, so a name has one spelling. */
+const HEADER_NAME = /^[a-z0-9!#$%&'*+.^_`|~-]{1,64}$/;
+
+/**
+ * The headers neither a connection's secret nor a template may name (the D6 plan, D6-D): the host,
+ * the cookie, and every header that frames the message or that the connector sets itself.
+ */
+const RESERVED_HEADERS = new Set([
+  'host',
+  'cookie',
+  'content-length',
+  'transfer-encoding',
+  'connection',
+  'keep-alive',
+  'te',
+  'trailer',
+  'upgrade',
+  'expect',
+  'accept-encoding',
+  'content-encoding',
+  'content-type',
+]);
+
+/** Whether a header name may carry a secret or a template's value: a token, and not reserved. */
+export function isFreeHeaderName(value: string): boolean {
+  return HEADER_NAME.test(value) && !RESERVED_HEADERS.has(value) && !value.startsWith('proxy-');
+}
+
+const httpSource = z.strictObject({
+  baseUrl: z.string().refine(isBaseUrl, {
+    message:
+      'A base URL is https, a lower-case host or a canonical address, an optional port and a path: no user, query, fragment or trailing slash',
+  }),
+  secretHeader: z.string().refine(isFreeHeaderName, {
+    message:
+      'A secret header is a lower-case header name, and not the host, a cookie or a header that frames the message',
+  }),
+});
+
+const versionMembers = {
   schemaVersion: z.literal(CONNECTION_SCHEMA_VERSION),
   name,
   description,
-  type: z.literal('postgres'),
-  source: postgresSource,
   identity,
   retired: z.boolean(),
-});
+};
+
+/**
+ * A connection version's settings (data.md, "The connection"; D1-C, D1-D): what anybody who may read
+ * it sees, and never a secret. A source by type: PostgreSQL from D1, HTTP from D6 (the D6 plan,
+ * D6-D); each arm arrives with its slice, which refuses nothing stored.
+ */
+export const connectionSettingsSchema = z.discriminatedUnion('type', [
+  z.strictObject({ ...versionMembers, type: z.literal('postgres'), source: postgresSource }),
+  z.strictObject({ ...versionMembers, type: z.literal('http'), source: httpSource }),
+]);
 
 export type ConnectionSettings = z.infer<typeof connectionSettingsSchema>;
+export type PostgresSettings = Extract<ConnectionSettings, { type: 'postgres' }>;
+export type HttpSettings = Extract<ConnectionSettings, { type: 'http' }>;
 
 type EndUserMechanism = 'delegated' | 'asserted';
 
 /**
  * The end-user mechanisms each type's connector declares (DAT-078): PostgreSQL asserts a person's own
- * role (the D7 plan, D7-A), and has no `assertion` to choose, which is SQL Server's.
+ * role (the D7 plan, D7-A), and has no `assertion` to choose, which is SQL Server's. HTTP declares
+ * none until the delegated token is built ([ADR-0041](../../../../docs/decisions/0041-the-delegated-provider-token-is-deferred-past-the-first-release.md)).
  */
 export const connectorIdentities: Readonly<
   Record<ConnectionSettings['type'], readonly EndUserMechanism[]>
-> = Object.freeze({ postgres: Object.freeze(['asserted'] as const) });
+> = Object.freeze({
+  postgres: Object.freeze(['asserted'] as const),
+  http: Object.freeze([] as const),
+});
 
 export type ConnectionProblem =
   | { readonly rule: 'connection_invalid'; readonly path: string; readonly message: string }
@@ -251,8 +334,32 @@ export function parseConnectionForWrite(value: unknown): ConnectionSettings {
  * cannot point a stored password at a server of their own. A name or a description changes nothing.
  */
 export function connectionTarget(settings: Pick<ConnectionSettings, 'type' | 'source'>): string {
-  const { host, port, database, account, tls } = settings.source;
-  return JSON.stringify([settings.type, host, port, database, account, tls]);
+  const target = settings as
+    Pick<PostgresSettings, 'type' | 'source'> | Pick<HttpSettings, 'type' | 'source'>;
+  // HTTP's target is where the secret is sent and in which header (the D6 plan's stored-shape check).
+  if (target.type === 'http') {
+    return JSON.stringify([target.type, target.source.baseUrl, target.source.secretHeader]);
+  }
+  const { host, port, database, account, tls } = target.source;
+  return JSON.stringify([target.type, host, port, database, account, tls]);
+}
+
+/**
+ * What a version may not change of the one before it (the D6 plan, D6-A): its type, which every
+ * definition naming it was written for.
+ */
+export function connectionChangeProblems(
+  previous: Pick<ConnectionSettings, 'type'>,
+  next: Pick<ConnectionSettings, 'type'>,
+): ConnectionProblem[] {
+  if (previous.type === next.type) return [];
+  return [
+    {
+      rule: 'connection_invalid',
+      path: 'type',
+      message: "A connection's type never changes: make a connection of the other type",
+    },
+  ];
 }
 
 /**
