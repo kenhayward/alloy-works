@@ -271,10 +271,9 @@ export async function exchange(asked: Exchange, policy: ExchangePolicy): Promise
       response.on('end', () => {
         if (settled) return;
         rawEnded = true;
-        if (declared !== undefined && raw !== declared) {
-          finish(failed(dataFailure('result_incomplete')));
-          return;
-        }
+        // A body is held to its `Content-Length` by Node's own parser: one cut short ends in the
+        // response's error, and one longer than stated in the request's (the D6 review, which
+        // found a count of it here unreachable), each `result_incomplete`.
         for (const [algorithm, hash] of hashes) {
           const expected = stated.get(algorithm)!;
           const actual = hash.digest();

@@ -1,3 +1,7 @@
+import { readFileSync } from 'node:fs';
+import { createServer as createTlsServer } from 'node:tls';
+import { fileURLToPath } from 'node:url';
+
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { exchange, statedDigests, type Exchange, type ExchangePolicy } from './https.js';
@@ -77,6 +81,35 @@ describe('the guarded HTTPS client', () => {
     expect(code(await exchange(asked('/v1/digest-wrong'), policy()))).toBe('result_incomplete');
     expect(statedDigests('sha-256=:AAAA:, unknown=:BBBB:')?.size).toBe(1);
     expect(statedDigests('sha-256=AAAA')).toBeUndefined();
+  });
+
+  it('DAT-108 refuses a body longer than its Content-Length too, result_incomplete, the parser holding a body to its stated length', async () => {
+    const certs = new URL('../../../deploy/sources/http/', import.meta.url);
+    const server = createTlsServer(
+      {
+        key: readFileSync(fileURLToPath(new URL('server-key.pem', certs))),
+        cert: readFileSync(fileURLToPath(new URL('server.pem', certs))),
+      },
+      (socket) => {
+        socket.on('data', () => {
+          // Ten bytes stated, twenty sent, then the connection closed.
+          socket.end(
+            'HTTP/1.1 200 OK\r\ncontent-length: 10\r\nconnection: close\r\n\r\n0123456789ABCDEFGHIJ',
+          );
+        });
+      },
+    );
+    const port = await new Promise<number>((resolve) =>
+      server.listen(0, '127.0.0.1', () => resolve((server.address() as { port: number }).port)),
+    );
+    try {
+      const answered = await exchange({ ...asked('/v1/long'), port }, policy());
+      expect(answered.ok ? answered.body.toString('latin1') : answered.failure.code).toBe(
+        'result_incomplete',
+      );
+    } finally {
+      server.close();
+    }
   });
 
   it('follows no redirect, and reads a 401 as a failure to reach; any other refusal is its status alone', async () => {
