@@ -1,4 +1,5 @@
 import { Choice } from './Choice.js';
+import { FormatFields } from './FormatFields.js';
 import type { ParameterDraft } from './definitionDraft.js';
 import { NEW_PAIR, NEW_PART, type HttpDraft, type PairDraft, type PartDraft } from './httpDraft.js';
 import styles from './QueryDefinitionPage.module.css';
@@ -11,7 +12,7 @@ import styles from './QueryDefinitionPage.module.css';
  */
 
 /** A part's value: fixed text, or a parameter chosen by name. */
-function PartField({
+export function PartField({
   label,
   part,
   parameters,
@@ -193,45 +194,7 @@ export function HttpFields({
           onChange={(body) => onChange({ ...http, body })}
         />
       )}
-      <Choice label="The answer is">
-        {(id) => (
-          <select
-            id={id}
-            value={http.format}
-            onChange={(event) =>
-              onChange({ ...http, format: event.target.value as HttpDraft['format'] })
-            }
-          >
-            <option value="json">JSON</option>
-            <option value="jsonLines">JSON Lines, an object a line</option>
-          </select>
-        )}
-      </Choice>
-      {http.format === 'json' && (
-        <>
-          <label>
-            Rows at
-            <input
-              value={http.rows}
-              spellCheck={false}
-              placeholder="/data/items"
-              onChange={(event) => onChange({ ...http, rows: event.target.value })}
-            />
-          </label>
-          <label>
-            Row count at, where the answer states one
-            <input
-              value={http.count}
-              spellCheck={false}
-              onChange={(event) => onChange({ ...http, count: event.target.value })}
-            />
-          </label>
-          <p className={styles['hint']}>
-            Each is a JSON Pointer: empty for the whole answer, or each name after a /. A stated
-            count is checked against the rows read.
-          </p>
-        </>
-      )}
+      <FormatFields draft={http} noun="answer" onChange={onChange} />
       <p className={styles['hint']}>
         A parameter&apos;s value is placed where it stands and encoded for it: a path segment
         refuses a slash, . and .., and a header a line break. The connection&apos;s secret is sent

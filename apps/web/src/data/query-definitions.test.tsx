@@ -14,6 +14,7 @@ const FIRST = '55555555-5555-4555-8555-555555555555';
 const SECOND = '66666666-6666-4666-8666-666666666666';
 const WAREHOUSE = '77777777-7777-4777-8777-777777777777';
 const API = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+const BUCKET = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const COMPONENT = '88888888-8888-4888-8888-888888888888';
 const DOCUMENT = '99999999-9999-4999-8999-999999999999';
 
@@ -129,6 +130,8 @@ function service(
     warehouse?: boolean;
     /** An HTTP connection the person may use, Readings API, listed first (the D6 plan). */
     api?: boolean;
+    /** An S3 connection the person may use, Readings bucket, listed first (the D6 plan, task 2). */
+    bucket?: boolean;
     /** The definition the service holds at first. */
     held?: ReturnType<typeof view>;
     describe?: (body: unknown) => Response | Promise<Response>;
@@ -154,6 +157,21 @@ function service(
     if (request.method === 'GET' && path === '/v1/connections') {
       return json(200, {
         items: [
+          ...(options.bucket
+            ? [
+                {
+                  id: BUCKET,
+                  name: 'Readings bucket',
+                  space: { id: GENERAL, name: 'General' },
+                  type: 's3',
+                  retired: false,
+                  version: { id: FIRST, number: '0.1' },
+                  credentialSet: true,
+                  lastTest: null,
+                  changedAt: '2026-09-30T09:00:00.000Z',
+                },
+              ]
+            : []),
           ...(options.api
             ? [
                 {
@@ -216,7 +234,8 @@ function service(
               uses &&
               (target === `artifact:${READINGS}` ||
                 target === `artifact:${WAREHOUSE}` ||
-                target === `artifact:${API}`),
+                target === `artifact:${API}` ||
+                target === `artifact:${BUCKET}`),
           },
           {
             permission: 'write_sql',
@@ -273,10 +292,17 @@ function service(
       request.method === 'POST' &&
       (path === `/v1/connections/${READINGS}/describe` ||
         path === `/v1/connections/${WAREHOUSE}/describe` ||
-        path === `/v1/connections/${API}/describe`)
+        path === `/v1/connections/${API}/describe` ||
+        path === `/v1/connections/${BUCKET}/describe`)
     ) {
       // Sent nothing, a describe lists the source's tables and views (D1).
-      if (isRecord(body) && !('sql' in body) && !('builder' in body) && !('http' in body)) {
+      if (
+        isRecord(body) &&
+        !('sql' in body) &&
+        !('builder' in body) &&
+        !('http' in body) &&
+        !('file' in body)
+      ) {
         return json(200, RELATIONS);
       }
       return (
@@ -1601,5 +1627,109 @@ describe('a query definition on an HTTP connection (the D6 plan)', () => {
     expect(
       await screen.findByText('GET /sites/{site}?since=2026-01-01', { exact: false }),
     ).toBeInTheDocument();
+  });
+
+  it('DAT-105 reads a file by its key, proposes its columns by header from a sample, and saves its filter over them', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service({
+      bucket: true,
+      sqlWriter: false,
+      describe: () =>
+        json(200, {
+          columns: [
+            { name: 'id', sourceType: 'text', proposed: { base: 'integer' }, header: 'id' },
+            { name: 'site', sourceType: 'text', proposed: { base: 'text' }, header: 'site' },
+          ],
+          parameters: [],
+        }),
+    });
+    render(<QueryDefinitionPage client={client} id="new" />);
+    const connection = await screen.findByLabelText('Connection');
+    await waitFor(() => expect(connection).toHaveValue(BUCKET));
+    // An S3 connection's query is a file: no builder, no SQL, no request.
+    expect(screen.queryByLabelText('SQL text')).toBeNull();
+    expect(screen.queryByLabelText('Method')).toBeNull();
+    await user.type(screen.getByLabelText('Title'), 'Sites from a file');
+    await user.click(screen.getByRole('button', { name: 'Add parameter' }));
+    await user.type(
+      within(screen.getByRole('group', { name: 'Parameter 1' })).getByLabelText('Name'),
+      'year',
+    );
+    await user.click(screen.getByRole('button', { name: 'Add segment' }));
+    await user.type(screen.getByLabelText('Segment 1'), 'readings');
+    await user.click(screen.getByRole('button', { name: 'Add segment' }));
+    await user.selectOptions(screen.getByLabelText('Segment 2: fixed or a parameter'), 'parameter');
+    await user.selectOptions(screen.getByLabelText('Segment 2 parameter'), 'year');
+    await user.click(screen.getByRole('button', { name: 'Add segment' }));
+    await user.type(screen.getByLabelText('Segment 3'), 'sites.csv');
+    // A file is CSV unless said; its convention for an empty field is declared.
+    expect(screen.getByLabelText('The file is')).toHaveValue('csv');
+    await user.selectOptions(screen.getByLabelText('An empty field'), 'never');
+    await user.type(screen.getByLabelText('year'), '2026');
+    await user.click(screen.getByRole('button', { name: 'Sample for columns' }));
+    const columns = await screen.findByRole('table', { name: 'Columns' });
+    const key = [{ fixed: 'readings' }, { parameter: 'year' }, { fixed: 'sites.csv' }];
+    const format = { kind: 'csv', delimiter: 'comma', headerRow: true, null: 'never' };
+    expect(asked.find((each) => each.path.endsWith('/describe'))?.body).toEqual({
+      file: {
+        key,
+        format,
+        parameters: [{ name: 'year', type: { base: 'text' }, required: true, list: false }],
+        values: { year: '2026' },
+      },
+    });
+    for (const name of ['id', 'site']) {
+      await user.click(within(columns).getByRole('button', { name: `Confirm ${name}` }));
+    }
+    // A filter over a confirmed column, compared with a fixed value of its type.
+    await user.click(screen.getByRole('button', { name: 'Add a filter' }));
+    const filter = screen.getByRole('group', { name: 'Filter 1' });
+    await user.selectOptions(within(filter).getByLabelText('Column'), 'site');
+    await user.selectOptions(within(filter).getByLabelText('Compared with'), 'value');
+    await user.selectOptions(within(filter).getByLabelText('Comparison'), 'startsWith');
+    await user.type(within(filter).getByLabelText('Value'), 'North');
+    // Filtering changes which rows, never which columns: the confirmations stand.
+    await user.click(await screen.findByRole('button', { name: 'Save version' }));
+    await waitFor(() => expect(window.location.hash).toBe(`#/query-definitions/${DEFINITION}`));
+    expect(asked.find((each) => each.path.endsWith('/query-definitions'))?.body).toMatchObject({
+      definition: {
+        connection: BUCKET,
+        fetch: {
+          kind: 'file',
+          key,
+          format,
+          where: {
+            column: 'site',
+            is: 'startsWith',
+            to: { literal: 'North', type: { base: 'text' } },
+          },
+        },
+        columns: [
+          { name: 'id', from: { header: 'id' }, type: { base: 'integer' } },
+          { name: 'site', from: { header: 'site' }, type: { base: 'text' } },
+        ],
+      },
+    });
+  });
+
+  it('shows the object a file definition reads to somebody who may only read it', async () => {
+    const { client } = service({
+      held: {
+        ...view({
+          parameters: [{ name: 'year', type: { base: 'text' }, required: true, list: false }],
+          fetch: {
+            kind: 'file',
+            key: [{ fixed: 'readings' }, { parameter: 'year' }, { fixed: 'sites.csv' }],
+            format: { kind: 'csv', delimiter: 'comma', headerRow: false, null: 'empty' },
+          },
+          columns: [{ name: 'id', from: { letter: 'A' }, type: { base: 'integer' } }],
+          key: [],
+          order: 'multiset',
+        }),
+        mayEdit: false,
+      },
+    });
+    render(<QueryDefinitionPage client={client} id={DEFINITION} />);
+    expect(await screen.findByText('readings/{year}/sites.csv')).toBeInTheDocument();
   });
 });

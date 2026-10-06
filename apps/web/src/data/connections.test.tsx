@@ -387,6 +387,41 @@ describe('the Connections list', () => {
     });
   });
 
+  it('makes an S3 connection: an endpoint, a region, a bucket and how it is addressed', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service({ administers: [QUALITY] });
+    render(<Connections client={client} />);
+    await user.click(await screen.findByRole('button', { name: 'New connection' }));
+    const dialog = screen.getByRole('dialog', { name: 'New connection' });
+    await user.selectOptions(within(dialog).getByLabelText('Type'), 's3');
+    expect(within(dialog).queryByLabelText('Host')).toBeNull();
+    expect(within(dialog).queryByLabelText('Runs as')).toBeNull();
+    await user.type(within(dialog).getByLabelText('Name'), 'Readings bucket');
+    await user.type(within(dialog).getByLabelText('Endpoint'), 'minio.example.test:9000');
+    await user.clear(within(dialog).getByLabelText('Region'));
+    await user.type(within(dialog).getByLabelText('Region'), 'eu-west-2');
+    await user.type(within(dialog).getByLabelText('Bucket'), 'alloy-readings');
+    await user.selectOptions(within(dialog).getByLabelText('Addressed'), 'path');
+    await user.click(within(dialog).getByRole('button', { name: 'Create' }));
+    await waitFor(() => expect(window.location.hash).toBe(`#/connections/${READINGS}`));
+    expect(asked.find((each) => each.method === 'POST')?.body).toEqual({
+      settings: {
+        schemaVersion: 1,
+        name: 'Readings bucket',
+        description: '',
+        type: 's3',
+        source: {
+          endpoint: 'https://minio.example.test:9000',
+          region: 'eu-west-2',
+          bucket: 'alloy-readings',
+          pathStyle: true,
+        },
+        identity: { kind: 'service' },
+        retired: false,
+      },
+    });
+  });
+
   it('offers no New connection to somebody who administers no space', async () => {
     const { client, asked } = service({ administers: [] });
     render(<Connections client={client} />);
@@ -423,6 +458,46 @@ describe('an HTTP connection on its own page', () => {
       ),
     );
     expect(screen.getByLabelText('Secret')).toHaveValue('');
+    expect(document.body.textContent).not.toContain(CANARY);
+  });
+});
+
+describe('an S3 connection on its own page', () => {
+  const s3 = settings({
+    name: 'Readings bucket',
+    type: 's3',
+    source: {
+      endpoint: 'https://s3.example.test',
+      region: 'eu-west-2',
+      bucket: 'alloy-readings',
+      pathStyle: false,
+    },
+  });
+
+  it('shows its endpoint, region and bucket, sets its key pair write-only, and lists no tables', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service({ connection: view({ settings: s3 }) });
+    render(<ConnectionPage client={client} id={READINGS} />);
+    await screen.findByRole('heading', { name: 'Readings bucket' });
+    expect(screen.getByText('S3 bucket, in General')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Type')).toBeNull();
+    expect(screen.getByLabelText('Endpoint')).toHaveValue('https://s3.example.test');
+    expect(screen.getByLabelText('Bucket')).toHaveValue('alloy-readings');
+    expect(screen.queryByRole('button', { name: 'List tables' })).toBeNull();
+    await user.type(screen.getByLabelText('Access key id'), 'AKIAINVENTED');
+    await user.type(screen.getByLabelText('Secret access key'), CANARY);
+    await user.click(screen.getByRole('button', { name: 'Set' }));
+    await waitFor(() =>
+      expect(asked.some((each) => each.method === 'PUT' && each.path.endsWith('/credential'))).toBe(
+        true,
+      ),
+    );
+    expect(asked.find((each) => each.method === 'PUT')?.body).toEqual({
+      accessKeyId: 'AKIAINVENTED',
+      secretAccessKey: CANARY,
+    });
+    expect(screen.getByLabelText('Secret access key')).toHaveValue('');
+    expect(screen.getByLabelText('Access key id')).toHaveValue('');
     expect(document.body.textContent).not.toContain(CANARY);
   });
 });

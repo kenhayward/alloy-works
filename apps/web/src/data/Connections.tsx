@@ -158,8 +158,8 @@ function NewConnection({
     <section aria-labelledby="new-connection-heading">
       <h2 id="new-connection-heading">New connection</h2>
       <p>
-        A connection reaches one PostgreSQL database or one HTTPS API. Its password or secret is set
-        once it is made.
+        A connection reaches one PostgreSQL database, one HTTPS API or one S3 bucket. Its password,
+        secret or key pair is set once it is made.
       </p>
       <label>
         Space

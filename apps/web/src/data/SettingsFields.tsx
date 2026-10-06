@@ -1,11 +1,12 @@
 import type { Settings } from './shapes.js';
 
-/** The types of source a connection reaches: a PostgreSQL database, or an HTTPS API (D6). */
+/** The types of source a connection reaches: a PostgreSQL database, an HTTPS API or an S3 bucket (D6). */
 export type SourceType = Settings['type'];
 
 export const TYPE_LABELS: Readonly<Record<SourceType, string>> = {
   postgres: 'A PostgreSQL database',
   http: 'An HTTPS API',
+  s3: 'An S3 bucket',
 };
 
 /** What the settings form holds while it is being written: the port as typed. */
@@ -21,6 +22,11 @@ export interface Draft {
   /** An HTTP source's base URL, and the header its secret is sent in (the D6 plan, D6-D). */
   readonly baseUrl: string;
   readonly secretHeader: string;
+  /** An S3 source's endpoint, region, bucket and how the bucket is addressed (the D6 plan, D6-C). */
+  readonly endpoint: string;
+  readonly region: string;
+  readonly bucket: string;
+  readonly pathStyle: boolean;
   /** Whom it runs as: its own account, or each person by the attribute naming their role (D7-B). */
   readonly runsAs: RunsAs;
 }
@@ -50,6 +56,10 @@ export const EMPTY_DRAFT: Draft = {
   tls: 'require',
   baseUrl: 'https://',
   secretHeader: 'authorization',
+  endpoint: 'https://',
+  region: 'us-east-1',
+  bucket: '',
+  pathStyle: false,
   runsAs: 'service',
 };
 
@@ -67,6 +77,9 @@ export function draftOf(settings: Settings): Draft {
       baseUrl: settings.source.baseUrl,
       secretHeader: settings.source.secretHeader,
     };
+  }
+  if (settings.type === 's3') {
+    return { ...common, ...settings.source };
   }
   return {
     ...common,
@@ -101,6 +114,20 @@ export function settingsOf(
       identity: { kind: 'service' },
     };
   }
+  if (draft.type === 's3') {
+    // An S3 connection reads as its key pair alone: a store has no person's identity (DAT-077).
+    return {
+      ...common,
+      type: 's3',
+      source: {
+        endpoint: draft.endpoint.trim(),
+        region: draft.region.trim(),
+        bucket: draft.bucket.trim(),
+        pathStyle: draft.pathStyle,
+      },
+      identity: { kind: 'service' },
+    };
+  }
   return {
     ...common,
     type: 'postgres',
@@ -131,6 +158,14 @@ export function draftProblem(draft: Draft): string | null {
       return 'A connection needs the header its secret is sent in.';
     return null;
   }
+  if (draft.type === 's3') {
+    if (!/^https:\/\/[^/?#]+$/.test(draft.endpoint.trim())) {
+      return 'An endpoint starts https:// and names its host, and nothing after it.';
+    }
+    if (draft.region.trim() === '') return 'A connection needs the region of its bucket.';
+    if (draft.bucket.trim() === '') return 'A connection needs the name of its bucket.';
+    return null;
+  }
   if (draft.host.trim() === '') return 'A connection needs the host of its source.';
   if (!/^\d{1,5}$/.test(draft.port) || Number(draft.port) < 1 || Number(draft.port) > 65535) {
     return 'A port is a whole number from 1 to 65535.';
@@ -143,6 +178,16 @@ export function draftProblem(draft: Draft): string | null {
 /** What running as each person asks of the source, said beside the choice (the D7 plan, D7-C, D7-D). */
 export const RUNS_AS_HINT =
   "Each person's role at the source is named by this, and made by the source's administrator, who grants it to the connection's account. The account must read nothing of its own, and SQL written by hand is not allowed on the connection.";
+
+/** How an S3 bucket is addressed, said beside the choice (the D6 plan, D6-C). */
+export const PATH_STYLE_LABELS = {
+  virtual: 'By its name before the endpoint, as AWS addresses buckets',
+  path: "In the endpoint's path, as MinIO and SeaweedFS do by default",
+} as const;
+
+/** What an S3 connection's key pair is, said beside its fields. */
+export const KEY_PAIR_HINT =
+  "A static access key pair. Give it read access to this bucket alone: the store's own policy decides what the connection may read.";
 
 /** What an HTTP connection's secret is, said beside its header (the D6 plan, D6-D). */
 export const SECRET_HEADER_HINT =
@@ -167,7 +212,7 @@ export function SettingsFields({
   readonly onChange: (draft: Draft) => void;
   readonly typeFixed?: boolean;
 }) {
-  const field = (key: Exclude<keyof Draft, 'tls' | 'runsAs' | 'type'>) => ({
+  const field = (key: Exclude<keyof Draft, 'tls' | 'runsAs' | 'type' | 'pathStyle'>) => ({
     value: draft[key],
     onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       onChange({ ...draft, [key]: event.target.value }),
@@ -197,7 +242,32 @@ export function SettingsFields({
         Description
         <textarea rows={2} {...field('description')} />
       </label>
-      {draft.type === 'http' ? (
+      {draft.type === 's3' ? (
+        <>
+          <label>
+            Endpoint
+            <input {...field('endpoint')} autoComplete="off" spellCheck={false} inputMode="url" />
+          </label>
+          <label>
+            Region
+            <input {...field('region')} autoComplete="off" spellCheck={false} />
+          </label>
+          <label>
+            Bucket
+            <input {...field('bucket')} autoComplete="off" spellCheck={false} />
+          </label>
+          <label>
+            Addressed
+            <select
+              value={draft.pathStyle ? 'path' : 'virtual'}
+              onChange={(event) => onChange({ ...draft, pathStyle: event.target.value === 'path' })}
+            >
+              <option value="virtual">{PATH_STYLE_LABELS.virtual}</option>
+              <option value="path">{PATH_STYLE_LABELS.path}</option>
+            </select>
+          </label>
+        </>
+      ) : draft.type === 'http' ? (
         <>
           <label>
             Base URL

@@ -1,4 +1,10 @@
-import type { HttpBodyNode, HttpFetch, HttpPart, HttpTemplate } from '@alloy-works/domain';
+import type {
+  DataFormat,
+  HttpBodyNode,
+  HttpPart,
+  HttpTemplate,
+  QueryDefinition,
+} from '@alloy-works/domain';
 
 /**
  * An HTTP request template as its page holds it while it is written (the D6 plan, D6-E): each part of
@@ -18,37 +24,55 @@ export interface PairDraft {
   readonly value: PartDraft;
 }
 
-export interface HttpDraft {
+/**
+ * The format rows are read in, whatever carried them (the D6 plan, D6-F): JSON at a pointer, JSON
+ * Lines, or CSV with its delimiter, whether its first record is a header, and its convention for null.
+ */
+export interface FormatDraft {
+  readonly format: 'json' | 'jsonLines' | 'csv';
+  /** JSON's pointer to its rows, and to the count it states, where it states one. */
+  readonly rows: string;
+  readonly count: string;
+  readonly delimiter: 'comma' | 'semicolon' | 'tab' | 'pipe';
+  readonly headerRow: boolean;
+  /** Whether an unquoted empty field is null (`empty`), or every field text (`never`). */
+  readonly nulls: 'empty' | 'never';
+}
+
+export const NEW_FORMAT: FormatDraft = {
+  format: 'json',
+  rows: '',
+  count: '',
+  delimiter: 'comma',
+  headerRow: true,
+  nulls: 'empty',
+};
+
+export interface HttpDraft extends FormatDraft {
   readonly method: 'GET' | 'POST';
   readonly path: readonly PartDraft[];
   readonly query: readonly PairDraft[];
   readonly headers: readonly PairDraft[];
   /** A POST's body: a JSON object, a member each. */
   readonly body: readonly PairDraft[];
-  readonly format: 'json' | 'jsonLines';
-  /** JSON's pointer to its rows, and to the count it states, where it states one. */
-  readonly rows: string;
-  readonly count: string;
 }
 
 export const NEW_HTTP: HttpDraft = {
+  ...NEW_FORMAT,
   method: 'GET',
   path: [],
   query: [],
   headers: [],
   body: [],
-  format: 'json',
-  rows: '',
-  count: '',
 };
 
 export const NEW_PART: PartDraft = { kind: 'fixed', text: '' };
 export const NEW_PAIR: PairDraft = { name: '', value: NEW_PART };
 
-const partOf = (part: PartDraft): HttpPart =>
+export const partOf = (part: PartDraft): HttpPart =>
   part.kind === 'parameter' ? { parameter: part.text.trim() } : { fixed: part.text };
 
-const draftOfPart = (part: HttpPart): PartDraft =>
+export const draftOfPart = (part: HttpPart): PartDraft =>
   'parameter' in part
     ? { kind: 'parameter', text: part.parameter }
     : { kind: 'fixed', text: part.fixed };
@@ -80,12 +104,39 @@ export function templateOf(http: HttpDraft): HttpTemplate {
 }
 
 /** The format a draft reads its rows in. */
-export function formatOf(http: HttpDraft): HttpFetch['format'] {
-  if (http.format === 'jsonLines') return { kind: 'jsonLines' };
+export function formatOf(draft: FormatDraft): DataFormat {
+  if (draft.format === 'jsonLines') return { kind: 'jsonLines' };
+  if (draft.format === 'csv') {
+    return {
+      kind: 'csv',
+      delimiter: draft.delimiter,
+      headerRow: draft.headerRow,
+      null: draft.nulls,
+    };
+  }
   return {
     kind: 'json',
-    rows: http.rows.trim(),
-    ...(http.count.trim() === '' ? {} : { count: http.count.trim() }),
+    rows: draft.rows.trim(),
+    ...(draft.count.trim() === '' ? {} : { count: draft.count.trim() }),
+  };
+}
+
+/** A stored format as its page holds it. */
+export function formatDraftOf(format: DataFormat): FormatDraft {
+  if (format.kind === 'csv') {
+    return {
+      ...NEW_FORMAT,
+      format: 'csv',
+      delimiter: format.delimiter,
+      headerRow: format.headerRow,
+      nulls: format.null,
+    };
+  }
+  return {
+    ...NEW_FORMAT,
+    format: format.kind,
+    rows: format.kind === 'json' ? format.rows : '',
+    count: format.kind === 'json' ? (format.count ?? '') : '',
   };
 }
 
@@ -106,7 +157,9 @@ function flatBody(body: HttpBodyNode | undefined): PairDraft[] | undefined {
 }
 
 /** A stored HTTP fetch as the page holds it, or why the page cannot show it to edit. */
-export function httpDraftOf(stored: HttpFetch): HttpDraft | { readonly reason: string } {
+export function httpDraftOf(
+  stored: Extract<QueryDefinition['fetch'], { kind: 'http' }>,
+): HttpDraft | { readonly reason: string } {
   const body = flatBody(stored.request.body);
   if (body === undefined) {
     return {
@@ -115,6 +168,7 @@ export function httpDraftOf(stored: HttpFetch): HttpDraft | { readonly reason: s
     };
   }
   return {
+    ...formatDraftOf(stored.format),
     method: stored.request.method,
     path: stored.request.path.map(draftOfPart),
     query: stored.request.query.map((pair) => ({
@@ -126,14 +180,11 @@ export function httpDraftOf(stored: HttpFetch): HttpDraft | { readonly reason: s
       value: draftOfPart(pair.value),
     })),
     body,
-    format: stored.format.kind,
-    rows: stored.format.kind === 'json' ? stored.format.rows : '',
-    count: stored.format.kind === 'json' ? (stored.format.count ?? '') : '',
   };
 }
 
 /** A part as a reader is shown it: fixed text as it is, a parameter by its name in braces. */
-const shownPart = (part: HttpPart) => ('parameter' in part ? `{${part.parameter}}` : part.fixed);
+export const shownPart = (part: HttpPart) => ('parameter' in part ? `{${part.parameter}}` : part.fixed);
 
 /**
  * A template as its reader is shown it, a line each: the method and the path with its query, then
