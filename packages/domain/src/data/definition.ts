@@ -108,6 +108,19 @@ const headerName = storable('A header').refine(
   { message: 'A header is 1 to 200 characters, no control character' },
 );
 
+/**
+ * A sheet's name as a workbook holds one: 1 to 31 characters, no control character and none of the
+ * six a workbook refuses in a sheet's name.
+ */
+const sheetName = storable('A sheet').refine(
+  (value) =>
+    characters(value) >= 1 &&
+    characters(value) <= 31 &&
+    !CONTROL.test(value) &&
+    !/[:\\/?*[\]]/.test(value),
+  { message: 'A sheet is named in 1 to 31 characters, none of them : \\ / ? * [ or ]' },
+);
+
 /** A field's index from its letter, as a spreadsheet names a column: A is 0, Z 25, AA 26. */
 export function letterIndex(letter: string): number {
   let index = 0;
@@ -157,7 +170,8 @@ export const sqlTextSchema = storable('SQL').refine(
  * The formats a response or an object is read in, whatever carried it (the D6 plan, D6-F): JSON at a
  * pointer to an array of objects, with a pointer to a row count it states where it states one
  * (DAT-108); JSON Lines; or CSV, its delimiter named, whether its first record is a header, and its
- * convention for null - an unquoted empty field, or never (D6-H). XLSX arrives with D6.3.
+ * convention for null - an unquoted empty field, or never (D6-H); or XLSX, the one sheet read by its
+ * name and whether its first row is a header (D6-I).
  */
 export const dataFormatSchema = z.discriminatedUnion('kind', [
   z.strictObject({
@@ -172,6 +186,7 @@ export const dataFormatSchema = z.discriminatedUnion('kind', [
     headerRow: z.boolean(),
     null: z.enum(['empty', 'never']),
   }),
+  z.strictObject({ kind: z.literal('xlsx'), sheet: sheetName, headerRow: z.boolean() }),
 ]);
 export type DataFormat = z.infer<typeof dataFormatSchema>;
 
@@ -498,16 +513,20 @@ function fromProblem(fetch: DraftDefinition['fetch'], from: Column['from']): str
   if (fetch.kind === 'sql' || fetch.kind === 'builder') {
     return 'column' in from ? undefined : "A column of a query is read by the query's column name";
   }
-  if (fetch.format.kind !== 'csv') {
+  if (fetch.format.kind !== 'csv' && fetch.format.kind !== 'xlsx') {
     return 'pointer' in from ? undefined : 'A column of JSON is read by a pointer into its row';
   }
+  const sheet = fetch.format.kind === 'xlsx';
   if ('letter' in from) return undefined;
   if ('header' in from) {
-    return fetch.format.headerRow
-      ? undefined
+    if (fetch.format.headerRow) return undefined;
+    return sheet
+      ? 'A sheet whose first row is not a header names its columns by letter'
       : 'A CSV whose first record is not a header names its fields by letter';
   }
-  return 'A column of a CSV is read by its header or its letter';
+  return sheet
+    ? 'A column of a sheet is read by its header or its letter'
+    : 'A column of a CSV is read by its header or its letter';
 }
 
 /**
@@ -625,7 +644,10 @@ export function sampleDraft(
   parameters: readonly Parameter[],
   fetch: HttpFetch | Omit<FileFetch, 'where'>,
 ): DraftDefinition {
-  const from = fetch.format.kind === 'csv' ? { letter: 'A' } : { pointer: '/proposed' };
+  const from =
+    fetch.format.kind === 'csv' || fetch.format.kind === 'xlsx'
+      ? { letter: 'A' }
+      : { pointer: '/proposed' };
   return {
     schemaVersion: QUERY_DEFINITION_SCHEMA_VERSION,
     connection: '00000000-0000-4000-8000-000000000000',

@@ -159,6 +159,51 @@ describe("a file's object key", () => {
     for (const at of [0, 25, 26, 701, 702, 16383]) expect(letterIndex(indexLetter(at))).toBe(at);
   });
 
+  it('reads an XLSX column by its header or its letter from one named sheet, a header only where the first row is one', () => {
+    const XLSX = { kind: 'xlsx', sheet: 'Readings', headerRow: true } as const;
+    const fromProblems = (format: object, from: object) =>
+      checkQueryDefinition(
+        draft({
+          fetch: { kind: 'file', key, format } as DraftDefinition['fetch'],
+          columns: [{ name: 'site', from, type: { base: 'text' } } as never],
+        }),
+      ).map((each) => each.message);
+    expect(fromProblems(XLSX, { header: 'site' })).toEqual([]);
+    expect(fromProblems(XLSX, { letter: 'B' })).toEqual([]);
+    expect(fromProblems({ ...XLSX, headerRow: false }, { header: 'site' })).toEqual([
+      'A sheet whose first row is not a header names its columns by letter',
+    ]);
+    expect(fromProblems(XLSX, { pointer: '/site' })).toEqual([
+      'A column of a sheet is read by its header or its letter',
+    ]);
+    // A sheet is named as a workbook names one: 1 to 31 characters, none of the six it refuses.
+    const bad = [
+      '',
+      'x'.repeat(32),
+      'a/b',
+      'a[1]',
+      'what?',
+      'a*',
+      'a:b',
+      `a${String.fromCharCode(10)}`,
+    ];
+    for (const sheet of bad) {
+      expect(
+        () =>
+          parseDraftDefinition(draft({ fetch: { kind: 'file', key, format: { ...XLSX, sheet } } })),
+        sheet,
+      ).toThrow();
+    }
+    const fine = draft({
+      fetch: { kind: 'file', key, format: { ...XLSX, sheet: 'x'.repeat(31) } },
+      columns: [{ name: 'site', from: { letter: 'A' }, type: { base: 'text' } }],
+    });
+    expect(parseDraftDefinition(fine)).toEqual(fine);
+    expect(
+      checkQueryDefinition(sampleDraft(draft().parameters, { kind: 'file', key, format: XLSX })),
+    ).toEqual([]);
+  });
+
   it('reads a file on an S3 connection alone, and no other fetch on one', () => {
     expect(connectionFetchProblems(draft().fetch, s3)).toEqual([]);
     expect(

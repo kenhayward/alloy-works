@@ -16,7 +16,7 @@ import {
  */
 
 /** The JSON formats: at a pointer, or a line at a time. */
-export type JsonFormat = Exclude<DataFormat, { kind: 'csv' }>;
+export type JsonFormat = Extract<DataFormat, { kind: 'json' | 'jsonLines' }>;
 
 /** The deepest a JSON value may nest. */
 export const MAX_JSON_DEPTH = 64;
