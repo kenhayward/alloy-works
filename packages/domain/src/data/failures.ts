@@ -14,7 +14,8 @@ export type Attribution = 'connector' | 'query' | 'product';
  * form of its declared type can hold, a numeric `NaN` or an infinite date among them; and the re-review's
  * `definition_unbindable`, a definition whose binding the binder refused - a fragment running into the
  * SQL around it - which the definition's checks refuse when it is written, answered as the query's
- * should one reach a run unchecked, and never sent.
+ * should one reach a run unchecked, and never sent; and the D7 plan's `account_holds_privilege`, an
+ * account that may read data of its own where a person's identity is asserted (DAT-112, D7-D).
  */
 export const dataFailures = Object.freeze({
   connection_failed: 'connector',
@@ -35,6 +36,7 @@ export const dataFailures = Object.freeze({
   identity_unavailable: 'product',
   identity_expired: 'connector',
   identity_unmatched: 'connector',
+  account_holds_privilege: 'connector',
   sql_not_permitted: 'product',
   parameter_invalid: 'product',
   binding_unresolved: 'product',

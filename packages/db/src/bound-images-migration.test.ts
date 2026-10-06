@@ -153,6 +153,7 @@ describe('migration 0052, which widens dataset_take to an image', () => {
     expect((await migrate(db.migratorUrl)).tenants[upgraded.id]).toEqual([
       '0052_bound_images',
       '0053_dataset_image_index',
+      '0054_connection_test_privilege',
     ]);
     const kept = await queryAs(
       db.adminUrl,

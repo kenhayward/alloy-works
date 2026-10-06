@@ -31,6 +31,8 @@ describe('a data failure', () => {
       identity_unavailable: 'product',
       identity_expired: 'connector',
       identity_unmatched: 'connector',
+      // The D7 plan's D7-D: an account that may read data of its own where a person is asserted.
+      account_holds_privilege: 'connector',
       sql_not_permitted: 'product',
       parameter_invalid: 'product',
       binding_unresolved: 'product',

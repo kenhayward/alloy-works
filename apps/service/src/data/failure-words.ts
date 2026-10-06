@@ -46,6 +46,10 @@ const MESSAGES: Partial<Record<DataFailureCode, string>> = {
   connector_busy: 'The connector is busy. Try again in a moment.',
   image_refused:
     'The image is not a complete PNG or JPEG image the product admits, or is too large. Nothing was kept.',
+  account_holds_privilege:
+    "This connection's account can read data of its own, so it cannot run as each person. Ask the source's administrator to remove its privileges.",
+  identity_unmatched:
+    "The source has no role for you that this connection may use. Ask the source's administrator.",
 };
 
 /** Where a failure names a column or a row, the words for it, as the start of a sentence. */

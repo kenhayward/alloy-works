@@ -184,18 +184,23 @@ describe('a connection', () => {
       answer: 'connection.refused',
       problems: [{ rule: 'connection_invalid', path: 'source.host' }],
     });
-    const asserted = await service.withTenant(production, (trx) =>
+    const delegated = await service.withTenant(production, (trx) =>
       createConnection(trx, {
         author: ada,
         spaceId: general,
         settings: settings({
-          identity: { kind: 'endUser', mechanism: 'asserted', attribute: 'email' },
+          identity: {
+            kind: 'endUser',
+            mechanism: 'delegated',
+            tokenEndpoint: 'https://idp.example.test/token',
+            audience: 'readings',
+          },
         }),
       }),
     );
-    expect(asserted).toEqual({
+    expect(delegated).toEqual({
       answer: 'connection.refused',
-      problems: [{ rule: 'identity_not_supported', type: 'postgres', mechanism: 'asserted' }],
+      problems: [{ rule: 'identity_not_supported', type: 'postgres', mechanism: 'delegated' }],
     });
     const retired = await service.withTenant(production, (trx) =>
       createConnection(trx, {
@@ -668,7 +673,9 @@ describe('a connection', () => {
         findings: ['account_not_read_only'],
       }),
     ).rejects.toThrow(/connection_test/);
-    await expect(insert({ ...good, findings: ['account_holds_privilege'] })).rejects.toThrow(
+    // 0054's second finding (the D7 plan, D7-D) is taken beside the first; an unknown one is not.
+    await insert({ ...good, findings: ['account_not_read_only', 'account_holds_privilege'] });
+    await expect(insert({ ...good, findings: ['account_unknown'] })).rejects.toThrow(
       /connection_test/,
     );
     await expect(

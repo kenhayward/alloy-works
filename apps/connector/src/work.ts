@@ -3,6 +3,7 @@ import {
   bindFetch,
   dataFailure,
   type ChildRequest,
+  type ConnectionSettings,
   type DataFailure,
   type DataFailureCode,
   type DescribeAnswer,
@@ -10,6 +11,7 @@ import {
   type ParameterValues,
   type RunAnswer,
   type TestAnswer,
+  type TestFinding,
 } from '@alloy-works/domain';
 import type pg from 'pg';
 
@@ -22,8 +24,11 @@ import {
 } from './describe.js';
 import { guardedAddress, type Lookup } from './guard.js';
 import {
+  accountHoldsPrivilege,
+  assertRole,
   cancelBackend,
   connectPostgres,
+  heldAs,
   describeRelations,
   OLDEST_SERVER_VERSION,
   readOnlyFindings,
@@ -44,9 +49,45 @@ const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, Math.
 
 type Answer = TestAnswer | DescribeAnswer | RunAnswer | DescribeSqlAnswer;
 
+/**
+ * What a test finds of the account (D1-M): whether it may write, and, on a connection that asserts a
+ * person's identity, whether it may read data of its own, as every asserted run checks (DAT-112, D7-D).
+ */
+async function testFindings(
+  client: pg.Client,
+  settings: ConnectionSettings,
+): Promise<TestFinding[]> {
+  const findings = await readOnlyFindings(client);
+  const { identity } = settings;
+  if (identity.kind === 'endUser' && identity.mechanism === 'asserted') {
+    if (await accountHoldsPrivilege(client)) findings.push('account_holds_privilege');
+  }
+  return findings;
+}
+
 /** A failure in the shape of the request's answer: a test's and a run's say `failed`. */
 function failureAnswer(kind: ChildRequest['kind'], failure: DataFailure): Answer {
   return kind === 'test' || kind === 'run' ? { outcome: 'failed', failure } : { failure };
+}
+
+/** The person's role a request asserts (D7-G), or undefined for one run as the account. */
+function assertedRole(request: ChildRequest): string | undefined {
+  if (request.kind === 'test') return undefined;
+  const identity = request.request.identity;
+  return identity?.kind === 'asserted' ? identity.role : undefined;
+}
+
+/**
+ * A describe as a person (D7-G): in a read-only transaction, the role asserted first as a run asserts
+ * it (D7-A, D7-D), and still the source's `current_user` once the describe is done (D7-E).
+ */
+async function describedAs<T>(client: pg.Client, role: string, work: () => Promise<T>): Promise<T> {
+  await client.query('begin transaction read only');
+  const asserted = await assertRole(client, role);
+  if ('refused' in asserted) throw failedWith(asserted.refused);
+  const answer = await work();
+  if (!(await heldAs(client, role))) throw failedWith('identity_unmatched');
+  return answer;
 }
 
 /**
@@ -123,13 +164,18 @@ export async function answerRequest(
     try {
       if ((await serverVersion(client)) < OLDEST_SERVER_VERSION)
         throw failedWith('source_unsupported');
+      const role = assertedRole(request);
       switch (request.kind) {
         case 'test':
-          return { outcome: 'ok', findings: await readOnlyFindings(client) };
+          return { outcome: 'ok', findings: await testFindings(client, request.request.settings) };
         case 'describe':
-          return await describeRelations(client);
+          return role === undefined
+            ? await describeRelations(client)
+            : await describedAs(client, role, () => describeRelations(client!));
         case 'describeSql':
-          return await describeSql(client, request.request);
+          return role === undefined
+            ? await describeSql(client, request.request)
+            : await describedAs(client, role, () => describeSql(client!, request.request));
         case 'run':
           return await runStatement(
             client,
@@ -138,6 +184,7 @@ export async function answerRequest(
             request.request.limits,
             deadline,
             () => cancelBackend(address.address, request.request.settings.source.port, client!),
+            role,
           );
         default:
           throw failedWith('connector_error');

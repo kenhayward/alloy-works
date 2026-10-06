@@ -35,6 +35,8 @@ type Client = ReturnType<typeof createApiClient>;
 const FINDINGS: Readonly<Record<string, string>> = {
   account_not_read_only:
     'This account can change data at the source, so SQL written by hand will not be allowed on this connection.',
+  account_holds_privilege:
+    'This account can read data of its own at the source, so nothing will run as each person until its privileges are removed.',
 };
 
 const KINDS: Readonly<Record<string, string>> = {

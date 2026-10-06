@@ -31,7 +31,27 @@ const record = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
+const PRINCIPAL = '00000000-0000-4000-8000-0000000000a1';
+
+/** A person's own identity, asserted at the source (the D7 plan, D7-J). */
+const asserted = (over: Record<string, unknown> = {}) => ({
+  kind: 'endUser',
+  mechanism: 'asserted',
+  principal: PRINCIPAL,
+  signInRoute: 'organisation',
+  asSeen: 'ada@example.com',
+  ...over,
+});
+
 describe("a dataset version's provenance record", () => {
+  it("reads a person's own identity: whose, how they signed in, and the role the source saw (D7-J)", () => {
+    for (const signInRoute of ['organisation', 'google', 'token']) {
+      const identity = asserted({ signInRoute });
+      expect(parseProvenance(record({ identity })).identity).toEqual(identity);
+      expect(parseProvenanceForWrite(record({ identity })).identity).toEqual(identity);
+    }
+  });
+
   it('reads the record whole, as it was written', () => {
     const read: Provenance = parseProvenance(record());
     expect(read).toEqual(record());
@@ -68,16 +88,15 @@ describe("a dataset version's provenance record", () => {
       { ran: { sql: '' } },
       { ran: { sql: 'select 1', secret: 'x' } },
       { ran: { sql: 'x'.repeat(300_001) } },
-      // An end user's identity is D7's.
-      {
-        identity: {
-          kind: 'endUser',
-          mechanism: 'asserted',
-          principal: 'p',
-          signInRoute: 'r',
-          asSeen: 'a',
-        },
-      },
+      // A person's identity names a principal, a route they signed in by, and a role as the source saw it.
+      { identity: asserted({ principal: 'p' }) },
+      { identity: asserted({ principal: PRINCIPAL.toUpperCase() }) },
+      { identity: asserted({ signInRoute: 'r' }) },
+      { identity: asserted({ asSeen: '' }) },
+      { identity: asserted({ asSeen: 'x'.repeat(64) }) },
+      { identity: asserted({ mechanism: 'delegated' }) },
+      { identity: asserted({ role: 'ada@example.com' }) },
+      { identity: { kind: 'endUser' } },
       { at: '2026-10-03 09:15:00' },
       { at: '2026-10-03T09:15:00+01:00' },
       { at: '2026-13-03T09:15:00Z' },
@@ -121,8 +140,9 @@ describe("a dataset version's provenance record", () => {
 });
 
 describe("a dataset's identity", () => {
-  it("keys a service account's run as the service", () => {
+  it("keys a service account's run as the service, and a person's as theirs", () => {
     expect(identityKey({ kind: 'service' })).toBe('service');
+    expect(identityKey(asserted() as Provenance['identity'])).toBe('asserted:' + PRINCIPAL);
   });
 
   it('writes the parameters canonically: members sorted, lists in order, absent and null alike', () => {

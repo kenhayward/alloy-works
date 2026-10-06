@@ -108,8 +108,10 @@ export const TestView = z.discriminatedUnion('outcome', [
   z.object({
     outcome: z.literal('ok'),
     findings: z
-      .array(z.enum(['account_not_read_only']))
-      .describe('What the test found of the account once it had signed in'),
+      .array(z.enum(['account_not_read_only', 'account_holds_privilege']))
+      .describe(
+        "What the test found of the account once it had signed in: that it may change data, or, on a connection asserting each person's own identity, that it may read data of its own",
+      ),
     at: z.string(),
   }),
   z.object({ outcome: z.literal('failed'), failure: DataFailureView, at: z.string() }),
@@ -118,7 +120,7 @@ export type TestView = z.infer<typeof TestView>;
 
 export const LastTestView = z.object({
   outcome: z.enum(['ok', 'failed']),
-  findings: z.array(z.enum(['account_not_read_only'])),
+  findings: z.array(z.enum(['account_not_read_only', 'account_holds_privilege'])),
   failure: DataFailureView.optional(),
   at: z.string(),
   by: Named,

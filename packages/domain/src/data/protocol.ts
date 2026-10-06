@@ -95,11 +95,52 @@ export const testRequestSchema = z.strictObject({
 });
 export type TestRequest = z.infer<typeof testRequestSchema>;
 
-export const describeRequestSchema = testRequestSchema;
-export type DescribeRequest = TestRequest;
+/**
+ * A person's role at the source (the D7 plan, D7-B): their declared attribute verbatim, a PostgreSQL
+ * name of 1 to 63 bytes, no U+0000. Bound as a value where it is asserted (D7-A), never text.
+ */
+export const assertedRoleSchema = z
+  .string()
+  .refine((value) => utf8Bytes(value) >= 1 && utf8Bytes(value) <= 63, {
+    message: 'A role is 1 to 63 bytes of UTF-8',
+  })
+  .refine((value) => !value.includes('\u0000'), { message: 'A role holds no U+0000' });
 
-/** What a test finds of an authenticated account (D1-M): one finding in D1. */
-export const testFindings = ['account_not_read_only'] as const;
+/**
+ * Who a run, a sample or a describe runs as (the D7 plan, D7-G): the connection's account, or a
+ * person's own role, asserted at the source. Left out, the account; a test is always the account's.
+ */
+export const runIdentitySchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('service') }),
+  z.strictObject({ kind: z.literal('asserted'), role: assertedRoleSchema }),
+]);
+export type RunIdentity = z.infer<typeof runIdentitySchema>;
+
+/** Whether a request is a person's, and its connection asserts identity: both, or neither (D7-G). */
+function assertsAsDeclared(request: {
+  readonly settings: { readonly identity: { readonly kind: string; readonly mechanism?: string } };
+  readonly identity?: RunIdentity | undefined;
+}): boolean {
+  const { identity } = request.settings;
+  const declared = identity.kind === 'endUser' && identity.mechanism === 'asserted';
+  return declared === (request.identity?.kind === 'asserted');
+}
+
+const AS_DECLARED = {
+  message: 'A request runs as a person exactly where its connection asserts identity',
+};
+
+/** A describe of the relations a connection lists: as the account, or as a person (D7-G). */
+export const describeRequestSchema = testRequestSchema
+  .extend({ identity: runIdentitySchema.optional() })
+  .refine(assertsAsDeclared, AS_DECLARED);
+export type DescribeRequest = z.infer<typeof describeRequestSchema>;
+
+/**
+ * What a test finds of an authenticated account (D1-M): it may write; and, on a connection that
+ * asserts identity, it may read data of its own (DAT-112, the D7 plan's D7-D).
+ */
+export const testFindings = ['account_not_read_only', 'account_holds_privilege'] as const;
 export type TestFinding = (typeof testFindings)[number];
 
 export const testAnswerSchema = z.discriminatedUnion('outcome', [
@@ -216,6 +257,7 @@ const limitsSchema = z.strictObject({
  */
 export const runRequestSchema = testRequestSchema
   .extend({
+    identity: runIdentitySchema.optional(),
     definition: draftDefinitionSchema,
     values: parameterValuesSchema,
     limits: limitsSchema,
@@ -228,6 +270,13 @@ export const runRequestSchema = testRequestSchema
   .refine((request) => request.definition.connection === request.connection.id, {
     message: 'A run runs a definition of the connection it is sent for',
   })
+  .refine(assertsAsDeclared, AS_DECLARED)
+  // Only text the product generated runs as a person (DAT-113, the D7 plan's D7-F).
+  .refine(
+    (request) =>
+      request.identity?.kind !== 'asserted' || request.definition.fetch.kind === 'builder',
+    { message: "A run as a person runs the builder's text alone" },
+  )
   // The service checks both before it asks (DAT-020); the connector holds a request to them again at
   // its door, so nothing it binds was not checked.
   .refine((request) => checkQueryDefinition(request.definition).length === 0, {
@@ -321,6 +370,8 @@ export const runAnswerSchema = z.discriminatedUnion('outcome', [
       durationMs: z.number().int().min(0),
       // Absent where a result holds no image, as every answer before D8.
       images: imagesSchema.optional(),
+      // The identity as the source saw it, `current_user`, where the run was a person's (D7-A).
+      asSeen: sourceName.optional(),
     })
     .refine((answer) => answer.rowCount === answer.result.rows.length, {
       message: 'The row count is the number of rows',
@@ -357,8 +408,16 @@ const builderDescribe = z
     message: "A built query passes the builder's checks, each parameter declared once and used",
   });
 
-const sqlDescribeRequest = testRequestSchema.extend({ sql: sqlDescribe });
-const builderDescribeRequest = testRequestSchema.extend({ builder: builderDescribe });
+const sqlDescribeRequest = testRequestSchema
+  .extend({ identity: runIdentitySchema.optional(), sql: sqlDescribe })
+  .refine(assertsAsDeclared, AS_DECLARED)
+  // A person's identity describes generated text alone, as it runs it (DAT-113).
+  .refine((request) => request.identity?.kind !== 'asserted', {
+    message: "A describe as a person describes the builder's text alone",
+  });
+const builderDescribeRequest = testRequestSchema
+  .extend({ identity: runIdentitySchema.optional(), builder: builderDescribe })
+  .refine(assertsAsDeclared, AS_DECLARED);
 
 /**
  * A describe of SQL or of a built query, chosen by its key rather than by trying each: a union that
@@ -456,7 +515,7 @@ const childMembers = {
  */
 export const childRequestSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('test'), request: testRequestSchema, ...childMembers }),
-  z.strictObject({ kind: z.literal('describe'), request: testRequestSchema, ...childMembers }),
+  z.strictObject({ kind: z.literal('describe'), request: describeRequestSchema, ...childMembers }),
   z.strictObject({ kind: z.literal('run'), request: runRequestSchema, ...childMembers }),
   z.strictObject({
     kind: z.literal('describeSql'),

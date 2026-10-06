@@ -17,7 +17,7 @@ import pg from 'pg';
 import { describeStatement, QUERY_CANCELED, sourceRefused, withRefusedColumn } from './describe.js';
 import { admits, fromPostgresText } from './from-text.js';
 import { readImage } from './image.js';
-import { SERVER_TEXT, sourceTypes } from './postgres.js';
+import { assertRole, heldAs, SERVER_TEXT, sourceTypes } from './postgres.js';
 import { finishResult } from './result.js';
 
 /**
@@ -54,6 +54,8 @@ function sourceFailure(error: unknown, deadline: number): DataFailure {
 /**
  * Runs a definition against its values, under its limits, by the deadline (a `Date.now()` time), and
  * answers the canonical result or one named failure. The client is the child's, and closed by it.
+ * Given a person's role, it is asserted first in the transaction and held to the end (the D7 plan,
+ * D7-A, D7-D, D7-E): a result read under any other role is refused, nothing returned.
  */
 export async function runStatement(
   client: pg.Client,
@@ -62,6 +64,7 @@ export async function runStatement(
   limits: Limits,
   deadline: number,
   cancel: () => Promise<void>,
+  role?: string,
 ): Promise<RunAnswer> {
   const started = Date.now();
   const failed = (failure: DataFailure): RunAnswer => ({ outcome: 'failed', failure });
@@ -81,6 +84,12 @@ export async function runStatement(
   let sending = '';
   try {
     await client.query('begin transaction read only');
+    let asSeen: string | undefined;
+    if (role !== undefined) {
+      const asserted = await assertRole(client, role);
+      if ('refused' in asserted) return failed(dataFailure(asserted.refused));
+      asSeen = asserted.asSeen;
+    }
     if (shape !== undefined) {
       sending = shape.text;
       const admitted = await admittedColumns(client, shape.text, definition);
@@ -104,6 +113,9 @@ export async function runStatement(
     );
     const finished = finishResult(rows, definition, limits, imageBytes);
     if ('failure' in finished) return failed(finished.failure);
+    if (role !== undefined && !(await heldAs(client, role))) {
+      return failed(dataFailure('identity_unmatched'));
+    }
     return {
       outcome: 'ok',
       // The result as the interface's schema types it: the same arrays, read-only here.
@@ -115,6 +127,7 @@ export async function runStatement(
       images: Object.fromEntries(
         [...images].map(([hash, bytes]) => [hash, bytes.toString('base64')]),
       ),
+      ...(asSeen === undefined ? {} : { asSeen }),
     };
   } catch (error) {
     if (error instanceof Stopped) return failed(error.failure);

@@ -191,7 +191,7 @@ describe("the connector's protocol", () => {
     ).toBe(false);
     // An ok test with an unknown finding, or the same finding twice, is not an answer.
     for (const findings of [
-      ['account_holds_privilege'],
+      ['account_unknown'],
       ['account_not_read_only', 'account_not_read_only'],
     ]) {
       expect(testAnswerSchema.safeParse({ outcome: 'ok', findings }).success).toBe(false);
@@ -560,5 +560,116 @@ describe("the connector's protocol for a built query (the D4 plan)", () => {
     expect(unused.error!.issues.map((issue) => issue.message)).toEqual([
       "A built query passes the builder's checks, each parameter declared once and used",
     ]);
+  });
+});
+
+describe("the connector's protocol for a person's own identity (the D7 plan)", () => {
+  const assertedSettings: ConnectionSettings = {
+    ...settings,
+    source: { ...settings.source, account: 'asserter' },
+    identity: { kind: 'endUser', mechanism: 'asserted', attribute: 'email' },
+  };
+  const query: Query = {
+    sources: [{ alias: 's', table: { schema: 'sample', name: 'site' } }],
+    joins: [],
+    select: [
+      { name: 'id', of: { source: 's', column: 'id' } },
+      { name: 'name', of: { source: 's', column: 'name' } },
+    ],
+    where: { column: { source: 's', column: 'id' }, is: 'equal', to: { parameter: 'site' } },
+    groupBy: [],
+  };
+  const built: DraftDefinition = { ...draft, fetch: { kind: 'builder', format: 1, query } };
+  const ada = { kind: 'asserted', role: 'ada@example.com' } as const;
+  const asserted = { ...testRequest, settings: assertedSettings };
+
+  it('takes a run, a describe and a built describe as a person, by a role of 1 to 63 bytes', () => {
+    const run = { ...runRequest, settings: assertedSettings, definition: built, identity: ada };
+    expect(runRequestSchema.parse(JSON.parse(JSON.stringify(run)))).toEqual(run);
+    expect(describeRequestSchema.parse({ ...asserted, identity: ada })).toEqual({
+      ...asserted,
+      identity: ada,
+    });
+    const describing = {
+      ...asserted,
+      identity: ada,
+      builder: { query, parameters: draft.parameters },
+    };
+    expect(describeSqlRequestSchema.parse(describing)).toEqual(describing);
+    expect(
+      childRequestSchema.parse({
+        kind: 'describe',
+        request: { ...asserted, identity: ada },
+        secret: 'invented-password',
+        deny: [],
+        connectTimeoutMs: 5000,
+        failureFloorMs: 5000,
+      }),
+    ).toMatchObject({ request: { identity: ada } });
+    // The service's own identity is said, or left out, alike.
+    const service = { ...runRequest, identity: { kind: 'service' } };
+    expect(runRequestSchema.safeParse(service).success).toBe(true);
+    const nul = String.fromCharCode(0);
+    for (const role of ['', 'x'.repeat(64), 'é'.repeat(32), 'ada' + nul]) {
+      const named = { ...run, identity: { kind: 'asserted', role } };
+      expect(runRequestSchema.safeParse(named).success, JSON.stringify(role)).toBe(false);
+    }
+    const longest = { ...run, identity: { kind: 'asserted', role: 'x'.repeat(63) } };
+    expect(runRequestSchema.safeParse(longest).success).toBe(true);
+  });
+
+  it('DAT-113 refuses a run or a describe of SQL as a person at the door: builder text alone runs as one', () => {
+    const run = { ...runRequest, settings: assertedSettings, identity: ada };
+    const refused = runRequestSchema.safeParse(run);
+    expect(refused.success).toBe(false);
+    expect(refused.error!.issues.map((issue) => issue.message)).toContain(
+      "A run as a person runs the builder's text alone",
+    );
+    const describing = describeSqlRequestSchema.safeParse({
+      ...asserted,
+      identity: ada,
+      sql: { text: draft.fetch.text, parameters: draft.parameters },
+    });
+    expect(describing.success).toBe(false);
+    expect(describing.error!.issues.map((issue) => issue.message)).toContain(
+      "A describe as a person describes the builder's text alone",
+    );
+  });
+
+  it('runs as a person exactly where the connection asserts, and tests as the account', () => {
+    const service = { ...runRequest, definition: built };
+    // A person on a connection that asserts nothing; the account on one that asserts.
+    expect(runRequestSchema.safeParse({ ...service, identity: ada }).success).toBe(false);
+    const unasserted = { ...service, settings: assertedSettings };
+    expect(runRequestSchema.safeParse(unasserted).success).toBe(false);
+    expect(describeRequestSchema.safeParse({ ...testRequest, identity: ada }).success).toBe(false);
+    expect(describeRequestSchema.safeParse(asserted).success).toBe(false);
+    // A test checks the account, so it never carries a person.
+    expect(testRequestSchema.safeParse(asserted).success).toBe(true);
+    expect(testRequestSchema.safeParse({ ...asserted, identity: ada }).success).toBe(false);
+  });
+
+  it("carries the identity as the source saw it in a run's answer, and finds an account that holds a privilege", () => {
+    const answer = {
+      outcome: 'ok',
+      result: { columns: [['id', 'integer']], rows: [['1']] },
+      checksum,
+      rowCount: 1,
+      ran: { sql: 'select 1' },
+      durationMs: 4,
+      asSeen: 'ada@example.com',
+    };
+    expect(runAnswerSchema.parse(answer)).toEqual(answer);
+    expect(runAnswerSchema.safeParse({ ...answer, asSeen: '' }).success).toBe(false);
+    const findings = ['account_not_read_only', 'account_holds_privilege'];
+    expect(testAnswerSchema.parse({ outcome: 'ok', findings })).toEqual({
+      outcome: 'ok',
+      findings,
+    });
+    const failure = { code: 'account_holds_privilege', attribution: 'connector' };
+    expect(runAnswerSchema.parse({ outcome: 'failed', failure })).toEqual({
+      outcome: 'failed',
+      failure,
+    });
   });
 });

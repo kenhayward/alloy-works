@@ -16234,6 +16234,10 @@
           "howItIsMet": "The connector holds no platform credential and has no route to the platform; each request runs in a fresh process handed one opened credential, which exits with the request"
         },
         {
+          "id": "DAT-112",
+          "howItIsMet": "Under asserted identity the account is checked at every run, describe and sample, in the transaction before the assertion, and refused, `account_holds_privilege`, if it may `SELECT` any relation or column outside the catalogues by grant, ownership, `PUBLIC`, `pg_read_all_data` or an inherited role, or is a superuser; the test reports the same finding (the D7 plan, D7-D)"
+        },
+        {
           "id": "DAT-113",
           "howItIsMet": "On PostgreSQL an asserted identity runs only builder-generated text, the SQL fallback refused; on SQL Server, once built (ADR-0038), the assertion is a `read_only` `SESSION_CONTEXT` key or `EXECUTE AS USER ... WITH COOKIE` with the cookie held by the connector"
         },
@@ -17940,6 +17944,18 @@
   ],
   "citations": [
     {
+      "id": "DAT-077",
+      "file": "apps/connector/src/asserted.test.ts",
+      "line": 239,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-112",
+      "file": "apps/connector/src/asserted.test.ts",
+      "line": 289,
+      "kind": "title"
+    },
+    {
       "id": "DAT-100",
       "file": "apps/connector/src/builder.test.ts",
       "line": 79,
@@ -18212,13 +18228,13 @@
     {
       "id": "DAT-065",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 919,
+      "line": 956,
       "kind": "rule"
     },
     {
       "id": "DAT-065",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 907,
+      "line": 944,
       "kind": "title"
     },
     {
@@ -18230,7 +18246,7 @@
     {
       "id": "DAT-078",
       "file": "apps/service/src/connection-routes.test.ts",
-      "line": 825,
+      "line": 832,
       "kind": "rule"
     },
     {
@@ -19838,13 +19854,13 @@
     {
       "id": "DAT-003",
       "file": "packages/db/src/connections.test.ts",
-      "line": 377,
+      "line": 382,
       "kind": "title"
     },
     {
       "id": "DAT-065",
       "file": "packages/db/src/connections.test.ts",
-      "line": 753,
+      "line": 760,
       "kind": "title"
     },
     {
@@ -20790,6 +20806,12 @@
       "kind": "title"
     },
     {
+      "id": "DAT-113",
+      "file": "packages/domain/src/data/protocol.test.ts",
+      "line": 621,
+      "kind": "title"
+    },
+    {
       "id": "DAT-019",
       "file": "packages/domain/src/data/sql.test.ts",
       "line": 289,
@@ -20822,7 +20844,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 486,
+      "line": 489,
       "kind": "title"
     },
     {

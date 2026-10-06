@@ -319,8 +319,8 @@ export async function usableCredentialOf(
   return { answer: 'usable', sealed: row.sealed, credentialId: String(row.id) };
 }
 
-/** A finding a test may record (D1-M). */
-export type ConnectionFinding = 'account_not_read_only';
+/** A finding a test may record (D1-M; the D7 plan, D7-D, by 0054). */
+export type ConnectionFinding = 'account_not_read_only' | 'account_holds_privilege';
 
 /** The failures a test may record: its own four (the D1 plan's stored-shape check, row 13). */
 export type ConnectionTestFailure =

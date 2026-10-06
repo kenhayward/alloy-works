@@ -6385,7 +6385,7 @@ export interface operations {
                         lastTest: {
                             /** @enum {string} */
                             outcome: "ok" | "failed";
-                            findings: "account_not_read_only"[];
+                            findings: ("account_not_read_only" | "account_holds_privilege")[];
                             failure?: {
                                 /** @description Stable and machine-readable */
                                 code: string;
@@ -6574,8 +6574,8 @@ export interface operations {
                         test: {
                             /** @constant */
                             outcome: "ok";
-                            /** @description What the test found of the account once it had signed in */
-                            findings: "account_not_read_only"[];
+                            /** @description What the test found of the account once it had signed in: that it may change data, or, on a connection asserting each person's own identity, that it may read data of its own */
+                            findings: ("account_not_read_only" | "account_holds_privilege")[];
                             at: string;
                         } | {
                             /** @constant */
@@ -7721,8 +7721,8 @@ export interface operations {
                     "application/json": {
                         /** @constant */
                         outcome: "ok";
-                        /** @description What the test found of the account once it had signed in */
-                        findings: "account_not_read_only"[];
+                        /** @description What the test found of the account once it had signed in: that it may change data, or, on a connection asserting each person's own identity, that it may read data of its own */
+                        findings: ("account_not_read_only" | "account_holds_privilege")[];
                         at: string;
                     } | {
                         /** @constant */
@@ -8246,7 +8246,7 @@ export interface operations {
                         lastTest: {
                             /** @enum {string} */
                             outcome: "ok" | "failed";
-                            findings: "account_not_read_only"[];
+                            findings: ("account_not_read_only" | "account_holds_privilege")[];
                             failure?: {
                                 /** @description Stable and machine-readable */
                                 code: string;
@@ -8383,7 +8383,7 @@ export interface operations {
                             lastTest: {
                                 /** @enum {string} */
                                 outcome: "ok" | "failed";
-                                findings: "account_not_read_only"[];
+                                findings: ("account_not_read_only" | "account_holds_privilege")[];
                                 failure?: {
                                     /** @description Stable and machine-readable */
                                     code: string;
@@ -8591,7 +8591,7 @@ export interface operations {
                             lastTest: {
                                 /** @enum {string} */
                                 outcome: "ok" | "failed";
-                                findings: "account_not_read_only"[];
+                                findings: ("account_not_read_only" | "account_holds_privilege")[];
                                 failure?: {
                                     /** @description Stable and machine-readable */
                                     code: string;
@@ -10302,6 +10302,15 @@ export interface operations {
                                     identity: {
                                         /** @constant */
                                         kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -10479,6 +10488,15 @@ export interface operations {
                                     identity: {
                                         /** @constant */
                                         kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -10951,6 +10969,15 @@ export interface operations {
                                 identity: {
                                     /** @constant */
                                     kind: "service";
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "asserted";
+                                    principal: string;
+                                    /** @enum {string} */
+                                    signInRoute: "organisation" | "google" | "token";
+                                    asSeen: string;
                                 };
                                 at: string;
                                 durationMs: number;
@@ -11128,6 +11155,15 @@ export interface operations {
                                 identity: {
                                     /** @constant */
                                     kind: "service";
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "asserted";
+                                    principal: string;
+                                    /** @enum {string} */
+                                    signInRoute: "organisation" | "google" | "token";
+                                    asSeen: string;
                                 };
                                 at: string;
                                 durationMs: number;
@@ -11385,6 +11421,15 @@ export interface operations {
                                     identity: {
                                         /** @constant */
                                         kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -11562,6 +11607,15 @@ export interface operations {
                                     identity: {
                                         /** @constant */
                                         kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -11880,6 +11934,15 @@ export interface operations {
                                     identity: {
                                         /** @constant */
                                         kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -12057,6 +12120,15 @@ export interface operations {
                                     identity: {
                                         /** @constant */
                                         kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -12572,6 +12644,15 @@ export interface operations {
                                     identity: {
                                         /** @constant */
                                         kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -12749,6 +12830,15 @@ export interface operations {
                                     identity: {
                                         /** @constant */
                                         kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -13007,6 +13097,15 @@ export interface operations {
                                     identity: {
                                         /** @constant */
                                         kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -13184,6 +13283,15 @@ export interface operations {
                                     identity: {
                                         /** @constant */
                                         kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -13598,6 +13706,15 @@ export interface operations {
                                 identity: {
                                     /** @constant */
                                     kind: "service";
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "asserted";
+                                    principal: string;
+                                    /** @enum {string} */
+                                    signInRoute: "organisation" | "google" | "token";
+                                    asSeen: string;
                                 };
                                 at: string;
                                 durationMs: number;
@@ -13775,6 +13892,15 @@ export interface operations {
                                 identity: {
                                     /** @constant */
                                     kind: "service";
+                                } | {
+                                    /** @constant */
+                                    kind: "endUser";
+                                    /** @constant */
+                                    mechanism: "asserted";
+                                    principal: string;
+                                    /** @enum {string} */
+                                    signInRoute: "organisation" | "google" | "token";
+                                    asSeen: string;
                                 };
                                 at: string;
                                 durationMs: number;
@@ -14032,6 +14158,15 @@ export interface operations {
                                     identity: {
                                         /** @constant */
                                         kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -14209,6 +14344,15 @@ export interface operations {
                                     identity: {
                                         /** @constant */
                                         kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -14527,6 +14671,15 @@ export interface operations {
                                     identity: {
                                         /** @constant */
                                         kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -14704,6 +14857,15 @@ export interface operations {
                                     identity: {
                                         /** @constant */
                                         kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -15151,6 +15313,15 @@ export interface operations {
                                     identity: {
                                         /** @constant */
                                         kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -15328,6 +15499,15 @@ export interface operations {
                                     identity: {
                                         /** @constant */
                                         kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -15606,6 +15786,15 @@ export interface operations {
                                     identity: {
                                         /** @constant */
                                         kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -15783,6 +15972,15 @@ export interface operations {
                                     identity: {
                                         /** @constant */
                                         kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -16061,6 +16259,15 @@ export interface operations {
                                     identity: {
                                         /** @constant */
                                         kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -16238,6 +16445,15 @@ export interface operations {
                                     identity: {
                                         /** @constant */
                                         kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -16496,6 +16712,15 @@ export interface operations {
                                     identity: {
                                         /** @constant */
                                         kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -16673,6 +16898,15 @@ export interface operations {
                                     identity: {
                                         /** @constant */
                                         kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
                                     };
                                     at: string;
                                     durationMs: number;
@@ -17085,6 +17319,15 @@ export interface operations {
                             identity: {
                                 /** @constant */
                                 kind: "service";
+                            } | {
+                                /** @constant */
+                                kind: "endUser";
+                                /** @constant */
+                                mechanism: "asserted";
+                                principal: string;
+                                /** @enum {string} */
+                                signInRoute: "organisation" | "google" | "token";
+                                asSeen: string;
                             };
                             at: string;
                             durationMs: number;
@@ -26934,7 +27177,7 @@ export interface operations {
                         lastTest: {
                             /** @enum {string} */
                             outcome: "ok" | "failed";
-                            findings: "account_not_read_only"[];
+                            findings: ("account_not_read_only" | "account_holds_privilege")[];
                             failure?: {
                                 /** @description Stable and machine-readable */
                                 code: string;
@@ -27071,7 +27314,7 @@ export interface operations {
                             lastTest: {
                                 /** @enum {string} */
                                 outcome: "ok" | "failed";
-                                findings: "account_not_read_only"[];
+                                findings: ("account_not_read_only" | "account_holds_privilege")[];
                                 failure?: {
                                     /** @description Stable and machine-readable */
                                     code: string;
