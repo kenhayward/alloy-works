@@ -19,18 +19,26 @@ export {
 } from './clipboard.js';
 export { editorSchema } from './schema.js';
 export {
+  addBoundTableNote,
+  BOUND_TABLE_NOTES_MAX,
   boundTableAt,
   changeTableBinding,
   columnsPlaced,
   deleteBoundTable,
   insertBoundTable,
+  noteColumnDropped,
+  removeBoundTableNote,
   repeatedColumn,
+  selectBoundTableNote,
   setBoundTable,
   setBoundTablePart,
   setTableHeaders,
   setTableNumbered,
+  setTableWide,
   tableAt,
   tableCommand,
+  type BoundNoteAnchor,
+  type BoundNoteAt,
   type BoundTableChange,
   type BoundTablePart,
   type BoundTablePlace,
@@ -38,6 +46,7 @@ export {
   type TableAction,
   type TableAt,
   type TableChoice,
+  type Wide,
 } from './tables.js';
 export {
   assetContentPath,
@@ -92,6 +101,8 @@ export {
   BOUND_VALUE,
   DEFAULT_TABLE_SETTING,
   PAGE_ROWS,
+  NOTE_KEY_REQUIRED,
+  noteRowMissing,
   storedBoundTable,
   TABLE_CHANGED,
   TABLE_FAILURE_WORDS,
@@ -101,6 +112,7 @@ export {
   tableAlone,
   tableFailureWords,
   type BoundTableAt,
+  type BoundTableNoteShown,
   type BoundTableShown,
   type TableHeld,
   type TableSetting,
@@ -121,7 +133,7 @@ export {
   type BoundImage,
 } from './bindings.js';
 export { bindingContextOf, setBindingContext } from './bindingView.js';
-export { fillBoundTable, moreRows } from './boundTableView.js';
+export { fillBoundTable, moreRows, noteLabel } from './boundTableView.js';
 export { pasteIntoOpenFootnote } from './footnoteView.js';
 export {
   deleteImage,

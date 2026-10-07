@@ -1,13 +1,16 @@
 import {
   setTableHeaders,
   setTableNumbered,
+  setTableWide,
   tableCommand,
   type EditorView,
   type TableAction,
   type TableAt,
+  type Wide,
 } from '@alloy-works/editor';
 import type { Ref } from 'react';
 
+import { BOUND_TABLE_WORDS } from './BoundTablePanel.js';
 import styles from './TablePanel.module.css';
 import { TableStyle } from '../theme/StyleChoice.js';
 
@@ -94,6 +97,25 @@ export function TablePanel({ view, table, enabled, ref }: TablePanelProps) {
           }}
         />
         Numbered
+      </label>
+      <label className={styles['count']}>
+        {BOUND_TABLE_WORDS.wide}
+        <select
+          value={table.wide ?? 'style'}
+          disabled={!enabled}
+          onChange={(event) => {
+            const value = event.target.value;
+            if (enabled) {
+              setTableWide(value === 'style' ? null : (value as Wide))(view.state, view.dispatch);
+            }
+          }}
+        >
+          {(['style', 'scale', 'rotate'] as const).map((value) => (
+            <option key={value} value={value}>
+              {BOUND_TABLE_WORDS.wides[value]}
+            </option>
+          ))}
+        </select>
       </label>
       {ACTIONS.map(({ action, label }) => {
         const unavailable = !enabled || !tableCommand(action)(view.state);

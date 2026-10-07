@@ -77,11 +77,17 @@ export interface PrintedTable {
     readonly printed: string;
     readonly value: CanonicalValue;
   }[])[];
-  /** Each note printed beneath it, by its letter, and the anchor it was stored with (TB3.1). */
+  /**
+   * Each note printed beneath it, by its letter, the row it marks - its index among the rows printed,
+   * null for a column's note - and its column (TB3.1). Never a keyed note's key, whose values the table
+   * need not print and `provenance.json` would show every reader of the publication (the TB3 final
+   * review, M2).
+   */
   readonly notes: readonly {
     readonly note: string;
     readonly letter: string;
-    readonly anchor: FootnoteNode['anchor'];
+    readonly row: number | null;
+    readonly column: string;
   }[];
 }
 
@@ -316,7 +322,12 @@ export function bind(
         rows: laid.rows.map((row) =>
           row.cells.map((cell) => ({ printed: cell.text, value: cell.value })),
         ),
-        notes: placed.map(({ note, letter }) => ({ note: note.id, letter, anchor: note.anchor })),
+        notes: placed.map(({ note, letter, row }) => ({
+          note: note.id,
+          letter,
+          row,
+          column: (note.anchor as { readonly column: string }).column,
+        })),
       },
     });
     // The empty statement's own bindings are set only where it prints - the result has no rows - so a

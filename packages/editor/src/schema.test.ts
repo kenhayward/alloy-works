@@ -1,4 +1,4 @@
-import { CANVAS, markTypes } from '@alloy-works/domain';
+import { CANVAS, defaultLayout, markTypes } from '@alloy-works/domain';
 import { readFileSync } from 'node:fs';
 import { Mark, type ParseRule, type TagParseRule } from 'prosemirror-model';
 import { describe, expect, it } from 'vitest';
@@ -394,6 +394,25 @@ describe('the lists in the editor schema', () => {
           opens(item).matchType(editorSchema.nodes[list]),
           `${item} -> ${list}`,
         ).not.toBeNull();
+  });
+});
+
+describe("a table's note, as the PDF prints it (TB3.3)", () => {
+  it("begins with the default layout's word for a note, drawn before its words and never stored", () => {
+    const note = editorSchema.nodes.tableNote!.create(
+      null,
+      editorSchema.text('Taken at low tide.'),
+    );
+    const [, attrs] = editorSchema.nodes.tableNote!.spec.toDOM!(note) as unknown as [
+      string,
+      Record<string, string>,
+    ];
+    expect(attrs['data-word']).toBe(defaultLayout.words.note);
+    const css = readFileSync(new URL('../style.css', import.meta.url), 'utf-8');
+    expect(css).toMatch(
+      /\.aw-table-note\[data-word\]:not\(\.aw-empty\)::before\s*\{\s*content: attr\(data-word\) ' ';/,
+    );
+    expect(note.textContent).toBe('Taken at low tide.');
   });
 });
 

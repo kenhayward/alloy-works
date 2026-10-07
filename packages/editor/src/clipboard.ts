@@ -323,13 +323,17 @@ const STORED_NAMES: Record<string, string> = {
 };
 
 /**
- * Whether the selection stands in a footnote's text, both ends in the one footnote: true, false where
+ * Whether the selection stands in a footnote's text - or a bound table's note's - both ends in the one footnote: true, false where
  * it is split across one's edge, which nothing can paste into, and null where it is in none.
  */
 function footnoteHolding(state: EditorState): boolean | null {
   const holder = (depth: number, $pos: typeof state.selection.$from) => {
     for (let at = depth; at > 0; at -= 1) {
-      if ($pos.node(at).type === editorSchema.nodes.footnote) return $pos.before(at);
+      const type = $pos.node(at).type;
+      // A bound table's note holds a footnote's paragraphs, and takes a paste as one does (TB3.3).
+      if (type === editorSchema.nodes.footnote || type === editorSchema.nodes.boundTableNote) {
+        return $pos.before(at);
+      }
     }
     return null;
   };

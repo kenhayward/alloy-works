@@ -402,6 +402,7 @@ export function ComponentEditor({
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
   // The bound tables told to the page, by their nodes' attributes: told again only when one changes.
   const toldTables = useRef<readonly object[] | null>(null);
+  const toldAnchors = useRef<string | null>(null);
   const onBoundTablesRef = useRef(onBoundTables);
   onBoundTablesRef.current = onBoundTables;
   const onSavedRef = useRef(onSaved);
@@ -415,15 +416,21 @@ export function ComponentEditor({
       tables.push(storedBoundTable(node));
       return false;
     });
+    // Its notes' anchors too, which are its children's (TB3.3): a note added or removed is told.
+    const anchors = JSON.stringify(
+      tables.map((table) => (table.notes ?? []).map((each) => [each.id, each.anchor])),
+    );
     const told = toldTables.current;
     if (
       told !== null &&
+      toldAnchors.current === anchors &&
       told.length === attrs.length &&
       attrs.every((each, at) => each === told[at])
     ) {
       return;
     }
     toldTables.current = attrs;
+    toldAnchors.current = anchors;
     onBoundTablesRef.current?.(tables);
   };
   // Held in a ref, so a parent passing a new inline callback on every render asks nothing again.

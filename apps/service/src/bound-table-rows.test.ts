@@ -150,6 +150,7 @@ describe("a bound table's rows, for the page", () => {
       version,
       presorted: true,
       result: { columns: [['name', 'text']], rows: [['South'], ['North']] },
+      notes: {},
     });
     expect(answer.headers['cache-control']).toBe('private, no-cache');
 
@@ -161,6 +162,7 @@ describe("a bound table's rows, for the page", () => {
       version: held,
       presorted: true,
       result: { columns: [['name', 'text']], rows: [['North']] },
+      notes: {},
     });
   });
 
@@ -214,6 +216,71 @@ describe("a bound table's rows, for the page", () => {
         result: { columns: unknown };
       }>().result.columns,
     ).toEqual([['name', 'text']]);
+  });
+
+  /** A note on a bound table, keyed or on a column (TB3-A). */
+  const note = (id: string, anchor: Json) => ({
+    type: 'footnote',
+    id,
+    anchor,
+    content: [
+      {
+        type: 'paragraph',
+        id: `${id}p`,
+        style: 'body',
+        content: [{ type: 'text', value: id, marks: [] }],
+      },
+    ],
+  });
+
+  it("sends each keyed note's row as an index into the rows it sends, null where gone, and never a key column it does not show", async () => {
+    const definition = await h.definition(connection.id);
+    const { document, node } = await placed([
+      table(whole('b1', definition.id), {
+        sort: [{ column: 'id', direction: 'descending', nulls: 'last' }],
+        notes: [
+          note('n1', { kind: 'keyed', key: { id: '1' }, column: 'name' }),
+          note('n2', { kind: 'keyed', key: { id: '9' }, column: 'name' }),
+          note('n3', { kind: 'column', column: 'name' }),
+        ],
+      }),
+    ]);
+    const version = await resolve(document.id, node, [
+      ['1', 'North'],
+      ['2', 'South'],
+    ]);
+    const answer = await rowsOf('alice', document.id, node, version);
+    expect(answer.statusCode, answer.body).toBe(200);
+    // North is the second row sent, sorted by the id descending; the id, its key, is never sent.
+    expect(answer.json()).toEqual({
+      version,
+      presorted: true,
+      result: { columns: [['name', 'text']], rows: [['South'], ['North']] },
+      notes: { n1: 1, n2: null },
+    });
+  });
+
+  it('answers new notes, never a 304, once a note is added: its ETag covers the anchors', async () => {
+    const definition = await h.definition(connection.id);
+    const { component, document, node } = await placed([table(whole('b1', definition.id))]);
+    const version = await resolve(document.id, node, [['1', 'North']]);
+    const etag = (await rowsOf('ada', document.id, node, version)).headers.etag as string;
+    await h.placeBlocks(
+      component,
+      table(whole('b1', definition.id), {
+        notes: [note('n1', { kind: 'keyed', key: { id: '1' }, column: 'name' })],
+      }),
+    );
+    const answer = await rowsOf('ada', document.id, node, version, { etag });
+    expect(answer.statusCode, answer.body).toBe(200);
+    expect(answer.json()).toMatchObject({ notes: { n1: 0 } });
+  });
+
+  it('sends the key of the definition version its result ran in the bindings view', async () => {
+    const definition = await h.definition(connection.id);
+    const { document, node } = await placed([table(whole('b1', definition.id))]);
+    await resolve(document.id, node, [['1', 'North']]);
+    expect((await stateOf(document.id)).held).toMatchObject({ key: ['id'] });
   });
 
   it('refuses by name a binding never resolved, a waiting version, an inline binding, a binding changed since, and a result too long to print', async () => {
@@ -364,6 +431,64 @@ describe("a bound table's rows, for the page", () => {
         });
       return { document, node, version, session, save };
     };
+
+    it('refuses a save adding a note keyed by a column the table did not name, definition_unreadable', async () => {
+      const definition = await h.definition(connection.id, {}, h.quality);
+      const { component } = await placed([table(whole('b1', definition.id))]);
+      const session = randomUUID();
+      const claimed = await h.call('grace', 'POST', `/v1/components/${component.id}/lock`, {
+        session,
+        move: true,
+      });
+      expect(claimed.statusCode, claimed.body).toBe(200);
+      const saved = await h.call(
+        'grace',
+        'PUT',
+        `/v1/components/${component.id}/iterations/${session}/1`,
+        {
+          openedFrom: component.version,
+          content: content([
+            table(whole('b1', definition.id), {
+              notes: [note('n1', { kind: 'keyed', key: { id: '1' }, column: 'name' })],
+            }),
+          ]),
+        },
+      );
+      expect(saved.statusCode, saved.body).toBe(403);
+      expect(saved.json()).toMatchObject({ code: 'definition_unreadable' });
+    });
+
+    it('refuses a save adding a keyed note the version did not hold, though its columns are named, and takes one keeping it (the TB3 final review, M1)', async () => {
+      const definition = await h.definition(connection.id, {}, h.quality);
+      const columns = [
+        { column: 'id', header: 'Site' },
+        { column: 'name', header: 'Name' },
+      ];
+      const held = note('n1', { kind: 'keyed', key: { id: '1' }, column: 'name' });
+      const { component } = await placed([
+        table(whole('b1', definition.id), { columns, notes: [held] }),
+      ]);
+      const session = randomUUID();
+      const claimed = await h.call('grace', 'POST', `/v1/components/${component.id}/lock`, {
+        session,
+        move: true,
+      });
+      expect(claimed.statusCode, claimed.body).toBe(200);
+      const save = (notes: unknown[], sequence: number) =>
+        h.call('grace', 'PUT', `/v1/components/${component.id}/iterations/${session}/${sequence}`, {
+          openedFrom: component.version,
+          content: content([table(whole('b1', definition.id), { columns, notes })]),
+        });
+      // A key probed: whether a row of id 2 exists would show in the rows route's notes.
+      const probed = await save(
+        [held, note('n2', { kind: 'keyed', key: { id: '2' }, column: 'name' })],
+        1,
+      );
+      expect(probed.statusCode, probed.body).toBe(403);
+      expect(probed.json()).toMatchObject({ code: 'definition_unreadable' });
+      const kept = await save([held], 1);
+      expect(kept.statusCode, kept.body).toBe(200);
+    });
 
     it('refuses a save adding a column the table did not name, definition_unreadable, and takes one renaming a header', async () => {
       const { save } = await hidden();

@@ -1,6 +1,6 @@
 import { Schema, type Attrs, type MarkSpec, type TagParseRule } from 'prosemirror-model';
 import { tableNodes } from 'prosemirror-tables';
-import { equationAlternative, isLanguageLabel, kindWord } from '@alloy-works/domain';
+import { defaultLayout, equationAlternative, isLanguageLabel, kindWord } from '@alloy-works/domain';
 
 /**
  * Renders a mark's element, always carrying `data-mark-id`, so that the view can read its own output
@@ -399,7 +399,8 @@ export const editorSchema = new Schema({
      */
     boundTable: {
       group: 'block',
-      content: 'tableCaption boundTableBody boundTableEmpty? tableNote? boundTableSource?',
+      content:
+        'tableCaption boundTableBody boundTableEmpty? tableNote? boundTableNote* boundTableSource?',
       isolating: true,
       allowGapCursor: false,
       attrs: {
@@ -410,8 +411,6 @@ export const editorSchema = new Schema({
         columns: {},
         headerColumn: { default: false },
         sort: { default: null },
-        // Its keyed and column notes as stored (TB3-A), kept whole until the page edits them (TB3.3).
-        notes: { default: null },
         // How it is set where too wide (TB3-G), as a table's is.
         wide: { default: null },
       },
@@ -458,6 +457,23 @@ export const editorSchema = new Schema({
         0,
       ],
     },
+    /**
+     * **A bound table's note on a cell by key or on a column** (TB3-A; TB3.3): a stored footnote whose
+     * anchor is `keyed` or `column`, standing beneath the table as a child of its own between its note
+     * and its source, its paragraphs typed in place. Its letter, and why it fails where it does, are
+     * drawn by the surface from the decoration over it. Isolating, as a table's note is.
+     */
+    boundTableNote: {
+      content: 'footnoteParagraph+',
+      defining: true,
+      isolating: true,
+      attrs: { id: { default: null }, anchor: {} },
+      toDOM: () => [
+        'div',
+        { class: 'aw-bound-table-note', 'data-bound-table-note': '', 'data-role': 'tableNote' },
+        0,
+      ],
+    },
     /** A bound table's source (TAB-027): beneath the table and its note, isolating as they are. */
     boundTableSource: {
       content: '(text | crossReference | equation | binding)*',
@@ -490,9 +506,16 @@ export const editorSchema = new Schema({
       defining: true,
       isolating: true,
       parseDOM: [{ tag: 'p[data-table-note]', priority: 60 }],
+      // The default layout's word for a note, drawn before its words as the PDF prints it (TB3-E):
+      // an attribute, never content, so nothing stores it.
       toDOM: () => [
         'p',
-        { class: 'aw-table-note', 'data-table-note': '', 'data-role': 'tableNote' },
+        {
+          class: 'aw-table-note',
+          'data-table-note': '',
+          'data-role': 'tableNote',
+          'data-word': defaultLayout.words.note ?? '',
+        },
         0,
       ],
     },
@@ -652,7 +675,7 @@ export const editorSchema = new Schema({
       parseDOM: [
         {
           tag: 'p',
-          context: 'footnote/',
+          context: 'footnote/|boundTableNote/',
           priority: 60,
           getAttrs: (node) => ({ style: node.getAttribute('data-style') ?? 'body' }),
         },

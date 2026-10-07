@@ -178,7 +178,7 @@ describe('the publication template', () => {
     // table's notes lettered and set beneath it (TB3.1, TB3-E), re-pinned freely likewise; template 16
     // is not moved by it. Template 18 reads `publishing/18`: template 17 with a table too wide scaled or
     // turned, and each table's answer for the worker's query (TB3.2, TB3-H), re-pinned freely likewise;
-    // template 17 is not moved by it. Templates 1 to 13 are published versions and their rows never
+    // template 17 is not moved by it. Templates 1 to 18 are published versions and their rows never
     // move again.
     const pinned: Record<number, string> = {
       1: 'e8afabbac53bb797cfb024937ef4387834994a2d50062a029510d9ff300f58b0',

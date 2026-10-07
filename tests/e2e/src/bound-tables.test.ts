@@ -221,6 +221,7 @@ describe('a bound table over the whole system', () => {
           ['West dock', '-2.5'],
         ],
       },
+      notes: {},
     });
     const again = await fetch(`${SERVICE}${rowsPath(made.id, held)}`, {
       headers: { cookie, 'if-none-match': rows.headers.get('etag')! },
@@ -311,5 +312,206 @@ describe('a bound table over the whole system', () => {
       },
       { node, binding: 'quiet-rows', table: { rows: [] } },
     ]);
+  }, 180_000);
+
+  it('fails the publish by name once a source change removes the row a keyed note names (TB3.3)', async () => {
+    const noted = `sample.tb3_notes_${Date.now()}`;
+    atTheSource(
+      `create table ${noted} (site text primary key, reading numeric(10, 2));
+       insert into ${noted} values ('North weir', 1.11), ('South quay', 3.45), ('West dock', -2.5);
+       grant select on ${noted} to reader;`,
+    );
+    try {
+      const connection = ok(
+        await call('POST', `/v1/spaces/${general}/connections`, {
+          settings: {
+            schemaVersion: 1,
+            name: `Readings for notes ${Date.now()}`,
+            description: 'The development source.',
+            type: 'postgres',
+            source: {
+              host: 'source-postgres',
+              port: 5432,
+              database: 'readings',
+              account: READER.account,
+              tls: 'require',
+            },
+            identity: { kind: 'service' },
+            retired: false,
+          },
+        }),
+      )['id'] as string;
+      ok(
+        await call('PUT', `/v1/connections/${connection}/credential`, { secret: READER.password }),
+      );
+      const definition = ok(
+        await call('POST', `/v1/spaces/${general}/query-definitions`, {
+          definition: {
+            schemaVersion: 1,
+            title: `Noted readings ${Date.now()}`,
+            description: 'Readings by site.',
+            connection,
+            parameters: [],
+            fetch: { kind: 'sql', text: `select site, reading from ${noted} order by site` },
+            columns: [
+              { name: 'site', from: { column: 'site' }, type: { base: 'text' } },
+              {
+                name: 'reading',
+                from: { column: 'reading' },
+                type: { base: 'decimal', precision: 10, scale: 2 },
+              },
+            ],
+            key: ['site'],
+            order: [{ column: 'site', direction: 'ascending' }],
+            empty: 'valid',
+            limits: { rows: 100, bytes: 65_536, seconds: 10 },
+            retired: false,
+          },
+        }),
+      )['id'] as string;
+      const words = (id: string, value: string) => ({
+        type: 'footnote',
+        id,
+        content: [
+          {
+            type: 'paragraph',
+            id: `${id}-p`,
+            style: 'body',
+            content: [{ type: 'text', value, marks: [] }],
+          },
+        ],
+      });
+      const component = ok(
+        await call('POST', `/v1/spaces/${general}/components`, {
+          title: 'Noted readings',
+          language: 'en-GB',
+          direction: 'ltr',
+        }),
+      ) as { id: string; version: { id: string } };
+      const session = randomUUID();
+      ok(await call('POST', `/v1/components/${component.id}/lock`, { session }));
+      ok(
+        await call('PUT', `/v1/components/${component.id}/iterations/${session}/1`, {
+          openedFrom: component.version.id,
+          content: {
+            schemaVersion: 1,
+            title: 'Noted readings',
+            language: 'en-GB',
+            direction: 'ltr',
+            content: [
+              {
+                type: 'boundTable',
+                id: 'noted',
+                binding: {
+                  type: 'binding',
+                  id: 'noted-rows',
+                  query: definition,
+                  parameters: {},
+                  mode: 'checked',
+                },
+                caption: [{ type: 'text', value: 'Noted readings', marks: [] }],
+                columns: [
+                  { column: 'site', header: 'Site' },
+                  { column: 'reading', header: 'Reading' },
+                ],
+                headerColumn: false,
+                notes: [
+                  {
+                    ...words('n1', 'Estimated from the tide table.'),
+                    anchor: { kind: 'keyed', key: { site: 'West dock' }, column: 'reading' },
+                  },
+                  {
+                    ...words('n2', 'By the gauge name.'),
+                    anchor: { kind: 'column', column: 'site' },
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+      );
+      ok(
+        await call(
+          'DELETE',
+          `/v1/components/${component.id}/lock?session=${session}&openedFrom=${component.version.id}`,
+        ),
+      );
+      const made = ok(
+        await call('POST', `/v1/spaces/${general}/documents`, {
+          title: `Noted report ${Date.now()}`,
+          language: 'en-GB',
+          direction: 'ltr',
+        }),
+      ) as { id: string; version: { id: string } };
+      const edited = ok(
+        await call('POST', `/v1/documents/${made.id}/outline`, {
+          openedFrom: made.version.id,
+          operation: {
+            operation: 'insert',
+            parent: null,
+            position: 0,
+            node: { type: 'reference', component: component.id, mode: { kind: 'latest' } },
+          },
+        }),
+      ) as { version: { id: string }; outline: { nodes: { id: string }[] } };
+      const node = edited.outline.nodes[0]!.id;
+      const resolve = async () =>
+        ok(
+          await call('POST', `/v1/documents/${made.id}/bindings/resolve`, {
+            bindings: [{ node, binding: 'noted-rows' }],
+          }),
+        );
+      const publish = async () => {
+        const asked = ok(
+          await call('POST', `/v1/documents/${made.id}/publications`, {
+            version: edited.version.id,
+            formats: ['pdf'],
+          }),
+        ) as { id: string };
+        let finished: Json = {};
+        await vi.waitFor(
+          async () => {
+            finished = ok(await call('GET', `/v1/publication-requests/${asked.id}`));
+            expect(['done', 'failed']).toContain(finished['state']);
+          },
+          { timeout: 60_000, interval: 250 },
+        );
+        return finished;
+      };
+      await resolve();
+      // The view sends the key, and the rows route the note's row among the rows it sends.
+      const held = (
+        ok(await call('GET', `/v1/documents/${made.id}/bindings`))['bindings'] as {
+          binding: { id: string };
+          held: { version: string; key: string[] };
+        }[]
+      ).find((each) => each.binding.id === 'noted-rows')!.held;
+      expect(held.key).toEqual(['site']);
+      const rows = ok(
+        await call(
+          'GET',
+          `/v1/documents/${made.id}/bindings/${node}/noted-rows/rows?version=${held.version}`,
+        ),
+      );
+      expect(rows['notes']).toEqual({ n1: 2 });
+      expect(await publish()).toMatchObject({ state: 'done', failures: [] });
+
+      // The row goes at the source: resolved again, the note names nothing, and the publish says so.
+      atTheSource(`delete from ${noted} where site = 'West dock';`);
+      await resolve();
+      const failed = await publish();
+      expect(failed['state']).toBe('failed');
+      expect(failed['failures']).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            stage: 'bind',
+            code: 'note_row_missing',
+            detail: expect.stringContaining('{"site":"West dock"}'),
+          }),
+        ]),
+      );
+    } finally {
+      atTheSource(`drop table if exists ${noted};`);
+    }
   }, 180_000);
 });

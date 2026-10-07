@@ -196,6 +196,11 @@ const HeldView = z.object({
   version: z.string().describe('The dataset version it holds'),
   number: z.string().describe('`revision.version`, as `0.2`'),
   provenance: ProvenanceView,
+  key: z
+    .array(z.string())
+    .describe(
+      "The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none",
+    ),
   name: z.string().nullable().describe("The dataset's name, or null where nobody has named it"),
   stale: z
     .boolean()
@@ -523,6 +528,11 @@ export const BoundTableRowsView = z.object({
       .array(z.array(z.union([z.string(), z.boolean(), z.null()])))
       .describe("Every row, in the result's stored order, each value in its canonical form"),
   }),
+  notes: z
+    .record(z.string(), z.number().int().min(0).nullable())
+    .describe(
+      'Each note the table anchors by key, by its identifier: the index of its row among the rows sent, or null where the result has no row its key names (`note_row_missing`). A key column the table does not show is never sent',
+    ),
 });
 export type BoundTableRowsView = z.infer<typeof BoundTableRowsView>;
 

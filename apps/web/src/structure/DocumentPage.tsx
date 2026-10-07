@@ -29,7 +29,7 @@ import styles from './DocumentPage.module.css';
 import { ComponentEditor } from '../editor/ComponentEditor.js';
 import { ProvenancePanel } from '../data/ProvenancePanel.js';
 import { bindingStatesIn, holdsBinding, type BindingState } from './bindingContexts.js';
-import { boundTablesByKey } from './tableRows.js';
+import { boundTablesByKey, type TableRows } from './tableRows.js';
 import { followPending, WAITING_ON_IMAGES } from './pendingResult.js';
 import { settleBinding, type SettleAct } from './settleBinding.js';
 import { useOwnViewAsk } from './OwnViewAsk.js';
@@ -458,6 +458,8 @@ function Presented({ onSettled }: { onSettled: () => void }) {
   return null;
 }
 
+/** No bound table's rows read yet. */
+const NO_ROWS: ReadonlyMap<string, TableRows> = new Map();
 export function DocumentPage({
   client,
   id,
@@ -561,6 +563,8 @@ export function DocumentPage({
     readonly tables: readonly BoundTableNode[];
   } | null>(null);
   const boundTables = useMemo(() => boundTablesByKey(texts, editingTables), [texts, editingTables]);
+  // The rows the text has read for its bound tables, which the Data tab fails a note by (TB3.3).
+  const [tableRows, setTableRows] = useState<ReadonlyMap<string, TableRows>>(NO_ROWS);
   useEffect(() => {
     if (!holdsBindings && bindingSession === null) {
       setBindingStates(null);
@@ -1307,6 +1311,7 @@ export function DocumentPage({
                       }
                       language={document.outline.language}
                       tables={boundTables}
+                      rows={tableRows}
                       checking={checking}
                       onChanged={() => setBindingsRead((count) => count + 1)}
                       onCheckNow={checkNow}
@@ -1410,6 +1415,7 @@ export function DocumentPage({
               }}
               onBoundTables={(node, tables) => setEditingTables({ node, tables })}
               onSaved={(session, sequence) => setEditorSaved({ session, sequence })}
+              onTableRows={setTableRows}
               onProvenance={(node, binding, opener) => setProvenance({ node, binding, opener })}
               onBindingSettle={onBindingSettle}
               {...(principalId === undefined || !authoring

@@ -37,7 +37,7 @@ import {
   tableSetting,
   type BindingState,
 } from './bindingContexts.js';
-import { useTableRows } from './tableRows.js';
+import { useTableRows, type TableRows } from './tableRows.js';
 import type { SettleAct } from './settleBinding.js';
 import { referenceContexts } from './contexts.js';
 import { textOffsetIn } from '../editor/caret.js';
@@ -313,6 +313,7 @@ export function DocumentText({
   rowsFrom,
   onBoundTables,
   onSaved,
+  onTableRows,
 }: {
   outline: OutlineView;
   scheme: NumberingScheme | null;
@@ -369,6 +370,8 @@ export function DocumentText({
   onBoundTables?: (node: string, tables: readonly BoundTableNode[]) => void;
   /** Told each save the editor open in place has acknowledged (the TB2 final review). */
   onSaved?: (session: string, sequence: number) => void;
+  /** Told the rows read for its bound tables, by `tableKey`, as they arrive (TB3.3). */
+  onTableRows?: (rows: ReadonlyMap<string, TableRows>) => void;
 }) {
   // The whole document is one canvas, the theme's paper (document-view.md, "One scroll"; CNT-072).
   const column = useRef<HTMLElement>(null);
@@ -404,6 +407,7 @@ export function DocumentText({
     rowsFrom?.session ?? null,
     rowsFrom?.saved ?? 0,
   );
+  useEffect(() => onTableRows?.(rows), [onTableRows, rows]);
   const bindingContextsByNode = useMemo(
     () =>
       bindingStates === null

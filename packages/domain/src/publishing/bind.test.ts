@@ -990,7 +990,7 @@ describe("a bound table's notes published (the TB3 plan, TB3-B, TB3-C and TB3-E)
     expect(table.notes.map((each) => each.letter)).toEqual(['a', 'b']);
   });
 
-  it("sets the whole table's note after the layout's word, and records each note's letter and anchor", () => {
+  it("TAB-025 sets the whole table's note after the layout's word, and records each note's letter, row and column, never its key", () => {
     const made = assembled(
       component(boundTable([keyed('n1', 'north')], { note: [text('Taken at noon')] })),
       new Map([['rows', held(ROWS)]]),
@@ -1002,12 +1002,11 @@ describe("a bound table's notes published (the TB3 plan, TB3-B, TB3-C and TB3-E)
     ]);
     if (!made.ok) return;
     const [value] = made.values;
-    expect(value && 'table' in value ? value.table.notes : undefined).toEqual([
-      {
-        note: 'n1',
-        letter: 'a',
-        anchor: { kind: 'keyed', key: { site: 'north' }, column: 'reading' },
-      },
+    // Its row among the rows printed, never the key's values, which the table need not print (M2).
+    const notes = value && 'table' in value ? value.table.notes : undefined;
+    expect(notes).toEqual([
+      { note: 'n1', letter: 'a', row: expect.any(Number), column: 'reading' },
     ]);
+    expect(JSON.stringify(notes)).not.toContain('north');
   });
 });

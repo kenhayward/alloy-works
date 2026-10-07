@@ -41,6 +41,20 @@ describe("a document's bound table", () => {
     parameters: {},
     mode: 'checked',
   };
+  const noteOn = (id: string, site: string, words: string) => ({
+    type: 'footnote',
+    id,
+    anchor: { kind: 'keyed', key: { site }, column: 'depth' },
+    content: [
+      {
+        type: 'paragraph',
+        id: `${id}p`,
+        style: 'body',
+        content: [{ type: 'text', value: words, marks: [] }],
+      },
+    ],
+  });
+  let notes: unknown[] = [];
   const content = {
     schemaVersion: 1,
     title: 'Install the printer',
@@ -58,6 +72,9 @@ describe("a document's bound table", () => {
           { column: 'depth', header: 'Depth', unit: { text: 'm', place: 'header' } },
         ],
         headerColumn: true,
+        get notes() {
+          return notes.length === 0 ? undefined : notes;
+        },
       },
     ],
   };
@@ -88,6 +105,7 @@ describe("a document's bound table", () => {
       version: DATASET_VERSION,
       number: '0.1',
       provenance: provenance(rowCount),
+      key: ['site'],
       name: null,
       stale: false,
       taken: { table: true },
@@ -110,8 +128,14 @@ describe("a document's bound table", () => {
    * `editable`, Ada may edit it in place, and the rows route answers as the service does: from her
    * session's latest save where she names it, and from the version otherwise.
    */
-  function opened(rowCount: number, editable = false) {
-    let savedContent: { content: { columns: { column: string }[] }[] } | null = null;
+  function opened(rowCount: number, editable = false, noted: unknown[] = []) {
+    notes = noted;
+    let savedContent: {
+      content: {
+        columns: { column: string }[];
+        notes?: { id: string; anchor: { kind: string; key?: { site: string } } }[];
+      }[];
+    } | null = null;
     const fake = service(
       outline([section(INTRODUCTION, 'Introduction', [referenceTo(RESULTS, PRINTER)])]),
     );
@@ -144,6 +168,19 @@ describe("a document's bound table", () => {
           ['salary', 'decimal'],
         ];
         const at = all.flatMap((column, index) => (named.has(column[0]) ? [index] : []));
+        // Each keyed note's row by its site, as the service matches it (TB3-C).
+        const table = (fromSession ? savedContent! : content).content[0]! as {
+          notes?: { id: string; anchor: { kind: string; key?: { site: string } } }[];
+        };
+        const noteRows = Object.fromEntries(
+          (table.notes ?? []).flatMap((each) => {
+            if (each.anchor.kind !== 'keyed') return [];
+            const row = Number(each.anchor.key!.site.slice(1));
+            return [
+              [each.id, each.anchor.key!.site.startsWith('S') && row < rowCount ? row : null],
+            ];
+          }),
+        );
         return json(200, {
           version: DATASET_VERSION,
           presorted: !fromSession,
@@ -153,6 +190,7 @@ describe("a document's bound table", () => {
               at.map((index) => [`S${row}`, `${row}.5`, `${row + 1}000`][index]!),
             ),
           },
+          notes: noteRows,
         });
       }
       if (path === `/v1/components/${PRINTER}/lock` && request.method === 'POST') {
@@ -231,6 +269,58 @@ describe("a document's bound table", () => {
       `/v1/documents/${DOCUMENT}/bindings/${RESULTS}/b1/rows?version=${DATASET_VERSION}`,
     ]);
   });
+
+  it("draws a keyed note's letter in its cell and its words beneath, and a note whose row is gone in place and on the Data tab (TB3.3)", async () => {
+    const user = userEvent.setup();
+    opened(3, false, [noteOn('f1', 'S1', 'Estimated'), noteOn('f2', 'S9', 'Closed')]);
+    const text = await textRegion();
+    const grid = await within(text).findByRole('table', { name: 'Readings by site' });
+    expect(grid).toBeInTheDocument();
+    await waitFor(() =>
+      expect(text.querySelectorAll('[data-bound-table-body] tr')[2]?.textContent).toBe('S11.5a'),
+    );
+    const beneath = [...text.querySelectorAll<HTMLElement>('[data-bound-table-note]')];
+    expect(beneath.map((each) => each.textContent)).toEqual([
+      'aEstimated',
+      'No row has the key site S9 nowClosed',
+    ]);
+    expect(beneath[1]).toHaveClass('aw-binding-failed');
+    await user.click(await screen.findByRole('tab', { name: 'Data' }));
+    const panel = screen.getByRole('tabpanel', { name: 'Data' });
+    const row = panel.querySelector('[data-binding="b1"]')!;
+    expect(row.querySelector('[data-state]')).toHaveAttribute('data-state', 'failed');
+    expect(row).toHaveTextContent(
+      'A note on this table names the row with the key {"site":"S9"}, which its result no longer has.',
+    );
+  });
+
+  it('reads the rows again with the note added in the editor open in place, its letter drawn once its session has saved it (TB3.3)', async () => {
+    const user = userEvent.setup();
+    const { asked } = opened(3, true);
+    const text = await textRegion();
+    await within(text).findByRole('rowheader', { name: 'S0' });
+    await user.click(within(text).getByText('Readings by site'));
+    const surface = await within(text).findByRole('textbox', {
+      name: 'Content of Install the printer',
+    });
+    const panel = await screen.findByRole('group', { name: 'Bound table' });
+    const adding = within(panel).getByRole('group', { name: 'Add note' });
+    await user.selectOptions(within(adding).getByLabelText('Note on'), 'cell');
+    await user.selectOptions(within(adding).getByLabelText('Column'), 'depth');
+    await user.type(within(adding).getByLabelText('Where site is'), 'S2');
+    await user.click(within(adding).getByRole('button', { name: 'Add note' }));
+    await user.keyboard('Dredged');
+    const before = rowsAsked(asked).length;
+    await waitFor(
+      () =>
+        expect([...surface.querySelectorAll('[data-bound-table-body] tr')][3]?.textContent).toBe(
+          'S22.5a',
+        ),
+      { timeout: 8_000 },
+    );
+    expect(rowsAsked(asked).length).toBeGreaterThan(before);
+    expect(surface.querySelector('[data-bound-table-note]')).toHaveTextContent('aDredged');
+  }, 20_000);
 
   it('shows table_too_long in place and on the Data tab without fetching a row, its state failed', async () => {
     const user = userEvent.setup();

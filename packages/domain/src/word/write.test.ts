@@ -5038,6 +5038,49 @@ describe('writeDocx: a table too wide for its measure (the TB3 plan, TB3-J)', ()
     }
   });
 
+  it('carries the footnote numbers on across two turned tables, each with footnotes before it (the TB3 final review)', () => {
+    const second = {
+      type: 'table',
+      id: 't2',
+      style: 'ruled',
+      caption: [text('Depths')],
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [{ cells: [cell('d1', 'Weir'), cell('d2', '4')] }],
+    };
+    const twice = writtenOf(
+      [
+        paragraph('p1', text('Before'), note('n1', 'The first note.')),
+        readings(),
+        paragraph('p2', text('Between'), note('n2', 'The second.'), note('n3', 'The third.')),
+        second,
+        paragraph('p3', text('After'), note('n4', 'The fourth note.')),
+      ],
+      { layout: UNLISTED, theme: ruledTheme },
+      undefined,
+      undefined,
+      [
+        { node: id('blocks'), block: 't1', set: 'rotated' },
+        { node: id('blocks'), block: 't2', set: 'rotated' },
+      ],
+    );
+    const starts = sections(twice.docx)
+      .slice(-5)
+      .map(
+        (each) =>
+          kids(first(each.properties, 'w:footnotePr')!).find((child) => child.name === 'w:numStart')
+            ?.attrs['w:val'] ?? null,
+      );
+    // Before, the first turned table, between, the second, after: one note before the first, three
+    // before the second.
+    expect(starts).toEqual([null, '2', '2', '4', '4']);
+    expect(
+      sections(twice.docx)
+        .slice(-5)
+        .map((each) => stated(each.properties, 'w:pgSz')?.['w:orient'] ?? null),
+    ).toEqual([null, 'landscape', null, 'landscape', null]);
+  });
+
   it("sets a turned table's columns across the landscape page's measure", () => {
     const grid = (written: Written) =>
       all(

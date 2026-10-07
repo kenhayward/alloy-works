@@ -59,8 +59,9 @@ export const PUBLISHED_PROVENANCE_VERSION = 3;
  * table, recorded with no take - it binds the whole result - by each column shown, its header and the
  * format it was printed by, its rounding rule among it, and each printed cell, row by row, with the
  * canonical value it was printed from. Every new publication is written at 3; a file written earlier
- * stays as written. **A table's `notes`** (the TB3 plan) are each note printed beneath it, by its letter
- * and the anchor it was stored with: added to the arm at 3, since only pipeline 19 writes them.
+ * stays as written. **A table's `notes`** (the TB3 plan) are each note printed beneath it, by its letter,
+ * the printed row it marks (null for a column's) and its column - never a keyed note's key, which the
+ * table need not print: added to the arm at 3, absent from a file of pipeline 18 or earlier.
  */
 export interface PublishedProvenance {
   readonly schemaVersion: typeof PUBLISHED_PROVENANCE_VERSION;
@@ -135,7 +136,12 @@ export function publishedProvenance(
             rows: each.table.rows.map((row) =>
               row.map((cell) => ({ printed: cell.printed, value: cell.value })),
             ),
-            notes: each.table.notes.map(({ note, letter, anchor }) => ({ note, letter, anchor })),
+            notes: each.table.notes.map(({ note, letter, row, column }) => ({
+              note,
+              letter,
+              row,
+              column,
+            })),
           },
         };
       }

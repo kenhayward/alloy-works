@@ -17,6 +17,8 @@ import {
   bindingsShown,
   boundTablesShown,
   PAGE_ROWS,
+  NOTE_KEY_REQUIRED,
+  noteRowMissing,
   TABLE_CHANGED,
   TABLE_FAILURE_WORDS,
   TABLE_NEVER_RESOLVED,
@@ -362,6 +364,181 @@ describe("what a bound table's body shows (TB2-D)", () => {
         inDocument(heldTable({ columns: DECLARED, rowCount: 3, rows: sent })),
       ).spanning,
     ).toEqual({ text: TABLE_READING, failed: false });
+  });
+});
+
+describe("a bound table's notes on the page (TB3.3)", () => {
+  const footnote = (id: string, anchor: object, words: string) => ({
+    type: 'footnote' as const,
+    id,
+    anchor: anchor as never,
+    content: [paragraph(`${id}p`, text(words)) as never],
+  });
+  const noted = boundTable({
+    notes: [
+      footnote('f1', { kind: 'keyed', key: { site: 'S1' }, column: 'depth' }, 'Estimated'),
+      footnote('f2', { kind: 'column', column: 'site' }, 'By name'),
+      footnote('f3', { kind: 'keyed', key: { site: 'S0' }, column: 'site' }, 'Closed'),
+    ],
+  });
+
+  it('opens each note as a child beneath the table, typed in place and stored', () => {
+    const state = stateOf(documentOf(noted));
+    const notes: { pos: number; anchor: unknown }[] = [];
+    state.doc.descendants((node, pos) => {
+      if (node.type.name === 'boundTableNote') notes.push({ pos, anchor: node.attrs.anchor });
+    });
+    expect(notes.map((each) => each.anchor)).toEqual(noted.notes!.map((each) => each.anchor));
+    const typed = state.apply(state.tr.insertText('An ', notes[0]!.pos + 2));
+    expect((fromEditor(typed.doc).content[0] as BoundTableNode).notes![0]!.content).toEqual([
+      paragraph('f1p', text('An Estimated')),
+    ]);
+  });
+
+  it('takes a paste of paragraphs into a note as its paragraphs, and refuses a list', () => {
+    const state = stateOf(documentOf(noted));
+    let at = -1;
+    state.doc.descendants((node, pos) => {
+      if (at < 0 && node.type.name === 'boundTableNote') at = pos + 2;
+    });
+    const into = state.apply(state.tr.setSelection(TextSelection.create(state.doc, at)));
+    const clip = (content: unknown[]) =>
+      readClipboard(
+        {
+          types: [PRODUCT_CLIPBOARD_TYPE],
+          getData: () =>
+            JSON.stringify({
+              format: 'alloy-works/content',
+              schemaVersion: 1,
+              language: 'en-GB',
+              direction: 'ltr',
+              content,
+            }),
+        },
+        'blocks',
+      );
+    const words = pasteInto(into, clip([paragraph('q1', text('Roughly '))]), counter('p'));
+    if (!words.ok) throw new Error(words.report.at(-1)?.message);
+    const after = into.apply(words.transaction);
+    expect((fromEditor(after.doc).content[0] as BoundTableNode).notes![0]!.content).toMatchObject([
+      { type: 'paragraph', content: [text('Roughly Estimated')] },
+    ]);
+    const list = pasteInto(
+      into,
+      clip([
+        {
+          type: 'list',
+          id: 'l1',
+          kind: 'bulleted',
+          items: [{ content: [paragraph('q2', text('One'))] }],
+        },
+      ]),
+      counter('p'),
+    );
+    expect(list.ok).toBe(false);
+  });
+
+  it("draws a keyed note's letter in its cell and a column note's in its header, lettered in reading order, beyond the rows shown too", () => {
+    const shown = shownIn(
+      documentOf(noted),
+      inDocument(
+        heldTable({
+          columns: DECLARED,
+          rowCount: 3,
+          rows: rowsOf(3),
+          key: ['site'],
+          notes: { f1: 1, f3: 0 },
+        }),
+      ),
+    );
+    // The column note first, then row by row: S0's note, then S1's.
+    expect(shown.columns[0]!.marks).toEqual(['a']);
+    expect(shown.rows[0]![0]!.marks).toEqual(['b']);
+    expect(shown.rows[1]![1]!.marks).toEqual(['c']);
+    expect(shown.rows[2]![1]!.marks).toBeUndefined();
+    expect(shown.notes).toEqual([
+      { id: 'f1', letter: 'c', said: null, failed: false },
+      { id: 'f2', letter: 'a', said: null, failed: false },
+      { id: 'f3', letter: 'b', said: null, failed: false },
+    ]);
+    // A note on a row past the first 50 is lettered all the same.
+    const far = shownIn(
+      documentOf(boundTable({ notes: [noted.notes![0]!] })),
+      inDocument(
+        heldTable({
+          columns: DECLARED,
+          rowCount: 80,
+          rows: rowsOf(80),
+          key: ['site'],
+          notes: { f1: 70 },
+        }),
+      ),
+    );
+    expect(far.notes).toEqual([{ id: 'f1', letter: 'a', said: null, failed: false }]);
+    expect(far.rows.some((row) => row.some((cell) => cell.marks !== undefined))).toBe(false);
+  });
+
+  it('shows a note whose row is gone, and a keyed note on a definition with no key, failed in place', () => {
+    const gone = shownIn(
+      documentOf(noted),
+      inDocument(
+        heldTable({
+          columns: DECLARED,
+          rowCount: 3,
+          rows: rowsOf(3),
+          key: ['site'],
+          notes: { f1: null, f3: 0 },
+        }),
+      ),
+    );
+    expect(gone.notes![0]).toEqual({
+      id: 'f1',
+      letter: null,
+      said: noteRowMissing({ site: 'S1' }),
+      failed: true,
+    });
+    expect(gone.notes![2]).toMatchObject({ letter: 'b', failed: false });
+    const keyless = shownIn(
+      documentOf(noted),
+      inDocument(
+        heldTable({ columns: DECLARED, rowCount: 3, rows: rowsOf(3), key: [], notes: {} }),
+      ),
+    );
+    expect(keyless.notes).toEqual([
+      { id: 'f1', letter: null, said: NOTE_KEY_REQUIRED, failed: true },
+      { id: 'f2', letter: 'a', said: null, failed: false },
+      { id: 'f3', letter: null, said: NOTE_KEY_REQUIRED, failed: true },
+    ]);
+    // Not yet answered for a note just added: no letter, nothing failed.
+    const unread = shownIn(
+      documentOf(noted),
+      inDocument(
+        heldTable({ columns: DECLARED, rowCount: 3, rows: rowsOf(3), key: ['site'], notes: {} }),
+      ),
+    );
+    expect(unread.notes![0]).toEqual({ id: 'f1', letter: null, said: null, failed: false });
+  });
+
+  it('decorates each note with its letter, and a failed one with why, as the read text draws it', () => {
+    const context = inDocument(
+      heldTable({
+        columns: DECLARED,
+        rowCount: 3,
+        rows: rowsOf(3),
+        key: ['site'],
+        notes: { f1: null, f3: 0 },
+      }),
+    );
+    const state = stateOf(documentOf(noted), context);
+    const specs = bindingDecorations(state.doc, context)
+      .find()
+      .map((each) => (each as unknown as { spec: { boundTableNote?: unknown } }).spec)
+      .flatMap((spec) => (spec.boundTableNote === undefined ? [] : [spec.boundTableNote]));
+    expect(specs).toEqual([
+      { id: 'f1', letter: null, said: noteRowMissing({ site: 'S1' }), failed: true },
+      { id: 'f2', letter: 'a', said: null, failed: false },
+      { id: 'f3', letter: 'b', said: null, failed: false },
+    ]);
   });
 });
 

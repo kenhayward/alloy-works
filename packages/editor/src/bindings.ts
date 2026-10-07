@@ -4,11 +4,15 @@ import {
   defaultLayout,
   DEFAULT_VALUE_FORMATS,
   layoutTable,
+  placeTableNotes,
+  tableOrder,
   type AnyBinding,
   type Binding,
   type BoundTableNode,
   type CanonicalResult,
+  type CanonicalValue,
   type ColumnAlignment,
+  type FootnoteNode,
   type TableColumn,
   type TableFailure,
   type TablePresentation,
@@ -90,6 +94,16 @@ export interface TableHeld {
    * answers a reader (the TB2 final review) - so they are laid out as they stand.
    */
   readonly presorted?: boolean;
+  /**
+   * The key of the definition version held, from the bindings view (TB3-B), which a keyed note names
+   * its row by: empty where it declares none, `key_required` for a keyed note. Unknown where absent.
+   */
+  readonly key?: readonly string[];
+  /**
+   * Each keyed note's row among `rows`, by its identifier, as the rows route answered (TB3-C): null
+   * where the result has none (`note_row_missing`). A note it has not answered for is being read.
+   */
+  readonly notes?: Readonly<Record<string, number | null>>;
 }
 
 /**
@@ -409,6 +423,16 @@ export const TABLE_FAILURE_WORDS = {
 export const tableFailureWords = (failure: TableFailure): string =>
   (TABLE_FAILURE_WORDS[failure.code] as (failure: TableFailure) => string)(failure);
 
+/** A keyed note on a table whose definition declares no key (DAT-012, `key_required`). */
+export const NOTE_KEY_REQUIRED =
+  'Its query definition declares no key, so this note cannot name its row';
+
+/** A keyed note whose row the result no longer has (DAT-048, `note_row_missing`), by its key. */
+export const noteRowMissing = (key: Readonly<Record<string, CanonicalValue>>): string =>
+  `No row has the key ${Object.entries(key)
+    .map(([column, value]) => `${column} ${String(value)}`)
+    .join(', ')} now`;
+
 /** What a bound table shows on its own: the definition that fills it in each document (BI-B). */
 export const tableAlone = (title: string | null): string =>
   `Filled from ${title ?? 'a query definition'} in each document`;
@@ -418,6 +442,20 @@ export interface BoundTableColumnShown {
   readonly text: string;
   readonly align: ColumnAlignment | null;
   readonly wrap: boolean;
+  /** The letters of the notes on the column (TB3.3), where it has any. */
+  readonly marks?: readonly string[];
+}
+
+/**
+ * **A bound table's note as the page shows it** (TB3.3): its letter in the table's sequence, or null
+ * where it has none - its row gone, not yet read, or the table not laid out - and the words it says
+ * in place, `failed` where it would fail the publish.
+ */
+export interface BoundTableNoteShown {
+  readonly id: string;
+  readonly letter: string | null;
+  readonly said: string | null;
+  readonly failed: boolean;
 }
 
 /** A cell as the page draws it: its text, whether it heads its row, and its negative colour. */
@@ -425,6 +463,8 @@ export interface BoundTableCellShown {
   readonly text: string;
   readonly scope: 'row' | null;
   readonly negative: boolean;
+  /** The letters of the notes on the cell (TB3.3), where it has any. */
+  readonly marks?: readonly string[];
 }
 
 /**
@@ -437,6 +477,8 @@ export interface BoundTableShown {
   readonly rows: readonly (readonly BoundTableCellShown[])[];
   readonly spanning: { readonly text: string; readonly failed: boolean } | null;
   readonly more: number;
+  /** Each of its keyed and column notes, in the order they stand beneath it (TB3.3). */
+  readonly notes?: readonly BoundTableNoteShown[];
 }
 
 /** One bound table's body in `doc`: where its table and its body stand, and what it shows. */
@@ -450,9 +492,31 @@ export interface BoundTableAt {
   readonly shown: BoundTableShown;
 }
 
-/** The stored table a `boundTable` node's attributes hold, for `checkTable` and `layoutTable`. */
+/**
+ * A `boundTable` node's notes, each by its identifier and anchor alone, which is all that places one
+ * (TB3-C): its paragraphs are the text typed beneath the table.
+ */
+export function boundTableNotes(node: Node): FootnoteNode[] {
+  const notes: FootnoteNode[] = [];
+  node.forEach((child) => {
+    if (child.type.name !== 'boundTableNote') return;
+    notes.push({
+      type: 'footnote',
+      id: (child.attrs.id as string | null) ?? '',
+      anchor: child.attrs.anchor as FootnoteNode['anchor'],
+      content: [],
+    });
+  });
+  return notes;
+}
+
+/**
+ * The stored table a `boundTable` node's attributes hold, for `checkTable` and `layoutTable`, with its
+ * notes' anchors (`boundTableNotes`), which the page reads their rows by (TB3.3).
+ */
 export function storedBoundTable(node: Node): BoundTableNode {
   const { id, style, numbered, binding, columns, headerColumn, sort } = node.attrs;
+  const notes = boundTableNotes(node);
   return {
     type: 'boundTable',
     id: id as string,
@@ -463,6 +527,7 @@ export function storedBoundTable(node: Node): BoundTableNode {
     columns: columns as BoundTableNode['columns'],
     headerColumn: headerColumn as boolean,
     ...(sort === null ? {} : { sort: sort as NonNullable<BoundTableNode['sort']> }),
+    ...(notes.length === 0 ? {} : { notes }),
   };
 }
 
@@ -524,15 +589,74 @@ function wordsOf(node: Node, type: string): string {
   return words.replace(/\s+/g, ' ').trim();
 }
 
+/**
+ * **A bound table's notes placed** (TB3.3; TB3-C): lettered by `placeTableNotes` over every row in the
+ * table's order - so a note on a row past the first rows shown still takes its letter - with each mark
+ * on the column or the laid-out cell it names; a keyed note failing `key_required` where the definition
+ * declares no key, or `note_row_missing` where the rows route found no row by its key.
+ */
+function notesPlaced(
+  table: BoundTableNode,
+  notes: readonly FootnoteNode[],
+  held: TableHeld,
+  order: readonly number[] | null,
+): {
+  readonly notes: readonly BoundTableNoteShown[];
+  readonly placed: ReturnType<typeof placeTableNotes>;
+} {
+  const keyless = held.key !== undefined && held.key.length === 0;
+  const noteRows = new Map<string, number | null>();
+  for (const note of notes) {
+    const row = held.notes?.[note.id];
+    if (note.anchor.kind === 'keyed' && !keyless && row !== undefined) noteRows.set(note.id, row);
+  }
+  const placed =
+    order === null
+      ? []
+      : placeTableNotes(
+          { ...table, notes: [...notes] },
+          { rows: order.map((index) => ({ index })) },
+          noteRows,
+        );
+  const letters = new Map(placed.map((each) => [each.note.id, each.letter]));
+  return {
+    placed,
+    notes: notes.map((note): BoundTableNoteShown => {
+      const { anchor } = note;
+      const letter = letters.get(note.id) ?? null;
+      if (anchor.kind === 'keyed' && keyless) {
+        return { id: note.id, letter: null, said: NOTE_KEY_REQUIRED, failed: true };
+      }
+      if (anchor.kind === 'keyed' && order !== null && noteRows.get(note.id) === null) {
+        return { id: note.id, letter: null, said: noteRowMissing(anchor.key), failed: true };
+      }
+      return { id: note.id, letter, said: null, failed: false };
+    }),
+  };
+}
+
+/** What a table's notes are memoised by: each one's identifier and anchor, never its words. */
+const notesKey = (notes: readonly FootnoteNode[], held: TableHeld | null) =>
+  JSON.stringify([
+    notes.map((each) => [each.id, each.anchor]),
+    held?.key ?? null,
+    held?.notes ?? null,
+  ]);
+
 /** One bound table's body in `context`. */
 function tableShownFor(node: Node, context: BindingContext | null): BoundTableShown {
   const table = storedBoundTable(node);
+  const notes = table.notes ?? [];
+  let heldTable: TableHeld | null = null;
   const spanning = (keys: readonly object[], text: string, failed: boolean) =>
-    memoised(keys, `${failed ? 'failed' : 'shown'} ${text}`, () => ({
+    memoised(keys, `${failed ? 'failed' : 'shown'} ${text} ${notesKey(notes, heldTable)}`, () => ({
       columns: declaredColumns(table, setting.styles.get(table.style) ?? NO_STYLE),
       rows: [],
       spanning: { text, failed },
       more: 0,
+      ...(notes.length === 0 || heldTable === null
+        ? {}
+        : { notes: notesPlaced(table, notes, heldTable, null).notes }),
     }));
   const setting =
     context?.kind === 'document'
@@ -552,6 +676,7 @@ function tableShownFor(node: Node, context: BindingContext | null): BoundTableSh
     return spanning([node.attrs, setting], TABLE_CHANGED, true);
   }
   if (!('table' in held.shown)) return spanning([node.attrs, setting], TABLE_UNAVAILABLE, true);
+  heldTable = held.shown.table;
   const { columns, rowCount, rows } = held.shown.table;
   const presorted = held.shown.table.presorted === true;
   const style = setting.styles.get(table.style) ?? NO_STYLE;
@@ -574,35 +699,62 @@ function tableShownFor(node: Node, context: BindingContext | null): BoundTableSh
   }
   // The empty statement shows only where there are no rows: typing it changes nothing else.
   const empty = rows.rows.length === 0 ? wordsOf(node, 'boundTableEmpty') : '';
-  return memoised([rows, node.attrs, style, setting], empty, () => {
-    const laid = layoutTable(table, rows, columns, style, setting.formats, setting.words, {
-      limit: PAGE_ROWS,
-      presorted,
-    });
-    if ('failures' in laid) {
-      return {
-        columns: declaredColumns(table, style),
-        rows: [],
-        spanning: { text: laid.failures.map(tableFailureWords).join('; '), failed: true },
-        more: 0,
+  const shownHeld = held.shown.table;
+  return memoised(
+    [rows, node.attrs, style, setting],
+    `${empty} ${notesKey(notes, shownHeld)}`,
+    () => {
+      const laid = layoutTable(table, rows, columns, style, setting.formats, setting.words, {
+        limit: PAGE_ROWS,
+        presorted,
+      });
+      if ('failures' in laid) {
+        return {
+          columns: declaredColumns(table, style),
+          rows: [],
+          spanning: { text: laid.failures.map(tableFailureWords).join('; '), failed: true },
+          more: 0,
+        };
+      }
+      const order = presorted
+        ? rows.rows.map((_, index) => index)
+        : tableOrder(table, rows, columns);
+      const { notes: notesShown, placed } = notesPlaced(table, notes, shownHeld, order);
+      // Each mark where its note stands: a column's in its header, a cell's in a row laid out.
+      const marks = new Map<string, string[]>();
+      for (const each of placed) {
+        if (each.column < 0) continue;
+        const at = `${each.row ?? 'header'} ${each.column}`;
+        marks.set(at, [...(marks.get(at) ?? []), each.letter]);
+      }
+      const marked = (at: string) => {
+        const found = marks.get(at);
+        return found === undefined ? {} : { marks: found };
       };
-    }
-    return {
-      columns: laid.columns.map((column) => ({
-        text: column.header,
-        align: column.align,
-        wrap: column.wrap,
-      })),
-      rows: laid.rows.map((row) =>
-        row.cells.map((cell) => ({ text: cell.text, scope: cell.scope, negative: cell.negative })),
-      ),
-      spanning:
-        laid.rows.length > 0
-          ? null
-          : { text: empty === '' ? setting.words.noRows : empty, failed: false },
-      more: rowCount - laid.rows.length,
-    };
-  });
+      return {
+        columns: laid.columns.map((column, at) => ({
+          text: column.header,
+          align: column.align,
+          wrap: column.wrap,
+          ...marked(`header ${at}`),
+        })),
+        rows: laid.rows.map((row, y) =>
+          row.cells.map((cell, x) => ({
+            text: cell.text,
+            scope: cell.scope,
+            negative: cell.negative,
+            ...marked(`${y} ${x}`),
+          })),
+        ),
+        spanning:
+          laid.rows.length > 0
+            ? null
+            : { text: empty === '' ? setting.words.noRows : empty, failed: false },
+        more: rowCount - laid.rows.length,
+        ...(notes.length === 0 ? {} : { notes: notesShown }),
+      };
+    },
+  );
 }
 
 /**

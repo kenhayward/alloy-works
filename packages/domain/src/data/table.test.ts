@@ -9,6 +9,7 @@ import {
   checkTable,
   layoutTable,
   sortResult,
+  tableOrder,
   TABLE_ROWS_MAX,
   type LaidOut,
   type TablePresentation,
@@ -363,6 +364,10 @@ describe('a bound table checked without its rows, and laid out in part (the TB2 
     });
     const ordered = sortResult(sorted, READINGS, COLUMNS);
     expect(ordered.rows.map((row) => row[0])).toEqual(['North', 'South', 'East']);
+    // The same order as indices into the result's rows (TB3.3).
+    expect(tableOrder(sorted, READINGS, COLUMNS).map((index) => READINGS.rows[index])).toEqual(
+      ordered.rows,
+    );
     // The sort column left out, as the rows route sends it to a reader (the TB2 final review).
     const sent: CanonicalResult = {
       columns: [['site', 'text']],

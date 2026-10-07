@@ -12002,6 +12002,8 @@ export interface operations {
                                         [key: string]: string;
                                     };
                                 };
+                                /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
+                                key: string[];
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
@@ -12455,7 +12457,8 @@ export interface operations {
                      *       "result": {
                      *         "columns": [],
                      *         "rows": []
-                     *       }
+                     *       },
+                     *       "notes": {}
                      *     }
                      */
                     "application/json": {
@@ -12470,6 +12473,10 @@ export interface operations {
                             ][];
                             /** @description Every row, in the result's stored order, each value in its canonical form */
                             rows: (string | boolean | null)[][];
+                        };
+                        /** @description Each note the table anchors by key, by its identifier: the index of its row among the rows sent, or null where the result has no row its key names (`note_row_missing`). A key column the table does not show is never sent */
+                        notes: {
+                            [key: string]: number | null;
                         };
                     };
                 };
@@ -12711,6 +12718,8 @@ export interface operations {
                                         [key: string]: string;
                                     };
                                 };
+                                /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
+                                key: string[];
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
@@ -13334,6 +13343,8 @@ export interface operations {
                                         [key: string]: string;
                                     };
                                 };
+                                /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
+                                key: string[];
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
@@ -13814,6 +13825,7 @@ export interface operations {
                      *           "checksum": "0000000000000000000000000000000000000000000000000000000000000000",
                      *           "images": {}
                      *         },
+                     *         "key": [],
                      *         "name": "example",
                      *         "stale": false,
                      *         "taken": {
@@ -14071,6 +14083,8 @@ export interface operations {
                                     [key: string]: string;
                                 };
                             };
+                            /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
+                            key: string[];
                             /** @description The dataset's name, or null where nobody has named it */
                             name: string | null;
                             /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
@@ -14633,6 +14647,8 @@ export interface operations {
                                         [key: string]: string;
                                     };
                                 };
+                                /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
+                                key: string[];
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
@@ -15216,6 +15232,8 @@ export interface operations {
                                         [key: string]: string;
                                     };
                                 };
+                                /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
+                                key: string[];
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
@@ -15799,6 +15817,8 @@ export interface operations {
                                         [key: string]: string;
                                     };
                                 };
+                                /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
+                                key: string[];
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
@@ -16625,6 +16645,8 @@ export interface operations {
                                         [key: string]: string;
                                     };
                                 };
+                                /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
+                                key: string[];
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
@@ -17188,6 +17210,8 @@ export interface operations {
                                         [key: string]: string;
                                     };
                                 };
+                                /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
+                                key: string[];
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
@@ -17650,6 +17674,7 @@ export interface operations {
                      *           "checksum": "0000000000000000000000000000000000000000000000000000000000000000",
                      *           "images": {}
                      *         },
+                     *         "key": [],
                      *         "name": "example",
                      *         "stale": false,
                      *         "taken": {
@@ -17907,6 +17932,8 @@ export interface operations {
                                     [key: string]: string;
                                 };
                             };
+                            /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
+                            key: string[];
                             /** @description The dataset's name, or null where nobody has named it */
                             name: string | null;
                             /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
@@ -18469,6 +18496,8 @@ export interface operations {
                                         [key: string]: string;
                                     };
                                 };
+                                /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
+                                key: string[];
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
@@ -19092,6 +19121,8 @@ export interface operations {
                                         [key: string]: string;
                                     };
                                 };
+                                /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
+                                key: string[];
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
@@ -19850,6 +19881,8 @@ export interface operations {
                                         [key: string]: string;
                                     };
                                 };
+                                /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
+                                key: string[];
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
@@ -20435,6 +20468,8 @@ export interface operations {
                                         [key: string]: string;
                                     };
                                 };
+                                /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
+                                key: string[];
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
@@ -21018,6 +21053,8 @@ export interface operations {
                                         [key: string]: string;
                                     };
                                 };
+                                /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
+                                key: string[];
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
@@ -21581,6 +21618,8 @@ export interface operations {
                                         [key: string]: string;
                                     };
                                 };
+                                /** @description The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none */
+                                key: string[];
                                 /** @description The dataset's name, or null where nobody has named it */
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */

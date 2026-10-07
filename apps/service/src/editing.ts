@@ -58,12 +58,40 @@ function boundTablesIn(value: unknown): BoundTableNode[] {
   return Object.values(value).flatMap(boundTablesIn);
 }
 
-/** The columns a bound table names: those it shows and those it sorts by. */
+/**
+ * The columns a bound table names: those it shows, those it sorts by, and those its notes anchor to -
+ * a keyed note's key columns among them, which it need not show (TB3.3).
+ */
 const namedBy = (table: BoundTableNode) =>
   new Set([
     ...table.columns.map((each) => each.column),
     ...(table.sort ?? []).map((each) => each.column),
+    ...(table.notes ?? []).flatMap(({ anchor }) =>
+      anchor.kind === 'keyed'
+        ? [anchor.column, ...Object.keys(anchor.key)]
+        : anchor.kind === 'column'
+          ? [anchor.column]
+          : [],
+    ),
   ]);
+
+/**
+ * Each keyed note a bound table holds, by its key and column: a key held in a note is a question asked
+ * of the result - whether a row has it - which the rows route answers (the TB3 final review, M1).
+ */
+const keyedBy = (table: BoundTableNode) =>
+  new Set(
+    (table.notes ?? []).flatMap(({ anchor }) =>
+      anchor.kind === 'keyed'
+        ? [
+            JSON.stringify([
+              Object.entries(anchor.key).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+              anchor.column,
+            ]),
+          ]
+        : [],
+    ),
+  );
 
 /**
  * **A column is named only by whoever may read its definition** (the TB2 final review): a bound table's
@@ -71,7 +99,9 @@ const namedBy = (table: BoundTableNode) =>
  * column chosen by an author who may not read the definition - which the Value dialog asks of whoever
  * places one. A save naming, in a bound table, a column the version it opened from did not name there
  * under the same definition is refused `definition_unreadable` unless the saver may read the definition.
- * A header renamed, a column moved or removed, is never refused.
+ * A header renamed, a column moved or removed, is never refused. **A keyed note is a question too**:
+ * one whose key and column the version it opened from did not hold there is refused the same way, so
+ * nobody who may not read the definition probes a key value through the rows route's `notes`.
  */
 async function mayNameColumns(
   trx: TenantTransaction,
@@ -90,8 +120,12 @@ async function mayNameColumns(
   const reads = definitionReader(trx, callerOf(request));
   for (const table of tables) {
     const was = before.get(table.id);
-    const named = was?.binding.query === table.binding.query ? namedBy(was) : new Set<string>();
-    const added = [...namedBy(table)].some((column) => !named.has(column));
+    const same = was?.binding.query === table.binding.query;
+    const named = same ? namedBy(was) : new Set<string>();
+    const keyed = same ? keyedBy(was) : new Set<string>();
+    const added =
+      [...namedBy(table)].some((column) => !named.has(column)) ||
+      [...keyedBy(table)].some((asked) => !keyed.has(asked));
     if (added && !(await reads(table.binding.query))) {
       throw refused(
         403,

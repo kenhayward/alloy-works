@@ -244,7 +244,9 @@ behaviour: whether the header repeats, the continuation label, and whether rows 
 [W14.5](#where-a-caption-sits)). The editor renders all of it except break behaviour, which is
 pagination. The members answering STY-014 and STY-077 - formats and alignment by column
 type, the negative colour, unit brackets and the wide-table strategy - are set out in
-[tables.md](tables.md#the-table-style); TB1 built all but the wide-table strategy, TB3's.
+[tables.md](tables.md#the-table-style); TB1 built all but the wide-table strategy, `wide` - `scale`,
+the product's default, or `rotate` - which TB3 built, optional at `catalogue/3` with no theme version,
+a table's own `wide` overriding it.
 
 The continuation label matters beyond appearance: the spike found that no engine can express one
 without per-document work. In this design it is a table style property the Typst template renders -

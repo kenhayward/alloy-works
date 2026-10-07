@@ -64,7 +64,10 @@ const binding = (query = READINGS) => ({
   mode: 'checked' as const,
 });
 
-const withTable = (columns: unknown[] = [{ column: 'site', header: 'Site' }]) => {
+const withTable = (
+  columns: unknown[] = [{ column: 'site', header: 'Site' }],
+  notes?: unknown[],
+) => {
   const document = content('Before');
   document.content.push({
     type: 'boundTable',
@@ -74,15 +77,35 @@ const withTable = (columns: unknown[] = [{ column: 'site', header: 'Site' }]) =>
     caption: [{ type: 'text', value: 'Readings', marks: [] }],
     columns,
     headerColumn: false,
+    ...(notes === undefined ? {} : { notes }),
   } as never);
   return document;
 };
+
+/** A note on a bound table (TB3-A), its words one paragraph. */
+const note = (id: string, anchor: unknown, words: string) => ({
+  type: 'footnote',
+  id,
+  anchor,
+  content: [
+    {
+      type: 'paragraph',
+      id: `${id}p`,
+      style: 'body',
+      content: [{ type: 'text', value: words, marks: [] }],
+    },
+  ],
+});
 
 /** The document holding `ROWS` for k1 as `held` binds it, laid out in this table style. */
 const holding = (
   held = binding(),
   columns: readonly TableColumn[] = DECLARED,
   style: Record<string, unknown> = {},
+  notes: { readonly key: readonly string[]; readonly rows: Record<string, number | null> } = {
+    key: ['site'],
+    rows: {},
+  },
 ): BindingContext => ({
   kind: 'document',
   node: NODE,
@@ -91,7 +114,15 @@ const holding = (
       'k1',
       {
         binding: bindingDigestInput(held),
-        shown: { table: { columns, rowCount: ROWS.rows.length, rows: ROWS } },
+        shown: {
+          table: {
+            columns,
+            rowCount: ROWS.rows.length,
+            rows: ROWS,
+            key: notes.key,
+            notes: notes.rows,
+          },
+        },
       },
     ],
   ]),
@@ -161,10 +192,11 @@ async function inTable(
   extra: Parameters<typeof open>[3] = {},
   context: BindingContext = holding(),
   latest: readonly TableColumn[] = DECLARED,
+  notes?: unknown[],
 ) {
   const opening = open(
     {
-      'GET /v1/components/{id}': () => json(200, opened({ content: withTable(columns) })),
+      'GET /v1/components/{id}': () => json(200, opened({ content: withTable(columns, notes) })),
       ...routes(latest),
     },
     quick,
@@ -423,6 +455,144 @@ describe('the Bound table panel (TB2-F)', () => {
       repeatedWords('site'),
     ]);
     expect(words).not.toMatch(fancy);
+  });
+});
+
+describe("a bound table's notes and Wide (TB3.3)", () => {
+  const COLUMNS = [
+    { column: 'site', header: 'Site' },
+    { column: 'depth', header: 'Depth' },
+  ];
+  const notesOf = (view: EditorView) =>
+    [...view.dom.querySelectorAll<HTMLElement>('[data-bound-table-note]')].map((each) =>
+      each.textContent?.replace(/\s/gu, ' '),
+    );
+
+  it("draws a keyed note's letter in its cell and its words beneath, a column note's in its header, and a note whose row is gone failed in place", async () => {
+    const { view } = await inTable(
+      COLUMNS,
+      {},
+      holding(binding(), DECLARED, {}, { key: ['site'], rows: { f1: 1, f3: null } }),
+      DECLARED,
+      [
+        note('f1', { kind: 'keyed', key: { site: 'Birch' }, column: 'depth' }, 'Estimated'),
+        note('f2', { kind: 'column', column: 'site' }, 'By name'),
+        note('f3', { kind: 'keyed', key: { site: 'Elm' }, column: 'depth' }, 'Closed'),
+      ],
+    );
+    // The column's note first, then Birch's: a in the header, b in Birch's depth.
+    expect(bodyOf(view)[0]).toEqual(['Sitea', 'Depth']);
+    expect(bodyOf(view)[2]).toEqual(['Birch', '-1.25b']);
+    expect(notesOf(view)).toEqual([
+      'bEstimated',
+      'aBy name',
+      'No row has the key site Elm nowClosed',
+    ]);
+    const gone = view.dom.querySelectorAll('[data-bound-table-note]')[2]!;
+    expect(gone).toHaveClass('aw-binding-failed');
+  });
+
+  it('adds a note on a cell by key, its value offered from the rows shown, and types its words in place, by keyboard', async () => {
+    const user = userEvent.setup();
+    const { view, panel } = await inTable(COLUMNS);
+    const adding = within(panel).getByRole('group', { name: BOUND_TABLE_WORDS.addNote });
+    await user.selectOptions(within(adding).getByLabelText(BOUND_TABLE_WORDS.noteOn), 'cell');
+    await user.selectOptions(within(adding).getByLabelText(BOUND_TABLE_WORDS.noteColumn), 'depth');
+    const key = within(adding).getByLabelText(BOUND_TABLE_WORDS.keyIs('site'));
+    // Its values offered from the rows the page holds.
+    expect(
+      [...document.querySelectorAll(`#${CSS.escape(key.getAttribute('list')!)} option`)].map(
+        (each) => each.getAttribute('value'),
+      ),
+    ).toEqual(['Ash', 'Birch', 'Cedar', 'Dogwood']);
+    await user.click(key);
+    await user.keyboard('Cedar');
+    await user.tab();
+    expect(within(adding).getByRole('button', { name: BOUND_TABLE_WORDS.addNote })).toHaveFocus();
+    await user.keyboard('{Enter}');
+    // The cursor in its words beneath the table, typed in place.
+    expect(view.state.selection.$from.parent.type.name).toBe('footnoteParagraph');
+    await user.keyboard('Dredged');
+    expect(notesOf(view)).toEqual(['Dredged']);
+    const listed = within(panel).getByRole('group', { name: 'Note 1' });
+    expect(listed).toHaveTextContent('On Depth where site is Cedar');
+    await user.click(within(listed).getByRole('button', { name: 'Remove note 1' }));
+    expect(notesOf(view)).toEqual([]);
+  });
+
+  it('refuses to take out a column a note stands on, saying why (the TB3 final review, H1)', async () => {
+    const { view, panel } = await inTable(COLUMNS, {}, holding(), DECLARED, [
+      note('f2', { kind: 'column', column: 'depth' }, 'By gauge'),
+    ]);
+    await userEvent.click(within(column(panel, 2)).getByRole('button', { name: 'Remove' }));
+    expect(within(panel).getByRole('alert')).toHaveTextContent(
+      BOUND_TABLE_WORDS.noteStands('depth'),
+    );
+    // Still shown, its note's letter beside its header.
+    expect(bodyOf(view)[0]).toEqual(['Site', 'Deptha']);
+  });
+
+  it('refuses a key typed that is not a value of its column, saying so', async () => {
+    const user = userEvent.setup();
+    const { panel } = await inTable(
+      COLUMNS,
+      {},
+      holding(
+        binding(),
+        DECLARED,
+        {},
+        {
+          key: ['visits'],
+          rows: {},
+        },
+      ),
+    );
+    const adding = within(panel).getByRole('group', { name: BOUND_TABLE_WORDS.addNote });
+    await user.selectOptions(within(adding).getByLabelText(BOUND_TABLE_WORDS.noteOn), 'cell');
+    await user.type(within(adding).getByLabelText(BOUND_TABLE_WORDS.keyIs('visits')), 'two');
+    await user.click(within(adding).getByRole('button', { name: BOUND_TABLE_WORDS.addNote }));
+    expect(within(panel).getByRole('alert')).toHaveTextContent(
+      BOUND_TABLE_WORDS.keyNeeded('visits'),
+    );
+  });
+
+  it('offers a note on a column alone where the definition declares no key', async () => {
+    const { panel } = await inTable(
+      COLUMNS,
+      {},
+      holding(
+        binding(),
+        DECLARED,
+        {},
+        {
+          key: [],
+          rows: {},
+        },
+      ),
+    );
+    expect(panel).toHaveTextContent(BOUND_TABLE_WORDS.noKey);
+    expect(
+      within(panel).getByRole('option', { name: BOUND_TABLE_WORDS.noteOns.cell }),
+    ).toBeDisabled();
+  });
+
+  it("sets Wide on the Bound table panel: the style's, Scale or Rotate", async () => {
+    const user = userEvent.setup();
+    const { view, panel, asked } = await inTable(COLUMNS);
+    const wide = within(panel).getByLabelText(BOUND_TABLE_WORDS.wide);
+    expect(wide).toHaveDisplayValue(BOUND_TABLE_WORDS.wides.style);
+    await user.selectOptions(wide, 'rotate');
+    expect(view.state.doc.lastChild!.attrs.wide).toBe('rotate');
+    await waitFor(() =>
+      expect(
+        JSON.stringify(asked.filter((each) => each.route.startsWith('PUT')).at(-1)?.body),
+      ).toContain('"wide":"rotate"'),
+    );
+  });
+
+  it('has words for everything it says with no fancy dash', () => {
+    const fancy = new RegExp(`[${String.fromCodePoint(0x2013, 0x2014)}]`);
+    expect(JSON.stringify([BOUND_TABLE_WORDS, BOUND_TABLE_WORDS.keyIs('a')])).not.toMatch(fancy);
   });
 });
 

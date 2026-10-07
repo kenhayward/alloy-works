@@ -1,10 +1,12 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import {
   bindingDigestInput,
+  canonicalKeyValue,
   COLUMN_ALIGNMENTS,
   DEFAULT_TABLE_FIELDS,
   mergeFormat,
   type BoundColumn,
+  type CanonicalValue,
   type ColumnAlignment,
   type FieldFormat,
   type FieldKey,
@@ -12,17 +14,26 @@ import {
   type TablePresentation,
 } from '@alloy-works/domain';
 import {
+  addBoundTableNote,
   bindingContextOf,
+  BOUND_TABLE_NOTES_MAX,
+  boundTablesShown,
   deleteBoundTable,
+  noteColumnDropped,
+  removeBoundTableNote,
   repeatedColumn,
+  selectBoundTableNote,
   setBoundTable,
   setBoundTablePart,
+  type BoundNoteAnchor,
+  type BoundNoteAt,
   type BoundTablePart,
   type BoundTablePlace,
   type EditorView,
   type SortKey,
+  type Wide,
 } from '@alloy-works/editor';
-import { useEffect, useMemo, useRef, useState, type Ref } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type Ref } from 'react';
 import { createPortal } from 'react-dom';
 
 import styles from './BoundTablePanel.module.css';
@@ -72,7 +83,37 @@ export const BOUND_TABLE_WORDS = {
   needsHeader: 'A column needs a header.',
   lastColumn: 'A table shows at least one column.',
   allShown: 'Every column is shown.',
+  wide: 'Wide',
+  wides: {
+    style: "The table style's",
+    scale: 'Scale to fit',
+    rotate: 'Rotate onto landscape pages',
+  } satisfies Record<Wide | 'style', string>,
+  notes: 'Notes',
+  noteOn: 'Note on',
+  noteOns: { column: 'A column', cell: 'A cell, by its row' },
+  noteColumn: 'Column',
+  keyIs: (column: string) => `Where ${column} is`,
+  addNote: 'Add note',
+  editNote: 'Edit',
+  removeNote: 'Remove',
+  noKey: 'Its query definition declares no key, so a note can stand on a column alone.',
+  keyUnknown:
+    'The key of its query definition is not known here, so a note can stand on a column alone.',
+  keyNeeded: (column: string) => `Type a value of ${column} for the row the note is on.`,
+  tooManyNotes: `A table holds at most ${BOUND_TABLE_NOTES_MAX} notes.`,
+  noteStands: (column: string) =>
+    `A note stands on ${column}. Remove the note before taking the column out of the table.`,
 } as const;
+
+/** A note as the panel lists it: what it stands on, in words. */
+export function noteOnWords(anchor: BoundNoteAnchor, header: (column: string) => string): string {
+  if (anchor.kind === 'column') return `On the column ${header(anchor.column)}`;
+  const key = Object.entries(anchor.key)
+    .map(([column, value]) => `${column} is ${String(value)}`)
+    .join(' and ');
+  return `On ${header(anchor.column)} where ${key}`;
+}
 
 /** A column shown twice under one header, in the walk's words (TAB-048, `column_repeated`). */
 export const repeatedWords = (column: string) =>
@@ -110,6 +151,8 @@ export function BoundTablePanel({
   ref,
 }: BoundTablePanelProps) {
   const [declared, setDeclared] = useState<readonly TableColumn[] | 'unreadable' | null>(null);
+  // The definition's key, read with its columns where the document holds none (TB3.3).
+  const [declaredKey, setDeclaredKey] = useState<readonly string[] | null>(null);
   const [said, setSaid] = useState<string | null>(null);
   const [formatting, setFormattingNow] = useState<number | null>(null);
   // The Format button that opened the dialog, which takes the focus back as it closes.
@@ -155,6 +198,11 @@ export function BoundTablePanel({
       .then(({ data }) => {
         if (!live) return;
         const definition = isRecord(data) && isRecord(data.definition) ? data.definition : null;
+        setDeclaredKey(
+          definition !== null && Array.isArray(definition.key)
+            ? (definition.key as unknown[]).filter((each) => typeof each === 'string')
+            : null,
+        );
         setDeclared(
           definition === null || !Array.isArray(definition.columns)
             ? 'unreadable'
@@ -197,6 +245,11 @@ export function BoundTablePanel({
       setSaid(repeatedWords(repeated));
       return false;
     }
+    const noted = noteColumnDropped(table.notes, columns);
+    if (noted !== null) {
+      setSaid(BOUND_TABLE_WORDS.noteStands(noted));
+      return false;
+    }
     setSaid(null);
     return change({ columns }, typed);
   };
@@ -213,6 +266,20 @@ export function BoundTablePanel({
   );
   const unsorted = offered.find((each) => !table.sort.some((key) => key.column === each.name));
   const setSort = (sort: readonly SortKey[]) => change({ sort });
+
+  // Its notes as the page shows them, each with its letter and why it fails (TB3.3).
+  const tableShown = boundTablesShown(view.state.doc, context).find(
+    (each) => each.tablePos === table.pos,
+  )?.shown;
+  const heldTable = heldNow !== undefined && 'table' in heldNow.shown ? heldNow.shown.table : null;
+  const key: readonly string[] | null =
+    heldColumns !== null && heldTable?.key !== undefined
+      ? heldTable.key
+      : held === null && declaredKey !== null
+        ? declaredKey
+        : null;
+  const header = (name: string) =>
+    table.columns.find((each) => each.column === name)?.header ?? name;
 
   const formattingColumn = formatting === null ? null : table.columns[formatting];
   const formattingType = formattingColumn ? typeOf(formattingColumn.column) : null;
@@ -259,6 +326,23 @@ export function BoundTablePanel({
             {BOUND_TABLE_WORDS.parts[part]}
           </label>
         ))}
+        <label className={styles['inline']}>
+          {BOUND_TABLE_WORDS.wide}
+          <select
+            value={table.wide ?? 'style'}
+            disabled={!enabled}
+            onChange={(event) => {
+              const value = event.target.value;
+              change({ wide: value === 'style' ? null : (value as Wide) });
+            }}
+          >
+            {(['style', 'scale', 'rotate'] as const).map((value) => (
+              <option key={value} value={value}>
+                {BOUND_TABLE_WORDS.wides[value]}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
       {held === null && declared === 'unreadable' && (
         <p className={styles['note']}>{BOUND_TABLE_WORDS.unreadable}</p>
@@ -364,6 +448,16 @@ export function BoundTablePanel({
           {BOUND_TABLE_WORDS.addSort}
         </button>
       </fieldset>
+      <NotesFields
+        view={view}
+        table={table}
+        enabled={enabled}
+        tableKey={key}
+        typeOf={typeOf}
+        header={header}
+        shown={tableShown?.notes ?? []}
+        rows={heldTable?.rows ?? null}
+      />
       {said !== null && (
         <p role="alert" className={styles['complaint']}>
           {said}
@@ -408,6 +502,179 @@ export function BoundTablePanel({
           document.body,
         )}
     </div>
+  );
+}
+
+interface NotesFieldsProps {
+  readonly view: EditorView;
+  readonly table: BoundTablePlace;
+  readonly enabled: boolean;
+  /** The definition's key, or null where it is not known here. */
+  readonly tableKey: readonly string[] | null;
+  readonly typeOf: (name: string) => TableColumn['type'] | null;
+  readonly header: (name: string) => string;
+  /** Each note as the page shows it, in the order they stand. */
+  readonly shown: readonly { readonly letter: string | null; readonly said: string | null }[];
+  /** The rows the page holds for the table, which a key's values are offered from. */
+  readonly rows: {
+    readonly columns: readonly (readonly [string, string])[];
+    readonly rows: readonly (readonly CanonicalValue[])[];
+  } | null;
+}
+
+/**
+ * **The panel's Notes** (TB3.3; TB3-A): each note listed by its letter and what it stands on, with
+ * Edit, which puts the cursor in its words beneath the table, and Remove; and Add note, on a column
+ * the table shows or on that column's cell in the row a key names - one field per key column, its
+ * values offered from the rows shown or typed, and canonicalised by the column's type.
+ */
+function NotesFields({
+  view,
+  table,
+  enabled,
+  tableKey,
+  typeOf,
+  header,
+  shown,
+  rows,
+}: NotesFieldsProps) {
+  const [on, setOn] = useState<'column' | 'cell'>('column');
+  const [noteColumn, setNoteColumn] = useState(table.columns[0]?.column ?? '');
+  const [typed, setTyped] = useState<Readonly<Record<string, string>>>({});
+  const [said, setSaid] = useState<string | null>(null);
+  const listId = useId();
+  const keyed = tableKey !== null && tableKey.length > 0;
+  const chosen = table.columns.some((each) => each.column === noteColumn)
+    ? noteColumn
+    : (table.columns[0]?.column ?? '');
+  /** The values the rows shown hold for a key column, each once, in their order. */
+  const offeredValues = (name: string): string[] => {
+    const at = rows?.columns.findIndex(([column]) => column === name) ?? -1;
+    if (rows === null || at < 0) return [];
+    return [...new Set(rows.rows.map((row) => row[at]).filter((each) => each !== null))].map(
+      String,
+    );
+  };
+  const edit = (note: BoundNoteAt) => {
+    if (note.id !== null && selectBoundTableNote(note.id)(view.state, view.dispatch)) view.focus();
+  };
+  const add = () => {
+    if (!enabled) return;
+    if (table.notes.length >= BOUND_TABLE_NOTES_MAX) {
+      setSaid(BOUND_TABLE_WORDS.tooManyNotes);
+      return;
+    }
+    let anchor: BoundNoteAnchor = { kind: 'column', column: chosen };
+    if (on === 'cell' && keyed) {
+      const key: Record<string, CanonicalValue> = {};
+      for (const name of tableKey) {
+        const value = canonicalKeyValue(typeOf(name) ?? { base: 'text' }, typed[name] ?? '');
+        if (value === null) {
+          setSaid(BOUND_TABLE_WORDS.keyNeeded(name));
+          return;
+        }
+        key[name] = value;
+      }
+      anchor = { kind: 'keyed', key, column: chosen };
+    }
+    setSaid(null);
+    if (addBoundTableNote(anchor)(view.state, view.dispatch)) view.focus();
+  };
+  return (
+    <fieldset className={styles['group']}>
+      <legend>{BOUND_TABLE_WORDS.notes}</legend>
+      {table.notes.map((note, at) => {
+        const each = shown[at];
+        const label = `Note ${each?.letter ?? at + 1}`;
+        return (
+          <div key={note.id ?? at} role="group" aria-label={label} className={styles['row']}>
+            <span>
+              {label}: {noteOnWords(note.anchor, header)}
+            </span>
+            {each?.said != null && <span className={styles['complaint']}>{each.said}</span>}
+            <button type="button" aria-disabled={!enabled} onClick={() => enabled && edit(note)}>
+              {BOUND_TABLE_WORDS.editNote}
+            </button>
+            <button
+              type="button"
+              aria-disabled={!enabled}
+              onClick={() => {
+                if (enabled && note.id !== null) {
+                  removeBoundTableNote(note.id)(view.state, view.dispatch);
+                }
+              }}
+            >
+              {BOUND_TABLE_WORDS.removeNote} {label.toLowerCase()}
+            </button>
+          </div>
+        );
+      })}
+      <div role="group" aria-label={BOUND_TABLE_WORDS.addNote} className={styles['row']}>
+        <label className={styles['inline']}>
+          {BOUND_TABLE_WORDS.noteOn}
+          <select
+            value={keyed ? on : 'column'}
+            disabled={!enabled}
+            onChange={(event) => setOn(event.target.value as 'column' | 'cell')}
+          >
+            <option value="column">{BOUND_TABLE_WORDS.noteOns.column}</option>
+            <option value="cell" disabled={!keyed}>
+              {BOUND_TABLE_WORDS.noteOns.cell}
+            </option>
+          </select>
+        </label>
+        <label className={styles['inline']}>
+          {BOUND_TABLE_WORDS.noteColumn}
+          <select
+            value={chosen}
+            disabled={!enabled}
+            onChange={(event) => setNoteColumn(event.target.value)}
+          >
+            {table.columns
+              .filter(
+                (each, at) =>
+                  table.columns.findIndex((other) => other.column === each.column) === at,
+              )
+              .map((each) => (
+                <option key={each.column} value={each.column}>
+                  {each.header}
+                </option>
+              ))}
+          </select>
+        </label>
+        {keyed &&
+          on === 'cell' &&
+          tableKey.map((name) => (
+            <label key={name} className={styles['inline']}>
+              {BOUND_TABLE_WORDS.keyIs(name)}
+              <input
+                value={typed[name] ?? ''}
+                disabled={!enabled}
+                list={`${listId}-${name}`}
+                onChange={(event) => setTyped({ ...typed, [name]: event.target.value })}
+              />
+              <datalist id={`${listId}-${name}`}>
+                {offeredValues(name).map((value) => (
+                  <option key={value} value={value} />
+                ))}
+              </datalist>
+            </label>
+          ))}
+        <button type="button" aria-disabled={!enabled} onClick={add}>
+          {BOUND_TABLE_WORDS.addNote}
+        </button>
+      </div>
+      {!keyed && (
+        <p className={styles['note']}>
+          {tableKey === null ? BOUND_TABLE_WORDS.keyUnknown : BOUND_TABLE_WORDS.noKey}
+        </p>
+      )}
+      {said !== null && (
+        <p role="alert" className={styles['complaint']}>
+          {said}
+        </p>
+      )}
+    </fieldset>
   );
 }
 

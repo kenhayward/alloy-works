@@ -177,6 +177,8 @@ export function documentTargets({
   for (const entry of numbering.entries) entries.set(entryKey(entry.node, entry.block), entry);
   const labelOf = (node: string, block: string | null): string | null => {
     const entry = entries.get(entryKey(node, block));
+    // A table's footnote is labelled by its table alone: in an unnumbered one, by nothing (STR-071).
+    if (entry?.sequence === 'tableNote') return entry.label;
     return entry === undefined ? null : (entry.label ?? entry.number);
   };
 
@@ -389,6 +391,8 @@ export function referenceResolver(
     entries.set(entryKey(entry.node, entry.block), entry);
   const labelOf = (node: string, block: string | null): string | null => {
     const entry = entries.get(entryKey(node, block));
+    // A table's footnote is labelled by its table alone: in an unnumbered one, by nothing (STR-071).
+    if (entry?.sequence === 'tableNote') return entry.label;
     return entry === undefined ? null : (entry.label ?? entry.number);
   };
 
