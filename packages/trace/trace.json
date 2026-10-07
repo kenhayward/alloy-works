@@ -12757,7 +12757,7 @@
       "id": "TPL-060",
       "area": "TPL",
       "statement": "A template must bind exactly one query set",
-      "tranche": "T2",
+      "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
       "line": 48
@@ -12811,7 +12811,7 @@
       "id": "TPL-046",
       "area": "TPL",
       "statement": "Where a template needs no prompt library or no query set, it must bind a declared empty default rather than nothing, so that TPL-060 and TPL-061 hold and TPL-004 always has something to resolve (**TPL-Q01**)",
-      "tranche": "T2",
+      "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
       "line": 54
@@ -12947,7 +12947,7 @@
       "area": "TPL",
       "statement": "A parameter must be usable to seed metadata, to resolve variables, and to supply arguments to the queries the template's bindings run",
       "tranche": "T2",
-      "status": "Specified",
+      "status": "Superseded by TPL-066",
       "document": "TPL-templates-and-document-instantiation.md",
       "line": 100
     },
@@ -12974,7 +12974,7 @@
       "area": "TPL",
       "statement": "A template must declare what each parameter feeds: which metadata field it seeds, which variables take their value from it (**REU-018**), and which query arguments it supplies (**DAT-010**). A parameter with no declared use must be refused rather than accepted and ignored",
       "tranche": "T2",
-      "status": "Specified",
+      "status": "Superseded by TPL-068",
       "document": "TPL-templates-and-document-instantiation.md",
       "line": 103
     },
@@ -12997,13 +12997,49 @@
       "line": 105
     },
     {
+      "id": "TPL-066",
+      "area": "TPL",
+      "statement": "A parameter must be usable to seed a document metadata field when the document is made, and to supply arguments to the queries the document's bindings run",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "TPL-templates-and-document-instantiation.md",
+      "line": 106
+    },
+    {
+      "id": "TPL-067",
+      "area": "TPL",
+      "statement": "A parameter must be usable to resolve variables (**REU-018**)",
+      "tranche": "T4",
+      "status": "Specified",
+      "document": "TPL-templates-and-document-instantiation.md",
+      "line": 107
+    },
+    {
+      "id": "TPL-068",
+      "area": "TPL",
+      "statement": "A template must declare what each parameter feeds: which metadata field it seeds, and whether it supplies query arguments (**DAT-010**). A parameter with no declared use must be refused rather than accepted and ignored",
+      "tranche": "T2",
+      "status": "Specified",
+      "document": "TPL-templates-and-document-instantiation.md",
+      "line": 108
+    },
+    {
+      "id": "TPL-069",
+      "area": "TPL",
+      "statement": "A template must declare which variables take their value from each parameter (**REU-018**)",
+      "tranche": "T4",
+      "status": "Specified",
+      "document": "TPL-templates-and-document-instantiation.md",
+      "line": 109
+    },
+    {
       "id": "TPL-022",
       "area": "TPL",
       "statement": "Creating a document must materialise the starting outline, seed its metadata, resolve its variables, and establish its bindings",
       "tranche": "T2",
       "status": "Superseded by TPL-062",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 126
+      "line": 130
     },
     {
       "id": "TPL-062",
@@ -13012,16 +13048,16 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 127
+      "line": 131
     },
     {
       "id": "TPL-063",
       "area": "TPL",
       "statement": "Creating a document from a template must establish its bindings",
-      "tranche": "T2",
+      "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 128
+      "line": 132
     },
     {
       "id": "TPL-064",
@@ -13030,7 +13066,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 129
+      "line": 133
     },
     {
       "id": "TPL-051",
@@ -13039,7 +13075,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 130
+      "line": 134
     },
     {
       "id": "TPL-023",
@@ -13048,16 +13084,16 @@
       "tranche": "T2",
       "status": "Superseded by TPL-065",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 131
+      "line": 135
     },
     {
       "id": "TPL-065",
       "area": "TPL",
       "statement": "A binding's query must run when a document is created from its template, and its result must be stored (**DAT-083**); the binding's mode, checked or pinned (**DAT-082**), must govern only how source revisions are looked for, and must not be a template setting",
-      "tranche": "T2",
+      "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 132
+      "line": 136
     },
     {
       "id": "TPL-024",
@@ -13066,7 +13102,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 133
+      "line": 137
     },
     {
       "id": "TPL-025",
@@ -13075,7 +13111,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 134
+      "line": 138
     },
     {
       "id": "TPL-026",
@@ -13084,7 +13120,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 135
+      "line": 139
     },
     {
       "id": "TPL-050",
@@ -13093,7 +13129,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 136
+      "line": 140
     },
     {
       "id": "TPL-048",
@@ -13102,7 +13138,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 137
+      "line": 141
     },
     {
       "id": "TPL-027",
@@ -13111,7 +13147,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 147
+      "line": 151
     },
     {
       "id": "TPL-028",
@@ -13120,7 +13156,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 148
+      "line": 152
     },
     {
       "id": "TPL-029",
@@ -13129,7 +13165,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 149
+      "line": 153
     },
     {
       "id": "TPL-030",
@@ -13138,7 +13174,7 @@
       "tranche": "T1",
       "status": "Withdrawn",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 150
+      "line": 154
     },
     {
       "id": "TPL-044",
@@ -13147,7 +13183,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 151
+      "line": 155
     },
     {
       "id": "TPL-031",
@@ -13156,7 +13192,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 167
+      "line": 171
     },
     {
       "id": "TPL-032",
@@ -13165,7 +13201,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 168
+      "line": 172
     },
     {
       "id": "TPL-033",
@@ -13174,7 +13210,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 169
+      "line": 173
     },
     {
       "id": "TPL-034",
@@ -13183,7 +13219,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 170
+      "line": 174
     },
     {
       "id": "TPL-035",
@@ -13192,7 +13228,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 171
+      "line": 175
     },
     {
       "id": "TPL-058",
@@ -13201,7 +13237,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 172
+      "line": 176
     },
     {
       "id": "TPL-036",
@@ -13210,7 +13246,7 @@
       "tranche": "T1",
       "status": "Superseded by TPL-055",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 183
+      "line": 187
     },
     {
       "id": "TPL-037",
@@ -13219,7 +13255,7 @@
       "tranche": "T1",
       "status": "Superseded by MET-022",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 184
+      "line": 188
     },
     {
       "id": "TPL-038",
@@ -13228,7 +13264,7 @@
       "tranche": "T1",
       "status": "Superseded by MET-021",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 185
+      "line": 189
     },
     {
       "id": "TPL-043",
@@ -13237,7 +13273,7 @@
       "tranche": "Constraint",
       "status": "Superseded by TPL-057",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 186
+      "line": 190
     },
     {
       "id": "TPL-055",
@@ -13246,7 +13282,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 187
+      "line": 191
     },
     {
       "id": "TPL-056",
@@ -13255,7 +13291,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 188
+      "line": 192
     },
     {
       "id": "TPL-057",
@@ -13264,7 +13300,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 189
+      "line": 193
     },
     {
       "id": "TPL-039",
@@ -13273,7 +13309,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 213
+      "line": 217
     },
     {
       "id": "TPL-040",
@@ -13282,7 +13318,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 214
+      "line": 218
     },
     {
       "id": "TPL-047",
@@ -13291,7 +13327,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 215
+      "line": 219
     },
     {
       "id": "VER-001",
@@ -14472,25 +14508,25 @@
       "id": "TPL-N01",
       "statement": "**No document that stays synchronised with its template.** Moving forward is a migration, taken deliberately (section 9)",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 221
+      "line": 225
     },
     {
       "id": "TPL-N02",
       "statement": "**No template inheritance in the first instance.** A template that derives from another is a reasonable idea and an unreasonable amount of consequence; see TPL-Q02",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 222
+      "line": 226
     },
     {
       "id": "TPL-N03",
       "statement": "**No definitions owned here that another area owns.** A template references a theme, a layout, a query set and a prompt library; it does not contain them",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 223
+      "line": 227
     },
     {
       "id": "TPL-N04",
       "statement": "**Not a form builder.** A metadata schema describes a document, not a data-entry application",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 224
+      "line": 228
     },
     {
       "id": "VER-N01",
@@ -15405,28 +15441,28 @@
       "question": "**Can a document be created without a template at all?** A blank document is an obvious thing to want and an easy way to bypass every guarantee here",
       "settledBy": "Whether early users need one. The likely answer is a minimal default template rather than no template",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 230
+      "line": 234
     },
     {
       "id": "TPL-Q02",
       "question": "**Do templates need to inherit (TPL-N02)?** An organisation with twelve report types that share eleven twelfths of their structure will ask",
       "settledBy": "The first customer with a family of templates. It interacts badly with versioning, since a change to a parent is a change to every child",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 231
+      "line": 235
     },
     {
       "id": "TPL-Q03",
       "question": "**How much may a parameter change after instantiation (TPL-021)?** Changing the site a report is about invalidates every bound value in it",
       "settledBy": "Whether re-parameterising an existing document is a real workflow or a wish. If real, it is closer to a migration than an edit",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 232
+      "line": 236
     },
     {
       "id": "TPL-Q04",
       "question": "**Does a required component (TPL-014) float or pin?** Boilerplate that updates everywhere is the point of reuse; boilerplate that changes inside an approved document is not",
       "settledBy": "A decision with **VER** and **LIF** about whether an approved document may contain a floating reference at all",
       "document": "TPL-templates-and-document-instantiation.md",
-      "line": 233
+      "line": 237
     },
     {
       "id": "VER-Q01",
@@ -17757,6 +17793,38 @@
         {
           "id": "TPL-055",
           "howItIsMet": "A publication request resolves the document-level fields its template applies and validates the document's values, then each section's against the section-level fields, and is refused, `metadata_invalid`, listing every failure in MET-022's shape with the section it belongs to"
+        },
+        {
+          "id": "TPL-017",
+          "howItIsMet": "A template's `parameters` declare name, type, whether required, and permitted values or range, by the query definition's own declaration ([Parameters](#parameters))"
+        },
+        {
+          "id": "TPL-018",
+          "howItIsMet": "Making a document refuses a required parameter without a value, `parameter_invalid`, and writes nothing"
+        },
+        {
+          "id": "TPL-020",
+          "howItIsMet": "A document version holds its `parameters`; the Parameters panel and its route show each value and every change with who made it and when"
+        },
+        {
+          "id": "TPL-021",
+          "howItIsMet": "Each parameter declares `changeable`; changing one that is not is `parameter_fixed`"
+        },
+        {
+          "id": "TPL-026",
+          "howItIsMet": "Making a document, its parameters included, is the same route for the form and for any other client, and refuses alike"
+        },
+        {
+          "id": "TPL-045",
+          "howItIsMet": "Every value is checked by the definitions' `checkParameterValues` at creation, change and resolve, and refused naming the parameter, the rule and the value"
+        },
+        {
+          "id": "TPL-066",
+          "howItIsMet": "A parameter seeds its declared document field when the document is made, and supplies a binding's `{ document }` argument at resolve and check, a changed value marking the binding changed"
+        },
+        {
+          "id": "TPL-068",
+          "howItIsMet": "`feeds` declares the field a parameter seeds and whether it supplies arguments; one feeding nothing is `parameter_unused`"
         },
         {
           "id": "STR-060",
