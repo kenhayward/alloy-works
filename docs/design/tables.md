@@ -90,8 +90,8 @@ BoundTableNode = {
   empty?: InlineNode[],                  // the empty statement; absent, the layout's words.noRows
   source?: InlineNode[],                 // TAB-027
   note?: InlineNode[],                   // on the whole table (CNT-038)
-  notes: FootnoteNode[],                 // anchored 'keyed' or 'column'; at most 200
-  wide?: 'scale' | 'rotate',             // absent, the table style's
+  notes?: FootnoteNode[],                // anchored 'keyed' or 'column'; at most 200; TB3's
+  wide?: 'scale' | 'rotate',             // absent, the table style's; TB3's
 }
 BoundColumn = {
   column: string,                        // the result column's name (TAB-036)
@@ -179,7 +179,7 @@ publishing a bound table or a table with notes, as schema 4 did `continued`.
   fills it: a component holds no values (bindings.md).
 - **In a document**, the first 50 laid-out rows and the count of the rest, or the failures in place.
   The service lays them out, since a result can be 25 MiB, and keeps them as **derived data**:
-  `dataset_table (dataset_version, layout_digest, outcome)`, migration 0055, the digest over the
+  `dataset_table (dataset_version, layout_digest, outcome)`, by migration, the digest over the
   presentation, the table style and the value formats - deletable, recomputed exactly, never read by
   the publish, as `dataset_take` is (BI-G). An unsaved presentation is laid out by
   `POST /v1/documents/{id}/tables/layout`, `read` on the document, so the editor shows a change at once.
