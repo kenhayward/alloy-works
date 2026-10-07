@@ -44,7 +44,8 @@ import { projectTypst } from '../theme/typst.js';
 import { listsNotInWord } from '../word/lists.js';
 import { numberingNotInWord } from '../word/numbering.js';
 
-import { bind, type Bound, type PrintedValue, type Held } from './bind.js';
+import { bind, type Bound, type BoundTables, type PrintedValue, type Held } from './bind.js';
+import { isLaidOut } from './bound.js';
 import type { PublishFailure } from './failures.js';
 import { characterProblems, codePointName, type Covers, type Setting } from './glyphs.js';
 import {
@@ -229,6 +230,7 @@ export type RunsSite =
   | { readonly kind: 'term'; readonly block: string; readonly item: number }
   | { readonly kind: 'attribution'; readonly block: string }
   | { readonly kind: 'note'; readonly block: string }
+  | { readonly kind: 'source'; readonly block: string }
   | { readonly kind: 'caption'; readonly block: string };
 
 /** Where a cross-reference stands: among a block's runs, or in the title of the section it is read in. */
@@ -390,6 +392,16 @@ export function assemble(given: AssembleInput): Assembled {
   const valueFormats = formatsFor(given.theme?.valueCatalogue ?? null, given.outline.language);
   const values: PrintedValue[] = [];
   const bindFailures: PublishFailure[] = [];
+  // A bound table is laid out under a layout alone (TB1-H): a request made before layouts has none of
+  // its words, and its bound table is refused below by name, as any block it cannot set.
+  const tables: BoundTables | undefined =
+    given.layout === null || given.theme === null
+      ? undefined
+      : {
+          style: (id) => given.theme!.tableStyles.get(id),
+          words: given.layout.words,
+          laidOut: new Map(),
+        };
   const input: BoundInput = {
     ...given,
     occurrences: new Map(
@@ -399,6 +411,7 @@ export function assemble(given: AssembleInput): Assembled {
           condition(node, content),
           given.bindings?.get(node) ?? new Map(),
           valueFormats,
+          tables,
         );
         values.push(...stage.values);
         bindFailures.push(...stage.failures);
@@ -1269,6 +1282,21 @@ export function assemble(given: AssembleInput): Assembled {
                 { kind: 'note', block: block.id },
               );
         const noteSays = note.some((run) => !('text' in run) || run.text.trim() !== '');
+        // A bound table's own (TB1-H): its source beneath it, after the layout's word (TAB-027), in
+        // the table note role's style, and what the binding stage laid out of its columns and cells.
+        const laidOut = isLaidOut(block) ? block.laidOut : null;
+        const source =
+          laidOut?.source == null
+            ? null
+            : publishedRuns(
+                [{ type: 'text', value: `${layout.words.source} `, marks: [] }, ...laidOut.source],
+                node,
+                block.id,
+                roles('tableNote'),
+                roleStyle('tableNote').properties.size,
+                indent,
+                { kind: 'source', block: block.id },
+              );
         // No entry at all for a table the author marked unnumbered (STR-071): no label, and no place in
         // the list of tables. One the scheme withholds a number from has an entry, and is listed.
         const entry = numbering.entries.find(
@@ -1277,7 +1305,17 @@ export function assemble(given: AssembleInput): Assembled {
         const label = entry?.label ?? null;
         if (label !== null) check(label, node, block.id, captionFamilies('table'));
         const { columns, starts } = gridOf(block);
+        // A bound table's body cell's inset and colour, where it has either (TB1-I, TAB-016).
+        const cellMarks = (row: number, cell: number) => {
+          const marks = laidOut?.cells[row - block.headerRows]?.[cell];
+          return {
+            ...(marks?.inset === true ? { inset: true as const } : {}),
+            ...(marks?.colour == null ? {} : { colour: marks.colour }),
+          };
+        };
         const scopeAt = (row: number, column: number): PublishedCell['scope'] => {
+          // A bound table's empty statement is a data cell, whatever its first column does (TAB-011).
+          if (laidOut?.empty === true && row >= block.headerRows) return null;
           const heading = row < block.headerRows;
           const leading = column < block.headerColumns;
           if (heading && leading) return 'both';
@@ -1313,10 +1351,14 @@ export function assemble(given: AssembleInput): Assembled {
                 colspan: cell.colspan,
                 rowspan: cell.rowspan,
                 scope: scopeAt(rowIndex, starts[rowIndex]![cellIndex]!),
+                ...cellMarks(rowIndex, cellIndex),
               })),
             })),
             listed: entry !== undefined,
             note: noteSays ? note : null,
+            ...(laidOut === null
+              ? {}
+              : { bound: { align: laidOut.align, wrap: laidOut.wrap, source } }),
           },
         ];
       }
@@ -1435,10 +1477,12 @@ export function assemble(given: AssembleInput): Assembled {
         ];
       }
       case 'boundTable':
-        // **Refused by name until its stage is built** (the TB1 plan, TB1.1): TB1.2's binding stage
-        // replaces a bound table with a laid-out table before it reaches here, so one arriving is
-        // refused, naming the block, rather than published as anything.
-        failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
+        // **Laid out by the binding stage, or failed there** (TB1-H): under a layout the stage replaces
+        // a bound table with a table, or failed the publish naming it, so one arriving here sets
+        // nothing more. A request made before layouts has no stage for it, and is refused by name.
+        if (layout === null) {
+          failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
+        }
         return [];
       case 'equation': {
         // Refused by name without a layout, as a list is: the frozen first shape holds paragraphs alone.

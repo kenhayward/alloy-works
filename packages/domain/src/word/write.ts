@@ -1088,6 +1088,8 @@ class Writer {
   private readonly advances = new Map<string, FaceAdvances>();
   /** The node whose blocks are being written: a caption's number and a report's place are by it. */
   private at = '';
+  /** The colour a bound table's negative cell's runs are set in while it is written (TAB-016). */
+  private colour: string | null = null;
   /** Every target's bookmarks, by its anchor (Word 3, ruling R3). */
   private readonly bookmarks: ReadonlyMap<string, Bookmarked>;
 
@@ -1722,13 +1724,34 @@ class Writer {
         before: (below ? 0 : cell.spaceAfter) + this.properties(noteRole).spaceBefore,
       };
     }
+    // A bound table's source (TB1-H; TAB-027): a paragraph after its note in the table note role's
+    // style, its runs beginning with the layout's word, as the PDF sets it.
+    const sourceRuns = table.bound?.source ?? null;
+    const source =
+      sourceRuns === null
+        ? null
+        : this.paragraph(
+            noteRole,
+            this.inlineRuns(sourceRuns, noteRole, passage, { kind: 'source', block: table.id }),
+            { bidi: passage.rtl, ...this.indented(noteRole, place) },
+          );
+    if (source !== null) {
+      const noteStyle = this.properties(noteRole);
+      source.wanted = {
+        before:
+          note !== null
+            ? noteStyle.spaceAfter + noteStyle.spaceBefore
+            : (below ? 0 : cell.spaceAfter) + noteStyle.spaceBefore,
+      };
+    }
     this.report(table, style);
     const body: Body[] = below ? [written, caption] : [caption, written];
     if (note !== null) body.push(note);
+    if (source !== null) body.push(source);
     return {
       body,
       top: below ? cellStyle : captionRole,
-      bottom: note !== null ? noteRole : below ? captionRole : cellStyle,
+      bottom: note !== null || source !== null ? noteRole : below ? captionRole : cellStyle,
       container: true,
     };
   }
@@ -1818,16 +1841,27 @@ class Writer {
         if (each === undefined) break;
         const own = this.cellFormat(table, style, at, x, each);
         const merge = each.rowspan > 1 ? '<w:vMerge w:val="restart"/>' : '';
+        // A bound table's column that must not wrap (TAB-035): Word's `w:noWrap`, after the shading.
+        const noWrap = table.bound?.wrap[x] === false && each.colspan === 1 ? '<w:noWrap/>' : '';
         const tcPr = (merge: string) =>
           `<w:tcPr><w:tcW w:w="${column * each.colspan}" w:type="dxa"/>` +
           (each.colspan > 1 ? `<w:gridSpan w:val="${each.colspan}"/>` : '') +
           merge +
           own +
+          noWrap +
           '</w:tcPr>';
         for (let below = 1; below < each.rowspan; below += 1) {
           continued[at + below]?.set(x, { properties: tcPr('<w:vMerge/>'), span: each.colspan });
         }
-        cells.push({ properties: tcPr(merge), paragraphs: this.cell(each, style, place, passage) });
+        cells.push({
+          properties: tcPr(merge),
+          paragraphs: this.boundCell(
+            table,
+            x,
+            each,
+            this.cell(each, style, place, passage, each.colour ?? null),
+          ),
+        });
         x += each.colspan;
       }
       const heading = at < table.headerRows;
@@ -1877,6 +1911,7 @@ class Writer {
     style: TableStyle,
     place: Place,
     passage: Passage,
+    colour: string | null = null,
   ): Paragraph[] {
     const strong =
       cell.scope === 'column'
@@ -1894,16 +1929,47 @@ class Writer {
       bullets: place.bullets,
       strong,
     };
-    // A cell holds paragraphs and lists alone, so all it writes is paragraphs.
+    // A cell holds paragraphs and lists alone, so all it writes is paragraphs. A bound table's
+    // negative sets its runs in its style's colour (TAB-016).
+    this.colour = colour;
     const paragraphs = this.flow(cell.blocks, within, passage).flatMap(
       (block) => block.body as Paragraph[],
     );
+    this.colour = null;
     if (paragraphs.length === 0) return [this.emptyCell()];
     const first = paragraphs[0]!;
     const last = paragraphs[paragraphs.length - 1]!;
     first.wanted = { ...first.wanted, before: 0 };
     last.wanted = { ...last.wanted, after: 0 };
     return paragraphs;
+  }
+
+  /**
+   * **A bound table's cell as its column sets it** (TB1-I; TAB-046): aligned as its column says - a
+   * `decimal` column at its end, its digits unkerned as Word sets them, so its separators meet - and a
+   * value without parentheses in a column printing them stood in from its end by a parenthesis's
+   * advance in its face, as the PDF stands it. An authored table's cell is left as it is.
+   */
+  private boundCell(
+    table: PublishedTable,
+    x: number,
+    cell: PublishedCell,
+    paragraphs: Paragraph[],
+  ): Paragraph[] {
+    const align = table.bound?.align[x];
+    if (align === undefined || cell.colspan > 1) return paragraphs;
+    const justify = align === 'start' ? 'left' : align === 'centre' ? 'center' : 'right';
+    return paragraphs.map((paragraph) => {
+      const set: Paragraph = { ...paragraph, justify };
+      if (cell.inset === true) {
+        const style = this.style(paragraph.theme);
+        const size = Math.round(style.properties.size * 2) / 2;
+        const inset = twips(this.advancesOf(style).width(')') * size);
+        const indent = set.indent ?? { left: 0, right: 0 };
+        set.indent = { ...indent, right: indent.right + inset };
+      }
+      return set;
+    });
   }
 
   /** An empty paragraph in the table cell place's style, at the cell's edges. */
@@ -2843,7 +2909,8 @@ class Writer {
     const rendered = runFormat(this.theme, style, marks);
     this.use(rendered.typeface, rendered.bold || strong, rendered.italic);
     // A definition list's term, which the engine sets bold whatever its style and marks say.
-    const run = wordRun(this.theme, style, marks);
+    const own = wordRun(this.theme, style, marks);
+    const run = this.colour === null ? own : { ...own, pins: { ...own.pins, colour: this.colour } };
     return (
       pinned(strong ? { ...run, pins: { ...run.pins, bold: true } } : run, closer) +
       languageProperties(

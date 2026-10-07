@@ -10,13 +10,15 @@ import {
   parseOutlineDocument,
   type OutlineDocument,
 } from '../structure/outline.js';
+import { TABLE_ROWS_MAX } from '../data/table.js';
 import { DEFAULT_VALUE_FORMATS } from '../theme/default.js';
+import type { ValueFormats } from '../theme/schema.js';
 import { resolved } from '../theme/theme.fixture.js';
 
 import { assemble } from './assemble.js';
 import { bind, type Held } from './bind.js';
 import { defaultLayout } from './layout.js';
-import type { PublishedBlock, PublishedNode } from './published.js';
+import type { PublishedBlock, PublishedDocument, PublishedNode } from './published.js';
 
 /**
  * The publish's binding stage (the B3 plan, B3-D): each binding taken from the result the request
@@ -470,5 +472,304 @@ describe("a bound table's words, through the binding stage (TB1.1)", () => {
       note: [text('1.50')],
       source: [text('1.50')],
     });
+  });
+});
+
+describe('a bound table published (the TB1 plan, TB1-H; TB1.2)', () => {
+  const whole = (name: string) => {
+    const each = { ...binding(name) } as Record<string, unknown>;
+    delete each.take;
+    return each;
+  };
+  const boundTable = (extra: Record<string, unknown> = {}) => ({
+    type: 'boundTable',
+    id: 't1',
+    binding: whole('rows'),
+    caption: [text('Readings')],
+    columns: [
+      { column: 'site', header: 'Site' },
+      { column: 'reading', header: 'Reading', unit: { text: 'kPa', place: 'header' } },
+    ],
+    headerColumn: false,
+    ...extra,
+  });
+  const tableOf = (made: ReturnType<typeof assemble>) => {
+    if (!made.ok) throw new Error(JSON.stringify(made.failures));
+    const table = blocksOf((made.document as PublishedDocument).nodes).find(
+      (block) => block.type === 'table',
+    );
+    if (table === undefined || table.type !== 'table') throw new Error('no table');
+    return table;
+  };
+  const words = (cell: { blocks: readonly PublishedBlock[] }) =>
+    cell.blocks
+      .flatMap((block) => (block.type === 'paragraph' ? block.runs : []))
+      .map((run) => ('text' in run ? run.text : ''))
+      .join('');
+  const grid = (table: ReturnType<typeof tableOf>) => table.rows.map((row) => row.cells.map(words));
+
+  it("DAT-028 publishes a block binding as a table whose presentation is the block's and the table style's, never the binding's", () => {
+    const made = assembled(
+      component(
+        boundTable({ sort: [{ column: 'reading', direction: 'descending', nulls: 'last' }] }),
+      ),
+      new Map([['rows', held(result(['north', '4200.5'], ['south', '-12.345'], ['east', null]))]]),
+    );
+    const table = tableOf(made);
+    expect(table).toMatchObject({
+      id: 't1',
+      style: 'table',
+      label: 'Table 1.1',
+      headerRows: 1,
+      headerColumns: 0,
+      columns: 2,
+      listed: true,
+    });
+    expect(table.caption.map((run) => ('text' in run ? run.text : ''))).toEqual(['Readings']);
+    // The header from the columns, the unit bracketed as the style says; the rows sorted, each value
+    // printed at its scale by the style's format, a null as the layout's words say.
+    expect(grid(table)).toEqual([
+      ['Site', 'Reading (kPa)'],
+      ['north', '4,200.50'],
+      ['south', '-12.35'],
+      ['east', 'Not available'],
+    ]);
+    expect(table.rows[0]!.cells.map((cell) => cell.scope)).toEqual(['column', 'column']);
+    expect(table.rows[1]!.cells.map((cell) => cell.scope)).toEqual([null, null]);
+    // Text at the start and numbers on their separator, the table style's by type; both may wrap.
+    expect(table.bound).toEqual({ align: ['start', 'decimal'], wrap: [true, true], source: null });
+  });
+
+  it('heads each row by its first column where the table says so, and sets a no-wrap column, its alignment and its source after the layout word', () => {
+    const made = assembled(
+      component(
+        boundTable({
+          headerColumn: true,
+          columns: [
+            { column: 'site', header: 'Site', wrap: false, align: 'centre' },
+            {
+              column: 'reading',
+              header: 'Reading',
+              format: { negative: 'parentheses', negativeColour: true },
+            },
+          ],
+          source: [text('Gauge survey')],
+        }),
+      ),
+      new Map([['rows', held(result(['north', '1.5'], ['south', '-2']))]]),
+    );
+    const table = tableOf(made);
+    expect(table.headerColumns).toBe(1);
+    expect(table.rows[1]!.cells.map((cell) => cell.scope)).toEqual(['row', null]);
+    expect(grid(table).slice(1)).toEqual([
+      ['north', '1.50'],
+      ['south', '(2.00)'],
+    ]);
+    expect(table.bound).toEqual({
+      align: ['centre', 'decimal'],
+      wrap: [false, true],
+      source: [
+        { text: 'Source: ', marks: [] },
+        { text: 'Gauge survey', marks: [] },
+      ],
+    });
+    // A value without parentheses in a column printing them is inset by one, and a negative is set
+    // in the style's colour beside its parentheses.
+    expect(table.rows[1]!.cells[1]).toMatchObject({ inset: true });
+    expect(table.rows[1]!.cells[1]!.colour).toBeUndefined();
+    expect(table.rows[2]!.cells[1]).toMatchObject({ colour: '#c00000' });
+    expect(table.rows[2]!.cells[1]!.inset).toBeUndefined();
+  });
+
+  it('DAT-069 publishes an empty result its definition declares valid as its headers and the statement, a data cell spanning the table', () => {
+    for (const headerColumn of [false, true]) {
+      const declared = assembled(
+        component(boundTable({ headerColumn, empty: [text('No gauge reported.')] })),
+        new Map([['rows', held(result())]]),
+      );
+      const table = tableOf(declared);
+      expect(grid(table)).toEqual([['Site', 'Reading (kPa)'], ['No gauge reported.']]);
+      expect(table.rows[1]!.cells).toMatchObject([{ colspan: 2, rowspan: 1, scope: null }]);
+    }
+    const unsaid = tableOf(assembled(component(boundTable()), new Map([['rows', held(result())]])));
+    expect(grid(unsaid)[1]).toEqual(['No rows']);
+  });
+
+  it("TAB-045 publishes a table in a document's language with its value catalogue's separators and date order for that language", () => {
+    const fr: ValueFormats = {
+      number: { decimal: ',', group: '.', groupFrom: 4, minus: 'U+2212' },
+      date: { order: 'dmy', separator: '/', pad: true },
+      time: { separator: ':' },
+      boolean: { true: 'vrai', false: 'faux' },
+    };
+    const theme = resolved();
+    const french = {
+      ...theme,
+      valueCatalogue: { ...theme.valueCatalogue!, byLanguage: [{ language: 'fr', formats: fr }] },
+    };
+    const columns: Column[] = [
+      ...COLUMNS,
+      { name: 'taken', from: { column: 'taken_on' }, type: { base: 'date' } },
+    ];
+    const content = component(
+      boundTable({
+        columns: [
+          { column: 'reading', header: 'Mesure' },
+          { column: 'taken', header: 'Date' },
+        ],
+      }),
+    );
+    const made = assemble({
+      formats: ['pdf'],
+      outline: { ...outline, language: 'fr-FR' },
+      occurrences: new Map([[NODE, { ...content, language: 'fr-FR' }]]),
+      bindings: new Map([
+        [
+          NODE,
+          new Map<string, Held>([
+            [
+              'rows',
+              {
+                ...(held({
+                  columns: [
+                    ['site', 'text'],
+                    ['reading', 'decimal'],
+                    ['taken', 'date'],
+                  ],
+                  rows: [['north', '-4200.5', '2026-03-07']],
+                }) as Exclude<Held, 'unreadable'>),
+                columns,
+              },
+            ],
+          ]),
+        ],
+      ]),
+      refused: [],
+      layout: { ...defaultLayout, language: 'fr' },
+      theme: french,
+      revision: '0.1',
+      covers: () => true,
+      assets: new Map(),
+    });
+    const minus = String.fromCodePoint(0x2212);
+    expect(grid(tableOf(made))[1]).toEqual([`${minus}4.200,50`, '07/03/2026']);
+  });
+
+  it('TAB-004 fails the publish where the dataset version lacks a column shown, naming the table and the column, and prints no empty column', () => {
+    const made = assembled(
+      component(
+        boundTable({
+          columns: [
+            { column: 'site', header: 'Site' },
+            { column: 'depth', header: 'Depth' },
+          ],
+        }),
+      ),
+      new Map([['rows', held(result(['north', '1']))]]),
+    );
+    expect(made.ok).toBe(false);
+    if (made.ok) return;
+    expect(made.failures).toEqual([
+      { stage: 'bind', code: 'column_missing', node: NODE, block: 't1', detail: 'depth' },
+    ]);
+  });
+
+  it("fails a bound table by name where its result is unresolved or unreadable, too long, or a format means nothing for its column's type", () => {
+    const made = assembled(
+      component(
+        boundTable(),
+        boundTable({ id: 't2', binding: whole('gone') }),
+        boundTable({ id: 't3', binding: whole('broken') }),
+        boundTable({ id: 't4', binding: whole('long') }),
+        boundTable({
+          id: 't5',
+          binding: whole('rows2'),
+          columns: [{ column: 'site', header: 'Site', format: { places: 2 } }],
+        }),
+      ),
+      new Map<string, Held>([
+        ['rows', held(result(['north', '1']))],
+        ['rows2', held(result(['north', '1']))],
+        ['broken', 'unreadable'],
+        ['long', held(result(...Array.from({ length: TABLE_ROWS_MAX + 1 }, () => ['x', '1'])))],
+      ]),
+    );
+    expect(made.ok).toBe(false);
+    if (made.ok) return;
+    expect(made.failures).toEqual([
+      { stage: 'bind', code: 'binding_unresolved', node: NODE, block: 't2', detail: 'gone' },
+      { stage: 'bind', code: 'result_unreadable', node: NODE, block: 't3', detail: 'broken' },
+      {
+        stage: 'bind',
+        code: 'table_too_long',
+        node: NODE,
+        block: 't4',
+        detail: String(TABLE_ROWS_MAX + 1),
+      },
+      { stage: 'bind', code: 'format_mismatch', node: NODE, block: 't5', detail: 'site: places' },
+    ]);
+  });
+
+  it('fails a bound table under a layout stored without its words by name, table_words_missing', () => {
+    const older: Record<string, unknown> = { ...defaultLayout.words };
+    delete older.noRows;
+    delete older.notAvailable;
+    delete older.source;
+    const made = assemble({
+      formats: ['pdf'],
+      outline,
+      occurrences: new Map([[NODE, component(boundTable())]]),
+      bindings: new Map([[NODE, new Map([['rows', held(result(['north', '1']))]])]]),
+      refused: [],
+      layout: { ...defaultLayout, words: older as typeof defaultLayout.words },
+      theme: resolved(),
+      revision: '0.1',
+      covers: () => true,
+      assets: new Map(),
+    });
+    expect(made.ok).toBe(false);
+    if (made.ok) return;
+    expect(made.failures).toEqual([
+      {
+        stage: 'bind',
+        code: 'table_words_missing',
+        node: NODE,
+        block: 't1',
+        detail: 'noRows, notAvailable, source',
+      },
+    ]);
+  });
+
+  it('records each printed cell with the canonical value it was printed from, and each column with its format', () => {
+    const made = assembled(
+      component(boundTable()),
+      new Map([['rows', held(result(['north', '0.125']))]]),
+    );
+    if (!made.ok) throw new Error(JSON.stringify(made.failures));
+    expect(made.values).toEqual([
+      {
+        node: NODE,
+        block: 't1',
+        binding: 'rows',
+        datasetVersion: '00000000-0000-4000-8000-0000000000d1',
+        table: {
+          columns: [
+            { name: 'site', type: { base: 'text' }, header: 'Site', format: {} },
+            {
+              name: 'reading',
+              type: COLUMNS[1]!.type,
+              header: 'Reading (kPa)',
+              format: { style: 'number', rounding: 'halfAwayFromZero', negative: 'minus' },
+            },
+          ],
+          rows: [
+            [
+              { printed: 'north', value: 'north' },
+              { printed: '0.13', value: '0.125' },
+            ],
+          ],
+        },
+      },
+    ]);
   });
 });

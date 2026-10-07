@@ -51,6 +51,7 @@ import {
   PUBLISHING_SCHEMA_12,
   PUBLISHING_SCHEMA_13,
   PUBLISHING_SCHEMA_14,
+  PUBLISHING_SCHEMA_15,
   type PublishedBlock,
   type PublishedDocument,
   type PublishedInline,
@@ -1147,8 +1148,8 @@ describe('assemble', () => {
     ]);
   });
 
-  it('assembles under a layout as publishing/15, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/15');
+  it('assembles under a layout as publishing/16, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/16');
     // Frozen with templates 3 and 4 and the publications made by them, exactly as `publishing/2` was
     // frozen when a run began to carry its marks: a template version is a record, not something to
     // migrate.
@@ -1734,8 +1735,8 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     ]);
   });
 
-  it('makes publishing/15, and publishing/4 to publishing/14 are frozen', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/15');
+  it('makes publishing/16, and publishing/4 to publishing/15 are frozen', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/16');
     expect(PUBLISHING_SCHEMA_4).toBe('publishing/4');
     expect(PUBLISHING_SCHEMA_5).toBe('publishing/5');
     expect(PUBLISHING_SCHEMA_6).toBe('publishing/6');
@@ -1747,6 +1748,7 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     expect(PUBLISHING_SCHEMA_12).toBe('publishing/12');
     expect(PUBLISHING_SCHEMA_13).toBe('publishing/13');
     expect(PUBLISHING_SCHEMA_14).toBe('publishing/14');
+    expect(PUBLISHING_SCHEMA_15).toBe('publishing/15');
   });
 });
 
@@ -1877,7 +1879,7 @@ describe('a table, published (tables 2)', () => {
     expect(assemble(oneComponent(within)).ok).toBe(true);
   });
 
-  it('refuses a bound table that reaches it by name, block_not_publishable, until its stage sets it (TB1.1)', () => {
+  it('fails a bound table at its binding stage, never as a block it cannot set, and refuses one by name in a request made before layouts (TB1.2)', () => {
     const bound = {
       type: 'boundTable',
       id: 't2',
@@ -1893,6 +1895,10 @@ describe('a table, published (tables 2)', () => {
       headerColumn: false,
     };
     expect(failuresOf(assemble(oneComponent(stored(), bound)))).toEqual([
+      { ...failed('binding_unresolved', 'k1'), stage: 'bind', block: 't2' },
+    ]);
+    const before = { ...oneComponent(bound), layout: null, theme: null };
+    expect(failuresOf(assemble(before))).toEqual([
       { ...failed('block_not_publishable', 'boundTable'), block: 't2' },
     ]);
   });
@@ -4522,11 +4528,11 @@ describe('the theme a publication is set from (themes 1)', () => {
     return styles;
   };
 
-  it('makes publishing/15, carrying the Typst projection of every paragraph, table and image style the theme holds, used or not', () => {
+  it('makes publishing/16, carrying the Typst projection of every paragraph, table and image style the theme holds, used or not', () => {
     const theme = resolved();
     const assembled = assemble(oneParagraph(text('Set the tray.')));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    expect(assembled.document.schema).toBe('publishing/15');
+    expect(assembled.document.schema).toBe('publishing/16');
     expect(assembled.document.theme).toEqual(projectTypst(theme));
     expect(Object.keys(assembled.document.theme.tables)).toEqual(['table', 'banded']);
     expect(Object.keys(assembled.document.theme.images)).toEqual([

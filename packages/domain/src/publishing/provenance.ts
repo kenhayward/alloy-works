@@ -5,7 +5,7 @@ import type { Provenance } from '../data/provenance.js';
 import { canonicalJson } from '../stored/canonical.js';
 import { sectionNumbers, type NumberingTable } from '../structure/numbering.js';
 
-import type { PrintedValue } from './bind.js';
+import type { PrintedTable, PrintedValue } from './bind.js';
 
 /** A dataset version a value was taken from: its dataset, its name, its number and its provenance. */
 export interface HeldDataset {
@@ -21,7 +21,6 @@ interface FromResult {
   readonly number: string | null;
   readonly block: string;
   readonly binding: string;
-  readonly take: Binding['take'];
   readonly dataset: {
     readonly id: string;
     readonly name: string | null;
@@ -41,8 +40,11 @@ interface FromResult {
   };
 }
 
-/** The version every new `provenance.json` is written at: 2 since a value gained an image arm (B6-I). */
-export const PUBLISHED_PROVENANCE_VERSION = 2;
+/**
+ * The version every new `provenance.json` is written at: 2 since a value gained an image arm (B6-I),
+ * 3 since a bound table's (TB1-J).
+ */
+export const PUBLISHED_PROVENANCE_VERSION = 3;
 
 /**
  * **`provenance.json`** (the B3 plan, B3-G; DAT-042, PUB-049): every value a publication printed,
@@ -53,21 +55,28 @@ export const PUBLISHED_PROVENANCE_VERSION = 2;
  *
  * **At `schemaVersion` 2** (the B6 plan, B6-I): a value may instead be an image, recorded by its hash
  * and the asset version it was placed as, with the description it was given - its text, or
- * `decorative`. Every new publication is written at 2; a file written at 1 stays as written.
+ * `decorative`. **At 3** (the TB1 plan, TB1-J; TAB-019, TAB-015): a value may instead be a bound
+ * table, recorded with no take - it binds the whole result - by each column shown, its header and the
+ * format it was printed by, its rounding rule among it, and each printed cell, row by row, with the
+ * canonical value it was printed from. Every new publication is written at 3; a file written earlier
+ * stays as written.
  */
 export interface PublishedProvenance {
   readonly schemaVersion: typeof PUBLISHED_PROVENANCE_VERSION;
   readonly values: readonly (
     | (FromResult & {
+        readonly take: Binding['take'];
         readonly printed: string;
         readonly value: string | boolean;
         readonly column: { readonly name: string; readonly type: ValueType };
       })
     | (FromResult & {
+        readonly take: Binding['take'];
         readonly image: { readonly hash: string; readonly assetVersion: string };
         readonly description: string;
         readonly column: { readonly name: string; readonly type: ImageColumnType };
       })
+    | (FromResult & { readonly table: PrintedTable })
   )[];
 }
 
@@ -91,7 +100,6 @@ export function publishedProvenance(
         number: numbers.get(each.node) ?? null,
         block: each.block,
         binding: each.binding,
-        take: each.take,
         dataset: {
           id: held.id,
           name: held.name,
@@ -113,9 +121,26 @@ export function publishedProvenance(
           checksum: p.checksum,
         },
       };
+      if ('table' in each) {
+        return {
+          ...from,
+          table: {
+            columns: each.table.columns.map((column) => ({
+              name: column.name,
+              type: column.type,
+              header: column.header,
+              format: column.format,
+            })),
+            rows: each.table.rows.map((row) =>
+              row.map((cell) => ({ printed: cell.printed, value: cell.value })),
+            ),
+          },
+        };
+      }
       if ('image' in each) {
         return {
           ...from,
+          take: each.take,
           image: { hash: each.image.hash, assetVersion: each.image.assetVersion },
           description: each.description,
           column: { name: each.column.name, type: each.column.type },
@@ -123,6 +148,7 @@ export function publishedProvenance(
       }
       return {
         ...from,
+        take: each.take,
         printed: each.printed,
         value: each.value,
         column: { name: each.column.name, type: each.column.type },

@@ -14,7 +14,7 @@ export type {
 } from './assemble.js';
 // The binding stage and what a publication records of it (the B3 plan, B3-D, B3-G).
 export { bind, unbound } from './bind.js';
-export type { Bound, PrintedValue, Held } from './bind.js';
+export type { Bound, BoundTables, PrintedTable, PrintedValue, Held } from './bind.js';
 export { provenanceBytes, publishedProvenance } from './provenance.js';
 export type { HeldDataset, PublishedProvenance } from './provenance.js';
 export { publishFailureCodes } from './failures.js';
@@ -134,6 +134,9 @@ export {
   // Frozen by W14.5, which made `publishing/15`: the schema template 14 reads, and the schema of every
   // publication made before a caption's side was its style's.
   PUBLISHING_SCHEMA_14,
+  // Frozen by TB1.2, which made `publishing/16`: the schema template 15 reads, and the schema of every
+  // publication made before a table could be a bound table laid out.
+  PUBLISHING_SCHEMA_15,
 } from './published.js';
 export type {
   PublishedBlock,

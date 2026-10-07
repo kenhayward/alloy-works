@@ -176,6 +176,16 @@ export const publishFailureCodes = [
   'image_description_missing',
   'image_not_placeable',
   'value_not_image',
+  // bind, from TB1 (TB1-H, TB1-G): a bound table laid out by `layoutTable`, failed by its codes - a
+  // column shown or sorted by that the dataset version lacks, an image column, a format member
+  // meaningless for its column's type, more rows than `TABLE_ROWS_MAX` - and a layout stored before
+  // its schema 7, which has none of the words a bound table prints. Each names the table and, in
+  // `detail`, the column (`<column>: <member>` for a format), the row count, or the words missing.
+  'column_missing',
+  'column_image',
+  'format_mismatch',
+  'table_too_long',
+  'table_words_missing',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',
