@@ -423,6 +423,20 @@ export function failureWords(failure: Failure, wordOffered = false): string {
       return 'This image stands in a footnote or a caption, which cannot hold one. Move it into the text.';
     case 'value_not_image':
       return "This figure's value is not an image. Change it to an image column.";
+    // TB1 (TB1-H, TB1-G): a bound table its stage could not lay out. `detail` is the column, the
+    // column and the format member as `<column>: <member>`, the row count, or the words missing.
+    case 'column_missing':
+      return `This table shows or sorts by the column ${failure.detail ?? ''}, which its result does not have. Change the table, or resolve it again.`;
+    case 'column_image':
+      return `This table shows the image column ${failure.detail ?? ''}, which a table cannot print. Take the column out of the table.`;
+    case 'format_mismatch': {
+      const [column, member] = (failure.detail ?? '').split(': ');
+      return `This table's column ${column ?? ''} has a format setting, ${member ?? ''}, that does not apply to its values. Change the column's format.`;
+    }
+    case 'table_too_long':
+      return `This table's result has ${failure.detail ?? ''} rows, more than a table can print. Narrow the rows in its query.`;
+    case 'table_words_missing':
+      return "The layout has no words for a table's empty result, a missing value or its source. The layout has to change before this document can be published.";
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:
