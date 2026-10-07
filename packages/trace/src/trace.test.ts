@@ -806,8 +806,10 @@ describe('the citations in the committed model', () => {
   // stage, TAB-019 and TAB-015 in provenance, four in Word and eight in the worker.
   // 751 (2026-10-07): TB2.1's DAT-047, a bound table's failure in place in the editor.
   // 757 (2026-10-07): TB2.2's Bound table panel - TAB-001, TAB-002, TAB-003, TAB-007, TAB-037, TAB-048.
+  // 769 (2026-10-07): TB3.1's notes - CNT-039, TAB-024 to TAB-026 in the domain, DAT-012 and DAT-048
+  // at the stage, TAB-024 and TAB-026 in the worker.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(757);
+    expect(model.citations).toHaveLength(769);
   });
 
   it('cites no identifier the corpus does not hold', () => {
