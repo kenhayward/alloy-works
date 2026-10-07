@@ -2,7 +2,8 @@
 
 What a template is, what making a document from one does, and what the document keeps of it.
 
-This realises the T1 half of [TPL](../specification/requirements/TPL-templates-and-document-instantiation.md),
+This realises the T1 half of [TPL](../specification/requirements/TPL-templates-and-document-instantiation.md)
+and its T2 half, [parameters](#parameters),
 and STR-060's section values. A template is stored by [storage-and-versioning.md](storage-and-versioning.md)'s
 one mechanism (VER-056, claimed there); who may design one and make a document from one is
 [access.md](access.md)'s (TPL-006, IAM-018, claimed there); the theme a document takes is
@@ -40,6 +41,14 @@ refused while a required section is missing or a field its template applies is n
 | **TPL-025** | Making a document records, beside the document, the template and the template version it was made from, once and never changed                                                                                                                                                       |
 | **TPL-027** | After it is made, the document's outline is its own: every outline act changes the document and none reaches the template, and a template's later versions change no document already made                                                                                           |
 | **TPL-055** | A publication request resolves the document-level fields its template applies and validates the document's values, then each section's against the section-level fields, and is refused, `metadata_invalid`, listing every failure in MET-022's shape with the section it belongs to |
+| **TPL-017** | A template's `parameters` declare name, type, whether required, and permitted values or range, by the query definition's own declaration ([Parameters](#parameters))                                                                                                                 |
+| **TPL-018** | Making a document refuses a required parameter without a value, `parameter_invalid`, and writes nothing                                                                                                                                                                              |
+| **TPL-020** | A document version holds its `parameters`; the Parameters panel and its route show each value and every change with who made it and when                                                                                                                                             |
+| **TPL-021** | Each parameter declares `changeable`; changing one that is not is `parameter_fixed`                                                                                                                                                                                                  |
+| **TPL-026** | Making a document, its parameters included, is the same route for the form and for any other client, and refuses alike                                                                                                                                                               |
+| **TPL-045** | Every value is checked by the definitions' `checkParameterValues` at creation, change and resolve, and refused naming the parameter, the rule and the value                                                                                                                          |
+| **TPL-066** | A parameter seeds its declared document field when the document is made, and supplies a binding's `{ document }` argument at resolve and check, a changed value marking the binding changed                                                                                          |
+| **TPL-068** | `feeds` declares the field a parameter seeds and whether it supplies arguments; one feeding nothing is `parameter_unused`                                                                                                                                                            |
 | **STR-060** | A section carries its title, as it does, and field values in its `values`, written by the outline act's `set`, each checked against the section-level fields of the document's template and refused by name where it is not one of them or does not pass                             |
 
 ## What this document does not own
@@ -50,7 +59,7 @@ refused while a required section is missing or a field its template applies is n
 | STY-025          | [themes.md](themes.md) claims it: a document takes its template's theme. This document says where the binding is read                                                                                                                                                                                                                                                                                                                  |
 | VER-056          | [storage-and-versioning.md](storage-and-versioning.md) claims it; a template is versioned by `recordVersion` like any artifact                                                                                                                                                                                                                                                                                                         |
 | TPL-056, TPL-057 | Not T1. A document records no definition versions, so its values are validated against the current definitions (TE-K)                                                                                                                                                                                                                                                                                                                  |
-| TPL-014, TPL-026 | Not T1: a starting outline holds sections and no component references, and templates are made through the API rather than an editor                                                                                                                                                                                                                                                                                                    |
+| TPL-014          | T4: a starting outline holds sections and no component references                                                                                                                                                                                                                                                                                                                                                                      |
 | MET-019          | **A named gap.** Nothing records the definition versions a document's or a section's values were written against (TE-K), so a later change to a field or a schema can make a document that satisfied its template fail its next publication - what MET-019 forbids for documents and sections. Recording them is TPL-056 and validating against them TPL-057, both outside T1; [metadata.md](metadata.md) already defers these to them |
 
 ## The template
@@ -202,6 +211,102 @@ Before anything is queued, after the checks that stand today, in this order:
 Refused at the door, as a format or a language is (PUB-014, PUB-095), so the author is told at once and
 nothing is queued to fail.
 
+## Parameters
+
+**T2's half of TPL**: what a document is about, declared by its template, asked for when it is made,
+recorded on it, and fed to its metadata and to its bindings' `{ document }` arguments (DAT-030).
+Bindings established at creation, a query set and parameters resolving variables are T4's
+([ADR-0043](../decisions/0043-a-templates-bindings-query-set-and-variables-move-to-t4.md)), since a
+T2 template's outline holds sections and no components.
+
+> **Not built.** Built in two slices, [below](#build-order).
+
+### Declared on the template
+
+The definition gains `parameters`, at most 50, additive at template schema 1 (absent reads as none):
+
+```ts
+TemplateParameter = Parameter & {        // data.md's declaration: name, type, required, list, permitted
+  changeable: boolean,                   // TPL-021
+  feeds: {                               // TPL-068: at least one
+    field?: string,                      // a document-level effective field it seeds when the document is made
+    arguments: boolean,                  // offered to bindings as { document: name }
+  },
+}
+```
+
+- **The query definition's own `parameterSchema` and checks** (DAT-010, DAT-020), so one rule reads a
+  value whether a definition or a template declares it; `variation` is refused (`parameter_variation`),
+  since it selects SQL.
+- **A parameter feeding nothing is refused** at save, `parameter_unused` (TPL-068).
+- **A seeded field** must be a document-level effective field (resolution, TE-L) whose type takes the
+  parameter's: text to text, integer and decimal to number, date to date, time to time, instant to
+  date-time, boolean to boolean, a list only to a field of many. Anything else is `parameter_field`,
+  naming both. A local date-time has no field to seed.
+
+### Asked for when a document is made
+
+`POST /v1/spaces/{space}/documents` takes `parameters: Record<name, value>` beside `template`, and the
+New document form asks for them, each by its type: a text box, a number, a date, a check box, a list
+of entries, or a choice where `permitted` lists values (TPL-026). In the same transaction as today:
+
+- **Checked** by `checkParameterValues`: a required one missing, or any value invalid, refuses the
+  request, `400 parameter_invalid`, naming every parameter, its rule and its value, as the form shows
+  them (TPL-018, TPL-045); a name the template does not declare is `parameter_unknown`.
+- **Recorded** in the document's first version (below), and **each seeded field's value set** from it
+  over the field's default (TPL-066). Seeding happens once: a later change to the parameter does not
+  rewrite the field, which is the author's from then on.
+
+### Recorded on the document
+
+- **A document version holds `parameters`**, beside `values`: a new nullable `parameters` column on
+  `artifact_version` (0057), documents only, in `DocumentSubstance` and in the digest, which leaves it
+  out when empty so no existing document's digest moves.
+- **Changing one** is `PUT /v1/documents/{id}/parameters`, `openedFrom` and the whole set, cutting a
+  version with outline and values unchanged; a value of a parameter that is not `changeable` and
+  differs is refused, `parameter_fixed`, naming it (TPL-021); every value is checked as at creation.
+  Outline and values acts carry `parameters` unchanged.
+- **Visible and auditable** (TPL-020): the document page's **Parameters** panel shows each value, and
+  its history - each change, who made it and when, read from the version chain's author and time.
+  `GET /v1/documents/{id}/parameters` answers the same.
+
+### Feeding the bindings
+
+- **A `{ document: name }` argument takes the document's current value** at resolve and check: absent
+  from the document, or of a template parameter whose type and list are not the definition
+  parameter's, is `parameter_invalid` naming it; the value is then checked against the definition's
+  own declaration, which may be narrower.
+- **A changed value marks the bindings using it changed.** A binding's digest, wherever it is compared
+  with a resolution's - the view, Keep, the Data tab and the publish request's `binding_unresolved` -
+  is taken over the binding **with its document arguments replaced by their current values**, and resolve records it so. A
+  binding with none keeps the digest it has, so no resolution held today moves; a parameter change
+  makes every binding that reads it `changed`, and the Data tab says which parameter, read against
+  the held dataset version's provenance. Nothing runs by itself: the author checks and accepts, as for
+  any change (ADR-0035).
+- **The Value dialog's From the document** becomes available: in a document, a choice of its template
+  parameters that feed arguments and match the definition parameter's type; in a component alone, a
+  name typed, checked where it is resolved.
+
+### Failures
+
+| Failure               | Where                     | Meaning                                                                                 |
+| --------------------- | ------------------------- | --------------------------------------------------------------------------------------- |
+| `parameter_unused`    | template save             | A parameter seeds no field and supplies no argument (TPL-068)                           |
+| `parameter_variation` | template save             | A template parameter declares a variation                                               |
+| `parameter_field`     | template save, resolve    | A seeded field is not document-level, or cannot take the parameter's type               |
+| `parameter_invalid`   | creation, change, resolve | A required value missing or a value invalid, naming parameter, rule and value (TPL-045) |
+| `parameter_unknown`   | creation, change          | A value for a parameter the template does not declare                                   |
+| `parameter_fixed`     | change                    | A changed value of a parameter that is not changeable (TPL-021)                         |
+
+### Build order
+
+1. **TP1, parameters declared, asked for and recorded**: the template member and its checks, creation
+   with parameters through the API and the form, seeding, 0057, the change route, the Parameters panel
+   and its history.
+2. **TP2, parameters feeding bindings**: `{ document }` resolved, the substituted digest everywhere it
+   is compared, the Data tab's reason, the Value dialog's From the document, the whole system, and the
+   close.
+
 ## Routes
 
 | Route                               | Permission                                    | Does                                                                                                                |
@@ -212,6 +317,8 @@ nothing is queued to fail.
 | `POST /v1/templates/{id}/versions`  | `design` on the template                      | Cuts a version from `openedFrom` and a whole definition that passes and resolves, as above (API-037's precondition) |
 | `POST /v1/spaces/{space}/documents` | `create` on the space, `read` on the template | As today, with an optional `template`                                                                               |
 | `PUT /v1/documents/{id}/values`     | `edit` on the document                        | Replaces the document's values, cutting a version                                                                   |
+| `PUT /v1/documents/{id}/parameters` | `edit` on the document                        | Replaces the document's parameters, cutting a version (TPL-021)                                                     |
+| `GET /v1/documents/{id}/parameters` | `read` on the document                        | Each value and its history (TPL-020)                                                                                |
 
 ## Where the code lives
 
@@ -262,6 +369,11 @@ and I will review all live at the end"), each open to reversal at that review.
 | TE-J | T1's interface is the template chooser in **New document** and the refusals where the page already shows them; making and changing a template is through the API, and a template's own page and editor come later                           |
 | TE-K | With TPL-056 and TPL-057 outside T1, nothing records definition versions on a document: its values are resolved and validated against the current definitions each time, which leaves MET-019 unmet for documents and sections, named above |
 | TE-L | A template is refused, when made and when versioned, unless its definition passes `checkTemplate` and every reference resolves; resolution runs again when a document is made from it, because what it names can change after it is saved   |
+| TE-M | **T2's TPL is parameters alone**; bindings at creation, a query set and variables are T4's (ADR-0043)                                                                                                                                       |
+| TE-N | **A template parameter is the query definition's `Parameter`**, plus `changeable` and `feeds`, so one declaration and one checker serve both                                                                                                |
+| TE-O | **Parameters live in the document's versions**, so who changed one and when is the version chain's record, not a second log                                                                                                                 |
+| TE-P | **A seeded field is seeded once**, at creation; afterwards it is the author's                                                                                                                                                               |
+| TE-Q | **A binding's digest is taken with its document arguments substituted**, so a changed parameter marks exactly the bindings that read it, and a binding without one keeps its digest                                                         |
 
 ## What was ruled out
 
