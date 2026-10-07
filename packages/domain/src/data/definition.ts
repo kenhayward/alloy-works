@@ -580,8 +580,12 @@ function checkBindings(
   }
 }
 
-function checkPermitted(
-  parameter: Parameter,
+/**
+ * A parameter's permitted values or range, against its type (DAT-010): what a query definition and a
+ * template (the TP1 plan, TP1-A) both declare, checked by the one rule.
+ */
+export function checkPermitted(
+  parameter: Pick<Parameter, 'permitted' | 'type'>,
   path: string,
   problem: (path: string, message: string) => void,
 ): void {

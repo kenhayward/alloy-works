@@ -1,10 +1,12 @@
 import {
+  checkTemplateParameters,
   resolveTemplate,
   templateDefinitionSchema,
   type FieldDefinition,
   type MetadataSchemaDefinition,
   type ResolvedTemplate,
   type TemplateDefinition,
+  type TemplateParameterProblem,
   type TemplateReferences,
   type UnresolvedReference,
 } from '@alloy-works/domain';
@@ -55,8 +57,39 @@ export type TemplateAnswer =
   | { readonly answer: 'version.precondition'; readonly current: StoredTemplate }
   /** A reference that does not resolve (TPL-004, TE-L), each named; nothing is written. */
   | { readonly answer: 'template.unresolved'; readonly unresolved: readonly UnresolvedReference[] }
+  | ParametersRefused
   | { readonly answer: 'space.missing' }
   | { readonly answer: 'template.missing' };
+
+/**
+ * A template's parameters refused against its resolved fields (the TP1 plan, TP1-B), each named: one
+ * feeding nothing first (TPL-068), then a seeded field that cannot take it. Nothing is written.
+ */
+export type ParametersRefused = {
+  readonly answer: 'parameter.unused' | 'parameter.field';
+  readonly problems: readonly TemplateParameterProblem[];
+};
+
+/**
+ * TP1-B over a resolved definition: null where every parameter feeds something it may, else the first
+ * kind of problem found, `parameter.unused` before `parameter.field`, with each of that kind.
+ */
+export function refusedParameters(
+  definition: TemplateDefinition,
+  resolved: Extract<ResolvedTemplate, { ok: true }>,
+): ParametersRefused | null {
+  const problems = checkTemplateParameters(definition.parameters ?? [], resolved.document);
+  for (const code of ['parameter_unused', 'parameter_field'] as const) {
+    const these = problems.filter((each) => each.code === code);
+    if (these.length > 0) {
+      return {
+        answer: code === 'parameter_unused' ? 'parameter.unused' : 'parameter.field',
+        problems: these,
+      };
+    }
+  }
+  return null;
+}
 
 /**
  * What a definition's references name now (templates.md, "Resolving a template"): the kind of every
@@ -141,6 +174,8 @@ export async function createTemplate(
   if (!space) return { answer: 'space.missing' };
   const resolved = resolveTemplate(definition, await templateReferences(trx, definition));
   if (!resolved.ok) return { answer: 'template.unresolved', unresolved: resolved.unresolved };
+  const parameters = refusedParameters(definition, resolved);
+  if (parameters) return parameters;
   const version = await createArtifact(trx, {
     spaceId: input.spaceId,
     author: input.author,
@@ -167,6 +202,8 @@ export async function recordTemplateVersion(
   const definition = templateDefinitionSchema.parse(input.definition);
   const resolved = resolveTemplate(definition, await templateReferences(trx, definition));
   if (!resolved.ok) return { answer: 'template.unresolved', unresolved: resolved.unresolved };
+  const parameters = refusedParameters(definition, resolved);
+  if (parameters) return parameters;
   const answer = await recordVersion(trx, {
     artifactId: input.templateId,
     openedFrom: input.openedFrom,

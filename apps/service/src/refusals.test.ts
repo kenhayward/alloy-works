@@ -27,6 +27,8 @@ describe('the rule behind a refusal', () => {
       ['connection.in_use', 'connection_in_use', 'DAT-065'],
       ['sql.not_permitted', 'sql_not_permitted', 'DAT-103'],
       ['parameter.invalid', 'parameter_invalid', 'DAT-020'],
+      ['parameter.unused', 'parameter_unused', 'TPL-068'],
+      ['parameter.fixed', 'parameter_fixed', 'TPL-021'],
       ['acknowledgement.required', 'acknowledgement_required', 'DAT-091'],
     ];
     for (const [dotted, code, rule] of ruled) {
@@ -65,6 +67,10 @@ describe('the rule behind a refusal', () => {
       // missing required value is TPL-055's, refused at publication and not here.
       'values.invalid',
       'values.unresolved',
+      // A template parameter's seeded field that cannot take it, and a value for a parameter the
+      // template does not declare: the design's own guards (templates.md, "Parameters").
+      'parameter.field',
+      'parameter.unknown',
       // What a definition names that is not there, and a schema's own invalid default: the
       // definition's own shape, which no requirement names (definitions.md, DE-E).
       'definition.unresolved',

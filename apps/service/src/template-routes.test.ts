@@ -32,6 +32,9 @@ const APPROVER = 'f1e1d000-0000-4000-8000-00000000a99e';
 // Development's seeded Review schema and the Reviewer field it groups (dev-content.ts).
 const REVIEW_SCHEMA = '0d5e7a11-0000-4000-8000-00000000c4e3';
 const REVIEWER = '0d5e7a11-0000-4000-8000-00000000f1e1';
+// And its Sign-off schema, with the Due date field it groups beside Owner.
+const SIGN_OFF_SCHEMA = '0d5e7a11-0000-4000-8000-00000000c4e4';
+const DUE = '0d5e7a11-0000-4000-8000-00000000f1e3';
 
 type Json = Record<string, unknown>;
 
@@ -545,6 +548,94 @@ describe('templates through the service', () => {
       code: 'template_unresolved',
       rule: 'TPL-004',
       unresolved: [{ reference: 'requires', id: SIGN_OFF, field: APPROVER }],
+    });
+  });
+
+  describe("a template's parameters", () => {
+    const site = {
+      name: 'site',
+      type: { base: 'text' },
+      required: true,
+      list: false,
+      permitted: { values: ['Leeds', 'York'] },
+      changeable: false,
+      feeds: { field: REVIEWER, arguments: true },
+    };
+    const quarter = {
+      name: 'quarter',
+      type: { base: 'integer' },
+      required: false,
+      list: false,
+      permitted: { minimum: '1', maximum: '4' },
+      changeable: true,
+      feeds: { arguments: true },
+    };
+    const reviewed = { schemas: [{ schema: REVIEW_SCHEMA, level: 'document', requires: [] }] };
+
+    it('TPL-017 declares each name, type, whether required and its permitted values or range, read back from the API', async () => {
+      const made = await make('ada', { ...reviewed, parameters: [site, quarter] }, 'Site report');
+      expect(made.statusCode, made.body).toBe(200);
+      const read = await call('alice', 'GET', `/v1/templates/${made.json<TemplateBody>().id}`);
+      expect(read.json<{ definition: { parameters: unknown } }>().definition.parameters).toEqual([
+        site,
+        quarter,
+      ]);
+    });
+
+    it('TPL-068 names what each parameter feeds, and refuses one feeding nothing, parameter_unused', async () => {
+      const unused = await make('ada', {
+        ...reviewed,
+        parameters: [site, { ...quarter, feeds: { arguments: false } }],
+      });
+      expect(unused.statusCode).toBe(400);
+      expect(unused.json()).toMatchObject({
+        code: 'parameter_unused',
+        rule: 'TPL-068',
+        parameters: [{ parameter: 'quarter' }],
+      });
+      // A version cut with one is refused the same way, and nothing is written.
+      const template = (
+        await make('ada', { ...reviewed, parameters: [site] }, 'Audit')
+      ).json<TemplateBody>();
+      const next = await call('ada', 'POST', `/v1/templates/${template.id}/versions`, {
+        openedFrom: template.version.id,
+        definition: definition('Audit', {
+          ...reviewed,
+          parameters: [{ ...site, feeds: { arguments: false } }],
+        }),
+      });
+      expect(next.json()).toMatchObject({ code: 'parameter_unused' });
+      const kept = await call('ada', 'GET', `/v1/templates/${template.id}`);
+      expect(kept.json<TemplateBody>().version.number).toBe('0.1');
+    });
+
+    it('refuses a seeded field the document level does not hold, or one that cannot take its type, parameter_field', async () => {
+      const section = await make('ada', {
+        schemas: [{ schema: REVIEW_SCHEMA, level: 'section', requires: [] }],
+        parameters: [site],
+      });
+      expect(section.statusCode).toBe(400);
+      expect(section.json()).toMatchObject({
+        code: 'parameter_field',
+        parameters: [{ parameter: 'site', field: REVIEWER }],
+      });
+      expect(section.json<{ rule?: string }>().rule).toBeUndefined();
+      const typed = await make('ada', {
+        schemas: [{ schema: SIGN_OFF_SCHEMA, level: 'document', requires: [] }],
+        parameters: [{ ...quarter, feeds: { field: DUE, arguments: false } }],
+      });
+      expect(typed.json()).toMatchObject({
+        code: 'parameter_field',
+        parameters: [{ parameter: 'quarter', field: DUE }],
+      });
+    });
+
+    it('refuses a variation by the shape the contract parses', async () => {
+      const answer = await make('ada', {
+        parameters: [{ ...site, variation: [{ key: 'a', sql: 'select 1' }] }],
+      });
+      expect(answer.statusCode).toBe(400);
+      expect(answer.json<{ code: string }>().code).not.toBe('parameter_unused');
     });
   });
 });
