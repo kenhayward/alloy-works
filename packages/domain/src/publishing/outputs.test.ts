@@ -37,6 +37,7 @@ describe("an output's report", () => {
       'maths_coverage_unchecked',
       'titles_not_headings',
       'list_not_linked',
+      'table_reflowed',
     ]);
   });
 
@@ -175,6 +176,8 @@ describe("an output's report", () => {
       { kind: 'header_column_lost', ...place, label: 'Table 1.1' },
       { kind: 'header_repeated', ...place, label: 'Table 1.1' },
       { kind: 'continuation_label_omitted', ...place, label: null },
+      // A table the PDF scaled to its measure, which Word reflows (TB3-J).
+      { kind: 'table_reflowed', ...place, label: 'Table 1.1' },
     ];
     expect(parseOutputReport(JSON.parse(JSON.stringify(report)))).toEqual(report);
     // Two tables are two things; one table's kinds are each its own.

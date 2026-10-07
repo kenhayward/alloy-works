@@ -107,6 +107,7 @@ export function laidOutTable(
     headerColumns: table.headerColumn ? 1 : 0,
     ...(table.note === undefined ? {} : { note: table.note }),
     ...(table.numbered === false ? { numbered: false as const } : {}),
+    ...(table.wide === undefined ? {} : { wide: table.wide }),
     rows: [header, ...body],
     laidOut: {
       align: laid.columns.map((column) => column.align),

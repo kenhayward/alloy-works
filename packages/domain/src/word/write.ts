@@ -141,6 +141,20 @@ export interface WordWriting {
    * ruling R3). Only those the document places are written into the package.
    */
   readonly images: ReadonlyMap<string, Uint8Array>;
+  /**
+   * **How the PDF set each table too wide for its measure** (the TB3 plan, TB3-J), as the template
+   * answered the worker's query: turned onto landscape pages, which Word sets in a landscape section of
+   * its own, or scaled, which Word cannot do and reflows instead, and the report says so. A table not
+   * named here fitted its measure.
+   */
+  readonly wide?: readonly WideTable[];
+}
+
+/** A table the PDF set otherwise than at its measure (TB3-J): its node, its block, and how. */
+export interface WideTable {
+  readonly node: string;
+  readonly block: string;
+  readonly set: 'scaled' | 'rotated';
 }
 
 export interface WrittenDocx {
@@ -315,6 +329,8 @@ interface Paragraph {
    * properties or closes the body, since Word ends each with a paragraph (Word 2, ruling R7).
    */
   readonly closing?: boolean;
+  /** The table it belongs to, where that table is turned onto a landscape section (TB3-J). */
+  readonly turned?: string;
 }
 
 /**
@@ -356,6 +372,8 @@ interface WordTable {
    * on the paragraphs either side, whose own spaces add to it as they add to a paragraph's.
    */
   readonly spaced?: readonly Paragraph[];
+  /** The table it is, where it is turned onto a landscape section (TB3-J). */
+  readonly turned?: string;
 }
 
 /** What a body, a section and a block are made of: paragraphs, and tables. */
@@ -435,6 +453,13 @@ interface Section {
    * contents', which hold no footnote.
    */
   readonly footnotes: OutlineMatter | null;
+  /** A landscape section of a turned table's own, inside its segment (TB3-J). */
+  readonly turned?: boolean;
+  /**
+   * Where Word's count of the matter's footnotes starts in it, where it carries on a segment a turned
+   * table parted (TB3-J): one past the notes the segment's sections before it hold.
+   */
+  readonly footnoteStart?: number;
 }
 
 /** A hidden bookmark: its name, Word's way, and its identifier, the number the name ends in. */
@@ -592,6 +617,7 @@ export function writeDocx(input: WordWriting): WrittenDocx {
     images: word.images,
     references: word.references,
     titles: word.titles,
+    wide: input.wide ?? [],
   });
 
   // The page's furniture: the cover's header and footer, the running ones, and the contents' where its
@@ -711,6 +737,43 @@ export function writeDocx(input: WordWriting): WrittenDocx {
   if (front !== null) {
     front.push(...writer.listsAfterContents(generated, front.length > 0, textBlockWidth(format)));
   }
+  // A turned table's section (TB3-J): a segment parted around each table the PDF turned, the table -
+  // its caption, cells, notes and source - in a landscape section of its own, every part with the
+  // segment's header and footer and its page numbers carried on, never started again, and Word's count
+  // of the matter's footnotes carried on across them (`footnoteStart`), as the PDF numbers them.
+  const parted = sections.flatMap((section): Section[] => {
+    const matter = section.footnotes;
+    if (matter === null || !section.body.some((item) => item.turned !== undefined)) {
+      return [section];
+    }
+    const parts: Section[] = [];
+    let part: Body[] = [];
+    let turned: string | undefined;
+    let notesBefore = 0;
+    const close = () => {
+      if (part.length === 0) return;
+      const first = parts.length === 0;
+      parts.push({
+        ...section,
+        body: part,
+        pageNumbering: first ? section.pageNumbering : numberedOn(format, matter),
+        ...(turned === undefined ? {} : { turned: true }),
+        ...(first ? {} : { footnoteStart: notesBefore + 1 }),
+      });
+      notesBefore += part.reduce((sum, item) => sum + footnotesIn(item), 0);
+      part = [];
+    };
+    for (const item of section.body) {
+      if (item.turned !== turned) {
+        close();
+        turned = item.turned;
+      }
+      part.push(item);
+    }
+    close();
+    return parts;
+  });
+  sections.splice(0, sections.length, ...parted);
 
   const notes = writer.notes;
   const relationships = new Relationships();
@@ -857,7 +920,9 @@ export function writeDocx(input: WordWriting): WrittenDocx {
         section,
         format,
         partIds,
-        notes.length === 0 || numbered === null ? '' : footnoteProperties(word.scheme, numbered),
+        notes.length === 0 || numbered === null
+          ? ''
+          : footnoteProperties(word.scheme, numbered, section.footnoteStart),
       );
       const last = index === sections.length - 1;
       const items = section.body;
@@ -1109,6 +1174,7 @@ class Writer {
       readonly images: ReadonlyMap<string, WordImage>;
       readonly references: ReadonlyMap<string, WordReference>;
       readonly titles: ReadonlyMap<string, readonly WordTitleRun[]>;
+      readonly wide: readonly WideTable[];
     },
   ) {
     this.bookmarks = bookmarksOf(
@@ -1674,6 +1740,29 @@ class Writer {
    * PDF sets a cell's flow. What Word cannot set as the style asks is reported.
    */
   private table(table: PublishedTable, place: Place, passage: Passage): WrittenBlock {
+    const set = this.numbers.wide.find(
+      (each) => each.node === this.at && each.block === table.id,
+    )?.set;
+    // Turned only in the text itself, where the PDF turns one (TB3-H): its section is its own.
+    const turned = set === 'rotated' && place.at === 'text';
+    this.turning = turned;
+    try {
+      return this.turnedTable(table, place, passage, turned ? `${this.at}/${table.id}` : null, set);
+    } finally {
+      this.turning = false;
+    }
+  }
+
+  /** Whether the table being written is turned: its columns share the landscape page's measure. */
+  private turning = false;
+
+  private turnedTable(
+    table: PublishedTable,
+    place: Place,
+    passage: Passage,
+    turned: string | null,
+    set: WideTable['set'] | undefined,
+  ): WrittenBlock {
     const style = this.theme.tableStyles.get(table.style);
     // `assemble` refuses a table whose style is missing or is not a table's.
     if (style === undefined) throw new Error(`No table style ${table.style} in the theme`);
@@ -1786,12 +1875,21 @@ class Writer {
       source.wanted = { before: noteStyle.spaceAfter + noteStyle.spaceBefore };
     }
     this.report(table, style);
+    // Scaled in the PDF, where Word fits it to the page by reflowing it instead (TB3-J).
+    if (set === 'scaled') {
+      this.reported.push({
+        kind: 'table_reflowed',
+        node: this.at,
+        block: table.id,
+        label: table.label,
+      });
+    }
     const body: Body[] = below ? [written, caption] : [caption, written];
     if (note !== null) body.push(note);
     body.push(...notes);
     if (source !== null) body.push(source);
     return {
-      body,
+      body: turned === null ? body : body.map((each) => Object.assign(each, { turned })),
       top: below ? cellStyle : captionRole,
       bottom:
         note !== null || notes.length > 0 || source !== null
@@ -1854,7 +1952,7 @@ class Writer {
 
   /** A column's width, in twips: an equal share of the room the table stands in. */
   private columnWidth(table: PublishedTable, place: Place): number {
-    const room = textBlockWidth(this.numbers.format) - place.start - place.end;
+    const room = textBlockWidth(this.numbers.format, this.turning) - place.start - place.end;
     return Math.round(twips(room) / table.columns);
   }
 
@@ -3371,9 +3469,39 @@ function sectionFields(rtl: boolean): string {
   );
 }
 
-/** The text block's width in points: the page across, less both margins and the gutter. */
-function textBlockWidth(format: PageFormat): number {
-  const across = format.orientation === 'landscape' ? format.page.height : format.page.width;
+/** A matter's page numbering where its section carries on its segment's: its format, never a start. */
+function numberedOn(format: PageFormat, matter: OutlineMatter): string {
+  return `<w:pgNumType w:fmt="${WORD_FORMATS[format.pageNumbering[matter].format]}"/>`;
+}
+
+/** How many of Word's footnotes a body item marks: each `w:footnoteReference` in it. */
+function footnotesIn(item: Body): number {
+  const marked = (content: string) => content.split('<w:footnoteReference ').length - 1;
+  if (isTable(item)) {
+    return item.rows.reduce(
+      (sum, row) =>
+        sum +
+        row.cells.reduce(
+          (inner, cell) =>
+            inner + cell.paragraphs.reduce((most, each) => most + marked(each.content), 0),
+          0,
+        ),
+      0,
+    );
+  }
+  return (
+    marked(item.content) +
+    (item.box?.paragraphs.reduce((sum, each) => sum + marked(each.content), 0) ?? 0)
+  );
+}
+
+/**
+ * The text block's width in points: the page across, less both margins and the gutter - turned, a
+ * turned table's landscape section's (TB3-J).
+ */
+function textBlockWidth(format: PageFormat, turned = false): number {
+  const across =
+    (format.orientation === 'landscape') !== turned ? format.page.height : format.page.width;
   return across - format.margins.inside - format.margins.outside - format.gutter;
 }
 
@@ -3399,7 +3527,7 @@ function sectionProperties(
     (section.cover ? `<w:headerReference w:type="first" r:id="${header}"/>` : '') +
     `<w:footerReference w:type="default" r:id="${footer}"/>` +
     (section.cover ? `<w:footerReference w:type="first" r:id="${footer}"/>` : '');
-  const landscape = format.orientation === 'landscape';
+  const landscape = (format.orientation === 'landscape') !== (section.turned === true);
   const width = landscape ? format.page.height : format.page.width;
   const height = landscape ? format.page.width : format.page.height;
   const { top, bottom, inside, outside } = format.margins;

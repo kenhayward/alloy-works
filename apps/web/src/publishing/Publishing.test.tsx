@@ -747,6 +747,27 @@ describe('publishing from the document page', () => {
     }
   });
 
+  it('names each table too wide to publish, and why, suggesting rotate where a table could turn (TB3-H)', async () => {
+    const failed = (detail: string) => ({
+      stage: 'compose' as const,
+      code: 'table_too_wide' as const,
+      node: 'n7',
+      block: 't1',
+      detail,
+    });
+    const fake = failing([failed('narrow'), failed('tall'), failed('turned')]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    for (const words of [
+      'This table is too wide to print: it would have to be scaled to less than half its size. Set it to rotate onto landscape pages, or take out some of its columns.',
+      'This table is too wide for the page, and once scaled to fit it is taller than a page, which a scaled table cannot break across. Set it to rotate onto landscape pages, or take out some of its rows.',
+      'This table is too wide even for a landscape page. Take out some of its columns, or set it to scale.',
+    ]) {
+      expect(why).toHaveTextContent(words);
+    }
+  });
+
   it('names a cross-reference Word would not print as the PDF does, and why, pointing at the PDF', async () => {
     // Word 3's ruling R5: `detail` is `<form>:<why>`, and the reference is the author's to change.
     const refused = (detail: string) => ({

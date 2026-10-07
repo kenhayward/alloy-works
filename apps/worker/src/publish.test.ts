@@ -588,8 +588,8 @@ describe('publishing a document, from the request to the stored PDF', () => {
       engine: 'typst',
       engine_version: '0.15.1',
       template: 'publication',
-      template_version: 17,
-      pipeline_version: '19',
+      template_version: 18,
+      pipeline_version: '20',
       layout_version_id: (await requestRow(request)).layout_version_id,
     });
     expect(row!.layout_version_id).not.toBeNull();
@@ -1044,7 +1044,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
       engine_version: null,
       template: null,
       template_version: null,
-      pipeline_version: '19',
+      pipeline_version: '20',
       format: 'docx',
       standard: null,
       producer: 'word',
@@ -1077,12 +1077,12 @@ describe('publishing a document, from the request to the stored PDF', () => {
       engine: 'typst',
       engine_version: '0.15.1',
       template: 'publication',
-      template_version: 17,
-      pipeline_version: '19',
+      template_version: 18,
+      pipeline_version: '20',
       format: 'pdf',
       standard: 'ua-1',
       producer: 'typst',
-      producer_version: '17',
+      producer_version: '18',
       report: [],
     });
     // Beside a PDF, the Word document's pages are cited in the PDF, and it says so; and its titles
@@ -1124,6 +1124,75 @@ describe('publishing a document, from the request to the stored PDF', () => {
     expect(compiled.equals(await pdfOf(pdf!.object_key))).toBe(true);
   }, 120_000);
 
+  /** A table of `columns` columns of one long word each, under a header row: 8 are scaled, 30 too many. */
+  const wideTable = (columns: number) => ({
+    type: 'table',
+    id: 't1',
+    style: 'table',
+    caption: [{ type: 'text', value: 'Readings', marks: [] }],
+    headerRows: 1,
+    headerColumns: 0,
+    rows: ['Heading', 'Extraordinarily'].map((word, y) => ({
+      cells: Array.from({ length: columns }, (_, x) => ({
+        content: [
+          {
+            type: 'paragraph',
+            id: `t1r${y}c${x}`,
+            style: 'body',
+            content: [{ type: 'text', value: `${word}${x}`, marks: [] }],
+          },
+        ],
+        colspan: 1,
+        rowspan: 1,
+      })),
+    })),
+  });
+
+  it('fails a table too wide to set whole by name, before anything is compiled or kept (TB3-I)', async () => {
+    let node = '';
+    const id = await requested(
+      async (trx) => {
+        const made = reference(
+          await component(trx, general, 'Readings', ['Wide.'], [wideTable(30)]),
+        );
+        node = made.id;
+        return [made];
+      },
+      ['pdf', 'docx'],
+    );
+    const before = await publicationCount();
+    expect(await work()).toBe('failed');
+    expect(await requestRow(id)).toMatchObject({
+      state: 'failed',
+      failures: [{ stage: 'compose', code: 'table_too_wide', node, block: 't1', detail: 'narrow' }],
+    });
+    expect(await publicationCount()).toBe(before);
+    expect(await jobOf(id)).toEqual({ attempts: 1, last_error: 'publish_refused' });
+  }, 120_000);
+
+  it('says on the Word document that a table the PDF scaled is reflowed, naming it by its label (TB3-J)', async () => {
+    let node = '';
+    const id = await requested(
+      async (trx) => {
+        const made = reference(
+          await component(trx, general, 'Readings', ['Wide.'], [wideTable(8)]),
+        );
+        node = made.id;
+        return [made];
+      },
+      ['pdf', 'docx'],
+    );
+    expect(await work()).toBe('done');
+    const [pdf, docx] = await outputsOf(id);
+    expect(pdf).toMatchObject({ format: 'pdf', template_version: 18, pipeline_version: '20' });
+    expect(docx!.report).toContainEqual({
+      kind: 'table_reflowed',
+      node,
+      block: 't1',
+      label: 'Table 1.1',
+    });
+  }, 120_000);
+
   it('records neither output when the store keeps the PDF and will not take the Word document, and fails the request at the store stage', async () => {
     const id = await requested(plain, ['pdf', 'docx']);
     const before = await publicationCount();
@@ -1160,7 +1229,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
         format: 'pdf',
         standard: 'ua-1',
         producer: 'typst',
-        producer_version: '17',
+        producer_version: '18',
         report: [],
       }),
     ]);

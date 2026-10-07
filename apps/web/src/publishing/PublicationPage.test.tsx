@@ -244,6 +244,8 @@ describe('a publication at its own address', () => {
             { kind: 'header_column_lost', ...readings },
             { kind: 'header_repeated', ...readings },
             { kind: 'continuation_label_omitted', ...readings },
+            // Scaled in the PDF, reflowed in Word (TB3-J).
+            { kind: 'table_reflowed', ...readings },
             // One that names no table is left out rather than said wrongly.
             { kind: 'header_repeated', label: 'Table 9.9' },
             { kind: 'pages_cite_the_pdf' },
@@ -258,6 +260,7 @@ describe('a publication at its own address', () => {
       'Table 1.1 has a header column, which a Word document cannot mark as one, so in Word its cells are read as ordinary cells.',
       'Table 1.1 repeats its header rows on every page it reaches in Word, though its table style does not: Word marks header rows only by repeating them.',
       'Table 1.1 has no continuation label in Word on the pages it continues on, since Word cannot set one.',
+      'Table 1.1 is too wide for the page, so the PDF scales it down to fit; Word cannot scale a table, and fits it to the page by wrapping its text instead.',
       "Word lays out its own pages, so its page numbers can differ from the PDF's. A page number cited from this publication is the PDF's.",
     ]);
   });

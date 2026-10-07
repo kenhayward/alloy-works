@@ -140,6 +140,34 @@ describe('the pinned Typst', () => {
     }
   });
 
+  it("answers a query with the value of each metadata the template labels, laid out over the data, and names no label but a template's own (TB3-I)", async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'aw-query-template-'));
+    try {
+      const template = join(directory, 'main.typ');
+      await writeFile(
+        template,
+        [
+          '#set document(title: "Answers")',
+          '#let data = json("data.json")',
+          '#for each in data [#metadata((name: each, page: 1)) <aw-wide>]',
+          '#metadata("not asked") <aw-other>',
+        ].join('\n'),
+      );
+      const data = JSON.stringify(['first', '#panic("x")']);
+      expect(await typst.query(template, data, 'aw-wide', at)).toEqual([
+        { name: 'first', page: 1 },
+        { name: '#panic("x")', page: 1 },
+      ]);
+      for (const label of ['aw-wide>).len() + query(<x', 'wide', 'aw-Wide', '']) {
+        await expect(typst.query(template, data, label, at), label).rejects.toThrow(
+          /not a template's own label/,
+        );
+      }
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
   it('says plainly when the binary is not there', async () => {
     const missing = createTypst({ binary: 'typst-that-is-not-installed', fonts });
     await expect(missing.compile(SAMPLE_TEMPLATE, data, at)).rejects.toThrow(TypstFailed);

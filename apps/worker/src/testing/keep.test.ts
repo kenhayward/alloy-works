@@ -9,6 +9,7 @@ import { keepingEach } from './keep.js';
 const echo: Typst = {
   version: async () => '0.0.0',
   compile: async (_template, data) => Buffer.from(data),
+  query: async () => [],
 };
 
 let directory: string | null = null;

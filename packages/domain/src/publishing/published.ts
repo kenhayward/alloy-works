@@ -1,3 +1,4 @@
+import type { WideStrategy } from '../content/model/blocks.js';
 import type { OutlineMatter } from '../structure/outline.js';
 import type { TypstTheme } from '../theme/typst.js';
 
@@ -7,7 +8,9 @@ import type { MathsTree } from './maths.js';
 /**
  * The published document (docs/design/publishing.md, "The published document"): the one intermediate
  * every writer reads, holding everything a writer needs and nothing it must decide. Version
- * `publishing/17` is the document whose **tables letter their own notes** (the TB3 plan, TB3-D and
+ * `publishing/18` is the document whose **tables say how they are set where too wide** (the TB3 plan,
+ * TB3-G and TB3-H): each table carries `wide`, its own or its style's, `scale` where neither says.
+ * Otherwise it is `publishing/17`, the document whose **tables letter their own notes** (the TB3 plan, TB3-D and
  * TB3-E): a footnote in a table's cell is a lettered mark there - a link to its note in a body cell, a
  * plain letter in a header row - and its note is a paragraph beneath the table, in the table's
  * `notes`, after the whole table's note, which follows the layout's word where it has one. Otherwise it
@@ -34,7 +37,7 @@ import type { MathsTree } from './maths.js';
  * stored - only its digest is, on the publication - so a later shape is a new schema string and a new
  * template version, not a migration.
  */
-export const PUBLISHING_SCHEMA = 'publishing/17';
+export const PUBLISHING_SCHEMA = 'publishing/18';
 
 /**
  * The first slice's shape, before layouts: what `assemble` still makes, byte for byte, for a request
@@ -156,6 +159,12 @@ export const PUBLISHING_SCHEMA_15 = 'publishing/15';
  * with it are a record.
  */
 export const PUBLISHING_SCHEMA_16 = 'publishing/16';
+
+/**
+ * The document as it stood before a table said how it is set where too wide, frozen by TB3.2 for the
+ * reason `publishing/16` is: `apps/worker/templates/publication/17/` asserts it.
+ */
+export const PUBLISHING_SCHEMA_17 = 'publishing/17';
 
 /**
  * A BCP 47 tag as Typst can carry it: a language of two or three letters and, where there is one, a
@@ -481,6 +490,12 @@ export interface PublishedTable {
   readonly note: readonly PublishedInline[] | null;
   /** Its lettered notes, in letter order (TB3-E), set beneath it after `note`; empty where none. */
   readonly notes: readonly PublishedTableNote[];
+  /**
+   * How it is set where too wide for its measure (TB3-G, TB3-H): scaled to it, or on landscape pages of
+   * its own. Its own `wide`, else its table style's, else `scale`; a template applies it only where the
+   * table is too wide.
+   */
+  readonly wide: WideStrategy;
   /**
    * **A bound table's** (TB1-H, TB1-J), absent from an authored one: each column's alignment - a
    * `decimal` one set at its end with its digits unkerned, so its separators meet (TAB-046) - and

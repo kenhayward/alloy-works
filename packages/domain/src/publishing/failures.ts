@@ -192,6 +192,10 @@ export const publishFailureCodes = [
   // other columns than the definition's, `: the key is <columns>` after them.
   'key_required',
   'note_row_missing',
+  // compose, from TB3 (TB3-H, TB3-I): a table too wide for its measure that the template cannot set
+  // whole, which the worker's query of the template answers before the compile: `detail` `narrow`, scaled
+  // below one half; `tall`, taller than a page once scaled; or `turned`, too wide for a landscape page.
+  'table_too_wide',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',

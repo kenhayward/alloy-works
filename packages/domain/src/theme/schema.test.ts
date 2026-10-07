@@ -468,13 +468,15 @@ describe('catalogue/3', () => {
     }
   });
 
-  it("lets a table style say how a table too wide for its measure is set, optionally, so every stored style reads as it did (TB3-G)", () => {
+  it('lets a table style say how a table too wide for its measure is set, optionally, so every stored style reads as it did (TB3-G)', () => {
     for (const wide of ['scale', 'rotate']) {
       expect(accepts3(tables3({ ...tableStyle(), caption: 'above', wide })), wide).toBe(true);
     }
     expect(accepts3(tables3({ ...tableStyle(), caption: 'above' }))).toBe(true);
     for (const wide of ['split', 'none', '', null]) {
-      expect(accepts3(tables3({ ...tableStyle(), caption: 'above', wide })), String(wide)).toBe(false);
+      expect(accepts3(tables3({ ...tableStyle(), caption: 'above', wide })), String(wide)).toBe(
+        false,
+      );
     }
   });
 

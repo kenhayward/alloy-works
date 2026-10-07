@@ -200,13 +200,21 @@ export function footnoteSections(nodes: readonly Sectioned[]): {
  * each matter's footnotes from 1 on counters of its own. Never `continuous`: measured in Word 16, a
  * continuous section numbers a note by its place among every note in the document, not on from the
  * section before - the body entered again after an appendix printed 5 where the scheme counts 3 - so
- * it is the scheme's count only where it is the restarting section's too. `w:numStart` is Word's 1.
+ * it is the scheme's count only where it is the restarting section's too. `w:numStart` is Word's 1,
+ * but where a turned table parts a matter's run of nodes into sections (TB3-J): each after the first
+ * starts Word's count one past the notes before it, `start`, so the run counts as one section does and
+ * `footnoteSections` still describes Word's count.
  */
-export function footnoteProperties(scheme: NumberingScheme, matter: OutlineMatter): string {
+export function footnoteProperties(
+  scheme: NumberingScheme,
+  matter: OutlineMatter,
+  start?: number,
+): string {
   const rule = scheme.sequences['footnote']![matter];
   return (
     '<w:footnotePr>' +
     `<w:numFmt w:val="${WORD_FORMATS[rule.format[rule.format.length - 1]!]}"/>` +
+    (start === undefined ? '' : `<w:numStart w:val="${start}"/>`) +
     '<w:numRestart w:val="eachSect"/>' +
     '</w:footnotePr>'
   );

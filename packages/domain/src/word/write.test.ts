@@ -355,6 +355,8 @@ function written(
   formats: readonly [PublishingFormat, ...PublishingFormat[]] = ['docx'],
   /** The published document as the writer is handed it, changed where a test must. */
   handed: (document: PublishedDocument) => PublishedDocument = (document) => document,
+  /** How the PDF set each table too wide for its measure (TB3-J), as the job hands it on. */
+  wide: Parameters<typeof writeDocx>[0]['wide'] = [],
 ): Written {
   const theme = (over.theme ?? DEFAULT_THEME) as ResolvedTheme;
   const assembled = assemble({
@@ -380,6 +382,7 @@ function written(
     formats,
     faces,
     images,
+    wide,
   });
   return {
     docx: read(bytes),
@@ -1345,6 +1348,7 @@ const writtenOf = (
   over: Parameters<typeof written>[0] = {},
   formats?: Parameters<typeof written>[1],
   handed?: Parameters<typeof written>[2],
+  wide?: Parameters<typeof written>[3],
 ): Written =>
   written(
     {
@@ -1360,6 +1364,7 @@ const writtenOf = (
     },
     formats,
     handed,
+    wide,
   );
 
 const list = (name: string, kind: string, items: unknown[], over: object = {}) => ({
@@ -4946,5 +4951,115 @@ describe('writeDocx: a bound table (the TB1 plan, TB1-I; TB1.2)', () => {
     expect(heading!.map((each) => textOf(each))).toEqual(['Site', 'Reading']);
     expect(statement!.map((each) => textOf(each))).toEqual(['No rows']);
     expect(stated(statement![0]!, 'w:tcPr')['w:gridSpan']).toEqual({ 'w:val': '2' });
+  });
+});
+
+describe('writeDocx: a table too wide for its measure (the TB3 plan, TB3-J)', () => {
+  const note = (name: string, words: string) => ({
+    type: 'footnote',
+    id: name,
+    anchor: { kind: 'span' },
+    content: [paragraph(`${name}p`, text(words))],
+  });
+  const content = [
+    paragraph('p1', text('Before'), note('n1', 'The first note.')),
+    readings(),
+    paragraph('p2', text('After'), note('n2', 'The second note.')),
+  ];
+  const set = (how: 'scaled' | 'rotated') =>
+    writtenOf(content, { layout: UNLISTED, theme: ruledTheme }, undefined, undefined, [
+      { node: id('blocks'), block: 't1', set: how },
+    ]);
+  const upright = writtenOf(content, { layout: UNLISTED, theme: ruledTheme });
+  const turned = set('rotated');
+  const stated = (properties: Element, name: string) => first(properties, name)?.attrs;
+  const format = UNLISTED.formats.docx ?? UNLISTED.formats.pdf;
+
+  it('sets a table the PDF turned in a landscape section of its own, between two of the segment, each with its headers and footers', () => {
+    const before = sections(upright.docx);
+    const after = sections(turned.docx);
+    expect(after).toHaveLength(before.length + 2);
+    const [first_, landscape, rest] = after.slice(-3);
+    // The caption and the note beneath the table stand in the landscape section; the text either side
+    // in the segment's own.
+    expect(first_!.paragraphs.map(textOf)).toContain('Before');
+    expect(landscape!.paragraphs.map(textOf)).toContain('Table 1.1 Readings at noon');
+    expect(landscape!.paragraphs.map(textOf)).toContain('Note: Measured by Grace.');
+    expect(rest!.paragraphs.map(textOf)).toContain('After');
+    // The table itself between the section ending before it and the landscape section's end.
+    const body = kids(first(turned.docx.xml('word/document.xml'), 'w:body')!);
+    const table = body.findIndex((each) => each.name === 'w:tbl');
+    const ends = body.flatMap((each, at) =>
+      each.name === 'w:p' && first(each, 'w:sectPr') !== undefined ? [at] : [],
+    );
+    const next = ends.findIndex((at) => at > table);
+    expect(next).toBeGreaterThan(0);
+    // The landscape section's end, the last a paragraph holds: the body's own ends the rest.
+    expect(ends.length - next).toBe(1);
+    // Turned, its page across the format's height; the others as the layout's page.
+    expect(stated(landscape!.properties, 'w:pgSz')).toEqual({
+      'w:w': String(Math.round(format.page.height * 20)),
+      'w:h': String(Math.round(format.page.width * 20)),
+      'w:orient': 'landscape',
+    });
+    for (const each of [first_!, rest!]) {
+      expect(stated(each.properties, 'w:pgSz')).toEqual(
+        stated(before.at(-1)!.properties, 'w:pgSz'),
+      );
+    }
+    // The segment's header and footer on each, and its page numbers carried on, never restarted.
+    const references = (properties: Element) =>
+      [...all(properties, 'w:headerReference'), ...all(properties, 'w:footerReference')].map(
+        (each) => each.attrs,
+      );
+    for (const each of [landscape!, rest!]) {
+      expect(references(each.properties)).toEqual(references(first_!.properties));
+      expect(stated(each.properties, 'w:pgNumType')).toEqual({
+        'w:fmt': stated(first_!.properties, 'w:pgNumType')!['w:fmt'],
+      });
+    }
+  });
+
+  it("carries the document's footnote numbers on across the turned table's sections, as the PDF numbers them", () => {
+    const numbering = (properties: Element) =>
+      kids(first(properties, 'w:footnotePr')!).map((child) => [child.name, child.attrs['w:val']]);
+    const [first_, landscape, rest] = sections(turned.docx).slice(-3);
+    expect(numbering(first_!.properties)).toEqual([
+      ['w:numFmt', 'decimal'],
+      ['w:numRestart', 'eachSect'],
+    ]);
+    // One note before it: each section after it starts Word's count at 2, so the second note is 2.
+    for (const each of [landscape!, rest!]) {
+      expect(numbering(each.properties)).toEqual([
+        ['w:numFmt', 'decimal'],
+        ['w:numStart', '2'],
+        ['w:numRestart', 'eachSect'],
+      ]);
+    }
+  });
+
+  it("sets a turned table's columns across the landscape page's measure", () => {
+    const grid = (written: Written) =>
+      all(
+        blocksOf(written.docx).find((each) => each.name === 'w:tbl')!,
+        'w:gridCol',
+      ).reduce((sum, each) => sum + Number(each.attrs['w:w']), 0);
+    const across =
+      format.page.height - format.margins.inside - format.margins.outside - format.gutter;
+    expect(Math.abs(grid(turned) - across * 20)).toBeLessThanOrEqual(3);
+    expect(grid(turned)).toBeGreaterThan(grid(upright));
+  });
+
+  it('reports a table the PDF scaled as reflowed, Word fitting it to the page as it always does, and adds no section', () => {
+    const scaled = set('scaled');
+    expect(scaled.report).toContainEqual({
+      kind: 'table_reflowed',
+      node: id('blocks'),
+      block: 't1',
+      label: 'Table 1.1',
+    });
+    expect(sections(scaled.docx)).toHaveLength(sections(upright.docx).length);
+    expect(upright.report.map((each) => each.kind)).not.toContain('table_reflowed');
+    expect(turned.report.map((each) => each.kind)).not.toContain('table_reflowed');
   });
 });

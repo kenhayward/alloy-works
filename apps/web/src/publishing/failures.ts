@@ -449,6 +449,13 @@ export function failureWords(failure: Failure, wordOffered = false): string {
         : '';
       return `A note on this table names the row with the key ${key ?? ''}, which its result no longer has.${own} Change or remove the note, or resolve the table again.`;
     }
+    // TB3 (TB3-H): a table too wide for its measure that cannot be set whole, `detail` why.
+    case 'table_too_wide':
+      return failure.detail === 'turned'
+        ? 'This table is too wide even for a landscape page. Take out some of its columns, or set it to scale.'
+        : failure.detail === 'tall'
+          ? 'This table is too wide for the page, and once scaled to fit it is taller than a page, which a scaled table cannot break across. Set it to rotate onto landscape pages, or take out some of its rows.'
+          : 'This table is too wide to print: it would have to be scaled to less than half its size. Set it to rotate onto landscape pages, or take out some of its columns.';
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:
