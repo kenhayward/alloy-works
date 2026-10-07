@@ -122,6 +122,8 @@ it with its failures.
 
 ## Questions for Ken
 
+Answered by Ken on 2026-10-07: both as recommended.
+
 1. **TB2-A: lay the table out on the page, from the rows, in place of tables.md's TB-J** (a derived
    `dataset_table` and a layout route)? **Recommended: yes.** TB1 measured the publishable ceiling at
    2,000 rows, so a result the page needs is small; the page already formats every inline value
