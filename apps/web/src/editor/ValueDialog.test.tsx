@@ -426,7 +426,7 @@ const offered = (
 const fromDocument: Binding = { ...bound, parameters: { site: { document: 'site_no' } } };
 
 describe("the Value dialog's From the document (the TP2 plan, TP2-F)", () => {
-  it("offers only the document's parameters that feed values and match the parameter's type and list, and writes the one chosen", async () => {
+  it("DAT-030 offers only the document's parameters that feed values and match the parameter's type and list, and writes the one chosen", async () => {
     const user = userEvent.setup();
     const { onDone } = dialog({
       documentParameters: {
