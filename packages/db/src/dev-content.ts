@@ -230,11 +230,15 @@ const REPORT_PARAMETERS = [
  * optional parameters (the TP1 plan, Task 5), given once to a Report made before them.
  */
 async function seedReportTemplate(trx: TenantTransaction, space: string, designer: string) {
+  // Report by its name and the designer who seeds it, never another template somebody made in General.
   const exists = await trx
-    .selectFrom('artifact')
-    .select('id')
-    .where('kind', '=', 'template')
-    .where('space_id', '=', space)
+    .selectFrom('artifact as a')
+    .innerJoin('artifact_version as v', 'v.artifact_id', 'a.id')
+    .select('a.id')
+    .where('a.kind', '=', 'template')
+    .where('a.space_id', '=', space)
+    .where('v.author_id', '=', designer)
+    .where(sql<boolean>`v.content ->> 'name' = 'Report'`)
     .executeTakeFirst();
   if (exists) {
     const latest = await latestVersion(trx, exists.id);

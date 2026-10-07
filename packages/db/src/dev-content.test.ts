@@ -1,5 +1,5 @@
 // packages/db/src/dev-content.test.ts
-import { decide } from '@alloy-works/domain';
+import { decide, TEMPLATE_SCHEMA_VERSION } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadFacts } from './access-facts.js';
@@ -17,7 +17,9 @@ import { createTenant, type Tenant } from './provision.js';
 import { createRole, findRole } from './roles.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
-import { listReadableTemplates, recordTemplateVersion } from './templates.js';
+import { DEFAULT_LAYOUT_ID } from './layouts.js';
+import { createTemplate, listReadableTemplates, recordTemplateVersion } from './templates.js';
+import { DEFAULT_THEME_ID } from './themes.js';
 import { latestVersion } from './versions.js';
 
 const ISSUER = 'http://127.0.0.1:9090';
@@ -212,6 +214,55 @@ describe('the development content', () => {
       ['issued', false, false],
     ]);
     expect(parameters[0]!.feeds).toEqual({ field: REVIEWER_FIELD, arguments: false });
+  });
+
+  it('leaves alone a template made in General before Report, and still makes Report', async () => {
+    const other = await createTenant(db.adminUrl, db.migratorUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id: db.newTenantId(), name: 'Another development' },
+      hostnames: ['other.acme.alloy.test'],
+    });
+    const before = await service.withTenant(other, async (trx) => {
+      const grace = await trx
+        .insertInto('principal')
+        .values({ issuer: ISSUER, subject: 'grace', email: null, display_name: 'Grace' })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      const general = await trx
+        .selectFrom('space')
+        .select('id')
+        .where('name', '=', 'General')
+        .executeTakeFirstOrThrow();
+      const made = await createTemplate(trx, {
+        spaceId: general.id,
+        author: grace.id,
+        definition: {
+          schemaVersion: TEMPLATE_SCHEMA_VERSION,
+          name: 'Minutes',
+          theme: DEFAULT_THEME_ID,
+          layout: DEFAULT_LAYOUT_ID,
+          schemas: [],
+          outline: { sections: [] },
+          changes: { add: true, remove: true, reorder: true },
+        },
+      });
+      if (made.answer !== 'created') throw new Error(made.answer);
+      return made.template;
+    });
+    await service.withTenant(other, (trx) => seedDevelopmentContent(trx, { issuer: ISSUER }));
+    const after = await service.withTenant(other, async (trx) => ({
+      minutes: await latestVersion(trx, before.id),
+      names: (
+        await trx
+          .selectFrom('artifact_version as v')
+          .innerJoin('artifact as a', 'a.id', 'v.artifact_id')
+          .select(sql<string>`v.content ->> 'name'`.as('name'))
+          .where('a.kind', '=', 'template')
+          .execute()
+      ).map((each) => each.name),
+    }));
+    expect(after.minutes!.id).toBe(before.version.id);
+    expect(after.names.sort()).toEqual(['Minutes', 'Report']);
   });
 
   it('gives a Report made before parameters its two, once', async () => {
