@@ -1,10 +1,20 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { hasText, outlineDocumentSchema } from '@alloy-works/domain';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { hasText, outlineDocumentSchema, type TemplateParameter } from '@alloy-works/domain';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { DirectionSelect } from '../editor/DirectionSelect.js';
 import { useCreatableSpaces } from '../spaces.js';
 import { everyPage } from '../paging.js';
+import {
+  declarationsIn,
+  listed,
+  missingParameters,
+  ParameterInput,
+  refusedParameters,
+  startingValue,
+  valuesToSend,
+  type ParameterValue,
+} from './ParameterInput.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -52,6 +62,46 @@ function useTemplates(client: Client): readonly TemplateChoice[] | 'failed' | nu
   return templates;
 }
 
+/**
+ * The parameters the chosen template declares, read with `GET /v1/templates/{id}` (the TP1 plan,
+ * TP1-I): none for Blank, `'failed'` where the template could not be read - which leaves the service
+ * to refuse what is missing, and says so.
+ */
+function useDeclared(
+  client: Client,
+  template: string,
+): readonly TemplateParameter[] | 'failed' | null {
+  const [declared, setDeclared] = useState<{
+    readonly template: string;
+    readonly parameters: readonly TemplateParameter[] | 'failed';
+  } | null>(null);
+  useEffect(() => {
+    if (template === '') return undefined;
+    let current = true;
+    client
+      .GET('/v1/templates/{id}', { params: { path: { id: template } } })
+      .then(({ data }) => {
+        if (!current) return;
+        const definition: unknown = data?.definition;
+        setDeclared({
+          template,
+          parameters:
+            typeof definition === 'object' && definition !== null
+              ? declarationsIn((definition as { parameters?: unknown }).parameters)
+              : 'failed',
+        });
+      })
+      .catch(() => {
+        if (current) setDeclared({ template, parameters: 'failed' });
+      });
+    return () => {
+      current = false;
+    };
+  }, [client, template]);
+  if (template === '') return [];
+  return declared?.template === template ? declared.parameters : null;
+}
+
 export interface NewDocumentProps {
   readonly client: Client;
   /** Called with the new document's id, so the page can open it. */
@@ -79,13 +129,35 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
   const templates = useTemplates(client);
   // The empty string is Blank: a document made from nothing sends no template.
   const [template, setTemplate] = useState('');
+  const declared = useDeclared(client, template);
+  const parameters = useMemo(() => (Array.isArray(declared) ? declared : []), [declared]);
+  // What each parameter holds, by name, and what the service said of each: forgotten with the template.
+  const [given, setGiven] = useState<Record<string, ParameterValue>>({});
+  const [refused, setRefused] = useState<ReadonlyMap<string, string>>(new Map());
+  const formId = useId();
+  const reasonId = `${formId}-reason`;
+  const values = useMemo(() => {
+    const held: Record<string, ParameterValue> = {};
+    for (const parameter of parameters) {
+      const value = given[parameter.name] ?? startingValue(parameter);
+      if (value !== undefined) held[parameter.name] = value;
+    }
+    return held;
+  }, [given, parameters]);
+  const missing = missingParameters(parameters, values);
+  const reason =
+    declared === null && template !== ''
+      ? "Wait for the template's parameters to load."
+      : missing.length > 0
+        ? `Fill in ${listed(missing)} to create the document.`
+        : null;
   const [notice, setNotice] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   // Checked before any await, so a second click that lands before React re-renders sends nothing.
   const pending = useRef(false);
 
   const create = useCallback(async () => {
-    if (pending.current) return;
+    if (pending.current || reason !== null) return;
     if (!hasText(title)) {
       setNotice('A document needs a title.');
       return;
@@ -94,9 +166,11 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
       setNotice('A language tag looks like en-GB.');
       return;
     }
+    const sent = valuesToSend(parameters, values);
     pending.current = true;
     setSending(true);
     setNotice(null);
+    setRefused(new Map());
     try {
       const { data, error, response } = await client.POST('/v1/spaces/{space}/documents', {
         params: { path: { space: where } },
@@ -105,6 +179,7 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
           language: languageTag,
           direction,
           ...(template === '' ? {} : { template }),
+          ...(Object.keys(sent).length === 0 ? {} : { parameters: sent }),
         },
       });
       const id = typeof data === 'object' && data !== null && 'id' in data ? data.id : undefined;
@@ -127,6 +202,21 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
           setNotice(
             'This template refers to something that no longer exists, so a document cannot be made from it. Choose another, or Blank.',
           );
+        } else if (
+          response.status === 400 &&
+          (error?.code === 'parameter_field' || error?.code === 'parameter_unused')
+        ) {
+          setNotice(
+            "This template's parameters no longer fit its fields, so a document cannot be made from it. Choose another, or Blank.",
+          );
+        } else if (response.status === 400 && refusedParameters(error).size > 0) {
+          // The service's own sentence, and its refusal of each parameter beside it (TPL-045).
+          setRefused(refusedParameters(error));
+          setNotice(
+            typeof error?.message === 'string'
+              ? error.message
+              : 'A parameter was not accepted. Check them and try again.',
+          );
         } else if (response.status === 400) {
           setNotice('The title, language or direction was not accepted. Check them and try again.');
         } else {
@@ -141,7 +231,19 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
       pending.current = false;
       setSending(false);
     }
-  }, [client, direction, languageTag, loadSpaces, onCreated, template, title, where]);
+  }, [
+    client,
+    direction,
+    languageTag,
+    loadSpaces,
+    onCreated,
+    template,
+    title,
+    where,
+    reason,
+    parameters,
+    values,
+  ]);
 
   const status = <p role="status">{notice}</p>;
 
@@ -190,7 +292,14 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
       </label>
       <label>
         Template
-        <select value={template} onChange={(event) => setTemplate(event.target.value)}>
+        <select
+          value={template}
+          onChange={(event) => {
+            setTemplate(event.target.value);
+            setGiven({});
+            setRefused(new Map());
+          }}
+        >
           <option value="">Blank</option>
           {Array.isArray(templates) &&
             templates.map((each) => (
@@ -201,6 +310,26 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
         </select>
       </label>
       {templates === 'failed' && <p>The templates could not be loaded.</p>}
+      {declared === 'failed' && (
+        <p>
+          {"The template's parameters could not be loaded. The service will say if one is needed."}
+        </p>
+      )}
+      {parameters.length > 0 && (
+        <fieldset>
+          <legend>Parameters</legend>
+          {parameters.map((parameter) => (
+            <ParameterInput
+              key={`${template}-${parameter.name}`}
+              parameter={parameter}
+              id={`${formId}-parameter-${parameter.name}`}
+              value={values[parameter.name]}
+              onChange={(value) => setGiven((held) => ({ ...held, [parameter.name]: value }))}
+              {...(refused.has(parameter.name) ? { problem: refused.get(parameter.name)! } : {})}
+            />
+          ))}
+        </fieldset>
+      )}
       <label>
         Title
         <input value={title} onChange={(event) => setTitle(event.target.value)} />
@@ -213,9 +342,18 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
         Direction
         <DirectionSelect value={direction} onChange={setDirection} />
       </label>
-      <button className="primary" type="button" disabled={sending} onClick={() => void create()}>
+      {/* Unavailable rather than disabled, so the keyboard reaches it and hears why (TP1-I). */}
+      <button
+        className="primary"
+        type="button"
+        disabled={sending}
+        aria-disabled={reason !== null || undefined}
+        aria-describedby={reason === null ? undefined : reasonId}
+        onClick={() => void create()}
+      >
         Create
       </button>
+      {reason !== null && <p id={reasonId}>{reason}</p>}
       {status}
     </section>
   );

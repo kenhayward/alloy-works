@@ -55,6 +55,8 @@ import { inverseOf, nodeName, placeOf, visibleOrder, type Names } from './tree.j
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import { HeldFields, type SaveAnswer } from '../metadata/HeldFields.js';
+import { ParametersPanel, type ParametersSaved } from './ParametersPanel.js';
+import type { ParameterValue } from './ParameterInput.js';
 import { byName } from '../metadata/people.js';
 import { UnheldFaces, ZoomControl } from '../theme/Canvas.js';
 import { PresentationProvider, usePresentation } from '../theme/presentation.js';
@@ -114,6 +116,10 @@ interface Opened {
   };
   readonly schemas: readonly { readonly id: string; readonly name: string }[];
   readonly values: Readonly<Record<string, unknown>>;
+  /** Its parameters' values, by name (templates.md, "Recorded on the document"): none for most. */
+  readonly parameters: Readonly<Record<string, unknown>>;
+  /** Whether it was made from a template the reader may read, whose parameters it may then hold. */
+  readonly templated: boolean;
 }
 
 type Read = Opened | 'unreadable' | undefined;
@@ -133,8 +139,20 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  */
 function documentIn(data: unknown): Read {
   if (!isRecord(data)) return undefined;
-  const { id, space, version, outline, mayEdit, mayPublish, layout, fields, schemas, values } =
-    data;
+  const {
+    id,
+    space,
+    version,
+    outline,
+    mayEdit,
+    mayPublish,
+    layout,
+    fields,
+    schemas,
+    values,
+    parameters,
+    template,
+  } = data;
   if (typeof id !== 'string' || typeof mayEdit !== 'boolean' || typeof mayPublish !== 'boolean') {
     return undefined;
   }
@@ -182,6 +200,8 @@ function documentIn(data: unknown): Read {
         )
       : [],
     values: isRecord(values) ? values : {},
+    parameters: isRecord(parameters) ? parameters : {},
+    templated: isRecord(template),
   };
 }
 
@@ -928,6 +948,62 @@ export function DocumentPage({
     [client, id, opened, show],
   );
 
+  /**
+   * The document's parameters, whole, as its next version with the outline and values unchanged (the
+   * TP1 plan, TP1-H): one act at a time through the same guard, the page then holding the version
+   * the PUT answers, so the next act opens from it.
+   */
+  const saveParameters = useCallback(
+    async (next: Record<string, ParameterValue>): Promise<ParametersSaved> => {
+      if (pending.current || opened === null) return { answer: 'unsent' };
+      const before = latest.current ?? opened;
+      pending.current = true;
+      setBusy(true);
+      try {
+        const { data, error, response } = await client.PUT('/v1/documents/{id}/parameters', {
+          params: { path: { id } },
+          body: { openedFrom: before.version.id, parameters: next },
+        });
+        const after = documentIn(data);
+        if (after !== undefined && after !== 'unreadable') {
+          show(after);
+          setNotice(null);
+          return { answer: 'saved' };
+        }
+        if (response.status === 409) {
+          const refusal: unknown = error;
+          const current = documentIn(isRecord(refusal) ? refusal.current : undefined);
+          if (current !== undefined && current !== 'unreadable') show(current);
+          else setAttempt((count) => count + 1);
+          setNotice(SOMEBODY_ELSE);
+          return { answer: 'refused' };
+        }
+        if (response.status === 401) {
+          setSignedOuts((count) => count + 1);
+          setNotice('You are signed out. Sign in again to change this document.');
+          return { answer: 'refused' };
+        }
+        if (response.status === 400 || response.status === 403 || response.status === 404) {
+          setNotice(
+            isRecord(error) && typeof error.message === 'string'
+              ? error.message
+              : 'The parameters could not be saved.',
+          );
+          return { answer: 'refused', refusal: error };
+        }
+        setNotice('The parameters were not saved. Try again.');
+        return { answer: 'unsent' };
+      } catch {
+        setNotice('The parameters were not saved. Try again.');
+        return { answer: 'unsent' };
+      } finally {
+        pending.current = false;
+        setBusy(false);
+      }
+    },
+    [client, id, opened, show],
+  );
+
   const apply = useCallback(
     async (operation: OutlineOperation, undoing: boolean): Promise<Answered> => {
       if (pending.current || opened === null) return 'unsent';
@@ -1471,6 +1547,17 @@ export function DocumentPage({
                 stored={document.values}
                 readOnly={!document.mayEdit || !authoring}
                 onSave={saveValues}
+              />
+            )}
+            {/* What the document was made with, beside its fields (the TP1 plan, TP1-I). */}
+            {(document.templated || Object.keys(document.parameters).length > 0) && (
+              <ParametersPanel
+                client={client}
+                document={document.id}
+                version={document.version.id}
+                values={document.parameters}
+                readOnly={!document.mayEdit || !authoring}
+                onSave={saveParameters}
               />
             )}
             <GeneratedLists

@@ -518,8 +518,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   document starts with, which of them a document may not publish without, whether an author may add,
   remove or reorder sections, the theme and layout it is set in, and the metadata schemas it asks for
   at the document's level or its sections'. It is versioned like everything else, and refused by name
-  where anything it names does not exist. Development's General holds one, **Report**: Introduction
-  and Conclusion required, Method and Results beside them, in that order. Templates are made and
+  where anything it names does not exist. A template can declare **parameters**: each with a name, a
+  type, whether it is required, its permitted values or range, whether it may change after the
+  document is made, and the document field it seeds or the query arguments it supplies; one that feeds
+  nothing, or seeds a field that cannot take it, is refused by name. Development's General holds one,
+  **Report**: Introduction and Conclusion required, Method and Results beside them, in that order, and
+  two optional parameters, the reviewer, seeding its Reviewer field, and the date issued. Templates are made and
   changed through the API, `/v1/spaces/{space}/templates` and `/v1/templates`; nothing in the pages
   makes or changes one yet.
 
@@ -532,6 +536,17 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   is the document's own: changing it changes no template, and a template's next version changes no
   document already made. A template you may not read is answered as not there, and one naming
   something that no longer exists is refused with a sentence saying so, keeping your choice.
+
+- **A document's parameters.** Choosing a template in **New document** asks for its parameters, each
+  by its type: a box for text and numbers, a date, a time, a date and time, a check box, a choice of
+  its permitted values, or a list of entries. **Create** stays unavailable, saying which, until each
+  required one is filled, and a value the service refuses is named beside its parameter, with its rule
+  and the value. The same is open to any other client, `POST /v1/spaces/{space}/documents` with
+  `parameters`. The values are recorded on the document and seed the fields they feed, once. Its page
+  shows them in a **Parameters** panel beside its fields: a fixed one read only, a changeable one saved
+  a moment after you stop typing as the document's next version, and a **History** of every change,
+  who made it and when (`PUT` and `GET /v1/documents/{id}/parameters`). Nothing reads a parameter in a
+  query yet.
 
 - **What a template lets an author change, and its values.** A document made from a template is held
   to what that template's version said an author may change: a section added, removed or moved where

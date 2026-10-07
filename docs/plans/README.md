@@ -623,9 +623,9 @@ order names, each planned when its turn comes.
 
 [templates.md](../design/templates.md#parameters)'s build order: a template's parameters, T2's half of TPL.
 
-| #   | Plan                                                                      | Builds                                                                                                                                                                                                                    | Status  |
-| --- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| TP1 | [Declared, asked for and recorded](2026-10-07-tp1-template-parameters.md) | A template's parameters and their checks, a document made with them through the API and the form, seeded fields, parameters in the document's versions (0057), the change route and the Parameters panel with its history | Planned |
+| #   | Plan                                                                      | Builds                                                                                                                                                                                                                    | Status |
+| --- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| TP1 | [Declared, asked for and recorded](2026-10-07-tp1-template-parameters.md) | A template's parameters and their checks, a document made with them through the API and the form, seeded fields, parameters in the document's versions (0057), the change route and the Parameters panel with its history | Built  |
 
 ## Publishing
 

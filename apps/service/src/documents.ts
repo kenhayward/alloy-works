@@ -228,14 +228,21 @@ function refusedParameters(
         parameters: answer.parameters.map((parameter) => ({ parameter })),
       });
     case 'parameter.invalid':
-      return refused(400, 'parameter.invalid', PARAMETER_WORDS.invalid, {
-        problems: answer.problems.map(({ parameter, rule, value, field }) => ({
-          parameter,
-          rule,
-          value,
-          ...(field === undefined ? {} : { field }),
-        })),
-      });
+      // A template's own rules, not a query's (DAT-020): a missing value TPL-018's, any other TPL-045's.
+      return refused(
+        400,
+        'parameter.invalid',
+        PARAMETER_WORDS.invalid,
+        {
+          problems: answer.problems.map(({ parameter, rule, value, field }) => ({
+            parameter,
+            rule,
+            value,
+            ...(field === undefined ? {} : { field }),
+          })),
+        },
+        answer.problems.every((each) => each.rule === 'required') ? 'TPL-018' : 'TPL-045',
+      );
     case 'parameter.unused':
     case 'parameter.field':
       return refused(
@@ -644,7 +651,7 @@ export function documentHandlers(
      */
     getDocumentParameters: async (
       request: FastifyRequest,
-      { trx }: Authorised,
+      { trx, principalId }: Authorised,
     ): Promise<DocumentParametersView> => {
       const { id } = request.params as DocumentParams;
       const query = request.query as DocumentParametersQuery;
@@ -656,8 +663,16 @@ export function documentHandlers(
         limit: query.limit === undefined ? 50 : Number(query.limit),
         ...(after === undefined ? {} : { after }),
       });
+      // The declarations are the template's, shown only to a reader of it, as `templateView` is; the
+      // values and their history are the document's, which this reader may read.
+      const link = rules.bound ? await documentTemplate(trx, id) : undefined;
+      const templateFacts =
+        link === undefined || link === null
+          ? undefined
+          : await loadFacts(trx, principalId, { kind: 'artifact', id: link.template });
+      const readsTemplate = templateFacts != null && decide('read', templateFacts).allowed;
       return {
-        declarations: rules.bound ? [...(rules.definition.parameters ?? [])] : [],
+        declarations: rules.bound && readsTemplate ? [...(rules.definition.parameters ?? [])] : [],
         parameters: { ...document.version.parameters } as DocumentParametersView['parameters'],
         history: history.items.map((each) => ({
           version: {

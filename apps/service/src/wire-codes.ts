@@ -119,7 +119,8 @@ const RULES: Partial<Record<DottedCode, string>> = {
   'connection.in_use': 'DAT-065',
   // SQL on a connection whose latest test did not find its account read-only (data.md, "The fetch").
   'sql.not_permitted': 'DAT-103',
-  // A value failing its declaration, before anything runs (data.md, "Parameters").
+  // A value failing its declaration, before anything runs (data.md, "Parameters"). A template
+  // parameter's value is refused under TPL-018 or TPL-045 instead, by `refused`'s own rule.
   'parameter.invalid': 'DAT-020',
   // A template's parameter feeding nothing, refused when it is saved (templates.md, "Parameters").
   'parameter.unused': 'TPL-068',
@@ -144,6 +145,8 @@ export function refused(
   code: DottedCode,
   message: string,
   members: Readonly<Record<string, unknown>> = {},
+  /** The rule where this refusal's is not its code's: a template's parameters are TPL's, not DAT-020's. */
+  rule: string | undefined = RULES[code],
 ): AppError {
-  return new AppError(status, WIRE_CODES[code], message, RULES[code], members);
+  return new AppError(status, WIRE_CODES[code], message, rule, members);
 }

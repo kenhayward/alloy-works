@@ -1,19 +1,25 @@
 // packages/db/src/dev-content.test.ts
-import { decide } from '@alloy-works/domain';
+import { decide, TEMPLATE_SCHEMA_VERSION } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadFacts } from './access-facts.js';
 import { bootstrapCluster } from './bootstrap.js';
 import { componentFieldsNow } from './component-values.js';
 import { STARTER_COMPONENT_TYPE_ID } from './creation.js';
-import { seedDevelopmentConnectionUse, seedDevelopmentContent } from './dev-content.js';
+import {
+  REVIEWER_FIELD,
+  seedDevelopmentConnectionUse,
+  seedDevelopmentContent,
+} from './dev-content.js';
 import { inviteFirstAdministrator } from './first-administrator.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { createRole, findRole } from './roles.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
-import { listReadableTemplates } from './templates.js';
+import { DEFAULT_LAYOUT_ID } from './layouts.js';
+import { createTemplate, listReadableTemplates, recordTemplateVersion } from './templates.js';
+import { DEFAULT_THEME_ID } from './themes.js';
 import { latestVersion } from './versions.js';
 
 const ISSUER = 'http://127.0.0.1:9090';
@@ -199,6 +205,102 @@ describe('the development content', () => {
       ['conclusion', true],
     ]);
     expect(definition.changes.reorder).toBe(false);
+    // Two parameters to make a document with (the TP1 plan, Task 5): the reviewer seeding its field.
+    const { parameters } = report!.content as {
+      parameters: { name: string; required: boolean; changeable: boolean; feeds: unknown }[];
+    };
+    expect(parameters.map((each) => [each.name, each.required, each.changeable])).toEqual([
+      ['reviewer', false, true],
+      ['issued', false, false],
+    ]);
+    expect(parameters[0]!.feeds).toEqual({ field: REVIEWER_FIELD, arguments: false });
+  });
+
+  it('leaves alone a template made in General before Report, and still makes Report', async () => {
+    const other = await createTenant(db.adminUrl, db.migratorUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id: db.newTenantId(), name: 'Another development' },
+      hostnames: ['other.acme.alloy.test'],
+    });
+    const before = await service.withTenant(other, async (trx) => {
+      const grace = await trx
+        .insertInto('principal')
+        .values({ issuer: ISSUER, subject: 'grace', email: null, display_name: 'Grace' })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      const general = await trx
+        .selectFrom('space')
+        .select('id')
+        .where('name', '=', 'General')
+        .executeTakeFirstOrThrow();
+      const made = await createTemplate(trx, {
+        spaceId: general.id,
+        author: grace.id,
+        definition: {
+          schemaVersion: TEMPLATE_SCHEMA_VERSION,
+          name: 'Minutes',
+          theme: DEFAULT_THEME_ID,
+          layout: DEFAULT_LAYOUT_ID,
+          schemas: [],
+          outline: { sections: [] },
+          changes: { add: true, remove: true, reorder: true },
+        },
+      });
+      if (made.answer !== 'created') throw new Error(made.answer);
+      return made.template;
+    });
+    await service.withTenant(other, (trx) => seedDevelopmentContent(trx, { issuer: ISSUER }));
+    const after = await service.withTenant(other, async (trx) => ({
+      minutes: await latestVersion(trx, before.id),
+      names: (
+        await trx
+          .selectFrom('artifact_version as v')
+          .innerJoin('artifact as a', 'a.id', 'v.artifact_id')
+          .select(sql<string>`v.content ->> 'name'`.as('name'))
+          .where('a.kind', '=', 'template')
+          .execute()
+      ).map((each) => each.name),
+    }));
+    expect(after.minutes!.id).toBe(before.version.id);
+    expect(after.names.sort()).toEqual(['Minutes', 'Report']);
+  });
+
+  it('gives a Report made before parameters its two, once', async () => {
+    const run = () =>
+      service.withTenant(tenant, (trx) => seedDevelopmentContent(trx, { issuer: ISSUER }));
+    await run();
+    const report = await service.withTenant(tenant, async (trx) => {
+      const found = await trx
+        .selectFrom('artifact')
+        .select('id')
+        .where('kind', '=', 'template')
+        .executeTakeFirstOrThrow();
+      return (await latestVersion(trx, found.id))!;
+    });
+    // As an environment seeded before TP1 holds it: the same definition, with no parameters.
+    const before: Record<string, unknown> = { ...(report.content as Record<string, unknown>) };
+    delete before['parameters'];
+    await service.withTenant(tenant, async (trx) => {
+      const grace = await trx
+        .selectFrom('principal')
+        .select('id')
+        .where('subject', '=', 'grace')
+        .executeTakeFirstOrThrow();
+      const cut = await recordTemplateVersion(trx, {
+        templateId: report.artifactId,
+        openedFrom: report.id,
+        definition: before,
+        author: grace.id,
+      });
+      expect(cut.answer).toBe('recorded');
+    });
+    await run();
+    const after = await service.withTenant(tenant, (trx) => latestVersion(trx, report.artifactId));
+    const { parameters } = after!.content as { parameters: { name: string }[] };
+    expect(parameters.map((each) => each.name)).toEqual(['reviewer', 'issued']);
+    await run();
+    const again = await service.withTenant(tenant, (trx) => latestVersion(trx, report.artifactId));
+    expect(again!.id).toBe(after!.id);
   });
 
   it('makes a Procedure component in General whose type gives it fields, however often it runs', async () => {

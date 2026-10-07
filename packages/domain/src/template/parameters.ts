@@ -115,13 +115,38 @@ export function checkTemplateParameters(
       );
     }
   }
+  // One field seeded by two parameters would take whichever came last: each is refused, naming both.
+  const seeding = new Map<string, string[]>();
+  for (const parameter of parameters) {
+    const { field } = parameter.feeds;
+    if (field !== undefined) seeding.set(field, [...(seeding.get(field) ?? []), parameter.name]);
+  }
+  for (const [field, names] of seeding) {
+    if (names.length < 2) continue;
+    const named = fields.get(field)?.field.name ?? field;
+    const message = `The parameters ${names.slice(0, -1).join(', ')} and ${names.at(-1)} both seed ${named}`;
+    for (const parameter of names) {
+      problems.push({ code: 'parameter_field', parameter, field, message });
+    }
+  }
   return problems;
 }
+
+/**
+ * A template parameter's value refused: by the query definition's rules, or - a template's own, since
+ * a query's list may repeat an item - a list holding one item twice (`duplicate`).
+ */
+export type TemplateParameterValueProblem =
+  | ParameterProblem
+  | { readonly parameter: string; readonly rule: 'duplicate'; readonly value: string };
 
 /** Why a document's parameter values are refused (TP1-G, TP1-H): by name, or each value's problems. */
 export type ParameterValuesRefused =
   | { readonly code: 'parameter_unknown'; readonly parameters: readonly string[] }
-  | { readonly code: 'parameter_invalid'; readonly problems: readonly ParameterProblem[] };
+  | {
+      readonly code: 'parameter_invalid';
+      readonly problems: readonly TemplateParameterValueProblem[];
+    };
 
 /**
  * Values given for a template's parameters, checked (TP1-G): a name it does not declare first, which
@@ -135,10 +160,29 @@ export function checkDocumentParameters(
   const declared = new Set(parameters.map((each) => each.name));
   const unknown = Object.keys(values).filter((name) => !declared.has(name));
   if (unknown.length > 0) return { code: 'parameter_unknown', parameters: unknown };
-  const problems = checkParameterValues(
+  const problems: TemplateParameterValueProblem[] = checkParameterValues(
     parameters,
     values as Parameters<typeof checkParameterValues>[1],
   );
+  for (const parameter of parameters) {
+    const value = values[parameter.name];
+    if (!parameter.list || !Array.isArray(value)) continue;
+    if (problems.some((each) => each.parameter === parameter.name)) continue;
+    const seen = new Set<string>();
+    const twice = (value as unknown[]).find((item) => {
+      const key = JSON.stringify(item);
+      if (seen.has(key)) return true;
+      seen.add(key);
+      return false;
+    });
+    if (twice !== undefined) {
+      problems.push({
+        parameter: parameter.name,
+        rule: 'duplicate',
+        value: typeof twice === 'string' ? twice : JSON.stringify(twice),
+      });
+    }
+  }
   return problems.length > 0 ? { code: 'parameter_invalid', problems } : null;
 }
 
