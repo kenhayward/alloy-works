@@ -16,6 +16,7 @@ const held = (over: Partial<NonNullable<BindingState['held']>> = {}) => ({
     at: '2026-10-05T09:00:00.000Z',
     rowCount: 1,
     checksum: '0'.repeat(64),
+    columns: [],
   },
   name: null,
   stale: false,

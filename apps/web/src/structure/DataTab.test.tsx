@@ -163,7 +163,7 @@ describe('the Data tab (the B4 plan, task 3)', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(4);
   });
 
-  it("lists a bound table's binding as holding the whole result, never failed or stale for what it takes (TB1-C)", () => {
+  it("lists a bound table's binding as holding a table of its result's rows, never failed or stale for what it takes (TB1-C, TB2-H)", () => {
     const table = view(FIRST, 'table', 'unused');
     const binding = { ...table.binding } as Record<string, unknown>;
     delete binding.take;
@@ -175,7 +175,7 @@ describe('the Data tab (the B4 plan, task 3)', () => {
       }),
     );
     expect(rowOf('table')).toHaveTextContent('Holding');
-    expect(rowOf('table')).toHaveTextContent('A table of the whole result');
+    expect(rowOf('table')).toHaveTextContent('A table of 1 row');
   });
 
   it('DAT-070 lists a binding whose definition changed, and each binding changed since the document was last published with what differs', () => {

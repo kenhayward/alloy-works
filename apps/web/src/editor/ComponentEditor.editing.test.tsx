@@ -724,6 +724,37 @@ describe('the component editor', () => {
     expect(screen.queryByRole('textbox')).toBeNull();
   });
 
+  it('opens a component holding a bound table for editing, its body naming what fills it (TB2.1)', async () => {
+    const withTable = content('Before');
+    withTable.content.push({
+      type: 'boundTable',
+      id: 'bt1',
+      style: 'table',
+      binding: {
+        type: 'binding',
+        id: 'k1',
+        query: '00000000-0000-4000-8000-00000000d001',
+        parameters: {},
+        mode: 'checked',
+      },
+      caption: [{ type: 'text', value: 'Readings', marks: [] }],
+      columns: [{ column: 'site', header: 'Site' }],
+      headerColumn: false,
+    } as never);
+    const { surface } = open({
+      'GET /v1/components/{id}': () => json(200, opened({ content: withTable })),
+    });
+    const view = await surface();
+    const box = screen.getByRole('textbox', { name: 'Content of Install the printer' });
+    expect(box).toHaveAttribute('contenteditable', 'true');
+    expect(screen.queryByText(/cannot change yet/)).toBeNull();
+    const body = view.dom.querySelector('[data-bound-table-body]')!;
+    expect(
+      within(body as HTMLElement).getByRole('columnheader', { name: 'Site' }),
+    ).toBeInTheDocument();
+    expect(body).toHaveTextContent('Filled from a query definition in each document');
+  });
+
   it('says there is nothing to open when the service answers not found', async () => {
     open({});
     expect(
@@ -2567,6 +2598,7 @@ describe('a binding in the editor (the B1 plan, task 5)', () => {
               at: '2026-10-04T09:30:00.000Z',
               rowCount: 1,
               checksum: '0'.repeat(64),
+              columns: [],
             },
             name: null,
             stale: false,
