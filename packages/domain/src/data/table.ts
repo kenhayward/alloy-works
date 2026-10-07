@@ -31,10 +31,13 @@ import {
  */
 
 /**
- * The most rows a bound table prints (tables.md, `table_too_long`): the default row limit, which
- * TB1.2 measures against the pinned Typst and the Word writer on Linux and replaces (TB1-K).
+ * **The most rows a bound table prints** (tables.md, `table_too_long`; TB1-K), measured by TB1.2 in a
+ * `node:24-bookworm` container limited to 1 GiB and 2 CPUs: an 8-column table through `assemble`, the
+ * Word writer and the pinned Typst. 2,000 rows published in 3.5 s; 2,200 were killed for memory, the
+ * engine's, never time - 10,000 would need about 5 GiB. An authored table of as many cells costs the
+ * engine as much. The plan's "Changed while building" has the figures.
  */
-export const TABLE_ROWS_MAX = 10_000;
+export const TABLE_ROWS_MAX = 2_000;
 
 /**
  * What a table style says of a bound table's cells (STY-014, STY-077; TB1-F): a format by type, an
