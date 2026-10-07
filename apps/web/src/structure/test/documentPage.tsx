@@ -214,6 +214,11 @@ export function service(
       string,
       { block: string; sequence: string; numbered: boolean; caption: string | null }[]
     >;
+    /**
+     * The template's parameters and the values the document was made with (the TP1 plan, TP1-H): the
+     * view names a template and carries them, and the parameters routes answer as the service does.
+     */
+    parameters?: { declarations: unknown[]; values: Record<string, unknown> };
   } = {},
 ) {
   const sent: { url: string; body: unknown }[] = [];
@@ -241,6 +246,19 @@ export function service(
     return `nnnnnnnnnnnnnnnnnnnnnnnn${BASE32[Math.floor(allocated / 32)]}${BASE32[allocated % 32]}`;
   };
   const latest = () => chain[chain.length - 1]!;
+  // The parameters as they stand, and each version that changed them, newest last.
+  let parameters: Record<string, unknown> = { ...options.parameters?.values };
+  const changes: {
+    version: { id: string; number: string };
+    parameters: Record<string, unknown>;
+    changed: string[];
+  }[] = [
+    {
+      version: { id: chain[0]!.id, number: chain[0]!.number },
+      parameters,
+      changed: Object.keys(parameters),
+    },
+  ];
   const view = (version = latest()) => ({
     id: DOCUMENT,
     space: { id: SPACE, name: 'General' },
@@ -256,6 +274,16 @@ export function service(
     mayEdit: options.mayEdit ?? true,
     mayPublish: options.mayPublish ?? false,
     layout: options.layout ?? layoutView(defaultLayout.scheme),
+    ...(options.parameters === undefined
+      ? {}
+      : {
+          parameters,
+          template: {
+            id: 'ee000000-0000-4000-8000-000000000001',
+            name: 'Report',
+            version: { id: 'ee000000-0000-4000-8000-0000000000a1', number: '0.3' },
+          },
+        }),
   });
   const record = (next: OutlineDocument) => {
     const count = chain.length + 1;
@@ -312,6 +340,49 @@ export function service(
       return json(200, { ...previewRequest, state: 'done', preview: previewLinks });
     }
     if (url === `/v1/documents/${DOCUMENT}`) return json(200, view());
+    if (url === `/v1/documents/${DOCUMENT}/parameters` && options.parameters !== undefined) {
+      if (request.method === 'GET') {
+        const history = [...changes].reverse().map((each) => ({
+          ...each,
+          createdAt: '2026-09-18T09:00:00.000Z',
+          author: { id: ADA, name: 'Ada' },
+        }));
+        const cursor = new URL(request.url).searchParams.get('cursor');
+        const limit = Number(new URL(request.url).searchParams.get('limit') ?? '50');
+        const from = cursor === null ? 0 : Number(cursor);
+        return json(200, {
+          declarations: options.parameters.declarations,
+          parameters,
+          history: history.slice(from, from + limit),
+          next: from + limit < history.length ? String(from + limit) : null,
+        });
+      }
+      const sentParameters = body as { openedFrom: string; parameters: Record<string, unknown> };
+      if (sentParameters.openedFrom !== latest().id) {
+        return json(409, {
+          code: 'version_precondition',
+          message: 'This document has a newer version than the one this page opened.',
+          traceId: 't',
+          current: view(),
+        });
+      }
+      const changed = [
+        ...new Set([...Object.keys(parameters), ...Object.keys(sentParameters.parameters)]),
+      ].filter(
+        (name) =>
+          JSON.stringify(parameters[name]) !== JSON.stringify(sentParameters.parameters[name]),
+      );
+      if (changed.length > 0) {
+        record(latest().outline);
+        parameters = sentParameters.parameters;
+        changes.push({
+          version: { id: latest().id, number: latest().number },
+          parameters,
+          changed,
+        });
+      }
+      return json(200, view());
+    }
     if (url === `/v1/documents/${DOCUMENT}/contributions`) {
       // As `getContributions` answers: every reference of the latest version, in outline order, and
       // a version the caller may read named once with what it holds - never one they may not.
