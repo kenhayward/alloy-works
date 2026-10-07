@@ -35,6 +35,7 @@ understand the storage layer, rather than something to be thrown away.
 | [document-view.md](document-view.md)                   | A document read and authored on one page: one scroll, boundaries, modes, navigation and versions                       |
 | [data.md](data.md)                                     | Connections, query definitions and stored results, and the connector: the one process that reaches a source            |
 | [bindings.md](bindings.md)                             | A bound value placed and shown in the editor, a document's values and their revisions, and the publish's binding stage |
+| [tables.md](tables.md)                                 | A result as a bound table: its columns, order, formats and notes, laid out alike in the page and the publish           |
 
 ## Why these are not one per requirement area
 

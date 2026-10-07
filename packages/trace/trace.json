@@ -12343,7 +12343,7 @@
       "id": "TAB-008",
       "area": "TAB",
       "statement": "Rows must be groupable by a column, with a group heading row",
-      "tranche": "T2",
+      "tranche": "T3",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
       "line": 62
@@ -12352,7 +12352,7 @@
       "id": "TAB-009",
       "area": "TAB",
       "statement": "Totals and subtotals must be declarable per column, with the aggregation named",
-      "tranche": "T2",
+      "tranche": "T3",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
       "line": 63
@@ -12361,7 +12361,7 @@
       "id": "TAB-010",
       "area": "TAB",
       "statement": "An aggregation must state whether it was computed here or returned by the query, because the two can disagree",
-      "tranche": "T2",
+      "tranche": "T3",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
       "line": 64
@@ -12379,7 +12379,7 @@
       "id": "TAB-043",
       "area": "TAB",
       "statement": "Grouping must be declarable on more than one column, nesting in a declared order, and the relationship with a declared sort (TAB-007) must be stated: groups order first, and the sort applies within each group",
-      "tranche": "T2",
+      "tranche": "T3",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
       "line": 66
@@ -12388,7 +12388,7 @@
       "id": "TAB-042",
       "area": "TAB",
       "statement": "A group heading must stay with the first row of its group, and a subtotal with the last row of its, across a page break. How that is achieved is the table style's (**STY-013**); that it must hold is this document's",
-      "tranche": "T2",
+      "tranche": "T3",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
       "line": 67
@@ -12397,7 +12397,7 @@
       "id": "TAB-044",
       "area": "TAB",
       "statement": "The aggregations available for a total or a subtotal must be a closed set - sum, count, minimum, maximum and mean - named on the column. Anything else must be computed by the query (TAB-020, TAB-N02)",
-      "tranche": "T2",
+      "tranche": "T3",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
       "line": 68
@@ -12406,7 +12406,7 @@
       "id": "TAB-047",
       "area": "TAB",
       "statement": "A total computed here rather than returned by the query (TAB-010) must record its inputs and its rule in provenance, so that a number on the page that no query returned can still be explained (**DAT-085**)",
-      "tranche": "T2",
+      "tranche": "T3",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
       "line": 69
@@ -12532,7 +12532,7 @@
       "id": "TAB-021",
       "area": "TAB",
       "statement": "The presentation layer must perform only a declared, narrow set of reshaping: transposing a small result, and grouping as in section 4",
-      "tranche": "T2",
+      "tranche": "T3",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
       "line": 126
@@ -12541,7 +12541,7 @@
       "id": "TAB-022",
       "area": "TAB",
       "statement": "Any reshaping performed here must be stated in the table's definition, so that a reader of the definition can see what the query did not do",
-      "tranche": "T2",
+      "tranche": "T3",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
       "line": 127
@@ -12595,7 +12595,7 @@
       "id": "TAB-028",
       "area": "TAB",
       "statement": "Conditional presentation - a threshold exceeded, a value out of range - must be declarable as a rule in the table style (**STY**)",
-      "tranche": "T2",
+      "tranche": "T3",
       "status": "Specified",
       "document": "TAB-tabular-presentation.md",
       "line": 143
@@ -17571,6 +17571,143 @@
         {
           "id": "IAM-002",
           "howItIsMet": "Every container reaches tenant data only through that tenant's database role, scoped object-storage credentials and tenant channel - see below"
+        }
+      ]
+    },
+    {
+      "document": "tables.md",
+      "owns": [
+        {
+          "id": "TAB-001",
+          "howItIsMet": "`columns` lists the result columns shown, in order ([The presentation](#the-presentation))"
+        },
+        {
+          "id": "TAB-002",
+          "howItIsMet": "Each column carries its `header`, required, defaulting in the editor to the column's name"
+        },
+        {
+          "id": "TAB-003",
+          "howItIsMet": "A column's `unit` prints in its header, bracketed as the table style says, or after each value where the column asks"
+        },
+        {
+          "id": "TAB-004",
+          "howItIsMet": "A column the dataset version does not have is `column_missing`, in the page and at the stage, never an empty column"
+        },
+        {
+          "id": "TAB-035",
+          "howItIsMet": "Widths are the table style's; a column declares `wrap: false` where it must not wrap"
+        },
+        {
+          "id": "TAB-036",
+          "howItIsMet": "Every declaration lives in the block and names a column by the result's column name, never a position; T3's declarations follow the same rule"
+        },
+        {
+          "id": "TAB-048",
+          "howItIsMet": "A column named twice is refused unless every header naming it differs, `column_repeated`"
+        },
+        {
+          "id": "TAB-006",
+          "howItIsMet": "With no `sort`, rows print in the dataset version's stored order: the definition's declared order, or for a multiset the canonical order data.md stores"
+        },
+        {
+          "id": "TAB-007",
+          "howItIsMet": "`sort` is stable over the stored order, so ties keep it and never swap between runs ([Order](#order))"
+        },
+        {
+          "id": "TAB-011",
+          "howItIsMet": "No rows prints the headers and the declared empty statement spanning the table"
+        },
+        {
+          "id": "TAB-012",
+          "howItIsMet": "A column's format is the table style's format for its type, overridden by the column's ([Formatting](#formatting))"
+        },
+        {
+          "id": "TAB-013",
+          "howItIsMet": "Number, currency, percentage, date, time, duration and unit"
+        },
+        {
+          "id": "TAB-014",
+          "howItIsMet": "`places` per column, applied to every value in it"
+        },
+        {
+          "id": "TAB-015",
+          "howItIsMet": "`rounding` is declared, half away from zero or half to even, and stated in provenance"
+        },
+        {
+          "id": "TAB-016",
+          "howItIsMet": "`negative`: a minus sign or parentheses, and optionally the style's negative colour beside either, never alone"
+        },
+        {
+          "id": "TAB-017",
+          "howItIsMet": "`null` prints declared text, which may not be empty or a number; an empty text cell prints empty"
+        },
+        {
+          "id": "TAB-019",
+          "howItIsMet": "Formatting reads the canonical value and changes nothing; provenance records each printed cell's canonical value"
+        },
+        {
+          "id": "TAB-037",
+          "howItIsMet": "The override merges property by property ([Formatting](#formatting))"
+        },
+        {
+          "id": "TAB-038",
+          "howItIsMet": "A unit labels; no format converts a quantity"
+        },
+        {
+          "id": "TAB-045",
+          "howItIsMet": "Separators and date order come from the value catalogue's formats for the document's language (BI-F)"
+        },
+        {
+          "id": "TAB-046",
+          "howItIsMet": "A number column aligns on its decimal separator by layout, not by added characters; alignment by type is the table style's"
+        },
+        {
+          "id": "TAB-024",
+          "howItIsMet": "A note anchors to a cell by the definition's key and a column ([Notes](#notes))"
+        },
+        {
+          "id": "TAB-025",
+          "howItIsMet": "A note anchors to a column; the table's `note` is the note on the whole table"
+        },
+        {
+          "id": "TAB-026",
+          "howItIsMet": "Notes in any table, bound or authored, are lettered in the table's own sequence and printed beneath it"
+        },
+        {
+          "id": "TAB-027",
+          "howItIsMet": "`source`, inline content printed beneath the table after a layout word"
+        },
+        {
+          "id": "TAB-033",
+          "howItIsMet": "`wide`: `scale` or `rotate`, the table style's default, applied to every table, bound or authored ([Wide tables](#wide-tables))"
+        },
+        {
+          "id": "TAB-051",
+          "howItIsMet": "A scaled or rotated table is one tagged table and one Word table"
+        },
+        {
+          "id": "DAT-012",
+          "howItIsMet": "A note by key needs a definition declaring a key: `key_required` where it is placed"
+        },
+        {
+          "id": "DAT-028",
+          "howItIsMet": "A block binding produces a table whose presentation is this block's and the table style's, never the binding's"
+        },
+        {
+          "id": "DAT-033",
+          "howItIsMet": "A table's values are formatted by its table style over the value catalogue, the same declaration bindings.md formats an inline value by; neither is stored in the binding"
+        },
+        {
+          "id": "DAT-048",
+          "howItIsMet": "A note whose row the result no longer has is `note_row_missing`, naming the note, the key and the definition, in the page and at the stage"
+        },
+        {
+          "id": "DAT-069",
+          "howItIsMet": "An empty result where the definition declares one valid prints headers and the statement; declared invalid, the run already failed (DAT-068)"
+        },
+        {
+          "id": "CNT-039",
+          "howItIsMet": "A note into generated content names its row by key value, never by position"
         }
       ]
     },
