@@ -979,14 +979,18 @@
     // each cell's line unbroken; a negative is set in its style's colour. Its empty statement, a cell
     // spanning the table, is set as any cell is.
     let bound = b.at("bound", default: none)
-    let bound-cell(c, x) = {
+    let bound-runs(c, x) = {
       let p = c.blocks.at(0)
-      let a = bound.align.at(x)
       let runs = p.runs.map(run).join()
       let runs = if runs == none { [] } else { runs }
       let runs = if c.at("colour", default: none) == none { runs } else { text(fill: colour(c.colour), runs) }
-      let runs = if a == "decimal" { text(kerning: false, runs) } else { runs }
-      let runs = if c.at("inset", default: false) { runs + context h(measure[)].width) } else { runs }
+      let runs = if bound.align.at(x) == "decimal" { text(kerning: false, runs) } else { runs }
+      if c.at("inset", default: false) { runs + context h(measure[)].width) } else { runs }
+    }
+    let bound-cell(c, x) = {
+      let p = c.blocks.at(0)
+      let a = bound.align.at(x)
+      let runs = bound-runs(c, x)
       let runs = if bound.wrap.at(x) { runs } else { box(runs) }
       let where = if a == "start" { start } else if a == "centre" { center } else { end }
       styled(style(p.style), align(where, par(runs)), within: within("tableCell"))
@@ -1255,41 +1259,48 @@
       let found = ()
       for p in blocks {
         if p.type == "paragraph" {
-          found += words-of(p.runs).map(w => lettering(style(p.style), box(w)))
+          found += words-of(p.runs).map(w => lettering(style(p.style), w))
         } else if p.type == "list" {
           let s = place-style("listItem")
           for i in p.items {
-            if i.at("term", default: none) != none { found += words-of(i.term).map(w => lettering(s, box(w))) }
+            if i.at("term", default: none) != none { found += words-of(i.term).map(w => lettering(s, w)) }
             found += block-words(i.blocks)
           }
         }
       }
       found
     }
-    let least(c, x) = {
-      let width = if bound != none and c.colspan == 1 and not bound.wrap.at(x) {
-        measure(cell-body(c, x)).width
-      } else {
-        calc.max(0pt, ..block-words(c.blocks).map(w => measure(weighed(c, w)).width))
-      }
-      width + 2 * pt(t.inset)
+    // What a cell asks of its column: each word, in its weight, or a no-wrap cell's line.
+    let pieces(c, x) = if bound != none and c.colspan == 1 and not bound.wrap.at(x) {
+      (weighed(c, lettering(style(c.blocks.at(0).style), bound-runs(c, x))),)
+    } else {
+      block-words(c.blocks).map(w => weighed(c, w))
     }
-    // Each column's least width, each cell read where it stands in the grid.
+    // Each column's least width, each cell read where it stands in the grid: what its cells ask, a line
+    // each of one paragraph measured in no width, which is as wide as its widest line (measured) - one
+    // measure a column, a word never broken nor hyphenated where nothing narrows it. A stack of a box a
+    // word, or a measure a word, held a 2,000-row table's query at a third more memory.
     let least-columns() = {
-      let found = (0pt,) * b.columns
+      let found = range(b.columns).map(_ => ())
       let taken = (0,) * b.columns
       for row in b.rows {
         let next = taken.map(n => calc.max(0, n - 1))
         let x = 0
         for (i, c) in row.cells.enumerate() {
           while x < b.columns and taken.at(x) > 0 { x += 1 }
-          if c.colspan == 1 and x < b.columns { found.at(x) = calc.max(found.at(x), least(c, i)) }
+          if c.colspan == 1 and x < b.columns { found.at(x) += pieces(c, i) }
           for k in range(x, calc.min(b.columns, x + c.colspan)) { next.at(k) = calc.max(next.at(k), c.rowspan - 1) }
           x += c.colspan
         }
         taken = next
       }
-      found
+      found.map(each => {
+        let lines = {
+          set par(first-line-indent: 0pt, justify: false)
+          par(each.join(linebreak()))
+        }
+        (if each.len() == 0 { 0pt } else { measure(lines).width }) + 2 * pt(t.inset)
+      })
     }
     // The measure, from the page's own data and never `layout`, so a turned table can be set from
     // here at the top of the flow: the format across less its margins and gutter, upright or turned,

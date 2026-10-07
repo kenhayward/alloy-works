@@ -36,9 +36,12 @@ import {
  * `node:24-bookworm` container limited to 1 GiB and 2 CPUs: an 8-column table through `assemble`, the
  * Word writer and the pinned Typst. 2,000 rows published in 3.5 s; 2,200 were killed for memory, the
  * engine's, never time - 10,000 would need about 5 GiB. An authored table of as many cells costs the
- * engine as much. The plan's "Changed while building" has the figures.
+ * engine as much. **Re-timed by TB3.2** with template 18, which measures every cell's words to know a
+ * table too wide and is queried before it compiles (TB3-H, TB3-I): the engine's peak a third higher for
+ * the same table, so 1,500 rows, the query's peak 913 MiB and the compile's 941, and 1,800 killed.
+ * The TB3 and TB1 plans' "Changed while building" have the figures.
  */
-export const TABLE_ROWS_MAX = 2_000;
+export const TABLE_ROWS_MAX = 1_500;
 
 /**
  * What a table style says of a bound table's cells (STY-014, STY-077; TB1-F): a format by type, an
