@@ -53,6 +53,7 @@ import {
   PUBLISHING_SCHEMA_14,
   PUBLISHING_SCHEMA_15,
   PUBLISHING_SCHEMA_16,
+  PUBLISHING_SCHEMA_17,
   type PublishedBlock,
   type PublishedDocument,
   type PublishedInline,
@@ -1149,8 +1150,8 @@ describe('assemble', () => {
     ]);
   });
 
-  it('assembles under a layout as publishing/17, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/17');
+  it('assembles under a layout as publishing/18, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/18');
     // Frozen with templates 3 and 4 and the publications made by them, exactly as `publishing/2` was
     // frozen when a run began to carry its marks: a template version is a record, not something to
     // migrate.
@@ -1736,8 +1737,8 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     ]);
   });
 
-  it('makes publishing/17, and publishing/4 to publishing/16 are frozen', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/17');
+  it('makes publishing/18, and publishing/4 to publishing/17 are frozen', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/18');
     expect(PUBLISHING_SCHEMA_4).toBe('publishing/4');
     expect(PUBLISHING_SCHEMA_5).toBe('publishing/5');
     expect(PUBLISHING_SCHEMA_6).toBe('publishing/6');
@@ -1751,6 +1752,7 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     expect(PUBLISHING_SCHEMA_14).toBe('publishing/14');
     expect(PUBLISHING_SCHEMA_15).toBe('publishing/15');
     expect(PUBLISHING_SCHEMA_16).toBe('publishing/16');
+    expect(PUBLISHING_SCHEMA_17).toBe('publishing/17');
   });
 });
 
@@ -1846,6 +1848,8 @@ describe('a table, published (tables 2)', () => {
         listed: true,
         note: null,
         notes: [],
+        // Scaled where too wide, as neither it nor its style says otherwise (TB3-G).
+        wide: 'scale',
       },
     ]);
   });
@@ -4567,11 +4571,11 @@ describe('the theme a publication is set from (themes 1)', () => {
     return styles;
   };
 
-  it('makes publishing/17, carrying the Typst projection of every paragraph, table and image style the theme holds, used or not', () => {
+  it('makes publishing/18, carrying the Typst projection of every paragraph, table and image style the theme holds, used or not', () => {
     const theme = resolved();
     const assembled = assemble(oneParagraph(text('Set the tray.')));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    expect(assembled.document.schema).toBe('publishing/17');
+    expect(assembled.document.schema).toBe('publishing/18');
     expect(assembled.document.theme).toEqual(projectTypst(theme));
     expect(Object.keys(assembled.document.theme.tables)).toEqual(['table', 'banded']);
     expect(Object.keys(assembled.document.theme.images)).toEqual([
@@ -5304,6 +5308,19 @@ describe('table and image styles, published (themes 2)', () => {
     expect(assemble(under(theme, labelled)).ok).toBe(true);
     const plain = table('table', paragraph('p1', text('1')));
     expect(assemble({ ...under(theme, plain), layout: fourth }).ok).toBe(true);
+  });
+  it("publishes how a table too wide is set: its own wide, else its style's, else scale (TB3-G)", () => {
+    const theme = styled([], [tableStyle('turned', { wide: 'rotate' })]);
+    const wideOf = (stored: object) => {
+      const assembled = assemble(under(theme, stored));
+      if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+      return (blocksOf(assembled)[0] as { wide: unknown }).wide;
+    };
+    const plain = table('table', paragraph('p1', text('1')));
+    expect(wideOf(plain)).toBe('scale');
+    expect(wideOf({ ...plain, wide: 'rotate' })).toBe('rotate');
+    expect(wideOf(table('turned', paragraph('p1', text('1'))))).toBe('rotate');
+    expect(wideOf({ ...table('turned', paragraph('p1', text('1'))), wide: 'scale' })).toBe('scale');
   });
 });
 

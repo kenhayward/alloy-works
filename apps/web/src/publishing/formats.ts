@@ -16,6 +16,8 @@ const TABLE_KINDS = [
   'header_column_lost',
   'header_repeated',
   'continuation_label_omitted',
+  // TB3 (TB3-J): a table the PDF scaled to its measure, which Word reflows.
+  'table_reflowed',
 ] as const;
 type TableKind = (typeof TABLE_KINDS)[number];
 
@@ -219,6 +221,8 @@ export function reportWords(entry: ReportEntry): string {
       return `${tableName(entry)} repeats its header rows on every page it reaches in Word, though its table style does not: Word marks header rows only by repeating them.`;
     case 'continuation_label_omitted':
       return `${tableName(entry)} has no continuation label in Word on the pages it continues on, since Word cannot set one.`;
+    case 'table_reflowed':
+      return `${tableName(entry)} is too wide for the page, so the PDF scales it down to fit; Word cannot scale a table, and fits it to the page by wrapping its text instead.`;
     // A heading by its number and a caption by its label, as the PDF prints them.
     case 'equation_flattened':
       return `${flattenedName(entry)} holds an equation that Word sets as its characters in a row ${

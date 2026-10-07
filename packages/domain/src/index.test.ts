@@ -209,6 +209,7 @@ describe('the domain package', () => {
         // Frozen by TB1.2, which made `publishing/16`: the schema template 15 reads.
         'PUBLISHING_SCHEMA_15',
         'PUBLISHING_SCHEMA_16',
+        'PUBLISHING_SCHEMA_17',
         'assemble',
         'publishedImagePath',
         'publishFailureCodes',

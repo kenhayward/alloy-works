@@ -17,6 +17,8 @@ export function keepingEach(
   const counts = new Map<string, number>();
   return {
     version: () => typst.version(),
+    query: (template, data, label, createdAt, images) =>
+      typst.query(template, data, label, createdAt, images),
     async compile(template, data, createdAt, images) {
       const pdf = await typst.compile(template, data, createdAt, images);
       // The test's own title, after the last ` > `: a describe's title is shared by every test in it,

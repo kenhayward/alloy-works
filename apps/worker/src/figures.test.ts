@@ -277,7 +277,7 @@ describe('a figure in the PDF (figures 3)', () => {
       PUBLICATION_TEMPLATE[TEMPLATE_READING[PUBLISHING_SCHEMA]].file,
       assembled.document,
     );
-    expect(TEMPLATE_READING[PUBLISHING_SCHEMA]).toBe(17);
+    expect(TEMPLATE_READING[PUBLISHING_SCHEMA]).toBe(18);
     expect(after.elements).toMatchObject({ TOC: 1, TOCI: 4 });
     expect(after.pages).toBe(before.pages);
     expect(after.taggedText).toEqual(before.taggedText);

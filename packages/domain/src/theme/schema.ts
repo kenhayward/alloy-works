@@ -353,8 +353,9 @@ const byType = <T extends z.ZodType>(member: T) =>
 /**
  * At `catalogue/3`, a table style says where its caption sits, and - **optional, so every stored
  * style reads as it did** (the TB1 plan, TB1-F) - how a bound table's cells are formatted by type
- * (STY-014), aligned by type (STY-077), the colour a negative is set in beside its sign (TAB-016), and
- * how a unit in a header is bracketed (TAB-003). Where a style names none, `layoutTable` reads the
+ * (STY-014), aligned by type (STY-077), the colour a negative is set in beside its sign (TAB-016),
+ * how a unit in a header is bracketed (TAB-003), and, from TB3, how a table too wide for its measure is
+ * set (TAB-033). Where a style names none, `layoutTable` reads the
  * product's defaults (`DEFAULT_TABLE_FIELDS`, `DEFAULT_TABLE_ALIGN`, parentheses).
  */
 export const tableStyleSchema = z.strictObject({
@@ -364,6 +365,8 @@ export const tableStyleSchema = z.strictObject({
   align: byType(z.enum(COLUMN_ALIGNMENTS)).optional(),
   negativeColour: colour.optional(),
   unitBrackets: z.enum(['parentheses', 'brackets']).optional(),
+  // How a table too wide for its measure is set (TB3-G), optional likewise: absent, `scale`.
+  wide: z.enum(['scale', 'rotate']).optional(),
 });
 
 /** The units an image's size is given in (STY-015, STY-017). */

@@ -210,6 +210,7 @@ describe('the sample job, from the queue to the store', () => {
       typst: {
         version: () => typst.version(),
         compile: (template, _data, createdAt) => typst.compile(template, refused, createdAt),
+        query: async () => [],
       },
     });
     const refusing: Record<string, JobHandler> = {

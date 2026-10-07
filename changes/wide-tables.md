@@ -1,0 +1,3 @@
+### Added
+
+- **Wide tables are scaled or turned, never cut off.** A table too wide for the page is scaled down to fit it in the PDF, or, where the table or its table style says to rotate, set on landscape pages of its own with the running heads and page numbers carried on. Each stays one table to a screen reader. A table that would have to shrink below half its size, that is taller than a page once scaled, or that is too wide even for a landscape page fails the publish by name. In Word a rotated table has a landscape section of its own, and a table the PDF scaled is fitted to the page by Word and noted on the Word document. Through the API, a table, a bound table or a table style says which; choosing it on the page comes next.

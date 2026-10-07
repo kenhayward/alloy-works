@@ -774,7 +774,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   **On the page**, in a component it shows its headers and the definition that fills it; in a
   document, its first 50 rows laid out by the publish's own rules in the product's default words, and
   how many more there are, or
-  why it shows none - more than 2,000 rows, a column gone, a format that does not fit - before any
+  why it shows none - more than 1,500 rows, a column gone, a format that does not fit - before any
   publish. Each change in the panel redraws it at once, without a save. The read text draws it as the
   editor does, and the Data tab lists it as a table of its rows, failed where it would not print. It
   is resolved, checked, accepted and kept like any value. **A document holding one publishes**: the PDF and Word print it as a table
@@ -782,7 +782,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   in the document's language, numbers lined up on their decimal separator, a negative in parentheses
   and the style's colour where asked, no rows as the headers and the statement, and the source beneath
   it; `provenance.json` records each printed cell beside the value it was printed from. A table of more
-  than 2,000 rows, a column the result lacks or a format that does not fit its column fails the publish
+  than 1,500 rows, a column the result lacks or a format that does not fit its column fails the publish
   by name.
 - **The Data tab.** Beside Contents, in a document holding values: every value you may see, under its
   part of the document, with its definition, its mode and its state - never resolved, changed since

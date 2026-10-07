@@ -97,7 +97,23 @@ export interface Typst {
     createdAt: Date,
     images?: readonly RootImage[],
   ): Promise<Buffer>;
+  /**
+   * **What a template says of itself, before it is compiled** (the TB3 plan, TB3-I): the value of every
+   * `metadata` it labels `label`, in the order it sets them, the same template laid out over the same
+   * data in the same root and fonts as `compile`, its PDF made nowhere. The answer is the template's to
+   * describe and the caller's to check: JSON, never trusted further.
+   */
+  query(
+    template: string,
+    data: string,
+    label: string,
+    createdAt: Date,
+    images?: readonly RootImage[],
+  ): Promise<unknown[]>;
 }
+
+/** A label a query may name: one of the templates' own, never the data's, so never Typst source. */
+const QUERY_LABEL = /^aw-[a-z]{1,32}$/;
 
 export function createTypst(options: {
   readonly binary: string;
@@ -120,40 +136,111 @@ export function createTypst(options: {
       }
     },
 
-    async compile(template, data, createdAt, images = []) {
-      for (const image of images) {
-        if (!IMAGE_PLACE.test(image.path)) {
-          throw new TypstFailed(`${image.path} is not an image's place in the root`);
-        }
-      }
-      // Checked before every compile, not only at start-up: with no faces Typst exits 0 with blank
-      // pages (#145). A face missing or altered is FontsUnavailable, thrown before Typst starts.
-      const faces = await readPinnedFaces(options.fonts.directory);
-      // The compile root holds the template, the data, the pinned faces and the images handed in, and
-      // nothing else (PUB-062). The faces are the bytes just checked, and the images the bytes the job
-      // checked against their hashes, so Typst reads no file that was not.
-      const root = await mkdtemp(join(tmpdir(), 'aw-render-'));
-      try {
-        await copyFile(template, join(root, 'main.typ'));
-        await writeFile(join(root, 'data.json'), data);
-        await mkdir(join(root, 'fonts'));
-        for (const face of faces) await writeFile(join(root, 'fonts', face.file), face.bytes);
-        if (images.length > 0) await mkdir(join(root, 'assets'));
-        for (const image of images) await writeFile(join(root, image.path), image.bytes);
+    compile: (template, data, createdAt, images = []) =>
+      inRoot(template, data, images, async (root) => {
         await run(options.binary, typstArguments(root, join(root, 'fonts'), createdAt), {
           cwd: root,
           env: {},
           timeout,
         });
         return await readFile(join(root, 'out.pdf'));
-      } catch (error) {
-        if (typstOutcome(error) === 'refused') throw new TypstRefused();
-        throw new TypstFailed('Typst did not render the document.', { cause: howItEnded(error) });
-      } finally {
-        await rm(root, { recursive: true, force: true });
+      }),
+
+    async query(template, data, label, createdAt, images = []) {
+      if (!QUERY_LABEL.test(label)) throw new TypstFailed(`${label} is not a template's own label`);
+      const said = await inRoot(template, data, images, async (root) => {
+        const { stdout } = await run(
+          options.binary,
+          typstQueryArguments(root, join(root, 'fonts'), createdAt, label),
+          { cwd: root, env: {}, timeout, maxBuffer: 64 * 1024 * 1024 },
+        );
+        return stdout;
+      });
+      try {
+        const answer: unknown = JSON.parse(said);
+        if (!Array.isArray(answer)) throw new Error('not a list');
+        return answer;
+      } catch {
+        // What Typst printed is the template's, and may quote content: never carried as a cause.
+        throw new TypstFailed('Typst answered the query with something that is not a list.');
       }
     },
   };
+
+  /**
+   * The compile root - the template, the data, the pinned faces and the images handed in, and nothing
+   * else (PUB-062) - made for one run of Typst, and taken down after it, a compile's or a query's.
+   */
+  async function inRoot<T>(
+    template: string,
+    data: string,
+    images: readonly RootImage[],
+    work: (root: string) => Promise<T>,
+  ): Promise<T> {
+    for (const image of images) {
+      if (!IMAGE_PLACE.test(image.path)) {
+        throw new TypstFailed(`${image.path} is not an image's place in the root`);
+      }
+    }
+    // Checked before every compile, not only at start-up: with no faces Typst exits 0 with blank
+    // pages (#145). A face missing or altered is FontsUnavailable, thrown before Typst starts.
+    const faces = await readPinnedFaces(options.fonts.directory);
+    // The compile root holds the template, the data, the pinned faces and the images handed in, and
+    // nothing else (PUB-062). The faces are the bytes just checked, and the images the bytes the job
+    // checked against their hashes, so Typst reads no file that was not.
+    const root = await mkdtemp(join(tmpdir(), 'aw-render-'));
+    try {
+      await copyFile(template, join(root, 'main.typ'));
+      await writeFile(join(root, 'data.json'), data);
+      await mkdir(join(root, 'fonts'));
+      for (const face of faces) await writeFile(join(root, 'fonts', face.file), face.bytes);
+      if (images.length > 0) await mkdir(join(root, 'assets'));
+      for (const image of images) await writeFile(join(root, image.path), image.bytes);
+      return await work(root);
+    } catch (error) {
+      if (error instanceof TypstFailed) throw error;
+      if (typstOutcome(error) === 'refused') throw new TypstRefused();
+      throw new TypstFailed('Typst did not render the document.', { cause: howItEnded(error) });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  }
+}
+
+/**
+ * Every flag a query is given (TB3-I): a compile's, but its PDF standard and its output, which a query
+ * makes none of, and `eval` of the one expression that answers every metadata labelled `label` by its
+ * value - `typst query` itself is deprecated in 0.15.1 for this, measured by TB3-L's spike. The label is
+ * the template's own (`QUERY_LABEL`), never the data's.
+ */
+export function typstQueryArguments(
+  root: string,
+  fonts: string,
+  createdAt: Date,
+  label: string,
+): string[] {
+  return [
+    'eval',
+    `query(<${label}>).map(each => each.value)`,
+    '--in',
+    'main.typ',
+    '--root',
+    root,
+    '--ignore-system-fonts',
+    '--ignore-embedded-fonts',
+    '--font-path',
+    fonts,
+    '--package-path',
+    join(root, 'no-packages'),
+    '--package-cache-path',
+    join(root, 'no-packages'),
+    '--features',
+    'a11y-extras',
+    '--creation-timestamp',
+    String(Math.floor(createdAt.getTime() / 1000)),
+    '--diagnostic-format',
+    'short',
+  ];
 }
 
 /**

@@ -331,6 +331,14 @@ describe('a table in the editor', () => {
       );
     });
 
+    it('opens a table set to scale or rotate when too wide and stores it back exactly (TB3-G)', () => {
+      for (const wide of ['scale', 'rotate'] as const) {
+        const set: BlockNode = { ...readings, wide };
+        expect(fromEditor(stateOf(documentOf(set)).doc).content, wide).toEqual([set]);
+      }
+      expect(fromEditor(stateOf(documentOf(readings)).doc).content[0]).not.toHaveProperty('wide');
+    });
+
     it('says whether the table the cursor stands in is numbered, as the Table panel reads it', () => {
       expect(tableAt(inCaption(documentOf(readings)))).toMatchObject({ numbered: true });
       expect(tableAt(inCaption(documentOf({ ...readings, numbered: false })))).toMatchObject({

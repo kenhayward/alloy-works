@@ -139,6 +139,8 @@ export {
   // publication made before a table could be a bound table laid out.
   PUBLISHING_SCHEMA_15,
   PUBLISHING_SCHEMA_16,
+  // Frozen by TB3.2, which made `publishing/18`: the schema template 17 reads.
+  PUBLISHING_SCHEMA_17,
 } from './published.js';
 export type {
   PublishedBlock,

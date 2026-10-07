@@ -279,8 +279,9 @@ checksum, once per dataset version, and:
    `key_required`, `note_row_missing`, `table_too_long`, beside every other failure.
 
 **`table_too_long`**: a ceiling on rows printed, measured in TB1 against the pinned Typst on Linux as
-D6 measured its readers: **2,000 rows** (`TABLE_ROWS_MAX`), the most an 8-column table published in
-1 GiB - the engine's memory, never time, decides it.
+D6 measured its readers: **1,500 rows** (`TABLE_ROWS_MAX`), the most an 8-column table published in
+1 GiB - the engine's memory, never time, decides it. TB1 measured 2,000; TB3.2 re-timed it with the
+query and template 18's measuring of every cell's words, a third more of the engine's memory.
 
 **Provenance** (TAB-019, DAT-042): `provenance.json` gains per bound table the binding, the dataset by
 name and version, each column's name, type, header and the format applied - its rounding rule stated
@@ -343,7 +344,8 @@ table has every row.
 - **The source** stands after the note, in the table note role, its runs beginning with
   `words.source`. `words.note` waits for TB3; a layout stored at 6 publishing a bound table is
   `table_words_missing`.
-- **The ceiling is 2,000 rows**, not 10,000 (TB1-K): 10,000 would need about 5 GiB of the engine.
+- **The ceiling is 1,500 rows**, not 10,000 (TB1-K): 10,000 would need about 5 GiB of the engine.
+  TB1 measured 2,000; TB3.2's wide tables cost the engine a third more memory for the same table.
 - **An empty statement's bindings are set only where it prints** (the TB1 final review, M2), so with
   rows they record nothing and fail nothing. **A cell's parenthesis inset** is decided by what the
   formatter printed (`parenthesised`), never by the text, which a unit after the value ends (M1).

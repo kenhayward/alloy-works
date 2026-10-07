@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { z } from 'zod';
 import { publishedImagePath, type PublishingAsset } from '@alloy-works/domain';
 import {
   failPublicationRequest,
@@ -22,6 +23,7 @@ import {
   type HeldDataset,
   type Held,
   type PublishFailure,
+  type WideTable,
 } from '@alloy-works/domain';
 import { tenantPrefix, type ObjectStores, type TenantStore } from '@alloy-works/objects';
 import {
@@ -58,8 +60,9 @@ import type { JobHandler } from '../worker.js';
  * kind, 15 the first to set a table's or a figure's caption where its style places it, 16 the
  * first to set a bound value, read from its stored result, and make `provenance.json` beside it, and
  * 17 the first to set a bound image and write `provenance.json` at its schema 2 (the B6 plan), 18
- * the first to lay out and set a bound table and write `provenance.json` at its schema 3 (TB1-J), and
- * 19 the first to letter a table's notes beneath it and place a bound table's (TB3-K).
+ * the first to lay out and set a bound table and write `provenance.json` at its schema 3 (TB1-J), 19
+ * the first to letter a table's notes beneath it and place a bound table's (TB3-K), and 20 the first
+ * to query the template before it compiles, scaling or turning a table too wide (TB3-H, TB3-I).
  *
  * **Both keys are frozen.** Keyed by `PUBLISHING_SCHEMA` itself, a repoint moved the key while the
  * value stayed behind, and the `satisfies` clause could not catch it because `PublishedSchema`
@@ -71,7 +74,7 @@ import type { JobHandler } from '../worker.js';
  */
 export const PIPELINE_VERSION = {
   [PUBLISHING_SCHEMA_1]: '1',
-  [PUBLISHING_SCHEMA_CURRENT]: '19',
+  [PUBLISHING_SCHEMA_CURRENT]: '20',
 } as const satisfies Record<PublishedSchema, string>;
 
 /** The document's own failures, every one at once: the job is finished, never tried again. */
@@ -177,6 +180,60 @@ export async function heldResults(
     byNode.set(node, results);
   }
   return byNode;
+}
+
+/**
+ * **What template 18 says of each table it set** (TB3-H, TB3-I), labelled `aw-wide`: its node and its
+ * identifier, its least width and its measure in points, the scale it was set at or null, whether it was
+ * turned onto landscape pages, and why it cannot be published, or null. Checked before it is believed:
+ * an answer of any other shape is the engine's failure, never the document's.
+ */
+const wideAnswerSchema = z.array(
+  z.strictObject({
+    node: z.string().min(1),
+    table: z.string().min(1),
+    width: z.number(),
+    measure: z.number(),
+    scale: z.number().positive().nullable(),
+    rotate: z.boolean(),
+    fails: z.enum(['narrow', 'tall', 'turned']).nullable(),
+  }),
+);
+
+/** The label template 18 puts on each table's answer, which the query names. */
+export const WIDE_LABEL = 'aw-wide';
+
+/**
+ * Each table's answer, from the template itself before it is compiled (TB3-I): Typst asked once, its
+ * answer checked, so `table_too_wide` fails by name, every table at once, before the compile, and Word
+ * is told which tables the PDF scaled and which it turned.
+ */
+export async function wideTables(
+  typst: Typst,
+  template: string,
+  data: string,
+  createdAt: Date,
+  images: readonly RootImage[],
+): Promise<z.infer<typeof wideAnswerSchema>> {
+  const answer = wideAnswerSchema.safeParse(
+    await typst.query(template, data, WIDE_LABEL, createdAt, images),
+  );
+  if (!answer.success) throw new Error("The template's answer for its tables is not one it gives");
+  const failures: PublishFailure[] = answer.data.flatMap((each) =>
+    each.fails === null
+      ? []
+      : [
+          {
+            stage: 'compose' as const,
+            code: 'table_too_wide' as const,
+            node: each.node,
+            block: each.table,
+            detail: each.fails,
+          },
+        ],
+  );
+  if (failures.length > 0) throw new PublishRefused(failures);
+  return answer.data;
 }
 
 /** `provenance.json`'s content type: kept and served as JSON. */
@@ -314,8 +371,14 @@ export function publishJob(deps: {
         if (bound !== undefined) placed.set(value.image.assetVersion, bound);
       }
       const images = await rootImages(placed, (key) => read.store.get(key));
+      const template = PUBLICATION_TEMPLATE[TEMPLATE_READING[schema]];
+      // Asked of the template before anything is made (TB3-I): a table it cannot set whole fails the
+      // publish by name, and Word sets each table as the PDF does. Template 1 sets no wide table.
+      const wide =
+        schema === PUBLISHING_SCHEMA_1
+          ? []
+          : await wideTables(deps.typst, template.file, data, request.requestedAt, images);
       if (formats.includes('pdf')) {
-        const template = PUBLICATION_TEMPLATE[TEMPLATE_READING[schema]];
         const pdf = await deps.typst.compile(template.file, data, request.requestedAt, images);
         const engineVersion = await deps.typst.version();
         const stored = await keep(read.store, pdf, 'pdf');
@@ -344,6 +407,14 @@ export function publishJob(deps: {
           // were held to exactly these files above, so every file it names is here.
           faces: await pinnedFacesByHash(deps.fonts.directory),
           images: new Map(images.map((image) => [image.path, image.bytes])),
+          // How the PDF set each table too wide for its measure (TB3-J).
+          wide: wide.flatMap(({ node, table, scale, rotate }): WideTable[] =>
+            rotate
+              ? [{ node, block: table, set: 'rotated' }]
+              : scale === null
+                ? []
+                : [{ node, block: table, set: 'scaled' }],
+          ),
         });
         const stored = await keep(read.store, bytes, 'docx');
         outputs.push({

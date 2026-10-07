@@ -640,6 +640,12 @@ describe('a bound table published (the TB1 plan, TB1-H; TB1.2)', () => {
     expect(table.rows[2]!.cells[1]!.inset).toBeUndefined();
   });
 
+  it("publishes a bound table's own wide, and the style's where it says none (TB3-G)", () => {
+    const rows = new Map([['rows', held(result(['north', '1.5']))]]);
+    expect(tableOf(assembled(component(boundTable({ wide: 'rotate' })), rows)).wide).toBe('rotate');
+    expect(tableOf(assembled(component(boundTable()), rows)).wide).toBe('scale');
+  });
+
   it('DAT-069 publishes an empty result its definition declares valid as its headers and the statement, a data cell spanning the table', () => {
     for (const headerColumn of [false, true]) {
       const declared = assembled(

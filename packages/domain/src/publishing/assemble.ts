@@ -1455,6 +1455,8 @@ export function assemble(given: AssembleInput): Assembled {
             listed: entry !== undefined,
             note: noteSays ? note : null,
             notes: lettering.notes,
+            // Its own, else its style's, else scale (TB3-G): a missing style has already failed.
+            wide: block.wide ?? tableStyle?.wide ?? 'scale',
             ...(laidOut === null
               ? {}
               : { bound: { align: laidOut.align, wrap: laidOut.wrap, source } }),

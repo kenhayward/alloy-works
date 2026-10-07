@@ -170,6 +170,8 @@ describe('a bound table mapped to the editor and back (TB2-C)', () => {
         ],
       }),
       boundTable({ note: [text('Only a note.')] }),
+      // Set on landscape pages where too wide (TB3-G), kept as stored.
+      boundTable({ wide: 'rotate' }),
       boundTable({ source: [text('Only a source.')] }),
     ];
     for (const table of tables) {

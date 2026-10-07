@@ -83263,6 +83263,7 @@
                               "table_words_missing",
                               "key_required",
                               "note_row_missing",
+                              "table_too_wide",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -84630,6 +84631,7 @@
                               "table_words_missing",
                               "key_required",
                               "note_row_missing",
+                              "table_too_wide",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -92861,6 +92863,7 @@
                               "table_words_missing",
                               "key_required",
                               "note_row_missing",
+                              "table_too_wide",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -94311,6 +94314,40 @@
                                       "required": [
                                         "kind",
                                         "sequence"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "table_reflowed"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "label": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block",
+                                        "label"
                                       ]
                                     }
                                   ]

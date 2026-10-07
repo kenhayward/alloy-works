@@ -808,8 +808,9 @@ describe('the citations in the committed model', () => {
   // 757 (2026-10-07): TB2.2's Bound table panel - TAB-001, TAB-002, TAB-003, TAB-007, TAB-037, TAB-048.
   // 769 (2026-10-07): TB3.1's notes - CNT-039, TAB-024 to TAB-026 in the domain, DAT-012 and DAT-048
   // at the stage, TAB-024 and TAB-026 in the worker.
+  // 771 (2026-10-07): TB3.2's wide tables - TAB-033 and TAB-051 in the worker.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(769);
+    expect(model.citations).toHaveLength(771);
   });
 
   it('cites no identifier the corpus does not hold', () => {
