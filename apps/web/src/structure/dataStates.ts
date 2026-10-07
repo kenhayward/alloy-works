@@ -17,13 +17,20 @@ export const DATA_STATE_WORDS = {
 
 /**
  * **A binding's state** (B4-C): the first of the design's that holds, from what the view answered and
- * whether the check this page made failed for it - which the service records nowhere (DAT-086).
+ * whether the check this page made failed for it - which the service records nowhere (DAT-086) - and,
+ * for a bound table's, whether `checkTable` fails it (the TB2 plan, TB2-H): a table holding a result
+ * it cannot lay out holds nothing a reader sees.
  */
-export function dataState(view: BindingState, checkFailed: boolean): DataState {
+export function dataState(
+  view: BindingState,
+  checkFailed: boolean,
+  tableFailed = false,
+): DataState {
   if (view.unread) return 'failed';
   const { held } = view;
   if (held === null) return 'never';
   if (held.stale) return 'stale';
+  if (tableFailed) return 'failed';
   // A bound table's binding holds the whole result, which it takes nothing from (TB1-C).
   const holds = held.taken !== null && ('value' in held.taken || 'table' in held.taken);
   if (checkFailed || !holds) return 'failed';

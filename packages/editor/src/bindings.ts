@@ -1,16 +1,29 @@
 import {
   bindingDigestInput,
+  checkTable,
+  defaultLayout,
+  DEFAULT_VALUE_FORMATS,
+  layoutTable,
   type AnyBinding,
   type Binding,
+  type BoundTableNode,
+  type CanonicalResult,
+  type ColumnAlignment,
+  type TableColumn,
+  type TableFailure,
+  type TablePresentation,
+  type TableWords,
   type TakeFailure,
+  type ValueFormats,
 } from '@alloy-works/domain';
 import type { Node } from 'prosemirror-model';
 import { NodeSelection, type Command, type EditorState } from 'prosemirror-state';
 
-import { assetContentPath, BOUND_IMAGE, editorSchema } from './schema.js';
+import { assetContentPath, BOUND_IMAGE, BOUND_TABLE, editorSchema } from './schema.js';
 
 const bindingNode = editorSchema.nodes.binding!;
 const figureNode = editorSchema.nodes.figure!;
+const boundTableNode = editorSchema.nodes.boundTable!;
 
 /**
  * Why a binding holds no value where the view answered for it: a take's failure (`takeValue`), or a
@@ -58,8 +71,42 @@ export interface BindingHeld {
          */
         readonly image?: { readonly asset: string; readonly alt: string };
       }
+    | { readonly table: TableHeld }
     | BindingFailureHeld;
 }
+
+/**
+ * **What the document holds for a bound table's binding** (the TB2 plan, TB2-A, TB2-D): the declared
+ * columns of the version held and its row count, from the bindings view - enough for `checkTable` -
+ * and its rows, the canonical result trimmed to the table's columns, once read; null until then. The
+ * surface lays it out itself, so the host keeps `rows` the same object while it is the same result.
+ */
+export interface TableHeld {
+  readonly columns: readonly TableColumn[];
+  readonly rowCount: number;
+  readonly rows: CanonicalResult | null;
+}
+
+/**
+ * What a document lays its bound tables out with (TB2-A): each table style by its identifier, the
+ * value formats for the document's language and the words a table prints - the default layout's,
+ * since the page holds no publishing layout (TB2-D).
+ */
+export interface TableSetting {
+  readonly styles: ReadonlyMap<string, TablePresentation>;
+  readonly formats: ValueFormats;
+  readonly words: TableWords;
+}
+
+/** What a page lays a bound table out with where its host says nothing: the product's own. */
+export const DEFAULT_TABLE_SETTING: TableSetting = {
+  styles: new Map(),
+  formats: DEFAULT_VALUE_FORMATS,
+  words: {
+    noRows: defaultLayout.words.noRows ?? 'No rows',
+    notAvailable: defaultLayout.words.notAvailable ?? 'Not available',
+  },
+};
 
 /**
  * What the host tells a surface about where its bindings are shown (B1-D): in a document, what it
@@ -72,6 +119,8 @@ export type BindingContext =
       readonly kind: 'document';
       readonly held: ReadonlyMap<string, BindingHeld>;
       readonly node?: string;
+      /** What its bound tables are laid out with (TB2-A); the product's own where absent. */
+      readonly tables?: TableSetting;
     }
   | { readonly kind: 'alone'; readonly titles: ReadonlyMap<string, string | null> };
 
@@ -243,6 +292,8 @@ function shownFor(
   const held = context.held.get(binding.id);
   if (held === undefined) return failed(NEVER_RESOLVED);
   if (held.binding !== bindingDigestInput(binding)) return failed(CHANGED_SINCE_RESOLVED);
+  // A bound table's result stands in no line: an inline binding is never shown one (TB2-C).
+  if ('table' in held.shown) return failed(BINDING_FAILURE_WORDS.unavailable());
   if ('failure' in held.shown) {
     return failed(bindingFailureWords(binding, held.shown), held.unread !== true);
   }
@@ -315,6 +366,261 @@ export function boundFiguresShown(
       // With nothing to tell it more, what the node says: `toDOM`'s words.
       ...(context === null ? { text: BOUND_IMAGE } : {}),
       image: each.image === null || !decorative ? each.image : { ...each.image, alt: '' },
+    });
+    return false;
+  });
+  return shown;
+}
+
+/** The most rows a bound table shows on the page; the rest are counted (TB2-D). */
+export const PAGE_ROWS = 50;
+
+/** A bound table's binding never resolved in the document. */
+export const TABLE_NEVER_RESOLVED = 'No rows - never resolved';
+
+/** A bound table's binding changed since its result was held. */
+export const TABLE_CHANGED = 'No rows - the binding changed since it was resolved';
+
+/** A bound table whose result the page cannot read. */
+export const TABLE_UNAVAILABLE = 'No rows - the result cannot be read';
+
+/** A bound table whose rows the page is still reading. */
+export const TABLE_READING = 'Reading the rows';
+
+/** The words each failure of `checkTable` shows in place, by its code. */
+export const TABLE_FAILURE_WORDS = {
+  column_missing: (failure) => `No rows - the result has no column ${failure.column}`,
+  column_image: (failure) =>
+    `No rows - ${failure.column} is an image column, which a table cannot show`,
+  format_mismatch: (failure) =>
+    `No rows - the format of ${failure.column} sets ${failure.detail}, which does not apply to its values`,
+  table_too_long: (failure) =>
+    `No rows - the result has ${failure.detail} rows, more than a table prints`,
+} satisfies {
+  readonly [K in TableFailure['code']]: (failure: TableFailure & { readonly code: K }) => string;
+};
+
+/** One failure of a bound table in words. */
+export const tableFailureWords = (failure: TableFailure): string =>
+  (TABLE_FAILURE_WORDS[failure.code] as (failure: TableFailure) => string)(failure);
+
+/** What a bound table shows on its own: the definition that fills it in each document (BI-B). */
+export const tableAlone = (title: string | null): string =>
+  `Filled from ${title ?? 'a query definition'} in each document`;
+
+/** A column of a bound table as the page draws it: its header, alignment and wrap. */
+export interface BoundTableColumnShown {
+  readonly text: string;
+  readonly align: ColumnAlignment | null;
+  readonly wrap: boolean;
+}
+
+/** A cell as the page draws it: its text, whether it heads its row, and its negative colour. */
+export interface BoundTableCellShown {
+  readonly text: string;
+  readonly scope: 'row' | null;
+  readonly negative: boolean;
+}
+
+/**
+ * **What a bound table's body shows** (the TB2 plan, TB2-D): its headers, its first rows laid out and
+ * how many more there are, or one row spanning it with words in place of rows - the empty statement,
+ * the definition filling it, or why it has none, `failed` drawn apart (DAT-047).
+ */
+export interface BoundTableShown {
+  readonly columns: readonly BoundTableColumnShown[];
+  readonly rows: readonly (readonly BoundTableCellShown[])[];
+  readonly spanning: { readonly text: string; readonly failed: boolean } | null;
+  readonly more: number;
+}
+
+/** One bound table's body in `doc`: where its table and its body stand, and what it shows. */
+export interface BoundTableAt {
+  readonly tablePos: number;
+  readonly bodyPos: number;
+  /** Its binding's identifier. */
+  readonly id: string;
+  /** Its table's own identifier, or null where it has none yet. */
+  readonly table: string | null;
+  readonly shown: BoundTableShown;
+}
+
+/** The stored table a `boundTable` node's attributes hold, for `checkTable` and `layoutTable`. */
+export function storedBoundTable(node: Node): BoundTableNode {
+  const { id, style, numbered, binding, columns, headerColumn, sort } = node.attrs;
+  return {
+    type: 'boundTable',
+    id: id as string,
+    style: style as string,
+    ...(numbered === false ? { numbered: false as const } : {}),
+    binding: binding as BoundTableNode['binding'],
+    caption: [],
+    columns: columns as BoundTableNode['columns'],
+    headerColumn: headerColumn as boolean,
+    ...(sort === null ? {} : { sort: sort as NonNullable<BoundTableNode['sort']> }),
+  };
+}
+
+/**
+ * The layouts made, memoised (TB2-D, B1's rule): by the result's rows - or, unread, its columns - the
+ * node's attributes, the table style and the setting, then the words that vary, so a transaction
+ * that changes none of them hands the decoration the very object it held, and the body is not drawn
+ * again. Weak, so nothing outlives the result or the node it was made from.
+ */
+const MEMO = new WeakMap<object, unknown>();
+/** A style the setting names nothing for: one object, so the memo finds it again. */
+const NO_STYLE: TablePresentation = {};
+const LAST = {};
+function memoised(keys: readonly object[], last: string, make: () => BoundTableShown) {
+  let level = MEMO;
+  for (const key of keys) {
+    let next = level.get(key) as WeakMap<object, unknown> | undefined;
+    if (next === undefined) {
+      next = new WeakMap();
+      level.set(key, next);
+    }
+    level = next;
+  }
+  let made = level.get(LAST) as Map<string, BoundTableShown> | undefined;
+  if (made === undefined) {
+    made = new Map();
+    level.set(LAST, made);
+  }
+  let shown = made.get(last);
+  if (shown === undefined) {
+    shown = make();
+    made.set(last, shown);
+  }
+  return shown;
+}
+
+/** Its headers as declared, a unit in the header bracketed as the style says: with no layout. */
+function declaredColumns(
+  table: BoundTableNode,
+  style: TablePresentation,
+): readonly BoundTableColumnShown[] {
+  const [open, close] = style.unitBrackets === 'brackets' ? ['[', ']'] : ['(', ')'];
+  return table.columns.map((column) => ({
+    text:
+      column.unit?.place === 'header'
+        ? `${column.header} ${open}${column.unit.text}${close}`
+        : column.header,
+    align: column.align ?? null,
+    wrap: column.wrap !== false,
+  }));
+}
+
+/** The words of a bound table's own child of this type, spaces run together, or empty. */
+function wordsOf(node: Node, type: string): string {
+  let words = '';
+  node.forEach((child) => {
+    if (child.type.name === type) words = child.textContent;
+  });
+  return words.replace(/\s+/g, ' ').trim();
+}
+
+/** One bound table's body in `context`. */
+function tableShownFor(node: Node, context: BindingContext | null): BoundTableShown {
+  const table = storedBoundTable(node);
+  const spanning = (keys: readonly object[], text: string, failed: boolean) =>
+    memoised(keys, `${failed ? 'failed' : 'shown'} ${text}`, () => ({
+      columns: declaredColumns(table, setting.styles.get(table.style) ?? NO_STYLE),
+      rows: [],
+      spanning: { text, failed },
+      more: 0,
+    }));
+  const setting =
+    context?.kind === 'document'
+      ? (context.tables ?? DEFAULT_TABLE_SETTING)
+      : DEFAULT_TABLE_SETTING;
+  if (context === null) return spanning([node.attrs], BOUND_TABLE, false);
+  if (context.kind === 'alone') {
+    return spanning(
+      [node.attrs],
+      tableAlone(context.titles.get(table.binding.query) ?? null),
+      false,
+    );
+  }
+  const held = context.held.get(table.binding.id);
+  if (held === undefined) return spanning([node.attrs, setting], TABLE_NEVER_RESOLVED, true);
+  if (held.binding !== bindingDigestInput(table.binding)) {
+    return spanning([node.attrs, setting], TABLE_CHANGED, true);
+  }
+  if (!('table' in held.shown)) return spanning([node.attrs, setting], TABLE_UNAVAILABLE, true);
+  const { columns, rowCount, rows } = held.shown.table;
+  const style = setting.styles.get(table.style) ?? NO_STYLE;
+  const failures = checkTable(table, columns, rowCount, style);
+  if (failures.length > 0) {
+    return spanning(
+      [columns, node.attrs, style, setting],
+      failures.map(tableFailureWords).join('; '),
+      true,
+    );
+  }
+  // Read for another set of columns than the table now names: read again by the host (TB2-A).
+  const sent = new Set(rows?.columns.map(([name]) => name) ?? []);
+  const named = [
+    ...table.columns.map((each) => each.column),
+    ...(table.sort ?? []).map((each) => each.column),
+  ];
+  if (rows === null || named.some((name) => !sent.has(name))) {
+    return spanning([columns, node.attrs, style, setting], TABLE_READING, false);
+  }
+  const empty = wordsOf(node, 'boundTableEmpty');
+  return memoised([rows, node.attrs, style, setting], empty, () => {
+    const laid = layoutTable(table, rows, columns, style, setting.formats, setting.words, {
+      limit: PAGE_ROWS,
+    });
+    if ('failures' in laid) {
+      return {
+        columns: declaredColumns(table, style),
+        rows: [],
+        spanning: { text: laid.failures.map(tableFailureWords).join('; '), failed: true },
+        more: 0,
+      };
+    }
+    return {
+      columns: laid.columns.map((column) => ({
+        text: column.header,
+        align: column.align,
+        wrap: column.wrap,
+      })),
+      rows: laid.rows.map((row) =>
+        row.cells.map((cell) => ({ text: cell.text, scope: cell.scope, negative: cell.negative })),
+      ),
+      spanning:
+        laid.rows.length > 0
+          ? null
+          : { text: empty === '' ? setting.words.noRows : empty, failed: false },
+      more: rowCount - laid.rows.length,
+    };
+  });
+}
+
+/**
+ * **What each bound table's body in `doc` shows** (the TB2 plan, TB2-D), in document order, by the rule
+ * `bindingsShown` shows an inline binding by: in a document, its first `PAGE_ROWS` rows laid out by
+ * `layoutTable` from the result the document holds for its binding as it stands, and the count of the
+ * rest; `checkTable`'s failures in place without its rows; or why it holds none. On its own, its
+ * headers and one row naming the definition that fills it; with no context, `toDOM`'s words.
+ */
+export function boundTablesShown(
+  doc: Node,
+  context: BindingContext | null,
+): readonly BoundTableAt[] {
+  const shown: BoundTableAt[] = [];
+  doc.descendants((node, pos) => {
+    if (node.type !== boundTableNode) return true;
+    let bodyPos = pos + 1;
+    node.forEach((child, offset) => {
+      if (child.type.name === 'boundTableBody') bodyPos = pos + 1 + offset;
+    });
+    shown.push({
+      tablePos: pos,
+      bodyPos,
+      id: (node.attrs.binding as { id: string }).id,
+      table: typeof node.attrs.id === 'string' ? node.attrs.id : null,
+      shown: tableShownFor(node, context),
     });
     return false;
   });

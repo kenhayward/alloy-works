@@ -301,6 +301,49 @@
   margin: 0;
 }
 
+/* A bound table's body (the TB2 plan, TB2-D): the page's own drawing of its first rows, aligned as
+ * laid out, a no-wrap column kept to one line and a negative in the style's colour beside its sign.
+ * One with no rows to show says why in its place, drawn apart by a dashed border and italics as well
+ * as by colour, as a binding with no value is (DAT-047); the count of the rest stands beneath it. */
+.aw-bound-table-body [data-align='end'],
+.aw-bound-table-body [data-align='decimal'] {
+  text-align: end;
+}
+
+.aw-bound-table-body [data-align='centre'] {
+  text-align: center;
+}
+
+.aw-bound-table-body .aw-bound-table-nowrap {
+  white-space: nowrap;
+}
+
+.aw-bound-table-body .aw-bound-table-negative {
+  color: var(--danger);
+}
+
+.aw-bound-table-body.aw-binding-failed .aw-bound-table-spanning {
+  border: 1px dashed var(--danger);
+  color: var(--danger);
+  font-style: italic;
+}
+
+.aw-bound-table-body .aw-bound-table-spanning {
+  font-style: italic;
+}
+
+.aw-bound-table-more {
+  margin: 0.25em 0 0;
+  font-size: 0.9em;
+  color: var(--muted);
+}
+
+.aw-bound-table-empty,
+.aw-bound-table-source {
+  margin: 0.4em 0 0;
+  font-size: 0.9em;
+}
+
 /* The cells a cell selection holds, which `prosemirror-tables` marks with this class. */
 .ProseMirror .selectedCell {
   outline: 2px solid var(--ring);

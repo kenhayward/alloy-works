@@ -23,3 +23,15 @@ export class AfterCommit<T> {
 export class Accepted<T> {
   constructor(readonly body: T) {}
 }
+
+/**
+ * A permission-checked answer that is cached privately and revalidated (the TB2 plan, TB2-A): sent with
+ * `ETag: etag` and `Cache-Control: private, no-cache`, its body where the caller does not hold it, and
+ * where it does - `If-None-Match` naming `etag` - status 304 with none, `body` then undefined.
+ */
+export class Revalidated<T> {
+  constructor(
+    readonly etag: string,
+    readonly body: T | undefined,
+  ) {}
+}

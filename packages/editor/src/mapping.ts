@@ -91,6 +91,13 @@ function namesWithNoNode(blocks: readonly BlockNode[], found: Set<string>): void
         // Its caption is inline content, walked as a table's is (figures 2).
         marksWithNoType(block.caption, found);
         break;
+      case 'boundTable':
+        // Its caption, empty statement, note and source, each inline content walked as a table's
+        // caption is (the TB2 plan, TB2-C).
+        for (const content of [block.caption, block.empty, block.note, block.source]) {
+          if (content !== undefined) marksWithNoType(content, found);
+        }
+        break;
       case 'equation':
         // MathML and a record of LaTeX, which `equationBlock` holds whole (equations 1, ruling R4).
         break;
@@ -324,6 +331,34 @@ function nodeOf(block: BlockNode): Node {
           numbered: block.numbered !== false,
         },
         [editorSchema.node('figureCaption', null, block.caption.flatMap(toRun))],
+      );
+    case 'boundTable':
+      // One block as five nodes (the TB2 plan, TB2-C): the stored members as attributes, the body an
+      // atom, and each inline member a child - the empty statement, note and source only where stored.
+      return editorSchema.node(
+        'boundTable',
+        {
+          id: block.id,
+          style: block.style,
+          numbered: block.numbered !== false,
+          binding: block.binding,
+          columns: block.columns,
+          headerColumn: block.headerColumn,
+          sort: block.sort ?? null,
+        },
+        [
+          editorSchema.node('tableCaption', null, block.caption.flatMap(toRun)),
+          editorSchema.node('boundTableBody'),
+          ...(block.empty === undefined
+            ? []
+            : [editorSchema.node('boundTableEmpty', null, block.empty.flatMap(toRun))]),
+          ...(block.note === undefined
+            ? []
+            : [editorSchema.node('tableNote', null, block.note.flatMap(toRun))]),
+          ...(block.source === undefined
+            ? []
+            : [editorSchema.node('boundTableSource', null, block.source.flatMap(toRun))]),
+        ],
       );
     case 'equation':
       // One node for one (equations 1, ruling R4): the LaTeX is null here where none is stored.
@@ -676,6 +711,31 @@ function storedBlock(node: Node, at: string): unknown {
         caption: runsOf(node.child(0), id),
         alternative: node.attrs.alternative as object,
         ...(node.attrs.numbered === false ? { numbered: false } : {}),
+      };
+    }
+    case 'boundTable': {
+      const id = identifierOf(node, at);
+      const inline: Record<string, unknown[]> = {};
+      node.forEach((child) => {
+        inline[child.type.name] = runsOf(child, id);
+      });
+      // **Judged on what `runsOf` returned**, as an attribution is: an empty statement, a note or a
+      // source nobody has typed is none, and an empty one a second spelling of absent (TB2-C).
+      const member = (name: string, as: string) =>
+        (inline[name]?.length ?? 0) === 0 ? {} : { [as]: inline[name] };
+      return {
+        type: 'boundTable',
+        id,
+        style: node.attrs.style as string,
+        ...(node.attrs.numbered === false ? { numbered: false } : {}),
+        binding: node.attrs.binding as object,
+        caption: inline.tableCaption ?? [],
+        columns: node.attrs.columns as object,
+        headerColumn: node.attrs.headerColumn as boolean,
+        ...(node.attrs.sort === null ? {} : { sort: node.attrs.sort as object }),
+        ...member('boundTableEmpty', 'empty'),
+        ...member('tableNote', 'note'),
+        ...member('boundTableSource', 'source'),
       };
     }
     case 'equationBlock': {

@@ -9,6 +9,7 @@ import {
   resolve,
   sectionNumbers,
   walkOutline,
+  type BoundTableNode,
   type Contribution,
   type NumberingScheme,
   type OutlineView,
@@ -28,6 +29,7 @@ import styles from './DocumentPage.module.css';
 import { ComponentEditor } from '../editor/ComponentEditor.js';
 import { ProvenancePanel } from '../data/ProvenancePanel.js';
 import { bindingStatesIn, holdsBinding, type BindingState } from './bindingContexts.js';
+import { boundTablesByKey } from './tableRows.js';
 import { followPending, WAITING_ON_IMAGES } from './pendingResult.js';
 import { settleBinding, type SettleAct } from './settleBinding.js';
 import { useOwnViewAsk } from './OwnViewAsk.js';
@@ -546,6 +548,13 @@ export function DocumentPage({
   // DAT-091's warning, asked before a binding placed or resolved here holds one's own view (D7-H).
   const { ask: askOwnView, prompt: ownViewPrompt } = useOwnViewAsk();
   const [bindingsRead, setBindingsRead] = useState(0);
+  // The bound tables the editor open in place holds, which no save may have reached (TB2-H), and every
+  // bound table by its node and binding: the Data tab's to check, and the text's to lay out.
+  const [editingTables, setEditingTables] = useState<{
+    readonly node: string;
+    readonly tables: readonly BoundTableNode[];
+  } | null>(null);
+  const boundTables = useMemo(() => boundTablesByKey(texts, editingTables), [texts, editingTables]);
   useEffect(() => {
     if (!holdsBindings && bindingSession === null) {
       setBindingStates(null);
@@ -1291,6 +1300,7 @@ export function DocumentPage({
                         placeInOutline(document.outline, node, names, document.scheme)
                       }
                       language={document.outline.language}
+                      tables={boundTables}
                       checking={checking}
                       onChanged={() => setBindingsRead((count) => count + 1)}
                       onCheckNow={checkNow}
@@ -1385,6 +1395,9 @@ export function DocumentPage({
               // document (DV-F); anywhere else the label says it and offers nothing.
               {...(document.mayEdit && authoring ? { choosing } : {})}
               bindingStates={bindingStates}
+              boundTables={boundTables}
+              rowsFrom={{ client, document: document.id, session: bindingSession }}
+              onBoundTables={(node, tables) => setEditingTables({ node, tables })}
               onProvenance={(node, binding, opener) => setProvenance({ node, binding, opener })}
               onBindingSettle={onBindingSettle}
               {...(principalId === undefined || !authoring
@@ -1397,6 +1410,7 @@ export function DocumentPage({
                       if (node === null) {
                         setTextsAttempt((count) => count + 1);
                         setBindingSession(null);
+                        setEditingTables(null);
                       }
                     },
                     editor: (component: string, place: Place) => (

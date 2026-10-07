@@ -7,7 +7,6 @@ import { describe, expect, it } from 'vitest';
 
 import { blockCommand } from './blocks.js';
 import { fromEditor, toEditor } from './mapping.js';
-import { renderContent } from './render.js';
 import { createEditorState, placeholderDecorations } from './state.js';
 import { setTableHeaders, setTableNumbered, tableAt, tableCommand } from './tables.js';
 
@@ -356,28 +355,5 @@ describe('a table in the editor', () => {
         run(stateOf(documentOf(paragraph('p1', 'x')), 1), setTableNumbered(false)).handled,
       ).toBe(false);
     });
-  });
-});
-
-describe('a bound table, which the editor holds from TB2 (the TB1 plan)', () => {
-  it('opens a component holding one for reading, by name, and its text draws without throwing', () => {
-    const bound = {
-      type: 'boundTable',
-      id: 't1',
-      style: 'table',
-      binding: {
-        type: 'binding',
-        id: 'k1',
-        query: '00000000-0000-4000-8000-00000000d001',
-        parameters: {},
-        mode: 'checked',
-      },
-      caption: [text('Readings')],
-      columns: [{ column: 'depth', header: 'Depth' }],
-      headerColumn: false,
-    } as unknown as BlockNode;
-    const stored = documentOf(bound);
-    expect(toEditor(stored)).toEqual({ editable: false, unsupported: ['boundTable'] });
-    expect(() => renderContent(stored, {} as Document)).not.toThrow();
   });
 });

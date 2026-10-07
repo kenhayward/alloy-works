@@ -96,6 +96,12 @@ describe('the rule behind a refusal', () => {
       'confirm.not_possible',
       // Another person's own view, which only they may accept (the D7 plan, D7-H): the design's.
       'identity.differs',
+      // A bound table's rows for the page (the TB2 plan, TB2-A): asked of a value's binding, of one
+      // changed since, of a version not held, or of a result too long to print. The design's own.
+      'binding.not_table',
+      'binding.stale',
+      'version.not_held',
+      'table.too_long',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

@@ -150,6 +150,7 @@ const operationTags = {
     'confirmBinding',
     'getBindingHolders',
     'getDocumentDataset',
+    'getBoundTableRows',
     'nameDataset',
     'getPendingResult',
   ],
@@ -295,6 +296,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Lists the documents whose latest outline places the component at a node holding a value for the named binding, whatever the binding was when it was resolved: those the caller may read by title, and a count of the rest. Ask before changing a binding, to see which documents will hold no value until they resolve it again. It needs read on the component.',
   getDocumentDataset:
     "Returns a stored result whole - its columns, every row in canonical form, and its provenance - but only a version the document's bindings show the caller: one a binding in a component they may read holds, or has waiting while that binding has not changed. A version held only in a component they may not read, at a node the outline no longer has, or waiting for a binding that has changed since, is not found. Reading needs only read on the document; the provenance shows the SQL that ran, the connection and the source's column each declared column reads only to a caller who may read its query definition.",
+  getBoundTableRows:
+    "Returns the rows of the result a bound table holds in this document, for the page to lay out: every row in the result's stored order, each value in its canonical form, and only the columns the table shows or sorts by, so a column its author left out never reaches a reader of the document. Only the version the binding holds is answered, named as the bindings view names it, never one waiting, and only for a bound table whose binding has not changed since and whose result has no more rows than a table prints. Named, `session` reads the table from the caller's own editing session where it holds the component's lock, so a column just added is sent. It needs only read on the document. Each answer carries an `ETag` over the version and the columns sent and is cached privately and revalidated: asked again with `If-None-Match`, an unchanged answer is 304 with no body.",
   getPendingResult:
     "Follows a pending result, which a resolve or a check answers with status 202 for a binding whose run holds an image no asset in the definition's space holds yet. Each such image is stored and admitted as an asset, as an upload is. Asked while any image is still being admitted, it answers pending. Once every one is admitted, it records the dataset version, and for a resolve the binding's resolution, exactly as the act would have, deciding again the act's permissions, that the binding has not changed (`binding_changed`), and that it still holds what it held when the act ran (`resolution_precondition`, so an older result never replaces a newer one), and answers the act's own result for the binding; the pending result is then gone. Where an image is refused, nothing is recorded and the result is refused `image_refused`, naming its row and column. Only the person whose act ran it may follow it; anybody else is told there is no such pending result.",
   nameDataset:

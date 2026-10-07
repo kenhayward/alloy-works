@@ -3,17 +3,26 @@ import {
   bindingNodeSchema,
   formatsFor,
   formatValue,
+  imageColumnTypeSchema,
   tableBindingSchema,
   takeOutcomeSchema,
   takes,
   valueTypeSchema,
   type AnyBinding,
+  type CanonicalResult,
   type ResolvedTheme,
+  type TableColumn,
   type TakeOutcome,
   type ValueFormats,
   type ValueType,
 } from '@alloy-works/domain';
-import type { BindingContext, BindingFailureHeld, BindingHeld } from '@alloy-works/editor';
+import {
+  DEFAULT_TABLE_SETTING,
+  type BindingContext,
+  type BindingFailureHeld,
+  type BindingHeld,
+  type TableSetting,
+} from '@alloy-works/editor';
 
 /**
  * What the bindings view says of one binding, as this page reads it (the B1 plan, B1-I): checked
@@ -55,6 +64,23 @@ export interface ProvenanceShown {
   readonly at: string;
   readonly rowCount: number;
   readonly checksum: string;
+  /**
+   * Each declared column of the version, by its name and type, which the contract sends whoever may
+   * read it (TB2-B): what `checkTable` checks a bound table against, without its rows.
+   */
+  readonly columns: readonly TableColumn[];
+}
+
+/** The declared columns a provenance names, each read by its name and type; one that does not, left out. */
+function columnsIn(value: unknown): readonly TableColumn[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((each): TableColumn[] => {
+    if (!isRecord(each) || typeof each.name !== 'string') return [];
+    const type = valueTypeSchema.safeParse(each.type);
+    if (type.success) return [{ name: each.name, type: type.data }];
+    const image = imageColumnTypeSchema.safeParse(each.type);
+    return image.success ? [{ name: each.name, type: image.data }] : [];
+  });
 }
 
 export interface BindingState {
@@ -156,6 +182,7 @@ function provenanceIn(value: unknown): ProvenanceShown | undefined {
     at,
     rowCount,
     checksum,
+    columns: columnsIn(value.columns),
   };
 }
 
@@ -287,8 +314,29 @@ export const typeOf = (type: unknown): ValueType | null => {
  */
 const CHANGED = '';
 
+/** A bound table's binding at an occurrence, as the page keys what it holds and what it reads. */
+export const tableKey = (node: string, binding: string): string => `${node} ${binding}`;
+
+/**
+ * **What a document lays its bound tables out with** (the TB2 plan, TB2-A): its theme's table styles,
+ * its value formats for its language - the product's where the theme names none - and the default
+ * layout's words, since the page holds no publishing layout (TB2-D). One object per theme and
+ * language, which the page keeps, so a layout made with it is found again.
+ */
+export function tableSetting(theme: ResolvedTheme | null, language: string | null): TableSetting {
+  return {
+    styles: theme?.tableStyles ?? DEFAULT_TABLE_SETTING.styles,
+    formats: formatsFor(theme?.valueCatalogue ?? null, language),
+    words: DEFAULT_TABLE_SETTING.words,
+  };
+}
+
 /** What one binding shows, from what the document holds for it. */
-function heldOf(state: BindingState, formats: ValueFormats): BindingHeld | null {
+function heldOf(
+  state: BindingState,
+  formats: ValueFormats,
+  rows: ReadonlyMap<string, CanonicalResult>,
+): BindingHeld | null {
   const { held } = state;
   if (state.unread) {
     return {
@@ -301,8 +349,21 @@ function heldOf(state: BindingState, formats: ValueFormats): BindingHeld | null 
   if (held.stale) return { binding: CHANGED, shown: { failure: 'unavailable' } };
   const binding = bindingDigestInput(state.binding);
   const { taken } = held;
-  // A bound table's binding is drawn by no node in the editor until TB2: it has nothing to show there.
-  if (taken !== null && 'table' in taken) return null;
+  // A bound table's binding (TB2-A): the result's declared columns and row count, for `checkTable`,
+  // and its rows once this page has read them.
+  if (taken !== null && 'table' in taken) {
+    const { columns, rowCount } = held.provenance;
+    return {
+      binding,
+      shown: {
+        table: {
+          columns,
+          rowCount,
+          rows: rows.get(tableKey(state.node, state.binding.id)) ?? null,
+        },
+      },
+    };
+  }
   if (taken === null || 'unavailable' in taken) {
     return { binding, shown: { failure: 'unavailable' } };
   }
@@ -359,17 +420,26 @@ export function bindingContexts(
   states: readonly BindingState[],
   theme: ResolvedTheme | null,
   language: string | null,
+  tables: {
+    /** What its bound tables are laid out with, kept by the page (`tableSetting`). */
+    readonly setting: TableSetting;
+    /** Each bound table's rows the page has read, by `tableKey`. */
+    readonly rows: ReadonlyMap<string, CanonicalResult>;
+  } = { setting: tableSetting(theme, language), rows: new Map() },
 ): ReadonlyMap<string, BindingContext> {
   const formats = formatsFor(theme?.valueCatalogue ?? null, language);
   const held = new Map<string, Map<string, BindingHeld>>();
   for (const state of states) {
     const at = held.get(state.node) ?? new Map<string, BindingHeld>();
     held.set(state.node, at);
-    const shown = heldOf(state, formats);
+    const shown = heldOf(state, formats, tables.rows);
     if (shown !== null) at.set(state.binding.id, shown);
   }
   return new Map(
-    [...held].map(([node, each]) => [node, { kind: 'document', held: each, node } as const]),
+    [...held].map(([node, each]) => [
+      node,
+      { kind: 'document', held: each, node, tables: tables.setting } as const,
+    ]),
   );
 }
 

@@ -1,8 +1,14 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { formatsFor } from '@alloy-works/domain';
+import {
+  formatsFor,
+  type BoundTableNode,
+  type TableFailure,
+  type TablePresentation,
+} from '@alloy-works/domain';
 import { useId, useState } from 'react';
 
 import { said } from '../data/ProvenancePanel.js';
+import { failureWords } from '../publishing/failures.js';
 import { usePresentation } from '../theme/presentation.js';
 import type { BindingState, SinceDiffers } from './bindingContexts.js';
 import { DATA_STATE_WORDS, dataState, type DataState } from './dataStates.js';
@@ -10,6 +16,7 @@ import styles from './DataTab.module.css';
 import { codeOf, identityRefusal, NOT_HELD, whoseView } from './ownView.js';
 import { useOwnViewAsk } from './OwnViewAsk.js';
 import { settleBinding } from './settleBinding.js';
+import { tableFailures } from './tableRows.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -40,6 +47,27 @@ function sinceWords(since: BindingState['sincePublished']): string | null {
 
 const key = (node: string, binding: string) => `${node} ${binding}`;
 
+/** A bound table's result, by its rows (TB2-H). */
+const tableOf = (rows: number) => `A table of ${rows} ${rows === 1 ? 'row' : 'rows'}`;
+
+/** A table's failure in the words a publish's failure is said in, which it is at the stage (TB1-H). */
+const tableFailureSaid = (failure: TableFailure, node: string) =>
+  failureWords({
+    stage: 'bind',
+    code: failure.code,
+    node,
+    block: null,
+    detail:
+      failure.code === 'format_mismatch'
+        ? `${failure.column}: ${failure.detail}`
+        : 'column' in failure
+          ? failure.column
+          : failure.detail,
+  });
+
+const NO_TABLES: ReadonlyMap<string, BoundTableNode> = new Map();
+const NO_STYLES: ReadonlyMap<string, TablePresentation> = new Map();
+
 export interface DataTabProps {
   readonly client: Client;
   readonly document: string;
@@ -50,6 +78,11 @@ export interface DataTabProps {
   /** A node's number and title, as the outline shows them. */
   readonly headingOf: (node: string) => string;
   readonly language: string | null;
+  /**
+   * Each bound table by its node and binding, from the texts and the editor open in place (TB2-H):
+   * what `checkTable` checks a table's result against. None given, a table is never failed for it.
+   */
+  readonly tables?: ReadonlyMap<string, BoundTableNode>;
   /** Whether a check is in flight. */
   readonly checking: boolean;
   /** An act changed what the document holds: the view is read again. */
@@ -72,6 +105,7 @@ export function DataTab({
   checkFailures,
   headingOf,
   language,
+  tables = NO_TABLES,
   checking,
   onChanged,
   onCheckNow,
@@ -86,9 +120,20 @@ export function DataTab({
   const theme = presentation?.state === 'ready' ? presentation.theme : null;
   const formats = formatsFor(theme?.valueCatalogue ?? null, language);
 
+  const tableStyles = theme?.tableStyles ?? NO_STYLES;
   const rows = states.map((state) => {
     const failure = checkFailures.get(key(state.node, state.binding.id));
-    return { state, failure, shown: dataState(state, failure !== undefined) };
+    const failing = tableFailures(
+      state,
+      tables.get(key(state.node, state.binding.id)),
+      tableStyles,
+    );
+    return {
+      state,
+      failure,
+      failing,
+      shown: dataState(state, failure !== undefined, failing.length > 0),
+    };
   });
   const present = new Set(rows.map((row) => row.shown));
   const groups: { node: string; rows: typeof rows }[] = [];
@@ -190,10 +235,14 @@ export function DataTab({
         <section key={group.node} className={styles['group']}>
           <h3 className={styles['heading']}>{headingOf(group.node)}</h3>
           <ul className={styles['rows']}>
-            {group.rows.map(({ state, failure, shown }) => {
+            {group.rows.map(({ state, failure, failing, shown }) => {
               const held = state.held;
               const value =
-                held === null ? 'No value' : said(held.taken, formats, state.binding, held.stale);
+                held === null
+                  ? 'No value'
+                  : !held.stale && held.taken !== null && 'table' in held.taken
+                    ? tableOf(held.provenance.rowCount)
+                    : said(held.taken, formats, state.binding, held.stale);
               const since = sinceWords(state.sincePublished);
               const whose = held === null ? null : whoseView(held.provenance, held.by);
               const resolvable =
@@ -222,6 +271,11 @@ export function DataTab({
                   </span>
                   {whose !== null && <span className={styles['facts']}>{whose}</span>}
                   {failure !== undefined && <span className={styles['facts']}>{failure}</span>}
+                  {failing.map((each, at) => (
+                    <span key={at} className={styles['facts']} data-table-failure={each.code}>
+                      {tableFailureSaid(each, state.node)}
+                    </span>
+                  ))}
                   {state.definitionChanged && shown !== 'definition' && (
                     <span className={styles['facts']}>{DATA_STATE_WORDS.definition}</span>
                   )}

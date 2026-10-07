@@ -1,8 +1,10 @@
+import type { createApiClient } from '@alloy-works/api-client';
 import {
   conditions,
   number,
   resolve,
   sectionNumbers,
+  type BoundTableNode,
   type Contribution,
   type NumberingScheme,
   type OutlineView,
@@ -29,7 +31,13 @@ import {
 
 import { heldSentence } from '../editor/held.js';
 import type { BindingActs } from '../editor/ComponentEditor.js';
-import { bindingContexts, statesByNode, type BindingState } from './bindingContexts.js';
+import {
+  bindingContexts,
+  statesByNode,
+  tableSetting,
+  type BindingState,
+} from './bindingContexts.js';
+import { useTableRows } from './tableRows.js';
 import type { SettleAct } from './settleBinding.js';
 import { referenceContexts } from './contexts.js';
 import { textOffsetIn } from '../editor/caret.js';
@@ -45,6 +53,9 @@ import { VersionChoice, versionSaid, type Choosing } from './VersionChoice.js';
 
 /** The room the document's column has for its measure, at Fit: its own, inside its padding. */
 const ownRoom = (element: HTMLElement) => innerWidth(element);
+
+/** No bound tables, one object, so the rows the page wants are not asked again for nothing. */
+const NO_TABLES: ReadonlyMap<string, BoundTableNode> = new Map();
 
 /** What the text knows of an occurrence's contributions until the page has heard: nothing. */
 const NOTHING_KNOWN: ReadonlyMap<string, readonly Contribution[]> = new Map();
@@ -73,6 +84,8 @@ export interface Place {
   readonly onProvenance?: (binding: string, opener: HTMLElement) => void;
   /** What the document does with a binding placed or changed in it (B2-C, B2-D, B2-H). */
   readonly bindingActs?: BindingActs;
+  /** Told the bound tables the editor holds whenever they change, for the page (TB2-H). */
+  readonly onBoundTables?: (tables: readonly BoundTableNode[]) => void;
 }
 
 /**
@@ -294,6 +307,9 @@ export function DocumentText({
   bindingStates = null,
   onProvenance,
   onBindingSettle,
+  boundTables,
+  rowsFrom,
+  onBoundTables,
 }: {
   outline: OutlineView;
   scheme: NumberingScheme | null;
@@ -336,6 +352,16 @@ export function DocumentText({
   onProvenance?: (node: string, binding: string, opener: HTMLElement | null) => void;
   /** Resolves or keeps a binding placed, changed, kept or resolved in the editor at a node (B2). */
   onBindingSettle?: (node: string, binding: string, session: string | null, act: SettleAct) => void;
+  /** Each bound table by its node and binding (`tableKey`), from the texts and the editor (TB2-H). */
+  boundTables?: ReadonlyMap<string, BoundTableNode>;
+  /** Where its bound tables' rows are read from (TB2-A): none read without it. */
+  rowsFrom?: {
+    readonly client: ReturnType<typeof createApiClient>;
+    readonly document: string;
+    readonly session: string | null;
+  };
+  /** Told the bound tables the editor open in place holds, by its node, as they change (TB2-H). */
+  onBoundTables?: (node: string, tables: readonly BoundTableNode[]) => void;
 }) {
   // The whole document is one canvas, the theme's paper (document-view.md, "One scroll"; CNT-072).
   const column = useRef<HTMLElement>(null);
@@ -360,9 +386,22 @@ export function DocumentText({
   // Each occurrence's values, formatted in the theme's formats for the document's language (B1-G).
   const presentation = usePresentation();
   const theme = presentation?.state === 'ready' ? presentation.theme : null;
+  // Each bound table laid out on the page from its rows, read once per version and column set (TB2-A).
+  const setting = useMemo(() => tableSetting(theme, outline.language), [theme, outline.language]);
+  const rows = useTableRows(
+    rowsFrom?.client ?? null,
+    rowsFrom?.document ?? '',
+    bindingStates,
+    boundTables ?? NO_TABLES,
+    setting.styles,
+    rowsFrom?.session ?? null,
+  );
   const bindingContextsByNode = useMemo(
-    () => (bindingStates === null ? null : bindingContexts(bindingStates, theme, outline.language)),
-    [bindingStates, theme, outline.language],
+    () =>
+      bindingStates === null
+        ? null
+        : bindingContexts(bindingStates, theme, outline.language, { setting, rows }),
+    [bindingStates, theme, outline.language, setting, rows],
   );
   const bindingStatesByNode = useMemo(
     () => (bindingStates === null ? null : statesByNode(bindingStates)),
@@ -486,6 +525,12 @@ export function DocumentText({
                             onSettle: (binding: string, session: string | null, act: SettleAct) =>
                               onBindingSettle(node.id, binding, session, act),
                           },
+                        }
+                      : {}),
+                    ...(onBoundTables
+                      ? {
+                          onBoundTables: (tables: readonly BoundTableNode[]) =>
+                            onBoundTables(node.id, tables),
                         }
                       : {}),
                     onDone: () => onEdit?.(null),

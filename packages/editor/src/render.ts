@@ -6,11 +6,14 @@ import {
   ALONE_CLASS,
   bindingsShown,
   boundFiguresShown,
+  boundTablesShown,
   FAILED_CLASS,
   type BindingContext,
   type BindingShown,
+  type BoundTableAt,
 } from './bindings.js';
-import { fillBinding } from './bindingView.js';
+import { boundCaptionId, fillBinding } from './bindingView.js';
+import { fillBoundTable } from './boundTableView.js';
 import { drawEquation } from './equationView.js';
 import { fillBoundFigure } from './figureView.js';
 import { toEditor } from './mapping.js';
@@ -59,6 +62,7 @@ export function renderContent(
   drawReferences(rendered, referencesShown(opened.doc, context));
   drawBindings(rendered, bindingsShown(opened.doc, bindings), bindings);
   drawBoundFigures(rendered, boundFiguresShown(opened.doc, bindings));
+  drawBoundTables(rendered, boundTablesShown(opened.doc, bindings), bindings);
   drawEquations(rendered, opened.doc);
   drawImages(rendered);
   drawPlaces(rendered, opened.doc);
@@ -177,6 +181,27 @@ export function drawBoundFigures(
   shown.forEach((each, index) => {
     const holder = holders[index];
     if (holder !== undefined) fillBoundFigure(holder, each);
+  });
+}
+
+/**
+ * Each bound table's body as the surface draws it (the TB2 plan, TB2-D), by `boundTableView`'s own
+ * `fillBoundTable`, its caption given the identifier its table is labelled by. The serializer writes
+ * the tables in the order `boundTablesShown` walks the document in.
+ */
+export function drawBoundTables(
+  rendered: HTMLElement | DocumentFragment,
+  shown: readonly BoundTableAt[],
+  context: BindingContext | null,
+): void {
+  const figures = rendered.querySelectorAll<HTMLElement>('figure[data-bound-table]');
+  shown.forEach((each, index) => {
+    const figure = figures[index];
+    const holder = figure?.querySelector<HTMLElement>(':scope > [data-bound-table-body]');
+    if (figure === undefined || holder === null || holder === undefined) return;
+    const captionId = boundCaptionId(context, each.table, each.tablePos);
+    figure.querySelector(':scope > figcaption')?.setAttribute('id', captionId);
+    fillBoundTable(holder, each.shown, captionId);
   });
 }
 

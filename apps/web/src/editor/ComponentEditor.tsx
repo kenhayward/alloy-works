@@ -4,6 +4,7 @@ import {
   parseContentDocument,
   readContent,
   type Binding,
+  type BoundTableNode,
   type ReportEntry,
 } from '@alloy-works/domain';
 import {
@@ -62,6 +63,7 @@ import {
   type EquationAt,
   type ReferenceContext,
   type Selection,
+  storedBoundTable,
   whereBlockIs,
 } from '@alloy-works/editor';
 import '@alloy-works/editor/style.css';
@@ -210,6 +212,11 @@ export interface ComponentEditorProps {
    * spelling checker (CNT-178); the host's own otherwise. Given in tests.
    */
   readonly bridge?: PlatformBridge;
+  /**
+   * Told the bound tables its text holds as it opens and whenever one changes (the TB2 plan, TB2-H),
+   * so the document's Data tab checks what the author sees rather than what was last saved.
+   */
+  readonly onBoundTables?: (tables: readonly BoundTableNode[]) => void;
 }
 
 /** What the document does with a binding placed, changed, kept or resolved here (B2). */
@@ -360,8 +367,33 @@ export function ComponentEditor({
   onProvenance,
   bindingActs,
   bridge = resolveBridge(),
+  onBoundTables,
 }: ComponentEditorProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
+  // The bound tables told to the page, by their nodes' attributes: told again only when one changes.
+  const toldTables = useRef<readonly object[] | null>(null);
+  const onBoundTablesRef = useRef(onBoundTables);
+  onBoundTablesRef.current = onBoundTables;
+  const tellTables = (doc: EditorState['doc']) => {
+    const attrs: object[] = [];
+    const tables: BoundTableNode[] = [];
+    doc.descendants((node) => {
+      if (node.type.name !== 'boundTable') return true;
+      attrs.push(node.attrs);
+      tables.push(storedBoundTable(node));
+      return false;
+    });
+    const told = toldTables.current;
+    if (
+      told !== null &&
+      told.length === attrs.length &&
+      attrs.every((each, at) => each === told[at])
+    ) {
+      return;
+    }
+    toldTables.current = attrs;
+    onBoundTablesRef.current?.(tables);
+  };
   // Held in a ref, so a parent passing a new inline callback on every render asks nothing again.
   const toldSpace = useRef(onSpace);
   toldSpace.current = onSpace;
@@ -1160,6 +1192,7 @@ export function ComponentEditor({
         ahead = false;
         if (!hadPending) {
           view.updateState(fresh(base));
+          tellTables(view.state.doc);
           heldValues.current = baseValues;
           setValues(baseValues);
           setValuesDrawn((drawn) => drawn + 1);
@@ -1174,6 +1207,7 @@ export function ComponentEditor({
         // filled `kept` with exactly this text must not add a second copy of it (fix round 2, minor).
         captureKept();
         view.updateState(fresh(base));
+        tellTables(view.state.doc);
         // And the fields, which are held changes too: what was typed into them is not applied either,
         // and the form is drawn afresh so no input keeps what it held (W5.3 review).
         heldValues.current = baseValues;
@@ -1204,6 +1238,7 @@ export function ComponentEditor({
           return `${sentenceCase(label)} holds content this editor cannot change yet (${reopened.unsupported.join(', ')}), so it was not restored.`;
         }
         view.updateState(fresh(reopened.doc));
+        tellTables(view.state.doc);
         // And what the window keeps for a reload starts again from it, as the history does (RC-G).
         keeping.reset(editing.view().version.id, reopened.doc, restoredValues);
         heldValues.current = { ...restoredValues };
@@ -1221,6 +1256,7 @@ export function ComponentEditor({
         base = view.state.doc;
         baseValues = heldValues.current;
         view.updateState(fresh(base, selection));
+        tellTables(view.state.doc);
         // And nothing kept for a reload reaches past it either: the kept changes go with the history.
         keeping.reset(cut.id, base, baseValues);
         // As above: cutting changes nothing about the header, but this keeps that an invariant the
@@ -1248,6 +1284,7 @@ export function ComponentEditor({
         setTransactions((count) => count + 1);
         if (transaction.docChanged) {
           setHeader(headerOf(target.state.doc));
+          tellTables(target.state.doc);
           // A real change invalidates whatever `kept` already captured (fix round 2, minor): the next
           // refusal, if there is one, has something new to capture again.
           keptIsCurrent.current = false;
@@ -1264,6 +1301,7 @@ export function ComponentEditor({
     });
     setSurface(view);
     setHeader(headerOf(view.state.doc));
+    tellTables(view.state.doc);
     // Opened by a click in its rendered text: the caret goes where the click was, and the focus with
     // it, so the author types where they pointed. A selection changes nothing and claims nothing.
     if (openAtRef.current !== undefined) {
