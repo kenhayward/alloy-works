@@ -370,6 +370,8 @@ describe('the version chain as stored', () => {
         'metadata_values',
         'not_carried',
         'note',
+        // A document's parameters (0057), held to documents by a check: closed, as its values are.
+        'parameters',
         'revision_no',
         'schema_version',
         'version_digest',
