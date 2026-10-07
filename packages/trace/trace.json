@@ -18545,7 +18545,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 845,
+      "line": 851,
       "kind": "title"
     },
     {
@@ -19151,37 +19151,37 @@
     {
       "id": "CNT-082",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 1954,
+      "line": 1985,
       "kind": "title"
     },
     {
       "id": "CNT-094",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2405,
+      "line": 2436,
       "kind": "title"
     },
     {
       "id": "CNT-097",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 1943,
+      "line": 1974,
       "kind": "title"
     },
     {
       "id": "CNT-115",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 1971,
+      "line": 2002,
       "kind": "title"
     },
     {
       "id": "CNT-122",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 1989,
+      "line": 2020,
       "kind": "title"
     },
     {
       "id": "CNT-169",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 1247,
+      "line": 1278,
       "kind": "title"
     },
     {
@@ -19193,25 +19193,25 @@
     {
       "id": "DAT-098",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2825,
+      "line": 2857,
       "kind": "title"
     },
     {
       "id": "SCH-057",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 1831,
+      "line": 1862,
       "kind": "title"
     },
     {
       "id": "STY-070",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2199,
+      "line": 2230,
       "kind": "title"
     },
     {
       "id": "STY-079",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2089,
+      "line": 2120,
       "kind": "title"
     },
     {
@@ -21263,43 +21263,43 @@
     {
       "id": "TAB-002",
       "file": "packages/domain/src/data/table.test.ts",
-      "line": 77,
+      "line": 83,
       "kind": "title"
     },
     {
       "id": "TAB-003",
       "file": "packages/domain/src/data/table.test.ts",
-      "line": 90,
+      "line": 96,
       "kind": "title"
     },
     {
       "id": "TAB-004",
       "file": "packages/domain/src/data/table.test.ts",
-      "line": 112,
+      "line": 118,
       "kind": "title"
     },
     {
       "id": "TAB-006",
       "file": "packages/domain/src/data/table.test.ts",
-      "line": 175,
+      "line": 181,
       "kind": "title"
     },
     {
       "id": "TAB-007",
       "file": "packages/domain/src/data/table.test.ts",
-      "line": 179,
+      "line": 185,
       "kind": "title"
     },
     {
       "id": "TAB-011",
       "file": "packages/domain/src/data/table.test.ts",
-      "line": 216,
+      "line": 222,
       "kind": "title"
     },
     {
       "id": "TAB-046",
       "file": "packages/domain/src/data/table.test.ts",
-      "line": 242,
+      "line": 248,
       "kind": "title"
     },
     {
@@ -21323,7 +21323,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 572,
+      "line": 573,
       "kind": "title"
     },
     {
@@ -22281,6 +22281,12 @@
       "kind": "title"
     },
     {
+      "id": "DAT-047",
+      "file": "packages/editor/src/boundTables.test.ts",
+      "line": 269,
+      "kind": "title"
+    },
+    {
       "id": "CNT-025",
       "file": "packages/editor/src/equations.test.ts",
       "line": 455,
@@ -22427,7 +22433,7 @@
     {
       "id": "CNT-016",
       "file": "packages/editor/src/tables.test.ts",
-      "line": 111,
+      "line": 110,
       "kind": "title"
     },
     {

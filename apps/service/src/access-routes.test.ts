@@ -824,6 +824,10 @@ describe('routes that check a permission', () => {
       url: `/v1/documents/${report}/datasets/${MISSING}`,
       status: 404,
     }),
+    getBoundTableRows: () => ({
+      url: `/v1/documents/${report}/bindings/${'a'.repeat(26)}/b1/rows?version=${MISSING}`,
+      status: 404,
+    }),
     confirmBinding: () => ({
       url: `/v1/documents/${report}/bindings/confirm`,
       status: 404,

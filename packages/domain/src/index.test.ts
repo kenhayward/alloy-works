@@ -66,6 +66,7 @@ describe('the domain package', () => {
         'carryForward',
         'checkAssignment',
         'checkSchema',
+        'checkTable',
         'checkUserValues',
         'checkValue',
         'componentTypeDefinitionSchema',
