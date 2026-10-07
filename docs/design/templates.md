@@ -219,7 +219,8 @@ Bindings established at creation, a query set and parameters resolving variables
 ([ADR-0043](../decisions/0043-a-templates-bindings-query-set-and-variables-move-to-t4.md)), since a
 T2 template's outline holds sections and no components.
 
-> **Not built.** Built in two slices, [below](#build-order).
+> **TP1 built** (0.143.0): declared, asked for, recorded, changed and shown. **TP2**, feeding the
+> bindings, is not built. Built in two slices, [below](#build-order).
 
 ### Declared on the template
 
@@ -236,13 +237,16 @@ TemplateParameter = Parameter & {        // data.md's declaration: name, type, r
 ```
 
 - **The query definition's own `parameterSchema` and checks** (DAT-010, DAT-020), so one rule reads a
-  value whether a definition or a template declares it; `variation` is refused (`parameter_variation`),
-  since it selects SQL.
+  value whether a definition or a template declares it; `variation` is refused, since it selects SQL:
+  the strict shape has no such member, so a definition declaring one is not one the contract reads.
 - **A parameter feeding nothing is refused** at save, `parameter_unused` (TPL-068).
 - **A seeded field** must be a document-level effective field (resolution, TE-L) whose type takes the
-  parameter's: text to text, integer and decimal to number, date to date, time to time, instant to
-  date-time, boolean to boolean, a list only to a field of many. Anything else is `parameter_field`,
-  naming both. A local date-time has no field to seed.
+  parameter's (`seedable`): text to text; integer to number; decimal to number where the field's scale,
+  if declared, takes the decimal's, and to a whole-number field only at scale 0; date to date; time with
+  no fraction to time; instant to date-time; boolean to boolean; a list only to a field of many, a single
+  value only to a field of one. Anything else is `parameter_field`, naming both. A local date-time and a
+  `user` field have nothing to seed. Checked at save and again at creation, never inside resolution,
+  so a later schema change never makes a document's values unwritable.
 
 ### Asked for when a document is made
 
@@ -252,7 +256,10 @@ of entries, or a choice where `permitted` lists values (TPL-026). In the same tr
 
 - **Checked** by `checkParameterValues`: a required one missing, or any value invalid, refuses the
   request, `400 parameter_invalid`, naming every parameter, its rule and its value, as the form shows
-  them (TPL-018, TPL-045); a name the template does not declare is `parameter_unknown`.
+  them beside each parameter (TPL-018, TPL-045); a name the template does not declare is
+  `parameter_unknown`, and any value for a blank document. A seeded value the field would refuse - its
+  length, range, entries or duplicates - is `parameter_invalid` naming the parameter, the field and the
+  field's rule. The form keeps Create unavailable, saying which, until each required one is filled.
 - **Recorded** in the document's first version (below), and **each seeded field's value set** from it
   over the field's default (TPL-066). Seeding happens once: a later change to the parameter does not
   rewrite the field, which is the author's from then on.
@@ -266,9 +273,11 @@ of entries, or a choice where `permitted` lists values (TPL-026). In the same tr
   version with outline and values unchanged; a value of a parameter that is not `changeable` and
   differs is refused, `parameter_fixed`, naming it (TPL-021); every value is checked as at creation.
   Outline and values acts carry `parameters` unchanged.
-- **Visible and auditable** (TPL-020): the document page's **Parameters** panel shows each value, and
-  its history - each change, who made it and when, read from the version chain's author and time.
-  `GET /v1/documents/{id}/parameters` answers the same.
+- **Visible and auditable** (TPL-020): the document page's **Parameters** panel, beside its fields,
+  shows each value, a changeable one editable and saved a pause after it is typed, a fixed one read
+  only, and a **History** of each change, who made it and when, read from the version chain's author
+  and time. `GET /v1/documents/{id}/parameters` answers the same - the declarations at the document's
+  recorded template version, the values, and the history newest first, `limit` and `cursor` paging it.
 
 ### Feeding the bindings
 
@@ -289,14 +298,13 @@ of entries, or a choice where `permitted` lists values (TPL-026). In the same tr
 
 ### Failures
 
-| Failure               | Where                     | Meaning                                                                                 |
-| --------------------- | ------------------------- | --------------------------------------------------------------------------------------- |
-| `parameter_unused`    | template save             | A parameter seeds no field and supplies no argument (TPL-068)                           |
-| `parameter_variation` | template save             | A template parameter declares a variation                                               |
-| `parameter_field`     | template save, resolve    | A seeded field is not document-level, or cannot take the parameter's type               |
-| `parameter_invalid`   | creation, change, resolve | A required value missing or a value invalid, naming parameter, rule and value (TPL-045) |
-| `parameter_unknown`   | creation, change          | A value for a parameter the template does not declare                                   |
-| `parameter_fixed`     | change                    | A changed value of a parameter that is not changeable (TPL-021)                         |
+| Failure             | Where                     | Meaning                                                                                 |
+| ------------------- | ------------------------- | --------------------------------------------------------------------------------------- |
+| `parameter_unused`  | template save             | A parameter seeds no field and supplies no argument (TPL-068)                           |
+| `parameter_field`   | template save, creation   | A seeded field is not document-level, is fixed, or cannot take the parameter's type     |
+| `parameter_invalid` | creation, change, resolve | A required value missing or a value invalid, naming parameter, rule and value (TPL-045) |
+| `parameter_unknown` | creation, change          | A value for a parameter the template does not declare                                   |
+| `parameter_fixed`   | change                    | A changed value of a parameter that is not changeable (TPL-021)                         |
 
 ### Build order
 
@@ -322,19 +330,23 @@ of entries, or a choice where `permitted` lists values (TPL-026). In the same tr
 
 ## Where the code lives
 
-| Where                                              | What                                                                                                                                                                                                       |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `domain: src/template/`                            | The definition's schema, `checkTemplate`, `resolveTemplate`, and the starting outline's materialising                                                                                                      |
-| `domain: src/structure/`                           | `origin`, outline schema 3, and `changes` passed to `applyOutlineOperation`                                                                                                                                |
-| `db: migrations/tenant/0028_templates.sql`         | The kind, its space rule, and its versions authored                                                                                                                                                        |
-| `db: migrations/tenant/0029_document_template.sql` | `document_template`, and documents' values                                                                                                                                                                 |
-| `db: src/templates.ts`                             | Making, reading and versioning a template; a document's template, and the layout and theme it binds                                                                                                        |
-| `service: src/templates.ts`                        | The template routes; the documents and publishing handlers read a document's template                                                                                                                      |
-| `domain: src/version/substance.ts`                 | `DocumentSubstance.values`, and `canonicaliseVersion` digesting them                                                                                                                                       |
-| `db: src/versions.ts`                              | `insertVersion` and `substanceOf` writing and reading a document's values                                                                                                                                  |
-| `db: src/publishing.ts`, `layouts.ts`, `themes.ts` | `requestPublication` reading the document's template's layout and theme, `layoutLatest` and `themeLatest`, and the two door checks                                                                         |
-| `service: src/wire-codes.ts`                       | `template.unresolved`, `section.required` and `metadata.invalid`, with their rules TPL-004, TPL-013 and TPL-055 (API-006); `values.invalid` and `values.unresolved`, a written value's refusals, with none |
-| `web: src/structure/NewDocument.tsx`               | The template to start from                                                                                                                                                                                 |
+| Where                                                          | What                                                                                                                                                                                                       |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain: src/template/`                                        | The definition's schema, `checkTemplate`, `resolveTemplate`, and the starting outline's materialising                                                                                                      |
+| `domain: src/structure/`                                       | `origin`, outline schema 3, and `changes` passed to `applyOutlineOperation`                                                                                                                                |
+| `db: migrations/tenant/0028_templates.sql`                     | The kind, its space rule, and its versions authored                                                                                                                                                        |
+| `db: migrations/tenant/0029_document_template.sql`             | `document_template`, and documents' values                                                                                                                                                                 |
+| `db: src/templates.ts`                                         | Making, reading and versioning a template; a document's template, and the layout and theme it binds                                                                                                        |
+| `service: src/templates.ts`                                    | The template routes; the documents and publishing handlers read a document's template                                                                                                                      |
+| `domain: src/version/substance.ts`                             | `DocumentSubstance.values`, and `canonicaliseVersion` digesting them                                                                                                                                       |
+| `db: src/versions.ts`                                          | `insertVersion` and `substanceOf` writing and reading a document's values                                                                                                                                  |
+| `db: src/publishing.ts`, `layouts.ts`, `themes.ts`             | `requestPublication` reading the document's template's layout and theme, `layoutLatest` and `themeLatest`, and the two door checks                                                                         |
+| `service: src/wire-codes.ts`                                   | `template.unresolved`, `section.required` and `metadata.invalid`, with their rules TPL-004, TPL-013 and TPL-055 (API-006); `values.invalid` and `values.unresolved`, a written value's refusals, with none |
+| `web: src/structure/NewDocument.tsx`                           | The template to start from, and its parameters                                                                                                                                                             |
+| `domain: src/template/parameters.ts`                           | `templateParameterSchema`, `seedable`, `checkTemplateParameters`, `checkDocumentParameters` and `seededValues`                                                                                             |
+| `db: migrations/tenant/0057_document_parameters.sql`           | `artifact_version.parameters`, documents only                                                                                                                                                              |
+| `db: src/documents.ts`                                         | Creation with parameters, `recordDocumentParameters` and `parameterHistory`                                                                                                                                |
+| `web: src/structure/ParameterInput.tsx`, `ParametersPanel.tsx` | A value asked for by its type; the Parameters panel and its History                                                                                                                                        |
 
 ## Verification
 
