@@ -66,6 +66,21 @@ function blockContributions(block: BlockNode): Contribution[] {
         ),
         ...inlineContributions(block.note ?? []),
       ];
+    case 'boundTable':
+      // Numbered as a table, with its caption (the TB1 plan, TB1-D), so the page's numbers equal the
+      // publish's, where the stage has set it as one: its caption's footnotes, then its note's and its
+      // source's, in the order they stand. Its empty statement holds no footnote (`document.ts`).
+      return [
+        {
+          block: block.id,
+          sequence: 'table',
+          numbered: block.numbered !== false,
+          caption: captionText(block.caption),
+        },
+        ...inlineContributions(block.caption),
+        ...inlineContributions(block.note ?? []),
+        ...inlineContributions(block.source ?? []),
+      ];
     case 'figure':
       return [
         {

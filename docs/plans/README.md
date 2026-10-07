@@ -609,6 +609,14 @@ order names, each planned when its turn comes.
 | B4  | [The Data tab](2026-10-05-b4-the-data-tab.md)                     | The Data tab beside Contents, each binding with its state; the check on opening and Check now; Accept; waiting decided against the definition version a binding asks, so a definition moved on with the same rows is offered and a pinned binding is never offered another version; changed since last published   | Built  |
 | B6  | [Bound images](2026-10-06-b6-bound-images.md)                     | An image column bound in a line, a table cell or a figure, the figure taking a binding beside its asset at content schema 1; the description from the definition or decorative, `image_description_missing` failing the publish by name; the Value dialog offering image columns                                   | Built  |
 
+## Tables
+
+[tables.md](../design/tables.md)'s build order: a result as a bound table.
+
+| #   | Plan                                                                      | Builds                                                                                                                                                                              | Status  |
+| --- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| TB1 | [The bound table, published](2026-10-07-tb1-the-bound-table-published.md) | The `boundTable` block at content schema 1, `formatCell` and `layoutTable`, the table style's formats and alignment by type, `publishing/16`, Word and provenance for a bound table | Planned |
+
 ## Publishing
 
 A document version to a PDF somebody can download, cite and keep, designed in

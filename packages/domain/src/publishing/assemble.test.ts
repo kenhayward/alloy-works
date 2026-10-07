@@ -1877,6 +1877,26 @@ describe('a table, published (tables 2)', () => {
     expect(assemble(oneComponent(within)).ok).toBe(true);
   });
 
+  it('refuses a bound table that reaches it by name, block_not_publishable, until its stage sets it (TB1.1)', () => {
+    const bound = {
+      type: 'boundTable',
+      id: 't2',
+      binding: {
+        type: 'binding',
+        id: 'k1',
+        query: '00000000-0000-4000-8000-00000000d001',
+        parameters: {},
+        mode: 'checked',
+      },
+      caption: [text('Depths')],
+      columns: [{ column: 'depth', header: 'Depth' }],
+      headerColumn: false,
+    };
+    expect(failuresOf(assemble(oneComponent(stored(), bound)))).toEqual([
+      { ...failed('block_not_publishable', 'boundTable'), block: 't2' },
+    ]);
+  });
+
   it('refuses a table in a style the template does not set, as a paragraph is refused', () => {
     expect(failuresOf(assemble(oneComponent(stored({ style: 'wide' }))))).toEqual([
       failed('style_missing', 'wide'),
@@ -5197,6 +5217,23 @@ describe('table and image styles, published (themes 2)', () => {
     expect(failuresOf(assemble({ ...oneParagraph(text('Set.')), layout }))).toEqual([
       { stage: 'compose', code: 'layout_glyph_missing', node: null, block: null, detail: 'U+2016' },
     ]);
+  });
+
+  it("checks the words a bound table prints, no rows and a null in a cell's face and its source in a table note's, as the layout's own words (TB1-G)", () => {
+    for (const word of ['noRows', 'notAvailable', 'source'] as const) {
+      const layout = layoutWith((each) => {
+        each.words[word] = `Nothing ${String.fromCodePoint(0x2016)}`;
+      });
+      expect(failuresOf(assemble({ ...oneParagraph(text('Set.')), layout })), word).toEqual([
+        {
+          stage: 'compose',
+          code: 'layout_glyph_missing',
+          node: null,
+          block: null,
+          detail: 'U+2016',
+        },
+      ]);
+    }
   });
 
   it('refuses a table whose style asks for a continuation label under a layout with no words for one, naming the table and the style', () => {

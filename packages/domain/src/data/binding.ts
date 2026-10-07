@@ -2,7 +2,7 @@ import type { z } from 'zod';
 
 import type { BlockNode } from '../content/model/blocks.js';
 import type { ContentDocument } from '../content/model/document.js';
-import type { bindingNodeSchema, InlineNode } from '../content/model/inline.js';
+import type { bindingNodeSchema, InlineNode, tableBindingSchema } from '../content/model/inline.js';
 import { canonicalJson } from '../stored/canonical.js';
 import { valueProblem } from './canonical.js';
 import type { QueryDefinition } from './definition.js';
@@ -14,6 +14,17 @@ import type { ParameterValues } from './parameters.js';
  */
 export type Binding = z.infer<typeof bindingNodeSchema>;
 
+/** A bound table's binding (the TB1 plan, TB1-A): an inline binding's members, with no take. */
+export type TableBinding = z.infer<typeof tableBindingSchema>;
+
+/** Any binding a component stores: one taking a value, or a table's, taking the whole result. */
+export type AnyBinding = Binding | TableBinding;
+
+/** Whether a binding takes a value - every binding but a bound table's (TB1-C). */
+export function takes(binding: AnyBinding): binding is Binding {
+  return 'take' in binding;
+}
+
 /**
  * The input to the digest a resolution holds (D3-R): the binding's canonical form, every member - its
  * `id` and `mode` among them - with no set rule, so a parameter's list keeps its order whatever the
@@ -21,7 +32,7 @@ export type Binding = z.infer<typeof bindingNodeSchema>;
  * holds nothing in a document until it is resolved again (DA-AA). Hashed by the caller, as content's
  * canonical form is, since a hash is not platform-free.
  */
-export function bindingDigestInput(binding: Binding): string {
+export function bindingDigestInput(binding: AnyBinding): string {
   return canonicalJson(binding);
 }
 
@@ -30,27 +41,37 @@ export function bindingDigestInput(binding: Binding): string {
  * is placed - in a line, in a footnote's line, in a caption, or as a figure's image (the B6 plan, B6-D),
  * which decides whether an image it takes can stand there.
  */
-export interface BindingAt {
-  readonly binding: Binding;
-  readonly path: string;
-  readonly place: BindingPlace;
-  /**
-   * A figure's binding whose figure the author marked decorative (Ken, 2026-10-06): its image needs
-   * no description, so its row's missing one fails nothing. Absent everywhere else.
-   */
-  readonly decorative?: true;
-}
+export type BindingAt =
+  | {
+      readonly binding: Binding;
+      readonly path: string;
+      readonly place: BindingPlace;
+      /**
+       * A figure's binding whose figure the author marked decorative (Ken, 2026-10-06): its image
+       * needs no description, so its row's missing one fails nothing. Absent everywhere else.
+       */
+      readonly decorative?: true;
+    }
+  | {
+      /** A bound table's binding (TB1-C): the whole result, so it takes nothing. */
+      readonly binding: TableBinding;
+      readonly path: string;
+      readonly place: 'table';
+      readonly decorative?: undefined;
+    };
 
 /**
- * How a binding is placed: `figure` a figure's image, `footnote` in a footnote's text, `caption` in a
- * table's or a figure's caption - where no image stands (`image_in_caption`) - else `line`.
+ * How a binding taking a value is placed: `figure` a figure's image, `footnote` in a footnote's text,
+ * `caption` in a table's or a figure's caption - where no image stands (`image_in_caption`) - else
+ * `line`. A bound table's own binding is placed `table` (TB1-C) and takes nothing.
  */
 export type BindingPlace = 'line' | 'footnote' | 'caption' | 'figure';
 
 /**
  * Every binding in a component, in reading order, wherever its content admits an inline (D3-D): a
  * paragraph, a definition's term, a quotation's attribution, a table's caption, cells and note, a
- * figure's caption, and a footnote's paragraphs - and a figure's own (B6-A), before its caption.
+ * figure's caption, and a footnote's paragraphs - and a figure's own (B6-A), before its caption, and a
+ * bound table's own (TB1-C), before its caption, empty statement, note and source.
  * Reads content `parseContentDocument` returned, whose footnotes hold parsed paragraphs.
  */
 export function bindingsIn(content: ContentDocument): BindingAt[] {
@@ -89,6 +110,15 @@ function blocks(
             blocks(cell.content, `${here}.rows.${rowAt}.cells.${cellAt}.content`, found, place),
           ),
         );
+        break;
+      case 'boundTable':
+        // Its own binding, then the bindings in its caption, empty statement, note and source, in
+        // the order a reader meets them (the TB1 plan, TB1-C and TB1-D).
+        found.push({ binding: block.binding, path: `${here}.binding`, place: 'table' });
+        inlines(block.caption, `${here}.caption`, found, 'caption');
+        if (block.empty) inlines(block.empty, `${here}.empty`, found, place);
+        if (block.note) inlines(block.note, `${here}.note`, found, place);
+        if (block.source) inlines(block.source, `${here}.source`, found, place);
         break;
       case 'figure':
         if (block.binding) {
@@ -162,7 +192,7 @@ export function checkTake(
  * (`checkParameterValues`, D2-R).
  */
 export function literalValues(
-  binding: Binding,
+  binding: AnyBinding,
 ): { readonly values: ParameterValues } | { readonly document: string } {
   const values: Record<string, ParameterValues[string]> = {};
   for (const [name, parameter] of Object.entries(binding.parameters)) {

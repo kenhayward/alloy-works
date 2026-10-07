@@ -2043,3 +2043,235 @@ describe("a figure's image from a binding (the B6 plan, B6-A to B6-C)", () => {
     }
   });
 });
+
+describe('a bound table (the TB1 plan, TB1-A and TB1-B)', () => {
+  const run = (value: string) => ({ type: 'text', value, marks: [] });
+  const cell = (id: string, value: string) => ({
+    content: [{ type: 'paragraph', id, style: 'body', content: [run(value)] }],
+  });
+  const binding = (id = 'k1') => ({
+    type: 'binding',
+    id,
+    query: '00000000-0000-4000-8000-00000000d001',
+    parameters: { site: { literal: 'north' } },
+    mode: 'checked',
+  });
+  const boundTable = (over: Record<string, unknown> = {}) => ({
+    type: 'boundTable',
+    id: 'T1',
+    binding: binding(),
+    caption: [run('Readings')],
+    columns: [
+      { column: 'site', header: 'Site' },
+      { column: 'depth', header: 'Depth', unit: { text: 'm', place: 'header' } },
+    ],
+    headerColumn: false,
+    ...over,
+  });
+  const parsedTable = (over: Record<string, unknown> = {}) =>
+    parseContentDocument(doc([boundTable(over)])).content[0] as Extract<
+      BlockNode,
+      { type: 'boundTable' }
+    >;
+
+  /**
+   * An authored table and an inline binding, canonicalised before the bound table existed and written
+   * out rather than computed: the version digest (ADR-0024) is taken over this string, so a widening
+   * that moved it would record a new version of every component holding either (TB1-A).
+   */
+  const CANONICAL_TABLE_AND_BINDING =
+    '{"content":[{"content":[{"marks":[],"type":"text","value":"Depth "},{"id":"k1","mode":"checked",' +
+    '"parameters":{"site":{"literal":"north"}},"query":"00000000-0000-4000-8000-00000000d001",' +
+    '"take":{"column":"depth"},"type":"binding"}],"id":"p1","style":"body","type":"paragraph"},' +
+    '{"caption":[{"marks":[],"type":"text","value":"Readings"}],"headerColumns":0,"headerRows":1,' +
+    '"id":"t1","rows":[{"cells":[{"colspan":1,"content":[{"content":[{"marks":[],"type":"text",' +
+    '"value":"Site"}],"id":"a","style":"body","type":"paragraph"}],"rowspan":1},{"colspan":1,' +
+    '"content":[{"content":[{"marks":[],"type":"text","value":"Depth"}],"id":"b","style":"body",' +
+    '"type":"paragraph"}],"rowspan":1}]},{"cells":[{"colspan":1,"content":[{"content":[{"marks":[],' +
+    '"type":"text","value":"North"}],"id":"c","style":"body","type":"paragraph"}],"rowspan":1},' +
+    '{"colspan":1,"content":[{"content":[{"marks":[],"type":"text","value":"4"}],"id":"d",' +
+    '"style":"body","type":"paragraph"}],"rowspan":1}]}],"style":"table","type":"table"}],' +
+    '"direction":"ltr","language":"en-GB","schemaVersion":1,"title":"A component"}';
+
+  it("keeps an authored table's and an inline binding's canonical forms, and so their digests, unchanged", () => {
+    const stored = doc([
+      {
+        type: 'paragraph',
+        id: 'p1',
+        style: 'body',
+        content: [run('Depth '), { ...binding(), take: { column: 'depth' } }],
+      },
+      {
+        type: 'table',
+        id: 't1',
+        caption: [run('Readings')],
+        headerRows: 1,
+        headerColumns: 0,
+        rows: [
+          { cells: [cell('a', 'Site'), cell('b', 'Depth')] },
+          { cells: [cell('c', 'North'), cell('d', '4')] },
+        ],
+      },
+    ]);
+    const read = readContent(stored, { artifact: 'a', version: 'v' });
+    if (!read.ok) throw new Error(read.failure);
+    expect(canonicalise(read.document)).toBe(CANONICAL_TABLE_AND_BINDING);
+    expect(CURRENT_SCHEMA_VERSION).toBe(1);
+    expect(contentMigrationChain.migrations).toEqual({});
+  });
+
+  it('holds a bound table through the parse of what the parse returned, its style defaulting', () => {
+    const once = parseContentDocument(
+      doc([
+        boundTable({
+          sort: [{ column: 'depth', direction: 'descending', nulls: 'last' }],
+          empty: [run('No readings')],
+          source: [run('Survey of 2026')],
+          note: [run('Depths at noon')],
+        }),
+      ]),
+    );
+    expect(once.content[0]).toMatchObject({ type: 'boundTable', style: 'table' });
+    expect(parseContentDocument(once)).toEqual(once);
+  });
+
+  it('TAB-001 keeps the columns shown in the order declared, each by its result column name', () => {
+    const table = parsedTable({
+      columns: [
+        { column: 'depth', header: 'Depth' },
+        { column: 'site', header: 'Site' },
+        { column: 'measured_on', header: 'Measured' },
+      ],
+    });
+    expect(table.columns.map((column) => column.column)).toEqual(['depth', 'site', 'measured_on']);
+  });
+
+  it('TAB-036 refuses a column, or a sort column, named by its position rather than its name', () => {
+    expect(() => parsedTable({ columns: [{ column: 1, header: 'Depth' }] })).toThrow();
+    expect(() =>
+      parsedTable({ sort: [{ column: 0, direction: 'ascending', nulls: 'last' }] }),
+    ).toThrow();
+  });
+
+  it('TAB-048 refuses a column shown twice under one header, column_repeated, and keeps it under two', () => {
+    expect(() =>
+      parsedTable({
+        columns: [
+          { column: 'depth', header: 'Depth' },
+          { column: 'depth', header: 'Depth' },
+        ],
+      }),
+    ).toThrow(/T1.*depth.*column_repeated/);
+    const kept = parsedTable({
+      columns: [
+        { column: 'depth', header: 'Depth' },
+        { column: 'depth', header: 'Depth, rounded', format: { places: 0 } },
+      ],
+    });
+    expect(kept.columns).toHaveLength(2);
+  });
+
+  it('refuses a sort naming a column twice, more than four sort columns, or more than 64 columns', () => {
+    const by = (column: string) => ({ column, direction: 'ascending', nulls: 'last' });
+    expect(() => parsedTable({ sort: [by('depth'), by('depth')] })).toThrow(/T1.*sorts by depth/);
+    expect(() => parsedTable({ sort: [by('a'), by('b'), by('c'), by('d'), by('e')] })).toThrow();
+    expect(() => parsedTable({ sort: [] })).toThrow();
+    expect(() =>
+      parsedTable({
+        columns: Array.from({ length: 65 }, (_, at) => ({ column: `c${at}`, header: `C${at}` })),
+      }),
+    ).toThrow();
+    expect(() => parsedTable({ columns: [] })).toThrow();
+  });
+
+  it('refuses a header or a unit outside its length or not in NFC, and a format member out of range', () => {
+    const decomposed = `Cafe${String.fromCodePoint(0x301)}`;
+    expect(() => parsedTable({ columns: [{ column: 'site', header: '' }] })).toThrow();
+    expect(() => parsedTable({ columns: [{ column: 'site', header: 'x'.repeat(201) }] })).toThrow();
+    expect(() => parsedTable({ columns: [{ column: 'site', header: decomposed }] })).toThrow();
+    expect(() =>
+      parsedTable({
+        columns: [
+          { column: 'site', header: 'Site', unit: { text: 'x'.repeat(41), place: 'value' } },
+        ],
+      }),
+    ).toThrow();
+    for (const format of [
+      { places: 21 },
+      { places: -1 },
+      { fraction: 7 },
+      { currency: { symbol: '', position: 'before', space: false } },
+      { currency: { symbol: '123456789', position: 'before', space: false } },
+      { rounding: 'halfUp' },
+      { style: 'scientific' },
+    ]) {
+      expect(
+        () => parsedTable({ columns: [{ column: 'depth', header: 'Depth', format }] }),
+        JSON.stringify(format),
+      ).toThrow();
+    }
+  });
+
+  it('refuses a null text that reads as a number, or that is empty', () => {
+    for (const text of ['0', '-1.5', '(2)', '1,000', '12%', ' 3 ', '']) {
+      expect(
+        () =>
+          parsedTable({ columns: [{ column: 'depth', header: 'Depth', format: { null: text } }] }),
+        text,
+      ).toThrow();
+    }
+    expect(() =>
+      parsedTable({ columns: [{ column: 'depth', header: 'Depth', format: { null: 'n/a' } }] }),
+    ).not.toThrow();
+  });
+
+  it('refuses a binding that takes a value, since a table binds the whole result', () => {
+    expect(() => parsedTable({ binding: { ...binding(), take: { column: 'depth' } } })).toThrow();
+  });
+
+  it("claims a bound table's binding's identifier with the component's others", () => {
+    const inline = {
+      type: 'paragraph',
+      id: 'p1',
+      style: 'body',
+      content: [{ ...binding('k1'), take: { column: 'depth' } }],
+    };
+    expect(() => parseContentDocument(doc([inline, boundTable()]))).toThrow(
+      /k1 is used more than once/,
+    );
+    expect(() => parseContentDocument(doc([boundTable({ id: 'k1' })]))).toThrow(
+      /k1 is used more than once/,
+    );
+  });
+
+  it('refuses a bound table in a cell, as any table in a table', () => {
+    const table = {
+      type: 'table',
+      id: 't1',
+      caption: [run('Outer')],
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [{ cells: [{ content: [boundTable()] }] }],
+    };
+    expect(() => parseContentDocument(doc([table]))).toThrow(/t1 holds a boundTable in a cell/);
+  });
+
+  it("holds its caption, empty statement, source and note to a table caption's rules", () => {
+    const footnote = (id: string) => ({
+      type: 'footnote',
+      id,
+      anchor: { kind: 'span' },
+      content: [{ type: 'paragraph', id: `${id}-p`, style: 'body', content: [run('A note')] }],
+    });
+    expect(() => parsedTable({ source: [run('Survey '), footnote('f1')] })).not.toThrow();
+    // A footnote in the empty statement would number in the page and not in a publish of rows.
+    expect(() => parsedTable({ empty: [run('None'), footnote('f1')] })).toThrow(
+      /T1 holds a footnote in its empty statement/,
+    );
+    for (const member of ['caption', 'source', 'note']) {
+      expect(() => parsedTable({ [member]: [run('A'), footnote('T1')] }), member).toThrow(
+        /T1 is used more than once/,
+      );
+    }
+  });
+});

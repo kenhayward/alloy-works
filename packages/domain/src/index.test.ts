@@ -530,6 +530,37 @@ describe('the domain package', () => {
         'fileConditionSchema',
         'fileFilter',
         'sortRows',
+        // TB1: the bound table, its binding taking no value, its column's format and alignment, and
+        // its refusal (the TB1 plan, task 1).
+        'BOUND_TABLE_COLUMNS_MAX',
+        'BOUND_TABLE_SORT_MAX',
+        'BoundTableRefused',
+        'COLUMN_ALIGNMENTS',
+        'boundTableNodeSchema',
+        'fieldFormatSchema',
+        'readsAsANumber',
+        'tableBindingSchema',
+        'takes',
+        // TB1: a table's cell printed by its merged format, its mismatches and its colour (task 3).
+        'colouredNegative',
+        'formatCell',
+        'formatMismatch',
+        'mergeFormat',
+        // TB1: a bound table laid out, its row ceiling, and the product's formats and alignment by
+        // type where a table style names none (task 4).
+        'DEFAULT_TABLE_ALIGN',
+        'DEFAULT_TABLE_FIELDS',
+        'layoutTable',
+        'TABLE_ROWS_MAX',
+        // TB1: the types a table style formats by, the default theme's 0.6 frozen as 0.7 replaces it,
+        // and the default layout's 0.7 frozen as 0.8 does (task 5).
+        'FIELD_KEYS',
+        'SEVENTH_DEFAULT_LAYOUT',
+        'SIXTH_DEFAULT_CATALOGUES',
+        'SIXTH_DEFAULT_CATALOGUES_BY_VERSION',
+        'SIXTH_DEFAULT_CATALOGUE_VERSIONS',
+        'SIXTH_DEFAULT_THEME',
+        'SIXTH_DEFAULT_THEME_VERSION',
       ].sort(),
     );
   });

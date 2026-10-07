@@ -482,14 +482,14 @@ describe('requesting and recording a publication', () => {
           },
         });
         if (next.answer !== 'recorded') throw new Error(next.answer);
-        // The default is at 0.7 since 0035, so the version recorded after it is 0.8.
-        expect((await defaultLayout(trx)).number).toBe('0.8');
+        // The default is at 0.8 since 0055, so the version recorded after it is 0.9.
+        expect((await defaultLayout(trx)).number).toBe('0.9');
 
         const inputs = await publicationInputs(trx, id);
         expect(inputs!.layout).toEqual({ versionId: declared.versionId, layout: declared.layout });
         // The document's version as `revision.version` (VER-009): a first version is 0.1.
         expect(inputs!.revision).toBe('0.1');
-        // Thrown to roll the layout's 0.8 back: the rest of the suite publishes under the default.
+        // Thrown to roll the layout's 0.9 back: the rest of the suite publishes under the default.
         throw rolledBack;
       }),
     ).rejects.toBe(rolledBack);
@@ -518,13 +518,13 @@ describe('requesting and recording a publication', () => {
           theme: { ...declared.content, paper: '#fafafa' },
         });
         if (next.answer !== 'recorded') throw new Error(next.answer);
-        // The default is at 0.6 since 0048, so the version recorded after it is 0.7.
-        expect((await defaultTheme(trx)).number).toBe('0.7');
+        // The default is at 0.7 since 0055, so the version recorded after it is 0.8.
+        expect((await defaultTheme(trx)).number).toBe('0.8');
 
         const inputs = await publicationInputs(trx, id);
         expect(inputs!.theme).toEqual({ versionId: declared.versionId, theme: declared.theme });
         expect(inputs!.theme!.theme.paper).toBe('#ffffff');
-        // Thrown to roll the theme's 0.7 back: the rest of the suite publishes under the default.
+        // Thrown to roll the theme's 0.8 back: the rest of the suite publishes under the default.
         throw rolledBack;
       }),
     ).rejects.toBe(rolledBack);
@@ -836,7 +836,10 @@ describe('requesting and recording a publication', () => {
         for (const each of inputs) {
           expect(each!.theme!.versionId).toBe(declared.versionId);
           // The six kinds, which the value catalogue stands beside rather than among (B1-F).
-          expect(each!.theme!.theme.catalogues).toEqual(FIFTH_DEFAULT_CATALOGUE_VERSIONS);
+          expect(each!.theme!.theme.catalogues).toEqual({
+            ...FIFTH_DEFAULT_CATALOGUE_VERSIONS,
+            table: DEFAULT_CATALOGUE_VERSIONS.table,
+          });
         }
         const publications = [];
         for (const id of requests) publications.push(await recordPublication(trx, recording(id)));

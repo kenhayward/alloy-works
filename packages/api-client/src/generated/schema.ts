@@ -11756,6 +11756,7 @@ export interface operations {
                         /** @description Every binding in the components the document's latest version places that the caller may read, in the outline's order */
                         bindings: {
                             node: string;
+                            /** @description The binding as the component stores it: one taking a value, or a bound table's, which has no `take` and binds the whole result */
                             binding: {
                                 /** @constant */
                                 type: "binding";
@@ -11779,6 +11780,21 @@ export interface operations {
                                     };
                                     column: string;
                                 };
+                            } | {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
                             };
                             /** @description What it holds, or null where it has never been resolved */
                             held: {
@@ -11994,6 +12010,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 }) | null;
                                 /**
                                  * @description The act that made it what the binding holds
@@ -12217,6 +12239,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 };
                             } | null;
                             /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
@@ -12505,6 +12533,7 @@ export interface operations {
                      */
                     "application/json": {
                         node: string;
+                        /** @description The binding as the component stores it: one taking a value, or a bound table's, which has no `take` and binds the whole result */
                         binding: {
                             /** @constant */
                             type: "binding";
@@ -12528,6 +12557,21 @@ export interface operations {
                                 };
                                 column: string;
                             };
+                        } | {
+                            /** @constant */
+                            type: "binding";
+                            id: string;
+                            query: string;
+                            version?: string;
+                            parameters: {
+                                [key: string]: {
+                                    literal: (string | boolean | null) | (string | boolean | null)[];
+                                } | {
+                                    document: string;
+                                };
+                            };
+                            /** @enum {string} */
+                            mode: "checked" | "pinned";
                         };
                         /** @description What it holds, or null where it has never been resolved */
                         held: {
@@ -12743,6 +12787,12 @@ export interface operations {
                                  * @constant
                                  */
                                 unavailable: true;
+                            } | {
+                                /**
+                                 * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                 * @constant
+                                 */
+                                table: true;
                             }) | null;
                             /**
                              * @description The act that made it what the binding holds
@@ -12966,6 +13016,12 @@ export interface operations {
                                  * @constant
                                  */
                                 unavailable: true;
+                            } | {
+                                /**
+                                 * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                 * @constant
+                                 */
+                                table: true;
                             };
                         } | null;
                         /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
@@ -13039,6 +13095,7 @@ export interface operations {
                         /** @description resolution_precondition: the binding as it now stands */
                         current?: {
                             node: string;
+                            /** @description The binding as the component stores it: one taking a value, or a bound table's, which has no `take` and binds the whole result */
                             binding: {
                                 /** @constant */
                                 type: "binding";
@@ -13062,6 +13119,21 @@ export interface operations {
                                     };
                                     column: string;
                                 };
+                            } | {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
                             };
                             /** @description What it holds, or null where it has never been resolved */
                             held: {
@@ -13277,6 +13349,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 }) | null;
                                 /**
                                  * @description The act that made it what the binding holds
@@ -13500,6 +13578,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 };
                             } | null;
                             /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
@@ -13594,6 +13678,7 @@ export interface operations {
                         /** @description resolution_precondition: the binding as it now stands */
                         current?: {
                             node: string;
+                            /** @description The binding as the component stores it: one taking a value, or a bound table's, which has no `take` and binds the whole result */
                             binding: {
                                 /** @constant */
                                 type: "binding";
@@ -13617,6 +13702,21 @@ export interface operations {
                                     };
                                     column: string;
                                 };
+                            } | {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
                             };
                             /** @description What it holds, or null where it has never been resolved */
                             held: {
@@ -13832,6 +13932,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 }) | null;
                                 /**
                                  * @description The act that made it what the binding holds
@@ -14055,6 +14161,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 };
                             } | null;
                             /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
@@ -14149,6 +14261,7 @@ export interface operations {
                         /** @description resolution_precondition: the binding as it now stands */
                         current?: {
                             node: string;
+                            /** @description The binding as the component stores it: one taking a value, or a bound table's, which has no `take` and binds the whole result */
                             binding: {
                                 /** @constant */
                                 type: "binding";
@@ -14172,6 +14285,21 @@ export interface operations {
                                     };
                                     column: string;
                                 };
+                            } | {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
                             };
                             /** @description What it holds, or null where it has never been resolved */
                             held: {
@@ -14387,6 +14515,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 }) | null;
                                 /**
                                  * @description The act that made it what the binding holds
@@ -14610,6 +14744,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 };
                             } | null;
                             /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
@@ -14947,6 +15087,7 @@ export interface operations {
                         /** @description resolution_precondition: the binding as it now stands */
                         current?: {
                             node: string;
+                            /** @description The binding as the component stores it: one taking a value, or a bound table's, which has no `take` and binds the whole result */
                             binding: {
                                 /** @constant */
                                 type: "binding";
@@ -14970,6 +15111,21 @@ export interface operations {
                                     };
                                     column: string;
                                 };
+                            } | {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
                             };
                             /** @description What it holds, or null where it has never been resolved */
                             held: {
@@ -15185,6 +15341,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 }) | null;
                                 /**
                                  * @description The act that made it what the binding holds
@@ -15408,6 +15570,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 };
                             } | null;
                             /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
@@ -15482,6 +15650,7 @@ export interface operations {
                         /** @description resolution_precondition: the binding as it now stands */
                         current?: {
                             node: string;
+                            /** @description The binding as the component stores it: one taking a value, or a bound table's, which has no `take` and binds the whole result */
                             binding: {
                                 /** @constant */
                                 type: "binding";
@@ -15505,6 +15674,21 @@ export interface operations {
                                     };
                                     column: string;
                                 };
+                            } | {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
                             };
                             /** @description What it holds, or null where it has never been resolved */
                             held: {
@@ -15720,6 +15904,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 }) | null;
                                 /**
                                  * @description The act that made it what the binding holds
@@ -15943,6 +16133,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 };
                             } | null;
                             /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
@@ -16173,6 +16369,7 @@ export interface operations {
                      */
                     "application/json": {
                         node: string;
+                        /** @description The binding as the component stores it: one taking a value, or a bound table's, which has no `take` and binds the whole result */
                         binding: {
                             /** @constant */
                             type: "binding";
@@ -16196,6 +16393,21 @@ export interface operations {
                                 };
                                 column: string;
                             };
+                        } | {
+                            /** @constant */
+                            type: "binding";
+                            id: string;
+                            query: string;
+                            version?: string;
+                            parameters: {
+                                [key: string]: {
+                                    literal: (string | boolean | null) | (string | boolean | null)[];
+                                } | {
+                                    document: string;
+                                };
+                            };
+                            /** @enum {string} */
+                            mode: "checked" | "pinned";
                         };
                         /** @description What it holds, or null where it has never been resolved */
                         held: {
@@ -16411,6 +16623,12 @@ export interface operations {
                                  * @constant
                                  */
                                 unavailable: true;
+                            } | {
+                                /**
+                                 * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                 * @constant
+                                 */
+                                table: true;
                             }) | null;
                             /**
                              * @description The act that made it what the binding holds
@@ -16634,6 +16852,12 @@ export interface operations {
                                  * @constant
                                  */
                                 unavailable: true;
+                            } | {
+                                /**
+                                 * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                 * @constant
+                                 */
+                                table: true;
                             };
                         } | null;
                         /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
@@ -16707,6 +16931,7 @@ export interface operations {
                         /** @description resolution_precondition: the binding as it now stands */
                         current?: {
                             node: string;
+                            /** @description The binding as the component stores it: one taking a value, or a bound table's, which has no `take` and binds the whole result */
                             binding: {
                                 /** @constant */
                                 type: "binding";
@@ -16730,6 +16955,21 @@ export interface operations {
                                     };
                                     column: string;
                                 };
+                            } | {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
                             };
                             /** @description What it holds, or null where it has never been resolved */
                             held: {
@@ -16945,6 +17185,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 }) | null;
                                 /**
                                  * @description The act that made it what the binding holds
@@ -17168,6 +17414,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 };
                             } | null;
                             /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
@@ -17302,6 +17554,7 @@ export interface operations {
                         /** @description resolution_precondition: the binding as it now stands */
                         current?: {
                             node: string;
+                            /** @description The binding as the component stores it: one taking a value, or a bound table's, which has no `take` and binds the whole result */
                             binding: {
                                 /** @constant */
                                 type: "binding";
@@ -17325,6 +17578,21 @@ export interface operations {
                                     };
                                     column: string;
                                 };
+                            } | {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
                             };
                             /** @description What it holds, or null where it has never been resolved */
                             held: {
@@ -17540,6 +17808,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 }) | null;
                                 /**
                                  * @description The act that made it what the binding holds
@@ -17763,6 +18037,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 };
                             } | null;
                             /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
@@ -18032,6 +18312,7 @@ export interface operations {
                         /** @description resolution_precondition: the binding as it now stands */
                         current?: {
                             node: string;
+                            /** @description The binding as the component stores it: one taking a value, or a bound table's, which has no `take` and binds the whole result */
                             binding: {
                                 /** @constant */
                                 type: "binding";
@@ -18055,6 +18336,21 @@ export interface operations {
                                     };
                                     column: string;
                                 };
+                            } | {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
                             };
                             /** @description What it holds, or null where it has never been resolved */
                             held: {
@@ -18270,6 +18566,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 }) | null;
                                 /**
                                  * @description The act that made it what the binding holds
@@ -18493,6 +18795,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 };
                             } | null;
                             /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
@@ -18589,6 +18897,7 @@ export interface operations {
                         /** @description resolution_precondition: the binding as it now stands */
                         current?: {
                             node: string;
+                            /** @description The binding as the component stores it: one taking a value, or a bound table's, which has no `take` and binds the whole result */
                             binding: {
                                 /** @constant */
                                 type: "binding";
@@ -18612,6 +18921,21 @@ export interface operations {
                                     };
                                     column: string;
                                 };
+                            } | {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
                             };
                             /** @description What it holds, or null where it has never been resolved */
                             held: {
@@ -18827,6 +19151,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 }) | null;
                                 /**
                                  * @description The act that made it what the binding holds
@@ -19050,6 +19380,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 };
                             } | null;
                             /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
@@ -19144,6 +19480,7 @@ export interface operations {
                         /** @description resolution_precondition: the binding as it now stands */
                         current?: {
                             node: string;
+                            /** @description The binding as the component stores it: one taking a value, or a bound table's, which has no `take` and binds the whole result */
                             binding: {
                                 /** @constant */
                                 type: "binding";
@@ -19167,6 +19504,21 @@ export interface operations {
                                     };
                                     column: string;
                                 };
+                            } | {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
                             };
                             /** @description What it holds, or null where it has never been resolved */
                             held: {
@@ -19382,6 +19734,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 }) | null;
                                 /**
                                  * @description The act that made it what the binding holds
@@ -19605,6 +19963,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 };
                             } | null;
                             /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
@@ -19679,6 +20043,7 @@ export interface operations {
                         /** @description resolution_precondition: the binding as it now stands */
                         current?: {
                             node: string;
+                            /** @description The binding as the component stores it: one taking a value, or a bound table's, which has no `take` and binds the whole result */
                             binding: {
                                 /** @constant */
                                 type: "binding";
@@ -19702,6 +20067,21 @@ export interface operations {
                                     };
                                     column: string;
                                 };
+                            } | {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
                             };
                             /** @description What it holds, or null where it has never been resolved */
                             held: {
@@ -19917,6 +20297,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 }) | null;
                                 /**
                                  * @description The act that made it what the binding holds
@@ -20140,6 +20526,12 @@ export interface operations {
                                      * @constant
                                      */
                                     unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
                                 };
                             } | null;
                             /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */

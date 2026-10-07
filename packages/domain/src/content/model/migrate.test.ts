@@ -46,6 +46,7 @@ describe('schema versions and migration', () => {
       'paragraph',
       'list',
       'table',
+      'boundTable',
       'figure',
       'figure with a binding',
       'preformatted',

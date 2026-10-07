@@ -1,7 +1,12 @@
 export { markSchema, markTypes, allowedLinkSchemes } from './marks.js';
 export type { Mark, MarkType } from './marks.js';
 
-export { inlineNodeSchema, alternativeSchema, bindingNodeSchema } from './inline.js';
+export {
+  inlineNodeSchema,
+  alternativeSchema,
+  bindingNodeSchema,
+  tableBindingSchema,
+} from './inline.js';
 export type {
   InlineNode,
   Alternative,
@@ -9,14 +14,20 @@ export type {
   CrossReferenceTarget,
 } from './inline.js';
 
-export { blockNodeSchema } from './blocks.js';
-export type { BlockNode } from './blocks.js';
+export {
+  blockNodeSchema,
+  boundTableNodeSchema,
+  BOUND_TABLE_COLUMNS_MAX,
+  BOUND_TABLE_SORT_MAX,
+} from './blocks.js';
+export type { BlockNode, BoundColumn, BoundTableNode } from './blocks.js';
 
 export {
   contentDocumentSchema,
   parseContentDocument,
   CURRENT_SCHEMA_VERSION,
   FigureRefused,
+  BoundTableRefused,
 } from './document.js';
 export type { ContentDocument } from './document.js';
 

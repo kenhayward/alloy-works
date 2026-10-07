@@ -333,6 +333,39 @@ describe('a binding in a component', () => {
     );
   });
 
+  it("finds a bound table's binding, placed as a table and taking nothing, before the bindings in its caption, empty statement, note and source", () => {
+    const whole: Record<string, unknown> = binding({ id: 'as-table' });
+    delete whole.take;
+    const stored = parseContentDocument(
+      doc([
+        {
+          type: 'boundTable',
+          id: 't1',
+          binding: whole,
+          caption: [words('Depths at '), binding({ id: 'in-caption' })],
+          columns: [{ column: 'depth', header: 'Depth' }],
+          headerColumn: false,
+          empty: [words('None at '), binding({ id: 'in-empty' })],
+          note: [binding({ id: 'in-note' })],
+          source: [binding({ id: 'in-source' })],
+        },
+      ]),
+    );
+    const found = bindingsIn(stored);
+    expect(found.map(({ binding, path, place }) => [binding.id, path, place])).toEqual([
+      ['as-table', 'content.0.binding', 'table'],
+      ['in-caption', 'content.0.caption.1', 'caption'],
+      ['in-empty', 'content.0.empty.1', 'line'],
+      ['in-note', 'content.0.note.0', 'line'],
+      ['in-source', 'content.0.source.0', 'line'],
+    ]);
+    expect(found[0]!.binding).not.toHaveProperty('take');
+    expect(bindingDigestInput(found[0]!.binding)).toBe(
+      '{"id":"as-table","mode":"checked","parameters":{"site":{"literal":"north"}},' +
+        `"query":"${QUERY}","type":"binding"}`,
+    );
+  });
+
   it("says a figure's binding is decorative where its author marked the figure so, and no other", () => {
     const figure = (id: string, kind: 'inherited' | 'decorative') => ({
       type: 'figure',

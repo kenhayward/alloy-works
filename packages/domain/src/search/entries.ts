@@ -196,6 +196,20 @@ function blockTexts(blocks: readonly BlockNode[]): SearchText[] {
         footnoteBlocks(block.note).forEach(walk);
         for (const row of block.rows) for (const cell of row.cells) cell.content.forEach(walk);
         return;
+      case 'boundTable':
+        // Its own words (the TB1 plan, TB1-D): caption, headers, empty statement, note and source.
+        // Its cells are a result's values, which a component never holds.
+        add(block, [
+          inlineWords(block.caption),
+          ...block.columns.map((column) => column.header),
+          inlineWords(block.empty),
+          inlineWords(block.note),
+          inlineWords(block.source),
+        ]);
+        footnoteBlocks(block.caption).forEach(walk);
+        footnoteBlocks(block.note).forEach(walk);
+        footnoteBlocks(block.source).forEach(walk);
+        return;
       case 'figure':
         add(block, [
           inlineWords(block.caption),

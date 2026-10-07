@@ -226,7 +226,8 @@ function pageCitedIn(content: readonly InlineNode[] | undefined): boolean {
 
 /**
  * Whether these blocks cite a page anywhere they hold inline content, at any depth (PUB-074): a
- * paragraph's text, a term, an attribution, a caption, a table's note and every cell. Preformatted
+ * paragraph's text, a term, an attribution, a caption, a table's note and every cell, and a bound
+ * table's caption, empty statement, note and source. Preformatted
  * text and a block equation hold none. A `page` reference counts whether or not it declares a form for
  * an output with no pages (STR-055): Word has pages, only not the PDF's, so what it would print there
  * is a page number that cites the wrong document.
@@ -245,6 +246,14 @@ function citesAPage(blocks: readonly BlockNode[]): boolean {
           pageCitedIn(block.caption) ||
           pageCitedIn(block.note) ||
           block.rows.some((row) => row.cells.some((cell) => citesAPage(cell.content)))
+        );
+      case 'boundTable':
+        // Its inline content, walked as a table's (the TB1 plan, TB1-D); its cells are values.
+        return (
+          pageCitedIn(block.caption) ||
+          pageCitedIn(block.empty) ||
+          pageCitedIn(block.note) ||
+          pageCitedIn(block.source)
         );
       case 'figure':
         return pageCitedIn(block.caption);

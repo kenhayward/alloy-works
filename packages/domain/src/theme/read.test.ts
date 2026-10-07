@@ -5,6 +5,7 @@ import {
   DEFAULT_CATALOGUES_BY_VERSION,
   DEFAULT_CATALOGUE_VERSIONS,
   DEFAULT_THEME,
+  FIFTH_DEFAULT_CATALOGUES,
   FIFTH_DEFAULT_CATALOGUES_BY_VERSION,
   FIFTH_DEFAULT_CATALOGUE_VERSIONS,
   FIFTH_DEFAULT_THEME,
@@ -98,7 +99,10 @@ describe('readTheme', () => {
 
   it('binds one catalogue of each kind by artifact version, reading each at the version it names', () => {
     const theme = resolved();
-    expect(theme.catalogues).toEqual(FIFTH_DEFAULT_CATALOGUE_VERSIONS);
+    expect(theme.catalogues).toEqual({
+      ...FIFTH_DEFAULT_CATALOGUE_VERSIONS,
+      table: DEFAULT_CATALOGUE_VERSIONS.table,
+    });
 
     // Another version of the paragraph catalogue, one that would refuse, stands beside the one named:
     // it is never read, because the theme names a version and not a catalogue.
@@ -1099,11 +1103,11 @@ describe('readCatalogue', () => {
     // what 0.5 states outright, so nothing published under 0.4 moves.
     expect(readCatalogue(FOURTH_DEFAULT_CATALOGUES.table)).toEqual({
       ok: true,
-      catalogue: DEFAULT_CATALOGUES.table,
+      catalogue: FIFTH_DEFAULT_CATALOGUES.table,
     });
     expect(readCatalogue(FOURTH_DEFAULT_CATALOGUES.image)).toEqual({
       ok: true,
-      catalogue: DEFAULT_CATALOGUES.image,
+      catalogue: FIFTH_DEFAULT_CATALOGUES.image,
     });
     // Every other kind changes only its version.
     expect(readCatalogue(FOURTH_DEFAULT_CATALOGUES.paragraph)).toEqual({

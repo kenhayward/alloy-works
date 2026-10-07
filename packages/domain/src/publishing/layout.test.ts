@@ -16,6 +16,7 @@ import {
   PUBLISHING_FORMATS,
   readLayout,
   SECOND_DEFAULT_LAYOUT,
+  SEVENTH_DEFAULT_LAYOUT,
   SIXTH_DEFAULT_LAYOUT,
   speaksFor,
   THIRD_DEFAULT_LAYOUT,
@@ -72,7 +73,7 @@ describe('a layout', () => {
       },
     };
     const expected: Layout = {
-      schemaVersion: 6,
+      schemaVersion: 7,
       language: 'en',
       words: {
         contents: 'Contents',
@@ -89,6 +90,11 @@ describe('a layout', () => {
           sentence:
             'Preview - not approved. This is a preview of unapproved content, not a publication.',
         },
+        // Version 0.8's: what a bound table prints with no rows, for a null, and before its source
+        // (TB1-G).
+        noRows: 'No rows',
+        notAvailable: 'Not available',
+        source: 'Source:',
       },
       scheme: defaultNumberingScheme,
       matter: {
@@ -104,7 +110,7 @@ describe('a layout', () => {
       // Version 0.6's Word page is its PDF page, copied (Word 1, ruling R4).
       formats: { pdf: page, docx: page },
     };
-    expect(LAYOUT_SCHEMA_VERSION).toBe(6);
+    expect(LAYOUT_SCHEMA_VERSION).toBe(7);
     expect(PUBLISHING_FORMATS).toEqual(['pdf', 'docx']);
     expect(defaultLayout).toEqual(expected);
     expect(parseLayout(defaultLayout)).toEqual(expected);
@@ -166,10 +172,70 @@ describe('a layout', () => {
     });
   });
 
+  it("keeps the default layout's 0.7, as migration 0035 stored it at schema 6, and 0.8 is 0.7 with the words a bound table prints (TB1-G)", () => {
+    expect(SEVENTH_DEFAULT_LAYOUT.schemaVersion).toBe(6);
+    expect(SEVENTH_DEFAULT_LAYOUT.words).not.toHaveProperty('noRows');
+    expect(LAYOUT_SCHEMA_VERSION).toBe(7);
+    expect(defaultLayout).toEqual({
+      ...SEVENTH_DEFAULT_LAYOUT,
+      schemaVersion: 7,
+      words: {
+        ...SEVENTH_DEFAULT_LAYOUT.words,
+        noRows: 'No rows',
+        notAvailable: 'Not available',
+        source: 'Source:',
+      },
+    });
+  });
+
+  it('reads a layout stored at schema version 6 as one with no words for a bound table', () => {
+    const read = readLayout(JSON.parse(JSON.stringify(SEVENTH_DEFAULT_LAYOUT)), {
+      artifact: 'layout-artifact',
+      version: 'layout-version',
+    });
+    if (!read.ok) throw new Error(read.failure);
+    expect(read.layout).toEqual({
+      ...SEVENTH_DEFAULT_LAYOUT,
+      schemaVersion: LAYOUT_SCHEMA_VERSION,
+    });
+    for (const word of ['noRows', 'notAvailable', 'source']) {
+      expect(read.layout.words).not.toHaveProperty(word);
+    }
+    // Stored at 6 without a preview's words is still refused: 6 required them.
+    const without = JSON.parse(JSON.stringify(SEVENTH_DEFAULT_LAYOUT)) as Layout;
+    delete without.words.preview;
+    const refused = readLayout(without, { artifact: 'layout-artifact', version: 'layout-version' });
+    expect(refused.ok === false && refused.failure).toMatch(/preview/);
+  });
+
+  it("requires a layout written at schema version 7 to give a bound table's words, each words that say something", () => {
+    for (const word of ['noRows', 'notAvailable', 'source'] as const) {
+      const without = copy();
+      delete without.words[word];
+      expect(() => parseLayout(without), word).toThrow(/bound table/);
+      const stored = readLayout(JSON.parse(JSON.stringify(without)), {
+        artifact: 'layout-artifact',
+        version: 'layout-version',
+      });
+      expect(stored.ok === false && stored.failure, word).toMatch(/bound table/);
+      const blank = copy();
+      blank.words[word] = '   ';
+      expect(() => parseLayout(blank), word).toThrow(/say something/);
+    }
+    const french = copy();
+    french.words = {
+      ...french.words,
+      noRows: 'Aucune ligne',
+      notAvailable: 'n.d.',
+      source: 'Source :',
+    };
+    expect(parseLayout(french).words).toMatchObject({ noRows: 'Aucune ligne', source: 'Source :' });
+  });
+
   it("keeps the default layout's 0.6, as migration 0027 stored it at schema 5, and 0.7 is 0.6 with the words a preview says", () => {
     expect(SIXTH_DEFAULT_LAYOUT.schemaVersion).toBe(5);
     expect(SIXTH_DEFAULT_LAYOUT.words).not.toHaveProperty('preview');
-    expect(defaultLayout).toEqual({
+    expect(SEVENTH_DEFAULT_LAYOUT).toEqual({
       ...SIXTH_DEFAULT_LAYOUT,
       schemaVersion: 6,
       words: {
@@ -417,6 +483,9 @@ describe('a layout', () => {
       noticeSentence: DRAFT_NOTICE.text,
       continued: '(continued)',
       preview: defaultLayout.words.preview,
+      noRows: 'No rows',
+      notAvailable: 'Not available',
+      source: 'Source:',
     });
 
     for (const alone of ['above', 'below'] as const) {

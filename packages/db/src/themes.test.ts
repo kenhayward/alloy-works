@@ -370,9 +370,10 @@ describe("the theme's store", () => {
     const tenant = await environment();
     await service.withTenant(tenant, async (trx) => {
       const author = await ada(trx);
-      // The theme's 0.4 catalogues, at catalogue/2, saved again over 0.5's, at catalogue/3: the same
-      // catalogues as both read, so neither records a version.
-      for (const kind of ['table', 'image'] as const) {
+      // The theme's 0.4 image catalogue, at catalogue/2, saved again over 0.5's, at catalogue/3: the
+      // same catalogue as both read, so it records no version. (The table catalogue's latest is 0.7's,
+      // whose styles say what a bound table's cells read, which 0.4's did not.)
+      for (const kind of ['image'] as const) {
         expect(
           await addCatalogueVersion(trx, {
             artifactId: DEFAULT_CATALOGUE_IDS[kind],
@@ -401,7 +402,7 @@ describe("the theme's store", () => {
         answer: 'refused',
         refusals: [{ code: 'catalogue_malformed' }],
       });
-      expect(await versionsOf(trx, DEFAULT_CATALOGUE_IDS.table)).toBe(4);
+      expect(await versionsOf(trx, DEFAULT_CATALOGUE_IDS.table)).toBe(5);
       // At catalogue/3, a caption moved below its table is a change, written at 3.
       const moved = recorded(
         await addCatalogueVersion(trx, {
@@ -416,7 +417,7 @@ describe("the theme's store", () => {
           },
         }),
       );
-      expect(moved).toMatchObject({ version: 5, schemaVersion: 3 });
+      expect(moved).toMatchObject({ version: 6, schemaVersion: 3 });
     });
   });
 
@@ -450,12 +451,12 @@ describe("the theme's store", () => {
       expect(version).toMatchObject({
         kind: 'theme',
         revision: 0,
-        version: 7,
+        version: 8,
         author,
         content: next,
       });
       const now = await defaultTheme(trx);
-      expect(now).toMatchObject({ versionId: version.id, number: '0.7', content: next });
+      expect(now).toMatchObject({ versionId: version.id, number: '0.8', content: next });
       expect(now.theme.name).toBe('Italic captions');
       expect(now.theme.catalogues.paragraph).toBe(captions.id);
       expect(now.theme.paragraphStyles.get('caption')!.properties.italic).toBe(true);
@@ -512,7 +513,7 @@ describe("the theme's store", () => {
       });
 
       // Neither was saved: the environment is set from the theme it was.
-      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(6);
+      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(7);
       expect((await latestVersion(trx, DEFAULT_THEME_ID))!.id).toBe(declared.versionId);
     });
   });
@@ -541,7 +542,7 @@ describe("the theme's store", () => {
           },
         ],
       });
-      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(6);
+      expect(await versionsOf(trx, DEFAULT_THEME_ID)).toBe(7);
     });
   });
 });

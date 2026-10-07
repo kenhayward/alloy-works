@@ -532,6 +532,13 @@ function findIn(block: BlockNode, index: Map<string, Found>): void {
       }
       footnotesIn(block.note ?? [], index);
       return;
+    case 'boundTable':
+      // Found as a table, its caption's words beside it (TB1-D), where `blockContributions` numbers it.
+      index.set(block.id, { kind: 'table', caption: captionText(block.caption) });
+      footnotesIn(block.caption, index);
+      footnotesIn(block.note ?? [], index);
+      footnotesIn(block.source ?? [], index);
+      return;
     case 'figure':
       index.set(block.id, { kind: 'figure', caption: captionText(block.caption) });
       footnotesIn(block.caption, index);

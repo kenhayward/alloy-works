@@ -3,9 +3,11 @@ import {
   bindingNodeSchema,
   formatsFor,
   formatValue,
+  tableBindingSchema,
   takeOutcomeSchema,
+  takes,
   valueTypeSchema,
-  type Binding,
+  type AnyBinding,
   type ResolvedTheme,
   type TakeOutcome,
   type ValueFormats,
@@ -39,7 +41,9 @@ export type Taken =
   | Exclude<TakeOutcome, { readonly image: unknown }>
   | TakenImage
   | { readonly failure: PlacementFailure }
-  | { readonly unavailable: true };
+  | { readonly unavailable: true }
+  /** A bound table's binding, which takes nothing and holds the whole result (the TB1 plan, TB1-C). */
+  | { readonly table: true };
 
 /** A provenance record as the view shows it: what only a definition's reader may see is null. */
 export interface ProvenanceShown {
@@ -55,7 +59,8 @@ export interface ProvenanceShown {
 
 export interface BindingState {
   readonly node: string;
-  readonly binding: Binding;
+  /** A binding taking a value, or a bound table's, taking the whole result (TB1-C). */
+  readonly binding: AnyBinding;
   readonly held: {
     readonly dataset: string;
     readonly version: string;
@@ -114,6 +119,7 @@ const text = (value: unknown): string | undefined =>
 function takenIn(value: unknown): Taken | null {
   if (!isRecord(value)) return null;
   if (value.unavailable === true) return { unavailable: true };
+  if (value.table === true && Object.keys(value).length === 1) return { table: true };
   if (PLACEMENT_FAILURES.includes(value.failure) && Object.keys(value).length === 1) {
     return { failure: value.failure as PlacementFailure };
   }
@@ -201,7 +207,8 @@ export function bindingStatesIn(data: unknown): readonly BindingState[] | undefi
   if (!isRecord(data) || !Array.isArray(data.bindings)) return undefined;
   return (data.bindings as unknown[]).flatMap((each): BindingState[] => {
     if (!isRecord(each) || typeof each.node !== 'string') return [];
-    const binding = bindingNodeSchema.safeParse(each.binding);
+    const inline = bindingNodeSchema.safeParse(each.binding);
+    const binding = inline.success ? inline : tableBindingSchema.safeParse(each.binding);
     const held = heldIn(each.held);
     const waiting = waitingIn(each.waiting);
     if (!binding.success) return [];
@@ -294,6 +301,8 @@ function heldOf(state: BindingState, formats: ValueFormats): BindingHeld | null 
   if (held.stale) return { binding: CHANGED, shown: { failure: 'unavailable' } };
   const binding = bindingDigestInput(state.binding);
   const { taken } = held;
+  // A bound table's binding is drawn by no node in the editor until TB2: it has nothing to show there.
+  if (taken !== null && 'table' in taken) return null;
   if (taken === null || 'unavailable' in taken) {
     return { binding, shown: { failure: 'unavailable' } };
   }
@@ -319,17 +328,19 @@ function heldOf(state: BindingState, formats: ValueFormats): BindingHeld | null 
 /** A take's failure as the editor's words for it read it: the column from the binding where unsaid. */
 export function failureHeld(
   taken: Extract<Taken, { readonly failure: unknown }>,
-  binding: Binding,
+  binding: AnyBinding,
 ): BindingFailureHeld {
+  // A bound table's binding takes no column, so a failure names none of its own (TB1-C).
+  const column = takes(binding) ? binding.take.column : '';
   if (!('column' in taken || 'count' in taken) && PLACEMENT_FAILURES.includes(taken.failure)) {
     return { failure: taken.failure as PlacementFailure };
   }
   const failed = taken as Extract<TakeOutcome, { readonly failure: unknown }>;
   if (failed.failure === 'image_description_missing') {
-    return { failure: 'image_description_missing', column: failed.column ?? binding.take.column };
+    return { failure: 'image_description_missing', column: failed.column ?? column };
   }
   return failed.failure === 'take_invalid'
-    ? { failure: 'take_invalid', column: failed.column ?? binding.take.column }
+    ? { failure: 'take_invalid', column: failed.column ?? column }
     : {
         failure: failed.failure,
         ...(failed.count === undefined ? {} : { count: failed.count }),

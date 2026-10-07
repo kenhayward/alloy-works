@@ -4,6 +4,7 @@ import {
   FIRST_DEFAULT_LAYOUT,
   FOURTH_DEFAULT_LAYOUT,
   SECOND_DEFAULT_LAYOUT,
+  SEVENTH_DEFAULT_LAYOUT,
   SIXTH_DEFAULT_LAYOUT,
   THIRD_DEFAULT_LAYOUT,
   type Layout,
@@ -61,7 +62,7 @@ describe('the layout every environment starts with', () => {
     );
   const firstVersion = (tenant: Tenant) => versionOf(tenant, 1);
 
-  it('is declared in every environment, at 0.7, authored by nobody and in no space', async () => {
+  it('is declared in every environment, at 0.8, authored by nobody and in no space', async () => {
     for (const tenant of [acme, other]) {
       const { declared, artifact } = await service.withTenant(tenant, async (trx) => ({
         declared: await defaultLayout(trx),
@@ -78,10 +79,11 @@ describe('the layout every environment starts with', () => {
       const fifth = await versionOf(tenant, 5);
       const sixth = await versionOf(tenant, 6);
       const seventh = await versionOf(tenant, 7);
+      const eighth = await versionOf(tenant, 8);
       expect(declared).toEqual({
         artifactId: DEFAULT_LAYOUT_ID,
-        versionId: seventh.id,
-        number: '0.7',
+        versionId: eighth.id,
+        number: '0.8',
         layout: productDefaultLayout,
       });
       expect(artifact).toMatchObject({ kind: 'layout', space_id: null });
@@ -98,6 +100,7 @@ describe('the layout every environment starts with', () => {
       expect(fifth).toMatchObject({ ...unauthored, schema_version: 4 });
       expect(sixth).toMatchObject({ ...unauthored, schema_version: 5 });
       expect(seventh).toMatchObject({ ...unauthored, schema_version: 6 });
+      expect(eighth).toMatchObject({ ...unauthored, schema_version: 7 });
     }
   });
 
@@ -106,7 +109,8 @@ describe('the layout every environment starts with', () => {
     // 0021 stored it, with a list of figures before it, 0.4 as 0023 stored it, with words for above
     // and below a relative reference, 0.5 as 0025 stored it, with the words a continued table's
     // label adds, 0.6 as 0027 stored it, with a Word page copying the PDF's, and 0.7 as 0035 stored
-    // it, with the words a preview says.
+    // it, with the words a preview says, and 0.8 as 0055 stored it, with the words a bound table
+    // prints.
     const cases = [
       [1, FIRST_DEFAULT_LAYOUT as unknown as Layout],
       [2, SECOND_DEFAULT_LAYOUT as unknown as Layout],
@@ -114,7 +118,8 @@ describe('the layout every environment starts with', () => {
       [4, FOURTH_DEFAULT_LAYOUT as unknown as Layout],
       [5, FIFTH_DEFAULT_LAYOUT as unknown as Layout],
       [6, SIXTH_DEFAULT_LAYOUT as unknown as Layout],
-      [7, productDefaultLayout],
+      [7, SEVENTH_DEFAULT_LAYOUT as unknown as Layout],
+      [8, productDefaultLayout],
     ] as const;
     for (const [number, layout] of cases) {
       const version = await versionOf(acme, number);
@@ -166,7 +171,7 @@ describe('the layout every environment starts with', () => {
           },
         }),
       ).rejects.toThrow(/lists/);
-      expect(await versions()).toBe(7);
+      expect(await versions()).toBe(8);
 
       const next: Layout = {
         ...productDefaultLayout,
@@ -181,11 +186,11 @@ describe('the layout every environment starts with', () => {
       return { recorded, declared: await defaultLayout(trx), next };
     });
     if (answer.recorded.answer !== 'recorded') throw new Error(answer.recorded.answer);
-    expect(answer.recorded.version).toMatchObject({ kind: 'layout', revision: 0, version: 8 });
+    expect(answer.recorded.version).toMatchObject({ kind: 'layout', revision: 0, version: 9 });
     expect(answer.declared).toEqual({
       artifactId: DEFAULT_LAYOUT_ID,
       versionId: answer.recorded.version.id,
-      number: '0.8',
+      number: '0.9',
       layout: answer.next,
     });
   });

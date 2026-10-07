@@ -8,7 +8,6 @@ import {
   DEFAULT_CATALOGUES_BY_VERSION,
   DEFAULT_THEME,
   DEFAULT_THEME_VERSION,
-  DEFAULT_CATALOGUES,
   DEFAULT_VALUE_FORMATS,
   defaultNumberingScheme,
   FIFTH_DEFAULT_CATALOGUES_BY_VERSION,
@@ -21,6 +20,10 @@ import {
   SECOND_DEFAULT_CATALOGUE_VERSIONS,
   SECOND_DEFAULT_THEME,
   SECOND_DEFAULT_THEME_VERSION,
+  SIXTH_DEFAULT_CATALOGUES,
+  SIXTH_DEFAULT_CATALOGUES_BY_VERSION,
+  SIXTH_DEFAULT_THEME,
+  SIXTH_DEFAULT_THEME_VERSION,
   THIRD_DEFAULT_THEME,
   THIRD_DEFAULT_THEME_VERSION,
   FIRST_DEFAULT_CATALOGUES,
@@ -335,6 +338,7 @@ describe('migration 0024, which gives every environment its default theme', () =
       '0052_bound_images',
       '0053_dataset_image_index',
       '0054_connection_test_privilege',
+      '0055_bound_tables',
     ]);
 
     // The one trigger held off during the migration stands enabled again, as does every other.
@@ -1024,6 +1028,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0052_bound_images',
       '0053_dataset_image_index',
       '0054_connection_test_privilege',
+      '0055_bound_tables',
     ]);
 
     expect((await themeChain(tenant)).map((each) => each.id)).toEqual([
@@ -1085,6 +1090,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0052_bound_images',
       '0053_dataset_image_index',
       '0054_connection_test_privilege',
+      '0055_bound_tables',
     ]);
 
     const chain = await themeChain(tenant);
@@ -1775,6 +1781,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0052_bound_images',
       '0053_dataset_image_index',
       '0054_connection_test_privilege',
+      '0055_bound_tables',
     ]);
 
     // The theme is at 0.6, under its fixed identifier, unauthored, on top of 0.5; the value catalogue
@@ -1788,9 +1795,17 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
         schema_version: 1,
       },
       {
-        id: DEFAULT_THEME_VERSION,
+        id: SIXTH_DEFAULT_THEME_VERSION,
         revision_no: 0,
         version_no: 6,
+        author_id: null,
+        schema_version: 1,
+      },
+      // And 0055's 0.7 on top (TB1), naming the table catalogue's fifth version.
+      {
+        id: DEFAULT_THEME_VERSION,
+        revision_no: 0,
+        version_no: 7,
         author_id: null,
         schema_version: 1,
       },
@@ -1806,23 +1821,29 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
     ]);
     for (const kind of CATALOGUE_KINDS) {
       const chain = await chainOf(tenant, DEFAULT_CATALOGUE_IDS[kind]);
-      expect(chain.at(-1)!.id, kind).toBe(FIFTH_DEFAULT_CATALOGUE_VERSIONS[kind]);
+      expect(chain.at(-1)!.id, kind).toBe(
+        kind === 'table'
+          ? DEFAULT_CATALOGUE_VERSIONS.table
+          : FIFTH_DEFAULT_CATALOGUE_VERSIONS[kind],
+      );
     }
+    const sixth = read(SIXTH_DEFAULT_THEME, SIXTH_DEFAULT_CATALOGUES_BY_VERSION);
     const now = read(DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION);
     expect(await service.withTenant(tenant, (trx) => defaultTheme(trx))).toEqual({
       artifactId: DEFAULT_THEME_ID,
       versionId: DEFAULT_THEME_VERSION,
-      number: '0.6',
+      number: '0.7',
       content: DEFAULT_THEME,
       theme: now,
       catalogues: DEFAULT_CATALOGUES_BY_VERSION,
     });
-    // Set as 0.5 was, style for style, with the value catalogue beside: the product's default formats.
-    expect({ ...now, valueCatalogue: null }).toEqual(fifth());
-    expect(now.valueCatalogue).toEqual(DEFAULT_CATALOGUES.value);
-    expect(formatsFor(now.valueCatalogue, 'en-GB')).toEqual(DEFAULT_VALUE_FORMATS);
+    // 0.6 is set as 0.5 was, style for style, with the value catalogue beside: the product's default
+    // formats.
+    expect({ ...sixth, valueCatalogue: null }).toEqual(fifth());
+    expect(sixth.valueCatalogue).toEqual(SIXTH_DEFAULT_CATALOGUES.value);
+    expect(formatsFor(sixth.valueCatalogue, 'en-GB')).toEqual(DEFAULT_VALUE_FORMATS);
 
-    // The request waiting was made under 0.5 and is handed 0.5; one made now records 0.6.
+    // The request waiting was made under 0.5 and is handed 0.5; one made now records the latest, 0.7.
     const handed = await service.withTenant(tenant, async (trx) => {
       const made = await ask(trx, version);
       return {
@@ -1857,6 +1878,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0052_bound_images',
       '0053_dataset_image_index',
       '0054_connection_test_privilege',
+      '0055_bound_tables',
     ]);
 
     // The theme is left at the environment's own version, with nothing of the product's on top; the
@@ -1888,6 +1910,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0052_bound_images',
       '0053_dataset_image_index',
       '0054_connection_test_privilege',
+      '0055_bound_tables',
     ]);
     return (await chainOf(tenant, DEFAULT_THEME_ID)).slice(4).map((each) => each.id);
   };

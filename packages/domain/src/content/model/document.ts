@@ -544,6 +544,8 @@ function checkBlock(block: BlockNode, claimed: Claimed): BlockNode {
         })),
       };
     }
+    case 'boundTable':
+      return checkBoundTable(block, claimed);
     case 'figure':
       // **Exactly one image** (the B6 plan, B6-A, `figure_image`): an asset version, or a binding
       // taking an image column. **A bound figure is described by its definition, or is decorative**
@@ -563,6 +565,56 @@ function checkBlock(block: BlockNode, claimed: Claimed): BlockNode {
     default:
       return block;
   }
+}
+
+/**
+ * **A bound table** (the TB1 plan, TB1-A): what zod cannot hold. A column shown twice is refused unless
+ * every header naming it differs (TAB-048, `column_repeated`), headers compared as stored, in NFC; a
+ * sort names each column once. Its binding's identifier is claimed as an inline one's is, and its
+ * caption, empty statement, note and source are inline content under a table caption's rules, walked
+ * in the order a reader meets them: the caption, the table's body, then its note and its source.
+ */
+function checkBoundTable(
+  block: Extract<BlockNode, { type: 'boundTable' }>,
+  claimed: Claimed,
+): BlockNode {
+  const headers = new Map<string, Set<string>>();
+  for (const column of block.columns) {
+    const seen = headers.get(column.column) ?? new Set<string>();
+    if (seen.has(column.header))
+      throw new BoundTableRefused('column_repeated', block.id, column.column);
+    seen.add(column.header);
+    headers.set(column.column, seen);
+  }
+  const sorted = new Set<string>();
+  for (const key of block.sort ?? []) {
+    if (sorted.has(key.column)) {
+      throw new Error(`Bound table ${block.id} sorts by ${key.column} more than once`);
+    }
+    sorted.add(key.column);
+  }
+  claim(block.binding.id, claimed.ids);
+  const inline = (member: 'empty' | 'source' | 'note') => {
+    const content = block[member];
+    if (content === undefined) return {};
+    const checked = checkInlineContent(content, 'component', claimed);
+    if (checked.length === 0) {
+      throw new Error(
+        `Bound table ${block.id} has ${member === 'empty' ? 'an' : 'a'} ${member} that holds no text`,
+      );
+    }
+    return { [member]: checked };
+  };
+  const caption = checkInlineContent(block.caption, 'component', claimed);
+  // The empty statement prints only where the result has no rows, so a footnote in it would take a
+  // number in the page and none in a publish of rows: refused, until TB3 letters a table's notes in
+  // its own sequence. Widening this later is additive.
+  if (block.empty?.some((inline) => inline.type === 'footnote')) {
+    throw new Error(`Bound table ${block.id} holds a footnote in its empty statement`);
+  }
+  const empty = inline('empty');
+  const note = inline('note');
+  return { ...block, caption, ...empty, ...note, ...inline('source') };
 }
 
 /**
@@ -661,6 +713,20 @@ export class FigureRefused extends Error {
         ? `Figure ${figure} places an asset or a binding, never both or neither (figure_image)`
         : `Figure ${figure} takes its image from a binding, and so carries no text of its own (figure_bound_alternative)`,
     );
+  }
+}
+
+/**
+ * A bound table the walk refuses (the TB1 plan): `column_repeated`, a column shown twice under one
+ * header (TAB-048). Names the table and the column, and nothing of the author's text.
+ */
+export class BoundTableRefused extends Error {
+  constructor(
+    readonly code: 'column_repeated',
+    readonly table: string,
+    readonly column: string,
+  ) {
+    super(`Bound table ${table} shows ${column} twice under one header (column_repeated)`);
   }
 }
 

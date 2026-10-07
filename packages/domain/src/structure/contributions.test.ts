@@ -92,3 +92,69 @@ describe('what a component contributes to the sequences', () => {
     expect(contributionsOf(unbound(content))).toEqual([]);
   });
 });
+
+describe('a bound table, numbered as the table its stage sets (the TB1 plan, TB1-D)', () => {
+  const words = (value: string) => ({ type: 'text', value, marks: [] });
+  const caption = [words('Depths '), note('n1')];
+  const bound = {
+    type: 'boundTable',
+    id: 't2',
+    binding: {
+      type: 'binding',
+      id: 'k1',
+      query: '00000000-0000-4000-8000-00000000d001',
+      parameters: {},
+      mode: 'checked',
+    },
+    caption,
+    columns: [{ column: 'depth', header: 'Depth' }],
+    headerColumn: false,
+    note: [words('At noon'), note('n2')],
+    source: [words('Survey'), note('n3')],
+  };
+  /** The table the stage will set in its place: its caption, a body of values, its note, its source. */
+  const asSet = {
+    type: 'table',
+    id: 't2',
+    caption,
+    headerRows: 1,
+    headerColumns: 0,
+    rows: [{ cells: [{ content: [{ type: 'paragraph', id: 'c1', content: [words('Depth')] }] }] }],
+    note: [words('At noon'), note('n2'), words(' Survey'), note('n3')],
+  };
+  const authored = (id: string) => ({
+    ...asSet,
+    id,
+    caption: [words(id)],
+    note: undefined,
+    rows: [{ cells: [{ content: [{ type: 'paragraph', id: `${id}c`, content: [words('A')] }] }] }],
+  });
+  const of = (table: unknown) =>
+    contributionsOf(
+      unbound(
+        parseContentDocument({
+          schemaVersion: 1,
+          title: 'Readings',
+          language: 'en-GB',
+          direction: 'ltr',
+          content: [authored('t1'), table, figure('f1'), authored('t3')],
+        }),
+      ),
+    );
+
+  it('contributes as the authored table it becomes, so the page numbers it as the publish will', () => {
+    const contributed = of(bound);
+    expect(contributed).toEqual(of(asSet));
+    expect(contributed.filter((each) => each.sequence === 'table')).toEqual([
+      { block: 't1', sequence: 'table', numbered: true, caption: 't1' },
+      { block: 't2', sequence: 'table', numbered: true, caption: 'Depths ' },
+      { block: 't3', sequence: 'table', numbered: true, caption: 't3' },
+    ]);
+  });
+
+  it('takes no number where its author marked it unnumbered', () => {
+    expect(of({ ...bound, numbered: false }).find((each) => each.block === 't2')).toMatchObject({
+      numbered: false,
+    });
+  });
+});
