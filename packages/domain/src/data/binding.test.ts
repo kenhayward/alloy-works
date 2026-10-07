@@ -8,6 +8,7 @@ import {
   bindingsIn,
   checkTake,
   literalValues,
+  substituteDocumentArguments,
   type Binding,
 } from './binding.js';
 import type { QueryDefinition } from './definition.js';
@@ -427,19 +428,81 @@ describe('what a binding takes, against the definition it resolves to', () => {
 });
 
 describe('the values a binding runs with', () => {
-  it('answers its literals by name, and the first parameter it takes from the document', () => {
+  it('answers its literals by name, and every parameter it still takes from the document', () => {
     const literal = inlineNodeSchema.parse(
       binding({ parameters: { site: { literal: 'north' }, ids: { literal: ['1', '2'] } } }),
     ) as Binding;
-    expect(literalValues(literal)).toEqual({ values: { site: 'north', ids: ['1', '2'] } });
+    expect(literalValues(literal)).toEqual({
+      values: { site: 'north', ids: ['1', '2'] },
+      fromDocument: [],
+    });
     // A parameter named `document` is a literal like any other.
     const named = inlineNodeSchema.parse(
       binding({ parameters: { document: { literal: 'region' } } }),
     ) as Binding;
-    expect(literalValues(named)).toEqual({ values: { document: 'region' } });
+    expect(literalValues(named)).toEqual({ values: { document: 'region' }, fromDocument: [] });
     const fromDocument = inlineNodeSchema.parse(
-      binding({ parameters: { site: { literal: 'north' }, region: { document: 'region' } } }),
+      binding({
+        parameters: {
+          site: { literal: 'north' },
+          region: { document: 'region' },
+          on: { document: 'issued' },
+        },
+      }),
     ) as Binding;
-    expect(literalValues(fromDocument)).toEqual({ document: 'region' });
+    expect(literalValues(fromDocument)).toEqual({
+      values: { site: 'north' },
+      fromDocument: ['region', 'on'],
+    });
+  });
+});
+
+describe("a binding's document arguments substituted (TP2-A)", () => {
+  const parse = (over: Record<string, unknown>) => inlineNodeSchema.parse(binding(over)) as Binding;
+
+  it('replaces each document argument with a value by that value, as a literal', () => {
+    const asked = parse({
+      parameters: {
+        site: { literal: 'north' },
+        on: { document: 'issued' },
+        ids: { document: 'ids' },
+      },
+    });
+    expect(
+      substituteDocumentArguments(asked, { issued: '2026-10-01', ids: ['1', '2'], other: 'x' }),
+    ).toEqual({
+      ...asked,
+      parameters: {
+        site: { literal: 'north' },
+        on: { literal: '2026-10-01' },
+        ids: { literal: ['1', '2'] },
+      },
+    });
+  });
+
+  it('leaves one the document has no value for, or an empty list for, as it is', () => {
+    const asked = parse({
+      parameters: { on: { document: 'issued' }, ids: { document: 'ids' } },
+    });
+    expect(substituteDocumentArguments(asked, { ids: [] })).toEqual(asked);
+  });
+
+  it('returns a binding with no document argument unchanged, so its digest stays', () => {
+    const asked = parse({ parameters: { site: { literal: 'north' } } });
+    expect(substituteDocumentArguments(asked, { site: 'south' })).toBe(asked);
+    expect(bindingDigestInput(substituteDocumentArguments(asked, { site: 'south' }))).toBe(
+      bindingDigestInput(asked),
+    );
+  });
+
+  it('digests a document argument with its value as the same literal would be', () => {
+    const fromDocument = parse({ parameters: { on: { document: 'issued' } } });
+    const literal = parse({ parameters: { on: { literal: '2026-10-01' } } });
+    expect(
+      bindingDigestInput(substituteDocumentArguments(fromDocument, { issued: '2026-10-01' })),
+    ).toBe(bindingDigestInput(literal));
+    expect(
+      bindingDigestInput(substituteDocumentArguments(fromDocument, { issued: '2026-10-02' })),
+    ).not.toBe(bindingDigestInput(literal));
   });
 });

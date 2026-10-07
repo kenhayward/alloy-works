@@ -7,8 +7,8 @@ import type { Provenance } from './provenance.js';
  * definition, the same parameters - compared as the parameters digest is taken, a null left out - and
  * the version it resolves to, its pin or else `latestVersion`, the one the result ran. Only what it
  * takes or its mode may differ, which is what Keep holds a result across; a bound table's binding
- * takes nothing (TB1-C), so only its mode. A parameter taken from the
- * document is never unchanged: no document has one to compare.
+ * takes nothing (TB1-C), so only its mode. A parameter still taken from the document is never
+ * unchanged: the service compares the binding with its document arguments substituted (TP2-D).
  */
 export function questionUnchanged(
   binding: AnyBinding,
@@ -17,7 +17,7 @@ export function questionUnchanged(
 ): boolean {
   const values = literalValues(binding);
   return (
-    'values' in values &&
+    values.fromDocument.length === 0 &&
     held.queryDefinition.artifact === binding.query &&
     held.queryDefinition.version === (binding.version ?? latestVersion) &&
     parametersDigestInput(values.values) === parametersDigestInput(held.parameters)

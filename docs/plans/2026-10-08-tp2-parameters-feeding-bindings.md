@@ -90,3 +90,15 @@ template's argument parameters of the right type. With it, T2's data work is com
 ## Questions for Ken
 
 None: templates.md's decisions are taken. The plan rides in TP2.1.
+
+## Changed while building
+
+| PR    | Found                                                                                     | Change                                                                                                                                                                |
+| ----- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TP2.1 | `ParameterRule` keys the page's `PARAMETER_WORDS`, and `feeds` is no value's rule         | `feeds` is the contract's rule alone, beside the others in a refusal's `problems`; the domain's `ParameterRule` is unchanged, and the page's words for it are TP2.2's |
+| TP2.1 | `feeds` and `type` could name either parameter                                            | They name the document's parameter, whose fault it is; `required` names the definition's, which has no value                                                          |
+| TP2.1 | Comparing whole types would refuse a decimal of another precision whose value fits        | `argumentRefusal` (domain, for TP2.2's dialog too) compares the base type and `list`; anything narrower is the definition's check of the value                        |
+| TP2.1 | `literalValues` left the definition's own `required` beside each argument without a value | It answers `fromDocument`, every argument unsubstituted; each is `required` once, and the definition's problems for it are dropped                                    |
+| TP2.1 | TP2-E's member had no home                                                                | `held.parameters`, optional, present only where the binding is stale and a parameter it reads differs from the held provenance                                        |
+| TP2.1 | Report's `period` needs a document-level date field                                       | A Reporting schema holding Period, assigned by Report beside Review; a Report lacking any of its parameters or schemas is given them as one new version               |
+| TP2.1 | The bindings harness seeds nothing of development's                                       | `startHarness({ development: true })` seeds it once everyone has signed in, and `documentReferencing` takes a template and parameters                                 |

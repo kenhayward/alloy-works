@@ -7,6 +7,7 @@ import { bootstrapCluster } from './bootstrap.js';
 import { componentFieldsNow } from './component-values.js';
 import { STARTER_COMPONENT_TYPE_ID } from './creation.js';
 import {
+  PERIOD_FIELD,
   REVIEWER_FIELD,
   seedDevelopmentConnectionUse,
   seedDevelopmentContent,
@@ -205,15 +206,23 @@ describe('the development content', () => {
       ['conclusion', true],
     ]);
     expect(definition.changes.reorder).toBe(false);
-    // Two parameters to make a document with (the TP1 plan, Task 5): the reviewer seeding its field.
-    const { parameters } = report!.content as {
+    // Three parameters to make a document with (the TP1 plan, Task 5; the TP2 plan, TP2-G): the
+    // reviewer seeding its field, and the period seeding its own and feeding arguments.
+    const { parameters, schemas } = report!.content as {
       parameters: { name: string; required: boolean; changeable: boolean; feeds: unknown }[];
+      schemas: { level: string }[];
     };
     expect(parameters.map((each) => [each.name, each.required, each.changeable])).toEqual([
       ['reviewer', false, true],
       ['issued', false, false],
+      ['period', false, true],
     ]);
     expect(parameters[0]!.feeds).toEqual({ field: REVIEWER_FIELD, arguments: false });
+    expect(parameters[2]).toMatchObject({
+      type: { base: 'date' },
+      feeds: { field: PERIOD_FIELD, arguments: true },
+    });
+    expect(schemas.map((each) => each.level)).toEqual(['document', 'document']);
   });
 
   it('leaves alone a template made in General before Report, and still makes Report', async () => {
@@ -297,7 +306,53 @@ describe('the development content', () => {
     await run();
     const after = await service.withTenant(tenant, (trx) => latestVersion(trx, report.artifactId));
     const { parameters } = after!.content as { parameters: { name: string }[] };
-    expect(parameters.map((each) => each.name)).toEqual(['reviewer', 'issued']);
+    expect(parameters.map((each) => each.name)).toEqual(['reviewer', 'issued', 'period']);
+    await run();
+    const again = await service.withTenant(tenant, (trx) => latestVersion(trx, report.artifactId));
+    expect(again!.id).toBe(after!.id);
+  });
+
+  it("gives a Report holding TP1's two parameters the period, and its field, once", async () => {
+    const run = () =>
+      service.withTenant(tenant, (trx) => seedDevelopmentContent(trx, { issuer: ISSUER }));
+    await run();
+    const report = await service.withTenant(tenant, async (trx) => {
+      const found = await trx
+        .selectFrom('artifact')
+        .select('id')
+        .where('kind', '=', 'template')
+        .executeTakeFirstOrThrow();
+      return (await latestVersion(trx, found.id))!;
+    });
+    // As an environment seeded at TP1 holds it: reviewer and issued, and Review alone.
+    const content = report.content as {
+      parameters: { name: string }[];
+      schemas: unknown[];
+    };
+    const before = {
+      ...content,
+      parameters: content.parameters.filter((each) => each.name !== 'period'),
+      schemas: content.schemas.slice(0, 1),
+    };
+    await service.withTenant(tenant, async (trx) => {
+      const grace = await trx
+        .selectFrom('principal')
+        .select('id')
+        .where('subject', '=', 'grace')
+        .executeTakeFirstOrThrow();
+      const cut = await recordTemplateVersion(trx, {
+        templateId: report.artifactId,
+        openedFrom: report.id,
+        definition: before,
+        author: grace.id,
+      });
+      expect(cut.answer).toBe('recorded');
+    });
+    await run();
+    const after = await service.withTenant(tenant, (trx) => latestVersion(trx, report.artifactId));
+    const now = after!.content as { parameters: { name: string }[]; schemas: unknown[] };
+    expect(now.parameters.map((each) => each.name)).toEqual(['reviewer', 'issued', 'period']);
+    expect(now.schemas).toHaveLength(2);
     await run();
     const again = await service.withTenant(tenant, (trx) => latestVersion(trx, report.artifactId));
     expect(again!.id).toBe(after!.id);

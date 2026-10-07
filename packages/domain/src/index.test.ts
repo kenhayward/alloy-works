@@ -330,6 +330,8 @@ describe('the domain package', () => {
         'seedable',
         'seededValues',
         'templateParameterSchema',
+        // And whether one may be a binding's argument (the TP2 plan, TP2-C).
+        'argumentRefusal',
         // And the outline a document made from one starts with (templates.md, W4.2).
         'materialiseTemplate',
         // Values as a section or a document is written with them (templates.md, W4.3).
@@ -449,6 +451,8 @@ describe('the domain package', () => {
         'bindingsIn',
         'checkTake',
         'literalValues',
+        // A binding with its document arguments substituted (the TP2 plan, TP2-A).
+        'substituteDocumentArguments',
         'PROVENANCE_SCHEMA_VERSION',
         'parseProvenance',
         'parseProvenanceForWrite',

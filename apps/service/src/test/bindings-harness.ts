@@ -11,6 +11,7 @@ import {
   grant,
   listenToTenants,
   migrate,
+  seedDevelopmentContent,
   type Tenant,
   type TenantDatabase,
   type TenantListener,
@@ -179,10 +180,14 @@ export interface Harness {
   place(component: { id: string; version: string }, ...inlines: unknown[]): Promise<string>;
   /** As `place`, the component's content these blocks rather than one paragraph. */
   placeBlocks(component: { id: string; version: string }, ...blocks: unknown[]): Promise<string>;
-  /** A document in a space referencing these components, made by Ada through the routes. */
+  /**
+   * A document in a space referencing these components, made by Ada through the routes: blank, or
+   * from a template with these parameters.
+   */
   documentReferencing(
     components: readonly string[],
     space?: string,
+    from?: { readonly template: string; readonly parameters?: Json },
   ): Promise<{ id: string; version: string; nodes: string[] }>;
   close(): Promise<void>;
 }
@@ -192,6 +197,8 @@ export interface HarnessOptions {
   readonly objects?: (stores: ObjectStores) => ObjectStores;
   /** Whether the service hears the environment's events, as a deployed one does. */
   readonly events?: boolean;
+  /** Whether development's content is seeded once everyone has signed in: its Report among it. */
+  readonly development?: boolean;
 }
 
 export async function startHarness(options: HarnessOptions = {}): Promise<Harness> {
@@ -313,6 +320,9 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
   await allow(ids.grace!, roles.Author!, { kind: 'space', id: general });
   await allow(ids.grace!, roles['Connection user']!, { kind: 'space', id: general });
   await allow(ids.alice!, roles.Reader!, { kind: 'space', id: general });
+  if (options.development) {
+    await tenantDb.withTenant(tenant, (trx) => seedDevelopmentContent(trx, { issuer: idp.issuer }));
+  }
 
   const harness: Harness = {
     db,
@@ -450,14 +460,15 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
       return component.version;
     },
 
-    async documentReferencing(components, space = general) {
-      const made = (
-        await call('ada', 'POST', `/v1/spaces/${space}/documents`, {
-          title: 'The readings report',
-          language: 'en-GB',
-          direction: 'ltr',
-        })
-      ).json<{ id: string; version: { id: string } }>();
+    async documentReferencing(components, space = general, from) {
+      const asked = await call('ada', 'POST', `/v1/spaces/${space}/documents`, {
+        title: 'The readings report',
+        language: 'en-GB',
+        direction: 'ltr',
+        ...from,
+      });
+      if (asked.statusCode !== 200) throw new Error(`${asked.statusCode} ${asked.body}`);
+      const made = asked.json<{ id: string; version: { id: string } }>();
       let version = made.version.id;
       for (const [at, component] of components.entries()) {
         const edited = await call('ada', 'POST', `/v1/documents/${made.id}/outline`, {

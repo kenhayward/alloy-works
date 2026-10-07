@@ -18659,6 +18659,18 @@
       "kind": "rule"
     },
     {
+      "id": "DAT-030",
+      "file": "apps/service/src/document-arguments.test.ts",
+      "line": 132,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-066",
+      "file": "apps/service/src/document-arguments.test.ts",
+      "line": 151,
+      "kind": "title"
+    },
+    {
       "id": "API-037",
       "file": "apps/service/src/document-routes.test.ts",
       "line": 515,
@@ -21319,19 +21331,19 @@
     {
       "id": "DAT-029",
       "file": "packages/domain/src/data/binding.test.ts",
-      "line": 52,
+      "line": 53,
       "kind": "title"
     },
     {
       "id": "DAT-067",
       "file": "packages/domain/src/data/binding.test.ts",
-      "line": 93,
+      "line": 94,
       "kind": "title"
     },
     {
       "id": "DAT-098",
       "file": "packages/domain/src/data/binding.test.ts",
-      "line": 315,
+      "line": 316,
       "kind": "title"
     },
     {
@@ -21559,7 +21571,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 596,
+      "line": 600,
       "kind": "title"
     },
     {

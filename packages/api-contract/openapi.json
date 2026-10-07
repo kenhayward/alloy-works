@@ -24006,7 +24006,8 @@
                                   "scale",
                                   "zone",
                                   "variation",
-                                  "position"
+                                  "position",
+                                  "feeds"
                                 ]
                               },
                               "value": {
@@ -26199,7 +26200,8 @@
                                   "scale",
                                   "zone",
                                   "variation",
-                                  "position"
+                                  "position",
+                                  "feeds"
                                 ]
                               },
                               "value": {
@@ -35294,6 +35296,14 @@
                                     "type": "boolean",
                                     "description": "Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again"
                                   },
+                                  "parameters": {
+                                    "description": "Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does",
+                                    "minItems": 1,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  },
                                   "taken": {
                                     "anyOf": [
                                       {
@@ -37242,7 +37252,8 @@
                                   "scale",
                                   "zone",
                                   "variation",
-                                  "position"
+                                  "position",
+                                  "feeds"
                                 ]
                               },
                               "value": {
@@ -38234,6 +38245,14 @@
                                 "stale": {
                                   "type": "boolean",
                                   "description": "Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again"
+                                },
+                                "parameters": {
+                                  "description": "Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does",
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
                                 },
                                 "taken": {
                                   "anyOf": [
@@ -39916,7 +39935,8 @@
                                   "scale",
                                   "zone",
                                   "variation",
-                                  "position"
+                                  "position",
+                                  "feeds"
                                 ]
                               },
                               "value": {
@@ -40908,6 +40928,14 @@
                                 "stale": {
                                   "type": "boolean",
                                   "description": "Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again"
+                                },
+                                "parameters": {
+                                  "description": "Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does",
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
                                 },
                                 "taken": {
                                   "anyOf": [
@@ -43531,6 +43559,14 @@
                               "type": "boolean",
                               "description": "Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again"
                             },
+                            "parameters": {
+                              "description": "Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does",
+                              "minItems": 1,
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
                             "taken": {
                               "anyOf": [
                                 {
@@ -45221,7 +45257,8 @@
                                   "scale",
                                   "zone",
                                   "variation",
-                                  "position"
+                                  "position",
+                                  "feeds"
                                 ]
                               },
                               "value": {
@@ -46213,6 +46250,14 @@
                                 "stale": {
                                   "type": "boolean",
                                   "description": "Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again"
+                                },
+                                "parameters": {
+                                  "description": "Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does",
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
                                 },
                                 "taken": {
                                   "anyOf": [
@@ -47813,7 +47858,8 @@
                                   "scale",
                                   "zone",
                                   "variation",
-                                  "position"
+                                  "position",
+                                  "feeds"
                                 ]
                               },
                               "value": {
@@ -48805,6 +48851,14 @@
                                 "stale": {
                                   "type": "boolean",
                                   "description": "Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again"
+                                },
+                                "parameters": {
+                                  "description": "Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does",
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
                                 },
                                 "taken": {
                                   "anyOf": [
@@ -50405,7 +50459,8 @@
                                   "scale",
                                   "zone",
                                   "variation",
-                                  "position"
+                                  "position",
+                                  "feeds"
                                 ]
                               },
                               "value": {
@@ -51397,6 +51452,14 @@
                                 "stale": {
                                   "type": "boolean",
                                   "description": "Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again"
+                                },
+                                "parameters": {
+                                  "description": "Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does",
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
                                 },
                                 "taken": {
                                   "anyOf": [
@@ -53652,7 +53715,8 @@
                                   "scale",
                                   "zone",
                                   "variation",
-                                  "position"
+                                  "position",
+                                  "feeds"
                                 ]
                               },
                               "value": {
@@ -54644,6 +54708,14 @@
                                 "stale": {
                                   "type": "boolean",
                                   "description": "Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again"
+                                },
+                                "parameters": {
+                                  "description": "Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does",
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
                                 },
                                 "taken": {
                                   "anyOf": [
@@ -56203,7 +56275,8 @@
                                   "scale",
                                   "zone",
                                   "variation",
-                                  "position"
+                                  "position",
+                                  "feeds"
                                 ]
                               },
                               "value": {
@@ -57195,6 +57268,14 @@
                                 "stale": {
                                   "type": "boolean",
                                   "description": "Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again"
+                                },
+                                "parameters": {
+                                  "description": "Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does",
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
                                 },
                                 "taken": {
                                   "anyOf": [
@@ -59779,6 +59860,14 @@
                               "type": "boolean",
                               "description": "Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again"
                             },
+                            "parameters": {
+                              "description": "Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does",
+                              "minItems": 1,
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
                             "taken": {
                               "anyOf": [
                                 {
@@ -61469,7 +61558,8 @@
                                   "scale",
                                   "zone",
                                   "variation",
-                                  "position"
+                                  "position",
+                                  "feeds"
                                 ]
                               },
                               "value": {
@@ -62461,6 +62551,14 @@
                                 "stale": {
                                   "type": "boolean",
                                   "description": "Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again"
+                                },
+                                "parameters": {
+                                  "description": "Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does",
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
                                 },
                                 "taken": {
                                   "anyOf": [
@@ -64143,7 +64241,8 @@
                                   "scale",
                                   "zone",
                                   "variation",
-                                  "position"
+                                  "position",
+                                  "feeds"
                                 ]
                               },
                               "value": {
@@ -65135,6 +65234,14 @@
                                 "stale": {
                                   "type": "boolean",
                                   "description": "Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again"
+                                },
+                                "parameters": {
+                                  "description": "Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does",
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
                                 },
                                 "taken": {
                                   "anyOf": [
@@ -67127,7 +67234,7 @@
             }
           },
           "400": {
-            "description": "`binding_missing`: no such binding in the component the node places, a definition that is not there or that the caller may not read, answered alike, or a pinned version that is not its definition's; `take_invalid`: what it takes is not the definition's; `parameter_invalid`: a value fails its parameter, or a parameter is taken from the document, which has none yet",
+            "description": "`binding_missing`: no such binding in the component the node places, a definition that is not there or that the caller may not read, answered alike, or a pinned version that is not its definition's; `take_invalid`: what it takes is not the definition's; `parameter_invalid`: a value fails its parameter, a parameter taken from the document has no value there (`required`), or the document's parameter does not feed arguments (`feeds`) or is not of the parameter's type and list (`type`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -67225,7 +67332,8 @@
                                   "scale",
                                   "zone",
                                   "variation",
-                                  "position"
+                                  "position",
+                                  "feeds"
                                 ]
                               },
                               "value": {
@@ -68217,6 +68325,14 @@
                                 "stale": {
                                   "type": "boolean",
                                   "description": "Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again"
+                                },
+                                "parameters": {
+                                  "description": "Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does",
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
                                 },
                                 "taken": {
                                   "anyOf": [
@@ -69824,7 +69940,8 @@
                                   "scale",
                                   "zone",
                                   "variation",
-                                  "position"
+                                  "position",
+                                  "feeds"
                                 ]
                               },
                               "value": {
@@ -70816,6 +70933,14 @@
                                 "stale": {
                                   "type": "boolean",
                                   "description": "Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again"
+                                },
+                                "parameters": {
+                                  "description": "Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does",
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
                                 },
                                 "taken": {
                                   "anyOf": [
@@ -72416,7 +72541,8 @@
                                   "scale",
                                   "zone",
                                   "variation",
-                                  "position"
+                                  "position",
+                                  "feeds"
                                 ]
                               },
                               "value": {
@@ -73408,6 +73534,14 @@
                                 "stale": {
                                   "type": "boolean",
                                   "description": "Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again"
+                                },
+                                "parameters": {
+                                  "description": "Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does",
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
                                 },
                                 "taken": {
                                   "anyOf": [
@@ -74967,7 +75101,8 @@
                                   "scale",
                                   "zone",
                                   "variation",
-                                  "position"
+                                  "position",
+                                  "feeds"
                                 ]
                               },
                               "value": {
@@ -75959,6 +76094,14 @@
                                 "stale": {
                                   "type": "boolean",
                                   "description": "Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again"
+                                },
+                                "parameters": {
+                                  "description": "Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does",
+                                  "minItems": 1,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
                                 },
                                 "taken": {
                                   "anyOf": [

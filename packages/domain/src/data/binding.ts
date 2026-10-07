@@ -7,6 +7,7 @@ import { canonicalJson } from '../stored/canonical.js';
 import { valueProblem } from './canonical.js';
 import type { QueryDefinition } from './definition.js';
 import type { ParameterValues } from './parameters.js';
+import type { DocumentParameters } from '../template/parameters.js';
 
 /**
  * A binding as a component stores it (data.md, "The binding, in the component's content"; the D3 plan,
@@ -185,19 +186,45 @@ export function checkTake(
 }
 
 /**
- * The values a binding runs its definition with: its literals by name, under `values` so that a
- * parameter named `document` is never read as the other answer - or, where it takes a parameter
- * from the document, that parameter's name, which the act fails `parameter_invalid` until a document
- * has a parameter set (TPL-020; D3-L). The values are D2's to check against the definition
- * (`checkParameterValues`, D2-R).
+ * A binding with its document arguments replaced by the document's values (TP2-A; templates.md,
+ * "Feeding the bindings"): each `{ document: name }` the document has a value for becomes that value as
+ * a literal; one it has none for, or an empty list for, stays as it is, for the act to refuse. A
+ * binding with no document argument is returned as it is, so its digest - and every resolution held
+ * of it - stays. Its digest is taken over what this answers wherever it is compared.
  */
-export function literalValues(
-  binding: AnyBinding,
-): { readonly values: ParameterValues } | { readonly document: string } {
+export function substituteDocumentArguments<B extends AnyBinding>(
+  binding: B,
+  parameters: DocumentParameters,
+): B {
+  const entries = Object.entries(binding.parameters);
+  if (!entries.some(([, parameter]) => 'document' in parameter)) return binding;
+  const substituted = entries.map(([name, parameter]) => {
+    if (!('document' in parameter) || !Object.hasOwn(parameters, parameter.document)) {
+      return [name, parameter] as const;
+    }
+    const value = parameters[parameter.document]!;
+    if (Array.isArray(value) && value.length === 0) return [name, parameter] as const;
+    return [name, { literal: value as Exclude<typeof value, readonly unknown[]> }] as const;
+  });
+  return { ...binding, parameters: Object.fromEntries(substituted) };
+}
+
+/**
+ * The values a binding runs its definition with: its literals by name, under `values` so that a
+ * parameter named `document` is never read as anything else, and the definition parameters it still
+ * takes from the document - those `substituteDocumentArguments` found no value for - which the act
+ * fails `parameter_invalid`, rule `required` (TP2-C). The values are D2's to check against the
+ * definition (`checkParameterValues`, D2-R).
+ */
+export function literalValues(binding: AnyBinding): {
+  readonly values: ParameterValues;
+  readonly fromDocument: readonly string[];
+} {
   const values: Record<string, ParameterValues[string]> = {};
+  const fromDocument: string[] = [];
   for (const [name, parameter] of Object.entries(binding.parameters)) {
-    if ('document' in parameter) return { document: parameter.document };
-    values[name] = parameter.literal;
+    if ('document' in parameter) fromDocument.push(name);
+    else values[name] = parameter.literal;
   }
-  return { values };
+  return { values, fromDocument };
 }

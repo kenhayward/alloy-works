@@ -6,6 +6,7 @@ import {
   type MetadataSchemaDefinition,
   type ResolvedTemplate,
   type TemplateDefinition,
+  type TemplateParameter,
   type TemplateParameterProblem,
   type TemplateReferences,
   type UnresolvedReference,
@@ -345,6 +346,18 @@ async function boundBy(
   const version = await readVersion(trx, link.version);
   if (!version) throw new Error(`The template version ${link.version} a document names is gone`);
   return templateDefinitionSchema.parse(version.content);
+}
+
+/**
+ * The parameters a document's recorded template version declares (the TP2 plan, TP2-C), none for a
+ * blank document: read at resolve and check to decide whether one may be a binding's argument, its
+ * declarations only, never the template's resolution (`documentRules`).
+ */
+export async function documentParameterDeclarations(
+  trx: TenantTransaction,
+  documentId: string,
+): Promise<readonly TemplateParameter[]> {
+  return (await boundBy(trx, documentId))?.parameters ?? [];
 }
 
 /**
