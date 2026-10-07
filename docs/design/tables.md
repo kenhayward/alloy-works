@@ -18,15 +18,17 @@ grouping, totals and subtotals, transposition and conditional emphasis rules - e
 the presentation layer. A tenant groups and totals in the query (TAB-020). Revising a bound cell by
 hand is T3's with the rest of revision (ADR-0036, DAT-063).
 
-> **TB1 built; TB2 and TB3 not built.** [TB1](../plans/2026-10-07-tb1-the-bound-table-published.md)
+> **TB1 and TB2 built; TB3 not built.** [TB1](../plans/2026-10-07-tb1-the-bound-table-published.md)
 > built the `boundTable` block and its walks, `formatCell` and `layoutTable`, the table style's formats
 > and alignment by type (default theme 0.7), layout schema 7's `noRows`, `notAvailable` and `source`,
 > the binding paths, and the publish: the stage lays a bound table out in its place, template 16 and
 > the Word writer set it, and `provenance.json` at schema 3 records its cells. Of the claims below TB1
 > answers TAB-001 to TAB-004, TAB-006, TAB-007, TAB-011 to TAB-017, TAB-019, TAB-027, TAB-036 to
-> TAB-038, TAB-045, TAB-046, TAB-048, DAT-028, DAT-033 and DAT-069; the rest wait for TB2 and TB3. A
-> bound table is placed through the API; the editor opens a component holding one for reading only.
-> [Changed while building](#changed-while-building) records where TB1 differs from what follows.
+> TAB-038, TAB-045, TAB-046, TAB-048, DAT-028, DAT-033 and DAT-069; the rest wait for TB3.
+> [TB2](../plans/2026-10-07-tb2-the-bound-table-on-the-page.md) built [the page](#the-page): Place as
+> Table, the Bound table panel and its Format dialog, the body drawn in the editor and the read text by
+> `layoutTable` from the rows route, and the Data tab's row; it claims nothing new.
+> [Changed while building](#changed-while-building) records where TB1 and TB2 differ from what follows.
 
 ## The shape in one paragraph
 
@@ -187,21 +189,38 @@ publishing a bound table or a table with notes, as schema 4 did `continued`.
 
 ## The page
 
+As TB2 built it ([the TB2 plan](../plans/2026-10-07-tb2-the-bound-table-on-the-page.md)).
+
 - **In a component**, a bound table shows its caption, its headers and one row saying which definition
   fills it: a component holds no values (bindings.md).
-- **In a document**, the first 50 laid-out rows and the count of the rest, or the failures in place.
-  The service lays them out, since a result can be 25 MiB, and keeps them as **derived data**:
-  `dataset_table (dataset_version, layout_digest, outcome)`, by migration, the digest over the
-  presentation, the table style and the value formats - deletable, recomputed exactly, never read by
-  the publish, as `dataset_take` is (BI-G). An unsaved presentation is laid out by
-  `POST /v1/documents/{id}/tables/layout`, `read` on the document, so the editor shows a change at once.
-- **Placing**: the Value dialog's **Place as** gains **Table**, which skips the take and starts with
-  every column shown, headed by its name. The Table panel, for a bound table, edits columns (order,
-  header, unit, format, alignment, wrap), the sort, the header column and the wide strategy; the
-  caption, empty statement, source and note are edited in place, as a table's caption is.
+- **In a document**, its first 50 rows laid out and the count of the rest, or its failures in place -
+  `table_too_long` among them, from the row count alone, before any publish. **The page lays it out
+  itself** (TB2-A, replacing TB-J), with `layoutTable` and the document's theme and language, as it
+  formats every inline value: `checkTable` first, from the declared columns and the row count the
+  bindings view gives, then the rows from **`GET /v1/documents/{id}/bindings/{node}/{binding}/rows`**,
+  `read` on the document, for the version held, only the columns the table shows or sorts by, with an
+  `ETag` so a revisit is a 304. The author's own editing session widens the trim to a column just
+  added. An unsaved change shows at once, since nothing is laid out by the service.
+- **The body** is a real `<table>` labelled by its caption, `th scope="col"` headers with units and
+  `th scope="row"` under a header column, drawn by one `fillBoundTable` in the editor and the read
+  text; the layout is memoised in the decoration, so typing in the caption redraws nothing. The empty
+  statement's default is the default layout's `words.noRows`.
+- **Placing**: the Value dialog's **Place as** offers **As a table** wherever a block may stand, which
+  asks no column and starts with the definition's first 64 columns that are not images, each headed by
+  its name, saying where it left any out.
+- **The Bound table panel**, an `F6` region beside the Value panel, sets the style, Numbered, the
+  header column, the empty statement, note and source (each added or removed), and the columns - each
+  one's column, header, unit and its place, alignment, wrap, order and **Format**, a dialog of
+  `FieldFormat`'s members showing the style's value beside each one unset - and up to four sort keys.
+  It offers the definition's declared columns, read as the Value dialog reads them, or the table's own
+  where the definition cannot be read. A header emptied or repeated (TAB-048) and removing the last
+  column are refused with words. **Change** in the Value panel changes the binding, resolved at once in
+  a document; a column the new definition lacks stays, `column_missing`. The caption, empty statement,
+  source and note are typed in place.
 - **Notes**: in a document, a cell's or a header's menu adds a note anchored to it; in a component,
-  the panel adds one by typing the key. Notes list beneath the table, lettered.
-- **The Data tab** lists a bound table as one binding, with the table's failures beside its state.
+  the panel adds one by typing the key. Notes list beneath the table, lettered. TB3's.
+- **The Data tab** lists a bound table as one binding, "A table of N rows", with `checkTable`'s
+  failures beside its state, which they make `failed`.
 
 ## Notes
 
@@ -295,7 +314,7 @@ what the source returned.
 | TB-G | **Wide tables scale or rotate, for every table; no split**                                                             | A split no engine keeps as one tagged table                                      |
 | TB-H | **A row gone fails the publish**, named                                                                                | Dropping the note, which states nothing about a row that was there               |
 | TB-I | **No image columns in T2**                                                                                             | A layout no requirement asks for                                                 |
-| TB-J | **The page lays out the first 50 rows on the service, kept as derived data**                                           | Sending a 25 MiB result to the browser                                           |
+| TB-J | **Replaced by TB2-A**: the page lays out its first 50 rows itself, from the rows the table names, at most 2,000        | The service laying them out into derived data, and a route for an unsaved layout |
 
 ## Changed while building
 
@@ -324,14 +343,27 @@ table has every row.
   `column_missing`, `column_image`, `format_mismatch`, `table_too_long` and `table_words_missing` fail
   a publish at stage `bind`, naming the table.
 
+What TB2 built that differs; the [TB2 plan](../plans/2026-10-07-tb2-the-bound-table-on-the-page.md)'s
+table has every row.
+
+- **No `dataset_table` and no layout route** (TB2-A replaces TB-J): the page lays out from the rows
+  route, which takes the version held as the view names it, refusing any other `version_not_held`, and
+  answers `binding_missing`, `binding_not_table`, `binding_unresolved`, `binding_stale`,
+  `table_too_long` and `result_unreadable` by name.
+- **Place as stands wherever a block may go**, for any column: _As a figure_ only for an image column.
+- **The panel offers the definition's latest version's columns**, as the Value dialog reads them, even
+  where the binding pins an older version; a column that version lacks shows `column_missing`.
+- **Each panel change is its own undo step**; a header or a unit typed joins the keystrokes before it.
+  The panel also has **Delete table**.
+
 ## Build order
 
 1. **TB1, the bound table published**: the block and its walk, `layoutTable` and `formatCell`, the
    table style's members and default theme 0.7, layout schema 7, the stage, Typst and Word, provenance,
    the row ceiling measured. Placed by the API and fixtures. Plan with pre-flight review (a stored
    shape).
-2. **TB2, the page**: Place as Table, the body in a component and a document, `dataset_table` (0055)
-   and the layout route, the Table panel's members, the Data tab.
+2. **TB2, the page**: Place as Table, the body in a component and a document laid out by the page from
+   the rows route, the Bound table panel and Format dialog, the Data tab. Built.
 3. **TB3, notes and wide tables**: keyed and column notes, `key_required`, `note_row_missing`, notes
    lettered for every table, `wide` for every table, scale and rotate in the PDF and Word. Closes the
    tables.

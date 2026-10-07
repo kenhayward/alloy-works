@@ -61,6 +61,11 @@ border, no fill, no head of controls. The editor opened in place is the same sur
 so opening a component moves nothing (CNT-075). What each card says today - whether the reader may edit
 it, and who holds it - moves into the component's label.
 
+**A bound table in the read text** is drawn as the editor draws it, by the same `fillBoundTable` (the
+[TB2 plan](../plans/2026-10-07-tb2-the-bound-table-on-the-page.md), TB2-D): a real table labelled by its
+caption, its first 50 rows laid out by the page from the rows route, and how many more there are, or
+why it shows none, in its place ([tables.md](tables.md#the-page)).
+
 ## Boundaries
 
 **A component's label** stands at its top edge, in the application's own face and colours - it is

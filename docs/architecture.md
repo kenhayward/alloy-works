@@ -3156,15 +3156,16 @@ what a fetch asks of the source side (DAT-090), `read` on the definition and `us
 connection the accepted version ran. A provenance is answered whole to a caller who may read its
 definition, and otherwise with `ran.sql`, `connection` and each column's `from` null.
 
-| Route                                       | Needs                                                           | Does                                                                                |
-| ------------------------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `GET /v1/documents/{id}/bindings`           | `read` on the document                                          | Each binding the caller may read, what it holds, whether it is stale, what waits    |
-| `POST /v1/documents/{id}/bindings/resolve`  | `edit` on it; `read` on each definition; `use_connection`       | Runs 1 to 50 named bindings and holds each result; no idempotency key               |
-| `POST /v1/documents/{id}/bindings/check`    | `read` on it; `use_connection` per connection, others unchecked | Runs its checked bindings again, a different result recorded as waiting             |
-| `POST /v1/documents/{id}/bindings/accept`   | `edit` on it; `read` on the definition; `use_connection`        | Holds a waiting version for one binding, from the one it replaces                   |
-| `GET /v1/documents/{id}/datasets/{version}` | `read` on it                                                    | A result its bindings show the caller, whole, from the bytes held to their checksum |
-| `PUT /v1/datasets/{id}/name`                | `edit` on the dataset                                           | A name, the latest the name                                                         |
-| `GET /v1/query-definitions/{id}/uses`       | `read`                                                          | The components whose latest versions bind it and the documents holding its results  |
+| Route                                                   | Needs                                                           | Does                                                                                             |
+| ------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `GET /v1/documents/{id}/bindings`                       | `read` on the document                                          | Each binding the caller may read, what it holds, whether it is stale, what waits                 |
+| `POST /v1/documents/{id}/bindings/resolve`              | `edit` on it; `read` on each definition; `use_connection`       | Runs 1 to 50 named bindings and holds each result; no idempotency key                            |
+| `POST /v1/documents/{id}/bindings/check`                | `read` on it; `use_connection` per connection, others unchecked | Runs its checked bindings again, a different result recorded as waiting                          |
+| `POST /v1/documents/{id}/bindings/accept`               | `edit` on it; `read` on the definition; `use_connection`        | Holds a waiting version for one binding, from the one it replaces                                |
+| `GET /v1/documents/{id}/datasets/{version}`             | `read` on it                                                    | A result its bindings show the caller, whole, from the bytes held to their checksum              |
+| `GET /v1/documents/{id}/bindings/{node}/{binding}/rows` | `read` on it                                                    | A bound table's held rows, only its columns, with an `ETag` (TB2; [bound tables](#bound-tables)) |
+| `PUT /v1/datasets/{id}/name`                            | `edit` on the dataset                                           | A name, the latest the name                                                                      |
+| `GET /v1/query-definitions/{id}/uses`                   | `read`                                                          | The components whose latest versions bind it and the documents holding its results               |
 
 The definition's page shows **Used by** - those components and documents, the readable ones linked
 and the rest counted - before **Save version**.
@@ -3595,10 +3596,11 @@ reader to a named failure over a hostile file within the memory bound; `tests/e2
 
 ## Bound tables
 
-TB1 of [tables.md](design/tables.md), built by
-[the TB1 plan](plans/2026-10-07-tb1-the-bound-table-published.md): a table bound to a whole query
-result, placed through the API, resolved like any binding, and published as a table laid out from its
-result.
+TB1 and TB2 of [tables.md](design/tables.md), built by
+[the TB1 plan](plans/2026-10-07-tb1-the-bound-table-published.md) and
+[the TB2 plan](plans/2026-10-07-tb2-the-bound-table-on-the-page.md): a table bound to a whole query
+result, placed from the Value dialog and shaped in its panel, laid out on the page by the publish's own
+function, resolved like any binding, and published as a table laid out from its result.
 
 **The model** (`packages/domain`): `boundTable`, a block at content schema 1 (TB1-A), holding a
 binding with no take (`tableBindingSchema`, built with the inline binding from one `bindingShape`) and
@@ -3639,6 +3641,32 @@ gaining a table arm: each column's header and format and each printed cell besid
 | `db: migrations/tenant/0055`                  | The table catalogue's fifth version, the theme's 0.7 and the layout's 0.8 |
 | `worker: templates/publication/16/`           | Template 16                                                               |
 | `tests/e2e: src/bound-tables.test.ts`         | Placed, resolved and published from the development source                |
+
+**On the page** (TB2). `checkTable` (`data/table.ts`) answers `layoutTable`'s failures from the declared
+columns and the row count alone, so `table_too_long` shows without a row read; `layoutTable` takes a
+`limit`, sorting every row and formatting the first. **The rows route**, `GET
+/v1/documents/{id}/bindings/{node}/{binding}/rows?version=`, `read` on the document, answers only the
+version held and only for a bound table, trimmed to the columns it shows or sorts by - widened by the
+caller's own editing `session` - from the object read by checksum; the permission wrapper sends its
+`Revalidated` answer with an `ETag` and `Cache-Control: private, no-cache`, a matching `If-None-Match`
+a 304. `bindingContexts.ts` fetches the rows once per version and column set and hands them to the
+editor's `BindingContext` with the document's table styles and value formats. **The editor's
+`boundTable` node** holds the stored members as attributes, its caption, empty statement, note and
+source as children, and an atom body drawn by `boundTableView`'s `fillBoundTable` from a memoised
+decoration - which `render.ts` shares, so the read text draws the same table. `tables.ts` holds
+`insertBoundTable`, `setBoundTable`, `setBoundTablePart`, `changeTableBinding` and `deleteBoundTable`;
+the Value dialog places `As a table`, and `BoundTablePanel` and `FormatDialog` in `apps/web` shape it,
+each change one transaction. The Data tab lists it as "A table of N rows", `failed` by `checkTable`.
+
+| Where                                                     | What                                                  |
+| --------------------------------------------------------- | ----------------------------------------------------- |
+| `domain: src/data/table.ts`                               | `checkTable`, `layoutTable`'s `limit`                 |
+| `service: src/data/bindings.ts`, `after-commit.ts`        | The rows route and its `Revalidated` answer           |
+| `editor: src/schema.ts`, `mapping.ts`, `bindings.ts`      | The node, its mapping, `boundTablesShown`             |
+| `editor: src/boundTableView.ts`, `render.ts`, `tables.ts` | The body drawn, the read text, the commands           |
+| `web: src/editor/BoundTablePanel.tsx`, `FormatDialog.tsx` | The panel and the Format dialog                       |
+| `web: src/structure/bindingContexts.ts`, `tableRows.ts`   | The rows fetched for the page, and the table setting  |
+| `tests/browser: src/bound-tables.test.ts`                 | Placed and shaped by the keyboard, axe, and published |
 
 ## Containers and images
 

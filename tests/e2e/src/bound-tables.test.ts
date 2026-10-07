@@ -192,6 +192,43 @@ describe('a bound table over the whole system', () => {
       }),
     );
 
+    // The rows route's gate over HTTP (the TB2 plan, task 5): the page's rows, in the columns the
+    // table names, for the version the bindings view holds; the same rows again a 304; any other
+    // version refused by name; nobody signed in, and a document that is not there, refused.
+    const held = (
+      ok(await call('GET', `/v1/documents/${made.id}/bindings`))['bindings'] as {
+        binding: { id: string };
+        held: { version: string };
+      }[]
+    ).find((each) => each.binding.id === 'readings-rows')!.held.version;
+    const rowsPath = (document: string, version: string) =>
+      `/v1/documents/${document}/bindings/${node}/readings-rows/rows?version=${version}`;
+    const rows = await fetch(`${SERVICE}${rowsPath(made.id, held)}`, { headers: { cookie } });
+    expect(rows.status).toBe(200);
+    expect(rows.headers.get('cache-control')).toBe('private, no-cache');
+    expect(await rows.json()).toMatchObject({
+      version: held,
+      result: {
+        columns: [
+          ['site', 'text'],
+          ['reading', 'decimal'],
+        ],
+        rows: [
+          ['North weir', '1.11'],
+          ['South quay', '3.45'],
+          ['West dock', '-2.5'],
+        ],
+      },
+    });
+    const again = await fetch(`${SERVICE}${rowsPath(made.id, held)}`, {
+      headers: { cookie, 'if-none-match': rows.headers.get('etag')! },
+    });
+    expect(again.status).toBe(304);
+    const other = await call('GET', rowsPath(made.id, randomUUID()));
+    expect([other.status, other.body['code']]).toEqual([409, 'version_not_held']);
+    expect((await fetch(`${SERVICE}${rowsPath(made.id, held)}`)).status).toBe(401);
+    expect((await call('GET', rowsPath(randomUUID(), held))).status).toBe(404);
+
     const asked = ok(
       await call('POST', `/v1/documents/${made.id}/publications`, {
         version: edited.version.id,
