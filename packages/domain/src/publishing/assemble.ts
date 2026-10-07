@@ -2562,6 +2562,8 @@ function anchorResolves(
   table: TableNode | null,
 ): boolean {
   if (table === null) return false;
+  // A bound table's note (TB3-A) is the stage's to place, and stands in no paragraph: never here.
+  if (anchor.kind === 'keyed' || anchor.kind === 'column') return false;
   const { columns, starts } = gridOf(table);
   if (anchor.kind === 'cellPosition') {
     return anchor.row < table.rows.length && anchor.column < columns;

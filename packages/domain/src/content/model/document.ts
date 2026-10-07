@@ -308,6 +308,8 @@ export function checkInlineContent(
   inlines: readonly InlineNode[],
   home: InlineHome,
   claimed: Claimed,
+  /** A bound table's `notes` (TB3-A): every footnote anchored `keyed` or `column`, and only there. */
+  tableNotes = false,
 ): InlineNode[] {
   // Every mark identifier is held to NFC, for the reason `claim` holds a block's, a footnote's and a
   // cross-reference's identifier to it: the caller stores exactly what the digest covers, and the
@@ -369,6 +371,14 @@ export function checkInlineContent(
       claim(inline.id, claimed.ids);
     }
     if (inline.type !== 'footnote') return inline;
+    const noteKind = inline.anchor.kind === 'keyed' || inline.anchor.kind === 'column';
+    if (noteKind !== tableNotes) {
+      throw new Error(
+        tableNotes
+          ? `Footnote ${inline.id} is anchored ${inline.anchor.kind}, which a bound table's notes may not be`
+          : `Footnote ${inline.id} is anchored ${inline.anchor.kind}, which only a bound table's notes may be`,
+      );
+    }
     claim(inline.id, claimed.ids);
     const parsed = footnoteContentSchema.parse(inline.content);
     // A footnote's paragraphs are a range of their own (`claimRange`): nothing inside continues an
@@ -614,7 +624,53 @@ function checkBoundTable(
   }
   const empty = inline('empty');
   const note = inline('note');
-  return { ...block, caption, ...empty, ...note, ...inline('source') };
+  const notes = block.notes && checkTableNotes(block, claimed);
+  return {
+    ...block,
+    caption,
+    ...empty,
+    ...note,
+    ...(notes === undefined ? {} : { notes }),
+    ...inline('source'),
+  };
+}
+
+/**
+ * **A bound table's notes** (the TB3 plan, TB3-A), walked after its note, as a reader meets them: each
+ * anchored `keyed` or `column`, naming a column the table shows; a key of 1 to 32 columns, each name and
+ * text value in NFC, as the stored form is. Whether the key is the definition's is the stage's and the
+ * page's to say (TB3-B): the walk cannot see the definition.
+ */
+function checkTableNotes(
+  block: Extract<BlockNode, { type: 'boundTable' }>,
+  claimed: Claimed,
+): Extract<InlineNode, { type: 'footnote' }>[] {
+  const shown = new Set(block.columns.map((column) => column.column));
+  for (const note of block.notes ?? []) {
+    const { anchor } = note;
+    if (anchor.kind !== 'keyed' && anchor.kind !== 'column') continue;
+    refuseUnnormalised(anchor.column, 'Column');
+    if (!shown.has(anchor.column)) {
+      throw new Error(`Note ${note.id} names ${anchor.column}, a column not shown`);
+    }
+    if (anchor.kind === 'keyed') {
+      const entries = Object.entries(anchor.key);
+      if (entries.length < 1 || entries.length > 32) {
+        throw new Error(`Note ${note.id} keys its row by 1 to 32 columns, not ${entries.length}`);
+      }
+      // Named by the note alone: a key's values are the source's data.
+      const nfc = (text: string) => text === text.normalize('NFC');
+      if (
+        !entries.every(([name, value]) => nfc(name) && (typeof value !== 'string' || nfc(value)))
+      ) {
+        throw new Error(`Note ${note.id} has a key not in NFC`);
+      }
+    }
+  }
+  return checkInlineContent(block.notes ?? [], 'component', claimed, true) as Extract<
+    InlineNode,
+    { type: 'footnote' }
+  >[];
 }
 
 /**

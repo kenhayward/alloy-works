@@ -182,6 +182,13 @@ export {
 } from './format-cell.js';
 export type { CellWords } from './format-cell.js';
 export { checkTable, layoutTable, sortResult, TABLE_ROWS_MAX } from './table.js';
+export {
+  keyNamesTheKey,
+  matchNoteRows,
+  placeTableNotes,
+  tableNoteLetter,
+  type PlacedNote,
+} from './table-notes.js';
 export type {
   LaidOut,
   LaidOutCell,

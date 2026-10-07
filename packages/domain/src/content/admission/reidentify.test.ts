@@ -533,6 +533,47 @@ describe('the re-identify stage', () => {
     ]);
   });
 
+  it("renews a pasted bound table's notes and their paragraphs' identifiers, its key left as it is (TB3-A)", () => {
+    const note = {
+      type: 'footnote',
+      id: 'f1',
+      anchor: { kind: 'keyed', key: { id: 'n3' }, column: 'depth' },
+      content: [paragraph('f1p', [text('Estimated')])],
+    };
+    const table: Record<string, unknown> = {
+      type: 'boundTable',
+      id: 't1',
+      binding: { ...binding('k1'), take: undefined },
+      caption: [text('Depths')],
+      columns: [{ column: 'depth', header: 'Depth' }],
+      headerColumn: false,
+      notes: [note],
+    };
+    delete (table.binding as Record<string, unknown>).take;
+    const identified = reidentify(
+      { schemaVersion: 1, content: [table] },
+      receiver(),
+      createReport(),
+    );
+    if (!identified.ok) throw new Error(identified.failure);
+    // A key column called id holding what looks like an identifier is a value, renamed nothing.
+    expect(identified.value.content).toEqual([
+      {
+        ...table,
+        id: 'n3',
+        binding: { ...(table.binding as object), id: 'n4' },
+        notes: [
+          { ...note, id: 'n5', content: [{ ...paragraph('f1p', [text('Estimated')]), id: 'n6' }] },
+        ],
+      },
+    ]);
+    expect([...identified.renamed]).toEqual([
+      ['t1', 'n3'],
+      ['f1', 'n5'],
+      ['f1p', 'n6'],
+    ]);
+  });
+
   it('keeps a block and a binding that arrived under one identifier apart, neither making the other ambiguous', () => {
     const identified = reidentify(
       { schemaVersion: 1, content: [paragraph('z', [text('Mean '), binding('z')])] },

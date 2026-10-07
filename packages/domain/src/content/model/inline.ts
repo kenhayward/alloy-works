@@ -239,9 +239,21 @@ export const footnoteNodeSchema = z.strictObject({
       column: z.number().int().min(0),
     }),
     z.strictObject({ kind: z.literal('table') }),
+    // A bound table's notes alone (the TB3 plan, TB3-A): a row by the definition's key values, never
+    // a position (CNT-039), and a column by its result name. The walk holds where each may stand, the
+    // key's 1 to 32 columns and NFC.
+    z.strictObject({
+      kind: z.literal('keyed'),
+      key: z.record(z.string().min(1), z.union([z.string(), z.boolean()])),
+      column: z.string().min(1),
+    }),
+    z.strictObject({ kind: z.literal('column'), column: z.string().min(1) }),
   ]),
   content: z.array(z.unknown()),
 });
+
+/** A footnote, as `footnoteNodeSchema` holds it. */
+export type FootnoteNode = z.infer<typeof footnoteNodeSchema>;
 
 export const inlineNodeSchema = z.discriminatedUnion('type', [
   textNodeSchema,

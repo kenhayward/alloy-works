@@ -811,6 +811,42 @@ describe('resolving a reference in the document that publishes it', () => {
     }
   });
 
+  it("labels a table's footnote by its table's label and its letter, and offers it so (TB3-D)", () => {
+    const lettered: ContentDocument = parseContentDocument({
+      schemaVersion: 1,
+      title: 'Readings',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        {
+          type: 'table',
+          id: 't1',
+          caption: [text('Totals')],
+          headerRows: 0,
+          headerColumns: 0,
+          rows: [{ cells: [{ content: [paragraph('c1', text('12'), note('tn'))] }] }],
+        },
+      ],
+    });
+    const resolver = resolving([placed('ada', ADA)], { ada: lettered });
+    expect(resolver(block('tn'), { node: id('ada') })).toEqual(
+      bound({
+        node: id('ada'),
+        block: 'tn',
+        kind: 'footnote',
+        label: 'Table 1.1 (a)',
+        title: null,
+      }),
+    );
+    const targets = offered([occurrence('ada', ADA)], {
+      ada: contributionsOf(unbound(lettered)),
+    });
+    expect(
+      targets.find((each) => each.target.kind === 'block' && each.target.block === 'tn'),
+    ).toMatchObject({ kind: 'footnote', label: 'Table 1.1 (a)' });
+    expect(printed(targets[1]!, 'number', null)).toBe('Table 1.1 (a)');
+  });
+
   it("CNT-125 finds a block that takes no number anywhere in the occurrence, a paragraph at depth in a list's item among them", () => {
     const resolver = resolving([placed('ada', ADA)], { ada });
     const reading = { node: id('ada') };

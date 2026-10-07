@@ -667,6 +667,51 @@ describe('numbering an outline', () => {
     ]);
   });
 
+  it("TAB-026 letters a table's footnotes in its own sequence, so a document footnote after a table keeps the document's next number", () => {
+    const run = (value: string) => ({ type: 'text', value, marks: [] });
+    const footnote = (block: string) => ({
+      type: 'footnote',
+      id: block,
+      anchor: { kind: 'span' },
+      content: [{ type: 'paragraph', id: `${block}p`, content: [run('A note')] }],
+    });
+    const content = parseContentDocument({
+      schemaVersion: 1,
+      title: 'Survey',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        { type: 'paragraph', id: 'p1', content: [run('Before'), footnote('n1')] },
+        {
+          type: 'table',
+          id: 't1',
+          caption: [run('Readings')],
+          headerRows: 1,
+          headerColumns: 0,
+          rows: [
+            { cells: [{ content: [{ type: 'paragraph', id: 'h', content: [footnote('t1a')] }] }] },
+            { cells: [{ content: [{ type: 'paragraph', id: 'c', content: [footnote('t1b')] }] }] },
+          ],
+        },
+        { type: 'paragraph', id: 'p2', content: [run('After'), footnote('n2')] },
+      ],
+    });
+    const numbered = table([section('one', [reference('survey')])], {
+      survey: contributionsOf(unbound(content)),
+    });
+    expect(
+      numbered.entries
+        .filter((entry) => entry.block !== null)
+        .map((entry) => [entry.block, entry.sequence, entry.number, entry.label]),
+    ).toEqual([
+      ['n1', 'footnote', '1', '1'],
+      ['t1', 'table', '1.1', 'Table 1.1'],
+      ['t1a', 'tableNote', 'a', 'Table 1.1 (a)'],
+      ['t1b', 'tableNote', 'b', 'Table 1.1 (b)'],
+      ['n2', 'footnote', '2', '2'],
+    ]);
+  });
+
   it('STR-022 traces every number to the node, block, counters and restart that produced it', () => {
     const numbered = table([section('one'), section('two', [section('a', [reference('p')])])], {
       p: figures('p1', 'p2'),

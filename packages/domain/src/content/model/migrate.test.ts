@@ -38,6 +38,9 @@ describe('schema versions and migration', () => {
       if (typeof record.type === 'string') found.add(record.type);
       // A figure taking its image from a binding (B6-A) is a construct of its own, not a node type.
       if (record.type === 'figure' && 'binding' in record) found.add('figure with a binding');
+      // So is a bound table's note by its key or by its column (TB3-A).
+      const anchor = record.type === 'footnote' ? (record.anchor as { kind: string }) : undefined;
+      if (anchor?.kind === 'keyed' || anchor?.kind === 'column') found.add(`${anchor.kind} note`);
       for (const member of Object.values(record)) collect(member);
     };
     collect(JSON.parse(readFileSync(join(fixtures, 'v1', 'every-node.json'), 'utf8')));
@@ -49,6 +52,8 @@ describe('schema versions and migration', () => {
       'boundTable',
       'figure',
       'figure with a binding',
+      'keyed note',
+      'column note',
       'preformatted',
       'blockquote',
       'equation',

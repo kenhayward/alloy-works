@@ -345,6 +345,7 @@ function nodeOf(block: BlockNode): Node {
           columns: block.columns,
           headerColumn: block.headerColumn,
           sort: block.sort ?? null,
+          notes: block.notes ?? null,
         },
         [
           editorSchema.node('tableCaption', null, block.caption.flatMap(toRun)),
@@ -735,6 +736,7 @@ function storedBlock(node: Node, at: string): unknown {
         ...(node.attrs.sort === null ? {} : { sort: node.attrs.sort as object }),
         ...member('boundTableEmpty', 'empty'),
         ...member('tableNote', 'note'),
+        ...(node.attrs.notes === null ? {} : { notes: node.attrs.notes as object }),
         ...member('boundTableSource', 'source'),
       };
     }
