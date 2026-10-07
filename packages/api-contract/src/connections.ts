@@ -508,7 +508,10 @@ export const unauthenticatedOrEnded = {
   schema: AuthorityEndedRefusal,
 } as const;
 
-/** A value refused by its declaration (DAT-020): the parameter, the rule and the value. */
+/**
+ * A value refused by its declaration (DAT-020): the parameter, the rule and the value; `feeds`, a
+ * document's parameter a binding takes that does not feed arguments (the TP2 plan, TP2-C).
+ */
 const ParameterProblem = z.object({
   parameter: z.string(),
   rule: z.enum([
@@ -522,6 +525,7 @@ const ParameterProblem = z.object({
     'zone',
     'variation',
     'position',
+    'feeds',
   ]),
   value: z.string().describe('The value as sent, cut to 1,000 characters'),
 });

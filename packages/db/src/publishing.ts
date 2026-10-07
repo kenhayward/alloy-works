@@ -10,10 +10,12 @@ import {
   readLayout,
   readOutline,
   speaksFor,
+  substituteDocumentArguments,
   unsupportedFormats,
   valueFailures,
   walkOutline,
   type ContentDocument,
+  type DocumentParameters,
   type Layout,
   type MissingSection,
   type NodeFailure,
@@ -482,19 +484,21 @@ interface HeldBinding {
 
 /**
  * Each binding the resolved occurrences hold, against the latest resolution its document has for its
- * node and binding: held where that resolution's digest is the binding's as read now, and otherwise
- * unresolved, `never` or `changed`.
+ * node and binding: held where that resolution's digest is the binding's as read now - its document
+ * arguments substituted by the latest version's parameters, the only version a request may publish
+ * (the TP2 plan, TP2-B) - and otherwise unresolved, `never` or `changed`.
  */
 async function bindingsHeld(
   trx: TenantTransaction,
   documentId: string,
   resolved: readonly ReadOccurrence[],
+  parameters: DocumentParameters,
 ): Promise<{ held: HeldBinding[]; unresolved: UnresolvedBinding[] }> {
   const asked = resolved.flatMap((each) =>
     bindingsIn(each.content).map(({ binding }) => ({
       node: each.node,
       binding: binding.id,
-      digest: sha256Hex(bindingDigestInput(binding)),
+      digest: sha256Hex(bindingDigestInput(substituteDocumentArguments(binding, parameters))),
     })),
   );
   if (asked.length === 0) return { held: [], unresolved: [] };
@@ -640,7 +644,7 @@ export async function requestPublication(
   }
   // Every binding the publisher's resolved components hold, by its latest resolution in this document
   // (B3-C): one without a result, or with one taken under another digest, refuses the request by name.
-  const bindings = await bindingsHeld(trx, input.documentId, resolved);
+  const bindings = await bindingsHeld(trx, input.documentId, resolved, latest.parameters);
   if (bindings.unresolved.length > 0) {
     return { answer: 'binding.unresolved', bindings: bindings.unresolved };
   }

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { canonicalValueSchema, parameterName } from '../data/primitives.js';
-import { parameterSchema } from '../data/definition.js';
+import { parameterSchema, type Parameter } from '../data/definition.js';
 import { checkParameterValues, type ParameterProblem } from '../data/parameters.js';
 import type { CanonicalValue } from '../data/canonical.js';
 import type { FieldDefinition } from '../metadata/field.js';
@@ -184,6 +184,23 @@ export function checkDocumentParameters(
     }
   }
   return problems.length > 0 ? { code: 'parameter_invalid', problems } : null;
+}
+
+/**
+ * Why a document's parameter cannot be a binding's argument for a definition's parameter (TP2-C), or
+ * null where it can: `feeds`, its declaration does not feed arguments; `type`, its base type or `list`
+ * is not the definition parameter's. Anything narrower - a range, permitted values, a precision - is
+ * the definition's to check against the value itself (DAT-020).
+ */
+export function argumentRefusal(
+  declaration: TemplateParameter,
+  parameter: Pick<Parameter, 'type' | 'list'>,
+): 'feeds' | 'type' | null {
+  if (!declaration.feeds.arguments) return 'feeds';
+  if (declaration.type.base !== parameter.type.base || declaration.list !== parameter.list) {
+    return 'type';
+  }
+  return null;
 }
 
 /** The values each parameter seeds, by field (TPL-066's half): those given, for the fields fed. */

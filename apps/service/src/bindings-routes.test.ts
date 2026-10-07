@@ -938,7 +938,7 @@ describe('bindings and datasets through the service', () => {
     });
   });
 
-  it('refuses a resolve before anything runs: a binding the node does not hold, a retired definition, a document parameter, and a caller who may not use the connection', async () => {
+  it('refuses a resolve before anything runs: a binding the node does not hold, a retired definition, a parameter a blank document has no value for, and a caller who may not use the connection', async () => {
     const definition = await h.definition(connection.id);
     const { document, node } = await placed(
       binding('b1', definition.id, { parameters: { site: { literal: '71' } } }),
@@ -954,13 +954,17 @@ describe('bindings and datasets through the service', () => {
       node,
       document: document.id,
     });
-    for (const id of ['fromDocument', 'wrongValue']) {
+    for (const [id, rule] of [
+      ['fromDocument', 'required'],
+      ['wrongValue', 'type'],
+    ] as const) {
       const answer = await resolve('ada', document.id, [{ node, binding: id }]);
       expect(answer.statusCode, id).toBe(400);
       expect(answer.json(), id).toMatchObject({
         code: 'parameter_invalid',
         binding: id,
         definition: definition.id,
+        problems: [{ parameter: 'site', rule }],
       });
     }
     // Ivy may edit the document and read what it binds; without use_connection she may not run it.

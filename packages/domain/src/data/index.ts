@@ -163,7 +163,14 @@ export type {
 } from './protocol.js';
 export { defaultLimits, effectiveLimits, limitCeilings } from './limits.js';
 export type { Limits, TenantLimits } from './limits.js';
-export { bindingDigestInput, bindingsIn, checkTake, literalValues, takes } from './binding.js';
+export {
+  bindingDigestInput,
+  bindingsIn,
+  checkTake,
+  literalValues,
+  substituteDocumentArguments,
+  takes,
+} from './binding.js';
 export type { AnyBinding, Binding, BindingAt, BindingPlace, TableBinding } from './binding.js';
 export {
   COLUMN_ALIGNMENTS,

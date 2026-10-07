@@ -12,6 +12,7 @@ export type { ResolvedTemplate, TemplateReferences, UnresolvedReference } from '
 export { missingSections, valueFailures } from './conformance.js';
 export type { MissingSection, NodeFailure } from './conformance.js';
 export {
+  argumentRefusal,
   checkDocumentParameters,
   checkTemplateParameters,
   documentParametersSchema,

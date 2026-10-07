@@ -8216,7 +8216,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position" | "feeds";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -8852,7 +8852,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position" | "feeds";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -12037,6 +12037,8 @@ export interface operations {
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                                 stale: boolean;
+                                /** @description Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does */
+                                parameters?: string[];
                                 /** @description The value the binding takes from the version held, or null where it is stale */
                                 taken: ({
                                     /** @description The value, in its column's canonical form: a string, or a boolean */
@@ -12558,7 +12560,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position" | "feeds";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -12753,6 +12755,8 @@ export interface operations {
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                                 stale: boolean;
+                                /** @description Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does */
+                                parameters?: string[];
                                 /** @description The value the binding takes from the version held, or null where it is stale */
                                 taken: ({
                                     /** @description The value, in its column's canonical form: a string, or a boolean */
@@ -13183,7 +13187,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position" | "feeds";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -13378,6 +13382,8 @@ export interface operations {
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                                 stale: boolean;
+                                /** @description Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does */
+                                parameters?: string[];
                                 /** @description The value the binding takes from the version held, or null where it is stale */
                                 taken: ({
                                     /** @description The value, in its column's canonical form: a string, or a boolean */
@@ -14118,6 +14124,8 @@ export interface operations {
                             name: string | null;
                             /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                             stale: boolean;
+                            /** @description Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does */
+                            parameters?: string[];
                             /** @description The value the binding takes from the version held, or null where it is stale */
                             taken: ({
                                 /** @description The value, in its column's canonical form: a string, or a boolean */
@@ -14487,7 +14495,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position" | "feeds";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -14682,6 +14690,8 @@ export interface operations {
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                                 stale: boolean;
+                                /** @description Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does */
+                                parameters?: string[];
                                 /** @description The value the binding takes from the version held, or null where it is stale */
                                 taken: ({
                                     /** @description The value, in its column's canonical form: a string, or a boolean */
@@ -15072,7 +15082,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position" | "feeds";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -15267,6 +15277,8 @@ export interface operations {
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                                 stale: boolean;
+                                /** @description Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does */
+                                parameters?: string[];
                                 /** @description The value the binding takes from the version held, or null where it is stale */
                                 taken: ({
                                     /** @description The value, in its column's canonical form: a string, or a boolean */
@@ -15657,7 +15669,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position" | "feeds";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -15852,6 +15864,8 @@ export interface operations {
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                                 stale: boolean;
+                                /** @description Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does */
+                                parameters?: string[];
                                 /** @description The value the binding takes from the version held, or null where it is stale */
                                 taken: ({
                                     /** @description The value, in its column's canonical form: a string, or a boolean */
@@ -16485,7 +16499,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position" | "feeds";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -16680,6 +16694,8 @@ export interface operations {
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                                 stale: boolean;
+                                /** @description Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does */
+                                parameters?: string[];
                                 /** @description The value the binding takes from the version held, or null where it is stale */
                                 taken: ({
                                     /** @description The value, in its column's canonical form: a string, or a boolean */
@@ -17050,7 +17066,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position" | "feeds";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -17245,6 +17261,8 @@ export interface operations {
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                                 stale: boolean;
+                                /** @description Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does */
+                                parameters?: string[];
                                 /** @description The value the binding takes from the version held, or null where it is stale */
                                 taken: ({
                                     /** @description The value, in its column's canonical form: a string, or a boolean */
@@ -17967,6 +17985,8 @@ export interface operations {
                             name: string | null;
                             /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                             stale: boolean;
+                            /** @description Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does */
+                            parameters?: string[];
                             /** @description The value the binding takes from the version held, or null where it is stale */
                             taken: ({
                                 /** @description The value, in its column's canonical form: a string, or a boolean */
@@ -18336,7 +18356,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position" | "feeds";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -18531,6 +18551,8 @@ export interface operations {
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                                 stale: boolean;
+                                /** @description Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does */
+                                parameters?: string[];
                                 /** @description The value the binding takes from the version held, or null where it is stale */
                                 taken: ({
                                     /** @description The value, in its column's canonical form: a string, or a boolean */
@@ -18961,7 +18983,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position" | "feeds";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -19156,6 +19178,8 @@ export interface operations {
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                                 stale: boolean;
+                                /** @description Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does */
+                                parameters?: string[];
                                 /** @description The value the binding takes from the version held, or null where it is stale */
                                 taken: ({
                                     /** @description The value, in its column's canonical form: a string, or a boolean */
@@ -19684,7 +19708,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `binding_missing`: no such binding in the component the node places, a definition that is not there or that the caller may not read, answered alike, or a pinned version that is not its definition's; `take_invalid`: what it takes is not the definition's; `parameter_invalid`: a value fails its parameter, or a parameter is taken from the document, which has none yet */
+            /** @description `binding_missing`: no such binding in the component the node places, a definition that is not there or that the caller may not read, answered alike, or a pinned version that is not its definition's; `take_invalid`: what it takes is not the definition's; `parameter_invalid`: a value fails its parameter, a parameter taken from the document has no value there (`required`), or the document's parameter does not feed arguments (`feeds`) or is not of the parameter's type and list (`type`) */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -19721,7 +19745,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position" | "feeds";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -19916,6 +19940,8 @@ export interface operations {
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                                 stale: boolean;
+                                /** @description Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does */
+                                parameters?: string[];
                                 /** @description The value the binding takes from the version held, or null where it is stale */
                                 taken: ({
                                     /** @description The value, in its column's canonical form: a string, or a boolean */
@@ -20308,7 +20334,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position" | "feeds";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -20503,6 +20529,8 @@ export interface operations {
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                                 stale: boolean;
+                                /** @description Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does */
+                                parameters?: string[];
                                 /** @description The value the binding takes from the version held, or null where it is stale */
                                 taken: ({
                                     /** @description The value, in its column's canonical form: a string, or a boolean */
@@ -20893,7 +20921,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position" | "feeds";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -21088,6 +21116,8 @@ export interface operations {
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                                 stale: boolean;
+                                /** @description Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does */
+                                parameters?: string[];
                                 /** @description The value the binding takes from the version held, or null where it is stale */
                                 taken: ({
                                     /** @description The value, in its column's canonical form: a string, or a boolean */
@@ -21458,7 +21488,7 @@ export interface operations {
                         } | {
                             parameter: string;
                             /** @enum {string} */
-                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position" | "feeds";
                             /** @description The value as sent, cut to 1,000 characters */
                             value: string;
                         })[];
@@ -21653,6 +21683,8 @@ export interface operations {
                                 name: string | null;
                                 /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
                                 stale: boolean;
+                                /** @description Where it is stale, the document's parameters it takes as arguments whose values now differ from those its held result ran with, by the document's names: absent where none does */
+                                parameters?: string[];
                                 /** @description The value the binding takes from the version held, or null where it is stale */
                                 taken: ({
                                     /** @description The value, in its column's canonical form: a string, or a boolean */

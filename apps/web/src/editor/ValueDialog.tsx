@@ -390,7 +390,7 @@ export function ValueDialog({
     const chosenNow = asTable ? tableChoice : choice;
     if (current === null || chosenNow === null || ready === null) return false;
     const held = literalValues(current);
-    if (!('values' in held)) return false;
+    if (held.fromDocument.length > 0) return false;
     return questionUnchanged(
       { type: 'binding', id: current.id, ...chosenNow },
       {

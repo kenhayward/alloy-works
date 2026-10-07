@@ -197,11 +197,15 @@ export async function seedDevelopmentContent(
 /** Development's Review schema and its one field, and the template assigning it. Fixed, so a rerun finds them. */
 export const REVIEWER_FIELD = '0d5e7a11-0000-4000-8000-00000000f1e1';
 const REVIEW_SCHEMA = '0d5e7a11-0000-4000-8000-00000000c4e3';
+/** Development's Reporting schema and its Period field, which Report's `period` seeds (TP2-G). */
+export const PERIOD_FIELD = '0d5e7a11-0000-4000-8000-00000000f1e4';
+const REPORTING_SCHEMA = '0d5e7a11-0000-4000-8000-00000000c4e5';
 
 /**
- * The Report template's parameters (the TP1 plan, Task 5), both optional so nothing made from it
- * before must now be given one: the reviewer, changeable and seeding the Reviewer field, and the date
- * issued, fixed and offered to bindings.
+ * The Report template's parameters (the TP1 plan, Task 5; the TP2 plan, TP2-G), each optional so
+ * nothing made from it before must now be given one: the reviewer, changeable and seeding the Reviewer
+ * field; the date issued, fixed and offered to bindings; and the period, a changeable date seeding the
+ * Period field and offered to bindings, so one parameter does both.
  */
 const REPORT_PARAMETERS = [
   {
@@ -220,16 +224,32 @@ const REPORT_PARAMETERS = [
     changeable: false,
     feeds: { arguments: true },
   },
+  {
+    name: 'period',
+    type: { base: 'date' as const },
+    required: false,
+    list: false,
+    changeable: true,
+    feeds: { field: PERIOD_FIELD, arguments: true },
+  },
+];
+
+/** The schemas Report assigns at the document's level: Review, and Reporting for the period. */
+const REPORT_SCHEMAS = [
+  { schema: REVIEW_SCHEMA, level: 'document' as const, requires: [] },
+  { schema: REPORTING_SCHEMA, level: 'document' as const, requires: [] },
 ];
 
 /**
  * A template in General to make a document from (templates.md): Report, whose Introduction and
  * Conclusion a document may not publish without and whose sections keep their order, over the
- * environment's theme and layout, assigning Review at the document's level with nothing required -
- * a field no page can fill in yet (W5) must not stop a document publishing. Made once; with two
- * optional parameters (the TP1 plan, Task 5), given once to a Report made before them.
+ * environment's theme and layout, assigning Review and Reporting at the document's level with nothing
+ * required - a field no page can fill in yet (W5) must not stop a document publishing. Made once; a
+ * Report made before a parameter of its own is given those it lacks, and their schemas, as one new
+ * version.
  */
 async function seedReportTemplate(trx: TenantTransaction, space: string, designer: string) {
+  await seedReportFields(trx, designer);
   // Report by its name and the designer who seeds it, never another template somebody made in General.
   const exists = await trx
     .selectFrom('artifact as a')
@@ -242,12 +262,26 @@ async function seedReportTemplate(trx: TenantTransaction, space: string, designe
     .executeTakeFirst();
   if (exists) {
     const latest = await latestVersion(trx, exists.id);
-    const content = latest?.content as Record<string, unknown> | undefined;
-    if (latest === undefined || content === undefined || content.parameters !== undefined) return;
+    const content = latest?.content as
+      { parameters?: { name: string }[]; schemas?: { schema: string }[] } | undefined;
+    if (latest === undefined || content === undefined) return;
+    const parameters = content.parameters ?? [];
+    const schemas = content.schemas ?? [];
+    const lacking = REPORT_PARAMETERS.filter(
+      (each) => !parameters.some((held) => held.name === each.name),
+    );
+    const unassigned = REPORT_SCHEMAS.filter(
+      (each) => !schemas.some((held) => held.schema === each.schema),
+    );
+    if (lacking.length === 0 && unassigned.length === 0) return;
     const recorded = await recordTemplateVersion(trx, {
       templateId: exists.id,
       openedFrom: latest.id,
-      definition: { ...content, parameters: REPORT_PARAMETERS },
+      definition: {
+        ...content,
+        schemas: [...schemas, ...unassigned],
+        parameters: [...parameters, ...lacking],
+      },
       author: designer,
     });
     if (recorded.answer !== 'recorded') {
@@ -255,6 +289,41 @@ async function seedReportTemplate(trx: TenantTransaction, space: string, designe
     }
     return;
   }
+  const section = (key: string, words: string, required: boolean) => ({
+    key,
+    title: [{ type: 'text' as const, value: words, marks: [] }],
+    required,
+    numbered: true,
+    matter: 'body' as const,
+    pageBreak: 'none' as const,
+    children: [],
+  });
+  const made = await createTemplate(trx, {
+    spaceId: space,
+    author: designer,
+    definition: {
+      schemaVersion: TEMPLATE_SCHEMA_VERSION,
+      name: 'Report',
+      theme: DEFAULT_THEME_ID,
+      layout: DEFAULT_LAYOUT_ID,
+      schemas: [...REPORT_SCHEMAS],
+      outline: {
+        sections: [
+          section('introduction', 'Introduction', true),
+          section('method', 'Method', false),
+          section('results', 'Results', false),
+          section('conclusion', 'Conclusion', true),
+        ],
+      },
+      changes: { add: true, remove: true, reorder: false },
+      parameters: [...REPORT_PARAMETERS],
+    },
+  });
+  if (made.answer !== 'created') throw new Error(`The Report template was refused: ${made.answer}`);
+}
+
+/** Report's fields and the schemas grouping them, each made once: Reviewer in Review, Period in Reporting. */
+async function seedReportFields(trx: TenantTransaction, designer: string) {
   const identity = (id: string, name: string) =>
     ({ schemaVersion: DEFINITION_SCHEMA_VERSION, id, name }) as const;
   if (!(await latestVersion(trx, REVIEWER_FIELD))) {
@@ -283,37 +352,32 @@ async function seedReportTemplate(trx: TenantTransaction, space: string, designe
       },
     });
   }
-  const section = (key: string, words: string, required: boolean) => ({
-    key,
-    title: [{ type: 'text' as const, value: words, marks: [] }],
-    required,
-    numbered: true,
-    matter: 'body' as const,
-    pageBreak: 'none' as const,
-    children: [],
-  });
-  const made = await createTemplate(trx, {
-    spaceId: space,
-    author: designer,
-    definition: {
-      schemaVersion: TEMPLATE_SCHEMA_VERSION,
-      name: 'Report',
-      theme: DEFAULT_THEME_ID,
-      layout: DEFAULT_LAYOUT_ID,
-      schemas: [{ schema: REVIEW_SCHEMA, level: 'document', requires: [] }],
-      outline: {
-        sections: [
-          section('introduction', 'Introduction', true),
-          section('method', 'Method', false),
-          section('results', 'Results', false),
-          section('conclusion', 'Conclusion', true),
-        ],
+  if (!(await latestVersion(trx, PERIOD_FIELD))) {
+    await createArtifact(trx, {
+      author: designer,
+      substance: {
+        kind: 'field',
+        content: {
+          ...identity(PERIOD_FIELD, 'Period'),
+          dataType: 'date',
+          multiplicity: 'one',
+          validation: {},
+        },
       },
-      changes: { add: true, remove: true, reorder: false },
-      parameters: [...REPORT_PARAMETERS],
-    },
-  });
-  if (made.answer !== 'created') throw new Error(`The Report template was refused: ${made.answer}`);
+    });
+  }
+  if (!(await latestVersion(trx, REPORTING_SCHEMA))) {
+    await createArtifact(trx, {
+      author: designer,
+      substance: {
+        kind: 'metadataSchema',
+        content: {
+          ...identity(REPORTING_SCHEMA, 'Reporting'),
+          entries: [{ field: PERIOD_FIELD, required: false, fixed: false }],
+        },
+      },
+    });
+  }
 }
 
 /** Development's Procedure type and what it assigns. Fixed, so a rerun finds them. */

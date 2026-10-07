@@ -25,6 +25,7 @@ import {
   componentsBinding,
   dataPolicy,
   datasetName,
+  documentParameterDeclarations,
   documentsHolding,
   documentsResolving,
   finishPending,
@@ -60,6 +61,7 @@ import {
 } from '@alloy-works/db';
 import {
   ADMITTED_FORMATS,
+  argumentRefusal,
   bindingDigestInput,
   bindingsIn,
   canonicalResultBytes,
@@ -82,6 +84,7 @@ import {
   takes,
   takeValue,
   sortResult,
+  substituteDocumentArguments,
   TABLE_ROWS_MAX,
   type AnyBinding,
   type AssetFormat,
@@ -90,6 +93,7 @@ import {
   type BindingPlace,
   type CanonicalResult,
   type Column,
+  type DocumentParameters,
   type DraftDefinition,
   type Limits,
   type ParameterValues,
@@ -193,13 +197,22 @@ export interface RunsThrough {
   readonly whileHeld: <T>(work: (signal: AbortSignal) => Promise<T>) => Promise<T>;
 }
 
-/** A binding as a document places it: the node, the component version, and its digest (D3-R). */
+/**
+ * A binding as a document places it: the node, the component version, and its digest (D3-R), taken
+ * over the binding with its document arguments substituted by the document's latest parameters (the
+ * TP2 plan, TP2-A), so a changed parameter changes exactly the digests of the bindings reading it.
+ */
 interface Placed {
   readonly node: string;
   readonly component: string;
-  /** A binding taking a value, or a bound table's, taking the whole result (the TB1 plan, TB1-C). */
+  /**
+   * A binding taking a value, or a bound table's, taking the whole result (the TB1 plan, TB1-C): as
+   * the component holds it, its document arguments as written, which clients compare it by.
+   */
   readonly binding: AnyBinding;
   readonly digest: string;
+  /** The document's latest version's parameters, which its document arguments take (TP2-B). */
+  readonly parameters: DocumentParameters;
   /**
    * In a line, in a footnote's line, or as a figure's image: where an image may stand (B6-D); or
    * `table`, a bound table's own binding, which takes nothing.
@@ -214,6 +227,10 @@ interface Placed {
 }
 
 const key = (node: string, binding: string) => `${node} ${binding}`;
+
+/** The binding with its document arguments substituted: the question it asks (TP2-A). */
+const questionOf = (placed: Placed): AnyBinding =>
+  substituteDocumentArguments(placed.binding, placed.parameters);
 
 /**
  * Where bindings are read from beside the component versions (B2-C): the caller's own editing session,
@@ -289,7 +306,10 @@ async function bindingsPlaced(
         node: occurrence.node,
         component: occurrence.component,
         binding,
-        digest: sha256(bindingDigestInput(binding)),
+        digest: sha256(
+          bindingDigestInput(substituteDocumentArguments(binding, document.version.parameters)),
+        ),
+        parameters: document.version.parameters,
         place,
         ...(decorative ? { decorative } : {}),
         ...(fromSession ? { fromSession: true as const } : {}),
@@ -406,6 +426,34 @@ function draftOf(definition: QueryDefinition): DraftDefinition {
   };
 }
 
+/**
+ * Each document argument whose document parameter cannot be it (the TP2 plan, TP2-C): one whose
+ * declaration does not feed arguments, `feeds`, or whose base type or list is not the definition
+ * parameter's, `type` - naming the document's parameter and nothing of its declaration, which the
+ * caller may not read. A parameter the template does not declare is left for `required`.
+ */
+async function argumentProblems(
+  trx: TenantTransaction,
+  documentId: string,
+  placed: Placed,
+  definition: QueryDefinition,
+): Promise<{ parameter: string; rule: 'feeds' | 'type'; value: string }[]> {
+  const taken = Object.entries(placed.binding.parameters).flatMap(([name, parameter]) =>
+    'document' in parameter ? [[name, parameter.document] as const] : [],
+  );
+  if (taken.length === 0) return [];
+  const declared = new Map(
+    (await documentParameterDeclarations(trx, documentId)).map((each) => [each.name, each]),
+  );
+  const asks = new Map(definition.parameters.map((each) => [each.name, each]));
+  return taken.flatMap(([name, documentName]) => {
+    const declaration = declared.get(documentName);
+    const parameter = asks.get(name);
+    const rule = declaration && parameter && argumentRefusal(declaration, parameter);
+    return rule ? [{ parameter: documentName, rule, value: '' }] : [];
+  });
+}
+
 /** Everything a binding's run needs, decided and read in the deciding transaction. */
 interface Prepared {
   readonly placed: Placed;
@@ -475,16 +523,30 @@ async function prepare(
     // are checked, as every binding's are, and no take.
     const take = takes(binding) ? checkTake(binding.take, definition) : null;
     if (take !== null) throw refused(400, 'take.invalid', `${take}.`);
-    const literal = literalValues(binding);
-    if ('document' in literal) {
+    const arguments_ = await argumentProblems(trx, documentId, placed, definition);
+    if (arguments_.length > 0) {
       throw refused(
         400,
         'parameter.invalid',
-        `The binding ${binding.id} takes its ${literal.document} from the document, and no document has parameters yet.`,
-        { attribution: 'product' },
+        'A parameter of the document cannot be this argument.',
+        {
+          attribution: 'product',
+          problems: arguments_,
+        },
       );
     }
-    const problems = checkParameterValues(definition.parameters, literal.values);
+    // Its document arguments substituted (TP2-C): one the document has no value for is required.
+    const literal = literalValues(questionOf(placed));
+    const problems = [
+      ...literal.fromDocument.map((parameter) => ({
+        parameter,
+        rule: 'required' as const,
+        value: '',
+      })),
+      ...checkParameterValues(definition.parameters, literal.values).filter(
+        (problem) => !literal.fromDocument.includes(problem.parameter),
+      ),
+    ];
     if (problems.length > 0) {
       throw refused(400, 'parameter.invalid', 'A value does not fit its parameter.', {
         attribution: 'product',
@@ -1335,7 +1397,7 @@ function viewer(
     const latest = await readQueryDefinition(trx, placed.binding.query);
     return (
       latest !== undefined &&
-      questionUnchanged(placed.binding, held.held.provenance, latest.version.id)
+      questionUnchanged(questionOf(placed), held.held.provenance, latest.version.id)
     );
   }
 
@@ -1367,6 +1429,7 @@ function viewer(
         continue;
       }
       const stale = held.digest !== placed.digest;
+      const changed = stale ? parametersChanged(placed, held.held.provenance) : [];
       // A waiting result that is another person's own view is offered to them alone (D7-H).
       const waitingWhose = held.waiting && ownViewOf(held.waiting.provenance.identity);
       const offered = waitingWhose === undefined || waitingWhose === caller.principalId;
@@ -1383,6 +1446,7 @@ function viewer(
           key: [...(await keyOf(held.held.provenance.queryDefinition.version))],
           name: name?.name ?? null,
           stale,
+          ...(changed.length > 0 ? { parameters: changed } : {}),
           taken: stale ? null : viewTaken(placed, taken, held.held.version, held.held.provenance),
           act: held.act,
           keepable: await keepable(placed, held),
@@ -1408,6 +1472,25 @@ function viewer(
 }
 
 type Views = ReturnType<typeof viewer>;
+
+/**
+ * The document's parameters a stale binding reads whose values now differ from those its held result
+ * ran with (the TP2 plan, TP2-E): for each `{ document }` argument, the definition parameter's value in
+ * the provenance against the document's, compared as the parameters digest compares them, by the
+ * document's names, once each.
+ */
+function parametersChanged(placed: Placed, provenance: Provenance): string[] {
+  const spelled = (value: ParameterValues[string]) =>
+    parametersDigestInput(value === undefined ? {} : { value });
+  const changed = new Set<string>();
+  for (const [name, parameter] of Object.entries(placed.binding.parameters)) {
+    if (!('document' in parameter)) continue;
+    const ran = spelled(provenance.parameters[name]);
+    const now = spelled(placed.parameters[parameter.document]);
+    if (ran !== now) changed.add(parameter.document);
+  }
+  return [...changed];
+}
 
 /** The view of one binding as a document holds it now. */
 const stateView = async (views: Views, placed: Placed, held: HeldResolution | undefined) =>
@@ -1988,7 +2071,7 @@ export function bindingHandlers(
           { ...naming, definition: found.binding.query },
         );
       }
-      if (!latest || !questionUnchanged(found.binding, provenance, latest.version.id)) {
+      if (!latest || !questionUnchanged(questionOf(found), provenance, latest.version.id)) {
         throw refused(
           409,
           'confirm.not_possible',

@@ -816,8 +816,10 @@ describe('the citations in the committed model', () => {
   // TPL-026, TPL-018, TPL-021 and TPL-020 over HTTP.
   // 789 (2026-10-07): TP1's final review - a template parameter's refusals ruled TPL-018 and TPL-045,
   // not DAT-020.
+  // 791 (2026-10-07): TP2.1's document parameters feeding bindings - DAT-030 and TPL-066 through the
+  // service.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(789);
+    expect(model.citations).toHaveLength(791);
   });
 
   it('cites no identifier the corpus does not hold', () => {

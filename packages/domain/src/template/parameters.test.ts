@@ -6,6 +6,7 @@ import type { EffectiveField } from '../metadata/resolve.js';
 
 import { TEMPLATE_SCHEMA_VERSION, templateDefinitionSchema } from './definition.js';
 import {
+  argumentRefusal,
   checkDocumentParameters,
   checkTemplateParameters,
   documentParametersSchema,
@@ -279,5 +280,28 @@ describe("a document's parameter values", () => {
     );
     expect(documentParametersSchema.safeParse({ site: null }).success).toBe(false);
     expect(documentParametersSchema.safeParse({ Site: 'x' }).success).toBe(false);
+  });
+});
+
+describe("a document's parameter as a binding's argument (TP2-C)", () => {
+  const asked = { name: 'from', type: { base: 'text' as const }, required: true, list: false };
+
+  it('fits a parameter feeding arguments, of the same base type and list', () => {
+    expect(argumentRefusal(parameter(), asked)).toBeNull();
+    // Narrower bounds are the definition's to check against the value, not a refusal here.
+    expect(
+      argumentRefusal(parameter({ type: { base: 'decimal', precision: 10, scale: 2 } }), {
+        ...asked,
+        type: { base: 'decimal', precision: 6, scale: 2 },
+      }),
+    ).toBeNull();
+  });
+
+  it('refuses one not feeding arguments by feeds, and one of another type or list by type', () => {
+    expect(argumentRefusal(parameter({ feeds: { field: SITE, arguments: false } }), asked)).toBe(
+      'feeds',
+    );
+    expect(argumentRefusal(parameter({ type: { base: 'date' } }), asked)).toBe('type');
+    expect(argumentRefusal(parameter({ list: true }), asked)).toBe('type');
   });
 });

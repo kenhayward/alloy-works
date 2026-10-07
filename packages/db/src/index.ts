@@ -342,6 +342,7 @@ export {
 export {
   createTemplate,
   documentLayout,
+  documentParameterDeclarations,
   documentRules,
   documentTemplate,
   refusedParameters,
