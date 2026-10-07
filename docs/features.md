@@ -772,7 +772,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   statement, note and source are typed in place. **Change** in the Value panel opens the dialog on its
   binding, resolved at once in a document; a column the new definition lacks stays, shown as missing.
   **On the page**, in a component it shows its headers and the definition that fills it; in a
-  document, its first 50 rows laid out as the publish lays them out, and how many more there are, or
+  document, its first 50 rows laid out by the publish's own rules in the product's default words, and
+  how many more there are, or
   why it shows none - more than 2,000 rows, a column gone, a format that does not fit - before any
   publish. Each change in the panel redraws it at once, without a save. The read text draws it as the
   editor does, and the Data tab lists it as a table of its rows, failed where it would not print. It
@@ -1269,8 +1270,8 @@ Named explicitly so nobody has to read the source to find out:
   and nothing yet changes which one is the environment's default.
 - No way to delete a component or a document, including one made by mistake.
 - A bound table has no notes on its cells or columns, and no strategy for a table wider than the page;
-  its panel offers the columns of its definition's latest version, even where the binding pins an
-  older one.
+  where the document holds no result for it, its panel offers the columns of its definition's latest
+  version.
 - A document's own parameters do not exist, so a binding taking one cannot be resolved. A connection
   reaches PostgreSQL, as its own account or as each person by a role the database's administrator
   made, an HTTPS API by its own secret or an S3 bucket by a static key pair, each answering JSON,

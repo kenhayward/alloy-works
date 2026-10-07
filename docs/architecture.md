@@ -3646,10 +3646,14 @@ gaining a table arm: each column's header and format and each printed cell besid
 columns and the row count alone, so `table_too_long` shows without a row read; `layoutTable` takes a
 `limit`, sorting every row and formatting the first. **The rows route**, `GET
 /v1/documents/{id}/bindings/{node}/{binding}/rows?version=`, `read` on the document, answers only the
-version held and only for a bound table, trimmed to the columns it shows or sorts by - widened by the
-caller's own editing `session` - from the object read by checksum; the permission wrapper sends its
-`Revalidated` answer with an `ETag` and `Cache-Control: private, no-cache`, a matching `If-None-Match`
-a 304. `bindingContexts.ts` fetches the rows once per version and column set and hands them to the
+version held and only for a bound table, from the object read by checksum: to a reader, the columns
+it shows alone, its rows sorted by `sortResult` (`presorted`); to the lock holder's own `session`, where
+they may read the definition, the columns it shows or sorts by in stored order. The permission wrapper
+sends its `Revalidated` answer with an `ETag` and `Cache-Control: private, no-cache`, a matching
+`If-None-Match` - weakly, from a list - a 304. A session save naming a column the opened-from version did
+not is refused `definition_unreadable` unless the saver reads the definition (`editing.ts`).
+`tableRows.ts` fetches the rows with the open editor's session once per version and column set, asking
+again after each acknowledged save where a reply lacked a named column, and hands them to the
 editor's `BindingContext` with the document's table styles and value formats. **The editor's
 `boundTable` node** holds the stored members as attributes, its caption, empty statement, note and
 source as children, and an atom body drawn by `boundTableView`'s `fillBoundTable` from a memoised

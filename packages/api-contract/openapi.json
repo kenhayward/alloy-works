@@ -17599,7 +17599,7 @@
             }
           },
           "403": {
-            "description": "The caller may read the component but may not edit it",
+            "description": "The caller may read the component but may not edit it; `definition_unreadable`: a bound table names a column its version did not, of a query definition the caller may not read",
             "content": {
               "application/json": {
                 "schema": {
@@ -36882,7 +36882,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "description": "The caller's own editing session: where it holds the component's lock, the table is read from its latest save, as the bindings view's `session` is",
+              "description": "The caller's own editing session: where it holds the component's lock and the caller may read the binding's definition, the table is read from its latest save, as the bindings view's `session` is",
               "type": "string",
               "allOf": [
                 {
@@ -36907,7 +36907,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The rows of the result the bound table holds, only the columns it shows or sorts by. Sent with an `ETag`, and `Cache-Control: private, no-cache`",
+            "description": "The rows of the result the bound table holds: to a reader, in the table's order and only the columns it shows; to the lock holder's own session, the columns it shows or sorts by. Sent with an `ETag`, and `Cache-Control: private, no-cache`",
             "content": {
               "application/json": {
                 "schema": {
@@ -36915,6 +36915,10 @@
                   "properties": {
                     "version": {
                       "type": "string"
+                    },
+                    "presorted": {
+                      "type": "boolean",
+                      "description": "True where the rows are already in the table's order and its sort columns not sent, as a reader is answered; false to the lock holder's own session, which is sent its sort columns, rows in stored order"
                     },
                     "result": {
                       "type": "object",
@@ -36960,11 +36964,13 @@
                   },
                   "required": [
                     "version",
+                    "presorted",
                     "result"
                   ]
                 },
                 "example": {
                   "version": "example",
+                  "presorted": false,
                   "result": {
                     "columns": [],
                     "rows": []

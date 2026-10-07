@@ -199,8 +199,17 @@ As TB2 built it ([the TB2 plan](../plans/2026-10-07-tb2-the-bound-table-on-the-p
   formats every inline value: `checkTable` first, from the declared columns and the row count the
   bindings view gives, then the rows from **`GET /v1/documents/{id}/bindings/{node}/{binding}/rows`**,
   `read` on the document, for the version held, only the columns the table shows or sorts by, with an
-  `ETag` so a revisit is a 304. The author's own editing session widens the trim to a column just
-  added. An unsaved change shows at once, since nothing is laid out by the service.
+  `ETag` so a revisit is a 304. **A reader is sent the columns the table shows alone**, its rows
+  sorted on the service (`sortResult`, `presorted`), so a column it only sorts by never reaches them.
+  The lock holder's own editing session is sent the table as that session holds it, its sort columns
+  among them, so an unsaved sort lays out at once - **but only where they may read the binding's
+  definition**: another caller's session is ignored. A reply missing a column the table names is never
+  kept, and is asked for again after the session's next save.
+- **A column is named only by whoever may read its definition.** A bound table's columns and sort stand
+  outside its binding's digest, so a result already held would otherwise show any column an author
+  chose; a save naming a column the version it opened from did not name in that table is refused
+  `definition_unreadable` unless the saver may read the binding's definition, as the Value dialog
+  asks of whoever places one.
 - **The body** is a real `<table>` labelled by its caption, `th scope="col"` headers with units and
   `th scope="row"` under a header column, drawn by one `fillBoundTable` in the editor and the read
   text; the layout is memoised in the decoration, so typing in the caption redraws nothing. The empty
@@ -212,8 +221,9 @@ As TB2 built it ([the TB2 plan](../plans/2026-10-07-tb2-the-bound-table-on-the-p
   header column, the empty statement, note and source (each added or removed), and the columns - each
   one's column, header, unit and its place, alignment, wrap, order and **Format**, a dialog of
   `FieldFormat`'s members showing the style's value beside each one unset - and up to four sort keys.
-  It offers the definition's declared columns, read as the Value dialog reads them, or the table's own
-  where the definition cannot be read. A header emptied or repeated (TAB-048) and removing the last
+  It offers the declared columns of the version the document holds for it, or, where it holds none or
+  on its own, the definition's latest, read as the Value dialog reads them, or the table's own where
+  the definition cannot be read. A header emptied or repeated (TAB-048) and removing the last
   column are refused with words. **Change** in the Value panel changes the binding, resolved at once in
   a document; a column the new definition lacks stays, `column_missing`. The caption, empty statement,
   source and note are typed in place.
@@ -351,8 +361,11 @@ table has every row.
   answers `binding_missing`, `binding_not_table`, `binding_unresolved`, `binding_stale`,
   `table_too_long` and `result_unreadable` by name.
 - **Place as stands wherever a block may go**, for any column: _As a figure_ only for an image column.
-- **The panel offers the definition's latest version's columns**, as the Value dialog reads them, even
-  where the binding pins an older version; a column that version lacks shows `column_missing`.
+- **The panel offers the held version's columns**, and the definition's latest only where the document
+  holds no result for the binding, or on its own page.
+- **The rows route sends a reader the shown columns alone, presorted** (the TB2 final review), and
+  honours a session only for whoever may read the definition; a save naming a new column is refused
+  `definition_unreadable` to anyone else.
 - **Each panel change is its own undo step**; a header or a unit typed joins the keystrokes before it.
   The panel also has **Delete table**.
 

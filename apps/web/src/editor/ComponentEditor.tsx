@@ -225,6 +225,11 @@ export interface ComponentEditorProps {
    * so the document's Data tab checks what the author sees rather than what was last saved.
    */
   readonly onBoundTables?: (tables: readonly BoundTableNode[]) => void;
+  /**
+   * Told each save the service acknowledges, by its session and sequence (the TB2 final review), so a
+   * document reads a bound table's rows from what the author has saved, and again after each save.
+   */
+  readonly onSaved?: (session: string, sequence: number) => void;
 }
 
 /** What the document does with a binding placed, changed, kept or resolved here (B2). */
@@ -392,12 +397,15 @@ export function ComponentEditor({
   bindingActs,
   bridge = resolveBridge(),
   onBoundTables,
+  onSaved,
 }: ComponentEditorProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
   // The bound tables told to the page, by their nodes' attributes: told again only when one changes.
   const toldTables = useRef<readonly object[] | null>(null);
   const onBoundTablesRef = useRef(onBoundTables);
   onBoundTablesRef.current = onBoundTables;
+  const onSavedRef = useRef(onSaved);
+  onSavedRef.current = onSaved;
   const tellTables = (doc: EditorState['doc']) => {
     const attrs: object[] = [];
     const tables: BoundTableNode[] = [];
@@ -1167,7 +1175,10 @@ export function ComponentEditor({
       ),
       sequence: startAt,
       onSent: (sequence) => keeping.sent(sequence),
-      onAccepted: (sequence) => keeping.accepted(sequence),
+      onAccepted: (sequence) => {
+        keeping.accepted(sequence);
+        if (sessionNow.current !== null) onSavedRef.current?.(sessionNow.current, sequence);
+      },
       onSaveRefused: (sequence) => keeping.refused(sequence),
       clock: clockRef.current,
       timing: timingRef.current,

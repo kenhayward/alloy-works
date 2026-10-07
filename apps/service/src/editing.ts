@@ -18,6 +18,7 @@ import {
   latestVersion,
   listIterations,
   readIteration,
+  readVersion,
   releaseLock,
   saveIteration,
   type HolderRefusal,
@@ -29,12 +30,14 @@ import {
   hasText,
   parseContentDocument,
   storableEverywhere,
+  type BoundTableNode,
   type ContentDocument,
   type MetadataFailure,
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
-import { notFound, type Authorised } from './access.js';
+import { callerOf, notFound, type Authorised } from './access.js';
 import { lockView, versionView } from './components.js';
+import { definitionReader } from './data/bindings.js';
 import type { AppError } from './errors.js';
 import { cursorFor, pageAsked } from './listing.js';
 import { refused } from './wire-codes.js';
@@ -46,6 +49,58 @@ type Refusal =
   | { readonly answer: 'iteration.stale' | 'iteration.conflict'; readonly latest: number }
   | { readonly answer: 'values.invalid'; readonly failures: readonly MetadataFailure[] }
   | { readonly answer: 'artifact.missing' };
+
+/** Every bound table in some content, wherever it stands. */
+function boundTablesIn(value: unknown): BoundTableNode[] {
+  if (Array.isArray(value)) return value.flatMap(boundTablesIn);
+  if (typeof value !== 'object' || value === null) return [];
+  if ((value as { type?: unknown }).type === 'boundTable') return [value as BoundTableNode];
+  return Object.values(value).flatMap(boundTablesIn);
+}
+
+/** The columns a bound table names: those it shows and those it sorts by. */
+const namedBy = (table: BoundTableNode) =>
+  new Set([
+    ...table.columns.map((each) => each.column),
+    ...(table.sort ?? []).map((each) => each.column),
+  ]);
+
+/**
+ * **A column is named only by whoever may read its definition** (the TB2 final review): a bound table's
+ * columns and sort stand outside its binding's digest, so a result already held would otherwise show a
+ * column chosen by an author who may not read the definition - which the Value dialog asks of whoever
+ * places one. A save naming, in a bound table, a column the version it opened from did not name there
+ * under the same definition is refused `definition_unreadable` unless the saver may read the definition.
+ * A header renamed, a column moved or removed, is never refused.
+ */
+async function mayNameColumns(
+  trx: TenantTransaction,
+  request: FastifyRequest,
+  content: ContentDocument,
+  openedFrom: string,
+): Promise<void> {
+  const tables = boundTablesIn(content.content);
+  if (tables.length === 0) return;
+  const before = new Map(
+    boundTablesIn((await readVersion(trx, openedFrom))?.content ?? null).map((table) => [
+      table.id,
+      table,
+    ]),
+  );
+  const reads = definitionReader(trx, callerOf(request));
+  for (const table of tables) {
+    const was = before.get(table.id);
+    const named = was?.binding.query === table.binding.query ? namedBy(was) : new Set<string>();
+    const added = [...namedBy(table)].some((column) => !named.has(column));
+    if (added && !(await reads(table.binding.query))) {
+      throw refused(
+        403,
+        'definition.unreadable',
+        'A bound table names a column of a query definition you may not read.',
+      );
+    }
+  }
+}
 
 /**
  * A refusal in the one error shape, with its members (component-editor.md, "The API"). Three refusals
@@ -165,6 +220,7 @@ export function editingHandlers() {
           'The content is not a document this product can store.',
         );
       }
+      await mayNameColumns(trx, request, content, body.openedFrom);
       const answer = await saveIteration(trx, {
         artifactId: params.id,
         principal: principalId,

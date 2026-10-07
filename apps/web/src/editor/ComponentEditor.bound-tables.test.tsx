@@ -160,11 +160,12 @@ async function inTable(
   columns?: unknown[],
   extra: Parameters<typeof open>[3] = {},
   context: BindingContext = holding(),
+  latest: readonly TableColumn[] = DECLARED,
 ) {
   const opening = open(
     {
       'GET /v1/components/{id}': () => json(200, opened({ content: withTable(columns) })),
-      ...routes(),
+      ...routes(latest),
     },
     quick,
     false,
@@ -355,6 +356,24 @@ describe('the Bound table panel (TB2-F)', () => {
     );
     expect(view.dom.querySelectorAll('[data-bound-table-body] th[scope="row"]')).toHaveLength(4);
     expect(within(panel).getByRole('checkbox', { name: 'Source' })).toBeChecked();
+  });
+
+  it("offers the columns of the version the document holds, not the definition's latest, and formats by their types (the TB2 final review)", async () => {
+    // The definition has moved on to a version declaring only a tide, and depth as text.
+    const latest: TableColumn[] = [
+      { name: 'tide', type: { base: 'text' } },
+      { name: 'depth', type: { base: 'text' } },
+    ];
+    const { panel } = await inTable(undefined, {}, holding(), latest);
+    const options = [
+      ...within(column(panel, 1)).getByLabelText('Column').querySelectorAll('option'),
+    ];
+    expect(options.map((each) => each.textContent)).toEqual(['site', 'depth', 'visits']);
+    await userEvent.click(within(panel).getByRole('button', { name: 'Add column' }));
+    await userEvent.click(within(column(panel, 2)).getByRole('button', { name: 'Format' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Format of depth' });
+    // A decimal's members, from the held version's type.
+    expect(within(dialog).getByLabelText('Decimal places')).toBeInTheDocument();
   });
 
   it('is a region F6 moves to, beside the Value panel', async () => {

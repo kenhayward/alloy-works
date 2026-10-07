@@ -545,6 +545,12 @@ export function DocumentPage({
   // The editing session of the editor open in place once it has placed or changed a binding, whose
   // bindings the view is read with until it closes (B2-C), and a count read again by.
   const [bindingSession, setBindingSession] = useState<string | null>(null);
+  // The editor open in place's last acknowledged save (the TB2 final review): its bound tables' rows
+  // are read with its session whenever one is open, and asked again after each save.
+  const [editorSaved, setEditorSaved] = useState<{
+    readonly session: string;
+    readonly sequence: number;
+  } | null>(null);
   // DAT-091's warning, asked before a binding placed or resolved here holds one's own view (D7-H).
   const { ask: askOwnView, prompt: ownViewPrompt } = useOwnViewAsk();
   const [bindingsRead, setBindingsRead] = useState(0);
@@ -1396,8 +1402,14 @@ export function DocumentPage({
               {...(document.mayEdit && authoring ? { choosing } : {})}
               bindingStates={bindingStates}
               boundTables={boundTables}
-              rowsFrom={{ client, document: document.id, session: bindingSession }}
+              rowsFrom={{
+                client,
+                document: document.id,
+                session: bindingSession ?? editorSaved?.session ?? null,
+                saved: editorSaved?.sequence ?? 0,
+              }}
               onBoundTables={(node, tables) => setEditingTables({ node, tables })}
+              onSaved={(session, sequence) => setEditorSaved({ session, sequence })}
               onProvenance={(node, binding, opener) => setProvenance({ node, binding, opener })}
               onBindingSettle={onBindingSettle}
               {...(principalId === undefined || !authoring
@@ -1411,6 +1423,7 @@ export function DocumentPage({
                         setTextsAttempt((count) => count + 1);
                         setBindingSession(null);
                         setEditingTables(null);
+                        setEditorSaved(null);
                       }
                     },
                     editor: (component: string, place: Place) => (

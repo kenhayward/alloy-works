@@ -1,5 +1,6 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import {
+  bindingDigestInput,
   COLUMN_ALIGNMENTS,
   DEFAULT_TABLE_FIELDS,
   mergeFormat,
@@ -21,7 +22,7 @@ import {
   type EditorView,
   type SortKey,
 } from '@alloy-works/editor';
-import { useEffect, useRef, useState, type Ref } from 'react';
+import { useEffect, useMemo, useRef, useState, type Ref } from 'react';
 import { createPortal } from 'react-dom';
 
 import styles from './BoundTablePanel.module.css';
@@ -130,7 +131,24 @@ export function BoundTablePanel({
   }, [formatting]);
   const presentation = usePresentation();
 
+  // The version the document holds for it, as it stands: its declared columns are the ones offered
+  // (the TB2 final review), so a binding pinned to an older version is offered that version's.
+  const context = bindingContextOf(view.state);
+  const heldNow = context?.kind === 'document' ? context.held.get(table.binding.id) : undefined;
+  const heldColumns =
+    heldNow !== undefined &&
+    heldNow.binding === bindingDigestInput(table.binding) &&
+    'table' in heldNow.shown
+      ? heldNow.shown.table.columns
+      : null;
+  const held = useMemo(
+    () => heldColumns?.filter((each) => each.type.base !== 'image') ?? null,
+    [heldColumns],
+  );
+
+  // Only where the document holds nothing for it, or on its own, is the definition read.
   useEffect(() => {
+    if (held !== null) return undefined;
     let live = true;
     void client
       .GET('/v1/query-definitions/{id}', { params: { path: { id: table.binding.query } } })
@@ -147,10 +165,10 @@ export function BoundTablePanel({
     return () => {
       live = false;
     };
-  }, [client, table.binding.query]);
+  }, [client, table.binding.query, held]);
+  const columnsKnown = held ?? (declared !== null && declared !== 'unreadable' ? declared : null);
 
   // What the page lays it out with, else the theme the page is set in, else the product's own.
-  const context = bindingContextOf(view.state);
   const style: TablePresentation =
     (context?.kind === 'document' ? context.tables?.styles.get(table.style) : undefined) ??
     (presentation?.state === 'ready'
@@ -158,13 +176,8 @@ export function BoundTablePanel({
       : undefined) ??
     {};
   const offered: readonly TableColumn[] =
-    declared !== null && declared !== 'unreadable'
-      ? declared
-      : table.columns.map((each) => ({ name: each.column, type: { base: 'text' } }));
-  const typeOf = (name: string) =>
-    declared !== null && declared !== 'unreadable'
-      ? (declared.find((each) => each.name === name)?.type ?? null)
-      : null;
+    columnsKnown ?? table.columns.map((each) => ({ name: each.column, type: { base: 'text' } }));
+  const typeOf = (name: string) => columnsKnown?.find((each) => each.name === name)?.type ?? null;
 
   const change = (next: Parameters<typeof setBoundTable>[0], typed = false) =>
     enabled && setBoundTable(next, { typed })(view.state, view.dispatch);
@@ -247,7 +260,7 @@ export function BoundTablePanel({
           </label>
         ))}
       </div>
-      {declared === 'unreadable' && (
+      {held === null && declared === 'unreadable' && (
         <p className={styles['note']}>{BOUND_TABLE_WORDS.unreadable}</p>
       )}
       <fieldset className={styles['group']}>

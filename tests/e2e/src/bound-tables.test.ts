@@ -206,16 +206,18 @@ describe('a bound table over the whole system', () => {
     const rows = await fetch(`${SERVICE}${rowsPath(made.id, held)}`, { headers: { cookie } });
     expect(rows.status).toBe(200);
     expect(rows.headers.get('cache-control')).toBe('private, no-cache');
-    expect(await rows.json()).toMatchObject({
+    // To a reader, in the table's order: its reading descending, sorted on the service.
+    expect(await rows.json()).toEqual({
       version: held,
+      presorted: true,
       result: {
         columns: [
           ['site', 'text'],
           ['reading', 'decimal'],
         ],
         rows: [
-          ['North weir', '1.11'],
           ['South quay', '3.45'],
+          ['North weir', '1.11'],
           ['West dock', '-2.5'],
         ],
       },

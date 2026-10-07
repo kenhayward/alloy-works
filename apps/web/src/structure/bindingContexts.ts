@@ -9,7 +9,6 @@ import {
   takes,
   valueTypeSchema,
   type AnyBinding,
-  type CanonicalResult,
   type ResolvedTheme,
   type TableColumn,
   type TakeOutcome,
@@ -23,6 +22,8 @@ import {
   type BindingHeld,
   type TableSetting,
 } from '@alloy-works/editor';
+
+import type { TableRows } from './tableRows.js';
 
 /**
  * What the bindings view says of one binding, as this page reads it (the B1 plan, B1-I): checked
@@ -335,7 +336,7 @@ export function tableSetting(theme: ResolvedTheme | null, language: string | nul
 function heldOf(
   state: BindingState,
   formats: ValueFormats,
-  rows: ReadonlyMap<string, CanonicalResult>,
+  rows: ReadonlyMap<string, TableRows>,
 ): BindingHeld | null {
   const { held } = state;
   if (state.unread) {
@@ -353,13 +354,15 @@ function heldOf(
   // and its rows once this page has read them.
   if (taken !== null && 'table' in taken) {
     const { columns, rowCount } = held.provenance;
+    const read = rows.get(tableKey(state.node, state.binding.id));
     return {
       binding,
       shown: {
         table: {
           columns,
           rowCount,
-          rows: rows.get(tableKey(state.node, state.binding.id)) ?? null,
+          rows: read?.result ?? null,
+          presorted: read?.presorted === true,
         },
       },
     };
@@ -424,7 +427,7 @@ export function bindingContexts(
     /** What its bound tables are laid out with, kept by the page (`tableSetting`). */
     readonly setting: TableSetting;
     /** Each bound table's rows the page has read, by `tableKey`. */
-    readonly rows: ReadonlyMap<string, CanonicalResult>;
+    readonly rows: ReadonlyMap<string, TableRows>;
   } = { setting: tableSetting(theme, language), rows: new Map() },
 ): ReadonlyMap<string, BindingContext> {
   const formats = formatsFor(theme?.valueCatalogue ?? null, language);

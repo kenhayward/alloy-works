@@ -85,6 +85,11 @@ export interface TableHeld {
   readonly columns: readonly TableColumn[];
   readonly rowCount: number;
   readonly rows: CanonicalResult | null;
+  /**
+   * Whether the rows came already in the table's order, its sort columns not sent - as the rows route
+   * answers a reader (the TB2 final review) - so they are laid out as they stand.
+   */
+  readonly presorted?: boolean;
 }
 
 /**
@@ -548,6 +553,7 @@ function tableShownFor(node: Node, context: BindingContext | null): BoundTableSh
   }
   if (!('table' in held.shown)) return spanning([node.attrs, setting], TABLE_UNAVAILABLE, true);
   const { columns, rowCount, rows } = held.shown.table;
+  const presorted = held.shown.table.presorted === true;
   const style = setting.styles.get(table.style) ?? NO_STYLE;
   const failures = checkTable(table, columns, rowCount, style);
   if (failures.length > 0) {
@@ -561,15 +567,17 @@ function tableShownFor(node: Node, context: BindingContext | null): BoundTableSh
   const sent = new Set(rows?.columns.map(([name]) => name) ?? []);
   const named = [
     ...table.columns.map((each) => each.column),
-    ...(table.sort ?? []).map((each) => each.column),
+    ...(presorted ? [] : (table.sort ?? []).map((each) => each.column)),
   ];
   if (rows === null || named.some((name) => !sent.has(name))) {
     return spanning([columns, node.attrs, style, setting], TABLE_READING, false);
   }
-  const empty = wordsOf(node, 'boundTableEmpty');
+  // The empty statement shows only where there are no rows: typing it changes nothing else.
+  const empty = rows.rows.length === 0 ? wordsOf(node, 'boundTableEmpty') : '';
   return memoised([rows, node.attrs, style, setting], empty, () => {
     const laid = layoutTable(table, rows, columns, style, setting.formats, setting.words, {
       limit: PAGE_ROWS,
+      presorted,
     });
     if ('failures' in laid) {
       return {

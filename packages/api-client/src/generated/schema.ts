@@ -6069,7 +6069,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may read the component but may not edit it */
+            /** @description The caller may read the component but may not edit it; `definition_unreadable`: a bound table names a column its version did not, of a query definition the caller may not read */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -12418,7 +12418,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The rows of the result the bound table holds, only the columns it shows or sorts by. Sent with an `ETag`, and `Cache-Control: private, no-cache` */
+            /** @description The rows of the result the bound table holds: to a reader, in the table's order and only the columns it shows; to the lock holder's own session, the columns it shows or sorts by. Sent with an `ETag`, and `Cache-Control: private, no-cache` */
             200: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -12429,6 +12429,7 @@ export interface operations {
                     /**
                      * @example {
                      *       "version": "example",
+                     *       "presorted": false,
                      *       "result": {
                      *         "columns": [],
                      *         "rows": []
@@ -12437,6 +12438,8 @@ export interface operations {
                      */
                     "application/json": {
                         version: string;
+                        /** @description True where the rows are already in the table's order and its sort columns not sent, as a reader is answered; false to the lock holder's own session, which is sent its sort columns, rows in stored order */
+                        presorted: boolean;
                         result: {
                             /** @description Each column the table shows or sorts by, by its name and its type's base, in the result's order */
                             columns: [

@@ -180,6 +180,52 @@ export function checkTable<C extends TableColumn>(
   return failures;
 }
 
+/** Stored order, then each sort key in turn; the stored position breaks every tie (TAB-007). */
+function orderOf(
+  result: CanonicalResult,
+  sort: readonly {
+    readonly key: NonNullable<BoundTableNode['sort']>[number];
+    readonly type: ColumnType;
+    readonly index: number;
+  }[],
+): number[] {
+  const order = result.rows.map((_, index) => index);
+  if (sort.length > 0) {
+    order.sort((x, y) => {
+      for (const { key, type, index } of sort) {
+        const compared = compareBy(type, result.rows[x]![index]!, result.rows[y]![index]!, key);
+        if (compared !== 0) return compared;
+      }
+      return x - y;
+    });
+  }
+  return order;
+}
+
+/**
+ * **A result in a bound table's order** (the TB2 final review): its rows sorted stably by the table's
+ * sort, as `layoutTable` sorts them, every column kept - so the rows route can send a reader rows in
+ * order without the columns they were sorted by. A sort column the result or the declared columns
+ * lack is passed over; `layoutTable` says so.
+ */
+export function sortResult<C extends TableColumn>(
+  table: BoundTableNode,
+  result: CanonicalResult,
+  columns: readonly C[],
+): CanonicalResult {
+  const at = new Map(result.columns.map(([name], index) => [name, index]));
+  const declared = new Map(columns.map((column) => [column.name, column]));
+  const sort = (table.sort ?? []).flatMap((key) => {
+    const column = declared.get(key.column);
+    const index = at.get(key.column);
+    return column === undefined || index === undefined ? [] : [{ key, type: column.type, index }];
+  });
+  return {
+    columns: result.columns,
+    rows: orderOf(result, sort).map((index) => result.rows[index]!),
+  };
+}
+
 /**
  * **`layoutTable`** (TB1-E): the columns shown in their order, headed as declared, a unit in the header
  * bracketed as the style says (TAB-001 to TAB-003); the rows in the result's stored order (TAB-006),
@@ -190,7 +236,8 @@ export function checkTable<C extends TableColumn>(
  * Fails, every failure gathered, as `checkTable` finds them over the declared columns the result has.
  *
  * **`limit`** (TB2-B): every row is sorted and only the first `limit` formatted and returned - the
- * page's 50 of up to 2,000. The publish passes none.
+ * page's 50 of up to 2,000. The publish passes none. **`presorted`**: the rows are already in the
+ * table's order (`sortResult`), so its sort is neither applied nor its columns looked for.
  */
 export function layoutTable<C extends TableColumn>(
   table: BoundTableNode,
@@ -199,8 +246,14 @@ export function layoutTable<C extends TableColumn>(
   style: TablePresentation,
   formats: ValueFormats,
   words: TableWords,
-  options: { readonly limit?: number } = {},
+  options: { readonly limit?: number; readonly presorted?: boolean } = {},
 ): LaidOut | { readonly failures: readonly TableFailure[] } {
+  // Already in the table's order, its sort columns perhaps not sent (the TB2 final review).
+  if (options.presorted === true && table.sort !== undefined) {
+    const unsorted: BoundTableNode = { ...table };
+    delete unsorted.sort;
+    return layoutTable(unsorted, result, columns, style, formats, words, { ...options });
+  }
   const at = new Map(result.columns.map(([name], index) => [name, index]));
   const present = columns.filter((column) => at.has(column.name));
   const failures = checkTable(table, present, result.rows.length, style);
@@ -229,17 +282,7 @@ export function layoutTable<C extends TableColumn>(
     index: at.get(key.column)!,
   }));
 
-  // Stored order, then each sort key in turn; the stored position breaks every tie (TAB-007).
-  const order = result.rows.map((_, index) => index);
-  if (sort.length > 0) {
-    order.sort((x, y) => {
-      for (const { key, type, index } of sort) {
-        const compared = compareBy(type, result.rows[x]![index]!, result.rows[y]![index]!, key);
-        if (compared !== 0) return compared;
-      }
-      return x - y;
-    });
-  }
+  const order = orderOf(result, sort);
   const units = table.columns.map((shown) =>
     shown.unit?.place === 'value' ? shown.unit.text : undefined,
   );

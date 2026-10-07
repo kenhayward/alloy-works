@@ -105,8 +105,13 @@ describe("a document's bound table", () => {
     mayResolve: true,
   });
 
-  /** The page over one document placing the printer, its table holding a result of `rowCount` rows. */
-  function opened(rowCount: number) {
+  /**
+   * The page over one document placing the printer, its table holding a result of `rowCount` rows.
+   * `editable`, Ada may edit it in place, and the rows route answers as the service does: from her
+   * session's latest save where she names it, and from the version otherwise.
+   */
+  function opened(rowCount: number, editable = false) {
+    let savedContent: { content: { columns: { column: string }[] }[] } | null = null;
     const fake = service(
       outline([section(INTRODUCTION, 'Introduction', [referenceTo(RESULTS, PRINTER)])]),
     );
@@ -121,7 +126,7 @@ describe("a document's bound table", () => {
         return json(200, {
           document: DOCUMENT,
           version: { id: 'dddddddd-0000-4000-8000-000000000001', number: '0.1' },
-          occurrences: [{ node: RESULTS, version: VERSION, mayEdit: false, lock: null }],
+          occurrences: [{ node: RESULTS, version: VERSION, mayEdit: editable, lock: null }],
           versions: [{ id: VERSION, content }],
         });
       }
@@ -129,14 +134,48 @@ describe("a document's bound table", () => {
         return json(200, { bindings: [state(rowCount)] });
       }
       if (path === `/v1/documents/${DOCUMENT}/bindings/${RESULTS}/b1/rows`) {
+        const fromSession = url.searchParams.has('session') && savedContent !== null;
+        const named = new Set(
+          (fromSession ? savedContent! : content).content[0]!.columns.map((each) => each.column),
+        );
+        const all: [string, string][] = [
+          ['site', 'text'],
+          ['depth', 'decimal'],
+          ['salary', 'decimal'],
+        ];
+        const at = all.flatMap((column, index) => (named.has(column[0]) ? [index] : []));
         return json(200, {
           version: DATASET_VERSION,
+          presorted: !fromSession,
           result: {
-            columns: [
-              ['site', 'text'],
-              ['depth', 'decimal'],
-            ],
-            rows: Array.from({ length: rowCount }, (_, at) => [`S${at}`, `${at}.5`]),
+            columns: at.map((index) => all[index]!),
+            rows: Array.from({ length: rowCount }, (_, row) =>
+              at.map((index) => [`S${row}`, `${row}.5`, `${row + 1}000`][index]!),
+            ),
+          },
+        });
+      }
+      if (path === `/v1/components/${PRINTER}/lock` && request.method === 'POST') {
+        const { session } = (await request.json()) as { session: string };
+        return json(200, {
+          lock: {
+            holder: { id: ADA, name: 'Ada' },
+            expectedRelease: '2026-10-07T09:15:00.000Z',
+            yours: true,
+            session,
+          },
+        });
+      }
+      const saving = new RegExp(`^/v1/components/${PRINTER}/iterations/([^/]+)/(\\d+)$`).exec(path);
+      if (saving && request.method === 'PUT') {
+        savedContent = ((await request.json()) as { content: typeof savedContent }).content;
+        return json(200, {
+          sequence: Number(saving[2]),
+          lock: {
+            holder: { id: ADA, name: 'Ada' },
+            expectedRelease: '2026-10-07T09:15:00.000Z',
+            yours: true,
+            session: saving[1],
           },
         });
       }
@@ -152,7 +191,7 @@ describe("a document's bound table", () => {
             note: null,
           },
           content,
-          mayEdit: false,
+          mayEdit: editable,
           lock: null,
           type: { id: 'type-topic', name: 'Topic' },
           fields: [],
@@ -213,4 +252,36 @@ describe("a document's bound table", () => {
     );
     expect(rowsAsked(asked)).toEqual([]);
   });
+
+  it('draws a column added in the editor open in place once its session has saved it, never sticking at reading its rows (the TB2 final review)', async () => {
+    const user = userEvent.setup();
+    const { asked } = opened(3, true);
+    const text = await textRegion();
+    await within(text).findByRole('rowheader', { name: 'S0' });
+    await user.click(within(text).getByText('Readings by site'));
+    const surface = await within(text).findByRole('textbox', {
+      name: 'Content of Install the printer',
+    });
+    // Opened where the caption was clicked, so the panel shapes its table.
+    const panel = await screen.findByRole('group', { name: 'Bound table' });
+    await waitFor(() =>
+      expect(within(panel).getByRole('button', { name: 'Add column' })).toHaveAttribute(
+        'aria-disabled',
+        'false',
+      ),
+    );
+    await user.click(within(panel).getByRole('button', { name: 'Add column' }));
+    const body = () => surface.querySelector('[data-bound-table-body]')!;
+    // Read once the session has saved it, with that session, and drawn: not stuck reading.
+    const firstRow = () =>
+      [...(body().querySelectorAll('tr')[1]?.querySelectorAll('th, td') ?? [])].map(
+        (cell) => cell.textContent,
+      );
+    expect(body()).toHaveTextContent('Reading the rows');
+    await waitFor(() => expect(firstRow()).toEqual(['S0', '0.5', '1,000.0']), { timeout: 8_000 });
+    expect(
+      within(body() as HTMLElement).getByRole('columnheader', { name: 'salary' }),
+    ).toBeInTheDocument();
+    expect(rowsAsked(asked).some((each) => each.includes('session='))).toBe(true);
+  }, 20_000);
 });

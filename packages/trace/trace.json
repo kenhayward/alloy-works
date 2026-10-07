@@ -19145,37 +19145,37 @@
     {
       "id": "TAB-001",
       "file": "apps/web/src/editor/ComponentEditor.bound-tables.test.tsx",
-      "line": 237,
+      "line": 238,
       "kind": "title"
     },
     {
       "id": "TAB-002",
       "file": "apps/web/src/editor/ComponentEditor.bound-tables.test.tsx",
-      "line": 250,
+      "line": 251,
       "kind": "title"
     },
     {
       "id": "TAB-003",
       "file": "apps/web/src/editor/ComponentEditor.bound-tables.test.tsx",
-      "line": 250,
+      "line": 251,
       "kind": "title"
     },
     {
       "id": "TAB-007",
       "file": "apps/web/src/editor/ComponentEditor.bound-tables.test.tsx",
-      "line": 266,
+      "line": 267,
       "kind": "title"
     },
     {
       "id": "TAB-037",
       "file": "apps/web/src/editor/ComponentEditor.bound-tables.test.tsx",
-      "line": 287,
+      "line": 288,
       "kind": "title"
     },
     {
       "id": "TAB-048",
       "file": "apps/web/src/editor/ComponentEditor.bound-tables.test.tsx",
-      "line": 324,
+      "line": 325,
       "kind": "title"
     },
     {
@@ -21299,43 +21299,43 @@
     {
       "id": "TAB-002",
       "file": "packages/domain/src/data/table.test.ts",
-      "line": 83,
+      "line": 84,
       "kind": "title"
     },
     {
       "id": "TAB-003",
       "file": "packages/domain/src/data/table.test.ts",
-      "line": 96,
+      "line": 97,
       "kind": "title"
     },
     {
       "id": "TAB-004",
       "file": "packages/domain/src/data/table.test.ts",
-      "line": 118,
+      "line": 119,
       "kind": "title"
     },
     {
       "id": "TAB-006",
       "file": "packages/domain/src/data/table.test.ts",
-      "line": 181,
+      "line": 182,
       "kind": "title"
     },
     {
       "id": "TAB-007",
       "file": "packages/domain/src/data/table.test.ts",
-      "line": 185,
+      "line": 186,
       "kind": "title"
     },
     {
       "id": "TAB-011",
       "file": "packages/domain/src/data/table.test.ts",
-      "line": 222,
+      "line": 223,
       "kind": "title"
     },
     {
       "id": "TAB-046",
       "file": "packages/domain/src/data/table.test.ts",
-      "line": 248,
+      "line": 249,
       "kind": "title"
     },
     {
@@ -21359,7 +21359,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 573,
+      "line": 575,
       "kind": "title"
     },
     {
@@ -22319,7 +22319,7 @@
     {
       "id": "DAT-047",
       "file": "packages/editor/src/boundTables.test.ts",
-      "line": 269,
+      "line": 270,
       "kind": "title"
     },
     {
