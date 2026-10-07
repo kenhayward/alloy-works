@@ -619,6 +619,14 @@ order names, each planned when its turn comes.
 | TB2 | [The bound table on the page](2026-10-07-tb2-the-bound-table-on-the-page.md) | Place as Table, the Bound table panel and Format dialog, the body drawn in the editor and read text by the publish's own layout, the rows route trimmed to the table's columns, `table_too_long` and every table failure shown before publishing | Built  |
 | TB3 | [Notes and wide tables](2026-10-07-tb3-notes-and-wide-tables.md)             | Notes on a bound table's cell by key, a column or the whole table, every table's notes lettered beneath it; `key_required` and `note_row_missing`; wide tables scaled or rotated, one tagged table                                               | Built  |
 
+## Template parameters
+
+[templates.md](../design/templates.md#parameters)'s build order: a template's parameters, T2's half of TPL.
+
+| #   | Plan                                                                      | Builds                                                                                                                                                                                                                    | Status  |
+| --- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| TP1 | [Declared, asked for and recorded](2026-10-07-tp1-template-parameters.md) | A template's parameters and their checks, a document made with them through the API and the form, seeded fields, parameters in the document's versions (0057), the change route and the Parameters panel with its history | Planned |
+
 ## Publishing
 
 A document version to a PDF somebody can download, cite and keep, designed in
