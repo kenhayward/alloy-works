@@ -1,6 +1,12 @@
 import {
+  argumentRefusal,
   checkTemplateParameters,
+  parseQueryDefinition,
   resolveTemplate,
+  substituteDocumentArguments,
+  type AnyBinding,
+  type DocumentParameters,
+  type Parameter,
   templateDefinitionSchema,
   type FieldDefinition,
   type MetadataSchemaDefinition,
@@ -353,11 +359,77 @@ async function boundBy(
  * blank document: read at resolve and check to decide whether one may be a binding's argument, its
  * declarations only, never the template's resolution (`documentRules`).
  */
-export async function documentParameterDeclarations(
+export function documentParameterDeclarations(
   trx: TenantTransaction,
   documentId: string,
 ): Promise<readonly TemplateParameter[]> {
-  return (await boundBy(trx, documentId))?.parameters ?? [];
+  return readOnce(trx, `declarations ${documentId}`, async () => {
+    return (await boundBy(trx, documentId))?.parameters ?? [];
+  });
+}
+
+/**
+ * What one transaction - one act - has read for its bindings' document arguments, so each document's
+ * declarations and each definition version's parameters are read once however many bindings ask (the
+ * TP2 final review). Nothing it holds outlives the transaction.
+ */
+const reads = new WeakMap<TenantTransaction, Map<string, Promise<unknown>>>();
+
+function readOnce<T>(trx: TenantTransaction, key: string, read: () => Promise<T>): Promise<T> {
+  let held = reads.get(trx);
+  if (held === undefined) {
+    held = new Map();
+    reads.set(trx, held);
+  }
+  if (!held.has(key)) held.set(key, read());
+  return held.get(key) as Promise<T>;
+}
+
+/** The parameters of the definition version a binding asks - its pin, or the latest - if it reads. */
+function definitionParameters(
+  trx: TenantTransaction,
+  binding: AnyBinding,
+): Promise<readonly Parameter[] | undefined> {
+  return readOnce(trx, `definition ${binding.query} ${binding.version ?? 'latest'}`, async () => {
+    const version =
+      binding.version === undefined
+        ? await latestVersion(trx, binding.query)
+        : await readVersion(trx, binding.version);
+    if (version?.kind !== 'queryDefinition' || version.artifactId !== binding.query) {
+      return undefined;
+    }
+    return parseQueryDefinition(version.content).parameters;
+  });
+}
+
+/**
+ * The question a binding asks in a document (the TP2 plan, TP2-A; the TP2 final review): each
+ * `{ document }` argument substituted by the document's value only where the document's template
+ * declares that parameter feeding arguments of the definition parameter's base type and list
+ * (`argumentRefusal`); any other is left as written, so its digest reads as changed and the act
+ * refuses it by name. A binding with no document argument is answered as it is, reading nothing.
+ */
+export async function bindingQuestion<B extends AnyBinding>(
+  trx: TenantTransaction,
+  documentId: string,
+  binding: B,
+  parameters: DocumentParameters,
+): Promise<B> {
+  if (!Object.values(binding.parameters).some((parameter) => 'document' in parameter)) {
+    return binding;
+  }
+  const declared = new Map(
+    (await documentParameterDeclarations(trx, documentId)).map((each) => [each.name, each]),
+  );
+  const asks = await definitionParameters(trx, binding);
+  return substituteDocumentArguments(binding, parameters, (argument, name) => {
+    const declaration = declared.get(name);
+    if (declaration === undefined) return false;
+    const parameter = asks?.find((each) => each.name === argument);
+    return parameter === undefined
+      ? declaration.feeds.arguments
+      : argumentRefusal(declaration, parameter) === null;
+  });
 }
 
 /**

@@ -340,6 +340,7 @@ export {
   type StoredDocument,
 } from './documents.js';
 export {
+  bindingQuestion,
   createTemplate,
   documentLayout,
   documentParameterDeclarations,

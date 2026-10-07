@@ -190,16 +190,23 @@ export function checkTake(
  * "Feeding the bindings"): each `{ document: name }` the document has a value for becomes that value as
  * a literal; one it has none for, or an empty list for, stays as it is, for the act to refuse. A
  * binding with no document argument is returned as it is, so its digest - and every resolution held
- * of it - stays. Its digest is taken over what this answers wherever it is compared.
+ * of it - stays. Its digest is taken over what this answers wherever it is compared. `admits`, by the
+ * argument's name and the document's parameter's, leaves one the caller cannot take as it is - a
+ * parameter not fed to arguments, or of another type - so it reads as changed (the TP2 final review).
  */
 export function substituteDocumentArguments<B extends AnyBinding>(
   binding: B,
   parameters: DocumentParameters,
+  admits: (argument: string, documentName: string) => boolean = () => true,
 ): B {
   const entries = Object.entries(binding.parameters);
   if (!entries.some(([, parameter]) => 'document' in parameter)) return binding;
   const substituted = entries.map(([name, parameter]) => {
-    if (!('document' in parameter) || !Object.hasOwn(parameters, parameter.document)) {
+    if (
+      !('document' in parameter) ||
+      !Object.hasOwn(parameters, parameter.document) ||
+      !admits(name, parameter.document)
+    ) {
       return [name, parameter] as const;
     }
     const value = parameters[parameter.document]!;

@@ -104,6 +104,11 @@ export interface BindingState {
     readonly act: 'resolve' | 'accept' | 'confirm';
     /** Whether Keep may hold it under the binding as it now stands (B2-G). */
     readonly keepable: boolean;
+    /**
+     * The document's parameters it takes whose values differ from those its result ran with, by the
+     * document's names (the TP2 plan, TP2-E): absent where none does.
+     */
+    readonly parameters?: readonly string[];
     readonly by: { readonly id: string; readonly displayName: string | null };
     readonly at: string;
   } | null;
@@ -211,6 +216,12 @@ function heldIn(value: unknown): BindingState['held'] | undefined {
     Array.isArray(value.key) && value.key.every((each) => typeof each === 'string')
       ? { key: value.key as string[] }
       : {};
+  const parameters =
+    Array.isArray(value.parameters) &&
+    value.parameters.length > 0 &&
+    value.parameters.every((each) => typeof each === 'string')
+      ? { parameters: value.parameters as string[] }
+      : {};
   return {
     dataset,
     version,
@@ -222,6 +233,7 @@ function heldIn(value: unknown): BindingState['held'] | undefined {
     taken: takenIn(value.taken),
     act: value.act,
     keepable: value.keepable === true,
+    ...parameters,
     by: { id: by, displayName: text(value.by.displayName) ?? null },
     at,
   };

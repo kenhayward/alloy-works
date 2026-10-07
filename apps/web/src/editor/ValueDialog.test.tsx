@@ -1,10 +1,16 @@
 import { createApiClient } from '@alloy-works/api-client';
-import type { Binding } from '@alloy-works/domain';
-import { render, screen, waitFor } from '@testing-library/react';
+import type { Binding, TemplateParameter } from '@alloy-works/domain';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
-import { PARAMETER_WORDS, PLACE_AS, RUNS_AS, ValueDialog } from './ValueDialog.js';
+import {
+  PARAMETER_WORDS,
+  PLACE_AS,
+  RUNS_AS,
+  ValueDialog,
+  type DocumentOffer,
+} from './ValueDialog.js';
 
 const SITES = '44444444-4444-4444-8444-444444444441';
 const VISITS = '44444444-4444-4444-8444-444444444442';
@@ -406,5 +412,193 @@ describe('a table in the Value dialog (the TB2 plan, TB2-E and TB2-G)', () => {
       'table',
       declared,
     );
+  });
+});
+
+/** A template's parameter, as `GET /v1/documents/{id}/parameters` declares it. */
+const offered = (
+  name: string,
+  base: 'integer' | 'date',
+  over: { list?: boolean; argues?: boolean } = {},
+): TemplateParameter => ({
+  name,
+  type: { base } as TemplateParameter['type'],
+  required: false,
+  list: over.list ?? false,
+  changeable: true,
+  feeds: { arguments: over.argues ?? true },
+});
+
+const fromDocument: Binding = { ...bound, parameters: { site: { document: 'site_no' } } };
+
+describe("the Value dialog's From the document (the TP2 plan, TP2-F)", () => {
+  it("DAT-030 offers only the document's parameters that feed values and match the parameter's type and list, and writes the one chosen", async () => {
+    const user = userEvent.setup();
+    const { onDone } = dialog({
+      documentParameters: {
+        declarations: [
+          offered('site_no', 'integer'),
+          offered('issued', 'date'),
+          offered('count', 'integer', { argues: false }),
+          offered('sites', 'integer', { list: true }),
+          offered('lot', 'integer'),
+        ],
+      },
+    });
+    await user.click(await screen.findByRole('radio', { name: /Site by id/ }));
+    await user.click(await screen.findByRole('checkbox', { name: 'Take site from the document' }));
+    expect(screen.queryByLabelText('site')).toBeNull();
+    const chosen = screen.getByRole('combobox', { name: 'Document parameter for site' });
+    expect(
+      within(chosen)
+        .getAllByRole('option')
+        .map((each) => each.textContent),
+    ).toEqual(['site_no', 'lot']);
+    await user.selectOptions(chosen, 'lot');
+    await user.click(screen.getByRole('button', { name: 'Insert' }));
+    expect(onDone).toHaveBeenCalledWith(
+      {
+        query: SITES,
+        parameters: { site: { document: 'lot' } },
+        mode: 'checked',
+        take: { column: 'id' },
+      },
+      'line',
+    );
+  });
+
+  it("tells a reader without the template's declarations why none is offered, and takes a typed name", async () => {
+    const user = userEvent.setup();
+    const { onDone } = dialog({ documentParameters: { none: 'unreadable' } });
+    await user.click(await screen.findByRole('radio', { name: /Site by id/ }));
+    await user.click(await screen.findByRole('checkbox', { name: 'Take site from the document' }));
+    expect(
+      screen.getByText(
+        "You may not read this document's template, so its parameters cannot be offered. Type the name of the one this value takes.",
+      ),
+    ).toBeInTheDocument();
+    await user.type(
+      screen.getByLabelText('Name of the document parameter for site'),
+      'site_no{Enter}',
+    );
+    expect(onDone).toHaveBeenCalledWith(
+      expect.objectContaining({ parameters: { site: { document: 'site_no' } } }),
+      'line',
+    );
+  });
+
+  it("takes a typed name in a component alone, held to a parameter's name", async () => {
+    const user = userEvent.setup();
+    const { onDone } = dialog({ inDocument: null });
+    await user.click(await screen.findByRole('radio', { name: /Site by id/ }));
+    await user.click(await screen.findByRole('checkbox', { name: 'Take site from the document' }));
+    expect(
+      screen.getByText(
+        'A component alone has no document to offer parameters. Type the name of the one this value takes.',
+      ),
+    ).toBeInTheDocument();
+    const name = screen.getByLabelText('Name of the document parameter for site');
+    await user.type(name, 'Site No{Enter}');
+    expect(
+      await screen.findByText(
+        'site takes a name of lower-case letters, digits and underscores, beginning with a letter.',
+      ),
+    ).toBeInTheDocument();
+    expect(onDone).not.toHaveBeenCalled();
+    await user.clear(name);
+    await user.type(name, 'site_no{Enter}');
+    expect(onDone).toHaveBeenCalledWith(
+      expect.objectContaining({ parameters: { site: { document: 'site_no' } } }),
+      'line',
+    );
+  });
+
+  it('opens a binding that takes a parameter from the document with it chosen', async () => {
+    dialog({
+      current: fromDocument,
+      documentParameters: {
+        declarations: [offered('lot', 'integer'), offered('site_no', 'integer')],
+      },
+    });
+    expect(
+      await screen.findByRole('checkbox', { name: 'Take site from the document' }),
+    ).toBeChecked();
+    expect(screen.getByRole('combobox', { name: 'Document parameter for site' })).toHaveValue(
+      'site_no',
+    );
+  });
+
+  it('warns no holder where only the value taken changed on a binding taking a parameter from the document (TP2-D)', async () => {
+    const user = userEvent.setup();
+    dialog(
+      {
+        current: fromDocument,
+        documentParameters: { declarations: [offered('site_no', 'integer')] },
+      },
+      { holders: { documents: { readable: [{ id: 'd1', title: 'Site report' }], others: 0 } } },
+    );
+    await screen.findByRole('checkbox', { name: 'Take site from the document' });
+    await user.selectOptions(screen.getByLabelText('Column'), 'id');
+    expect(screen.queryByText(/will hold no value/)).toBeNull();
+    await user.click(screen.getByRole('checkbox', { name: 'Take site from the document' }));
+    await user.type(screen.getByLabelText('site'), '2');
+    expect(
+      await screen.findByText(
+        'One document will hold no value for it until resolved again: Site report.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('forgets a parameter taken from the document once another definition without it is chosen (the TP2 final review)', async () => {
+    const user = userEvent.setup();
+    const { onDone } = dialog({ inDocument: null });
+    await user.click(await screen.findByRole('radio', { name: /Site by id/ }));
+    await user.click(await screen.findByRole('checkbox', { name: 'Take site from the document' }));
+    await user.click(screen.getByRole('radio', { name: /Visits by person/ }));
+    await screen.findByRole('radio', { name: 'Always the latest' });
+    await user.click(await screen.findByRole('button', { name: 'Insert' }));
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(onDone).toHaveBeenCalledWith(
+      { query: VISITS, parameters: {}, mode: 'checked', take: { column: 'id' } },
+      'line',
+    );
+  });
+
+  it("holds its choice while the document's parameters are read, and offers them once they are (the TP2 final review)", async () => {
+    const user = userEvent.setup();
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const path = new URL(request.url).pathname;
+      if (path === '/v1/query-definitions') {
+        return json(200, {
+          items: [summary(SITES, 'Site by id', 'service')],
+          next: null,
+          total: 1,
+          facets: { spaces: [] },
+        });
+      }
+      if (path === `/v1/query-definitions/${SITES}`) return json(200, view());
+      return json(200, { documents: { readable: [], others: 0 } });
+    }) as unknown as typeof fetch;
+    const shown = (documentParameters: DocumentOffer) => (
+      <ValueDialog
+        client={createApiClient({ baseUrl: 'http://value.test', fetch: fetching })}
+        componentId={COMPONENT}
+        current={null}
+        inDocument={{ pinned: false }}
+        documentParameters={documentParameters}
+        onDone={() => null}
+        onCancel={() => undefined}
+      />
+    );
+    const { rerender } = render(shown({ none: 'reading' }));
+    await user.click(await screen.findByRole('radio', { name: /Site by id/ }));
+    await user.click(await screen.findByRole('checkbox', { name: 'Take site from the document' }));
+    expect(screen.getByText("Reading this document's parameters.")).toBeInTheDocument();
+    expect(screen.queryByLabelText('Name of the document parameter for site')).toBeNull();
+    rerender(shown({ declarations: [offered('lot', 'integer'), offered('site_no', 'integer')] }));
+    expect(
+      await screen.findByRole('combobox', { name: 'Document parameter for site' }),
+    ).toHaveValue('lot');
   });
 });

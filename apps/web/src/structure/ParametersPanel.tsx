@@ -3,6 +3,7 @@ import type { TemplateParameter } from '@alloy-works/domain';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import { whenChanged } from '../editor/changed.js';
+import type { DocumentOffer } from '../editor/ValueDialog.js';
 import type { SaveAnswer } from '../metadata/HeldFields.js';
 import styles from '../metadata/FieldsForm.module.css';
 import {
@@ -97,8 +98,35 @@ export interface ParametersPanelProps {
   readonly readOnly: boolean;
   /** Saves the parameters, whole, as the document's next version. */
   readonly onSave: (parameters: Record<string, ParameterValue>) => Promise<ParametersSaved>;
+  /**
+   * Told the template's declarations each time it reads them, none where they are withheld or there
+   * are none: what the page hands the Value dialog's From the document (the TP2 plan, TP2-F).
+   */
+  readonly onDeclarations?: (declarations: readonly TemplateParameter[] | null) => void;
   /** How long after the last change the parameters are saved: each save is a version. */
   readonly delayMs?: number;
+}
+
+/**
+ * What the Value dialog's From the document is offered (the TP2 plan, TP2-F; the TP2 final review),
+ * from what the panel - `shown` where the document is templated or holds values - has `read`: nothing
+ * yet, `reading`; a read that failed, `unread`; the declarations a reader of the template is given;
+ * none given with values held, `unreadable`, since they are withheld; and otherwise `blank`.
+ */
+export function documentOffer({
+  shown,
+  read,
+  holdsValues,
+}: {
+  readonly shown: boolean;
+  readonly read: readonly TemplateParameter[] | null | undefined;
+  readonly holdsValues: boolean;
+}): DocumentOffer {
+  if (!shown) return { none: 'blank' };
+  if (read === undefined) return { none: 'reading' };
+  if (read === null) return { none: 'unread' };
+  if (read.length > 0) return { declarations: read };
+  return { none: holdsValues ? 'unreadable' : 'blank' };
 }
 
 /**
@@ -130,6 +158,8 @@ export function ParametersPanel(props: ParametersPanelProps) {
   const declaredNow = useRef<readonly TemplateParameter[]>([]);
   declaredNow.current = Array.isArray(declared) ? declared : [];
   const delay = props.delayMs ?? 800;
+  const told = useRef(props.onDeclarations);
+  told.current = props.onDeclarations;
 
   /** A page of the history, the first or the one after `cursor`, with the declarations. */
   const read = useCallback(
@@ -144,9 +174,12 @@ export function ParametersPanel(props: ParametersPanelProps) {
         });
         if (!isRecord(data)) {
           if (cursor === null) setDeclared((was) => (Array.isArray(was) ? was : 'failed'));
+          if (cursor === null) told.current?.(null);
           return;
         }
-        setDeclared(declarationsIn(data.declarations));
+        const declarations = declarationsIn(data.declarations);
+        setDeclared(declarations);
+        told.current?.(declarations);
         const changes = changesIn(data.history);
         const next = typeof data.next === 'string' ? data.next : null;
         setHistory((was) => ({
@@ -156,6 +189,7 @@ export function ParametersPanel(props: ParametersPanelProps) {
         }));
       } catch {
         if (cursor === null) setDeclared((was) => (Array.isArray(was) ? was : 'failed'));
+        if (cursor === null) told.current?.(null);
       } finally {
         setReading(false);
       }

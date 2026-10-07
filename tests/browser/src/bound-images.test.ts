@@ -169,7 +169,12 @@ describe('a bound image, in Chromium (the B6 plan, task 5)', () => {
       expect(await image.getAttribute('src')).toMatch(
         /^\/v1\/asset-versions\/[0-9a-f-]+\/content$/,
       );
-      expect(await image.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBe(4);
+      // Its src and alt arrive before its bytes are decoded: wait for the image itself, not a read once.
+      await expect
+        .poll(() => image.evaluate((element: HTMLImageElement) => element.naturalWidth), {
+          timeout: 30_000,
+        })
+        .toBe(4);
 
       // Captioned, the cursor standing in its caption as it was placed: a figure is published with one.
       await page.keyboard.type('The weir');

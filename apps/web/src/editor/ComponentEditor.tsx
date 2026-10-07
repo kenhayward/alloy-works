@@ -97,7 +97,7 @@ import { MarkPrompt, type Refused } from './MarkPrompt.js';
 import { askAndApply, pressCommand, type AskForValue, type MarkCommand } from './press.js';
 import { referenceChoicesIn, type ReferenceChoices } from './referenceChoices.js';
 import { ReferenceDialog } from './ReferenceDialog.js';
-import { ValueDialog } from './ValueDialog.js';
+import { ValueDialog, type DocumentOffer } from './ValueDialog.js';
 import { SymbolPalette } from './SymbolPalette.js';
 import { SaveIndicator } from './SaveIndicator.js';
 import { uploadImage } from './upload.js';
@@ -215,6 +215,11 @@ export interface ComponentEditorProps {
    * is not editing, so the binding is read from the version. Absent on the component's own page.
    */
   readonly bindingActs?: BindingActs;
+  /**
+   * What the document it is open in offers the Value dialog's **From the document** (the TP2 plan,
+   * TP2-F), from the page. Absent on the component's own page, where a name is typed.
+   */
+  readonly documentParameters?: DocumentOffer;
   /**
    * The seam to whatever hosts the page, told the component's base language while it is open, for the
    * spelling checker (CNT-178); the host's own otherwise. Given in tests.
@@ -395,6 +400,7 @@ export function ComponentEditor({
   bindingStates,
   onProvenance,
   bindingActs,
+  documentParameters,
   bridge = resolveBridge(),
   onBoundTables,
   onSaved,
@@ -2286,6 +2292,7 @@ export function ComponentEditor({
             inDocument={
               bindingContext === undefined ? null : { pinned: bindingActs?.pinned ?? false }
             }
+            {...(documentParameters === undefined ? {} : { documentParameters })}
             place={valuing.place}
             onDone={(...chosen) => {
               const now = controls.current?.view().phase;

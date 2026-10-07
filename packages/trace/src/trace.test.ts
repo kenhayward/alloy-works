@@ -818,8 +818,9 @@ describe('the citations in the committed model', () => {
   // not DAT-020.
   // 791 (2026-10-07): TP2.1's document parameters feeding bindings - DAT-030 and TPL-066 through the
   // service.
+  // 793 (2026-10-07): TP2.2's page and whole system - DAT-030 in the Value dialog, TPL-066 over HTTP.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(791);
+    expect(model.citations).toHaveLength(793);
   });
 
   it('cites no identifier the corpus does not hold', () => {

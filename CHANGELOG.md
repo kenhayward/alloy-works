@@ -3,6 +3,22 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.144.0 - 2026-10-07 (PR #451)
+
+### Added
+
+- **Document parameters feed values.** A value whose definition takes a parameter from the document
+  runs with the document's current value, and changing that parameter marks just those values changed
+  until they are resolved again. The Data tab says which parameter changed each, such as "The
+  document's period changed", and a publish waits until they are resolved.
+- **From the document in the Value dialog.** Each of a value's parameters can be taken from the
+  document instead, choosing among the document's parameters its template gives to values of that
+  type. Where none can be offered, in a component alone or under a template you may not read, the
+  dialog says why and takes the parameter's name typed. A resolve refused for a document's parameter
+  says which and why.
+- **Report's period.** Development's Report template asks for a period, which fills its Period field
+  and can be given to values.
+
 ## 0.143.0 - 2026-10-07 (PR #448)
 
 ### Added

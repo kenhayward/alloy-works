@@ -523,7 +523,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   document is made, and the document field it seeds or the query arguments it supplies; one that feeds
   nothing, or seeds a field that cannot take it, is refused by name. Development's General holds one,
   **Report**: Introduction and Conclusion required, Method and Results beside them, in that order, and
-  two optional parameters, the reviewer, seeding its Reviewer field, and the date issued. Templates are made and
+  three optional parameters: the reviewer, seeding its Reviewer field; the date issued, offered to
+  values; and the period, a changeable date seeding its Period field and offered to values. Templates are made and
   changed through the API, `/v1/spaces/{space}/templates` and `/v1/templates`; nothing in the pages
   makes or changes one yet.
 
@@ -545,8 +546,17 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   `parameters`. The values are recorded on the document and seed the fields they feed, once. Its page
   shows them in a **Parameters** panel beside its fields: a fixed one read only, a changeable one saved
   a moment after you stop typing as the document's next version, and a **History** of every change,
-  who made it and when (`PUT` and `GET /v1/documents/{id}/parameters`). Nothing reads a parameter in a
-  query yet.
+  who made it and when (`PUT` and `GET /v1/documents/{id}/parameters`).
+
+- **Parameters feeding values.** A value can take a parameter of its query from the document: the
+  Value dialog's **From the document**, beside each parameter, offers the document's parameters that
+  its template gives to values of that type, or, where it cannot - in a component alone, or a template
+  you may not read - says why and takes the name typed. Resolved and checked, the value runs with the
+  document's current value. A parameter the document does not give to values, or of another type, is
+  refused by name, and one it has no value for is too where the query requires it; otherwise the
+  query runs without it, and setting it later marks the value changed. Changing a parameter marks just the values that read it changed,
+  the Data tab saying "The document's period changed", and the publish refuses them until they are
+  resolved again; every other value keeps what it holds.
 
 - **What a template lets an author change, and its values.** A document made from a template is held
   to what that template's version said an author may change: a section added, removed or moved where
@@ -1305,8 +1315,7 @@ Named explicitly so nobody has to read the source to find out:
 - Where the document holds no result for a bound table, its panel offers the columns of its
   definition's latest version. A note is added to a bound table from its panel alone, not from a menu
   on a cell.
-- A document's own parameters do not exist, so a binding taking one cannot be resolved. A connection
-  reaches PostgreSQL, as its own account or as each person by a role the database's administrator
+- A connection reaches PostgreSQL, as its own account or as each person by a role the database's administrator
   made, an HTTPS API by its own secret or an S3 bucket by a static key pair, each answering JSON,
   JSON Lines, CSV or XLSX; no S3 role, instance credentials or anonymous bucket, and no
   connection runs with a person's own token from their sign-in provider

@@ -1354,7 +1354,7 @@ history, `lag` over the chain, newest first, paged. On the page, `ParameterInput
 its type in **New document**, which reads the chosen template and keeps Create unavailable, saying
 why, until each required one is filled, and in the **Parameters** panel beside the document's fields,
 which saves a changeable one a pause after it is typed through the page's `pending` guard and opens
-its **History**. Development's Report declares two, `reviewer` and `issued`.
+its **History**. Development's Report declares three: `reviewer`, `issued` and `period` (TP2).
 
 | Where                                                                         | What                                                                                                        |
 | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -1365,6 +1365,35 @@ its **History**. Development's Report declares two, `reviewer` and `issued`.
 | `service: src/documents.ts`, `src/templates.ts`                               | The handlers; `PARAMETER_WORDS`                                                                             |
 | `web: structure/ParameterInput.tsx`, `NewDocument.tsx`, `ParametersPanel.tsx` | The input by type, the form's parameters, the panel and its history                                         |
 | `tests/browser: src/parameters.test.ts`, `tests/e2e: src/parameters.test.ts`  | Made and changed by the keyboard, axe; over HTTP, a fixed one refused                                       |
+
+**Parameters feeding bindings** ([the TP2 plan](plans/2026-10-08-tp2-parameters-feeding-bindings.md)).
+`bindingsPlaced` and `bindingsHeld` take each binding's question from `bindingQuestion` (db), which
+substitutes each `{ document: name }` argument holding a value whose declaration `argumentRefusal`
+admits (`substituteDocumentArguments`), reading declarations and definition parameters once per
+transaction: `Placed.digest` is taken over the substituted binding, so every comparer - resolve and settle, check, accept, confirm, Keep, the view's
+`stale`, `sincePublished`, `mayCheck` and the publish request's `bindingsHeld` - compares like with
+like, while `Placed.binding` stays as written for the view and the page. A binding with no document
+argument keeps its digest. `literalValues` answers `fromDocument`, each argument left unsubstituted
+refused `parameter_invalid`, rule `required`, where its definition parameter is required, and left out
+of the run otherwise; `documentParameterDeclarations` reads the recorded
+template version's parameters, and `argumentRefusal` refuses one not feeding arguments (`feeds`) or of
+another base type or `list` (`type`), naming the document's parameter alone. The view's
+`held.parameters` names each document parameter differing from the held provenance where only its
+value moved, which the Data
+tab says as "The document's period changed". On the page, the Parameters panel hands the page the
+declarations it read (`onDeclarations`), which the page passes to the component editor and the Value
+dialog's **From the document** as a `DocumentOffer` (`documentOffer`, `reading` until the read settles): a choice of those `argumentRefusal` allows, or why
+none is offered and a typed name held to `PARAMETER_NAME`. The dialog compares a changed binding's
+question by `questionSpelledAlike`, and `settleBinding` says a resolve's `parameter_invalid` by
+parameter.
+
+| Where                                                                                          | What                                                                                           |
+| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `domain: data/binding.ts`, `data/question.ts`, `template/parameters.ts`                        | `substituteDocumentArguments`, `literalValues`; `questionSpelledAlike`; `argumentRefusal`      |
+| `db: src/templates.ts`, `src/publishing.ts`                                                    | `documentParameterDeclarations`; `bindingsHeld` substituting the latest parameters             |
+| `service: src/data/bindings.ts`                                                                | `bindingsPlaced`, the refusals at resolve and check, `held.parameters`                         |
+| `web: editor/ValueDialog.tsx`, `structure/DataTab.tsx`, `settleBinding.ts`, `DocumentPage.tsx` | From the document, the Data tab's reason, a refusal by parameter, the declarations handed down |
+| `tests/browser: src/document-arguments.test.ts`, `tests/e2e: src/document-arguments.test.ts`   | `period` chosen From the document, changed, resolved and published, by keyboard and over HTTP  |
 
 ## Definitions
 

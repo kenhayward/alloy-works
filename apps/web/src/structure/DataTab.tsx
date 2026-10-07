@@ -281,6 +281,13 @@ export function DataTab({
                     {DATA_STATE_WORDS[shown]}
                   </span>
                   {whose !== null && <span className={styles['facts']}>{whose}</span>}
+                  {/* Which of the document's parameters changed it (TP2-E), beside any other reason. */}
+                  {held?.stale === true &&
+                    held.parameters?.map((name) => (
+                      <span key={name} className={styles['facts']}>
+                        The document&apos;s {name} changed
+                      </span>
+                    ))}
                   {failure !== undefined && <span className={styles['facts']}>{failure}</span>}
                   {failing.map((each, at) => (
                     <span key={at} className={styles['facts']} data-table-failure={each.code}>

@@ -179,6 +179,32 @@ describe("a binding placed or changed in a document's editor (the B2 plan, B2-C,
   });
 });
 
+describe("a resolve refused for a document's parameter (the TP2 plan, TP2-C)", () => {
+  it('says which parameter the document cannot give, and why, naming no declaration', async () => {
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      return new URL(request.url).pathname.endsWith('/bindings')
+        ? json(200, { bindings: [state(false)] })
+        : json(400, {
+            code: 'parameter_invalid',
+            message: 'No.',
+            problems: [
+              { parameter: 'issued', rule: 'feeds', value: '' },
+              { parameter: 'period', rule: 'type', value: '' },
+              { parameter: 'site', rule: 'required', value: '' },
+            ],
+          });
+    }) as unknown as typeof fetch;
+    const client = createApiClient({ baseUrl: 'http://settle.test', fetch: fetching });
+    expect(await settleBinding(client, DOCUMENT, NODE, 'b1', null, 'resolve')).toBe(
+      "The document's issued is not one its template gives to values. " +
+        "The document's period is not of the type the value takes. " +
+        "This value's site needs a value. " +
+        "Change the value's parameters, or the document's.",
+    );
+  });
+});
+
 describe('a resolve whose result waits on its images (the D8 plan, D8-F)', () => {
   const PENDING = '33333333-3333-4333-8333-333333333333';
 

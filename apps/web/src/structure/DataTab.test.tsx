@@ -194,6 +194,26 @@ describe('the Data tab (the B4 plan, task 3)', () => {
     );
   });
 
+  it("says which of the document's parameters changed a binding that reads them, beside its other reasons (TP2-E)", () => {
+    const stale = (id: string, over: Record<string, unknown>) => {
+      const base = view(FIRST, id, 'North');
+      return { ...base, held: { ...base.held, stale: true, ...over } };
+    };
+    drawn(
+      states(
+        stale('period', { parameters: ['period'] }),
+        stale('both', { parameters: ['period', 'issued'] }),
+        stale('component', {}),
+      ),
+    );
+    expect(rowOf('period')).toHaveTextContent('Changed since resolved');
+    expect(rowOf('period')).toHaveTextContent("The document's period changed");
+    expect(rowOf('both')).toHaveTextContent("The document's period changed");
+    expect(rowOf('both')).toHaveTextContent("The document's issued changed");
+    expect(rowOf('component')).toHaveTextContent('Changed since resolved');
+    expect(rowOf('component')).not.toHaveTextContent("The document's");
+  });
+
   it('shows a waiting value beside the one held, and accepts it, saying where the value changed meanwhile', async () => {
     const user = userEvent.setup();
     const shown = states(

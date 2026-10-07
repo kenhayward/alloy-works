@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Binding } from './binding.js';
-import { questionUnchanged } from './question.js';
+import { questionSpelledAlike, questionUnchanged } from './question.js';
 
 /**
  * `questionUnchanged` (the B2 plan, B2-E): whether a binding asks the question its held result
@@ -44,8 +44,49 @@ describe('whether a changed binding still asks the question its held result answ
     expect(questionUnchanged(binding({ parameters: {} }), held, V1)).toBe(false);
     expect(questionUnchanged(binding({ version: V2 }), held, V1)).toBe(false);
     expect(questionUnchanged(binding(), held, V2)).toBe(false);
+  });
+
+  it('is changed by an argument still taken from the document, which the service substitutes first', () => {
     expect(
       questionUnchanged(binding({ parameters: { site: { document: 'site' } } }), held, V1),
+    ).toBe(false);
+  });
+});
+
+describe('whether a binding changed in the Value dialog still asks the question it asked (TP2-D)', () => {
+  const fromDocument = binding({ parameters: { site: { document: 'site' } } });
+
+  it('is unchanged where only the take or the mode changed, a document argument among its parameters', () => {
+    expect(questionSpelledAlike(fromDocument, fromDocument, V1)).toBe(true);
+    expect(
+      questionSpelledAlike(fromDocument, { ...fromDocument, take: { column: 'site' } }, V1),
+    ).toBe(true);
+    expect(questionSpelledAlike(fromDocument, { ...fromDocument, mode: 'pinned' }, V1)).toBe(true);
+    expect(questionSpelledAlike(binding(), binding({ version: V1 }), V1)).toBe(true);
+  });
+
+  it('leaves a null literal out, as the parameters digest does', () => {
+    expect(
+      questionSpelledAlike(binding(), binding({ parameters: { site: { literal: 'north' } } }), V1),
+    ).toBe(true);
+  });
+
+  it('is changed by another definition, pin, or parameter, a literal for a document argument among them', () => {
+    expect(questionSpelledAlike(binding(), binding({ query: OTHER }), V1)).toBe(false);
+    expect(questionSpelledAlike(binding(), binding({ version: V2 }), V1)).toBe(false);
+    expect(
+      questionSpelledAlike(
+        fromDocument,
+        binding({ parameters: { site: { document: 'region' } } }),
+        V1,
+      ),
+    ).toBe(false);
+    expect(
+      questionSpelledAlike(
+        fromDocument,
+        binding({ parameters: { site: { literal: 'site' } } }),
+        V1,
+      ),
     ).toBe(false);
   });
 });

@@ -10,7 +10,6 @@ import {
   readLayout,
   readOutline,
   speaksFor,
-  substituteDocumentArguments,
   unsupportedFormats,
   valueFailures,
   walkOutline,
@@ -57,7 +56,7 @@ import {
 } from './listing.js';
 import { indexPublication } from './search.js';
 import type { TenantTransaction } from './tables.js';
-import { documentLayout, documentRules, documentTheme } from './templates.js';
+import { bindingQuestion, documentLayout, documentRules, documentTheme } from './templates.js';
 import { themeAt } from './themes.js';
 import { sha256Hex } from './version-digest.js';
 import { headingOf, latestVersion, readVersion, type VersionHeading } from './versions.js';
@@ -494,13 +493,17 @@ async function bindingsHeld(
   resolved: readonly ReadOccurrence[],
   parameters: DocumentParameters,
 ): Promise<{ held: HeldBinding[]; unresolved: UnresolvedBinding[] }> {
-  const asked = resolved.flatMap((each) =>
-    bindingsIn(each.content).map(({ binding }) => ({
-      node: each.node,
-      binding: binding.id,
-      digest: sha256Hex(bindingDigestInput(substituteDocumentArguments(binding, parameters))),
-    })),
-  );
+  const asked: { node: string; binding: string; digest: string }[] = [];
+  for (const each of resolved) {
+    for (const { binding } of bindingsIn(each.content)) {
+      const question = await bindingQuestion(trx, documentId, binding, parameters);
+      asked.push({
+        node: each.node,
+        binding: binding.id,
+        digest: sha256Hex(bindingDigestInput(question)),
+      });
+    }
+  }
   if (asked.length === 0) return { held: [], unresolved: [] };
   const latest = await trx
     .selectFrom('binding_resolution')

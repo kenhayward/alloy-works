@@ -15,6 +15,7 @@ import {
   type OutlineView,
   type OutlineViewNode,
   type OutlineOperation,
+  type TemplateParameter,
 } from '@alloy-works/domain';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -55,7 +56,7 @@ import { inverseOf, nodeName, placeOf, visibleOrder, type Names } from './tree.j
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import { HeldFields, type SaveAnswer } from '../metadata/HeldFields.js';
-import { ParametersPanel, type ParametersSaved } from './ParametersPanel.js';
+import { documentOffer, ParametersPanel, type ParametersSaved } from './ParametersPanel.js';
 import type { ParameterValue } from './ParameterInput.js';
 import { byName } from '../metadata/people.js';
 import { UnheldFaces, ZoomControl } from '../theme/Canvas.js';
@@ -585,6 +586,11 @@ export function DocumentPage({
   const boundTables = useMemo(() => boundTablesByKey(texts, editingTables), [texts, editingTables]);
   // The rows the text has read for its bound tables, which the Data tab fails a note by (TB3.3).
   const [tableRows, setTableRows] = useState<ReadonlyMap<string, TableRows>>(NO_ROWS);
+  // The template's declarations the Parameters panel read, by document, for the Value dialog (TP2-F).
+  const [declared, setDeclared] = useState<{
+    readonly document: string;
+    readonly declarations: readonly TemplateParameter[] | null;
+  } | null>(null);
   useEffect(() => {
     if (!holdsBindings && bindingSession === null) {
       setBindingStates(null);
@@ -1310,6 +1316,14 @@ export function DocumentPage({
   const authoring = mayAuthor && chosenMode === 'authoring';
   const tabs = offeredTabs(holdsBindings);
   const shown = shownTab(tab, tabs);
+  // What the Value dialog's From the document is offered (TP2-F): the declarations a reader of the
+  // template is given; none held, why - values withheld with them, or no parameters at all.
+  const holdsValues = Object.keys(document.parameters).length > 0;
+  const documentParameters = documentOffer({
+    shown: document.templated || holdsValues,
+    read: declared?.document === document.id ? declared.declarations : undefined,
+    holdsValues,
+  });
   const ids = tabIds(shown);
   return (
     // Set in the theme and layout this document publishes under, its own and its components' text alike
@@ -1515,6 +1529,7 @@ export function DocumentPage({
                         client={client}
                         principalId={principalId}
                         {...place}
+                        documentParameters={documentParameters}
                       />
                     ),
                   })}
@@ -1550,7 +1565,7 @@ export function DocumentPage({
               />
             )}
             {/* What the document was made with, beside its fields (the TP1 plan, TP1-I). */}
-            {(document.templated || Object.keys(document.parameters).length > 0) && (
+            {(document.templated || holdsValues) && (
               <ParametersPanel
                 client={client}
                 document={document.id}
@@ -1558,6 +1573,9 @@ export function DocumentPage({
                 values={document.parameters}
                 readOnly={!document.mayEdit || !authoring}
                 onSave={saveParameters}
+                onDeclarations={(read) =>
+                  setDeclared({ document: document.id, declarations: read })
+                }
               />
             )}
             <GeneratedLists
