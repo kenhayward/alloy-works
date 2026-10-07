@@ -1,4 +1,7 @@
 import type { createApiClient } from '@alloy-works/api-client';
+import type { ParameterRule } from '@alloy-works/domain';
+
+import { PARAMETER_WORDS } from '../editor/ValueDialog.js';
 
 import { bindingStatesIn } from './bindingContexts.js';
 import { codeOf, identityRefusal, NOT_HELD } from './ownView.js';
@@ -15,6 +18,38 @@ const WHY = {
   failed: 'The value could not be fetched. Resolve it again from the Value panel.',
   moved: 'The value changed meanwhile. Look at it again in the Value panel.',
 } as const satisfies Record<'forbidden' | 'failed' | 'moved', string>;
+
+/**
+ * What a document's parameter given as a value's argument broke, as a resolve's refusal names it (the
+ * TP2 plan, TP2-C): `feeds` and `type` name the document's parameter, never its declaration.
+ */
+export const ARGUMENT_WORDS = {
+  feeds: 'is not one its template gives to values',
+  type: 'is not of the type the value takes',
+} as const satisfies Record<'feeds' | 'type', string>;
+
+/**
+ * A resolve refused as `parameter_invalid`, in words: each problem by the parameter it names - the
+ * document's for `feeds` and `type`, the value's own otherwise - or null for any other refusal.
+ */
+export function argumentRefusalSaid(error: unknown): string | null {
+  if (typeof error !== 'object' || error === null) return null;
+  const { code, problems } = error as { code?: unknown; problems?: unknown };
+  if (code !== 'parameter_invalid' || !Array.isArray(problems)) return null;
+  const sentences = problems.flatMap((each: unknown) => {
+    if (typeof each !== 'object' || each === null) return [];
+    const { parameter, rule } = each as { parameter?: unknown; rule?: unknown };
+    if (typeof parameter !== 'string' || typeof rule !== 'string') return [];
+    if (rule === 'feeds' || rule === 'type') {
+      return [`The document's ${parameter} ${ARGUMENT_WORDS[rule]}.`];
+    }
+    const words = (PARAMETER_WORDS as Record<string, string>)[rule as ParameterRule];
+    return [`This value's ${parameter} ${words ?? 'does not fit its parameter'}.`];
+  });
+  return sentences.length === 0
+    ? null
+    : `${sentences.join(' ')} Change the value's parameters, or the document's.`;
+}
 
 /** How a settle that waits on a result's images says so, and pauses between asks (a test's). */
 export interface SettleOptions {
@@ -107,6 +142,8 @@ async function settleNow(
   }
   const refused = identityRefusal(error);
   if (refused !== null) return refused;
+  const argument = response.status === 400 ? argumentRefusalSaid(error) : null;
+  if (argument !== null) return argument;
   if (response.status === 403) return WHY.forbidden;
   if (response.status === 409) return WHY.moved;
   if (!response.ok) return WHY.failed;

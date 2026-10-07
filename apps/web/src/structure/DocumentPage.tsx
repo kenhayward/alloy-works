@@ -15,6 +15,7 @@ import {
   type OutlineView,
   type OutlineViewNode,
   type OutlineOperation,
+  type TemplateParameter,
 } from '@alloy-works/domain';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -27,6 +28,7 @@ import { PaneSeparator, usePaneWidth } from '../layouts/PaneWidth.js';
 import { StatusBar, useStatus } from '../shell/Status.js';
 import styles from './DocumentPage.module.css';
 import { ComponentEditor } from '../editor/ComponentEditor.js';
+import type { DocumentOffer } from '../editor/ValueDialog.js';
 import { ProvenancePanel } from '../data/ProvenancePanel.js';
 import { bindingStatesIn, holdsBinding, type BindingState } from './bindingContexts.js';
 import { boundTablesByKey, type TableRows } from './tableRows.js';
@@ -585,6 +587,11 @@ export function DocumentPage({
   const boundTables = useMemo(() => boundTablesByKey(texts, editingTables), [texts, editingTables]);
   // The rows the text has read for its bound tables, which the Data tab fails a note by (TB3.3).
   const [tableRows, setTableRows] = useState<ReadonlyMap<string, TableRows>>(NO_ROWS);
+  // The template's declarations the Parameters panel read, by document, for the Value dialog (TP2-F).
+  const [declared, setDeclared] = useState<{
+    readonly document: string;
+    readonly declarations: readonly TemplateParameter[];
+  } | null>(null);
   useEffect(() => {
     if (!holdsBindings && bindingSession === null) {
       setBindingStates(null);
@@ -1310,6 +1317,17 @@ export function DocumentPage({
   const authoring = mayAuthor && chosenMode === 'authoring';
   const tabs = offeredTabs(holdsBindings);
   const shown = shownTab(tab, tabs);
+  // What the Value dialog's From the document is offered (TP2-F): the declarations a reader of the
+  // template is given; none held, why - values withheld with them, or no parameters at all.
+  const declarations = declared?.document === document.id ? declared.declarations : null;
+  const documentParameters: DocumentOffer =
+    declarations !== null && declarations.length > 0
+      ? { declarations }
+      : Object.keys(document.parameters).length > 0
+        ? { none: declarations === null ? 'unread' : 'unreadable' }
+        : document.templated && declarations === null
+          ? { none: 'unread' }
+          : { none: 'blank' };
   const ids = tabIds(shown);
   return (
     // Set in the theme and layout this document publishes under, its own and its components' text alike
@@ -1515,6 +1533,7 @@ export function DocumentPage({
                         client={client}
                         principalId={principalId}
                         {...place}
+                        documentParameters={documentParameters}
                       />
                     ),
                   })}
@@ -1558,6 +1577,9 @@ export function DocumentPage({
                 values={document.parameters}
                 readOnly={!document.mayEdit || !authoring}
                 onSave={saveParameters}
+                onDeclarations={(read) =>
+                  setDeclared({ document: document.id, declarations: read })
+                }
               />
             )}
             <GeneratedLists

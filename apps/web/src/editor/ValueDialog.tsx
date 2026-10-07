@@ -1,8 +1,9 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import {
+  argumentRefusal,
   checkParameterValues,
-  literalValues,
-  questionUnchanged,
+  PARAMETER_NAME,
+  questionSpelledAlike,
   type AnyBinding,
   type Binding,
   type CanonicalValue,
@@ -10,6 +11,7 @@ import {
   type Parameter,
   type ParameterRule,
   type ParameterValues,
+  type TemplateParameter,
 } from '@alloy-works/domain';
 import type { BindingChoice, TableChoice } from '@alloy-works/editor';
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
@@ -41,6 +43,30 @@ export const PARAMETER_WORDS = {
   variation: 'is not one of its keys',
   position: 'cannot stand where the request places it',
 } as const satisfies Record<ParameterRule, string>;
+
+/**
+ * What a document offers the dialog's **From the document** (the TP2 plan, TP2-F): its template's
+ * declarations, as `GET /v1/documents/{id}/parameters` answers a reader of the template, or why there
+ * are none - made from no template, a template the reader may not read, or not read.
+ */
+export type DocumentOffer =
+  | { readonly declarations: readonly TemplateParameter[] }
+  | { readonly none: 'blank' | 'unreadable' | 'unread' };
+
+/** Why no document parameter is offered, before the dialog takes a typed name instead. */
+const NONE_OFFERED = {
+  alone: 'A component alone has no document to offer parameters.',
+  blank: 'This document holds no parameters to offer.',
+  unreadable: "You may not read this document's template, so its parameters cannot be offered.",
+  unread: "This document's parameters could not be read, so none can be offered.",
+  unfit: "None of this document's parameters is given to values of this type, so none is offered.",
+} as const;
+
+const TYPE_A_NAME = 'Type the name of the one this value takes.';
+
+/** A document parameter's name typed that no parameter could have (D2's pattern). */
+const NOT_A_NAME =
+  'takes a name of lower-case letters, digits and underscores, beginning with a letter';
 
 const MODES = {
   checked: 'Checked - looked for each time the document is opened',
@@ -104,6 +130,16 @@ function valuesOf(
   return values;
 }
 
+/** A binding's arguments taken from the document, by the definition's parameter names. */
+function fromDocumentOf(binding: AnyBinding | null): Record<string, string> {
+  const named: Record<string, string> = {};
+  if (binding === null) return named;
+  for (const [name, parameter] of Object.entries(binding.parameters)) {
+    if ('document' in parameter) named[name] = parameter.document;
+  }
+  return named;
+}
+
 /** A binding's literal values as fields hold them. */
 function typedOf(binding: AnyBinding | null): Record<string, string> {
   const typed: Record<string, string> = {};
@@ -137,6 +173,8 @@ export const PLACE_AS = {
   table: 'As a table',
 } as const satisfies Record<PlaceAs, string>;
 
+const NOTHING_READ: DocumentOffer = { none: 'unread' };
+
 export interface ValueDialogProps {
   readonly client: Client;
   /** The component the binding stands in, for its holders. */
@@ -148,6 +186,11 @@ export interface ValueDialogProps {
   readonly current: AnyBinding | null;
   /** Where it is placed: in a document, whether the node is pinned; null on the component's own. */
   readonly inDocument: { readonly pinned: boolean } | null;
+  /**
+   * What the document offers **From the document** (TP2-F), from the page; absent, nothing read. In a
+   * component alone a name is typed whatever it says.
+   */
+  readonly documentParameters?: DocumentOffer;
   /**
    * Where the value may stand: `offer`, where a block may go, asks **Place as** - _In the line_, _As a
    * figure_ for an image column (the B6 plan, B6-H), or _As a table_ (the TB2 plan, TB2-E); `figure`
@@ -182,6 +225,7 @@ export function ValueDialog({
   componentId,
   current,
   inDocument,
+  documentParameters = NOTHING_READ,
   place = 'line',
   onDone,
   onCancel,
@@ -202,6 +246,8 @@ export function ValueDialog({
   // The definition it binds, as read by its identifier, for one beyond the listing's first page.
   const [currentRead, setCurrentRead] = useState<Listed | 'unreadable' | null>(null);
   const [typed, setTyped] = useState<Record<string, string>>(() => typedOf(current));
+  // Each parameter taken from the document, by the definition's name: the document's name for it.
+  const [named, setNamed] = useState<Record<string, string>>(() => fromDocumentOf(current));
   const take: Binding['take'] | null =
     current !== null && 'take' in current ? (current as Binding).take : null;
   const [column, setColumn] = useState(take?.column ?? '');
@@ -336,9 +382,34 @@ export function ValueDialog({
     () => (ready === null ? {} : valuesOf(ready.parameters, typed)),
     [ready, typed],
   );
-  const problems = ready === null ? [] : checkParameterValues(ready.parameters, values);
+  // A parameter taken from the document has its value checked where the binding is resolved.
+  const problems =
+    ready === null
+      ? []
+      : checkParameterValues(
+          ready.parameters.filter((each) => !Object.hasOwn(named, each.name)),
+          values,
+        );
   const problemOf = (name: string) =>
     problems.find((each) => each.parameter === name && (tried || each.rule !== 'required'));
+  const unnamed = Object.entries(named)
+    .filter(([, name]) => !PARAMETER_NAME.test(name))
+    .map(([parameter]) => parameter);
+  const unnamedShown = (parameter: string) =>
+    unnamed.includes(parameter) && (tried || named[parameter] !== '');
+  // The document's parameters a definition's parameter may take: those fed to values, of its type.
+  const fitting = (parameter: Parameter): readonly string[] =>
+    inDocument === null || !('declarations' in documentParameters)
+      ? []
+      : documentParameters.declarations
+          .filter((each) => argumentRefusal(each, parameter) === null)
+          .map((each) => each.name);
+  const noneOffered =
+    inDocument === null
+      ? NONE_OFFERED.alone
+      : 'none' in documentParameters
+        ? NONE_OFFERED[documentParameters.none]
+        : NONE_OFFERED.unfit;
 
   const imageColumn = ready?.columns.find((each) => each.name === column)?.type.base === 'image';
   const placedAs: PlaceAs =
@@ -356,10 +427,13 @@ export function ValueDialog({
           query: ready.id,
           ...(pin === 'latest' ? {} : { version: pin }),
           parameters: Object.fromEntries(
-            Object.entries(values).map(([name, value]) => [
-              name,
-              { literal: value as CanonicalValue },
-            ]),
+            ready.parameters.flatMap(({ name }): [string, TableChoice['parameters'][string]][] =>
+              Object.hasOwn(named, name)
+                ? [[name, { document: named[name]! }]]
+                : Object.hasOwn(values, name)
+                  ? [[name, { literal: values[name] as CanonicalValue }]]
+                  : [],
+            ),
           ),
           mode,
         };
@@ -385,18 +459,14 @@ export function ValueDialog({
               : { column },
         };
 
-  // Only the value taken or the mode changed: every document keeps its value by Keep (BI-J).
+  // Only the value taken or the mode changed, its parameters spelled alike: every document keeps its
+  // value by Keep (BI-J; TP2-D's dialog half).
   const sameQuestion = (() => {
     const chosenNow = asTable ? tableChoice : choice;
     if (current === null || chosenNow === null || ready === null) return false;
-    const held = literalValues(current);
-    if (held.fromDocument.length > 0) return false;
-    return questionUnchanged(
-      { type: 'binding', id: current.id, ...chosenNow },
-      {
-        queryDefinition: { artifact: current.query, version: current.version ?? ready.version.id },
-        parameters: held.values,
-      },
+    return questionSpelledAlike(
+      current,
+      { type: 'binding', id: current.id, ...chosenNow } as AnyBinding,
       ready.version.id,
     );
   })();
@@ -475,7 +545,10 @@ export function ValueDialog({
           onSubmit={(event) => {
             event.preventDefault();
             setTried(true);
-            if (problems.length > 0 && (asTable ? tableChoice : choice) !== null) {
+            if (
+              (problems.length > 0 || unnamed.length > 0) &&
+              (asTable ? tableChoice : choice) !== null
+            ) {
               setSaid('A value does not fit its parameter.');
               return;
             }
@@ -566,13 +639,87 @@ export function ValueDialog({
                   {ready.parameters.map((parameter) => {
                     const problem = problemOf(parameter.name);
                     const field = `${id}-parameter-${parameter.name}`;
+                    const fromDocument = Object.hasOwn(named, parameter.name);
+                    const offered = fitting(parameter);
+                    const held = named[parameter.name];
+                    // A name the binding already holds is kept among those offered, fitting or not.
+                    const choices =
+                      held !== undefined && held !== '' && !offered.includes(held)
+                        ? [held, ...offered]
+                        : offered;
+                    const choosing = fromDocument && offered.length > 0;
+                    const complaint = unnamedShown(parameter.name);
                     return (
                       <div key={parameter.name} className={styles['field']}>
-                        <label htmlFor={field}>
-                          {parameter.name}
-                          {parameter.list ? ', one to a line' : ''}
+                        <label className={own['choice']}>
+                          <input
+                            type="checkbox"
+                            checked={fromDocument}
+                            onChange={(event) => {
+                              const rest = { ...named };
+                              delete rest[parameter.name];
+                              setNamed(
+                                event.target.checked
+                                  ? { ...rest, [parameter.name]: offered[0] ?? '' }
+                                  : rest,
+                              );
+                            }}
+                          />
+                          Take {parameter.name} from the document
                         </label>
-                        {parameter.list ? (
+                        {choosing && (
+                          <>
+                            <label htmlFor={`${field}-document`}>
+                              Document parameter for {parameter.name}
+                            </label>
+                            <select
+                              id={`${field}-document`}
+                              value={held ?? ''}
+                              onChange={(event) =>
+                                setNamed({ ...named, [parameter.name]: event.target.value })
+                              }
+                            >
+                              {choices.map((each) => (
+                                <option key={each} value={each}>
+                                  {each}
+                                </option>
+                              ))}
+                            </select>
+                          </>
+                        )}
+                        {fromDocument && !choosing && (
+                          <>
+                            <p id={`${field}-why`} className={styles['note']}>
+                              {noneOffered} {TYPE_A_NAME}
+                            </p>
+                            <label htmlFor={`${field}-document`}>
+                              Name of the document parameter for {parameter.name}
+                            </label>
+                            <input
+                              id={`${field}-document`}
+                              value={held ?? ''}
+                              aria-invalid={complaint}
+                              aria-describedby={
+                                complaint ? `${field}-why ${field}-unnamed` : `${field}-why`
+                              }
+                              onChange={(event) =>
+                                setNamed({ ...named, [parameter.name]: event.target.value.trim() })
+                              }
+                            />
+                            {complaint && (
+                              <p id={`${field}-unnamed`} className={styles['complaint']}>
+                                {parameter.name} {NOT_A_NAME}.
+                              </p>
+                            )}
+                          </>
+                        )}
+                        {!fromDocument && (
+                          <label htmlFor={field}>
+                            {parameter.name}
+                            {parameter.list ? ', one to a line' : ''}
+                          </label>
+                        )}
+                        {fromDocument ? null : parameter.list ? (
                           <textarea
                             id={field}
                             rows={3}
@@ -594,15 +741,11 @@ export function ValueDialog({
                             }
                           />
                         )}
-                        {problem !== undefined && (
+                        {problem !== undefined && !fromDocument && (
                           <p id={`${field}-problem`} className={styles['complaint']}>
                             {parameter.name} {PARAMETER_WORDS[problem.rule]}.
                           </p>
                         )}
-                        <label className={own['choice']}>
-                          <input type="checkbox" disabled />
-                          From the document - unavailable until documents have parameters
-                        </label>
                       </div>
                     );
                   })}

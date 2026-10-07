@@ -97,6 +97,11 @@ export interface ParametersPanelProps {
   readonly readOnly: boolean;
   /** Saves the parameters, whole, as the document's next version. */
   readonly onSave: (parameters: Record<string, ParameterValue>) => Promise<ParametersSaved>;
+  /**
+   * Told the template's declarations each time it reads them, none where they are withheld or there
+   * are none: what the page hands the Value dialog's From the document (the TP2 plan, TP2-F).
+   */
+  readonly onDeclarations?: (declarations: readonly TemplateParameter[]) => void;
   /** How long after the last change the parameters are saved: each save is a version. */
   readonly delayMs?: number;
 }
@@ -130,6 +135,8 @@ export function ParametersPanel(props: ParametersPanelProps) {
   const declaredNow = useRef<readonly TemplateParameter[]>([]);
   declaredNow.current = Array.isArray(declared) ? declared : [];
   const delay = props.delayMs ?? 800;
+  const told = useRef(props.onDeclarations);
+  told.current = props.onDeclarations;
 
   /** A page of the history, the first or the one after `cursor`, with the declarations. */
   const read = useCallback(
@@ -146,7 +153,9 @@ export function ParametersPanel(props: ParametersPanelProps) {
           if (cursor === null) setDeclared((was) => (Array.isArray(was) ? was : 'failed'));
           return;
         }
-        setDeclared(declarationsIn(data.declarations));
+        const declarations = declarationsIn(data.declarations);
+        setDeclared(declarations);
+        told.current?.(declarations);
         const changes = changesIn(data.history);
         const next = typeof data.next === 'string' ? data.next : null;
         setHistory((was) => ({
