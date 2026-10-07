@@ -218,7 +218,7 @@ describe('a table in the PDF (tables 2)', () => {
         )
         .then(readPdf),
     ]);
-    expect(TEMPLATE_READING[PUBLISHING_SCHEMA]).toBe(15);
+    expect(TEMPLATE_READING[PUBLISHING_SCHEMA]).toBe(16);
     expect(after.pages).toBe(before.pages);
     expect(after.taggedText).toEqual(before.taggedText);
     expect(after.artifactText).toEqual(before.artifactText);

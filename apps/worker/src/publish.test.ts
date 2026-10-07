@@ -588,7 +588,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
       engine: 'typst',
       engine_version: '0.15.1',
       template: 'publication',
-      template_version: 15,
+      template_version: 16,
       pipeline_version: '18',
       layout_version_id: (await requestRow(request)).layout_version_id,
     });
@@ -1077,12 +1077,12 @@ describe('publishing a document, from the request to the stored PDF', () => {
       engine: 'typst',
       engine_version: '0.15.1',
       template: 'publication',
-      template_version: 15,
+      template_version: 16,
       pipeline_version: '18',
       format: 'pdf',
       standard: 'ua-1',
       producer: 'typst',
-      producer_version: '15',
+      producer_version: '16',
       report: [],
     });
     // Beside a PDF, the Word document's pages are cited in the PDF, and it says so; and its titles
@@ -1160,7 +1160,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
         format: 'pdf',
         standard: 'ua-1',
         producer: 'typst',
-        producer_version: '15',
+        producer_version: '16',
         report: [],
       }),
     ]);
