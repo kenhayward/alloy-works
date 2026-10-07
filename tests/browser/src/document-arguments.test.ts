@@ -169,7 +169,7 @@ describe("a document's parameter feeding a value, in Chromium (the TP2 plan, tas
       const scroller = await text.evaluate((element) => `.${element.classList[0] ?? ''}`);
       await checkAxe(page, state, task.meta, {
         shows: [dialog, chosen],
-        allowed: [{ state, rule: 'scrollable-region-focusable', target: scroller, issue: 0 }],
+        allowed: [{ state, rule: 'scrollable-region-focusable', target: scroller, issue: 452 }],
       });
       await tabTo(page, dialog.getByRole('button', { name: 'Insert' }));
       await page.keyboard.press('Enter');
