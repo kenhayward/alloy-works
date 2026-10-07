@@ -69,22 +69,45 @@ export function tableFailures(
   return checkTable(table, columns, rowCount, styles.get(table.style) ?? NO_STYLE);
 }
 
+/** A bound table's rows as the rows route answered them: already in order where `presorted`. */
+export interface TableRows {
+  readonly result: CanonicalResult;
+  readonly presorted: boolean;
+}
+
 /** One table's rows to read: where, which version, and the columns it names. */
 interface Wanted {
   readonly key: string;
   readonly node: string;
   readonly binding: string;
   readonly version: string;
+  /** The columns it shows, and those it sorts by, which only an author's own session is sent. */
+  readonly shown: readonly string[];
+  readonly sorted: readonly string[];
   /** The version and the columns named: rows read once for each. */
   readonly ask: string;
 }
 
+/** Whether a reply holds every column the table needs to be laid out from it. */
+const answers = (rows: TableRows, wanted: Wanted) => {
+  const sent = new Set(rows.result.columns.map(([name]) => name));
+  return (
+    wanted.shown.every((name) => sent.has(name)) &&
+    (rows.presorted || wanted.sorted.every((name) => sent.has(name)))
+  );
+};
+
 /**
  * **The rows each bound table is laid out from** (TB2-A), by `tableKey`: read through the rows route,
- * with the page's editing session, for each table holding a result that `checkTable` passes - never
- * one failing, so `table_too_long` is said without a fetch - once per dataset version and set of
- * columns it names, and kept for the page's life as the same object, so a layout made from it is found
- * again. A read that fails leaves the table saying it is reading them.
+ * with the editing session of the editor open in place, for each table holding a result that
+ * `checkTable` passes - never one failing, so `table_too_long` is said without a fetch - once per
+ * dataset version and set of columns it names, and kept for the page's life as the same object, so a
+ * layout made from it is found again.
+ *
+ * **A reply missing a column the table names is never kept** (the TB2 final review): a column just
+ * added reaches the service only with the session's next save, so such a reply is asked again once the
+ * editor's `saved` sequence moves on, and the table says it is reading its rows meanwhile. A read that
+ * fails is asked again the next time.
  */
 export function useTableRows(
   client: Client | null,
@@ -93,9 +116,11 @@ export function useTableRows(
   tables: ReadonlyMap<string, BoundTableNode>,
   styles: ReadonlyMap<string, TablePresentation>,
   session: string | null,
-): ReadonlyMap<string, CanonicalResult> {
-  const read = useRef(new Map<string, CanonicalResult>());
-  const asked = useRef(new Set<string>());
+  saved = 0,
+): ReadonlyMap<string, TableRows> {
+  const read = useRef(new Map<string, TableRows>());
+  // Each ask out or answered short, by the save it was asked after.
+  const asked = useRef(new Map<string, string>());
   const [arrived, setArrived] = useState(0);
   const mounted = useRef(true);
   useEffect(() => {
@@ -112,12 +137,8 @@ export function useTableRows(
         if (table === undefined || state.held === null || state.held.stale) return [];
         if (state.held.taken === null || !('table' in state.held.taken)) return [];
         if (tableFailures(state, table, styles).length > 0) return [];
-        const named = [
-          ...new Set([
-            ...table.columns.map((each) => each.column),
-            ...(table.sort ?? []).map((each) => each.column),
-          ]),
-        ].sort();
+        const shown = [...new Set(table.columns.map((each) => each.column))].sort();
+        const sorted = [...new Set((table.sort ?? []).map((each) => each.column))].sort();
         const { version } = state.held;
         return [
           {
@@ -125,7 +146,9 @@ export function useTableRows(
             node: state.node,
             binding: state.binding.id,
             version,
-            ask: JSON.stringify([version, named]),
+            shown,
+            sorted,
+            ask: JSON.stringify([version, shown, sorted, table.sort ?? []]),
           },
         ];
       }),
@@ -133,9 +156,10 @@ export function useTableRows(
   );
   useEffect(() => {
     if (client === null) return;
+    const after = `${session ?? ''} ${saved}`;
     for (const each of wanted) {
-      if (asked.current.has(each.ask)) continue;
-      asked.current.add(each.ask);
+      if (read.current.has(each.ask) || asked.current.get(each.ask) === after) continue;
+      asked.current.set(each.ask, after);
       void client
         .GET('/v1/documents/{id}/bindings/{node}/{binding}/rows', {
           params: {
@@ -149,14 +173,17 @@ export function useTableRows(
             asked.current.delete(each.ask);
             return;
           }
-          read.current.set(each.ask, parsed.data);
+          const rows: TableRows = { result: parsed.data, presorted: data?.presorted === true };
+          // Short of a column it names: asked again after the next save, never kept.
+          if (!answers(rows, each)) return;
+          read.current.set(each.ask, rows);
           if (mounted.current) setArrived((count) => count + 1);
         })
         .catch(() => asked.current.delete(each.ask));
     }
-  }, [client, document, wanted, session]);
+  }, [client, document, wanted, session, saved]);
   return useMemo(() => {
-    const rows = new Map<string, CanonicalResult>();
+    const rows = new Map<string, TableRows>();
     for (const each of wanted) {
       const found = read.current.get(each.ask);
       if (found !== undefined) rows.set(each.key, found);

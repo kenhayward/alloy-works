@@ -132,7 +132,7 @@ describe("a bound table's rows, for the page", () => {
       },
     });
 
-  it("answers a reader of the document the held rows, only the columns its table shows or sorts by, in the result's order", async () => {
+  it("answers a reader of the document the held rows in the table's order, only the columns it shows: a column it sorts by is never sent", async () => {
     const definition = await h.definition(connection.id);
     const { document, node } = await placed([
       table(whole('b1', definition.id), {
@@ -145,18 +145,11 @@ describe("a bound table's rows, for the page", () => {
     ]);
     const answer = await rowsOf('alice', document.id, node, version);
     expect(answer.statusCode, answer.body).toBe(200);
+    // Sorted by the id descending on the service, and the id itself left out (the TB2 final review).
     expect(answer.json()).toEqual({
       version,
-      result: {
-        columns: [
-          ['id', 'integer'],
-          ['name', 'text'],
-        ],
-        rows: [
-          ['1', 'North'],
-          ['2', 'South'],
-        ],
-      },
+      presorted: true,
+      result: { columns: [['name', 'text']], rows: [['South'], ['North']] },
     });
     expect(answer.headers['cache-control']).toBe('private, no-cache');
 
@@ -166,6 +159,7 @@ describe("a bound table's rows, for the page", () => {
     const trimmed = await rowsOf('alice', other.id, at, held);
     expect(trimmed.json()).toEqual({
       version: held,
+      presorted: true,
       result: { columns: [['name', 'text']], rows: [['North']] },
     });
   });
@@ -192,6 +186,7 @@ describe("a bound table's rows, for the page", () => {
               { column: 'id', header: 'Site' },
               { column: 'name', header: 'Name' },
             ],
+            sort: [{ column: 'name', direction: 'descending', nulls: 'last' }],
           }),
         ]),
       },
@@ -199,10 +194,16 @@ describe("a bound table's rows, for the page", () => {
     expect(saved.statusCode, saved.body).toBe(200);
     const fromSession = await rowsOf('ada', document.id, node, version, { session });
     expect(fromSession.statusCode, fromSession.body).toBe(200);
-    expect(fromSession.json<{ result: { columns: unknown } }>().result.columns).toEqual([
-      ['id', 'integer'],
-      ['name', 'text'],
-    ]);
+    // The lock holder's own session: its columns, sorted ones among them, in stored order.
+    expect(fromSession.json()).toMatchObject({
+      presorted: false,
+      result: {
+        columns: [
+          ['id', 'integer'],
+          ['name', 'text'],
+        ],
+      },
+    });
     // Without it, and to another person naming it, the version's table: the name alone.
     expect(
       (await rowsOf('ada', document.id, node, version)).json<{ result: { columns: unknown } }>()
@@ -310,5 +311,81 @@ describe("a bound table's rows, for the page", () => {
     const answer = await rowsOf('ada', document.id, node, version);
     expect(answer.statusCode, answer.body).toBe(503);
     expect(answer.json()).toMatchObject({ code: 'result_unreadable' });
+  });
+
+  it('refuses a reader of another document holding the same dataset version, and a guest; a non-reader holding a valid ETag gets no 304', async () => {
+    const definition = await h.definition(connection.id);
+    const { document, node } = await placed([table(whole('b1', definition.id))], h.quality);
+    const version = await resolve(document.id, node, [['1', 'North']]);
+    const etag = (await rowsOf('ada', document.id, node, version)).headers.etag as string;
+    // Grace reads a document of her own holding the same result, but not this one.
+    const { document: hers, node: herNode } = await placed([table(whole('b1', definition.id))]);
+    expect(await resolve(hers.id, herNode, [['1', 'North']])).toBe(version);
+    expect((await rowsOf('grace', hers.id, herNode, version)).statusCode).toBe(200);
+    expect((await rowsOf('grace', document.id, node, version)).statusCode).toBe(404);
+    expect((await rowsOf('grace', document.id, node, version, { etag })).statusCode).toBe(404);
+    const guest = await h.app.inject({
+      method: 'GET',
+      url: `/v1/documents/${document.id}/bindings/${node}/b1/rows?version=${version}`,
+      headers: { host: HOST, 'if-none-match': etag },
+    });
+    expect(guest.statusCode).toBe(401);
+  });
+
+  it('answers 304 to its tag weak, or in a list', async () => {
+    const definition = await h.definition(connection.id);
+    const { document, node } = await placed([table(whole('b1', definition.id))]);
+    const version = await resolve(document.id, node, [['1', 'North']]);
+    const etag = (await rowsOf('ada', document.id, node, version)).headers.etag as string;
+    for (const asked of [`W/${etag}`, `"other", ${etag}`, '*']) {
+      const answer = await rowsOf('ada', document.id, node, version, { etag: asked });
+      expect(answer.statusCode, asked).toBe(304);
+    }
+    const other = await rowsOf('ada', document.id, node, version, { etag: '"other"' });
+    expect(other.statusCode).toBe(200);
+  });
+
+  describe('a column named by somebody who may not read the definition (the TB2 final review)', () => {
+    /** Grace authors in General; the definition stands in Quality, which she may not read. */
+    const hidden = async () => {
+      const definition = await h.definition(connection.id, {}, h.quality);
+      const { component, document, node } = await placed([table(whole('b1', definition.id))]);
+      const version = await resolve(document.id, node, [['1', 'North']]);
+      const session = randomUUID();
+      const claimed = await h.call('grace', 'POST', `/v1/components/${component.id}/lock`, {
+        session,
+        move: true,
+      });
+      expect(claimed.statusCode, claimed.body).toBe(200);
+      const save = (columns: unknown[], sequence = 1) =>
+        h.call('grace', 'PUT', `/v1/components/${component.id}/iterations/${session}/${sequence}`, {
+          openedFrom: component.version,
+          content: content([table(whole('b1', definition.id), { columns })]),
+        });
+      return { document, node, version, session, save };
+    };
+
+    it('refuses a save adding a column the table did not name, definition_unreadable, and takes one renaming a header', async () => {
+      const { save } = await hidden();
+      const added = await save([
+        { column: 'name', header: 'Name' },
+        { column: 'id', header: 'Site' },
+      ]);
+      expect(added.statusCode, added.body).toBe(403);
+      expect(added.json()).toMatchObject({ code: 'definition_unreadable' });
+      const renamed = await save([{ column: 'name', header: 'Site name' }]);
+      expect(renamed.statusCode, renamed.body).toBe(200);
+    });
+
+    it("ignores the session of a caller who may not read the definition, answering the version's table", async () => {
+      const { document, node, version, session, save } = await hidden();
+      expect((await save([{ column: 'name', header: 'Site name' }])).statusCode).toBe(200);
+      const answer = await rowsOf('grace', document.id, node, version, { session });
+      expect(answer.statusCode, answer.body).toBe(200);
+      expect(answer.json()).toMatchObject({
+        presorted: true,
+        result: { columns: [['name', 'text']] },
+      });
+    });
   });
 });

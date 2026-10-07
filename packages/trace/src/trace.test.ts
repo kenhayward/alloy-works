@@ -805,8 +805,9 @@ describe('the citations in the committed model', () => {
   // 750 (2026-10-07): TB1.2's bound table published - DAT-028, DAT-069, TAB-045 and TAB-004 at the
   // stage, TAB-019 and TAB-015 in provenance, four in Word and eight in the worker.
   // 751 (2026-10-07): TB2.1's DAT-047, a bound table's failure in place in the editor.
+  // 757 (2026-10-07): TB2.2's Bound table panel - TAB-001, TAB-002, TAB-003, TAB-007, TAB-037, TAB-048.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(751);
+    expect(model.citations).toHaveLength(757);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -878,6 +879,7 @@ describe('scanning the repository for test files', () => {
     // 37, from 36 (2026-10-05): structure/DataTab.test.tsx, which cites DAT-039 and DAT-070.
     // 43, from 37 (2026-10-05): ComponentEditor.test.tsx and DocumentPage.test.tsx split in four each.
     // 44, from 43 (2026-10-07): structure/DocumentPage.bound-tables.test.tsx, which cites nothing.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(44);
+    // 45, from 44 (2026-10-07): editor/ComponentEditor.bound-tables.test.tsx, which cites six TAB.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(45);
   });
 });

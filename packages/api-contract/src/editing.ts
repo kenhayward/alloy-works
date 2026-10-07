@@ -214,7 +214,12 @@ export const editingRoutes = {
         schema: EditingRefusal,
       },
       401: unauthenticated,
-      403: forbidden,
+      403: {
+        description:
+          'The caller may read the component but may not edit it; `definition_unreadable`: a bound ' +
+          'table names a column its version did not, of a query definition the caller may not read',
+        schema: ErrorBody,
+      },
       404: notFound,
       409: refused,
     },

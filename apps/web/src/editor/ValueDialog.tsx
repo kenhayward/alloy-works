@@ -3,6 +3,7 @@ import {
   checkParameterValues,
   literalValues,
   questionUnchanged,
+  type AnyBinding,
   type Binding,
   type CanonicalValue,
   type Column,
@@ -10,7 +11,7 @@ import {
   type ParameterRule,
   type ParameterValues,
 } from '@alloy-works/domain';
-import type { BindingChoice } from '@alloy-works/editor';
+import type { BindingChoice, TableChoice } from '@alloy-works/editor';
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 
 import shell from '../layouts/Modal.module.css';
@@ -104,7 +105,7 @@ function valuesOf(
 }
 
 /** A binding's literal values as fields hold them. */
-function typedOf(binding: Binding | null): Record<string, string> {
+function typedOf(binding: AnyBinding | null): Record<string, string> {
   const typed: Record<string, string> = {};
   if (binding === null) return typed;
   for (const [name, parameter] of Object.entries(binding.parameters)) {
@@ -123,34 +124,46 @@ function holdersSaid({ readable, others }: Holders): string {
   return names.length === 1 ? names[0]! : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
 }
 
-/** Where an image column's value is placed (B6-H): in the line, or as a figure's image. */
-export type PlaceAs = 'line' | 'figure';
+/**
+ * Where a binding is placed: its value in the line, an image column's as a figure's image (B6-H), or
+ * the whole result as a table (the TB2 plan, TB2-E).
+ */
+export type PlaceAs = 'line' | 'figure' | 'table';
 
 /** The words each place is offered by. */
 export const PLACE_AS = {
   line: 'In the line',
   figure: 'As a figure',
+  table: 'As a table',
 } as const satisfies Record<PlaceAs, string>;
 
 export interface ValueDialogProps {
   readonly client: Client;
   /** The component the binding stands in, for its holders. */
   readonly componentId: string;
-  /** The binding selected whole, which it opens on and changes; null where it places a new one. */
-  readonly current: Binding | null;
+  /**
+   * The binding it opens on and changes - one selected whole, a bound figure's, or a bound table's,
+   * which takes nothing - or null where it places a new one.
+   */
+  readonly current: AnyBinding | null;
   /** Where it is placed: in a document, whether the node is pinned; null on the component's own. */
   readonly inDocument: { readonly pinned: boolean } | null;
   /**
-   * Where an image column's value may stand (the B6 plan, B6-H): `offer` asks _In the line_ or _As a
-   * figure_, where a figure may go; `figure` changes a figure's binding, and so offers image columns
-   * alone; `line`, the default, places it in the line.
+   * Where the value may stand: `offer`, where a block may go, asks **Place as** - _In the line_, _As a
+   * figure_ for an image column (the B6 plan, B6-H), or _As a table_ (the TB2 plan, TB2-E); `figure`
+   * changes a figure's binding, and so offers image columns alone; `table` changes a bound table's,
+   * and so asks for no column; `line`, the default, places it in the line.
    */
-  readonly place?: 'line' | 'offer' | 'figure';
+  readonly place?: 'line' | 'offer' | 'figure' | 'table';
   /**
-   * The binding chosen, and where an image column's is placed; answers why it could not be placed,
-   * which the dialog says, or null.
+   * The binding chosen and where it is placed - as a table with no take, given the version's declared
+   * columns - answering why it could not be placed, which the dialog says, or null.
    */
-  readonly onDone: (choice: BindingChoice, placeAs: PlaceAs) => string | null;
+  readonly onDone: (
+    ...chosen:
+      | [choice: BindingChoice, placeAs: 'line' | 'figure']
+      | [choice: TableChoice, placeAs: 'table', columns: readonly Column[]]
+  ) => string | null;
   readonly onCancel: () => void;
 }
 
@@ -189,17 +202,24 @@ export function ValueDialog({
   // The definition it binds, as read by its identifier, for one beyond the listing's first page.
   const [currentRead, setCurrentRead] = useState<Listed | 'unreadable' | null>(null);
   const [typed, setTyped] = useState<Record<string, string>>(() => typedOf(current));
-  const [column, setColumn] = useState(current?.take.column ?? '');
-  const [row, setRow] = useState<'only' | 'key'>(
-    current !== null && 'key' in current.take ? 'key' : 'only',
-  );
+  const take: Binding['take'] | null =
+    current !== null && 'take' in current ? (current as Binding).take : null;
+  const [column, setColumn] = useState(take?.column ?? '');
+  const [row, setRow] = useState<'only' | 'key'>(take !== null && 'key' in take ? 'key' : 'only');
   const [keyTyped, setKeyTyped] = useState<Record<string, string>>(() =>
-    current !== null && 'key' in current.take
-      ? Object.fromEntries(Object.entries(current.take.key).map(([k, v]) => [k, String(v)]))
+    take !== null && 'key' in take
+      ? Object.fromEntries(
+          Object.entries((take as Extract<Binding['take'], { key: unknown }>).key).map(([k, v]) => [
+            k,
+            String(v),
+          ]),
+        )
       : {},
   );
   const [mode, setMode] = useState<Binding['mode']>(current?.mode ?? 'checked');
-  const [placeAs, setPlaceAs] = useState<PlaceAs>(place === 'figure' ? 'figure' : 'line');
+  const [placeAs, setPlaceAs] = useState<PlaceAs>(
+    place === 'figure' ? 'figure' : place === 'table' ? 'table' : 'line',
+  );
   const [holders, setHolders] = useState<Holders | null>(null);
   const [tried, setTried] = useState(false);
   const [said, setSaid] = useState<string | null>(null);
@@ -324,9 +344,13 @@ export function ValueDialog({
   const placedAs: PlaceAs =
     place === 'figure' || (place === 'offer' && imageColumn && placeAs === 'figure')
       ? 'figure'
-      : 'line';
-  const choice: BindingChoice | null =
-    ready === null || column === ''
+      : place === 'table' || (place === 'offer' && placeAs === 'table')
+        ? 'table'
+        : 'line';
+  // A table takes the whole result: no column and no row (TB2-E).
+  const asTable = placedAs === 'table';
+  const tableChoice: TableChoice | null =
+    ready === null
       ? null
       : {
           query: ready.id,
@@ -338,6 +362,12 @@ export function ValueDialog({
             ]),
           ),
           mode,
+        };
+  const choice: BindingChoice | null =
+    tableChoice === null || ready === null || column === ''
+      ? null
+      : {
+          ...tableChoice,
           take:
             row === 'key' && ready.key.length > 0
               ? {
@@ -357,11 +387,12 @@ export function ValueDialog({
 
   // Only the value taken or the mode changed: every document keeps its value by Keep (BI-J).
   const sameQuestion = (() => {
-    if (current === null || choice === null || ready === null) return false;
+    const chosenNow = asTable ? tableChoice : choice;
+    if (current === null || chosenNow === null || ready === null) return false;
     const held = literalValues(current);
     if (!('values' in held)) return false;
     return questionUnchanged(
-      { type: 'binding', id: current.id, ...choice },
+      { type: 'binding', id: current.id, ...chosenNow },
       {
         queryDefinition: { artifact: current.query, version: current.version ?? ready.version.id },
         parameters: held.values,
@@ -444,12 +475,15 @@ export function ValueDialog({
           onSubmit={(event) => {
             event.preventDefault();
             setTried(true);
-            if (choice === null) return;
-            if (problems.length > 0) {
+            if (problems.length > 0 && (asTable ? tableChoice : choice) !== null) {
               setSaid('A value does not fit its parameter.');
               return;
             }
-            setSaid(onDone(choice, placedAs));
+            if (asTable && tableChoice !== null) {
+              setSaid(onDone(tableChoice, 'table', ready?.columns ?? []));
+            } else if (!asTable && choice !== null) {
+              setSaid(onDone(choice, placedAs === 'figure' ? 'figure' : 'line'));
+            }
           }}
         >
           <h2 id={`${id}-heading`} className={styles['heading']}>
@@ -574,61 +608,67 @@ export function ValueDialog({
                   })}
                 </fieldset>
               )}
-              <fieldset className={own['group']}>
-                <legend>Value</legend>
-                <div className={styles['field']}>
-                  <label htmlFor={`${id}-column`}>Column</label>
-                  <select
-                    id={`${id}-column`}
-                    value={column}
-                    onChange={(event) => setColumn(event.target.value)}
-                  >
-                    {ready.columns.map((each) => (
-                      <option key={each.name} value={each.name}>
-                        {each.name}
-                        {each.type.base === 'image' ? ', an image' : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {place === 'figure' && ready.columns.length === 0 && (
-                  <p className={styles['note']}>
-                    This query definition has no image column, so it cannot give a figure its image.
-                  </p>
-                )}
-                <div className={own['forms']}>
-                  <label className={own['choice']}>
-                    {radio('row', 'only', row === 'only' || ready.key.length === 0, () =>
-                      setRow('only'),
-                    )}
-                    The only row
-                  </label>
-                  {ready.key.length > 0 && (
-                    <label className={own['choice']}>
-                      {radio('row', 'key', row === 'key', () => setRow('key'))}
-                      The row whose key is
-                    </label>
+              {!asTable && (
+                <fieldset className={own['group']}>
+                  <legend>Value</legend>
+                  <div className={styles['field']}>
+                    <label htmlFor={`${id}-column`}>Column</label>
+                    <select
+                      id={`${id}-column`}
+                      value={column}
+                      onChange={(event) => setColumn(event.target.value)}
+                    >
+                      {ready.columns.map((each) => (
+                        <option key={each.name} value={each.name}>
+                          {each.name}
+                          {each.type.base === 'image' ? ', an image' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {place === 'figure' && ready.columns.length === 0 && (
+                    <p className={styles['note']}>
+                      This query definition has no image column, so it cannot give a figure its
+                      image.
+                    </p>
                   )}
-                </div>
-                {row === 'key' &&
-                  ready.key.map((name) => (
-                    <div key={name} className={styles['field']}>
-                      <label htmlFor={`${id}-key-${name}`}>{name} is</label>
-                      <input
-                        id={`${id}-key-${name}`}
-                        value={keyTyped[name] ?? ''}
-                        onChange={(event) =>
-                          setKeyTyped({ ...keyTyped, [name]: event.target.value })
-                        }
-                      />
-                    </div>
-                  ))}
-              </fieldset>
-              {place === 'offer' && imageColumn && (
+                  <div className={own['forms']}>
+                    <label className={own['choice']}>
+                      {radio('row', 'only', row === 'only' || ready.key.length === 0, () =>
+                        setRow('only'),
+                      )}
+                      The only row
+                    </label>
+                    {ready.key.length > 0 && (
+                      <label className={own['choice']}>
+                        {radio('row', 'key', row === 'key', () => setRow('key'))}
+                        The row whose key is
+                      </label>
+                    )}
+                  </div>
+                  {row === 'key' &&
+                    ready.key.map((name) => (
+                      <div key={name} className={styles['field']}>
+                        <label htmlFor={`${id}-key-${name}`}>{name} is</label>
+                        <input
+                          id={`${id}-key-${name}`}
+                          value={keyTyped[name] ?? ''}
+                          onChange={(event) =>
+                            setKeyTyped({ ...keyTyped, [name]: event.target.value })
+                          }
+                        />
+                      </div>
+                    ))}
+                </fieldset>
+              )}
+              {place === 'offer' && (
                 <fieldset className={own['group']}>
                   <legend>Place as</legend>
                   <div className={own['forms']}>
-                    {(['line', 'figure'] as const).map((each) => (
+                    {(imageColumn
+                      ? (['line', 'figure', 'table'] as const)
+                      : (['line', 'table'] as const)
+                    ).map((each) => (
                       <label key={each} className={own['choice']}>
                         {radio('place', each, placeAs === each, () => setPlaceAs(each))}
                         {PLACE_AS[each]}
@@ -665,7 +705,7 @@ export function ValueDialog({
             <button type="button" onClick={onCancel}>
               Cancel
             </button>
-            {choice !== null && (
+            {(asTable ? tableChoice : choice) !== null && (
               <button
                 type="submit"
                 className="primary"

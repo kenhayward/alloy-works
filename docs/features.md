@@ -759,11 +759,25 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   decorative, which then needs no description. The PDF and Word print each as an image, described to
   a screen reader by the same words, and a publish fails by name where a bound image has neither a
   description nor a decorative mark, or stands in a footnote or a caption.
-- **Bound tables.** Through the API, a component can hold a table bound to a whole query result: the
-  columns it shows, each with its header, a unit in the header or after each value, its format and
-  alignment, and whether it may wrap; a stable sort; whether the first column heads each row; a
-  caption, an empty statement, a source and a note. It is resolved, checked, accepted and listed in the
-  Data tab like any value. **A document holding one publishes**: the PDF and Word print it as a table
+- **Bound tables.** A component can hold a table bound to a whole query result: the columns it shows,
+  each with its header, a unit in the header or after each value, its format and alignment, and
+  whether it may wrap; a stable sort; whether the first column heads each row; a caption, an empty
+  statement, a source and a note. The Value dialog's **Place as** offers **As a table** wherever a
+  block may stand, showing the definition's first 64 columns that are not images, headed by their
+  names, and saying where it left any out. The **Bound table** panel beside it sets its table style,
+  Numbered, the header column, the empty statement, note and source, each column's column, header,
+  unit, alignment, wrap and place in the order, and a sort of up to four keys; **Format** opens a
+  column's format member by member, beside each one left unset the table style's. A header emptied or
+  repeated under the same column is refused, and so is removing the last column. The caption, empty
+  statement, note and source are typed in place. **Change** in the Value panel opens the dialog on its
+  binding, resolved at once in a document; a column the new definition lacks stays, shown as missing.
+  **On the page**, in a component it shows its headers and the definition that fills it; in a
+  document, its first 50 rows laid out by the publish's own rules in the product's default words, and
+  how many more there are, or
+  why it shows none - more than 2,000 rows, a column gone, a format that does not fit - before any
+  publish. Each change in the panel redraws it at once, without a save. The read text draws it as the
+  editor does, and the Data tab lists it as a table of its rows, failed where it would not print. It
+  is resolved, checked, accepted and kept like any value. **A document holding one publishes**: the PDF and Word print it as a table
   of the result, each value formatted by the table style's format for its type under the column's own,
   in the document's language, numbers lined up on their decimal separator, a negative in parentheses
   and the style's colour where asked, no rows as the headers and the statement, and the source beneath
@@ -1255,9 +1269,9 @@ Named explicitly so nobody has to read the source to find out:
 - No page for component types: a Definitions manager makes and changes them through the API alone,
   and nothing yet changes which one is the environment's default.
 - No way to delete a component or a document, including one made by mistake.
-- A bound table is placed through the API alone: the editor opens a component holding one for reading
-  only, and a document's page shows no rows of it. It has no notes on its cells or columns, and no
-  strategy for a table wider than the page.
+- A bound table has no notes on its cells or columns, and no strategy for a table wider than the page;
+  where the document holds no result for it, its panel offers the columns of its definition's latest
+  version.
 - A document's own parameters do not exist, so a binding taking one cannot be resolved. A connection
   reaches PostgreSQL, as its own account or as each person by a role the database's administrator
   made, an HTTPS API by its own secret or an S3 bucket by a static key pair, each answering JSON,

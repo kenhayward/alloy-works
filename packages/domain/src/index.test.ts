@@ -557,6 +557,8 @@ describe('the domain package', () => {
         'DEFAULT_TABLE_FIELDS',
         'layoutTable',
         'TABLE_ROWS_MAX',
+        // The TB2 final review: a result in a table's order, for the rows route to send presorted.
+        'sortResult',
         // TB1: the types a table style formats by, the default theme's 0.6 frozen as 0.7 replaces it,
         // and the default layout's 0.7 frozen as 0.8 does (task 5).
         'FIELD_KEYS',

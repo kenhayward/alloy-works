@@ -80,6 +80,7 @@ import {
   takeOutcomeSchema,
   takes,
   takeValue,
+  sortResult,
   TABLE_ROWS_MAX,
   type AnyBinding,
   type AssetFormat,
@@ -207,6 +208,8 @@ interface Placed {
   readonly decorative?: true;
   /** A bound table's binding: the table holding it, as it is read (the TB2 plan, TB2-A). */
   readonly table?: BoundTableNode;
+  /** Read from the caller's own editing session, not the version (the TB2 final review). */
+  readonly fromSession?: true;
 }
 
 const key = (node: string, binding: string) => `${node} ${binding}`;
@@ -254,6 +257,7 @@ async function bindingsPlaced(
   for (const occurrence of await resolveOccurrences(trx, read.outline, principalId)) {
     if (occurrence.outcome !== 'resolved') continue;
     let substance: unknown;
+    let fromSession = false;
     const named =
       source !== undefined && (source.nodes === 'every' || source.nodes.has(occurrence.node));
     if (named) {
@@ -264,8 +268,10 @@ async function bindingsPlaced(
             session: source.session,
           })
         : undefined;
-      if (saved?.openedFrom === occurrence.version) substance = saved.content;
-      else if (source.nodes !== 'every' && source.fallBack !== true) continue;
+      if (saved?.openedFrom === occurrence.version) {
+        substance = saved.content;
+        fromSession = true;
+      } else if (source.nodes !== 'every' && source.fallBack !== true) continue;
     }
     if (substance === undefined) {
       const stored = await readVersion(trx, occurrence.version);
@@ -285,6 +291,7 @@ async function bindingsPlaced(
         digest: sha256(bindingDigestInput(binding)),
         place,
         ...(decorative ? { decorative } : {}),
+        ...(fromSession ? { fromSession: true as const } : {}),
         ...(place === 'table'
           ? { table: boundTableHolding(content.document.content, binding.id)! }
           : {}),
@@ -292,6 +299,18 @@ async function bindingsPlaced(
     }
   }
   return placed;
+}
+
+/**
+ * Whether `If-None-Match` names `etag`: `*`, or a list of tags any of which matches it weakly - its
+ * `W/` prefix aside, as RFC 9110 compares for a GET (the TB2 final review).
+ */
+export function tagMatches(header: string | string[] | undefined, etag: string): boolean {
+  if (header === undefined) return false;
+  const asked = (Array.isArray(header) ? header.join(',') : header)
+    .split(',')
+    .map((each) => each.trim());
+  return asked.some((each) => each === '*' || each.replace(/^W\//, '') === etag);
 }
 
 /** The bound table holding the binding `id`, wherever in the blocks it stands. */
@@ -2056,23 +2075,37 @@ export function bindingHandlers(
      * **A bound table's rows for the page** (the TB2 plan, TB2-A): on `read` on the document, the result
      * a bound table holds there - only the version held, named as the view names it, never one
      * waiting; only where its binding is unchanged since and its rows at most `TABLE_ROWS_MAX` - read
-     * by its checksum, and trimmed to the columns the table shows or sorts by, so a column its author
-     * left out never reaches a reader. With `session`, the table is read from the caller's own editing
-     * session where it can be, and from the version where it cannot. Revalidated by an `ETag` over the
-     * version and the columns sent, so asking again reads nothing.
+     * by its checksum. **To a reader**, sorted here by the table's own sort and trimmed to the columns
+     * it shows, `presorted`, so neither a column its author left out nor one it only sorts by reaches
+     * them (the TB2 final review). **To the lock holder's own `session`**, where they may read the
+     * binding's definition, the table as that session holds it, its sort columns sent and its rows in
+     * stored order, so an unsaved sort lays out at once; a session that cannot answer, or a caller who
+     * may not read the definition, is answered as a reader. Revalidated by an `ETag` over the version,
+     * the columns sent and the order, so asking again reads nothing.
      */
     getBoundTableRows: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
       const { id, node, binding } = request.params as BoundTableRowsParams;
       const { version, session } = request.query as BoundTableRowsQuery;
-      const placed = await bindingsPlaced(
+      const at = (placed: Placed[]) =>
+        placed.find((each) => each.node === node && each.binding.id === binding);
+      let placed = await bindingsPlaced(
         trx,
         id,
         principalId,
         session === undefined ? undefined : { session, nodes: new Set([node]), fallBack: true },
       );
       if (!placed) throw notFound();
+      // A session is honoured only for whoever may read the definition its table names (the TB2
+      // final review): another is answered the version's table, as a reader is.
+      const fromSession = at(placed);
+      if (
+        fromSession?.fromSession === true &&
+        !(await definitionReader(trx, callerOf(request))(fromSession.binding.query))
+      ) {
+        placed = (await bindingsPlaced(trx, id, principalId))!;
+      }
       const naming = { binding, node, document: id };
-      const found = placed.find((each) => each.node === node && each.binding.id === binding);
+      const found = at(placed);
       if (!found) {
         throw bindingMissing(
           naming,
@@ -2121,13 +2154,17 @@ export function bindingHandlers(
           naming,
         );
       }
+      const own = found.fromSession === true;
       const named = new Set([
         ...found.table.columns.map((each) => each.column),
-        ...(found.table.sort ?? []).map((each) => each.column),
+        ...(own ? (found.table.sort ?? []).map((each) => each.column) : []),
       ]);
       const sent = provenance.columns.map((each) => each.name).filter((name) => named.has(name));
-      const etag = `"${sha256(JSON.stringify([version, sent]))}"`;
-      if (request.headers['if-none-match'] === etag) return new Revalidated<never>(etag, undefined);
+      const order = own ? null : (found.table.sort ?? []);
+      const etag = `"${sha256(JSON.stringify([version, sent, order]))}"`;
+      if (tagMatches(request.headers['if-none-match'], etag)) {
+        return new Revalidated<never>(etag, undefined);
+      }
       if (!objects) throw storageUnavailable();
       const tenant = tenantOf(request);
       const store = await objects.forTenant(trx, tenant);
@@ -2143,12 +2180,14 @@ export function bindingHandlers(
           "The table's stored result cannot be read now. Try again later.",
         );
       }
-      const at = result.columns.flatMap(([name], index) => (named.has(name) ? [index] : []));
+      const ordered = own ? result : sortResult(found.table, result, provenance.columns);
+      const kept = ordered.columns.flatMap(([name], index) => (named.has(name) ? [index] : []));
       return new Revalidated(etag, {
         version,
+        presorted: !own,
         result: {
-          columns: at.map((index) => result.columns[index]!),
-          rows: result.rows.map((row) => at.map((index) => row[index] ?? null)),
+          columns: kept.map((index): [string, string] => [...ordered.columns[index]!]),
+          rows: ordered.rows.map((row) => kept.map((index) => row[index] ?? null)),
         },
       });
     },

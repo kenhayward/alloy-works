@@ -500,7 +500,7 @@ export const BoundTableRowsQuery = z.object({
     'The dataset version the binding holds, as the bindings view names it: any other, a waiting one among them, is refused `version_not_held`',
   ),
   session: SessionNamed.describe(
-    "The caller's own editing session: where it holds the component's lock, the table is read from its latest save, as the bindings view's `session` is",
+    "The caller's own editing session: where it holds the component's lock and the caller may read the binding's definition, the table is read from its latest save, as the bindings view's `session` is",
   ),
 });
 export type BoundTableRowsQuery = z.infer<typeof BoundTableRowsQuery>;
@@ -508,6 +508,11 @@ export type BoundTableRowsQuery = z.infer<typeof BoundTableRowsQuery>;
 /** A bound table's rows, only the columns it names (TB2-A). */
 export const BoundTableRowsView = z.object({
   version: z.string(),
+  presorted: z
+    .boolean()
+    .describe(
+      "True where the rows are already in the table's order and its sort columns not sent, as a reader is answered; false to the lock holder's own session, which is sent its sort columns, rows in stored order",
+    ),
   result: z.object({
     columns: z
       .array(z.tuple([z.string(), z.string()]))
@@ -796,7 +801,7 @@ export const bindingRoutes = {
     responses: {
       200: {
         description:
-          'The rows of the result the bound table holds, only the columns it shows or sorts by. Sent with an `ETag`, and `Cache-Control: private, no-cache`',
+          "The rows of the result the bound table holds: to a reader, in the table's order and only the columns it shows; to the lock holder's own session, the columns it shows or sorts by. Sent with an `ETag`, and `Cache-Control: private, no-cache`",
         schema: BoundTableRowsView,
       },
       304: { description: '`If-None-Match` named the same rows: nothing has changed' },

@@ -5,7 +5,7 @@ import type { Command, EditorState } from 'prosemirror-state';
 import { figureAt } from './figures.js';
 import { imageAt } from './images.js';
 import { paragraphPlaces } from './places.js';
-import { tableAt } from './tables.js';
+import { boundTableAt, tableAt } from './tables.js';
 
 /**
  * Choosing a style (themes.md, "The theme in the editor", ET-G; CNT-094, CNT-121): a block's appearance
@@ -58,7 +58,8 @@ export function setParagraphStyle(style: string): Command {
 /** Sets the style of the table the selection stands in; nothing where it stands in none. */
 export function setTableStyle(style: string): Command {
   return (state, dispatch) => {
-    const table = tableAt(state);
+    // A table's, or a bound table's (TB2-F): both take a table style.
+    const table = tableAt(state) ?? boundTableAt(state);
     if (table === null) return false;
     if (dispatch) dispatch(state.tr.setNodeAttribute(table.pos, 'style', style));
     return true;

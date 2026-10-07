@@ -8,6 +8,7 @@ import type { Column } from './definition.js';
 import {
   checkTable,
   layoutTable,
+  sortResult,
   TABLE_ROWS_MAX,
   type LaidOut,
   type TablePresentation,
@@ -353,5 +354,27 @@ describe('a bound table checked without its rows, and laid out in part (the TB2 
     expect(out.rows[0]!.cells[0]!.text).toBe('S119');
     expect(out.rows[49]!.cells[0]!.text).toBe('S70');
     expect(out.empty).toBeNull();
+  });
+
+  it('sorts a result as layoutTable does, stably, so a presorted one lays out without its sort columns', () => {
+    const sorted = table({
+      columns: [{ column: 'site', header: 'Site' }],
+      sort: [{ column: 'depth', direction: 'descending', nulls: 'last' }],
+    });
+    const ordered = sortResult(sorted, READINGS, COLUMNS);
+    expect(ordered.rows.map((row) => row[0])).toEqual(['North', 'South', 'East']);
+    // The sort column left out, as the rows route sends it to a reader (the TB2 final review).
+    const sent: CanonicalResult = {
+      columns: [['site', 'text']],
+      rows: ordered.rows.map((row) => [row[0]!]),
+    };
+    expect(layoutTable(sorted, sent, COLUMNS, style, DEFAULT_VALUE_FORMATS, words)).toMatchObject({
+      failures: [{ code: 'column_missing', column: 'depth' }],
+    });
+    const out = layoutTable(sorted, sent, COLUMNS, style, DEFAULT_VALUE_FORMATS, words, {
+      presorted: true,
+    });
+    if ('failures' in out) throw new Error(JSON.stringify(out.failures));
+    expect(out.rows.map((row) => row.cells[0]!.text)).toEqual(['North', 'South', 'East']);
   });
 });

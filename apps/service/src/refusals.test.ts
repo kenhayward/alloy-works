@@ -102,6 +102,9 @@ describe('the rule behind a refusal', () => {
       'binding.stale',
       'version.not_held',
       'table.too_long',
+      // A column named by somebody who may not read its definition (the TB2 final review): a guard
+      // of tables.md's own, which no requirement names.
+      'definition.unreadable',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

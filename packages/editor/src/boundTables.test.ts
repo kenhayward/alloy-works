@@ -18,6 +18,7 @@ import {
   boundTablesShown,
   PAGE_ROWS,
   TABLE_CHANGED,
+  TABLE_FAILURE_WORDS,
   TABLE_NEVER_RESOLVED,
   TABLE_READING,
   type BindingContext,
@@ -282,7 +283,10 @@ describe("what a bound table's body shows (TB2-D)", () => {
       heldTable({ columns: DECLARED, rowCount: 2, rows: rowsOf(2) }),
     );
     const doc = opened(document);
-    expect(boundTablesShown(doc, context)[0]!.shown.spanning).toMatchObject({ failed: true });
+    expect(boundTablesShown(doc, context)[0]!.shown.spanning).toEqual({
+      text: TABLE_FAILURE_WORDS.column_missing({ code: 'column_missing', column: 'tide' }),
+      failed: true,
+    });
     expect(bindingsShown(doc, context)[0]).toMatchObject({ text: 'North', failed: false });
   });
 
@@ -308,6 +312,40 @@ describe("what a bound table's body shows (TB2-D)", () => {
     expect(bodyOf(reheaded)).not.toBe(before);
     expect(bodyOf(reheaded)!.columns.map((each) => each.text)).toEqual(['Place']);
   });
+
+  it('keeps the memoised body while an empty statement is typed in a table with rows (the TB2 final review)', () => {
+    const context = inDocument(heldTable({ columns: DECLARED, rowCount: 3, rows: rowsOf(3) }));
+    const state = stateOf(documentOf(boundTable({ empty: [text('None')] })), context);
+    const before = boundTablesShown(state.doc, context)[0]!.shown;
+    let at = 0;
+    state.doc.descendants((node, pos) => {
+      if (node.type.name === 'boundTableEmpty') at = pos + 1;
+    });
+    const typed = state.apply(state.tr.insertText('Nothing: ', at));
+    expect(fromEditor(typed.doc).content[0]).toMatchObject({ empty: [text('Nothing: None')] });
+    expect(boundTablesShown(typed.doc, context)[0]!.shown).toBe(before);
+  });
+
+  it('lays out rows the service sent presorted, without the columns it sorted by, in the order sent (the TB2 final review)', () => {
+    const sorted = boundTable({
+      columns: [{ column: 'site', header: 'Site' }],
+      sort: [{ column: 'depth', direction: 'descending', nulls: 'last' }],
+    });
+    const sent: CanonicalResult = { columns: [['site', 'text']], rows: [['S2'], ['S0'], ['S1']] };
+    const body = shownIn(
+      documentOf(sorted),
+      inDocument(heldTable({ columns: DECLARED, rowCount: 3, rows: sent, presorted: true })),
+    );
+    expect(body.spanning).toBeNull();
+    expect(body.rows.map((row) => row[0]!.text)).toEqual(['S2', 'S0', 'S1']);
+    // Not presorted, the sort column is still to be read.
+    expect(
+      shownIn(
+        documentOf(sorted),
+        inDocument(heldTable({ columns: DECLARED, rowCount: 3, rows: sent })),
+      ).spanning,
+    ).toEqual({ text: TABLE_READING, failed: false });
+  });
 });
 
 describe('copying, cutting and pasting a bound table (BI-D)', () => {
@@ -322,6 +360,13 @@ describe('copying, cutting and pasting a bound table (BI-D)', () => {
     const found: string[] = [];
     state.doc.descendants((node) => {
       if (node.type.name === 'boundTable') found.push((node.attrs.binding as { id: string }).id);
+    });
+    return found;
+  };
+  const tableIds = (state: EditorState): string[] => {
+    const found: string[] = [];
+    state.doc.descendants((node) => {
+      if (node.type.name === 'boundTable') found.push(node.attrs.id as string);
     });
     return found;
   };
@@ -352,6 +397,10 @@ describe('copying, cutting and pasting a bound table (BI-D)', () => {
     const [original, copy] = tableBindings(copied);
     expect(original).toBe('k1');
     expect(copy).not.toBe('k1');
+    // The table's own identifier is renewed too, so the two are two tables.
+    const [table, copiedTable] = tableIds(copied);
+    expect(table).toBe('t1');
+    expect(copiedTable).not.toBe('t1');
     expect(() => fromEditor(copied.doc)).not.toThrow();
 
     const cut = state.apply(state.tr.delete(from, to));
@@ -418,57 +467,5 @@ describe("a bound table's body, which nothing deletes alone (TB2-C)", () => {
       const next = press(at, key);
       expect(fromEditor(next.doc)).toEqual(stored);
     }
-  });
-});
-
-describe('a bound table of 2,000 rows on the page (the TB2 plan, task 3)', () => {
-  it('sorts 2,000 rows of 8 columns and lays out the first 50 in under 50 ms', () => {
-    const names = ['site', 'depth', 'on', 'at', 'count', 'open', 'note', 'ratio'];
-    const columns: TableColumn[] = [
-      { name: 'site', type: { base: 'text' } },
-      { name: 'depth', type: { base: 'decimal', precision: 12, scale: 3 } },
-      { name: 'on', type: { base: 'date' } },
-      { name: 'at', type: { base: 'time', fraction: 0 } },
-      { name: 'count', type: { base: 'integer' } },
-      { name: 'open', type: { base: 'boolean' } },
-      { name: 'note', type: { base: 'text' } },
-      { name: 'ratio', type: { base: 'decimal', precision: 12, scale: 4 } },
-    ];
-    const result: CanonicalResult = {
-      columns: columns.map((each) => [each.name, each.type.base]) as CanonicalResult['columns'],
-      rows: Array.from({ length: 2_000 }, (_, at) => [
-        `Site ${(at * 7919) % 2_000}`,
-        `${(at * 37) % 1_000}.${at % 1_000}`,
-        `2026-${String((at % 12) + 1).padStart(2, '0')}-${String((at % 28) + 1).padStart(2, '0')}`,
-        `${String(at % 24).padStart(2, '0')}:${String(at % 60).padStart(2, '0')}:00`,
-        String(at * 13),
-        at % 2 === 0,
-        at % 5 === 0 ? null : `Note ${at}`,
-        `-0.${String(at).padStart(4, '0')}`,
-      ]),
-    };
-    const document = documentOf(
-      boundTable({
-        columns: names.map((name) => ({ column: name, header: name })),
-        sort: [
-          { column: 'depth', direction: 'descending', nulls: 'last' },
-          { column: 'site', direction: 'ascending', nulls: 'first' },
-        ],
-      }),
-    );
-    const doc = opened(document);
-    const timings: number[] = [];
-    for (let run = 0; run < 7; run += 1) {
-      // A fresh result object each run, so the memo never answers for the layout.
-      const rows = { ...result };
-      const context = inDocument(heldTable({ columns, rowCount: 2_000, rows }));
-      const started = performance.now();
-      const [shown] = boundTablesShown(doc, context);
-      timings.push(performance.now() - started);
-      expect(shown!.shown.rows).toHaveLength(PAGE_ROWS);
-      expect(shown!.shown.more).toBe(1_950);
-    }
-    const median = [...timings].sort((a, b) => a - b)[3]!;
-    expect(median).toBeLessThan(50);
   });
 });

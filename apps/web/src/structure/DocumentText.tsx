@@ -86,6 +86,8 @@ export interface Place {
   readonly bindingActs?: BindingActs;
   /** Told the bound tables the editor holds whenever they change, for the page (TB2-H). */
   readonly onBoundTables?: (tables: readonly BoundTableNode[]) => void;
+  /** Told each save the service acknowledges, by session and sequence (the TB2 final review). */
+  readonly onSaved?: (session: string, sequence: number) => void;
 }
 
 /**
@@ -310,6 +312,7 @@ export function DocumentText({
   boundTables,
   rowsFrom,
   onBoundTables,
+  onSaved,
 }: {
   outline: OutlineView;
   scheme: NumberingScheme | null;
@@ -359,9 +362,13 @@ export function DocumentText({
     readonly client: ReturnType<typeof createApiClient>;
     readonly document: string;
     readonly session: string | null;
+    /** The editor's last acknowledged save: a table's rows read short are asked again after it. */
+    readonly saved?: number;
   };
   /** Told the bound tables the editor open in place holds, by its node, as they change (TB2-H). */
   onBoundTables?: (node: string, tables: readonly BoundTableNode[]) => void;
+  /** Told each save the editor open in place has acknowledged (the TB2 final review). */
+  onSaved?: (session: string, sequence: number) => void;
 }) {
   // The whole document is one canvas, the theme's paper (document-view.md, "One scroll"; CNT-072).
   const column = useRef<HTMLElement>(null);
@@ -395,6 +402,7 @@ export function DocumentText({
     boundTables ?? NO_TABLES,
     setting.styles,
     rowsFrom?.session ?? null,
+    rowsFrom?.saved ?? 0,
   );
   const bindingContextsByNode = useMemo(
     () =>
@@ -533,6 +541,7 @@ export function DocumentText({
                             onBoundTables(node.id, tables),
                         }
                       : {}),
+                    ...(onSaved ? { onSaved } : {}),
                     onDone: () => onEdit?.(null),
                   })
                 : texts?.has(node.id) && (

@@ -19,12 +19,25 @@ export {
 } from './clipboard.js';
 export { editorSchema } from './schema.js';
 export {
+  boundTableAt,
+  changeTableBinding,
+  columnsPlaced,
+  deleteBoundTable,
+  insertBoundTable,
+  repeatedColumn,
+  setBoundTable,
+  setBoundTablePart,
   setTableHeaders,
   setTableNumbered,
   tableAt,
   tableCommand,
+  type BoundTableChange,
+  type BoundTablePart,
+  type BoundTablePlace,
+  type SortKey,
   type TableAction,
   type TableAt,
+  type TableChoice,
 } from './tables.js';
 export {
   assetContentPath,

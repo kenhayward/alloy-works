@@ -326,8 +326,9 @@ describe('an image column in the Value dialog (the B6 plan, B6-H)', () => {
     const { onDone } = dialog({ place: 'offer' });
     await user.click(await screen.findByRole('radio', { name: /Site by id/ }));
     await screen.findByLabelText('site');
-    // Asked only of an image column.
-    expect(screen.queryByRole('group', { name: 'Place as' })).toBeNull();
+    // As a figure asked only of an image column; in the line or as a table of any (TB2-E).
+    expect(screen.queryByRole('radio', { name: 'As a figure' })).toBeNull();
+    expect(screen.getByRole('radio', { name: 'As a table' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'photo, an image' })).toBeInTheDocument();
     await user.type(screen.getByLabelText('site'), '7');
     await user.selectOptions(screen.getByLabelText('Column'), 'photo');
@@ -366,7 +367,44 @@ describe('an image column in the Value dialog (the B6 plan, B6-H)', () => {
 
   it('has words for each place with no fancy dash', () => {
     const fancy = new RegExp(`[${String.fromCodePoint(0x2013, 0x2014)}]`);
-    expect(Object.values(PLACE_AS)).toEqual(['In the line', 'As a figure']);
+    expect(Object.values(PLACE_AS)).toEqual(['In the line', 'As a figure', 'As a table']);
     for (const words of Object.values(PLACE_AS)) expect(words).not.toMatch(fancy);
+  });
+});
+
+describe('a table in the Value dialog (the TB2 plan, TB2-E and TB2-G)', () => {
+  const declared = view().definition.columns;
+
+  it('places the whole result as a table where a block may go, asking no column and no row', async () => {
+    const user = userEvent.setup();
+    const { onDone } = dialog({ place: 'offer' });
+    await user.click(await screen.findByRole('radio', { name: /Site by id/ }));
+    await user.type(await screen.findByLabelText('site'), '7');
+    await user.click(screen.getByRole('radio', { name: 'As a table' }));
+    expect(screen.queryByLabelText('Column')).toBeNull();
+    expect(screen.queryByRole('radio', { name: 'The only row' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Insert' }));
+    expect(onDone).toHaveBeenLastCalledWith(
+      { query: SITES, parameters: { site: { literal: '7' } }, mode: 'checked' },
+      'table',
+      declared,
+    );
+  });
+
+  it("changes a bound table's binding, asking no column and offering no other place", async () => {
+    const user = userEvent.setup();
+    const { onDone } = dialog({
+      place: 'table',
+      current: { type: 'binding', id: 'b1', query: SITES, parameters: {}, mode: 'checked' },
+    });
+    await user.click(await screen.findByRole('radio', { name: /Visits by person/ }));
+    expect(screen.queryByLabelText('Column')).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Place as' })).toBeNull();
+    await user.click(await screen.findByRole('button', { name: 'Change' }));
+    expect(onDone).toHaveBeenLastCalledWith(
+      { query: VISITS, parameters: {}, mode: 'checked' },
+      'table',
+      declared,
+    );
   });
 });
