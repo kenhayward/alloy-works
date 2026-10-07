@@ -231,11 +231,26 @@ export function ParametersPanel(props: ParametersPanelProps) {
       </section>
     );
   }
-  if (declared.length === 0) return null;
+  const withheld = declared.length === 0;
+  // Declarations withheld from a reader of the document who may not read its template: the values
+  // alone, by name and read only. Nothing at all where there are neither.
+  if (withheld && Object.keys(props.values).length === 0) return null;
   const historyId = `${id}-history`;
   return (
     <section aria-labelledby={headingId}>
       <h2 id={headingId}>Parameters</h2>
+      {withheld && (
+        <dl>
+          {Object.keys(props.values)
+            .sort()
+            .map((name) => (
+              <div key={name}>
+                <dt>{name}</dt>
+                <dd>{shown(props.values[name])}</dd>
+              </div>
+            ))}
+        </dl>
+      )}
       <div className={styles['form']}>
         {declared.map((parameter) => {
           const fixed = !parameter.changeable;

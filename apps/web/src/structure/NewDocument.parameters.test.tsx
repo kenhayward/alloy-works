@@ -72,6 +72,14 @@ const DECLARED = [
     changeable: true,
     feeds,
   },
+  {
+    name: 'depth',
+    type: { base: 'decimal', precision: 6, scale: 2 },
+    required: false,
+    list: false,
+    changeable: true,
+    feeds,
+  },
 ];
 
 const template = (parameters: unknown[]) => ({
@@ -208,6 +216,7 @@ describe("New document's parameters (the TP1 plan, TP1-I)", () => {
         problems: [
           { parameter: 'pages', rule: 'type', value: '1.5' },
           { parameter: 'reviewer', rule: 'maxLength', value: 'Grace', field: 'f1' },
+          { parameter: 'sites', rule: 'duplicate', value: '4' },
         ],
       }),
     );
@@ -227,8 +236,47 @@ describe("New document's parameters (the TP1 plan, TP1-I)", () => {
     expect(screen.getByLabelText('reviewer')).toHaveAccessibleDescription(
       'reviewer is longer than the field it fills allows: Grace.',
     );
+    expect(screen.getByRole('group', { name: 'sites' })).toHaveAccessibleDescription(
+      'A whole number. sites holds an entry more than once: 4.',
+    );
     expect(screen.getByLabelText('due (required)')).not.toHaveAttribute('aria-invalid');
     expect(pages).toHaveValue('1.5');
+  });
+
+  it('sends a number in its canonical form, so 1.50 is sent as 1.5 and 012 as 12', async () => {
+    const { fetch, made } = service();
+    const onCreated = await chooseReport(fetch);
+    fireEvent.change(screen.getByLabelText('due (required)'), { target: { value: '2026-10-31' } });
+    await userEvent.selectOptions(screen.getByLabelText('region (required)'), 'South');
+    await userEvent.type(screen.getByLabelText('pages'), '012');
+    await userEvent.type(screen.getByLabelText('depth'), '1.50');
+    await userEvent.click(create());
+    await waitFor(() => expect(onCreated).toHaveBeenCalled());
+    expect((made()[0]?.body as { parameters: unknown }).parameters).toEqual({
+      due: '2026-10-31',
+      region: 'South',
+      final: false,
+      pages: '12',
+      depth: '1.5',
+    });
+  });
+
+  it('says a template whose parameters no longer fit its fields cannot be used, rather than blaming the title', async () => {
+    const { fetch } = service(() =>
+      json(400, {
+        code: 'parameter_field',
+        message: 'A parameter seeds a field the document does not hold.',
+        traceId: 't',
+        parameters: [{ parameter: 'reviewer', field: 'f1' }],
+      }),
+    );
+    await chooseReport(fetch);
+    fireEvent.change(screen.getByLabelText('due (required)'), { target: { value: '2026-10-31' } });
+    await userEvent.selectOptions(screen.getByLabelText('region (required)'), 'South');
+    await userEvent.click(create());
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      "This template's parameters no longer fit its fields, so a document cannot be made from it. Choose another, or Blank.",
+    );
   });
 
   it('asks for no parameters and sends none for a template that declares none, or for Blank', async () => {

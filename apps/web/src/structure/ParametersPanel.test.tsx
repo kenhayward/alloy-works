@@ -143,6 +143,24 @@ describe('the Parameters panel (the TP1 plan, TP1-I)', () => {
     expect(within(shown).getByLabelText('reviewer')).toHaveAttribute('readonly');
   });
 
+  it('shows the values by name, read only, to a reader the declarations are withheld from', async () => {
+    const fake = service(outline([section(INTRODUCTION, 'Introduction')]), {
+      parameters: { declarations: [], values: MADE_WITH },
+    });
+    open(fake.fetch);
+    const shown = await panel();
+    const terms = within(shown)
+      .getAllByRole('term')
+      .map((each) => each.textContent);
+    const definitions = within(shown)
+      .getAllByRole('definition')
+      .map((each) => each.textContent);
+    expect(terms).toEqual(['due', 'region', 'reviewer']);
+    expect(definitions).toEqual(['2026-10-31', 'North', 'Ada']);
+    expect(within(shown).queryByRole('textbox')).toBeNull();
+    expect(within(shown).getByRole('button', { name: 'History' })).toBeInTheDocument();
+  });
+
   it('shows no panel for a document whose template declares no parameters', async () => {
     const fake = service(outline([section(INTRODUCTION, 'Introduction')]), {
       parameters: { declarations: [], values: {} },

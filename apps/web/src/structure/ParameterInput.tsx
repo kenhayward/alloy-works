@@ -1,4 +1,5 @@
 import {
+  canonicaliseDecimal,
   templateParameterSchema,
   type MetadataRule,
   type ParameterRule,
@@ -52,7 +53,9 @@ export function refusedParameters(refusal: unknown): Map<string, string> {
       const words =
         typeof problem.field === 'string'
           ? (FIELD_WORDS[rule as MetadataRule] ?? 'does not fit the field it fills')
-          : (PARAMETER_WORDS[rule as ParameterRule] ?? 'does not fit its parameter');
+          : rule === 'duplicate'
+            ? 'holds an entry more than once'
+            : (PARAMETER_WORDS[rule as ParameterRule] ?? 'does not fit its parameter');
       const value =
         typeof problem.value === 'string' && problem.value !== '' ? problem.value : null;
       said.set(
@@ -109,8 +112,14 @@ export function valuesToSend(
   values: Readonly<Record<string, ParameterValue>>,
 ): Record<string, ParameterValue> {
   const sent: Record<string, ParameterValue> = {};
-  const clean = (parameter: TemplateParameter, entry: ParameterEntry): ParameterEntry =>
-    typeof entry === 'string' && parameter.type.base !== 'text' ? entry.trim() : entry;
+  // A number in its canonical form, so `1.50` is sent as `1.5`; one that is no number goes as typed,
+  // for the service to name.
+  const clean = (parameter: TemplateParameter, entry: ParameterEntry): ParameterEntry => {
+    if (typeof entry !== 'string' || parameter.type.base === 'text') return entry;
+    const trimmed = entry.trim();
+    if (parameter.type.base !== 'integer' && parameter.type.base !== 'decimal') return trimmed;
+    return canonicaliseDecimal(trimmed) ?? trimmed;
+  };
   for (const parameter of declared) {
     const value = values[parameter.name];
     if (blank(value)) continue;

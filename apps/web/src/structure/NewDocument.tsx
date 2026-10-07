@@ -202,6 +202,13 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
           setNotice(
             'This template refers to something that no longer exists, so a document cannot be made from it. Choose another, or Blank.',
           );
+        } else if (
+          response.status === 400 &&
+          (error?.code === 'parameter_field' || error?.code === 'parameter_unused')
+        ) {
+          setNotice(
+            "This template's parameters no longer fit its fields, so a document cannot be made from it. Choose another, or Blank.",
+          );
         } else if (response.status === 400 && refusedParameters(error).size > 0) {
           // The service's own sentence, and its refusal of each parameter beside it (TPL-045).
           setRefused(refusedParameters(error));
