@@ -541,6 +541,11 @@ describe('the domain package', () => {
         'readsAsANumber',
         'tableBindingSchema',
         'takes',
+        // TB1: a table's cell printed by its merged format, its mismatches and its colour (task 3).
+        'colouredNegative',
+        'formatCell',
+        'formatMismatch',
+        'mergeFormat',
       ].sort(),
     );
   });

@@ -171,6 +171,8 @@ export {
   readsAsANumber,
 } from './field-format.js';
 export type { ColumnAlignment, FieldFormat } from './field-format.js';
+export { colouredNegative, formatCell, formatMismatch, mergeFormat } from './format-cell.js';
+export type { CellWords } from './format-cell.js';
 export {
   PROVENANCE_SCHEMA_VERSION,
   provenanceSchema,

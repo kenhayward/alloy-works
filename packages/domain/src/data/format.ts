@@ -17,7 +17,7 @@ const CHARACTER: Readonly<Record<string, string>> = {
   'U+2212': String.fromCodePoint(0x2212),
 };
 
-const character = (token: string): string => CHARACTER[token] ?? token;
+export const character = (token: string): string => CHARACTER[token] ?? token;
 
 /** Every line break - CR LF, LF, CR, NEL, LS, PS - and a tab: each printed as one space. */
 const BREAK = new RegExp(
@@ -26,7 +26,7 @@ const BREAK = new RegExp(
 );
 
 /** Digits grouped in threes from the right, once there are `groupFrom` of them. */
-function grouped(digits: string, number: ValueFormats['number']): string {
+export function grouped(digits: string, number: ValueFormats['number']): string {
   if (number.group === 'none' || digits.length < number.groupFrom) return digits;
   const group = character(number.group);
   const head = digits.length % 3 || 3;
