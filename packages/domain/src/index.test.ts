@@ -496,6 +496,8 @@ describe('the domain package', () => {
         'FIFTH_DEFAULT_THEME_VERSION',
         // B2: whether a changed binding still asks its held result's question (the B2 plan, B2-E).
         'questionUnchanged',
+        // TP2.2: the Value dialog's question compared by its parameters' spelling (TP2-D).
+        'questionSpelledAlike',
         // D7: who a request runs as, and a person's role at the source (the D7 plan, D7-G).
         'assertedRoleSchema',
         'runIdentitySchema',

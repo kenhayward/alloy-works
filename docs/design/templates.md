@@ -219,8 +219,8 @@ Bindings established at creation, a query set and parameters resolving variables
 ([ADR-0043](../decisions/0043-a-templates-bindings-query-set-and-variables-move-to-t4.md)), since a
 T2 template's outline holds sections and no components.
 
-> **TP1 built** (0.143.0): declared, asked for, recorded, changed and shown. **TP2**, feeding the
-> bindings, is not built. Built in two slices, [below](#build-order).
+> **Built** in two slices, [below](#build-order): **TP1** (0.143.0) declared, asked for, recorded,
+> changed and shown; **TP2** (0.144.0) feeding the bindings. With TP2, T2's data work is complete.
 
 ### Declared on the template
 
@@ -282,20 +282,30 @@ of entries, or a choice where `permitted` lists values (TPL-026). In the same tr
 
 ### Feeding the bindings
 
-- **A `{ document: name }` argument takes the document's current value** at resolve and check: absent
-  from the document, or of a template parameter whose type and list are not the definition
-  parameter's, is `parameter_invalid` naming it; the value is then checked against the definition's
-  own declaration, which may be narrower.
-- **A changed value marks the bindings using it changed.** A binding's digest, wherever it is compared
-  with a resolution's - the view, Keep, the Data tab and the publish request's `binding_unresolved` -
-  is taken over the binding **with its document arguments replaced by their current values**, and resolve records it so. A
-  binding with none keeps the digest it has, so no resolution held today moves; a parameter change
-  makes every binding that reads it `changed`, and the Data tab says which parameter, read against
-  the held dataset version's provenance. Nothing runs by itself: the author checks and accepts, as for
-  any change (ADR-0035).
-- **The Value dialog's From the document** becomes available: in a document, a choice of its template
-  parameters that feed arguments and match the definition parameter's type; in a component alone, a
-  name typed, checked where it is resolved.
+As built by [the TP2 plan](../plans/2026-10-08-tp2-parameters-feeding-bindings.md):
+
+- **A `{ document: name }` argument takes the document's latest value** at resolve and check
+  (`substituteDocumentArguments`, made once in the service's `bindingsPlaced`). Refused
+  `parameter_invalid`: an argument the document has no value for, or an empty list, rule `required`
+  naming the definition's parameter; a document parameter whose declaration does not feed arguments,
+  `feeds`, or whose base type or `list` is not the definition parameter's, `type`, each naming the
+  document's parameter and nothing of its declaration (`argumentRefusal`). The value is then checked
+  against the definition's own declaration, which may be narrower.
+- **A changed value marks the bindings using it changed.** `Placed.digest`, which every comparer reads -
+  resolve and settle, check, accept, confirm, Keep, the view and the publish request's `bindingsHeld`
+  and `binding_unresolved` - is taken over the binding **with its document arguments replaced by their
+  current values**; the view still answers the binding as written. A binding with none keeps the digest
+  it has, so no resolution held before moved. The view's `held.parameters` names each document parameter
+  that differs from the held provenance, and the Data tab says "The document's period changed". A check
+  leaves a changed binding unchecked; the author resolves it again, as after any edit (ADR-0035).
+- **The Value dialog's From the document**, beside each parameter: in a document, a choice of its
+  template's parameters that feed arguments and match the definition parameter's base type and `list`,
+  from the declarations `GET /v1/documents/{id}/parameters` gives a reader of the template, which the
+  Parameters panel hands the page. Where it has none - a component alone, a template the reader may not
+  read, none fitting - it says why and takes a typed name, held to a parameter's name and checked where
+  it is resolved. A binding taking one opens with it chosen. The dialog, holding no document values,
+  compares a changed binding's question by its parameters' spelling (`questionSpelledAlike`), so a
+  change of the value taken alone warns no holder.
 
 ### Failures
 
@@ -348,6 +358,11 @@ of entries, or a choice where `permitted` lists values (TPL-026). In the same tr
 | `db: migrations/tenant/0057_document_parameters.sql`           | `artifact_version.parameters`, documents only                                                                                                                                                              |
 | `db: src/documents.ts`                                         | Creation with parameters, `recordDocumentParameters` and `parameterHistory`                                                                                                                                |
 | `web: src/structure/ParameterInput.tsx`, `ParametersPanel.tsx` | A value asked for by its type; the Parameters panel and its History                                                                                                                                        |
+| `domain: src/data/binding.ts`, `question.ts`                   | `substituteDocumentArguments` and `literalValues`; `questionSpelledAlike`, the Value dialog's comparison                                                                                                   |
+| `domain: src/template/parameters.ts`                           | `argumentRefusal`, a document parameter fed to a definition's                                                                                                                                              |
+| `db: src/templates.ts`                                         | `documentParameterDeclarations`, the recorded template version's parameters alone                                                                                                                          |
+| `service: src/data/bindings.ts`                                | `bindingsPlaced` substituting the document's latest parameters, and the view's `held.parameters`                                                                                                           |
+| `web: src/editor/ValueDialog.tsx`, `src/structure/DataTab.tsx` | From the document; the Data tab's reason                                                                                                                                                                   |
 
 ## Verification
 

@@ -125,7 +125,7 @@ it was made.
 | PUB-002, PUB-109 to PUB-111        | PUB-002 names transclusion, conditions and variables beside bindings, and PUB-109 to PUB-111 the order test's place for each: REU's, T4. publishing.md owns the order                                                                                                                                                                                                                                                                                        |
 | PUB-072                            | Publishing failing on a failed binding is one clause of publishing.md's list; this design supplies that clause's failures                                                                                                                                                                                                                                                                                                                                    |
 | DAT-038, VER-019                   | A baseline pinning every binding's dataset version is storage-and-versioning.md's; a publication's `publication_binding` rows are what a baseline made from it will pin                                                                                                                                                                                                                                                                                      |
-| DAT-030                            | data.md's. The dialog offers a document parameter once TPL-020 gives a document parameters, and says why it cannot before                                                                                                                                                                                                                                                                                                                                    |
+| DAT-030                            | data.md's. The dialog's half - **From the document** offering a document's parameters - is built by TP2 ([templates.md](templates.md#feeding-the-bindings))                                                                                                                                                                                                                                                                                                  |
 | TPL-019, TPL-022, TPL-063, TPL-065 | The `templates.md` additions', which call resolve for every binding a document is made with                                                                                                                                                                                                                                                                                                                                                                  |
 | STR-038, LIF-004, LIF-026          | T3's: the contents showing failed bindings, a transition gate on them, and the audit log's binding events                                                                                                                                                                                                                                                                                                                                                    |
 | LOC-043                            | A bound value inert through translation is LOC's, T6; a value is never in a component's text to translate                                                                                                                                                                                                                                                                                                                                                    |
@@ -181,7 +181,9 @@ The dialog, top to bottom, each step enabled once the one above is chosen:
 3. **Parameters**: each the version declares, as a field of its type - a list of its permitted values
    as a choice, a range's bounds said beside it, a list parameter as several - checked by D2's
    `checkParameterValues` as typed, its refusal said beside the field in its own words. **From the
-   document** is shown and unavailable until a document has parameters (TPL-020), saying so (DAT-030).
+   document** takes one of the document's parameters instead (DAT-030; TP2,
+   [templates.md](templates.md#feeding-the-bindings)): a choice of those its template feeds to values
+   of the parameter's type, or, where none is offered, a typed name and why.
 4. **Value**: the column, from the version's declared columns (an image column only from D8, BI-P);
    then **the only row**, or **the row whose** each key column **is** a typed value, offered only where
    the version declares a key (DAT-067). Nothing here knows how many rows a result will have: that is
@@ -349,6 +351,12 @@ the authority, so a derived row can never print.
 
 ## The document's side
 
+**A binding's digest, wherever the document compares it** with a resolution's - the view's `stale`,
+Keep, check, accept, the Data tab and a request's `binding_unresolved` - is taken over the binding with
+its `{ document }` arguments replaced by the document's latest parameter values (TP2,
+[templates.md](templates.md#feeding-the-bindings)), so a changed parameter marks exactly the bindings
+that read it; a binding with none keeps the digest it always had.
+
 ### The Data tab
 
 The document page's outline pane gains a tab, **Data**, beside **Contents** (`OutlineTabs`), shown
@@ -359,7 +367,7 @@ shows it, its definition, its mode and its state, filtered by state:
 | State                       | Means                                                                                                                                               | Offers, to whoever may                                       |
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | **Never resolved**          | No resolution for this node and binding                                                                                                             | **Resolve** (`edit` on the document, `use_connection`)       |
-| **Changed since resolved**  | The latest resolution's digest is not the binding's (`stale`)                                                                                       | **Keep** where the question is unchanged (BI-J), **Resolve** |
+| **Changed since resolved**  | The latest resolution's digest is not the binding's (`stale`), said with each document parameter that changed it (TP2)                              | **Keep** where the question is unchanged (BI-J), **Resolve** |
 | **Failed**                  | Its value cannot be taken (BI-E), or the check made on this page's opening failed for it - its failure in the product's words, attributed (DAT-049) | **Resolve**, **Check now**                                   |
 | **Revision waiting**        | A newer result of its question, shown beside the held value (DAT-082)                                                                               | **Accept**                                                   |
 | **Definition changed**      | Floating, and its definition has a version newer than the one its result ran (DAT-070)                                                              | **Check now**, then **Accept**                               |

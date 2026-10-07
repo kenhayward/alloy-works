@@ -19517,6 +19517,12 @@
       "kind": "title"
     },
     {
+      "id": "DAT-030",
+      "file": "apps/web/src/editor/ValueDialog.test.tsx",
+      "line": 429,
+      "kind": "title"
+    },
+    {
       "id": "DAT-098",
       "file": "apps/web/src/editor/ValueDialog.test.tsx",
       "line": 324,
@@ -19585,7 +19591,7 @@
     {
       "id": "DAT-022",
       "file": "apps/web/src/structure/DataTab.test.tsx",
-      "line": 353,
+      "line": 373,
       "kind": "title"
     },
     {
@@ -19603,7 +19609,7 @@
     {
       "id": "DAT-091",
       "file": "apps/web/src/structure/DataTab.test.tsx",
-      "line": 283,
+      "line": 303,
       "kind": "title"
     },
     {
@@ -19783,7 +19789,7 @@
     {
       "id": "TPL-020",
       "file": "apps/web/src/structure/ParametersPanel.test.tsx",
-      "line": 54,
+      "line": 56,
       "kind": "title"
     },
     {
@@ -21571,7 +21577,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 600,
+      "line": 602,
       "kind": "title"
     },
     {
@@ -22850,6 +22856,12 @@
       "id": "DAT-056",
       "file": "tests/e2e/src/connector-privilege.test.ts",
       "line": 178,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-066",
+      "file": "tests/e2e/src/document-arguments.test.ts",
+      "line": 46,
       "kind": "title"
     },
     {
