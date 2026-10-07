@@ -1,5 +1,6 @@
 import {
   bindingNodeSchema,
+  tableBindingSchema,
   imageColumnTypeSchema,
   MAX_COLUMNS,
   httpTemplateSchema,
@@ -178,6 +179,13 @@ export const TakeOutcomeView = z
           'The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again',
         ),
     }),
+    z.strictObject({
+      table: z
+        .literal(true)
+        .describe(
+          "A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats",
+        ),
+    }),
   ])
   .describe('What the binding takes from this dataset version');
 export type TakeOutcomeView = z.infer<typeof TakeOutcomeView>;
@@ -217,7 +225,11 @@ const HeldView = z.object({
 /** One binding of a document, what it holds, and the newer result waiting for it (D3-J). */
 export const BindingStateView = z.object({
   node: z.string(),
-  binding: bindingNodeSchema,
+  binding: z
+    .union([bindingNodeSchema, tableBindingSchema])
+    .describe(
+      "The binding as the component stores it: one taking a value, or a bound table's, which has no `take` and binds the whole result",
+    ),
   held: HeldView.nullable().describe('What it holds, or null where it has never been resolved'),
   waiting: z
     .object({

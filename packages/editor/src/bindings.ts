@@ -1,4 +1,9 @@
-import { bindingDigestInput, type Binding, type TakeFailure } from '@alloy-works/domain';
+import {
+  bindingDigestInput,
+  type AnyBinding,
+  type Binding,
+  type TakeFailure,
+} from '@alloy-works/domain';
 import type { Node } from 'prosemirror-model';
 import { NodeSelection, type Command, type EditorState } from 'prosemirror-state';
 
@@ -157,7 +162,7 @@ export const BINDING_FAILURE_WORDS = {
   value_none: () => 'No value - the query returned no rows',
   value_many: (_binding, held) => `No value - the query returned ${held.count ?? 'several'} rows`,
   row_missing: (binding) =>
-    'key' in binding.take
+    'take' in binding && 'key' in binding.take
       ? `No value - no row where ${keyWords(binding.take.key)}`
       : 'No value - no row',
   value_null: () => 'No value - empty',
@@ -169,7 +174,7 @@ export const BINDING_FAILURE_WORDS = {
   image_not_placeable: () => 'No image - a footnote or a caption cannot hold one',
 } satisfies {
   readonly [K in BindingFailureShown]: (
-    binding: Binding,
+    binding: AnyBinding,
     held: Extract<BindingFailureHeld, { readonly failure: K }>,
   ) => string;
 };
@@ -178,11 +183,10 @@ export const BINDING_FAILURE_WORDS = {
  * The words for one failure, in the text and a value's provenance alike: the record indexed by a union
  * cannot correlate it with its argument.
  */
-export const bindingFailureWords = (binding: Binding, held: BindingFailureHeld): string =>
-  (BINDING_FAILURE_WORDS[held.failure] as (binding: Binding, held: BindingFailureHeld) => string)(
-    binding,
-    held,
-  );
+export const bindingFailureWords = (binding: AnyBinding, held: BindingFailureHeld): string =>
+  (
+    BINDING_FAILURE_WORDS[held.failure] as (binding: AnyBinding, held: BindingFailureHeld) => string
+  )(binding, held);
 
 /** A binding node's attributes as the component stores the binding. */
 export function storedBinding(node: Node): Binding {

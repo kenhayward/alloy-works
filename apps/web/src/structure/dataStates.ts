@@ -24,7 +24,9 @@ export function dataState(view: BindingState, checkFailed: boolean): DataState {
   const { held } = view;
   if (held === null) return 'never';
   if (held.stale) return 'stale';
-  if (checkFailed || held.taken === null || !('value' in held.taken)) return 'failed';
+  // A bound table's binding holds the whole result, which it takes nothing from (TB1-C).
+  const holds = held.taken !== null && ('value' in held.taken || 'table' in held.taken);
+  if (checkFailed || !holds) return 'failed';
   if (view.waiting !== null) return 'waiting';
   if (view.definitionChanged) return 'definition';
   if (view.sincePublished !== null) return 'published';

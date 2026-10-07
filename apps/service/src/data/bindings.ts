@@ -76,7 +76,9 @@ import {
   readOutline,
   walkOutline,
   takeOutcomeSchema,
+  takes,
   takeValue,
+  type AnyBinding,
   type AssetFormat,
   type Binding,
   type BindingPlace,
@@ -189,10 +191,14 @@ export interface RunsThrough {
 interface Placed {
   readonly node: string;
   readonly component: string;
-  readonly binding: Binding;
+  /** A binding taking a value, or a bound table's, taking the whole result (the TB1 plan, TB1-C). */
+  readonly binding: AnyBinding;
   readonly digest: string;
-  /** In a line, in a footnote's line, or as a figure's image: where an image may stand (B6-D). */
-  readonly place: BindingPlace;
+  /**
+   * In a line, in a footnote's line, or as a figure's image: where an image may stand (B6-D); or
+   * `table`, a bound table's own binding, which takes nothing.
+   */
+  readonly place: BindingPlace | 'table';
   /** A figure's binding whose figure its author marked decorative (Ken, 2026-10-06). */
   readonly decorative?: true;
 }
@@ -413,7 +419,9 @@ async function prepare(
       definition = parseQueryDefinition(pinned.content);
       version = pinned.id;
     }
-    const take = checkTake(binding.take, definition);
+    // A bound table's binding takes nothing (the TB1 plan, TB1-C): its definition and its parameters
+    // are checked, as every binding's are, and no take.
+    const take = takes(binding) ? checkTake(binding.take, definition) : null;
     if (take !== null) throw refused(400, 'take.invalid', `${take}.`);
     const literal = literalValues(binding);
     if ('document' in literal) {
@@ -486,15 +494,19 @@ interface StoredImage {
   readonly bytes: number;
 }
 
-/** The takes of every binding asking each question, by question. */
+/**
+ * The takes of every binding asking each question, by question: every question asked, a bound
+ * table's among them, which takes nothing (TB1-C) and so may ask a question with no take.
+ */
 function takesByQuestion(prepared: readonly Prepared[]): Map<string, Take[]> {
-  const takes = new Map<string, Take[]>();
+  const asked = new Map<string, Take[]>();
   for (const each of prepared) {
-    const asking = takes.get(each.question) ?? [];
-    asking.push(each.placed.binding.take);
-    takes.set(each.question, asking);
+    const asking = asked.get(each.question) ?? [];
+    const { binding } = each.placed;
+    if (takes(binding)) asking.push(binding.take);
+    asked.set(each.question, asking);
   }
-  return takes;
+  return asked;
 }
 
 /**
@@ -521,7 +533,10 @@ const recordTaken = async (
   each: Prepared,
   ran: Extract<Ran, { ok: true }>,
 ) => {
-  const take = each.placed.binding.take;
+  // A bound table's binding takes nothing, so records none (TB1-C).
+  const { binding } = each.placed;
+  if (!takes(binding)) return;
+  const take = binding.take;
   const outcome = ran.taken.get(takeDigest(take));
   if (outcome !== undefined) await recordTake(trx, { version, take, outcome });
 };
@@ -1037,9 +1052,29 @@ async function takenOf(
 }
 
 /** What a take asked gave: the decorative take where one was made for it, else the take's own. */
-const takenAs = (taken: ReadonlyMap<string, Taken>, version: string, placed: Placed): Taken =>
-  (placed.decorative ? taken.get(takeKey(version, placed.binding.take, true)) : undefined) ??
-  taken.get(takeKey(version, placed.binding.take))!;
+const takenAs = (taken: ReadonlyMap<string, Taken>, version: string, placed: Placed): Taken => {
+  const { binding } = placed;
+  // A bound table's binding takes nothing (TB1-C), so asks no take: it is never read this way.
+  if (!takes(binding)) throw new Error(`The binding ${binding.id} takes no value`);
+  return (
+    (placed.decorative ? taken.get(takeKey(version, binding.take, true)) : undefined) ??
+    taken.get(takeKey(version, binding.take))!
+  );
+};
+
+/**
+ * What the view answers a binding takes from a version: a bound table's binding holds the whole
+ * result, `{ table: true }`, never stale for what it takes (TB1-C); any other its take, placed.
+ */
+const viewTaken = (
+  placed: Placed,
+  taken: ReadonlyMap<string, Taken>,
+  version: string,
+  provenance: Provenance,
+): TakeOutcomeView =>
+  placed.place === 'table'
+    ? { table: true }
+    : placedTaken(placed.place, takenAs(taken, version, placed), provenance);
 
 /** A stored result, held to its checksum and its shape, or undefined where it cannot be read. */
 async function readResult(
@@ -1066,7 +1101,8 @@ function takesAsked(
   held: HeldResolution | undefined,
   principal: string,
 ): TakeAsked[] {
-  if (!held || held.digest !== placed.digest) return [];
+  // A bound table's binding takes nothing (TB1-C): its view is the result it holds, never a take.
+  if (!held || held.digest !== placed.digest || !takes(placed.binding)) return [];
   const whose = held.waiting && ownViewOf(held.waiting.provenance.identity);
   const offered = whose === undefined || whose === principal;
   const take = placed.binding.take;
@@ -1283,13 +1319,7 @@ function viewer(
           provenance: provenanceView(held.held.provenance, readsDefinition),
           name: name?.name ?? null,
           stale,
-          taken: stale
-            ? null
-            : placedTaken(
-                placed.place,
-                takenAs(taken, held.held.version, placed),
-                held.held.provenance,
-              ),
+          taken: stale ? null : viewTaken(placed, taken, held.held.version, held.held.provenance),
           act: held.act,
           keepable: await keepable(placed, held),
           by: { id: held.by, displayName: await nameOf(held.by) },
@@ -1303,11 +1333,7 @@ function viewer(
                   held.waiting.provenance,
                   await reads(held.waiting.provenance.queryDefinition.artifact),
                 ),
-                taken: placedTaken(
-                  placed.place,
-                  takenAs(taken, held.waiting.version, placed),
-                  held.waiting.provenance,
-                ),
+                taken: viewTaken(placed, taken, held.waiting.version, held.waiting.provenance),
               }
             : null,
         ...shown,
@@ -1906,9 +1932,12 @@ export function bindingHandlers(
           { ...naming, definition: found.binding.query },
         );
       }
-      const ran = await readVersion(trx, provenance.queryDefinition.version);
-      const take = checkTake(found.binding.take, parseQueryDefinition(ran!.content));
-      if (take !== null) throw named(refused(400, 'take.invalid', `${take}.`), naming);
+      // A bound table's binding takes nothing, so has no take to check (TB1-C): only its mode moved.
+      if (takes(found.binding)) {
+        const ran = await readVersion(trx, provenance.queryDefinition.version);
+        const take = checkTake(found.binding.take, parseQueryDefinition(ran!.content));
+        if (take !== null) throw named(refused(400, 'take.invalid', `${take}.`), naming);
+      }
       await recordResolution(trx, {
         document: id,
         node: found.node,

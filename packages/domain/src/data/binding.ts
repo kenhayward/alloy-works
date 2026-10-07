@@ -196,7 +196,7 @@ export function checkTake(
  * (`checkParameterValues`, D2-R).
  */
 export function literalValues(
-  binding: Binding,
+  binding: AnyBinding,
 ): { readonly values: ParameterValues } | { readonly document: string } {
   const values: Record<string, ParameterValues[string]> = {};
   for (const [name, parameter] of Object.entries(binding.parameters)) {
