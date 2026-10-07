@@ -132,6 +132,20 @@ describe('a bound table, laid out', () => {
     });
   });
 
+  it('lays out 2,000 rows, the most the pinned Typst publishes at 8 columns within 1 GiB on Linux (TB1-K), and refuses one more', () => {
+    expect(TABLE_ROWS_MAX).toBe(2_000);
+    const rows = (count: number) =>
+      result(...Array.from({ length: count }, (_, at) => [`S${at}`, String(at), null, null]));
+    const at = (count: number) =>
+      layoutTable(table(), rows(count), COLUMNS, style, DEFAULT_VALUE_FORMATS, words);
+    const most = at(TABLE_ROWS_MAX);
+    if ('failures' in most) throw new Error(JSON.stringify(most.failures));
+    expect(most.rows).toHaveLength(2_000);
+    expect(at(TABLE_ROWS_MAX + 1)).toEqual({
+      failures: [{ code: 'table_too_long', detail: '2001' }],
+    });
+  });
+
   it('gathers every failure at once: an image column, a format meaningless for its type, and too many rows', () => {
     const many = result(
       ...Array.from({ length: TABLE_ROWS_MAX + 1 }, () => ['A', '1', null, null]),
@@ -266,9 +280,9 @@ describe('a bound table, laid out', () => {
       negativeColour: true,
     });
     expect(out.rows.map((row) => row.cells[0])).toEqual([
-      { text: '4.5', value: '4.5', scope: null, negative: false },
-      { text: '(1.3)', value: '-1.25', scope: null, negative: true },
-      { text: 'Not available', value: null, scope: null, negative: false },
+      { text: '4.5', value: '4.5', scope: null, negative: false, parenthesised: false },
+      { text: '(1.3)', value: '-1.25', scope: null, negative: true, parenthesised: true },
+      { text: 'Not available', value: null, scope: null, negative: false, parenthesised: false },
     ]);
   });
 });

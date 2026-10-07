@@ -57,7 +57,8 @@ import type { JobHandler } from '../worker.js';
  * their styles, 14 the first to leave a table or a figure marked unnumbered out of the list of its
  * kind, 15 the first to set a table's or a figure's caption where its style places it, 16 the
  * first to set a bound value, read from its stored result, and make `provenance.json` beside it, and
- * 17 the first to set a bound image and write `provenance.json` at its schema 2 (the B6 plan).
+ * 17 the first to set a bound image and write `provenance.json` at its schema 2 (the B6 plan), and 18
+ * the first to lay out and set a bound table and write `provenance.json` at its schema 3 (TB1-J).
  *
  * **Both keys are frozen.** Keyed by `PUBLISHING_SCHEMA` itself, a repoint moved the key while the
  * value stayed behind, and the `satisfies` clause could not catch it because `PublishedSchema`
@@ -69,7 +70,7 @@ import type { JobHandler } from '../worker.js';
  */
 export const PIPELINE_VERSION = {
   [PUBLISHING_SCHEMA_1]: '1',
-  [PUBLISHING_SCHEMA_CURRENT]: '17',
+  [PUBLISHING_SCHEMA_CURRENT]: '18',
 } as const satisfies Record<PublishedSchema, string>;
 
 /** The document's own failures, every one at once: the job is finished, never tried again. */

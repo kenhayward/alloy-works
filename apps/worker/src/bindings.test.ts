@@ -449,9 +449,9 @@ describe('publishing a document holding a value', () => {
     expect(await work()).toBe('done');
     const outputs = await outputsOf(request);
     expect(outputs.map((each) => [each.format, each.producer, each.producer_version])).toEqual(
-      expect.arrayContaining([['provenance', 'pipeline', '17']]),
+      expect.arrayContaining([['provenance', 'pipeline', '18']]),
     );
-    expect(outputs[0]!.pipeline_version).toBe('17');
+    expect(outputs[0]!.pipeline_version).toBe('18');
     const kept = outputs.find((each) => each.format === 'provenance')!;
     const text = (await bytesOf(kept.object_key)).toString('utf8');
     const provenance = JSON.parse(text);
@@ -825,13 +825,13 @@ describe('publishing a document holding a value', () => {
       expect(await checkOoxml(docx)).toEqual([]);
     }, 120_000);
 
-    it('DAT-042 records each bound image in provenance.json at its schema 2: its hash, its asset version and its description', async () => {
+    it('DAT-042 records each bound image in provenance.json, at its schema 3 since TB1.2: its hash, its asset version and its description', async () => {
       const version = await documentPlacingPhotos('north');
       const request = await ask(version, ['pdf']);
       expect(await work()).toBe('done');
       const kept = (await outputsOf(request)).find((each) => each.format === 'provenance')!;
       const provenance = JSON.parse((await bytesOf(kept.object_key)).toString('utf8'));
-      expect(provenance.schemaVersion).toBe(2);
+      expect(provenance.schemaVersion).toBe(3);
       expect(provenance.values).toMatchObject(
         [
           ['p1', 'i1', NORTH_SAYS],

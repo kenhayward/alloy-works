@@ -77381,6 +77381,11 @@
                               "image_description_missing",
                               "image_not_placeable",
                               "value_not_image",
+                              "column_missing",
+                              "column_image",
+                              "format_mismatch",
+                              "table_too_long",
+                              "table_words_missing",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -78741,6 +78746,11 @@
                               "image_description_missing",
                               "image_not_placeable",
                               "value_not_image",
+                              "column_missing",
+                              "column_image",
+                              "format_mismatch",
+                              "table_too_long",
+                              "table_words_missing",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -86965,6 +86975,11 @@
                               "image_description_missing",
                               "image_not_placeable",
                               "value_not_image",
+                              "column_missing",
+                              "column_image",
+                              "format_mismatch",
+                              "table_too_long",
+                              "table_words_missing",
                               "engine_failed",
                               "store_failed"
                             ]

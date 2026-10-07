@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { parseContentDocument, type ContentDocument } from '../content/model/document.js';
 import { scanXml } from '../content/ooxml/xml.js';
+import type { Column } from '../data/definition.js';
 import {
   assemble,
   figureImageKey,
@@ -12,6 +13,7 @@ import {
   type PublishingAsset,
   type WordInput,
 } from '../publishing/assemble.js';
+import type { Held } from '../publishing/bind.js';
 import { defaultLayout, parseLayout, type Layout } from '../publishing/layout.js';
 import type { PublishingFormat } from '../publishing/layout.js';
 import { mathsTree } from '../publishing/maths.js';
@@ -4832,5 +4834,105 @@ describe("writeDocx: the report names what Word cannot carry of the PDF's struct
       { assets: IMAGES, theme: floatedTheme },
     );
     expect(unlinked(standing)).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------
+// TB1.2 (TB1-H, TB1-I): a bound table, laid out by the binding stage, written for Word.
+// ---------------------------------------------------------------------------------------------------
+
+describe('writeDocx: a bound table (the TB1 plan, TB1-I; TB1.2)', () => {
+  const COLUMNS: Column[] = [
+    { name: 'site', from: { column: 'site_code' }, type: { base: 'text' } },
+    {
+      name: 'reading',
+      from: { column: 'reading_kpa' },
+      type: { base: 'decimal', precision: 10, scale: 2 },
+    },
+  ];
+  const rows: Held = {
+    result: {
+      columns: [
+        ['site', 'text'],
+        ['reading', 'decimal'],
+      ],
+      rows: [
+        ['north', '1.5'],
+        ['south', '-2'],
+      ],
+    },
+    columns: COLUMNS,
+    datasetVersion: uuid(901),
+    images: {},
+  };
+  const bound = {
+    type: 'boundTable',
+    id: 't1',
+    binding: { type: 'binding', id: 'rows', query: uuid(900), parameters: {}, mode: 'checked' },
+    caption: [text('Readings')],
+    columns: [
+      { column: 'site', header: 'Site', wrap: false },
+      {
+        column: 'reading',
+        header: 'Reading',
+        format: { negative: 'parentheses', negativeColour: true },
+      },
+    ],
+    headerColumn: false,
+    source: [text('Gauge survey')],
+  };
+  const tabled = tabledOf([bound], {
+    bindings: new Map([[id('blocks'), new Map([['rows', rows]])]]),
+  });
+  const blocks = blocksOf(tabled.docx);
+  const table = blocks.find((each) => each.name === 'w:tbl')!;
+  const cells = rowsOf(table);
+  const paragraphOf = (row: number, column: number) => kids(cells[row]![column]!, 'w:p')[0]!;
+
+  it('TAB-046 TAB-027 sets a number column at its end with a value lacking parentheses stood in by one, a no-wrap column unwrapped, and the source after the table', () => {
+    expect(cells.map((row) => row.map((each) => textOf(each)))).toEqual([
+      ['Site', 'Reading'],
+      ['north', '1.50'],
+      ['south', '(2.00)'],
+    ]);
+    // Text at its start, numbers at their end, as the table style aligns them by type.
+    expect(first(paragraphOf(1, 0), 'w:jc')?.attrs['w:val']).toBe('left');
+    expect(first(paragraphOf(1, 1), 'w:jc')?.attrs['w:val']).toBe('right');
+    // A parenthesis's advance in the cell's face, at its size, after `1.50` and none after `(2.00)`,
+    // so their separators stand at one place; and no character added to either.
+    const size = DEFAULT_THEME.paragraphStyles.get('table-cell')!.properties.size;
+    const parenthesis = (1024 / 2048) * (Math.round(size * 2) / 2);
+    expect(first(paragraphOf(1, 1), 'w:ind')?.attrs['w:right']).toBe(twips(parenthesis));
+    expect(first(paragraphOf(2, 1), 'w:ind')?.attrs['w:right'] ?? '0').toBe('0');
+    // The site column never wraps; the reading column may.
+    for (const row of [0, 1, 2]) {
+      expect(stated(cells[row]![0]!, 'w:tcPr')).toHaveProperty('w:noWrap');
+      expect(stated(cells[row]![1]!, 'w:tcPr')).not.toHaveProperty('w:noWrap');
+    }
+    // The source, beneath the table in the table note role, after the layout's word.
+    const source = blocks[blocks.indexOf(table) + 1]!;
+    expect(textOf(source)).toBe('Source: Gauge survey');
+    expect(styleOf(source)).toBe('table-note');
+  });
+
+  it("TAB-016 sets a negative in its table style's colour, beside its parentheses, and nothing else in it", () => {
+    const colours = (paragraph: Element) =>
+      all(paragraph, 'w:r').map((run) => first(run, 'w:color')?.attrs['w:val'] ?? null);
+    expect(colours(paragraphOf(2, 1))).toEqual(['C00000']);
+    expect(colours(paragraphOf(1, 1))).toEqual([null]);
+  });
+
+  it('writes an empty result as its headers and the statement in one cell across the table', () => {
+    const empty = tabledOf([bound], {
+      bindings: new Map([
+        [id('blocks'), new Map([['rows', { ...rows, result: { ...rows.result, rows: [] } }]])],
+      ]),
+    });
+    const [heading, statement] = rowsOf(
+      blocksOf(empty.docx).find((each) => each.name === 'w:tbl')!,
+    );
+    expect(heading!.map((each) => textOf(each))).toEqual(['Site', 'Reading']);
+    expect(statement!.map((each) => textOf(each))).toEqual(['No rows']);
+    expect(stated(statement![0]!, 'w:tcPr')['w:gridSpan']).toEqual({ 'w:val': '2' });
   });
 });

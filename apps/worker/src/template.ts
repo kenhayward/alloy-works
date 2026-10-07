@@ -8,6 +8,7 @@ import {
   PUBLISHING_SCHEMA_12,
   PUBLISHING_SCHEMA_13,
   PUBLISHING_SCHEMA_14,
+  PUBLISHING_SCHEMA_15,
   type PublishedDocument,
   type PublishedDocument1,
 } from '@alloy-works/domain';
@@ -18,14 +19,15 @@ export type PublishedSchema = (PublishedDocument | PublishedDocument1)['schema']
 /**
  * `PUBLISHING_SCHEMA` frozen at the schema this worker's newest template was written for, and the one
  * key the maps below take for it. The annotation is the whole point: the day `PUBLISHING_SCHEMA` is
- * repointed at `publishing/16`, THIS LINE stops typechecking, where a key computed from the moving
- * constant would have moved with it and left `publishing/16` read by template 15 with the typecheck
+ * repointed at `publishing/17`, THIS LINE stops typechecking, where a key computed from the moving
+ * constant would have moved with it and left `publishing/17` read by template 16 with the typecheck
  * clean (the schema-keyed map trap, which cost three slices before it was pinned by literals in
- * `template.test.ts`). Freeze the domain's `PUBLISHING_SCHEMA_15` beside the new schema, key template
- * 15's rows by it, and re-point this at the new one - as themes 1 did for `publishing/11`, themes 2
- * for `publishing/12`, W14.4 for `publishing/13` and W14.5 for `publishing/14`.
+ * `template.test.ts`). Freeze the domain's `PUBLISHING_SCHEMA_16` beside the new schema, key template
+ * 16's rows by it, and re-point this at the new one - as themes 1 did for `publishing/11`, themes 2
+ * for `publishing/12`, W14.4 for `publishing/13`, W14.5 for `publishing/14` and TB1.2 for
+ * `publishing/15`.
  */
-export const PUBLISHING_SCHEMA_CURRENT: 'publishing/15' = PUBLISHING_SCHEMA;
+export const PUBLISHING_SCHEMA_CURRENT: 'publishing/16' = PUBLISHING_SCHEMA;
 
 const at = (version: number) =>
   fileURLToPath(new URL(`../templates/publication/${version}/main.typ`, import.meta.url));
@@ -48,8 +50,9 @@ const at = (version: number) =>
  * `publishing/12`, the same again set from its theme, version 13 `publishing/13`, the same again
  * with its tables and images set from their styles, version 14 `publishing/14`, the same again
  * with a table or a figure the author marked unnumbered left out of the list of its kind, and version
- * 15 `publishing/15`, the same again with a table's and a figure's caption where its style places it.
- * Versions 2 to 14 are kept although `assemble`
+ * 15 `publishing/15`, the same again with a table's and a figure's caption where its style places it,
+ * and version 16 `publishing/16`, the same again with a table that may be a bound table laid out.
+ * Versions 2 to 15 are kept although `assemble`
  * makes none of their schemas any more: they are what the publications made before a run carried
  * its marks, before a block could be a list, before one could be a quotation or preformatted text,
  * before one could be a table, before one could be a figure, before a run could be an image, before
@@ -83,13 +86,16 @@ export const PUBLICATION_TEMPLATE = {
   // W14.5 repointed `PUBLISHING_SCHEMA` at `publishing/15`, and the guard above asked for this row:
   // template 15, which sets a table's and a figure's caption where its style places it.
   15: { name: 'publication', version: 15, file: at(15) },
+  // TB1.2 repointed `PUBLISHING_SCHEMA` at `publishing/16`, and the guard above asked for this row:
+  // template 16, which sets a bound table's alignment, wrap, negative colour and source.
+  16: { name: 'publication', version: 16, file: at(16) },
 } as const;
 
 /**
  * The template that reads a published document of each schema. `assemble` makes `publishing/1` only
  * for a request made before layouts, which publishes with template 1 as it would have then (Ken's
- * answer F); every request since is made under a layout and a theme, and publishes with template 15,
- * the one W14.5 writes. Templates 9 to 14 keep their rows for `publishing/9` to `publishing/14`, the
+ * answer F); every request since is made under a layout and a theme, and publishes with template 16,
+ * the one TB1.2 writes. Templates 9 to 15 keep their rows for `publishing/9` to `publishing/15`, the
  * schemas they were written for, although nothing makes any of them now (cross-references 2, ruling
  * R8; equations 2; themes 1; themes 2; W14.4; W14.5); no row names templates 2 to 8.
  *
@@ -110,7 +116,8 @@ export const TEMPLATE_READING = {
   [PUBLISHING_SCHEMA_12]: 12,
   [PUBLISHING_SCHEMA_13]: 13,
   [PUBLISHING_SCHEMA_14]: 14,
-  [PUBLISHING_SCHEMA_CURRENT]: 15,
+  [PUBLISHING_SCHEMA_15]: 15,
+  [PUBLISHING_SCHEMA_CURRENT]: 16,
 } as const satisfies Record<
   | PublishedSchema
   | typeof PUBLISHING_SCHEMA_9
@@ -118,6 +125,7 @@ export const TEMPLATE_READING = {
   | typeof PUBLISHING_SCHEMA_11
   | typeof PUBLISHING_SCHEMA_12
   | typeof PUBLISHING_SCHEMA_13
-  | typeof PUBLISHING_SCHEMA_14,
+  | typeof PUBLISHING_SCHEMA_14
+  | typeof PUBLISHING_SCHEMA_15,
   keyof typeof PUBLICATION_TEMPLATE
 >;

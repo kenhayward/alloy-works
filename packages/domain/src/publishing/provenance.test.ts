@@ -70,7 +70,7 @@ const numbering = {
 describe('publishedProvenance', () => {
   it('records each value: where, what was printed and from what, and the result it was taken from', () => {
     expect(publishedProvenance([value], datasets, numbering)).toEqual({
-      schemaVersion: 2,
+      schemaVersion: 3,
       values: [
         {
           node: NODE,
@@ -103,7 +103,7 @@ describe('publishedProvenance', () => {
     });
   });
 
-  it('records a bound image at schema 2 by its hash, the asset version it was placed as and its description, and no printed value', () => {
+  it('records a bound image by its hash, the asset version it was placed as and its description, and no printed value', () => {
     const type = { base: 'image', encoding: 'binary', description: { column: 'caption' } } as const;
     const image: PrintedValue = {
       node: NODE,
@@ -116,7 +116,7 @@ describe('publishedProvenance', () => {
       datasetVersion: VERSION,
     };
     const made = publishedProvenance([value, image], datasets, numbering);
-    expect(made.schemaVersion).toBe(2);
+    expect(made.schemaVersion).toBe(3);
     const [, recorded] = made.values;
     expect(recorded).toMatchObject({
       block: 'f1',
@@ -128,6 +128,64 @@ describe('publishedProvenance', () => {
     });
     expect(recorded).not.toHaveProperty('printed');
     expect(recorded).not.toHaveProperty('value');
+  });
+
+  it("TAB-019 TAB-015 records a bound table at schema 3: each column's header and format, its rounding rule stated, and each printed cell with the canonical value it was printed from", () => {
+    const decimal = { base: 'decimal', precision: 40, scale: 30 } as const;
+    const canonical = '1234.567890123456789012345678901';
+    const table: PrintedValue = {
+      node: NODE,
+      block: 't1',
+      binding: 'rows',
+      datasetVersion: VERSION,
+      table: {
+        columns: [
+          {
+            name: 'reading',
+            type: decimal,
+            header: 'Reading (kPa)',
+            format: { style: 'number', places: 2, rounding: 'halfEven', negative: 'minus' },
+          },
+        ],
+        rows: [
+          [{ printed: '1,234.57', value: canonical }],
+          [{ printed: 'Not available', value: null }],
+        ],
+      },
+    };
+    const made = publishedProvenance([value, table], datasets, numbering);
+    expect(made.schemaVersion).toBe(3);
+    const [, recorded] = made.values;
+    expect(recorded).toEqual({
+      node: NODE,
+      number: '1',
+      block: 't1',
+      binding: 'rows',
+      dataset: {
+        id: '00000000-0000-4000-8000-0000000000d0',
+        name: 'Gauges',
+        version: VERSION,
+        number: '0.1',
+      },
+      result: (made.values[0] as { result: unknown }).result,
+      table: {
+        columns: [
+          {
+            name: 'reading',
+            type: decimal,
+            header: 'Reading (kPa)',
+            format: { style: 'number', places: 2, rounding: 'halfEven', negative: 'minus' },
+          },
+        ],
+        rows: [
+          [{ printed: '1,234.57', value: canonical }],
+          [{ printed: 'Not available', value: null }],
+        ],
+      },
+    });
+    // The canonical value as the source returned it, every digit, beside what was printed of it.
+    expect(new TextDecoder().decode(provenanceBytes(made))).toContain(`"value":"${canonical}"`);
+    expect(recorded).not.toHaveProperty('take');
   });
 
   it('holds no SQL, no connection and no column source, whatever the stored provenance carries beside them', () => {

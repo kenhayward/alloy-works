@@ -186,7 +186,7 @@ export const BOUND_TABLE_COLUMNS_MAX = 64;
 export const BOUND_TABLE_SORT_MAX = 4;
 
 /**
- * **A column a bound table shows** (TAB-001 to TAB-003, TAB-035, TAB-036): the result column by its
+ * **A column a bound table shows** (TAB-001 to TAB-003, TAB-036; no-wrap, half of TAB-035): the result column by its
  * name, never a position; its header, 1 to 200 characters in NFC; a unit printed in the header or
  * after each value; a format merged over the table style's (TAB-037); an alignment over the type's
  * (TAB-046); and `wrap: false` where it must not wrap - `false` the only value stored, as `numbered`.

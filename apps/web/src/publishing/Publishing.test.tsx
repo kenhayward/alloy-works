@@ -693,6 +693,35 @@ describe('publishing from the document page', () => {
     }
   });
 
+  it('names each bound table a publish could not lay out, and why (TB1)', async () => {
+    const failed = (code: string, detail: string) => ({
+      stage: 'bind' as const,
+      code: code as 'column_missing',
+      node: 'n7',
+      block: 't1',
+      detail,
+    });
+    const fake = failing([
+      failed('column_missing', 'depth'),
+      failed('column_image', 'photo'),
+      failed('format_mismatch', 'site: places'),
+      failed('table_too_long', '20001'),
+      failed('table_words_missing', 'noRows, notAvailable, source'),
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    for (const words of [
+      'This table shows or sorts by the column depth, which its result does not have. Change the table, or resolve it again.',
+      'This table shows the image column photo, which a table cannot print. Take the column out of the table.',
+      "This table's column site has a format setting, places, that does not apply to its values. Change the column's format.",
+      "This table's result has 20001 rows, more than a table can print. Narrow the rows in its query.",
+      "The layout has no words for a table's empty result, a missing value or its source. The layout has to change before this document can be published.",
+    ]) {
+      expect(why).toHaveTextContent(words);
+    }
+  });
+
   it('names a cross-reference Word would not print as the PDF does, and why, pointing at the PDF', async () => {
     // Word 3's ruling R5: `detail` is `<form>:<why>`, and the reference is the author's to change.
     const refused = (detail: string) => ({

@@ -186,6 +186,14 @@ describe('a table cell, formatted', () => {
     expect(cell('', { base: 'text' })).toBe('');
     expect(cell(null, { base: 'text' })).toBe('Not available');
     expect(fieldFormatSchema.safeParse({ null: '0' }).success).toBe(false);
+    // Digits of any script, and a currency's symbol beside them, read as a number too.
+    const fullwidth = String.fromCodePoint(0xff15);
+    const arabicIndic = String.fromCodePoint(0x0665, 0x066b, 0x0660);
+    const euro = String.fromCodePoint(0x20ac);
+    for (const looks of [fullwidth, arabicIndic, '$5', `5 ${euro}`, `(${euro}5)`]) {
+      expect(fieldFormatSchema.safeParse({ null: looks }).success, looks).toBe(false);
+    }
+    expect(fieldFormatSchema.safeParse({ null: 'n/a' }).success).toBe(true);
   });
 
   it('TAB-019 rounds a 30-digit decimal for print and leaves its canonical value as it was', () => {

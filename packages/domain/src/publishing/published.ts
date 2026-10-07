@@ -7,7 +7,11 @@ import type { MathsTree } from './maths.js';
 /**
  * The published document (docs/design/publishing.md, "The published document"): the one intermediate
  * every writer reads, holding everything a writer needs and nothing it must decide. Version
- * `publishing/15` is the document whose **tables and figures have their captions where their styles
+ * `publishing/16` is the document whose **tables may be bound tables laid out** (the TB1 plan, TB1-J):
+ * such a table carries `bound` - each column's alignment and wrap, and its source - and its body cells
+ * the parenthesis inset and negative colour `layoutTable` gave them; an authored table carries none of
+ * them and is what `publishing/15` made of it. Otherwise it is
+ * `publishing/15`, the document whose **tables and figures have their captions where their styles
  * say** (W14.5, W-I; STY-079, STR-025): the theme's projection carries each table style's
  * `captionPosition`, and a figure carries its own, from its image style - above or below the block, in
  * the engine's terms. Otherwise it is `publishing/14`, the document whose **tables and figures say
@@ -22,11 +26,11 @@ import type { MathsTree } from './maths.js';
  * set in, runs that carry their marks and may be images, footnotes, cross-references or equations,
  * blocks that may be lists, quotations, preformatted text, tables with their notes, figures and
  * equations, each carrying its anchor where a reference names it, and nodes' titles as runs, with its
- * generated lists after the contents, which `apps/worker/templates/publication/15/` reads. It is never
+ * generated lists after the contents, which `apps/worker/templates/publication/16/` reads. It is never
  * stored - only its digest is, on the publication - so a later shape is a new schema string and a new
  * template version, not a migration.
  */
-export const PUBLISHING_SCHEMA = 'publishing/15';
+export const PUBLISHING_SCHEMA = 'publishing/16';
 
 /**
  * The first slice's shape, before layouts: what `assemble` still makes, byte for byte, for a request
@@ -133,6 +137,13 @@ export const PUBLISHING_SCHEMA_13 = 'publishing/13';
  * with it are a record.
  */
 export const PUBLISHING_SCHEMA_14 = 'publishing/14';
+
+/**
+ * The document as it stood before a table could be a bound table laid out, frozen by TB1.2 for the
+ * reason `publishing/13` is: `apps/worker/templates/publication/15/` asserts it, and a template version
+ * and the publications made with it are a record.
+ */
+export const PUBLISHING_SCHEMA_15 = 'publishing/15';
 
 /**
  * A BCP 47 tag as Typst can carry it: a language of two or three letters and, where there is one, a
@@ -389,6 +400,14 @@ export interface PublishedCell {
    * where the grid is already known to be whole, so a template sets a cell without placing spans.
    */
   readonly scope: 'column' | 'row' | 'both' | null;
+  /**
+   * A bound table's body cell alone (TB1-I): true where it prints no parentheses in a column printing
+   * them and aligned on its separator, so a template stands it in from its end by a parenthesis's
+   * advance, and its separator meets theirs. Absent elsewhere.
+   */
+  readonly inset?: true;
+  /** A bound table's negative, set in its table style's negative colour (TAB-016). Absent elsewhere. */
+  readonly colour?: string;
 }
 
 /**
@@ -427,6 +446,17 @@ export interface PublishedTable {
    * inside its figure, or null where the table has none or it says nothing.
    */
   readonly note: readonly PublishedInline[] | null;
+  /**
+   * **A bound table's** (TB1-H, TB1-J), absent from an authored one: each column's alignment - a
+   * `decimal` one set at its end with its digits unkerned, so its separators meet (TAB-046) - and
+   * whether it may wrap (the no-wrap half of TAB-035); and its source, as runs the layout's word begins, which a template
+   * sets beneath the table after its note (TAB-027), or null.
+   */
+  readonly bound?: {
+    readonly align: readonly ('start' | 'centre' | 'end' | 'decimal')[];
+    readonly wrap: readonly boolean[];
+    readonly source: readonly PublishedInline[] | null;
+  };
 }
 
 /**

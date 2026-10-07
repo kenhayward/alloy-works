@@ -2,13 +2,17 @@ import type { BlockNode } from '../content/model/blocks.js';
 import type { ContentDocument } from '../content/model/document.js';
 import type { Alternative, InlineNode } from '../content/model/inline.js';
 import type { Binding } from '../data/binding.js';
-import type { CanonicalResult } from '../data/canonical.js';
-import type { ImageColumnType, ValueType } from '../data/columns.js';
+import type { CanonicalResult, CanonicalValue } from '../data/canonical.js';
+import type { ColumnType, ImageColumnType, ValueType } from '../data/columns.js';
 import type { Column } from '../data/definition.js';
+import type { FieldFormat } from '../data/field-format.js';
 import { formatValue } from '../data/format.js';
+import { layoutTable, type TablePresentation } from '../data/table.js';
 import { takeValue, type TakeOutcome } from '../data/take.js';
+import { canonicalJson } from '../stored/canonical.js';
 import type { ValueFormats } from '../theme/schema.js';
 
+import { DEFAULT_NEGATIVE_COLOUR, laidOutTable } from './bound.js';
 import type { PublishFailure } from './failures.js';
 
 declare const BOUND: unique symbol;
@@ -55,9 +59,28 @@ interface Placed {
 }
 
 /**
+ * **A bound table as printed** (the TB1 plan, TB1-J; TAB-019): each column shown - its result column's
+ * name and type, its header and the format it was printed by, its rounding rule among it - and each
+ * printed cell, row by row, with the canonical value it was printed from.
+ */
+export interface PrintedTable {
+  readonly columns: readonly {
+    readonly name: string;
+    readonly type: ColumnType;
+    readonly header: string;
+    readonly format: FieldFormat;
+  }[];
+  readonly rows: readonly (readonly {
+    readonly printed: string;
+    readonly value: CanonicalValue;
+  }[])[];
+}
+
+/**
  * A value set in the content: where, which binding, what was printed and what it was printed from -
  * or, for an image (the B6 plan, B6-E), the image's hash and the asset version it was placed as, and
- * its description: the text it was described by, or `decorative`.
+ * its description: the text it was described by, or `decorative` - or, for a bound table (TB1-J), the
+ * table as printed, its binding taking no value.
  */
 export type PrintedValue =
   | (Placed & {
@@ -69,7 +92,26 @@ export type PrintedValue =
       readonly image: { readonly hash: string; readonly assetVersion: string };
       readonly description: string;
       readonly column: { readonly name: string; readonly type: ImageColumnType };
-    });
+    })
+  | (Omit<Placed, 'take'> & { readonly table: PrintedTable });
+
+/**
+ * What the binding stage lays a bound table out with (TB1-H): the table style's presentation by its
+ * identifier, and the layout's words - each absent from a layout stored before its schema 7. Absent
+ * altogether for a request made before layouts, whose bound table `assemble` refuses by name.
+ */
+export interface BoundTables {
+  readonly style: (
+    id: string,
+  ) => (TablePresentation & { readonly negativeColour?: string | undefined }) | undefined;
+  readonly words: {
+    readonly noRows?: string | undefined;
+    readonly notAvailable?: string | undefined;
+    readonly source?: string | undefined;
+  };
+  /** Each table laid out once per dataset version and presentation, across the occurrences. */
+  readonly laidOut?: Map<string, ReturnType<typeof layoutTable>>;
+}
 
 /** An image a take gave, with the asset version its result's provenance admitted it as. */
 type TakenImage = Extract<TakeOutcome, { image: string }> & { readonly assetVersion: string };
@@ -108,6 +150,7 @@ export function bind(
   content: ContentDocument,
   held: ReadonlyMap<string, Held>,
   formats: ValueFormats,
+  tables?: BoundTables,
 ): { bound: Bound; values: PrintedValue[]; failures: PublishFailure[] } {
   const values: PrintedValue[] = [];
   const failures: PublishFailure[] = [];
@@ -181,6 +224,80 @@ export function bind(
       column: image.column,
     });
 
+  /**
+   * **A bound table laid out in its place** (TB1-H): its result read as an inline binding's is, laid
+   * out by `layoutTable` in its table style and the document's formats, and replaced by a table of the
+   * text it printed; or every failure, by name, at stage `bind`, the block left as it stood.
+   */
+  const layOut = (table: Extract<BlockNode, { type: 'boundTable' }>): BlockNode => {
+    if (tables === undefined) return table;
+    const result = held.get(table.binding.id);
+    if (result === undefined) {
+      fail('binding_unresolved', table.id, table.binding.id);
+      return table;
+    }
+    if (result === 'unreadable') {
+      fail('result_unreadable', table.id, table.binding.id);
+      return table;
+    }
+    const { noRows, notAvailable, source } = tables.words;
+    if (noRows === undefined || notAvailable === undefined || source === undefined) {
+      const missing = Object.entries({ noRows, notAvailable, source })
+        .filter(([, word]) => word === undefined)
+        .map(([name]) => name);
+      fail('table_words_missing', table.id, missing.join(', '));
+      return table;
+    }
+    const style = tables.style(table.style) ?? {};
+    const key = canonicalJson({ version: result.datasetVersion, table, style, formats });
+    let laid = tables.laidOut?.get(key);
+    if (laid === undefined) {
+      laid = layoutTable(table, result.result, result.columns, style, formats, {
+        noRows,
+        notAvailable,
+      });
+      tables.laidOut?.set(key, laid);
+    }
+    if ('failures' in laid) {
+      for (const each of laid.failures) {
+        fail(
+          each.code,
+          table.id,
+          each.code === 'table_too_long'
+            ? each.detail
+            : each.code === 'format_mismatch'
+              ? `${each.column}: ${each.detail}`
+              : each.column,
+        );
+      }
+      return table;
+    }
+    values.push({
+      node,
+      block: table.id,
+      binding: table.binding.id,
+      datasetVersion: result.datasetVersion,
+      table: {
+        columns: laid.columns.map((column) => ({
+          name: column.name,
+          type: column.type,
+          header: column.header,
+          format: column.format,
+        })),
+        rows: laid.rows.map((row) =>
+          row.cells.map((cell) => ({ printed: cell.text, value: cell.value })),
+        ),
+      },
+    });
+    // The empty statement's own bindings are set only where it prints - the result has no rows - so a
+    // statement not printed records no value and fails nothing (the TB1 final review, M2).
+    const printed =
+      laid.empty === null || table.empty === undefined
+        ? laid
+        : { ...laid, empty: { ...laid.empty, content: inlines(table.empty, table.id) } };
+    return laidOutTable(table, printed, style.negativeColour ?? DEFAULT_NEGATIVE_COLOUR);
+  };
+
   const inlines = (sequence: readonly InlineNode[], block: string, noImage = false): InlineNode[] =>
     sequence.map((inline): InlineNode => {
       if (inline.type === 'footnote') {
@@ -246,16 +363,15 @@ export function bind(
             })),
           };
         case 'boundTable':
-          // The bindings in its own words, as a table's caption's and note's are. Its own binding is
-          // left for TB1.2's stage, which lays the result out in its place; until then `assemble`
-          // refuses the block by name (the TB1 plan, TB1.1).
-          return {
+          // The bindings in its own words first, as a table's caption's and note's are - but for its
+          // empty statement's, set only where it prints; then its own binding, the whole result laid
+          // out in its place (TB1-H).
+          return layOut({
             ...block,
             caption: inlines(block.caption, block.id, true),
-            ...(block.empty ? { empty: inlines(block.empty, block.id, inFootnote) } : {}),
             ...(block.note ? { note: inlines(block.note, block.id, inFootnote) } : {}),
             ...(block.source ? { source: inlines(block.source, block.id, inFootnote) } : {}),
-          };
+          });
         case 'figure': {
           // The figure's own binding first, as a reader meets its image before its caption.
           let figure: BlockNode = block;

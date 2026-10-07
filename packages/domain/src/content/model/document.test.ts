@@ -2162,6 +2162,15 @@ describe('a bound table (the TB1 plan, TB1-A and TB1-B)', () => {
         ],
       }),
     ).toThrow(/T1.*depth.*column_repeated/);
+    // Headers differing only in case are one header to a reader, so are refused too.
+    expect(() =>
+      parsedTable({
+        columns: [
+          { column: 'depth', header: 'Depth' },
+          { column: 'depth', header: 'depth' },
+        ],
+      }),
+    ).toThrow(/T1.*depth.*column_repeated/);
     const kept = parsedTable({
       columns: [
         { column: 'depth', header: 'Depth' },
