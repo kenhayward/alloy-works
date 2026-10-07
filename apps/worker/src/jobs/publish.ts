@@ -23,6 +23,7 @@ import {
   type HeldDataset,
   type Held,
   type PublishFailure,
+  type WideTable,
 } from '@alloy-works/domain';
 import { tenantPrefix, type ObjectStores, type TenantStore } from '@alloy-works/objects';
 import {
@@ -407,12 +408,12 @@ export function publishJob(deps: {
           faces: await pinnedFacesByHash(deps.fonts.directory),
           images: new Map(images.map((image) => [image.path, image.bytes])),
           // How the PDF set each table too wide for its measure (TB3-J).
-          wide: wide.flatMap(({ node, table, scale, rotate }) =>
+          wide: wide.flatMap(({ node, table, scale, rotate }): WideTable[] =>
             rotate
-              ? [{ node, block: table, set: 'rotated' as const }]
+              ? [{ node, block: table, set: 'rotated' }]
               : scale === null
                 ? []
-                : [{ node, block: table, set: 'scaled' as const }],
+                : [{ node, block: table, set: 'scaled' }],
           ),
         });
         const stored = await keep(read.store, bytes, 'docx');
