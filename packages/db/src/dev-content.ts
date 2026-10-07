@@ -9,7 +9,7 @@ import { grant } from './grants.js';
 import { DEFAULT_LAYOUT_ID } from './layouts.js';
 import { createRole, findRole } from './roles.js';
 import type { TenantTransaction } from './tables.js';
-import { createTemplate } from './templates.js';
+import { createTemplate, recordTemplateVersion } from './templates.js';
 import { DEFAULT_THEME_ID } from './themes.js';
 import { createArtifact, latestVersion } from './versions.js';
 
@@ -195,14 +195,39 @@ export async function seedDevelopmentContent(
 }
 
 /** Development's Review schema and its one field, and the template assigning it. Fixed, so a rerun finds them. */
-const REVIEWER_FIELD = '0d5e7a11-0000-4000-8000-00000000f1e1';
+export const REVIEWER_FIELD = '0d5e7a11-0000-4000-8000-00000000f1e1';
 const REVIEW_SCHEMA = '0d5e7a11-0000-4000-8000-00000000c4e3';
+
+/**
+ * The Report template's parameters (the TP1 plan, Task 5), both optional so nothing made from it
+ * before must now be given one: the reviewer, changeable and seeding the Reviewer field, and the date
+ * issued, fixed and offered to bindings.
+ */
+const REPORT_PARAMETERS = [
+  {
+    name: 'reviewer',
+    type: { base: 'text' as const },
+    required: false,
+    list: false,
+    changeable: true,
+    feeds: { field: REVIEWER_FIELD, arguments: false },
+  },
+  {
+    name: 'issued',
+    type: { base: 'date' as const },
+    required: false,
+    list: false,
+    changeable: false,
+    feeds: { arguments: true },
+  },
+];
 
 /**
  * A template in General to make a document from (templates.md): Report, whose Introduction and
  * Conclusion a document may not publish without and whose sections keep their order, over the
  * environment's theme and layout, assigning Review at the document's level with nothing required -
- * a field no page can fill in yet (W5) must not stop a document publishing. Made once.
+ * a field no page can fill in yet (W5) must not stop a document publishing. Made once; with two
+ * optional parameters (the TP1 plan, Task 5), given once to a Report made before them.
  */
 async function seedReportTemplate(trx: TenantTransaction, space: string, designer: string) {
   const exists = await trx
@@ -211,7 +236,21 @@ async function seedReportTemplate(trx: TenantTransaction, space: string, designe
     .where('kind', '=', 'template')
     .where('space_id', '=', space)
     .executeTakeFirst();
-  if (exists) return;
+  if (exists) {
+    const latest = await latestVersion(trx, exists.id);
+    const content = latest?.content as Record<string, unknown> | undefined;
+    if (latest === undefined || content === undefined || content.parameters !== undefined) return;
+    const recorded = await recordTemplateVersion(trx, {
+      templateId: exists.id,
+      openedFrom: latest.id,
+      definition: { ...content, parameters: REPORT_PARAMETERS },
+      author: designer,
+    });
+    if (recorded.answer !== 'recorded') {
+      throw new Error(`The Report template's parameters were refused: ${recorded.answer}`);
+    }
+    return;
+  }
   const identity = (id: string, name: string) =>
     ({ schemaVersion: DEFINITION_SCHEMA_VERSION, id, name }) as const;
   if (!(await latestVersion(trx, REVIEWER_FIELD))) {
@@ -267,6 +306,7 @@ async function seedReportTemplate(trx: TenantTransaction, space: string, designe
         ],
       },
       changes: { add: true, remove: true, reorder: false },
+      parameters: [...REPORT_PARAMETERS],
     },
   });
   if (made.answer !== 'created') throw new Error(`The Report template was refused: ${made.answer}`);
