@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import {
   applyOutlineOperation,
   blockIdentifierFrom,
+  checkDocumentParameters,
   checkWrittenValues,
   decide,
   materialiseTemplate,
@@ -9,8 +10,10 @@ import {
   outlineDocumentSchema,
   readOutline,
   resolveTemplate,
+  seededValues,
   walkOutline,
   writtenValues,
+  type DocumentParameters,
   type EffectiveField,
   type MetadataFailure,
   type MetadataValues,
@@ -18,6 +21,7 @@ import {
   type OutlineNode,
   type OutlineOperation,
   type OutlineRules,
+  type TemplateParameter,
   type UnresolvedReference,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
@@ -39,7 +43,13 @@ import {
   type SortOf,
 } from './listing.js';
 import type { TenantTransaction } from './tables.js';
-import { documentRules, readTemplate, templateReferences } from './templates.js';
+import {
+  documentRules,
+  readTemplate,
+  refusedParameters,
+  templateReferences,
+  type ParametersRefused,
+} from './templates.js';
 import {
   createArtifact,
   latestVersion,
@@ -47,6 +57,7 @@ import {
   recordVersion,
   type RecordAnswer,
   type StoredVersion,
+  type VersionPosition,
 } from './versions.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -66,7 +77,25 @@ export interface NewDocument {
   readonly author: string;
   /** The template to make it from, at its latest version (templates.md); a blank document without. */
   readonly template?: string;
+  /** Its template's parameters' values, by name (TP1-G); none for a blank document. */
+  readonly parameters?: Readonly<Record<string, unknown>>;
 }
+
+/**
+ * A parameter's value refused (TP1-G, TP1-H): by its declaration (DAT-020), or - where it seeds a
+ * field - by the field's own rule, naming the field (TPL-045).
+ */
+export interface ParameterInvalid {
+  readonly parameter: string;
+  readonly rule: string;
+  readonly value: string;
+  readonly field?: string;
+}
+
+/** Parameter values refused at creation or change, each by name; nothing is written. */
+export type ParameterValuesRefused =
+  | { readonly answer: 'parameter.unknown'; readonly parameters: readonly string[] }
+  | { readonly answer: 'parameter.invalid'; readonly problems: readonly ParameterInvalid[] };
 
 export type CreateDocumentAnswer =
   | { readonly answer: 'created'; readonly version: StoredVersion }
@@ -77,7 +106,9 @@ export type CreateDocumentAnswer =
   /** No template by that id that the author may read (TE-I): nothing tells the two apart. */
   | { readonly answer: 'template.missing' }
   /** A reference the template makes does not resolve now (TPL-004), each named; nothing is written. */
-  | { readonly answer: 'template.unresolved'; readonly unresolved: readonly UnresolvedReference[] };
+  | { readonly answer: 'template.unresolved'; readonly unresolved: readonly UnresolvedReference[] }
+  | ParameterValuesRefused
+  | ParametersRefused;
 
 /**
  * What one structural act answers: the version chain's own answers, or a refusal from the outline -
@@ -159,7 +190,12 @@ export async function createDocument(
   }
 
   const heading = { title, language: input.language, direction: input.direction };
+  const given = input.parameters ?? {};
   if (input.template === undefined) {
+    // A blank document declares no parameter, so any value given is for one it does not have.
+    if (Object.keys(given).length > 0) {
+      return { answer: 'parameter.unknown', parameters: Object.keys(given) };
+    }
     const content: OutlineDocument = {
       schemaVersion: OUTLINE_SCHEMA_VERSION,
       ...heading,
@@ -186,11 +222,36 @@ export async function createDocument(
     await templateReferences(trx, template.definition),
   );
   if (!resolved.ok) return { answer: 'template.unresolved', unresolved: resolved.unresolved };
+  // Its parameters (TP1-G), in this order: a name it does not declare, each value against its
+  // declaration, the template's own parameter checks against what resolves now, and each seeded value
+  // against its field - so nothing is written on any refusal (TPL-018).
+  const declared = template.definition.parameters ?? [];
+  const checked = checkDocumentParameters(declared, given);
+  if (checked) return parameterValuesRefused(checked);
+  const unusable = refusedParameters(template.definition, resolved);
+  if (unusable) return unusable;
+  const parameters = present(given);
+  const seeded = seededValues(declared, parameters);
+  const unfit = checkWrittenValues(resolved.document, seeded);
+  if (unfit.length > 0) {
+    return {
+      answer: 'parameter.invalid',
+      problems: unfit.flatMap((failure) =>
+        feeding(declared, failure.field).map((parameter) => ({
+          parameter,
+          rule: failure.rule,
+          value: shownValue(parameters[parameter]),
+          field: failure.field,
+        })),
+      ),
+    };
+  }
   const { outline, values } = materialiseTemplate(resolved, heading, newNodeIdentifier);
   const version = await createArtifact(trx, {
     author: input.author,
     spaceId: input.spaceId,
-    substance: { kind: 'document', content: outline, values },
+    // Each seeded field's value over its default (TPL-066's half), once: afterwards it is the author's.
+    substance: { kind: 'document', content: outline, values: { ...values, ...seeded }, parameters },
   });
   await trx
     .insertInto('document_template')
@@ -201,6 +262,35 @@ export async function createDocument(
     })
     .execute();
   return { answer: 'created', version };
+}
+
+/**
+ * Checked values as stored: a null, which `checkParameterValues` reads as no value, is left out, so an
+ * optional parameter given none is recorded as absent and never as null.
+ */
+function present(values: Readonly<Record<string, unknown>>): DocumentParameters {
+  return Object.fromEntries(
+    Object.entries(values).filter(([, value]) => value !== null && value !== undefined),
+  ) as DocumentParameters;
+}
+
+/** The parameters that seed a field, by name. */
+function feeding(declared: readonly TemplateParameter[], field: string): string[] {
+  return declared.filter((each) => each.feeds.field === field).map((each) => each.name);
+}
+
+/** A value as a refusal names it: text as it is, anything else as JSON (DAT-020's spelling). */
+function shownValue(value: unknown): string {
+  return value === undefined ? '' : typeof value === 'string' ? value : JSON.stringify(value);
+}
+
+/** The domain's refusal of parameter values, as the store answers it. */
+function parameterValuesRefused(
+  refused: NonNullable<ReturnType<typeof checkDocumentParameters>>,
+): ParameterValuesRefused {
+  return refused.code === 'parameter_unknown'
+    ? { answer: 'parameter.unknown', parameters: refused.parameters }
+    : { answer: 'parameter.invalid', problems: refused.problems };
 }
 
 /**
@@ -513,8 +603,14 @@ export async function editOutline(
     artifactId: input.artifactId,
     openedFrom: input.openedFrom,
     author: input.author,
-    // The document's values are not the outline's to change, so they are carried as they stand.
-    substance: { kind: 'document', content: applied.outline, values: opened.values },
+    // The document's values and parameters are not the outline's to change, so they are carried as
+    // they stand (TP1-E).
+    substance: {
+      kind: 'document',
+      content: applied.outline,
+      values: opened.values,
+      parameters: opened.parameters,
+    },
   });
 }
 
@@ -562,6 +658,146 @@ export async function recordDocumentValues(
       kind: 'document',
       content: read.outline,
       values: writtenValues(fields, input.values),
+      // Carried as they stand (TP1-E): values are not parameters.
+      parameters: opened.parameters,
     },
   });
+}
+
+/** A parameter that is not changeable given another value than the version opened holds (TPL-021). */
+export type ParametersFixed = {
+  readonly answer: 'parameter.fixed';
+  readonly parameters: readonly string[];
+};
+
+/** Two parameter values, the same by their JSON: a list in its order. */
+const sameParameter = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
+/**
+ * A document's parameters, written whole as its next version with its outline and values unchanged
+ * (templates.md, "Recorded on the document"; TP1-H): checked against the declarations of the template
+ * version it was made from (TP1-F) as at creation, and refused `parameter.fixed` where one that is not
+ * changeable differs from the version opened - an unchanged one passes. A seeded field is not
+ * rewritten: seeding happens once (TE-P).
+ */
+export async function recordDocumentParameters(
+  trx: TenantTransaction,
+  input: {
+    readonly documentId: string;
+    readonly openedFrom: string;
+    readonly author: string;
+    readonly parameters: Readonly<Record<string, unknown>>;
+  },
+): Promise<RecordAnswer | ParameterValuesRefused | ParametersFixed> {
+  const opened = await readVersion(trx, input.openedFrom);
+  if (!opened || opened.artifactId !== input.documentId || opened.kind !== 'document') {
+    return { answer: 'artifact.missing' };
+  }
+  const read = readOutline(opened.content, { artifact: input.documentId, version: opened.id });
+  if (!read.ok) {
+    throw new Error(
+      `The document ${input.documentId} at ${opened.id} does not read: ${read.failure}`,
+    );
+  }
+  const rules = await documentRules(trx, input.documentId);
+  const declared = rules.bound ? (rules.definition.parameters ?? []) : [];
+  const checked = checkDocumentParameters(declared, input.parameters);
+  if (checked) return parameterValuesRefused(checked);
+  const given = present(input.parameters);
+  const fixed = declared
+    .filter((each) => !each.changeable)
+    .filter((each) => !sameParameter(given[each.name], opened.parameters[each.name]))
+    .map((each) => each.name);
+  if (fixed.length > 0) return { answer: 'parameter.fixed', parameters: fixed };
+  return recordVersion(trx, {
+    artifactId: input.documentId,
+    openedFrom: input.openedFrom,
+    author: input.author,
+    substance: {
+      kind: 'document',
+      content: read.outline,
+      values: opened.values,
+      parameters: given,
+    },
+  });
+}
+
+/** One change to a document's parameters, as its history shows it (TPL-020; TP1-H). */
+export interface ParameterChange {
+  readonly version: { readonly id: string; readonly revision: number; readonly version: number };
+  readonly createdAt: Date;
+  readonly author: { readonly id: string; readonly name: string | null } | null;
+  /** Its parameters after the change, whole. */
+  readonly parameters: DocumentParameters;
+  /** The names whose values it changed, sorted: every name it holds, for the first version. */
+  readonly changed: readonly string[];
+}
+
+/** The most changes one page of a document's parameter history holds. */
+export const PARAMETER_HISTORY_MAX = 200;
+
+/**
+ * A document's parameter history, newest first (TPL-020; TP1-H): its first version, and each version
+ * after it whose parameters differ from the one before, read from the version chain's own author and
+ * time over the whole chain, so an outline or values act between two changes is passed over. A version
+ * before 0057 reads as no parameters. A page is at most 200, by keyset over the version's number, with
+ * where the next begins or null; the chain is append-only, so no snapshot is needed (`listVersions`).
+ */
+export async function parameterHistory(
+  trx: TenantTransaction,
+  documentId: string,
+  page: { readonly limit: number; readonly after?: VersionPosition },
+): Promise<{ readonly items: readonly ParameterChange[]; readonly next: VersionPosition | null }> {
+  const limit = Math.min(Math.max(1, Math.trunc(page.limit)), PARAMETER_HISTORY_MAX);
+  if (!UUID.test(documentId)) return { items: [], next: null };
+  const { after } = page;
+  const { rows } = await sql<{
+    id: string;
+    revision_no: number;
+    version_no: number;
+    created_at: Date;
+    author_id: string | null;
+    parameters: Record<string, unknown> | null;
+    previous: Record<string, unknown> | null;
+    display_name: string | null;
+    email: string | null;
+  }>`
+    select c.id, c.revision_no, c.version_no, c.created_at, c.author_id, c.parameters, c.previous,
+      p.display_name, p.email
+    from (
+      select v.id, v.revision_no, v.version_no, v.created_at, v.author_id, v.parameters,
+        lag(v.parameters) over chain as previous, row_number() over chain as position
+      from artifact_version v
+      where v.artifact_id = ${documentId} and v.kind = 'document'
+      window chain as (order by v.revision_no, v.version_no)
+    ) c
+    left join principal p on p.id = c.author_id
+    where (c.position = 1 or c.parameters is distinct from c.previous)
+      and (${after === undefined} or (c.revision_no, c.version_no) < (${after?.revision ?? 0}, ${after?.version ?? 0}))
+    order by c.revision_no desc, c.version_no desc
+    limit ${limit + 1}
+  `.execute(trx);
+  const shown = rows.slice(0, limit);
+  const last = shown[shown.length - 1];
+  return {
+    items: shown.map((row) => {
+      const now = (row.parameters ?? {}) as DocumentParameters;
+      const before = (row.previous ?? {}) as DocumentParameters;
+      const names = [...new Set([...Object.keys(now), ...Object.keys(before)])].sort();
+      return {
+        version: { id: row.id, revision: row.revision_no, version: row.version_no },
+        createdAt: row.created_at,
+        author:
+          row.author_id === null
+            ? null
+            : { id: row.author_id, name: row.display_name ?? row.email ?? null },
+        parameters: now,
+        changed: names.filter((name) => !sameParameter(now[name], before[name])),
+      };
+    }),
+    next:
+      rows.length > limit && last !== undefined
+        ? { revision: last.revision_no, version: last.version_no }
+        : null,
+  };
 }

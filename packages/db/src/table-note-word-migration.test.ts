@@ -84,7 +84,10 @@ describe("migration 0056, which gives the default layout the word a table's note
     expect((await service.withTenant(tenant, (trx) => defaultLayout(trx))).layout).toEqual(
       EIGHTH_DEFAULT_LAYOUT,
     );
-    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual(['0056_table_note_word']);
+    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual([
+      '0056_table_note_word',
+      '0057_document_parameters',
+    ]);
     expect((await layoutChain(tenant)).at(-1)).toMatchObject({
       version_no: 9,
       author_id: null,

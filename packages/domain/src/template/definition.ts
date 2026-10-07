@@ -1,12 +1,15 @@
 import { z } from 'zod';
 
 import type { InlineNode } from '../content/model/inline.js';
+import { checkPermitted } from '../data/definition.js';
 import { assignmentSchema } from '../metadata/component-type.js';
 import {
   outlineMatterSchema,
   sectionTitleSchema,
   type OutlineMatter,
 } from '../structure/outline.js';
+
+import { MAX_TEMPLATE_PARAMETERS, templateParameterSchema } from './parameters.js';
 
 /**
  * The version of a template's own payload (templates.md, "The definition"), recorded in it and
@@ -95,6 +98,8 @@ export const templateDefinitionSchema = z
     schemas: z.array(templateAssignmentSchema),
     outline: z.strictObject({ sections: z.array(startingSectionSchema) }),
     changes: z.strictObject({ add: z.boolean(), remove: z.boolean(), reorder: z.boolean() }),
+    // Additive at schema 1: absent reads as none (templates.md, "Declared on the template").
+    parameters: z.array(templateParameterSchema).max(MAX_TEMPLATE_PARAMETERS).optional(),
   })
   .superRefine((template, context) => {
     const keys = new Set<string>();
@@ -130,6 +135,27 @@ export const templateDefinitionSchema = z
       });
     };
     walk(template.outline.sections, ['outline', 'sections']);
+
+    // A parameter named once, and its permitted values or range in its type, by the query
+    // definition's own rule (TE-N, TP1-A).
+    const names = new Set<string>();
+    (template.parameters ?? []).forEach((parameter, index) => {
+      if (names.has(parameter.name)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['parameters', index, 'name'],
+          message: `The parameter ${parameter.name} is declared more than once`,
+        });
+      }
+      names.add(parameter.name);
+      checkPermitted(parameter, `parameters.${index}`, (path, message) =>
+        context.addIssue({
+          code: 'custom',
+          path: path.split('.').map((each) => (/^\d+$/.test(each) ? Number(each) : each)),
+          message,
+        }),
+      );
+    });
 
     const assigned = new Set<string>();
     template.schemas.forEach((assignment, index) => {

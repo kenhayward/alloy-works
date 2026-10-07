@@ -810,8 +810,10 @@ describe('the citations in the committed model', () => {
   // 769 (2026-10-07): TB3.1's notes - CNT-039, TAB-024 to TAB-026 in the domain, DAT-012 and DAT-048
   // at the stage, TAB-024 and TAB-026 in the worker.
   // 771 (2026-10-07): TB3.2's wide tables - TAB-033 and TAB-051 in the worker.
+  // 781 (2026-10-07): TP1.1's template parameters through the service - TPL-017, TPL-018, TPL-020,
+  // TPL-026, TPL-045, TPL-021 and TPL-068 in titles, and TPL-068, TPL-021 and DAT-020 as rules.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(771);
+    expect(model.citations).toHaveLength(781);
   });
 
   it('cites no identifier the corpus does not hold', () => {

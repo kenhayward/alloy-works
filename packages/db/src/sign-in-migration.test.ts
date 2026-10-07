@@ -66,6 +66,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0054_connection_test_privilege',
       '0055_bound_tables',
       '0056_table_note_word',
+      '0057_document_parameters',
     ]);
 
     const read = async () =>

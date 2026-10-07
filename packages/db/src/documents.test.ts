@@ -32,7 +32,7 @@ import {
   type TestDatabase,
 } from './testing/database.js';
 import { versionDigests } from './version-digest.js';
-import { substanceOf, type StoredVersion } from './versions.js';
+import { recordVersion, substanceOf, type StoredVersion } from './versions.js';
 
 const ISSUER = 'https://idp.example';
 
@@ -304,7 +304,29 @@ describe('a document in the version chain, and its outline edited a version at a
   it('writes digests anybody can recompute from the stored row', async () => {
     const first = await created();
     const second = await recorded(first, section('Introduction'));
-    for (const stored of [first, second]) {
+    // And one holding parameters (TP1-D), recorded through the chain as any version is.
+    const third = await service.withTenant(production, async (trx) => {
+      const answer = await recordVersion(trx, {
+        artifactId: second.artifactId,
+        openedFrom: second.id,
+        author: ada,
+        substance: {
+          kind: 'document',
+          content: second.content as OutlineDocument,
+          parameters: { site: 'Leeds', days: ['3', '1'] },
+        },
+      });
+      if (answer.answer !== 'recorded') throw new Error(answer.answer);
+      return answer.version;
+    });
+    expect(third.parameters).toEqual({ site: 'Leeds', days: ['3', '1'] });
+    // None stored before them carries the member: the digest a version without parameters was
+    // taken over is the one it is recomputed over now.
+    expect(first.parameters).toEqual({});
+    expect(versionDigests(substanceOf(second))).toEqual(
+      versionDigests({ kind: 'document', content: second.content as OutlineDocument }),
+    );
+    for (const stored of [first, second, third]) {
       const row = await service.withTenant(production, (trx) =>
         trx
           .selectFrom('artifact_version')

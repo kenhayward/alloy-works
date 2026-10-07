@@ -322,6 +322,14 @@ describe('the domain package', () => {
         'startingSectionSchema',
         'templateAssignmentSchema',
         'templateDefinitionSchema',
+        // Its parameters, declared, checked and recorded (the TP1 plan, TP1-A to TP1-G).
+        'checkDocumentParameters',
+        'checkTemplateParameters',
+        'documentParametersSchema',
+        'MAX_TEMPLATE_PARAMETERS',
+        'seedable',
+        'seededValues',
+        'templateParameterSchema',
         // And the outline a document made from one starts with (templates.md, W4.2).
         'materialiseTemplate',
         // Values as a section or a document is written with them (templates.md, W4.3).

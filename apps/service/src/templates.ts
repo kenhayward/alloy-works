@@ -17,12 +17,28 @@ import {
   type TenantDatabase,
   type TemplateAnswer,
 } from '@alloy-works/db';
-import { decide, type AccessFacts } from '@alloy-works/domain';
+import { decide, type AccessFacts, type TemplateParameterProblem } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import { versionView } from './components.js';
 import type { SessionPrincipal } from './sessions.js';
 import { refused } from './wire-codes.js';
+
+/** What a person is told of each parameter refusal (templates.md, "Failures"), beside its code. */
+export const PARAMETER_WORDS = {
+  unused: 'A parameter seeds no field and supplies no argument. Give it a use or remove it.',
+  field:
+    'A parameter seeds a field the document does not hold, a fixed field, or one that does not take its type.',
+  unknown: 'A value is given for a parameter the template does not declare.',
+  invalid: 'A value does not fit its parameter.',
+  fixed: 'A parameter that may not change after the document is made was changed.',
+} as const;
+
+/** A template parameter's problem as the wire names it: the parameter, its field, and why. */
+function named(problem: TemplateParameterProblem) {
+  const { parameter, field, message } = problem;
+  return { parameter, ...(field === undefined ? {} : { field }), message };
+}
 
 /** A template as the routes answer it, with whether the caller may change it (TPL-006). */
 function templateView(template: StoredTemplate, facts: AccessFacts): TemplateView {
@@ -51,6 +67,14 @@ function refusedTemplate(
         'This template names a theme, layout, schema or field that does not resolve.',
         { unresolved: answer.unresolved },
       );
+    case 'parameter.unused':
+      throw refused(400, 'parameter.unused', PARAMETER_WORDS.unused, {
+        parameters: answer.problems.map(named),
+      });
+    case 'parameter.field':
+      throw refused(400, 'parameter.field', PARAMETER_WORDS.field, {
+        parameters: answer.problems.map(named),
+      });
     case 'version.precondition':
       throw refused(
         409,

@@ -217,6 +217,8 @@ export interface ArtifactVersionTable {
   content_hash: ColumnType<string, string, never>;
   metadata_values: ColumnType<Record<string, unknown>, string, never>;
   not_carried: ColumnType<unknown[], string, never>;
+  /** A document's parameters, by name (0057); null for every other kind, and for a document with none. */
+  parameters: ColumnType<Record<string, unknown> | null, string | null | undefined, never>;
   component_type_version_id: ColumnType<string | null, string | null, never>;
   /** Generated: `componentType` when the type is set, the key tying it to what the version records. */
   component_type_kind: ColumnType<'componentType' | null, never, never>;

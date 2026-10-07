@@ -56,7 +56,48 @@ export type TemplateListQuery = z.infer<typeof TemplateListQuery>;
 export type TemplateList = z.infer<typeof TemplateList>;
 
 /**
- * A template refused: each reference that does not resolve (`template_unresolved`, TPL-004), or the
+ * What a parameter refusal names (templates.md, "Failures"): each parameter refused by name, and for
+ * `parameter_invalid` each value with the rule it breaks (TPL-045). Spread into each refusal shape a
+ * route answering one carries.
+ */
+export const parameterRefusal = {
+  parameters: z
+    .array(
+      z.object({
+        parameter: z.string(),
+        field: z.string().optional().describe('The field it seeds, where that is what is refused'),
+        message: z.string().optional(),
+      }),
+    )
+    .optional()
+    .describe(
+      'parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); ' +
+        'parameter_field: each that seeds a field the document level does not hold, a fixed one, or ' +
+        'one that does not take its type; parameter_unknown: each value for a parameter the template ' +
+        'does not declare; parameter_fixed: each that may not change and was changed (TPL-021)',
+    ),
+  problems: z
+    .array(
+      z.object({
+        parameter: z.string(),
+        rule: z.string(),
+        value: z.string(),
+        field: z
+          .string()
+          .optional()
+          .describe("The field it seeds, where the rule is that field's and not the parameter's"),
+      }),
+    )
+    .optional()
+    .describe(
+      'parameter_invalid: each parameter missing a required value or given an invalid one, with ' +
+        'the rule it breaks and the value (TPL-018, TPL-045)',
+    ),
+};
+
+/**
+ * A template refused: each reference that does not resolve (`template_unresolved`, TPL-004), each
+ * parameter refused (`parameter_unused`, TPL-068; `parameter_field`), or the
  * template as it now stands where the version it was opened at is no longer the latest
  * (`version_precondition`, API-037).
  */
@@ -73,6 +114,7 @@ export const TemplateRefusal = ErrorBody.extend({
     )
     .optional(),
   current: TemplateView.optional(),
+  ...parameterRefusal,
 });
 export type TemplateRefusal = z.infer<typeof TemplateRefusal>;
 
@@ -81,7 +123,10 @@ const unauthenticated = {
   schema: ErrorBody,
 } as const;
 const unresolved = {
-  description: '`template_unresolved`: a theme, layout, schema or field it names does not resolve',
+  description:
+    '`template_unresolved`: a theme, layout, schema or field it names does not resolve; ' +
+    '`parameter_unused`: a parameter feeds nothing; `parameter_field`: a seeded field cannot take ' +
+    'its parameter; or the definition is not one the contract reads',
   schema: TemplateRefusal,
 } as const;
 

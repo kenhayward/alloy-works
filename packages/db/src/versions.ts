@@ -9,6 +9,7 @@ import {
   parseLayout,
   templateDefinitionSchema,
   parseOutlineDocument,
+  documentParametersSchema,
   ConnectionRefused,
   DefinitionRefused,
   parseConnection,
@@ -20,6 +21,7 @@ import {
   type CatalogueSubstance,
   type DefinitionRef,
   type DefinitionSubstance,
+  type DocumentParameters,
   type MetadataValues,
   type NotCarried,
   type ThemeSubstance,
@@ -66,6 +68,8 @@ export interface StoredVersion {
   readonly content: unknown;
   readonly contentHash: string;
   readonly values: MetadataValues;
+  /** A document's parameters, by name (TP1-D): empty for anything else, and for a document with none. */
+  readonly parameters: DocumentParameters;
   readonly notCarried: readonly NotCarried[];
   /** The component type's version, for a component; null for anything else. */
   readonly componentType: string | null;
@@ -155,10 +159,14 @@ function prepare(substance: VersionSubstance): VersionSubstance {
     // Its values are its template's fields', written already checked (templates.md, "Values"), and
     // left out where there are none, so a document with none digests as it did before templates.
     const values = substance.values ?? {};
+    // Its parameters likewise (TP1-D): canonical values by name, already checked against their
+    // template's declarations by the writer, and left out where there are none.
+    const parameters = documentParametersSchema.parse(substance.parameters ?? {});
     return {
       kind: 'document',
       content: parseOutlineDocument(substance.content),
       ...(Object.keys(values).length === 0 ? {} : { values }),
+      ...(Object.keys(parameters).length === 0 ? {} : { parameters }),
     };
   }
   if (substance.kind === 'layout') {
@@ -223,6 +231,7 @@ async function insertVersion(
   const component = substance.kind === 'component' ? substance : undefined;
   const values =
     component?.values ?? (substance.kind === 'document' ? substance.values : undefined) ?? {};
+  const parameters = substance.kind === 'document' ? substance.parameters : undefined;
   const row = await trx
     .insertInto('artifact_version')
     .values({
@@ -236,6 +245,9 @@ async function insertVersion(
       content: JSON.stringify(substance.content),
       content_hash: digests.contentHash,
       metadata_values: JSON.stringify(values),
+      // Named only where there are some, so a write reaching a schema before 0057 - a migration's own
+      // test, standing an environment where it was - names no column it lacks.
+      ...(parameters === undefined ? {} : { parameters: JSON.stringify(parameters) }),
       not_carried: JSON.stringify(component?.notCarried ?? []),
       component_type_version_id: component ? componentTypeOf(component.definitions) : null,
       version_digest: digests.versionDigest,
@@ -373,6 +385,8 @@ export async function readVersion(
     content: row.content,
     contentHash: row.content_hash,
     values: row.metadata_values,
+    // A version before 0057, and any with none, reads as no parameters.
+    parameters: (row.parameters ?? {}) as DocumentParameters,
     notCarried: row.not_carried as NotCarried[],
     componentType: row.component_type_version_id,
     definitions: definitions
@@ -534,6 +548,7 @@ export function substanceOf(stored: StoredVersion): VersionSubstance {
       kind: 'document',
       content: stored.content as Extract<VersionSubstance, { kind: 'document' }>['content'],
       values: stored.values,
+      parameters: stored.parameters,
     };
   }
   if (stored.kind === 'connection') {
