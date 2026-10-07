@@ -1,7 +1,7 @@
 import type { Node } from 'prosemirror-model';
 import type { Decoration, NodeView } from 'prosemirror-view';
 
-import { FAILED_CLASS, type BoundTableShown } from './bindings.js';
+import { FAILED_CLASS, type BoundTableNoteShown, type BoundTableShown } from './bindings.js';
 import { BOUND_TABLE } from './schema.js';
 
 /** The rows a bound table has beyond those the page shows, in words, or null for none (TB2-D). */
@@ -39,6 +39,14 @@ export function fillBoundTable(
     if (column?.wrap === false) cell.classList.add('aw-bound-table-nowrap');
     return cell;
   };
+  // A note's mark after the words it stands by, a superscript letter (TB3.3).
+  const marked = (cell: HTMLElement, marks: readonly string[] | undefined) => {
+    if (marks === undefined || marks.length === 0) return;
+    const mark = document.createElement('sup');
+    mark.className = 'aw-bound-table-mark';
+    mark.textContent = marks.join(',');
+    cell.append(mark);
+  };
   if (shown.columns.length > 0) {
     const head = document.createElement('thead');
     const row = document.createElement('tr');
@@ -46,6 +54,7 @@ export function fillBoundTable(
       const cell = dressed(document.createElement('th'), at);
       cell.setAttribute('scope', 'col');
       cell.textContent = column.text;
+      marked(cell, column.marks);
       row.append(cell);
     });
     head.append(row);
@@ -59,6 +68,7 @@ export function fillBoundTable(
       if (each.scope === 'row') cell.setAttribute('scope', 'row');
       if (each.negative) cell.classList.add('aw-bound-table-negative');
       cell.textContent = each.text;
+      marked(cell, each.marks);
       row.append(cell);
     });
     body.append(row);
@@ -82,6 +92,30 @@ export function fillBoundTable(
   said.className = 'aw-bound-table-more';
   said.textContent = more;
   holder.replaceChildren(table, said);
+}
+
+/**
+ * **A bound table's note's label** (TB3.3): its letter, and where it fails or is being read, why -
+ * drawn before its words, never content, by the surface's widget and the read text alike.
+ */
+export function noteLabel(document: Document, shown: BoundTableNoteShown): HTMLElement {
+  const label = document.createElement('span');
+  label.className = 'aw-bound-table-note-label';
+  label.setAttribute('contenteditable', 'false');
+  label.setAttribute('data-bound-table-note-label', '');
+  if (shown.letter !== null) {
+    const letter = document.createElement('span');
+    letter.className = 'aw-bound-table-note-letter';
+    letter.textContent = shown.letter;
+    label.append(letter);
+  }
+  if (shown.said !== null) {
+    const said = document.createElement('span');
+    said.className = 'aw-bound-table-note-said';
+    said.textContent = shown.said;
+    label.append(said);
+  }
+  return label;
 }
 
 /**

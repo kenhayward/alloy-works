@@ -181,8 +181,9 @@ export {
   parenthesised,
 } from './format-cell.js';
 export type { CellWords } from './format-cell.js';
-export { checkTable, layoutTable, sortResult, TABLE_ROWS_MAX } from './table.js';
+export { checkTable, layoutTable, sortResult, TABLE_ROWS_MAX, tableOrder } from './table.js';
 export {
+  canonicalKeyValue,
   keyNamesTheKey,
   matchNoteRows,
   placeTableNotes,

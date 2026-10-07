@@ -70,6 +70,7 @@ import {
   effectiveLimits,
   identityKey,
   literalValues,
+  matchNoteRows,
   parametersDigestInput,
   parseQueryDefinition,
   questionUnchanged,
@@ -311,6 +312,12 @@ export function tagMatches(header: string | string[] | undefined, etag: string):
     .split(',')
     .map((each) => each.trim());
   return asked.some((each) => each === '*' || each.replace(/^W\//, '') === etag);
+}
+
+/** The key a query definition version declares (TB3-B): empty where it declares none or is gone. */
+async function definitionKey(trx: TenantTransaction, version: string): Promise<readonly string[]> {
+  const found = await readVersion(trx, version);
+  return found?.kind === 'queryDefinition' ? parseQueryDefinition(found.content).key : [];
 }
 
 /** The bound table holding the binding `id`, wherever in the blocks it stands. */
@@ -1296,6 +1303,17 @@ function viewer(
     };
   }
 
+  const keys = new Map<string, Promise<readonly string[]>>();
+  /** The key of the definition version a result ran (TB3-B), each read once. */
+  const keyOf = (version: string) => {
+    let found = keys.get(version);
+    if (!found) {
+      found = definitionKey(trx, version);
+      keys.set(version, found);
+    }
+    return found;
+  };
+
   /** The connection the held result ran on, by name, to a reader of its definition and of it. */
   async function connectionOf(held: HeldResolution | undefined) {
     if (!held) return null;
@@ -1362,6 +1380,7 @@ function viewer(
           version: held.held.version,
           number: `${held.held.number.revision}.${held.held.number.version}`,
           provenance: provenanceView(held.held.provenance, readsDefinition),
+          key: [...(await keyOf(held.held.provenance.queryDefinition.version))],
           name: name?.name ?? null,
           stale,
           taken: stale ? null : viewTaken(placed, taken, held.held.version, held.held.provenance),
@@ -2161,7 +2180,11 @@ export function bindingHandlers(
       ]);
       const sent = provenance.columns.map((each) => each.name).filter((name) => named.has(name));
       const order = own ? null : (found.table.sort ?? []);
-      const etag = `"${sha256(JSON.stringify([version, sent, order]))}"`;
+      // The keyed notes' anchors, so a note added or removed is answered anew, never a 304 (TB3.3).
+      const anchors = (found.table.notes ?? []).flatMap((each) =>
+        each.anchor.kind === 'keyed' ? [[each.id, each.anchor.key]] : [],
+      );
+      const etag = `"${sha256(JSON.stringify([version, sent, order, anchors]))}"`;
       if (tagMatches(request.headers['if-none-match'], etag)) {
         return new Revalidated<never>(etag, undefined);
       }
@@ -2182,6 +2205,17 @@ export function bindingHandlers(
       }
       const ordered = own ? result : sortResult(found.table, result, provenance.columns);
       const kept = ordered.columns.flatMap(([name], index) => (named.has(name) ? [index] : []));
+      // Each keyed note's row matched over the whole result, before it is trimmed, so a key column
+      // the table does not show finds its row and is never sent (TB3-C).
+      const notes =
+        anchors.length === 0
+          ? new Map<string, number | null>()
+          : matchNoteRows(
+              found.table.notes ?? [],
+              ordered,
+              await definitionKey(trx, provenance.queryDefinition.version),
+              provenance.columns,
+            );
       return new Revalidated(etag, {
         version,
         presorted: !own,
@@ -2189,6 +2223,7 @@ export function bindingHandlers(
           columns: kept.map((index): [string, string] => [...ordered.columns[index]!]),
           rows: ordered.rows.map((row) => kept.map((index) => row[index] ?? null)),
         },
+        notes: Object.fromEntries(notes),
       });
     },
 

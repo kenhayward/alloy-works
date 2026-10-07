@@ -35266,6 +35266,13 @@
                                       "images"
                                     ]
                                   },
+                                  "key": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none"
+                                  },
                                   "name": {
                                     "description": "The dataset's name, or null where nobody has named it",
                                     "type": [
@@ -35629,6 +35636,7 @@
                                   "version",
                                   "number",
                                   "provenance",
+                                  "key",
                                   "name",
                                   "stale",
                                   "taken",
@@ -37060,12 +37068,32 @@
                         "columns",
                         "rows"
                       ]
+                    },
+                    "notes": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "description": "Each note the table anchors by key, by its identifier: the index of its row among the rows sent, or null where the result has no row its key names (`note_row_missing`). A key column the table does not show is never sent"
                     }
                   },
                   "required": [
                     "version",
                     "presorted",
-                    "result"
+                    "result",
+                    "notes"
                   ]
                 },
                 "example": {
@@ -37074,7 +37102,8 @@
                   "result": {
                     "columns": [],
                     "rows": []
-                  }
+                  },
+                  "notes": {}
                 }
               }
             },
@@ -38178,6 +38207,13 @@
                                     "images"
                                   ]
                                 },
+                                "key": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none"
+                                },
                                 "name": {
                                   "description": "The dataset's name, or null where nobody has named it",
                                   "type": [
@@ -38541,6 +38577,7 @@
                                 "version",
                                 "number",
                                 "provenance",
+                                "key",
                                 "name",
                                 "stale",
                                 "taken",
@@ -40844,6 +40881,13 @@
                                     "images"
                                   ]
                                 },
+                                "key": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none"
+                                },
                                 "name": {
                                   "description": "The dataset's name, or null where nobody has named it",
                                   "type": [
@@ -41207,6 +41251,7 @@
                                 "version",
                                 "number",
                                 "provenance",
+                                "key",
                                 "name",
                                 "stale",
                                 "taken",
@@ -43458,6 +43503,13 @@
                                 "images"
                               ]
                             },
+                            "key": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none"
+                            },
                             "name": {
                               "description": "The dataset's name, or null where nobody has named it",
                               "type": [
@@ -43821,6 +43873,7 @@
                             "version",
                             "number",
                             "provenance",
+                            "key",
                             "name",
                             "stale",
                             "taken",
@@ -44960,6 +45013,7 @@
                       "checksum": "0000000000000000000000000000000000000000000000000000000000000000",
                       "images": {}
                     },
+                    "key": [],
                     "name": "example",
                     "stale": false,
                     "taken": {
@@ -46132,6 +46186,13 @@
                                     "images"
                                   ]
                                 },
+                                "key": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none"
+                                },
                                 "name": {
                                   "description": "The dataset's name, or null where nobody has named it",
                                   "type": [
@@ -46495,6 +46556,7 @@
                                 "version",
                                 "number",
                                 "provenance",
+                                "key",
                                 "name",
                                 "stale",
                                 "taken",
@@ -48716,6 +48778,13 @@
                                     "images"
                                   ]
                                 },
+                                "key": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none"
+                                },
                                 "name": {
                                   "description": "The dataset's name, or null where nobody has named it",
                                   "type": [
@@ -49079,6 +49148,7 @@
                                 "version",
                                 "number",
                                 "provenance",
+                                "key",
                                 "name",
                                 "stale",
                                 "taken",
@@ -51300,6 +51370,13 @@
                                     "images"
                                   ]
                                 },
+                                "key": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none"
+                                },
                                 "name": {
                                   "description": "The dataset's name, or null where nobody has named it",
                                   "type": [
@@ -51663,6 +51740,7 @@
                                 "version",
                                 "number",
                                 "provenance",
+                                "key",
                                 "name",
                                 "stale",
                                 "taken",
@@ -54539,6 +54617,13 @@
                                     "images"
                                   ]
                                 },
+                                "key": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none"
+                                },
                                 "name": {
                                   "description": "The dataset's name, or null where nobody has named it",
                                   "type": [
@@ -54902,6 +54987,7 @@
                                 "version",
                                 "number",
                                 "provenance",
+                                "key",
                                 "name",
                                 "stale",
                                 "taken",
@@ -57082,6 +57168,13 @@
                                     "images"
                                   ]
                                 },
+                                "key": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none"
+                                },
                                 "name": {
                                   "description": "The dataset's name, or null where nobody has named it",
                                   "type": [
@@ -57445,6 +57538,7 @@
                                 "version",
                                 "number",
                                 "provenance",
+                                "key",
                                 "name",
                                 "stale",
                                 "taken",
@@ -59657,6 +59751,13 @@
                                 "images"
                               ]
                             },
+                            "key": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none"
+                            },
                             "name": {
                               "description": "The dataset's name, or null where nobody has named it",
                               "type": [
@@ -60020,6 +60121,7 @@
                             "version",
                             "number",
                             "provenance",
+                            "key",
                             "name",
                             "stale",
                             "taken",
@@ -61159,6 +61261,7 @@
                       "checksum": "0000000000000000000000000000000000000000000000000000000000000000",
                       "images": {}
                     },
+                    "key": [],
                     "name": "example",
                     "stale": false,
                     "taken": {
@@ -62331,6 +62434,13 @@
                                     "images"
                                   ]
                                 },
+                                "key": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none"
+                                },
                                 "name": {
                                   "description": "The dataset's name, or null where nobody has named it",
                                   "type": [
@@ -62694,6 +62804,7 @@
                                 "version",
                                 "number",
                                 "provenance",
+                                "key",
                                 "name",
                                 "stale",
                                 "taken",
@@ -64997,6 +65108,13 @@
                                     "images"
                                   ]
                                 },
+                                "key": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none"
+                                },
                                 "name": {
                                   "description": "The dataset's name, or null where nobody has named it",
                                   "type": [
@@ -65360,6 +65478,7 @@
                                 "version",
                                 "number",
                                 "provenance",
+                                "key",
                                 "name",
                                 "stale",
                                 "taken",
@@ -68071,6 +68190,13 @@
                                     "images"
                                   ]
                                 },
+                                "key": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none"
+                                },
                                 "name": {
                                   "description": "The dataset's name, or null where nobody has named it",
                                   "type": [
@@ -68434,6 +68560,7 @@
                                 "version",
                                 "number",
                                 "provenance",
+                                "key",
                                 "name",
                                 "stale",
                                 "taken",
@@ -70662,6 +70789,13 @@
                                     "images"
                                   ]
                                 },
+                                "key": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none"
+                                },
                                 "name": {
                                   "description": "The dataset's name, or null where nobody has named it",
                                   "type": [
@@ -71025,6 +71159,7 @@
                                 "version",
                                 "number",
                                 "provenance",
+                                "key",
                                 "name",
                                 "stale",
                                 "taken",
@@ -73246,6 +73381,13 @@
                                     "images"
                                   ]
                                 },
+                                "key": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none"
+                                },
                                 "name": {
                                   "description": "The dataset's name, or null where nobody has named it",
                                   "type": [
@@ -73609,6 +73751,7 @@
                                 "version",
                                 "number",
                                 "provenance",
+                                "key",
                                 "name",
                                 "stale",
                                 "taken",
@@ -75789,6 +75932,13 @@
                                     "images"
                                   ]
                                 },
+                                "key": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "The key of the query definition version the result ran, which a bound table's keyed notes name their rows by: empty where it declares none"
+                                },
                                 "name": {
                                   "description": "The dataset's name, or null where nobody has named it",
                                   "type": [
@@ -76152,6 +76302,7 @@
                                 "version",
                                 "number",
                                 "provenance",
+                                "key",
                                 "name",
                                 "stale",
                                 "taken",

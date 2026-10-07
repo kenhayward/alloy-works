@@ -93,6 +93,11 @@ export interface BindingState {
     readonly version: string;
     readonly number: string;
     readonly provenance: ProvenanceShown;
+    /**
+     * The key of the definition version its result ran (TB3-B), which a bound table's keyed notes
+     * name their rows by: empty where it declares none; absent where the view did not say.
+     */
+    readonly key?: readonly string[];
     readonly name: string | null;
     readonly stale: boolean;
     readonly taken: Taken | null;
@@ -202,11 +207,16 @@ function heldIn(value: unknown): BindingState['held'] | undefined {
   if (typeof value.stale !== 'boolean') return undefined;
   if (value.act !== 'resolve' && value.act !== 'accept' && value.act !== 'confirm')
     return undefined;
+  const key =
+    Array.isArray(value.key) && value.key.every((each) => typeof each === 'string')
+      ? { key: value.key as string[] }
+      : {};
   return {
     dataset,
     version,
     number,
     provenance,
+    ...key,
     name: text(value.name) ?? null,
     stale: value.stale,
     taken: takenIn(value.taken),
@@ -363,6 +373,8 @@ function heldOf(
           rowCount,
           rows: read?.result ?? null,
           presorted: read?.presorted === true,
+          ...(held.key === undefined ? {} : { key: held.key }),
+          ...(read === undefined ? {} : { notes: read.notes }),
         },
       },
     };

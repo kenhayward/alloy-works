@@ -73,6 +73,45 @@ export function tableFailures(
 export interface TableRows {
   readonly result: CanonicalResult;
   readonly presorted: boolean;
+  /** Each keyed note's row among them, null where gone (TB3-C): the route's `notes`. */
+  readonly notes: Readonly<Record<string, number | null>>;
+}
+
+/** A table's keyed notes, by identifier and key: what the rows route matches rows for (TB3.3). */
+const keyedNotes = (table: BoundTableNode) =>
+  (table.notes ?? []).flatMap((each) =>
+    each.anchor.kind === 'keyed' ? [[each.id, each.anchor.key] as const] : [],
+  );
+
+/**
+ * **Why a bound table's notes would fail its publish** (TB3.3; DAT-012, DAT-048), in the stage's
+ * codes and `detail`: `key_required` once where a keyed note stands on a definition declaring no key,
+ * `note_row_missing` for each keyed note the rows route found no row for. None until both are known.
+ */
+export function noteFailures(
+  state: BindingState,
+  table: BoundTableNode | undefined,
+  rows: TableRows | undefined,
+): readonly { readonly code: 'key_required' | 'note_row_missing'; readonly detail: string }[] {
+  const { held } = state;
+  if (table === undefined || held === null || held.stale || held.key === undefined) return [];
+  const keyed = (table.notes ?? []).filter((each) => each.anchor.kind === 'keyed');
+  if (keyed.length === 0) return [];
+  const definition = table.binding.query;
+  if (held.key.length === 0) return [{ code: 'key_required', detail: definition }];
+  if (rows === undefined) return [];
+  return keyed.flatMap((note) => {
+    if (note.anchor.kind !== 'keyed' || rows.notes[note.id] !== null) return [];
+    return [
+      {
+        code: 'note_row_missing' as const,
+        // Its key as the stage names it: its members in code point order.
+        detail: `${note.id}: ${JSON.stringify(
+          Object.fromEntries(Object.entries(note.anchor.key).sort(([a], [b]) => (a < b ? -1 : 1))),
+        )}: ${definition}`,
+      },
+    ];
+  });
 }
 
 /** One table's rows to read: where, which version, and the columns it names. */
@@ -84,7 +123,9 @@ interface Wanted {
   /** The columns it shows, and those it sorts by, which only an author's own session is sent. */
   readonly shown: readonly string[];
   readonly sorted: readonly string[];
-  /** The version and the columns named: rows read once for each. */
+  /** Its keyed notes' identifiers, each of which a reply must answer (TB3.3). */
+  readonly notes: readonly string[];
+  /** The version, the columns and the keyed notes named: rows read once for each. */
   readonly ask: string;
 }
 
@@ -93,9 +134,20 @@ const answers = (rows: TableRows, wanted: Wanted) => {
   const sent = new Set(rows.result.columns.map(([name]) => name));
   return (
     wanted.shown.every((name) => sent.has(name)) &&
-    (rows.presorted || wanted.sorted.every((name) => sent.has(name)))
+    (rows.presorted || wanted.sorted.every((name) => sent.has(name))) &&
+    wanted.notes.every((id) => id in rows.notes)
   );
 };
+
+/** The route's `notes`, each a row's index or null; anything else left out. */
+function notesIn(value: unknown): Readonly<Record<string, number | null>> {
+  if (typeof value !== 'object' || value === null) return {};
+  return Object.fromEntries(
+    Object.entries(value).filter(
+      ([, row]) => row === null || (typeof row === 'number' && Number.isInteger(row) && row >= 0),
+    ),
+  ) as Record<string, number | null>;
+}
 
 /**
  * **The rows each bound table is laid out from** (TB2-A), by `tableKey`: read through the rows route,
@@ -139,6 +191,7 @@ export function useTableRows(
         if (tableFailures(state, table, styles).length > 0) return [];
         const shown = [...new Set(table.columns.map((each) => each.column))].sort();
         const sorted = [...new Set((table.sort ?? []).map((each) => each.column))].sort();
+        const notes = keyedNotes(table);
         const { version } = state.held;
         return [
           {
@@ -148,7 +201,8 @@ export function useTableRows(
             version,
             shown,
             sorted,
-            ask: JSON.stringify([version, shown, sorted, table.sort ?? []]),
+            notes: notes.map(([id]) => id),
+            ask: JSON.stringify([version, shown, sorted, table.sort ?? [], notes]),
           },
         ];
       }),
@@ -173,7 +227,12 @@ export function useTableRows(
             asked.current.delete(each.ask);
             return;
           }
-          const rows: TableRows = { result: parsed.data, presorted: data?.presorted === true };
+          const notes = notesIn((data as { notes?: unknown } | undefined)?.notes);
+          const rows: TableRows = {
+            result: parsed.data,
+            presorted: data?.presorted === true,
+            notes,
+          };
           // Short of a column it names: asked again after the next save, never kept.
           if (!answers(rows, each)) return;
           read.current.set(each.ask, rows);

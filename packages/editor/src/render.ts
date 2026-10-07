@@ -13,7 +13,7 @@ import {
   type BoundTableAt,
 } from './bindings.js';
 import { boundCaptionId, fillBinding } from './bindingView.js';
-import { fillBoundTable } from './boundTableView.js';
+import { fillBoundTable, noteLabel } from './boundTableView.js';
 import { drawEquation } from './equationView.js';
 import { fillBoundFigure } from './figureView.js';
 import { toEditor } from './mapping.js';
@@ -202,6 +202,15 @@ export function drawBoundTables(
     const captionId = boundCaptionId(context, each.table, each.tablePos);
     figure.querySelector(':scope > figcaption')?.setAttribute('id', captionId);
     fillBoundTable(holder, each.shown, captionId);
+    // Each note's label before its words, as the surface's widget draws it (TB3.3).
+    const notes = figure.querySelectorAll<HTMLElement>(':scope > [data-bound-table-note]');
+    (each.shown.notes ?? []).forEach((shown, at) => {
+      const note = notes[at];
+      if (note === undefined) return;
+      if (shown.failed) note.classList.add(FAILED_CLASS);
+      const first = note.firstElementChild ?? note;
+      first.prepend(noteLabel(note.ownerDocument, shown));
+    });
   });
 }
 

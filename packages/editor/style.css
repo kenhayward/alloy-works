@@ -344,6 +344,40 @@
   font-size: 0.9em;
 }
 
+/* A bound table's note (TB3.3): beneath it, its letter before its words, and why it fails drawn apart. */
+.aw-bound-table-note {
+  margin: 0.4em 0 0;
+  font-size: 0.9em;
+}
+
+.aw-bound-table-note > p {
+  margin: 0;
+}
+
+.aw-bound-table-note-letter {
+  font-size: 0.75em;
+  vertical-align: super;
+  margin-inline-end: 0.3em;
+}
+
+.aw-bound-table-note-said {
+  margin-inline-end: 0.5em;
+  font-style: italic;
+}
+
+.aw-bound-table-note.aw-binding-failed {
+  border: 1px dashed var(--danger);
+}
+
+.aw-bound-table-note.aw-binding-failed .aw-bound-table-note-said {
+  color: var(--danger);
+}
+
+.aw-bound-table-body .aw-bound-table-mark {
+  margin-inline-start: 0.15em;
+  font-size: 0.75em;
+}
+
 /* The cells a cell selection holds, which `prosemirror-tables` marks with this class. */
 .ProseMirror .selectedCell {
   outline: 2px solid var(--ring);

@@ -217,6 +217,21 @@ export function sortResult<C extends TableColumn>(
   result: CanonicalResult,
   columns: readonly C[],
 ): CanonicalResult {
+  return {
+    columns: result.columns,
+    rows: tableOrder(table, result, columns).map((index) => result.rows[index]!),
+  };
+}
+
+/**
+ * **Every row's index in a bound table's order** (TB3.3): `sortResult`'s order, as indices into the
+ * result's rows, so the page letters a note on a row it does not lay out (`placeTableNotes`).
+ */
+export function tableOrder<C extends TableColumn>(
+  table: BoundTableNode,
+  result: CanonicalResult,
+  columns: readonly C[],
+): number[] {
   const at = new Map(result.columns.map(([name], index) => [name, index]));
   const declared = new Map(columns.map((column) => [column.name, column]));
   const sort = (table.sort ?? []).flatMap((key) => {
@@ -224,10 +239,7 @@ export function sortResult<C extends TableColumn>(
     const index = at.get(key.column);
     return column === undefined || index === undefined ? [] : [{ key, type: column.type, index }];
   });
-  return {
-    columns: result.columns,
-    rows: orderOf(result, sort).map((index) => result.rows[index]!),
-  };
+  return orderOf(result, sort);
 }
 
 /**

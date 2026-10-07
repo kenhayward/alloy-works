@@ -14,8 +14,13 @@ import { fromEditor, toEditor } from './mapping.js';
 import { createEditorState } from './state.js';
 import { setTableStyle } from './styles.js';
 import {
+  addBoundTableNote,
   boundTableAt,
   changeTableBinding,
+  removeBoundTableNote,
+  selectBoundTableNote,
+  setTableWide,
+  tableAt,
   columnsPlaced,
   deleteBoundTable,
   insertBoundTable,
@@ -251,6 +256,97 @@ describe('the Bound table panel (TB2-F)', () => {
     expect(stored(state).style).toBe('wide');
     state = run(state, deleteBoundTable).state;
     expect(fromEditor(state.doc).content.map((each) => each.type)).toEqual(['paragraph']);
+  });
+});
+
+describe("a bound table's notes and Wide (TB3.3)", () => {
+  const inTable = (over: Partial<BoundTableNode> = {}) =>
+    into(stateOf(documentOf(paragraph('p1'), boundTable(over))), 'tableCaption');
+
+  it('adds a note on a column and on a cell by key, each a child beneath the table, the cursor in it, typed in place', () => {
+    let state = inTable({ source: [text('Survey')] });
+    let ran = run(state, addBoundTableNote({ kind: 'column', column: 'depth' }));
+    expect(ran.done).toBe(true);
+    state = ran.state;
+    expect(state.selection.$from.parent.type.name).toBe('footnoteParagraph');
+    state = state.apply(state.tr.insertText('Below datum'));
+    ran = run(state, addBoundTableNote({ kind: 'keyed', key: { site: 'North' }, column: 'depth' }));
+    state = ran.state.apply(ran.state.tr.insertText('Estimated'));
+    const table = stored(state);
+    expect(table.notes).toMatchObject([
+      {
+        type: 'footnote',
+        anchor: { kind: 'column', column: 'depth' },
+        content: [{ type: 'paragraph', content: [text('Below datum')] }],
+      },
+      {
+        type: 'footnote',
+        anchor: { kind: 'keyed', key: { site: 'North' }, column: 'depth' },
+        content: [{ type: 'paragraph', content: [text('Estimated')] }],
+      },
+    ]);
+    // Each a footnote of its own identifier; the source still last.
+    expect(new Set(table.notes!.map((each) => each.id)).size).toBe(2);
+    expect(table.source).toEqual([text('Survey')]);
+    expect(boundTableAt(state)?.notes.map((each) => each.anchor.kind)).toEqual(['column', 'keyed']);
+  });
+
+  it('declines a note on a column the table does not show, or a key with no column', () => {
+    const state = inTable();
+    expect(addBoundTableNote({ kind: 'column', column: 'tide' })(state)).toBe(false);
+    expect(addBoundTableNote({ kind: 'keyed', key: {}, column: 'depth' })(state)).toBe(false);
+  });
+
+  it('removes a note whole, whatever it holds, and adds the empty statement before the notes', () => {
+    let state = inTable();
+    state = run(state, addBoundTableNote({ kind: 'column', column: 'site' })).state;
+    state = state.apply(state.tr.insertText('By name'));
+    const [note] = boundTableAt(state)!.notes;
+    state = run(state, setBoundTablePart('empty', true)).state;
+    state = state.apply(state.tr.insertText('None'));
+    expect(stored(state)).toMatchObject({ empty: [text('None')], notes: [{ id: note!.id }] });
+    // Edit puts the cursor at the start of its words, beneath the table.
+    const editing = run(state, selectBoundTableNote(note!.id!)).state;
+    expect(editing.selection.$from.parent.textContent).toBe('By name');
+    expect(editing.selection.$from.parentOffset).toBe(0);
+    const removed = run(state, removeBoundTableNote(note!.id!));
+    expect(removed.done).toBe(true);
+    expect(stored(removed.state).notes).toBeUndefined();
+    expect(stored(removed.state).empty).toEqual([text('None')]);
+  });
+
+  it("sets Wide on the Bound table panel and the Table panel: the style's, Scale or Rotate", () => {
+    let state = inTable();
+    state = run(state, setBoundTable({ wide: 'rotate' })).state;
+    expect(stored(state).wide).toBe('rotate');
+    expect(boundTableAt(state)?.wide).toBe('rotate');
+    state = run(state, setBoundTable({ wide: null })).state;
+    expect(stored(state).wide).toBeUndefined();
+
+    const authored = parseContentDocument({
+      schemaVersion: 1,
+      title: 'Sites',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        {
+          type: 'table',
+          id: 't2',
+          style: 'table',
+          caption: [text('Depths')],
+          headerRows: 0,
+          headerColumns: 0,
+          rows: [{ cells: [{ content: [paragraph('c1', text('1'))], colspan: 1, rowspan: 1 }] }],
+        },
+      ],
+    });
+    let table = into(stateOf(authored), 'tableCaption');
+    table = run(table, setTableWide('scale')).state;
+    expect(fromEditor(table.doc).content[0]).toMatchObject({ wide: 'scale' });
+    expect(tableAt(table)?.wide).toBe('scale');
+    expect(setTableWide('scale')(table)).toBe(false);
+    table = run(table, setTableWide(null)).state;
+    expect(fromEditor(table.doc).content[0]).not.toHaveProperty('wide');
   });
 });
 

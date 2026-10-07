@@ -12,7 +12,9 @@ import {
   type BindingContext,
   type BindingShown,
   type BoundImage,
+  type BoundTableNoteShown,
 } from './bindings.js';
+import { noteLabel } from './boundTableView.js';
 import { MISSING_IMAGE } from './figureView.js';
 
 /** Where a surface's state keeps its host's binding context (the B1 plan, B1-D). */
@@ -63,9 +65,48 @@ export function bindingDecorations(doc: Node, context: BindingContext | null): D
     return [
       Decoration.node(bodyPos, bodyPos + 1, {}, { boundTable: shown, captionId }),
       Decoration.node(tablePos + 1, tablePos + 1 + caption.nodeSize, { id: captionId }),
+      ...noteDecorations(doc, tablePos, shown.notes ?? []),
     ];
   });
   return DecorationSet.create(doc, [...decorations, ...figures, ...tables]);
+}
+
+/**
+ * Each of a bound table's notes (TB3.3): its letter and why it fails in the node decoration's spec and
+ * attributes - drawn apart where failed - and its label a widget before its first words, keyed by what
+ * it says, so it is drawn again only when that changes.
+ */
+function noteDecorations(
+  doc: Node,
+  tablePos: number,
+  notes: readonly BoundTableNoteShown[],
+): Decoration[] {
+  const decorations: Decoration[] = [];
+  let index = 0;
+  doc.nodeAt(tablePos)!.forEach((child, offset) => {
+    if (child.type.name !== 'boundTableNote') return;
+    const shown = notes[index];
+    index += 1;
+    if (shown === undefined) return;
+    const pos = tablePos + 1 + offset;
+    decorations.push(
+      Decoration.node(
+        pos,
+        pos + child.nodeSize,
+        {
+          ...(shown.failed ? { class: FAILED_CLASS } : {}),
+          ...(shown.letter === null ? {} : { 'data-note-letter': shown.letter }),
+        },
+        { boundTableNote: shown },
+      ),
+      Decoration.widget(pos + 2, (view) => noteLabel(view.dom.ownerDocument, shown), {
+        side: -1,
+        ignoreSelection: true,
+        key: `note ${shown.id} ${shown.letter ?? ''} ${shown.said ?? ''}`,
+      }),
+    );
+  });
+  return decorations;
 }
 
 /**

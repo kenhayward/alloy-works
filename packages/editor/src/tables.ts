@@ -3,6 +3,7 @@ import {
   BOUND_TABLE_SORT_MAX,
   type BoundColumn,
   type BoundTableNode,
+  type CanonicalValue,
   type TableBinding,
   type TableColumn,
 } from '@alloy-works/domain';
@@ -47,7 +48,12 @@ export interface TableAt {
   readonly note: boolean;
   /** Whether it takes a number, which the Table panel's Numbered box shows (STR-071). */
   readonly numbered: boolean;
+  /** How it is set where too wide (TB3-G), or null for its table style's: the Table panel's Wide. */
+  readonly wide: Wide | null;
 }
+
+/** How a table too wide for its measure is set (TB3-G). */
+export type Wide = 'scale' | 'rotate';
 
 /** The innermost table the selection stands in - its caption or any cell - or null. */
 export function tableAt(state: EditorState): TableAt | null {
@@ -66,6 +72,7 @@ export function tableAt(state: EditorState): TableAt | null {
       columns: map.width,
       note: node.childCount > 2,
       numbered: node.attrs.numbered !== false,
+      wide: (node.attrs.wide as Wide | null) ?? null,
     };
   }
   return null;
@@ -257,6 +264,22 @@ export function setTableNumbered(numbered: boolean): Command {
   };
 }
 
+/**
+ * **Wide**, from the Table panel (TB3-G; TB3.3): how the table the cursor stands in is set where too
+ * wide - scaled, rotated, or null for its table style's. One step; declined where it already is.
+ */
+export function setTableWide(wide: Wide | null): Command {
+  return (state, dispatch) => {
+    const table = tableAt(state);
+    if (table === null || table.wide === wide) return false;
+    if (dispatch) {
+      const node = state.doc.nodeAt(table.pos)!;
+      dispatch(state.tr.setNodeMarkup(table.pos, undefined, { ...node.attrs, wide }));
+    }
+    return true;
+  };
+}
+
 /** What the table panel does, each one command (tables 1, ruling R4). */
 export type TableAction =
   | 'rowAbove'
@@ -380,6 +403,35 @@ const PART_NODES = {
   source: 'boundTableSource',
 } as const satisfies Record<BoundTablePart, string>;
 
+/** A bound table's children beneath its body, in the order they stand (TB2-C; TB3.3). */
+const BENEATH: readonly string[] = [
+  'boundTableEmpty',
+  'tableNote',
+  'boundTableNote',
+  'boundTableSource',
+];
+
+const boundTableNoteNode = editorSchema.nodes.boundTableNote!;
+const footnoteParagraphNode = editorSchema.nodes.footnoteParagraph!;
+
+/** The most notes a bound table holds (TB3-A). */
+export const BOUND_TABLE_NOTES_MAX = 200;
+
+/** A bound table's note's anchor (TB3-A): on a cell by the definition's key, or on a column. */
+export type BoundNoteAnchor =
+  | {
+      readonly kind: 'keyed';
+      readonly key: Readonly<Record<string, CanonicalValue>>;
+      readonly column: string;
+    }
+  | { readonly kind: 'column'; readonly column: string };
+
+/** One of a bound table's notes, as the panel lists it: its identifier and anchor. */
+export interface BoundNoteAt {
+  readonly id: string | null;
+  readonly anchor: BoundNoteAnchor;
+}
+
 /** The bound table the cursor stands in, as the Bound table panel reads it (TB2-F). */
 export interface BoundTablePlace {
   /** Where the `boundTable` node starts. */
@@ -393,6 +445,10 @@ export interface BoundTablePlace {
   readonly sort: readonly SortKey[];
   /** Whether it has an empty statement, a note and a source. */
   readonly parts: Readonly<Record<BoundTablePart, boolean>>;
+  /** Its keyed and column notes, in the order they stand beneath it (TB3.3). */
+  readonly notes: readonly BoundNoteAt[];
+  /** How it is set where too wide (TB3-G), or null for its table style's. */
+  readonly wide: Wide | null;
 }
 
 function placeOf(node: Node, pos: number): BoundTablePlace {
@@ -417,7 +473,21 @@ function placeOf(node: Node, pos: number): BoundTablePlace {
       note: has(PART_NODES.note),
       source: has(PART_NODES.source),
     },
+    notes: notesOf(node),
+    wide: (node.attrs.wide as Wide | null) ?? null,
   };
+}
+
+function notesOf(node: Node): BoundNoteAt[] {
+  const notes: BoundNoteAt[] = [];
+  node.forEach((child) => {
+    if (child.type !== boundTableNoteNode) return;
+    notes.push({
+      id: (child.attrs.id as string | null) ?? null,
+      anchor: child.attrs.anchor as BoundNoteAnchor,
+    });
+  });
+  return notes;
 }
 
 /** The bound table the selection stands in - its caption or a part - or has selected whole, or null. */
@@ -548,6 +618,8 @@ export interface BoundTableChange {
   readonly headerColumn?: boolean;
   readonly sort?: readonly SortKey[];
   readonly numbered?: boolean;
+  /** Wide (TB3-G): scale, rotate, or null for the table style's. */
+  readonly wide?: Wide | null;
 }
 
 /** A column as stored: its header and unit in NFC, an empty unit none. */
@@ -598,6 +670,7 @@ export function setBoundTable(change: BoundTableChange, { typed = false } = {}):
       ...(change.headerColumn === undefined ? {} : { headerColumn: change.headerColumn }),
       ...(sort === undefined ? {} : { sort: sort.length === 0 ? null : [...sort] }),
       ...(change.numbered === undefined ? {} : { numbered: change.numbered }),
+      ...(change.wide === undefined ? {} : { wide: change.wide }),
     };
     if (JSON.stringify(attrs) === JSON.stringify(node.attrs)) return false;
     if (dispatch) {
@@ -618,15 +691,15 @@ export function setBoundTablePart(part: BoundTablePart, present: boolean): Comma
     if (table === null || table.parts[part] === present) return false;
     if (dispatch) {
       const node = state.doc.nodeAt(table.pos)!;
-      const order: readonly string[] = Object.values(PART_NODES);
-      const wanted = order.indexOf(PART_NODES[part]);
-      // After the caption, the body and every part before this one.
+      const wanted = BENEATH.indexOf(PART_NODES[part]);
+      // After the caption, the body and every child that stands before this one: its notes before
+      // the source (TB3.3).
       let at = table.pos + 1;
       let found: { readonly from: number; readonly to: number } | null = null;
       node.forEach((child, offset) => {
         const from = table.pos + 1 + offset;
         if (child.type.name === PART_NODES[part]) found = { from, to: from + child.nodeSize };
-        if (order.indexOf(child.type.name) < wanted) at = from + child.nodeSize;
+        if (BENEATH.indexOf(child.type.name) < wanted) at = from + child.nodeSize;
       });
       if (present) {
         const tr = state.tr.insert(at, editorSchema.nodes[PART_NODES[part]]!.create());
@@ -637,6 +710,75 @@ export function setBoundTablePart(part: BoundTablePart, present: boolean): Comma
         const $near = tr.doc.resolve(Math.min(tr.mapping.map(state.selection.from, -1), from));
         dispatch(tr.setSelection(TextSelection.near($near, -1)).scrollIntoView());
       }
+    }
+    return true;
+  };
+}
+
+/**
+ * **Add note** (TB3.3; TB3-A): a note beneath the bound table the cursor stands in, after its other
+ * notes, anchored on a column it shows or on that column's cell in the row a key names - the key's
+ * values already canonical, as the panel makes them - one empty paragraph with the cursor in it. Its
+ * identifier, and its paragraph's, the identity plugin gives. Declines a column not shown, a key of
+ * no column, and a 201st note.
+ */
+export function addBoundTableNote(anchor: BoundNoteAnchor): Command {
+  return (state, dispatch) => {
+    const table = boundTableAt(state);
+    if (table === null || table.notes.length >= BOUND_TABLE_NOTES_MAX) return false;
+    if (!table.columns.some((each) => each.column === anchor.column)) return false;
+    if (anchor.kind === 'keyed' && Object.keys(anchor.key).length === 0) return false;
+    if (dispatch) {
+      const node = state.doc.nodeAt(table.pos)!;
+      const source = BENEATH.indexOf('boundTableSource');
+      let at = table.pos + 1;
+      node.forEach((child, offset) => {
+        if (BENEATH.indexOf(child.type.name) < source) at = table.pos + 1 + offset + child.nodeSize;
+      });
+      const note = boundTableNoteNode.create({ id: null, anchor }, footnoteParagraphNode.create());
+      const tr = state.tr.insert(at, note);
+      dispatch(tr.setSelection(TextSelection.create(tr.doc, at + 2)).scrollIntoView());
+    }
+    return true;
+  };
+}
+
+/** **Edit**, a bound table's note (TB3.3): the cursor put at the start of its words, typed in place. */
+export function selectBoundTableNote(id: string): Command {
+  return (state, dispatch) => {
+    const table = boundTableAt(state);
+    if (table === null) return false;
+    let at = -1;
+    state.doc.nodeAt(table.pos)!.forEach((child, offset) => {
+      if (child.type === boundTableNoteNode && child.attrs.id === id)
+        at = table.pos + 1 + offset + 2;
+    });
+    if (at < 0) return false;
+    if (dispatch) {
+      dispatch(state.tr.setSelection(TextSelection.create(state.doc, at)).scrollIntoView());
+    }
+    return true;
+  };
+}
+
+/** **Remove**, a bound table's note (TB3.3): the one with this identifier, whole, in the table the cursor stands in. */
+export function removeBoundTableNote(id: string): Command {
+  return (state, dispatch) => {
+    const table = boundTableAt(state);
+    if (table === null) return false;
+    const node = state.doc.nodeAt(table.pos)!;
+    let found: { readonly from: number; readonly to: number } | null = null;
+    node.forEach((child, offset) => {
+      if (child.type !== boundTableNoteNode || child.attrs.id !== id) return;
+      const from = table.pos + 1 + offset;
+      found = { from, to: from + child.nodeSize };
+    });
+    if (found === null) return false;
+    if (dispatch) {
+      const { from, to } = found;
+      const tr = state.tr.delete(from, to);
+      const $near = tr.doc.resolve(Math.min(from, tr.doc.content.size));
+      dispatch(tr.setSelection(TextSelection.near($near, -1)).scrollIntoView());
     }
     return true;
   };

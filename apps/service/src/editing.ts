@@ -58,11 +58,21 @@ function boundTablesIn(value: unknown): BoundTableNode[] {
   return Object.values(value).flatMap(boundTablesIn);
 }
 
-/** The columns a bound table names: those it shows and those it sorts by. */
+/**
+ * The columns a bound table names: those it shows, those it sorts by, and those its notes anchor to -
+ * a keyed note's key columns among them, which it need not show (TB3.3).
+ */
 const namedBy = (table: BoundTableNode) =>
   new Set([
     ...table.columns.map((each) => each.column),
     ...(table.sort ?? []).map((each) => each.column),
+    ...(table.notes ?? []).flatMap(({ anchor }) =>
+      anchor.kind === 'keyed'
+        ? [anchor.column, ...Object.keys(anchor.key)]
+        : anchor.kind === 'column'
+          ? [anchor.column]
+          : [],
+    ),
   ]);
 
 /**

@@ -6,7 +6,13 @@ import { DEFAULT_VALUE_FORMATS } from '../theme/default.js';
 import type { CanonicalResult } from './canonical.js';
 import type { Column } from './definition.js';
 import { layoutTable, type LaidOut } from './table.js';
-import { keyNamesTheKey, matchNoteRows, placeTableNotes, tableNoteLetter } from './table-notes.js';
+import {
+  canonicalKeyValue,
+  keyNamesTheKey,
+  matchNoteRows,
+  placeTableNotes,
+  tableNoteLetter,
+} from './table-notes.js';
 
 /** A bound table's notes matched to their rows and lettered (the TB3 plan, TB3-C). */
 
@@ -73,6 +79,25 @@ const placed = (presentation: BoundTableNode) => {
   const rows = matchNoteRows(presentation.notes ?? [], RESULT, KEY, COLUMNS);
   return { out, notes: placeTableNotes(presentation, out, rows) };
 };
+
+describe("a key's value typed for a note (TB3.3)", () => {
+  it("canonicalises what is typed by the column's type, and refuses what is none of its values", () => {
+    const decimal = { base: 'decimal', precision: 10, scale: 2 } as const;
+    expect(canonicalKeyValue(decimal, ' 01.50 ')).toBe('1.5');
+    expect(canonicalKeyValue(decimal, '-0.0')).toBe('0');
+    expect(canonicalKeyValue(decimal, '+.25')).toBe('0.25');
+    expect(canonicalKeyValue(decimal, '1.234')).toBeNull();
+    expect(canonicalKeyValue({ base: 'integer' }, '007')).toBe('7');
+    expect(canonicalKeyValue({ base: 'integer' }, '-0')).toBe('0');
+    expect(canonicalKeyValue({ base: 'integer' }, '1.5')).toBeNull();
+    expect(canonicalKeyValue({ base: 'boolean' }, ' True ')).toBe(true);
+    expect(canonicalKeyValue({ base: 'boolean' }, 'yes')).toBeNull();
+    expect(canonicalKeyValue({ base: 'date' }, ' 2026-10-07')).toBe('2026-10-07');
+    expect(canonicalKeyValue({ base: 'time', fraction: 3 }, '09:30:00.500')).toBe('09:30:00.5');
+    expect(canonicalKeyValue({ base: 'text' }, 'Cafe\u0301')).toBe('Caf\u00e9');
+    expect(canonicalKeyValue({ base: 'text' }, '')).toBeNull();
+  });
+});
 
 describe("a bound table's notes, matched to their rows and lettered", () => {
   it('CNT-039 names its row by key values, never a position, and follows its row through a re-sort', () => {

@@ -743,6 +743,19 @@ describe('the table panel (tables 1)', () => {
     await waitFor(() => expect(tableOf(view)).not.toHaveProperty('numbered'));
   });
 
+  it("sets Wide from the Table panel: the style's, Scale or Rotate (TB3.3)", async () => {
+    const { surface } = openWith(aTable);
+    const view = await surface();
+    caretIn(view, 'd1');
+    const panel = await screen.findByRole('group', { name: 'Table' });
+    const wide = within(panel).getByLabelText('Wide');
+    expect(wide).toHaveDisplayValue("The table style's");
+    await userEvent.selectOptions(wide, 'scale');
+    await waitFor(() => expect(tableOf(view)).toMatchObject({ wide: 'scale' }));
+    await userEvent.selectOptions(within(panel).getByLabelText('Wide'), 'style');
+    await waitFor(() => expect(tableOf(view)).not.toHaveProperty('wide'));
+  });
+
   it('shows a table stored unnumbered as unnumbered, and follows an undo', async () => {
     const { surface } = openWith(
       blocksOf(para('b1', 'Before.'), {

@@ -16,7 +16,7 @@ import styles from './DataTab.module.css';
 import { codeOf, identityRefusal, NOT_HELD, whoseView } from './ownView.js';
 import { useOwnViewAsk } from './OwnViewAsk.js';
 import { settleBinding } from './settleBinding.js';
-import { tableFailures } from './tableRows.js';
+import { noteFailures, tableFailures, type TableRows } from './tableRows.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -50,8 +50,12 @@ const key = (node: string, binding: string) => `${node} ${binding}`;
 /** A bound table's result, by its rows (TB2-H). */
 const tableOf = (rows: number) => `A table of ${rows} ${rows === 1 ? 'row' : 'rows'}`;
 
+/** A table's failure, or its notes' (TB3.3), as the stage names it. */
+type TableFailing =
+  TableFailure | { readonly code: 'key_required' | 'note_row_missing'; readonly detail: string };
+
 /** A table's failure in the words a publish's failure is said in, which it is at the stage (TB1-H). */
-const tableFailureSaid = (failure: TableFailure, node: string) =>
+const tableFailureSaid = (failure: TableFailing, node: string) =>
   failureWords({
     stage: 'bind',
     code: failure.code,
@@ -66,6 +70,7 @@ const tableFailureSaid = (failure: TableFailure, node: string) =>
   });
 
 const NO_TABLES: ReadonlyMap<string, BoundTableNode> = new Map();
+const NO_ROWS: ReadonlyMap<string, TableRows> = new Map();
 const NO_STYLES: ReadonlyMap<string, TablePresentation> = new Map();
 
 export interface DataTabProps {
@@ -83,6 +88,11 @@ export interface DataTabProps {
    * what `checkTable` checks a table's result against. None given, a table is never failed for it.
    */
   readonly tables?: ReadonlyMap<string, BoundTableNode>;
+  /**
+   * The rows the page has read for each bound table, by node and binding (TB3.3): what a note whose
+   * row is gone is failed by. None given, no note is.
+   */
+  readonly rows?: ReadonlyMap<string, TableRows>;
   /** Whether a check is in flight. */
   readonly checking: boolean;
   /** An act changed what the document holds: the view is read again. */
@@ -106,6 +116,7 @@ export function DataTab({
   headingOf,
   language,
   tables = NO_TABLES,
+  rows: tableRows = NO_ROWS,
   checking,
   onChanged,
   onCheckNow,
@@ -123,11 +134,11 @@ export function DataTab({
   const tableStyles = theme?.tableStyles ?? NO_STYLES;
   const rows = states.map((state) => {
     const failure = checkFailures.get(key(state.node, state.binding.id));
-    const failing = tableFailures(
-      state,
-      tables.get(key(state.node, state.binding.id)),
-      tableStyles,
-    );
+    const table = tables.get(key(state.node, state.binding.id));
+    const failing: readonly TableFailing[] = [
+      ...tableFailures(state, table, tableStyles),
+      ...noteFailures(state, table, tableRows.get(key(state.node, state.binding.id))),
+    ];
     return {
       state,
       failure,

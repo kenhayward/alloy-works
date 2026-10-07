@@ -164,6 +164,44 @@ function footnoteParagraphs(
 }
 
 /**
+ * A stored footnote as a node of `type` - a `footnote` in a paragraph, or a bound table's
+ * `boundTableNote` (TB3.3) - holding its paragraphs as `footnoteParagraph`s.
+ */
+function footnoteNodeOf(
+  footnote: Extract<InlineNode, { type: 'footnote' }>,
+  type: 'footnote' | 'boundTableNote',
+): Node {
+  return editorSchema.nodes[type]!.create(
+    { id: footnote.id, anchor: footnote.anchor },
+    footnoteParagraphs(footnote).map((paragraph) =>
+      editorSchema.nodes.footnoteParagraph!.create(
+        { id: paragraph.id, style: paragraph.style },
+        paragraph.content.flatMap(toRun),
+      ),
+    ),
+  );
+}
+
+/**
+ * A footnote as stored, from a `footnote` node or a bound table's `boundTableNote` (TB3.3), which hold
+ * the same members: its identifier, its anchor and its paragraphs.
+ */
+function storedFootnote(node: Node, id: string): unknown {
+  const footnote = identifierOf(node, id);
+  const content: unknown[] = [];
+  node.forEach((paragraph) => {
+    const at = identifierOf(paragraph, `${footnote}.${content.length}`);
+    content.push({
+      type: 'paragraph',
+      id: at,
+      style: paragraph.attrs.style as string,
+      content: runsOf(paragraph, at),
+    });
+  });
+  return { type: 'footnote', id: footnote, anchor: node.attrs.anchor as object, content };
+}
+
+/**
  * One stored mark as the editor holds it: the same members, less the discriminator the editor keeps
  * in the mark's type. A member the stored form leaves out - a `hyperlink` with no `title` - takes the
  * schema's default of null, which `markOf` writes back out as absence rather than as null.
@@ -186,17 +224,7 @@ function toRun(inline: InlineNode): Node[] {
   }
   if (inline.type === 'footnote') {
     // Its paragraphs are the stored model's, spelt as the one node type a footnote holds (ruling R1).
-    return [
-      editorSchema.nodes.footnote!.create(
-        { id: inline.id, anchor: inline.anchor },
-        footnoteParagraphs(inline).map((paragraph) =>
-          editorSchema.nodes.footnoteParagraph!.create(
-            { id: paragraph.id, style: paragraph.style },
-            paragraph.content.flatMap(toRun),
-          ),
-        ),
-      ),
-    ];
+    return [footnoteNodeOf(inline, 'footnote')];
   }
   if (inline.type === 'crossReference') {
     // Every stored member, as stored; a form for an output with no pages that is absent is null here,
@@ -334,8 +362,9 @@ function nodeOf(block: BlockNode): Node {
         [editorSchema.node('figureCaption', null, block.caption.flatMap(toRun))],
       );
     case 'boundTable':
-      // One block as five nodes (the TB2 plan, TB2-C): the stored members as attributes, the body an
-      // atom, and each inline member a child - the empty statement, note and source only where stored.
+      // One block as five nodes and more (the TB2 plan, TB2-C): the stored members as attributes, the
+      // body an atom, and each inline member a child - the empty statement, note and source only where
+      // stored - and each keyed or column note a child of its own, edited in place (TB3.3).
       return editorSchema.node(
         'boundTable',
         {
@@ -346,7 +375,6 @@ function nodeOf(block: BlockNode): Node {
           columns: block.columns,
           headerColumn: block.headerColumn,
           sort: block.sort ?? null,
-          notes: block.notes ?? null,
           wide: block.wide ?? null,
         },
         [
@@ -358,6 +386,7 @@ function nodeOf(block: BlockNode): Node {
           ...(block.note === undefined
             ? []
             : [editorSchema.node('tableNote', null, block.note.flatMap(toRun))]),
+          ...(block.notes ?? []).map((note) => footnoteNodeOf(note, 'boundTableNote')),
           ...(block.source === undefined
             ? []
             : [editorSchema.node('boundTableSource', null, block.source.flatMap(toRun))]),
@@ -478,18 +507,7 @@ function runsOf(textblock: Node, id: string): unknown[] {
       return;
     }
     if (child.type.name === 'footnote') {
-      const footnote = identifierOf(child, id);
-      const content: unknown[] = [];
-      child.forEach((paragraph) => {
-        const at = identifierOf(paragraph, `${footnote}.${content.length}`);
-        content.push({
-          type: 'paragraph',
-          id: at,
-          style: paragraph.attrs.style as string,
-          content: runsOf(paragraph, at),
-        });
-      });
-      runs.push({ type: 'footnote', id: footnote, anchor: child.attrs.anchor as object, content });
+      runs.push(storedFootnote(child, id));
       return;
     }
     if (child.type.name === 'crossReference') {
@@ -721,8 +739,10 @@ function storedBlock(node: Node, at: string): unknown {
     case 'boundTable': {
       const id = identifierOf(node, at);
       const inline: Record<string, unknown[]> = {};
+      const notes: unknown[] = [];
       node.forEach((child) => {
-        inline[child.type.name] = runsOf(child, id);
+        if (child.type.name === 'boundTableNote') notes.push(storedFootnote(child, id));
+        else inline[child.type.name] = runsOf(child, id);
       });
       // **Judged on what `runsOf` returned**, as an attribution is: an empty statement, a note or a
       // source nobody has typed is none, and an empty one a second spelling of absent (TB2-C).
@@ -740,7 +760,7 @@ function storedBlock(node: Node, at: string): unknown {
         ...(node.attrs.sort === null ? {} : { sort: node.attrs.sort as object }),
         ...member('boundTableEmpty', 'empty'),
         ...member('tableNote', 'note'),
-        ...(node.attrs.notes === null ? {} : { notes: node.attrs.notes as object }),
+        ...(notes.length === 0 ? {} : { notes }),
         ...member('boundTableSource', 'source'),
         ...(node.attrs.wide === null ? {} : { wide: node.attrs.wide as string }),
       };
