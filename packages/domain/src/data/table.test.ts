@@ -5,7 +5,13 @@ import { DEFAULT_VALUE_FORMATS } from '../theme/default.js';
 import type { CanonicalResult, CanonicalValue } from './canonical.js';
 import type { ColumnType } from './columns.js';
 import type { Column } from './definition.js';
-import { layoutTable, TABLE_ROWS_MAX, type LaidOut, type TablePresentation } from './table.js';
+import {
+  checkTable,
+  layoutTable,
+  TABLE_ROWS_MAX,
+  type LaidOut,
+  type TablePresentation,
+} from './table.js';
 
 /**
  * A bound table laid out (tables.md; the TB1 plan, task 4): its columns chosen and headed, its rows
@@ -284,5 +290,68 @@ describe('a bound table, laid out', () => {
       { text: '(1.3)', value: '-1.25', scope: null, negative: true, parenthesised: true },
       { text: 'Not available', value: null, scope: null, negative: false, parenthesised: false },
     ]);
+  });
+});
+
+describe('a bound table checked without its rows, and laid out in part (the TB2 plan, TB2-B)', () => {
+  const failing: BoundTableNode[] = [
+    table({ columns: [{ column: 'tide', header: 'Tide' }] }),
+    table({ columns: [{ column: 'photo', header: 'Photo' }] }),
+    table({ columns: [{ column: 'measured_on', header: 'On', format: { places: 2 } }] }),
+    table({ sort: [{ column: 'tide', direction: 'ascending', nulls: 'last' }] }),
+    table({ sort: [{ column: 'photo', direction: 'ascending', nulls: 'last' }] }),
+    table({
+      columns: [
+        { column: 'photo', header: 'Photo' },
+        { column: 'gone', header: 'Gone' },
+        {
+          column: 'depth',
+          header: 'Depth',
+          format: { currency: { symbol: '$', position: 'before', space: false } },
+        },
+      ],
+      sort: [{ column: 'gone', direction: 'descending', nulls: 'first' }],
+    }),
+  ];
+
+  it("agrees with layoutTable's failures for every failure, in its order", () => {
+    for (const each of [table(), ...failing]) {
+      const laidOut = layoutTable(each, READINGS, COLUMNS, style, DEFAULT_VALUE_FORMATS, words);
+      const checked = checkTable(each, COLUMNS, READINGS.rows.length, style);
+      expect(checked).toEqual('failures' in laidOut ? laidOut.failures : []);
+    }
+    // A declared column the result lacks is missing to both, as `layoutTable` intersects them.
+    const fewer: CanonicalResult = { columns: READINGS.columns.slice(0, 1), rows: [['North']] };
+    const laidOut = layoutTable(table(), fewer, COLUMNS, style, DEFAULT_VALUE_FORMATS, words);
+    expect('failures' in laidOut && laidOut.failures).toEqual(
+      checkTable(table(), COLUMNS.slice(0, 1), 1, style),
+    );
+  });
+
+  it('answers table_too_long from the row count alone', () => {
+    expect(checkTable(table(), COLUMNS, TABLE_ROWS_MAX, style)).toEqual([]);
+    expect(checkTable(table(), COLUMNS, TABLE_ROWS_MAX + 1, style)).toEqual([
+      { code: 'table_too_long', detail: String(TABLE_ROWS_MAX + 1) },
+    ]);
+  });
+
+  it('sorts every row and formats only the first limit', () => {
+    const rows = result(
+      ...Array.from({ length: 120 }, (_, at): CanonicalValue[] => [
+        `S${at}`,
+        String(at),
+        null,
+        null,
+      ]),
+    );
+    const sorted = table({ sort: [{ column: 'depth', direction: 'descending', nulls: 'last' }] });
+    const out = layoutTable(sorted, rows, COLUMNS, style, DEFAULT_VALUE_FORMATS, words, {
+      limit: 50,
+    });
+    if ('failures' in out) throw new Error(JSON.stringify(out.failures));
+    expect(out.rows).toHaveLength(50);
+    expect(out.rows[0]!.cells[0]!.text).toBe('S119');
+    expect(out.rows[49]!.cells[0]!.text).toBe('S70');
+    expect(out.empty).toBeNull();
   });
 });

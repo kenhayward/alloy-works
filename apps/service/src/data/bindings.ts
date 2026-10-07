@@ -2,6 +2,8 @@ import { createHash, randomUUID } from 'node:crypto';
 import type {
   AcceptBindingBody,
   BindingStateView,
+  BoundTableRowsParams,
+  BoundTableRowsQuery,
   CheckBindingsView,
   ComponentBindingParams,
   ConfirmBindingBody,
@@ -78,9 +80,11 @@ import {
   takeOutcomeSchema,
   takes,
   takeValue,
+  TABLE_ROWS_MAX,
   type AnyBinding,
   type AssetFormat,
   type Binding,
+  type BoundTableNode,
   type BindingPlace,
   type CanonicalResult,
   type Column,
@@ -97,7 +101,7 @@ import { tenantPrefix, type ObjectStores, type TenantStore } from '@alloy-works/
 import type { FastifyRequest } from 'fastify';
 import type { z } from 'zod';
 import { authoriseAt, callerOf, notFound, type Authorised, type Caller } from '../access.js';
-import { Accepted, AfterCommit } from '../after-commit.js';
+import { Accepted, AfterCommit, Revalidated } from '../after-commit.js';
 import { AppError, storageUnavailable } from '../errors.js';
 import { hashToken } from '../sessions.js';
 import { bearerSecret, isBearer } from '../tokens.js';
@@ -201,6 +205,8 @@ interface Placed {
   readonly place: BindingPlace | 'table';
   /** A figure's binding whose figure its author marked decorative (Ken, 2026-10-06). */
   readonly decorative?: true;
+  /** A bound table's binding: the table holding it, as it is read (the TB2 plan, TB2-A). */
+  readonly table?: BoundTableNode;
 }
 
 const key = (node: string, binding: string) => `${node} ${binding}`;
@@ -213,6 +219,8 @@ const key = (node: string, binding: string) => `${node} ${binding}`;
 interface SessionSource {
   readonly session: string;
   readonly nodes: ReadonlySet<string> | 'every';
+  /** The nodes named fall back to the version where the session cannot answer, as `every` does. */
+  readonly fallBack?: true;
 }
 
 /**
@@ -257,7 +265,7 @@ async function bindingsPlaced(
           })
         : undefined;
       if (saved?.openedFrom === occurrence.version) substance = saved.content;
-      else if (source.nodes !== 'every') continue;
+      else if (source.nodes !== 'every' && source.fallBack !== true) continue;
     }
     if (substance === undefined) {
       const stored = await readVersion(trx, occurrence.version);
@@ -277,10 +285,28 @@ async function bindingsPlaced(
         digest: sha256(bindingDigestInput(binding)),
         place,
         ...(decorative ? { decorative } : {}),
+        ...(place === 'table'
+          ? { table: boundTableHolding(content.document.content, binding.id)! }
+          : {}),
       });
     }
   }
   return placed;
+}
+
+/** The bound table holding the binding `id`, wherever in the blocks it stands. */
+function boundTableHolding(value: unknown, id: string): BoundTableNode | undefined {
+  if (Array.isArray(value)) {
+    for (const each of value) {
+      const found = boundTableHolding(each, id);
+      if (found) return found;
+    }
+    return undefined;
+  }
+  if (typeof value !== 'object' || value === null) return undefined;
+  const node = value as { type?: unknown; binding?: { id?: unknown } };
+  if (node.type === 'boundTable' && node.binding?.id === id) return value as BoundTableNode;
+  return boundTableHolding(Object.values(value), id);
 }
 
 /** What names a binding in a refusal or a failure (DAT-086). */
@@ -2024,6 +2050,107 @@ export function bindingHandlers(
         ),
         result: { columns: result.columns, rows: result.rows },
       };
+    },
+
+    /**
+     * **A bound table's rows for the page** (the TB2 plan, TB2-A): on `read` on the document, the result
+     * a bound table holds there - only the version held, named as the view names it, never one
+     * waiting; only where its binding is unchanged since and its rows at most `TABLE_ROWS_MAX` - read
+     * by its checksum, and trimmed to the columns the table shows or sorts by, so a column its author
+     * left out never reaches a reader. With `session`, the table is read from the caller's own editing
+     * session where it can be, and from the version where it cannot. Revalidated by an `ETag` over the
+     * version and the columns sent, so asking again reads nothing.
+     */
+    getBoundTableRows: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
+      const { id, node, binding } = request.params as BoundTableRowsParams;
+      const { version, session } = request.query as BoundTableRowsQuery;
+      const placed = await bindingsPlaced(
+        trx,
+        id,
+        principalId,
+        session === undefined ? undefined : { session, nodes: new Set([node]), fallBack: true },
+      );
+      if (!placed) throw notFound();
+      const naming = { binding, node, document: id };
+      const found = placed.find((each) => each.node === node && each.binding.id === binding);
+      if (!found) {
+        throw bindingMissing(
+          naming,
+          `The component the node ${node} places holds no binding ${binding}.`,
+        );
+      }
+      if (found.table === undefined) {
+        throw refused(
+          400,
+          'binding.not_table',
+          `The binding ${binding} takes a value: it is no bound table's, and has no rows to send.`,
+          naming,
+        );
+      }
+      const held = (await heldBy(trx, id, [found])).get(key(node, binding));
+      if (!held) {
+        throw refused(
+          409,
+          'binding.unresolved',
+          `The document holds no result for the binding ${binding}: resolve it.`,
+          naming,
+        );
+      }
+      if (held.digest !== found.digest) {
+        throw refused(
+          409,
+          'binding.stale',
+          `The binding ${binding} has changed since its result was held: resolve it again.`,
+          naming,
+        );
+      }
+      if (held.held.version !== version) {
+        throw refused(
+          409,
+          'version.not_held',
+          `The binding ${binding} does not hold the version ${version}.`,
+          naming,
+        );
+      }
+      const { provenance } = held.held;
+      if (provenance.rowCount > TABLE_ROWS_MAX) {
+        throw refused(
+          409,
+          'table.too_long',
+          `The result has ${provenance.rowCount} rows, more than the ${TABLE_ROWS_MAX} a table prints.`,
+          naming,
+        );
+      }
+      const named = new Set([
+        ...found.table.columns.map((each) => each.column),
+        ...(found.table.sort ?? []).map((each) => each.column),
+      ]);
+      const sent = provenance.columns.map((each) => each.name).filter((name) => named.has(name));
+      const etag = `"${sha256(JSON.stringify([version, sent]))}"`;
+      if (request.headers['if-none-match'] === etag) return new Revalidated<never>(etag, undefined);
+      if (!objects) throw storageUnavailable();
+      const tenant = tenantOf(request);
+      const store = await objects.forTenant(trx, tenant);
+      const result = await readResult(
+        () => Promise.resolve(store),
+        (checksum) => `${tenantPrefix(tenant)}sha256/${checksum}`,
+        provenance,
+      );
+      if (result === undefined) {
+        throw new AppError(
+          503,
+          'result_unreadable',
+          "The table's stored result cannot be read now. Try again later.",
+        );
+      }
+      const at = result.columns.flatMap(([name], index) => (named.has(name) ? [index] : []));
+      return new Revalidated(etag, {
+        version,
+        result: {
+          columns: at.map((index) => result.columns[index]!),
+          rows: result.rows.map((row) => at.map((index) => row[index] ?? null)),
+        },
+      });
     },
 
     /** Naming a dataset (DAT-092; D3-N): `edit` on it, in its definition's space. */

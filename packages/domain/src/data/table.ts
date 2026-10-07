@@ -121,6 +121,65 @@ function compareBy(
   return key.direction === 'ascending' ? compared : -compared;
 }
 
+/** A declared column as a check reads it: its name and its type, whoever may read the rest. */
+export type TableColumn = Pick<Column, 'name' | 'type'>;
+
+/** The format a shown column is printed in: its type's in the style, then its own (TAB-037). */
+const formatOf = (
+  shown: BoundTableNode['columns'][number],
+  type: ColumnType,
+  style: TablePresentation,
+): FieldFormat =>
+  mergeFormat(
+    mergeFormat(DEFAULT_TABLE_FIELDS[type.base as FieldKey], style.fields?.[type.base as FieldKey]),
+    shown.format,
+  );
+
+/**
+ * **`checkTable`** (the TB2 plan, TB2-B): every failure `layoutTable` finds before it lays a row out,
+ * from the declared columns and the row count alone, so the page can say a result is too long, or a
+ * column gone, without reading its rows. `columns` are the result's: the declared columns it has.
+ * In `layoutTable`'s order: each column shown - `column_missing` (TAB-004), `column_image`,
+ * `format_mismatch` - then each sort key, then `table_too_long`.
+ */
+export function checkTable<C extends TableColumn>(
+  table: BoundTableNode,
+  columns: readonly C[],
+  rowCount: number,
+  style: TablePresentation,
+): readonly TableFailure[] {
+  const failures: TableFailure[] = [];
+  const declared = new Map(columns.map((column) => [column.name, column]));
+  const missing = new Set<string>();
+  const found = (name: string) => {
+    const column = declared.get(name);
+    if (column === undefined && !missing.has(name)) {
+      failures.push({ code: 'column_missing', column: name });
+    }
+    if (column === undefined) missing.add(name);
+    return column;
+  };
+  for (const shown of table.columns) {
+    const column = found(shown.column);
+    if (column === undefined) continue;
+    if (column.type.base === 'image') {
+      failures.push({ code: 'column_image', column: shown.column });
+      continue;
+    }
+    for (const member of formatMismatch(column.type, formatOf(shown, column.type, style))) {
+      failures.push({ code: 'format_mismatch', column: shown.column, detail: member });
+    }
+  }
+  for (const key of table.sort ?? []) {
+    const column = found(key.column);
+    if (column?.type.base === 'image') failures.push({ code: 'column_image', column: key.column });
+  }
+  if (rowCount > TABLE_ROWS_MAX) {
+    failures.push({ code: 'table_too_long', detail: String(rowCount) });
+  }
+  return failures;
+}
+
 /**
  * **`layoutTable`** (TB1-E): the columns shown in their order, headed as declared, a unit in the header
  * bracketed as the style says (TAB-001 to TAB-003); the rows in the result's stored order (TAB-006),
@@ -128,76 +187,47 @@ function compareBy(
  * its type's in the style (TAB-012), aligned by the column, else the style, else its type (TAB-046).
  * No rows lays out the statement declared, else `words.noRows` (TAB-011).
  *
- * Fails, every failure gathered: a column shown or sorted by that the result lacks, `column_missing`
- * (TAB-004); an image column, `column_image`; a format member meaningless for the type,
- * `format_mismatch`; more rows than `TABLE_ROWS_MAX`, `table_too_long`.
+ * Fails, every failure gathered, as `checkTable` finds them over the declared columns the result has.
+ *
+ * **`limit`** (TB2-B): every row is sorted and only the first `limit` formatted and returned - the
+ * page's 50 of up to 2,000. The publish passes none.
  */
-export function layoutTable(
+export function layoutTable<C extends TableColumn>(
   table: BoundTableNode,
   result: CanonicalResult,
-  columns: readonly Column[],
+  columns: readonly C[],
   style: TablePresentation,
   formats: ValueFormats,
   words: TableWords,
+  options: { readonly limit?: number } = {},
 ): LaidOut | { readonly failures: readonly TableFailure[] } {
-  const failures: TableFailure[] = [];
   const at = new Map(result.columns.map(([name], index) => [name, index]));
-  const declared = new Map(columns.map((column) => [column.name, column]));
-  const found = (name: string) =>
-    at.has(name) && declared.has(name) ? declared.get(name)! : undefined;
-  const missing = new Set<string>();
-  const fail = (failure: TableFailure) => failures.push(failure);
+  const present = columns.filter((column) => at.has(column.name));
+  const failures = checkTable(table, present, result.rows.length, style);
+  if (failures.length > 0) return { failures };
+  const declared = new Map(present.map((column) => [column.name, column]));
 
-  const laidColumns: LaidOutColumn[] = [];
-  for (const shown of table.columns) {
-    const column = found(shown.column);
-    if (column === undefined) {
-      if (!missing.has(shown.column)) fail({ code: 'column_missing', column: shown.column });
-      missing.add(shown.column);
-      continue;
-    }
-    if (column.type.base === 'image') {
-      fail({ code: 'column_image', column: shown.column });
-      continue;
-    }
-    const base = column.type.base;
-    const format = mergeFormat(
-      mergeFormat(DEFAULT_TABLE_FIELDS[base], style.fields?.[base]),
-      shown.format,
-    );
-    for (const member of formatMismatch(column.type, format)) {
-      fail({ code: 'format_mismatch', column: shown.column, detail: member });
-    }
-    const [open, close] = style.unitBrackets === 'brackets' ? ['[', ']'] : ['(', ')'];
-    laidColumns.push({
+  const [open, close] = style.unitBrackets === 'brackets' ? ['[', ']'] : ['(', ')'];
+  const laidColumns = table.columns.map((shown): LaidOutColumn => {
+    const { type } = declared.get(shown.column)!;
+    const base = type.base as FieldKey;
+    return {
       name: shown.column,
-      type: column.type,
+      type,
       header:
         shown.unit?.place === 'header'
           ? `${shown.header} ${open}${shown.unit.text}${close}`
           : shown.header,
-      format,
+      format: formatOf(shown, type, style),
       align: shown.align ?? style.align?.[base] ?? DEFAULT_TABLE_ALIGN[base],
       wrap: shown.wrap !== false,
-    });
-  }
-  const sort = (table.sort ?? []).flatMap((key) => {
-    const column = found(key.column);
-    if (column === undefined) {
-      if (!missing.has(key.column)) fail({ code: 'column_missing', column: key.column });
-      missing.add(key.column);
-      return [];
-    }
-    if (column.type.base === 'image') {
-      fail({ code: 'column_image', column: key.column });
-      return [];
-    }
-    return [{ key, type: column.type, index: at.get(key.column)! }];
+    };
   });
-  if (result.rows.length > TABLE_ROWS_MAX) {
-    fail({ code: 'table_too_long', detail: String(result.rows.length) });
-  }
-  if (failures.length > 0) return { failures };
+  const sort = (table.sort ?? []).map((key) => ({
+    key,
+    type: declared.get(key.column)!.type,
+    index: at.get(key.column)!,
+  }));
 
   // Stored order, then each sort key in turn; the stored position breaks every tie (TAB-007).
   const order = result.rows.map((_, index) => index);
@@ -210,20 +240,18 @@ export function layoutTable(
       return x - y;
     });
   }
-  const shownUnits = new Map(
-    table.columns.map((shown) => [
-      shown,
-      shown.unit?.place === 'value' ? shown.unit.text : undefined,
-    ]),
+  const units = table.columns.map((shown) =>
+    shown.unit?.place === 'value' ? shown.unit.text : undefined,
   );
-  const rows = order.map((index) => {
+  const indexes = laidColumns.map((column) => at.get(column.name)!);
+  const shownOrder = options.limit === undefined ? order : order.slice(0, options.limit);
+  const rows = shownOrder.map((index) => {
     const row = result.rows[index]!;
     return {
       cells: laidColumns.map((column, place): LaidOutCell => {
-        const value = row[at.get(column.name)!] ?? null;
-        const unit = shownUnits.get(table.columns[place]!);
+        const value = row[indexes[place]!] ?? null;
         return {
-          text: formatCell(value, column.type, column.format, formats, words, unit),
+          text: formatCell(value, column.type, column.format, formats, words, units[place]),
           value,
           scope: table.headerColumn && place === 0 ? 'row' : null,
           negative: colouredNegative(value, column.type, column.format),
@@ -237,7 +265,7 @@ export function layoutTable(
     columns: laidColumns,
     rows,
     empty:
-      rows.length > 0
+      result.rows.length > 0
         ? null
         : {
             content: table.empty ?? [{ type: 'text', value: words.noRows, marks: [] }],

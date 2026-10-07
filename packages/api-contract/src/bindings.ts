@@ -486,6 +486,41 @@ export const DocumentDatasetView = z.object({
 });
 export type DocumentDatasetView = z.infer<typeof DocumentDatasetView>;
 
+/** One bound table in a document: its node, and its binding (the TB2 plan, TB2-A). */
+export const BoundTableRowsParams = z.object({
+  id: LowercaseUuid,
+  node: z.string().min(1).max(64),
+  binding: z.string().min(1).max(200),
+});
+export type BoundTableRowsParams = z.infer<typeof BoundTableRowsParams>;
+
+/** Which result's rows: the version held, as the bindings view names it, read with a session. */
+export const BoundTableRowsQuery = z.object({
+  version: LowercaseUuid.describe(
+    'The dataset version the binding holds, as the bindings view names it: any other, a waiting one among them, is refused `version_not_held`',
+  ),
+  session: SessionNamed.describe(
+    "The caller's own editing session: where it holds the component's lock, the table is read from its latest save, as the bindings view's `session` is",
+  ),
+});
+export type BoundTableRowsQuery = z.infer<typeof BoundTableRowsQuery>;
+
+/** A bound table's rows, only the columns it names (TB2-A). */
+export const BoundTableRowsView = z.object({
+  version: z.string(),
+  result: z.object({
+    columns: z
+      .array(z.tuple([z.string(), z.string()]))
+      .describe(
+        "Each column the table shows or sorts by, by its name and its type's base, in the result's order",
+      ),
+    rows: z
+      .array(z.array(z.union([z.string(), z.boolean(), z.null()])))
+      .describe("Every row, in the result's stored order, each value in its canonical form"),
+  }),
+});
+export type BoundTableRowsView = z.infer<typeof BoundTableRowsView>;
+
 export const DatasetNameBody = z.strictObject({
   name: z
     .string()
@@ -745,6 +780,45 @@ export const bindingRoutes = {
       },
       503: {
         description: '`storage_unavailable`: the environment has nowhere results are kept',
+        schema: ErrorBody,
+      },
+    },
+  },
+  getBoundTableRows: {
+    operationId: 'getBoundTableRows',
+    method: 'GET',
+    path: '/v1/documents/{id}/bindings/{node}/{binding}/rows',
+    summary: "A bound table's rows, as the document holds them, in the columns it names",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: documentTarget },
+    params: BoundTableRowsParams,
+    query: BoundTableRowsQuery,
+    responses: {
+      200: {
+        description:
+          'The rows of the result the bound table holds, only the columns it shows or sorts by. Sent with an `ETag`, and `Cache-Control: private, no-cache`',
+        schema: BoundTableRowsView,
+      },
+      304: { description: '`If-None-Match` named the same rows: nothing has changed' },
+      400: {
+        description:
+          "`binding_missing`: no such binding in the component the node places, or none the caller may read; `binding_not_table`: the binding is a value's, not a bound table's",
+        schema: BindingRefusal,
+      },
+      401: unauthenticated,
+      403: {
+        description: 'Never answered: a document the caller may not read is not found',
+        schema: ErrorBody,
+      },
+      404: documentNotFound,
+      409: {
+        description:
+          '`binding_unresolved`: the document holds no result for it; `binding_stale`: the binding has changed since its result was held; `version_not_held`: the version named is not the one held, a waiting one among them; `table_too_long`: the result has more rows than a table prints',
+        schema: BindingRefusal,
+      },
+      503: {
+        description:
+          '`storage_unavailable`: the environment has nowhere results are kept; `result_unreadable`: the stored result cannot be read now',
         schema: ErrorBody,
       },
     },

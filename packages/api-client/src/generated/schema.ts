@@ -631,6 +631,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{id}/bindings/{node}/{binding}/rows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A bound table's rows, as the document holds them, in the columns it names
+         * @description Returns the rows of the result a bound table holds in this document, for the page to lay out: every row in the result's stored order, each value in its canonical form, and only the columns the table shows or sorts by, so a column its author left out never reaches a reader of the document. Only the version the binding holds is answered, named as the bindings view names it, never one waiting, and only for a bound table whose binding has not changed since and whose result has no more rows than a table prints. Named, `session` reads the table from the caller's own editing session where it holds the component's lock, so a column just added is sent. It needs only read on the document. Each answer carries an `ETag` over the version and the columns sent and is cached privately and revalidated: asked again with `If-None-Match`, an unchanged answer is 304 with no body.
+         */
+        get: operations["getBoundTableRows"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents/{id}/bindings/accept": {
         parameters: {
             query?: never;
@@ -2170,6 +2190,34 @@ export interface components {
             }[];
         } | {
             array: components["schemas"]["getDocumentBindings200_schema0"][];
+        };
+        getBoundTableRows400_schema0: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["getBoundTableRows400_schema0"];
+            }[];
+        } | {
+            array: components["schemas"]["getBoundTableRows400_schema0"][];
+        };
+        getBoundTableRows409_schema0: {
+            fixed: string | boolean | null;
+        } | {
+            number: string;
+        } | {
+            parameter: string;
+        } | {
+            object: {
+                name: string;
+                value: components["schemas"]["getBoundTableRows409_schema0"];
+            }[];
+        } | {
+            array: components["schemas"]["getBoundTableRows409_schema0"][];
         };
         acceptBinding200_schema0: {
             fixed: string | boolean | null;
@@ -12311,6 +12359,1295 @@ export interface operations {
             };
             /** @description No such document in this environment, or none the caller may read */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getBoundTableRows: {
+        parameters: {
+            query: {
+                version: string & (unknown & unknown);
+                session?: string & (unknown & unknown);
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+                node: string;
+                binding: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The rows of the result the bound table holds, only the columns it shows or sorts by. Sent with an `ETag`, and `Cache-Control: private, no-cache` */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "version": "example",
+                     *       "result": {
+                     *         "columns": [],
+                     *         "rows": []
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        version: string;
+                        result: {
+                            /** @description Each column the table shows or sorts by, by its name and its type's base, in the result's order */
+                            columns: [
+                                string,
+                                string
+                            ][];
+                            /** @description Every row, in the result's stored order, each value in its canonical form */
+                            rows: (string | boolean | null)[][];
+                        };
+                    };
+                };
+            };
+            /** @description `If-None-Match` named the same rows: nothing has changed */
+            304: {
+                headers: {
+                    /** @description Where to go next */
+                    Location?: string;
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `binding_missing`: no such binding in the component the node places, or none the caller may read; `binding_not_table`: the binding is a value's, not a bound table's */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
+                        };
+                        column?: string;
+                        row?: number;
+                        problems?: ({
+                            /** @constant */
+                            rule: "definition_invalid";
+                            /** @description The member refused, dotted, as `columns.2.name` */
+                            path: string;
+                            message: string;
+                        } | {
+                            parameter: string;
+                            /** @enum {string} */
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
+                            /** @description The value as sent, cut to 1,000 characters */
+                            value: string;
+                        })[];
+                        definition?: string;
+                        binding?: string;
+                        node?: string;
+                        document?: string;
+                        /** @enum {string} */
+                        reason?: "untested" | "not_read_only" | "asserted" | "signed_out" | "token_revoked";
+                        /** @description resolution_precondition: the binding as it now stands */
+                        current?: {
+                            node: string;
+                            /** @description The binding as the component stores it: one taking a value, or a bound table's, which has no `take` and binds the whole result */
+                            binding: {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
+                                take: {
+                                    column: string;
+                                } | {
+                                    key: {
+                                        [key: string]: string | boolean | null;
+                                    };
+                                    column: string;
+                                };
+                            } | {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
+                            };
+                            /** @description What it holds, or null where it has never been resolved */
+                            held: {
+                                dataset: string;
+                                /** @description The dataset version it holds */
+                                version: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    } | null;
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["getBoundTableRows400_schema0"];
+                                        } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
+                                    columns: {
+                                        name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
+                                        from: ({
+                                            column: string;
+                                        } | {
+                                            pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
+                                        }) | null;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: {
+                                        [key: string]: string;
+                                    };
+                                };
+                                /** @description The dataset's name, or null where nobody has named it */
+                                name: string | null;
+                                /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
+                                stale: boolean;
+                                /** @description The value the binding takes from the version held, or null where it is stale */
+                                taken: ({
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
+                                }) | null;
+                                /**
+                                 * @description The act that made it what the binding holds
+                                 * @enum {string}
+                                 */
+                                act: "resolve" | "accept" | "confirm";
+                                /** @description Whether Keep may hold it under the binding as it now stands: stale, and still asking the question it answers - the same definition, parameters and version - so only the value taken or the mode changed */
+                                keepable: boolean;
+                                /** @description Who resolved or accepted it */
+                                by: {
+                                    id: string;
+                                    /** @description Their name, or null where they have none */
+                                    displayName: string | null;
+                                };
+                                /** @description When */
+                                at: string;
+                            } | null;
+                            /** @description A different result a check recorded after the one held, which nothing holds until it is accepted */
+                            waiting: {
+                                version: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    } | null;
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["getBoundTableRows400_schema0"];
+                                        } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
+                                    columns: {
+                                        name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
+                                        from: ({
+                                            column: string;
+                                        } | {
+                                            pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
+                                        }) | null;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: {
+                                        [key: string]: string;
+                                    };
+                                };
+                                /** @description The value the binding would take from it */
+                                taken: {
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
+                                };
+                            } | null;
+                            /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
+                            definition: {
+                                title: string;
+                                /** @description `revision.version`, as `0.2` */
+                                version: string;
+                            } | null;
+                            /** @description The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection */
+                            connection: {
+                                name: string;
+                            } | null;
+                            /** @description Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran */
+                            definitionChanged: boolean;
+                            /** @description How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published */
+                            sincePublished: ("new" | ("digest" | "dataset" | "definition")[]) | null;
+                            /** @description Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on */
+                            mayCheck: boolean;
+                            /** @description Whether the caller may resolve it: they may edit the document and use the connection its definition runs on */
+                            mayResolve: boolean;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a document the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `binding_unresolved`: the document holds no result for it; `binding_stale`: the binding has changed since its result was held; `version_not_held`: the version named is not the one held, a waiting one among them; `table_too_long`: the result has more rows than a table prints */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
+                        };
+                        column?: string;
+                        row?: number;
+                        problems?: ({
+                            /** @constant */
+                            rule: "definition_invalid";
+                            /** @description The member refused, dotted, as `columns.2.name` */
+                            path: string;
+                            message: string;
+                        } | {
+                            parameter: string;
+                            /** @enum {string} */
+                            rule: "required" | "type" | "permitted" | "range" | "list" | "precision" | "scale" | "zone" | "variation" | "position";
+                            /** @description The value as sent, cut to 1,000 characters */
+                            value: string;
+                        })[];
+                        definition?: string;
+                        binding?: string;
+                        node?: string;
+                        document?: string;
+                        /** @enum {string} */
+                        reason?: "untested" | "not_read_only" | "asserted" | "signed_out" | "token_revoked";
+                        /** @description resolution_precondition: the binding as it now stands */
+                        current?: {
+                            node: string;
+                            /** @description The binding as the component stores it: one taking a value, or a bound table's, which has no `take` and binds the whole result */
+                            binding: {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
+                                take: {
+                                    column: string;
+                                } | {
+                                    key: {
+                                        [key: string]: string | boolean | null;
+                                    };
+                                    column: string;
+                                };
+                            } | {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
+                            };
+                            /** @description What it holds, or null where it has never been resolved */
+                            held: {
+                                dataset: string;
+                                /** @description The dataset version it holds */
+                                version: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    } | null;
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["getBoundTableRows409_schema0"];
+                                        } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
+                                    columns: {
+                                        name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
+                                        from: ({
+                                            column: string;
+                                        } | {
+                                            pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
+                                        }) | null;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: {
+                                        [key: string]: string;
+                                    };
+                                };
+                                /** @description The dataset's name, or null where nobody has named it */
+                                name: string | null;
+                                /** @description Whether the binding has changed since it was resolved: if so it holds nothing for this document's purposes until it is resolved again */
+                                stale: boolean;
+                                /** @description The value the binding takes from the version held, or null where it is stale */
+                                taken: ({
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
+                                }) | null;
+                                /**
+                                 * @description The act that made it what the binding holds
+                                 * @enum {string}
+                                 */
+                                act: "resolve" | "accept" | "confirm";
+                                /** @description Whether Keep may hold it under the binding as it now stands: stale, and still asking the question it answers - the same definition, parameters and version - so only the value taken or the mode changed */
+                                keepable: boolean;
+                                /** @description Who resolved or accepted it */
+                                by: {
+                                    id: string;
+                                    /** @description Their name, or null where they have none */
+                                    displayName: string | null;
+                                };
+                                /** @description When */
+                                at: string;
+                            } | null;
+                            /** @description A different result a check recorded after the one held, which nothing holds until it is accepted */
+                            waiting: {
+                                version: string;
+                                provenance: {
+                                    /** @constant */
+                                    schemaVersion: 1;
+                                    queryDefinition: {
+                                        artifact: string;
+                                        version: string;
+                                    };
+                                    /** @description The connection version it ran on, or null where the caller may not read the query definition */
+                                    connection: {
+                                        artifact: string;
+                                        version: string;
+                                    } | null;
+                                    parameters: {
+                                        [key: string]: (string | boolean | null) | (string | boolean | null)[];
+                                    };
+                                    ran: {
+                                        /** @description The SQL that ran, or null where the caller may not read the query definition */
+                                        sql: string | null;
+                                    } | {
+                                        /** @description The HTTP request template that was sent, never its URL, or null where the caller may not read the query definition */
+                                        request: {
+                                            /** @enum {string} */
+                                            method: "GET" | "POST";
+                                            path: ({
+                                                fixed: string;
+                                            } | {
+                                                parameter: string;
+                                            })[];
+                                            query: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            headers: {
+                                                name: string;
+                                                value: {
+                                                    fixed: string;
+                                                } | {
+                                                    parameter: string;
+                                                };
+                                            }[];
+                                            body?: components["schemas"]["getBoundTableRows409_schema0"];
+                                        } | null;
+                                    } | {
+                                        /** @description The S3 object read - its bucket, its key as bound and its version - never a URL, or null where the caller may not read the query definition */
+                                        object: {
+                                            bucket: string;
+                                            key: string;
+                                            versionId?: string;
+                                        } | null;
+                                    };
+                                    identity: {
+                                        /** @constant */
+                                        kind: "service";
+                                    } | {
+                                        /** @constant */
+                                        kind: "endUser";
+                                        /** @constant */
+                                        mechanism: "asserted";
+                                        principal: string;
+                                        /** @enum {string} */
+                                        signInRoute: "organisation" | "google" | "token";
+                                        asSeen: string;
+                                    };
+                                    at: string;
+                                    durationMs: number;
+                                    rowCount: number;
+                                    /** @description The definition's declared columns: each one's name and type, and where it reads */
+                                    columns: {
+                                        name: string;
+                                        /** @description The source's column it reads, or null where the caller may not read the query definition */
+                                        from: ({
+                                            column: string;
+                                        } | {
+                                            pointer: string;
+                                        } | {
+                                            header: string;
+                                        } | {
+                                            letter: string;
+                                        }) | null;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        } | {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    }[];
+                                    /** @constant */
+                                    canonical: 1;
+                                    checksum: string;
+                                    images: {
+                                        [key: string]: string;
+                                    };
+                                };
+                                /** @description The value the binding would take from it */
+                                taken: {
+                                    /** @description The value, in its column's canonical form: a string, or a boolean */
+                                    value: string | boolean;
+                                    column: {
+                                        /** @description The declared column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "text";
+                                        } | {
+                                            /** @constant */
+                                            base: "integer";
+                                        } | {
+                                            /** @constant */
+                                            base: "decimal";
+                                            precision: number;
+                                            scale: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "date";
+                                        } | {
+                                            /** @constant */
+                                            base: "time";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "localDateTime";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "instant";
+                                            fraction: number;
+                                        } | {
+                                            /** @constant */
+                                            base: "boolean";
+                                        };
+                                    };
+                                } | {
+                                    /** @description The image's SHA-256, as the result's cell holds it */
+                                    image: string;
+                                    /** @description The asset version the image was admitted as, from the dataset version's provenance: its bytes are at /v1/asset-versions/{id}/content to a reader of a document holding it */
+                                    assetVersion: string;
+                                    /** @description What describes the image: the text the same row holds in the column the image column's type names, or `decorative` where the type says so */
+                                    description: string;
+                                    column: {
+                                        /** @description The declared image column it was taken from */
+                                        name: string;
+                                        type: {
+                                            /** @constant */
+                                            base: "image";
+                                            /** @enum {string} */
+                                            encoding: "base64" | "binary";
+                                            description: {
+                                                column: string;
+                                            } | "decorative";
+                                        };
+                                    };
+                                } | {
+                                    /**
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @enum {string}
+                                     */
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    /** @description `value_many`: how many rows there were */
+                                    count?: number;
+                                    /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
+                                    column?: string;
+                                } | {
+                                    /**
+                                     * @description The stored result could not be read to take a value from it now: nothing is recorded, and a later read tries again
+                                     * @constant
+                                     */
+                                    unavailable: true;
+                                } | {
+                                    /**
+                                     * @description A bound table's binding: it takes no value, and holds the whole result, which the table lays out by its own columns, headers and formats
+                                     * @constant
+                                     */
+                                    table: true;
+                                };
+                            } | null;
+                            /** @description The query definition: the version the held result ran, or where it holds none the version the binding pins or the latest. Null where the caller may not read the definition */
+                            definition: {
+                                title: string;
+                                /** @description `revision.version`, as `0.2` */
+                                version: string;
+                            } | null;
+                            /** @description The connection the held result ran on. Null where it holds none, or where the caller may not read both the definition and the connection */
+                            connection: {
+                                name: string;
+                            } | null;
+                            /** @description Whether the binding floats at its definition's latest version and that has moved on from the version its held result ran */
+                            definitionChanged: boolean;
+                            /** @description How the binding differs from what the document's latest publication printed: `new` where it printed no such binding, or the members that differ - `digest`, the binding itself; `dataset`, the dataset version held; `definition`, the definition version that ran. Null where nothing differs or the document has never been published */
+                            sincePublished: ("new" | ("digest" | "dataset" | "definition")[]) | null;
+                            /** @description Whether a check would look for a revision of it for the caller: checked, resolved, and the caller may use the connection its held result ran on */
+                            mayCheck: boolean;
+                            /** @description Whether the caller may resolve it: they may edit the document and use the connection its definition runs on */
+                            mayResolve: boolean;
+                        };
+                    };
+                };
+            };
+            /** @description `storage_unavailable`: the environment has nowhere results are kept; `result_unreadable`: the stored result cannot be read now */
+            503: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

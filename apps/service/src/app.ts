@@ -1,6 +1,6 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { IDEMPOTENT_REPLAYED, keyedRequest, once } from './idempotency.js';
-import { Accepted, AfterCommit } from './after-commit.js';
+import { Accepted, AfterCommit, Revalidated } from './after-commit.js';
 import cookie from '@fastify/cookie';
 import {
   routes,
@@ -184,6 +184,7 @@ export type Handlers = {
         authorised: Authorised,
       ) => Promise<
         | Success<(typeof routes)[K]>
+        | Revalidated<Success<(typeof routes)[K]>>
         | AfterCommit<Success<(typeof routes)[K]> | Accepted<Success<(typeof routes)[K]>>>
       >
     : (
@@ -818,6 +819,14 @@ export function buildApp(options: AppOptions): FastifyInstance {
         // Accepted, not yet done: the caller follows it elsewhere (D8-D).
         if (answer instanceof Accepted) return reply.status(202).send(answer.body);
         return answer;
+      }
+      // Cached privately and revalidated (TB2-A): unchanged, nothing is sent but the tag.
+      if (body instanceof Revalidated) {
+        const tagged = body as Revalidated<unknown>;
+        void reply.header('ETag', tagged.etag);
+        void reply.header('Cache-Control', 'private, no-cache');
+        if (tagged.body === undefined) return reply.status(304).send();
+        return tagged.body;
       }
       if (!binary) return body;
       // Bytes, sent only now that the transaction has committed, as a body is (figures 1, R2): never

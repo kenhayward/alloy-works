@@ -74,7 +74,8 @@ const forbidden = {
   schema: ErrorBody,
 } as const;
 
-export const routes = {
+/** The routes declared here; every other module's are spread beside them in `routes`. */
+const ownRoutes = {
   getHealth: {
     operationId: 'getHealth',
     method: 'GET',
@@ -264,6 +265,35 @@ export const routes = {
       404: notFound,
     },
   },
+} as const satisfies Record<string, RouteContract>;
+
+/**
+ * Every route, its type named as the intersection of each module's rather than inferred whole: the
+ * inferred object grew past what the compiler will write into a declaration (TS7056, TB2.1).
+ */
+type Routes = typeof ownRoutes &
+  typeof componentRoutes &
+  typeof documentRoutes &
+  typeof publishingRoutes &
+  typeof editingRoutes &
+  typeof managingAccessRoutes &
+  typeof invitationRoutes &
+  typeof groupRoutes &
+  typeof assetRoutes &
+  typeof templateRoutes &
+  typeof connectionRoutes &
+  typeof queryDefinitionRoutes &
+  typeof bindingRoutes &
+  typeof definitionRoutes &
+  typeof peopleRoutes &
+  typeof searchRoutes &
+  typeof presentationRoutes &
+  typeof settingsRoutes &
+  typeof tokenRoutes &
+  typeof administeredTokenRoutes;
+
+export const routes: Routes = {
+  ...ownRoutes,
   // Finding, opening and editing components and documents, each declared beside its schemas.
   ...componentRoutes,
   ...documentRoutes,
