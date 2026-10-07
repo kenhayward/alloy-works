@@ -229,7 +229,7 @@ interface Placed {
 const key = (node: string, binding: string) => `${node} ${binding}`;
 
 /** The binding with its document arguments substituted: the question it asks (TP2-A). */
-const asked = (placed: Placed): AnyBinding =>
+const questionOf = (placed: Placed): AnyBinding =>
   substituteDocumentArguments(placed.binding, placed.parameters);
 
 /**
@@ -536,7 +536,7 @@ async function prepare(
       );
     }
     // Its document arguments substituted (TP2-C): one the document has no value for is required.
-    const literal = literalValues(asked(placed));
+    const literal = literalValues(questionOf(placed));
     const problems = [
       ...literal.fromDocument.map((parameter) => ({
         parameter,
@@ -1397,7 +1397,7 @@ function viewer(
     const latest = await readQueryDefinition(trx, placed.binding.query);
     return (
       latest !== undefined &&
-      questionUnchanged(asked(placed), held.held.provenance, latest.version.id)
+      questionUnchanged(questionOf(placed), held.held.provenance, latest.version.id)
     );
   }
 
@@ -2071,7 +2071,7 @@ export function bindingHandlers(
           { ...naming, definition: found.binding.query },
         );
       }
-      if (!latest || !questionUnchanged(asked(found), provenance, latest.version.id)) {
+      if (!latest || !questionUnchanged(questionOf(found), provenance, latest.version.id)) {
         throw refused(
           409,
           'confirm.not_possible',
