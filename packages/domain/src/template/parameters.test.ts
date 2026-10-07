@@ -206,6 +206,28 @@ describe("checking a template's parameters against its fields", () => {
       checkTemplateParameters([feeding({ type: { base: 'integer' } })], [effective(field('text'))]),
     ).toMatchObject([{ code: 'parameter_field', field: SITE }]);
   });
+
+  it('refuses two parameters seeding one field, parameter_field naming both', () => {
+    expect(
+      checkTemplateParameters(
+        [feeding(), feeding({ name: 'place', required: false })],
+        [effective(field('text'))],
+      ),
+    ).toEqual([
+      {
+        code: 'parameter_field',
+        parameter: 'site',
+        field: SITE,
+        message: 'The parameters site and place both seed Site',
+      },
+      {
+        code: 'parameter_field',
+        parameter: 'place',
+        field: SITE,
+        message: 'The parameters site and place both seed Site',
+      },
+    ]);
+  });
 });
 
 describe("a document's parameter values", () => {
@@ -232,6 +254,15 @@ describe("a document's parameter values", () => {
     expect(checkDocumentParameters([parameter(), quarter], { site: 'Leeds', quarter: '2' })).toBe(
       null,
     );
+  });
+
+  it('refuse a list holding one item twice, by the rule duplicate', () => {
+    const sites = parameter({ name: 'sites', list: true });
+    expect(checkDocumentParameters([sites], { sites: ['Leeds', 'York', 'Leeds'] })).toEqual({
+      code: 'parameter_invalid',
+      problems: [{ parameter: 'sites', rule: 'duplicate', value: 'Leeds' }],
+    });
+    expect(checkDocumentParameters([sites], { sites: ['Leeds', 'York'] })).toBe(null);
   });
 
   it('seed the fields they feed, and only those given', () => {

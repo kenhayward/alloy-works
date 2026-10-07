@@ -25,4 +25,5 @@ export type {
   ParameterValuesRefused,
   TemplateParameter,
   TemplateParameterProblem,
+  TemplateParameterValueProblem,
 } from './parameters.js';

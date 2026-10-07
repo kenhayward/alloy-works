@@ -731,7 +731,7 @@ describe('templates through the service', () => {
       expect(answer.statusCode).toBe(400);
       expect(answer.json()).toMatchObject({
         code: 'parameter_invalid',
-        rule: 'DAT-020',
+        rule: 'TPL-018',
         problems: [{ parameter: 'site', rule: 'required', value: '' }],
       });
       expect(await documents()).toBe(before);
@@ -752,7 +752,11 @@ describe('templates through the service', () => {
       ] as const) {
         const answer = await withParameters('alice', given);
         expect(answer.statusCode).toBe(400);
-        expect(answer.json()).toMatchObject({ code: 'parameter_invalid', problems: [problem] });
+        expect(answer.json()).toMatchObject({
+          code: 'parameter_invalid',
+          rule: 'TPL-045',
+          problems: [problem],
+        });
       }
       expect(await documents()).toBe(before);
       const view = (await withParameters('alice', { site: 'York' })).json<Made>();
@@ -763,7 +767,98 @@ describe('templates through the service', () => {
       expect(changed.statusCode).toBe(400);
       expect(changed.json()).toMatchObject({
         code: 'parameter_invalid',
+        rule: 'TPL-045',
         problems: [{ parameter: 'quarter', rule: 'range', value: '0' }],
+      });
+    });
+
+    it('refuses a list parameter holding one item twice, at creation and at change, by the rule duplicate', async () => {
+      const sites = {
+        name: 'sites',
+        type: { base: 'text' },
+        required: false,
+        list: true,
+        changeable: true,
+        feeds: { arguments: true },
+      };
+      const listed = (
+        await make('ada', { parameters: [sites] }, 'Survey of sites')
+      ).json<TemplateBody>();
+      const made = (sitesGiven: unknown) =>
+        call('alice', 'POST', `/v1/spaces/${general}/documents`, {
+          title: 'The survey',
+          language: 'en-GB',
+          direction: 'ltr',
+          template: listed.id,
+          parameters: { sites: sitesGiven },
+        });
+      const twice = await made(['Leeds', 'York', 'Leeds']);
+      expect(twice.statusCode).toBe(400);
+      expect(twice.json()).toMatchObject({
+        code: 'parameter_invalid',
+        rule: 'TPL-045',
+        problems: [{ parameter: 'sites', rule: 'duplicate', value: 'Leeds' }],
+      });
+      const view = (await made(['Leeds', 'York'])).json<Made>();
+      const changed = await change('alice', view.id, view.version.id, {
+        sites: ['York', 'York'],
+      });
+      expect(changed.statusCode).toBe(400);
+      expect(changed.json()).toMatchObject({
+        problems: [{ parameter: 'sites', rule: 'duplicate', value: 'York' }],
+      });
+    });
+
+    it("answers the declarations only to a reader who may read the document's template, its values and history to any reader", async () => {
+      // A template in Quality, which Alice may read by a grant on it alone, and a document of hers
+      // made from it in General; Grace may read the document and not the template.
+      const template = (
+        await make(
+          'ada',
+          { parameters: [{ ...site, feeds: { arguments: true } }] },
+          'Audit',
+          quality,
+        )
+      ).json<TemplateBody>();
+      const reader = await tenantDb.withTenant(tenant, (trx) => findRole(trx, 'Reader'));
+      await tenantDb.withTenant(tenant, (trx) =>
+        grant(trx, {
+          roleId: reader!.id,
+          subject: { principal: ids.alice! },
+          level: { kind: 'artifact', id: template.id },
+          effect: 'allow',
+          grantedBy: ids.ada!,
+        }),
+      );
+      const made = await call('alice', 'POST', `/v1/spaces/${general}/documents`, {
+        title: 'The audit',
+        language: 'en-GB',
+        direction: 'ltr',
+        template: template.id,
+        parameters: { site: 'York' },
+      });
+      expect(made.statusCode, made.body).toBe(200);
+      const view = made.json<Made>();
+      await tenantDb.withTenant(tenant, (trx) =>
+        grant(trx, {
+          roleId: reader!.id,
+          subject: { principal: ids.grace! },
+          level: { kind: 'artifact', id: view.id },
+          effect: 'allow',
+          grantedBy: ids.ada!,
+        }),
+      );
+      type Read = { declarations: { name: string }[]; parameters: Json; history: unknown[] };
+      const byAlice = (
+        await call('alice', 'GET', `/v1/documents/${view.id}/parameters`)
+      ).json<Read>();
+      expect(byAlice.declarations.map((each) => each.name)).toEqual(['site']);
+      const byGrace = await call('grace', 'GET', `/v1/documents/${view.id}/parameters`);
+      expect(byGrace.statusCode, byGrace.body).toBe(200);
+      expect(byGrace.json<Read>()).toMatchObject({
+        declarations: [],
+        parameters: { site: 'York' },
+        history: [expect.anything()],
       });
     });
 
