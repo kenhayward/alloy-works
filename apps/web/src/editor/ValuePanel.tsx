@@ -1,4 +1,4 @@
-import type { Binding } from '@alloy-works/domain';
+import type { AnyBinding } from '@alloy-works/domain';
 import { useId, type Ref } from 'react';
 
 import { longDate } from '../data/shapes.js';
@@ -11,8 +11,8 @@ const MODES = {
 } as const;
 
 export interface ValuePanelProps {
-  /** The binding selected whole, as the component stores it. */
-  readonly binding: Binding;
+  /** The binding selected whole, or a bound figure's or a bound table's, as the component stores it. */
+  readonly binding: AnyBinding;
   /** What it shows where it stands: the value, why there is none, or what it asks for. */
   readonly shown: string;
   /**

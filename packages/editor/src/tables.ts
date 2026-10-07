@@ -1,4 +1,13 @@
+import {
+  BOUND_TABLE_COLUMNS_MAX,
+  BOUND_TABLE_SORT_MAX,
+  type BoundColumn,
+  type BoundTableNode,
+  type TableBinding,
+  type TableColumn,
+} from '@alloy-works/domain';
 import type { Node } from 'prosemirror-model';
+import { closeHistory } from 'prosemirror-history';
 import { Plugin, TextSelection, type Command, type EditorState } from 'prosemirror-state';
 import {
   addColumnAfter,
@@ -12,6 +21,7 @@ import {
   TableMap,
 } from 'prosemirror-tables';
 
+import type { BindingChoice } from './bindings.js';
 import { editorSchema } from './schema.js';
 
 const tableFigureNode = editorSchema.nodes.tableFigure;
@@ -351,3 +361,300 @@ export function tableCommand(action: TableAction): Command {
       return removeNote;
   }
 }
+
+const boundTableNode = editorSchema.nodes.boundTable!;
+const boundTableBodyNode = editorSchema.nodes.boundTableBody!;
+
+/** What the Value dialog chooses for a bound table: a binding's members but its take (TB2-E). */
+export type TableChoice = Omit<BindingChoice, 'take'>;
+
+/** A bound table's sort key, as stored. */
+export type SortKey = NonNullable<BoundTableNode['sort']>[number];
+
+/** A bound table's own parts beneath its body, each present only where stored (TB2-C). */
+export type BoundTablePart = 'empty' | 'note' | 'source';
+
+const PART_NODES = {
+  empty: 'boundTableEmpty',
+  note: 'tableNote',
+  source: 'boundTableSource',
+} as const satisfies Record<BoundTablePart, string>;
+
+/** The bound table the cursor stands in, as the Bound table panel reads it (TB2-F). */
+export interface BoundTablePlace {
+  /** Where the `boundTable` node starts. */
+  readonly pos: number;
+  readonly id: string | null;
+  readonly style: string;
+  readonly numbered: boolean;
+  readonly binding: TableBinding;
+  readonly columns: readonly BoundColumn[];
+  readonly headerColumn: boolean;
+  readonly sort: readonly SortKey[];
+  /** Whether it has an empty statement, a note and a source. */
+  readonly parts: Readonly<Record<BoundTablePart, boolean>>;
+}
+
+function placeOf(node: Node, pos: number): BoundTablePlace {
+  const has = (type: string) => {
+    let found = false;
+    node.forEach((child) => {
+      if (child.type.name === type) found = true;
+    });
+    return found;
+  };
+  return {
+    pos,
+    id: (node.attrs.id as string | null) ?? null,
+    style: node.attrs.style as string,
+    numbered: node.attrs.numbered !== false,
+    binding: node.attrs.binding as TableBinding,
+    columns: node.attrs.columns as BoundColumn[],
+    headerColumn: node.attrs.headerColumn as boolean,
+    sort: (node.attrs.sort as SortKey[] | null) ?? [],
+    parts: {
+      empty: has(PART_NODES.empty),
+      note: has(PART_NODES.note),
+      source: has(PART_NODES.source),
+    },
+  };
+}
+
+/** The bound table the selection stands in - its caption or a part - or has selected whole, or null. */
+export function boundTableAt(state: EditorState): BoundTablePlace | null {
+  const { $from } = state.selection;
+  for (let depth = $from.depth; depth > 0; depth -= 1) {
+    const node = $from.node(depth);
+    if (node.type === boundTableNode) return placeOf(node, $from.before(depth));
+  }
+  const selected = state.doc.nodeAt(state.selection.from);
+  if (
+    selected?.type === boundTableNode &&
+    state.selection.to === state.selection.from + selected.nodeSize
+  ) {
+    return placeOf(selected, state.selection.from);
+  }
+  return null;
+}
+
+/**
+ * **The columns a bound table starts with** (TB2-E): the first 64 declared columns that are not
+ * images, in the definition's order, each headed by its name; and how many were left out.
+ */
+export function columnsPlaced(declared: readonly TableColumn[]): {
+  readonly columns: readonly BoundColumn[];
+  readonly left: number;
+} {
+  const columns = declared
+    .filter((each) => each.type.base !== 'image')
+    .slice(0, BOUND_TABLE_COLUMNS_MAX)
+    .map((each) => ({ column: each.name, header: each.name.normalize('NFC') }));
+  return { columns, left: declared.length - columns.length };
+}
+
+/**
+ * The column a list shows twice under one header, by the walk's rule (TAB-048, `column_repeated`):
+ * headers in NFC folded to one case. Null where there is none.
+ */
+export function repeatedColumn(columns: readonly BoundColumn[]): string | null {
+  const headers = new Map<string, Set<string>>();
+  for (const column of columns) {
+    const seen = headers.get(column.column) ?? new Set<string>();
+    const header = column.header.normalize('NFC').toLocaleLowerCase('und');
+    if (seen.has(header)) return column.column;
+    seen.add(header);
+    headers.set(column.column, seen);
+  }
+  return null;
+}
+
+const bindingOf = (id: string, choice: TableChoice): TableBinding => ({
+  type: 'binding',
+  id,
+  query: choice.query,
+  ...(choice.version === undefined ? {} : { version: choice.version }),
+  parameters: choice.parameters,
+  mode: choice.mode,
+});
+
+/**
+ * **Place as Table** (TB2-E): a bound table of the chosen definition where a table may go - after the
+ * paragraph the cursor is in, or in its place where that paragraph is empty - showing `columnsPlaced`'s
+ * columns, its caption empty and the cursor in it. Its binding is given a fresh identifier, as a placed
+ * binding is. Declines where no column could be shown.
+ */
+export function insertBoundTable(
+  choice: TableChoice,
+  declared: readonly TableColumn[],
+  newIdentifier: () => string,
+): Command {
+  return (state, dispatch) => {
+    if (nowhereForATable(state)) return false;
+    const { columns } = columnsPlaced(declared);
+    if (columns.length === 0) return false;
+    const { $from } = state.selection;
+    const depth = $from.depth;
+    const index = $from.index(depth - 1);
+    const parent = $from.node(depth - 1);
+    const empty = $from.parent.content.size === 0;
+    const at = empty ? index : index + 1;
+    if (!parent.canReplaceWith(at, empty ? index + 1 : at, boundTableNode)) return false;
+    if (dispatch) {
+      const table = boundTableNode.create(
+        {
+          id: newIdentifier(),
+          style: 'table',
+          binding: bindingOf(newIdentifier(), choice),
+          columns,
+          headerColumn: false,
+          sort: null,
+        },
+        [tableCaptionNode.create(), boundTableBodyNode.create()],
+      );
+      const start = empty ? $from.before(depth) : $from.after(depth);
+      const tr = empty
+        ? state.tr.replaceWith(start, $from.after(depth), table)
+        : state.tr.insert(start, table);
+      dispatch(tr.setSelection(TextSelection.create(tr.doc, start + 2)).scrollIntoView());
+    }
+    return true;
+  };
+}
+
+/**
+ * Changes the binding of the bound table at `pos`, keeping its identifier - the same binding, changed
+ * (TB2-G) - and every column, so one the new definition lacks shows `column_missing`.
+ */
+export function changeTableBinding(pos: number, choice: TableChoice): Command {
+  return (state, dispatch) => {
+    const node = state.doc.nodeAt(pos);
+    if (node?.type !== boundTableNode) return false;
+    if (dispatch) {
+      const held = node.attrs.binding as TableBinding;
+      dispatch(
+        state.tr.setNodeMarkup(pos, undefined, {
+          ...node.attrs,
+          binding: bindingOf(held.id, choice),
+        }),
+      );
+    }
+    return true;
+  };
+}
+
+/** What the Bound table panel changes, each one transaction (TB2-F). */
+export interface BoundTableChange {
+  readonly columns?: readonly BoundColumn[];
+  readonly headerColumn?: boolean;
+  readonly sort?: readonly SortKey[];
+  readonly numbered?: boolean;
+}
+
+/** A column as stored: its header and unit in NFC, an empty unit none. */
+function columnStored(column: BoundColumn): BoundColumn {
+  const { unit, ...rest } = column;
+  return {
+    ...rest,
+    header: column.header.normalize('NFC'),
+    ...(unit === undefined || unit.text === ''
+      ? {}
+      : { unit: { ...unit, text: unit.text.normalize('NFC') } }),
+  };
+}
+
+/**
+ * **The Bound table panel's change** (TB2-F) to the table the cursor stands in, one step for the undo
+ * history. Declines what the walk would refuse - no column or more than 64, a header empty or over 200
+ * characters, a unit over 40, a column shown twice under one header (TAB-048), more than four sort
+ * keys or one column sorted twice - and a change that changes nothing.
+ *
+ * Its own step even beside another made at once, unless `typed`: a header or a unit typed in the panel
+ * a keystroke at a time joins the steps typed just before it, as typing in the text does.
+ */
+export function setBoundTable(change: BoundTableChange, { typed = false } = {}): Command {
+  return (state, dispatch) => {
+    const table = boundTableAt(state);
+    if (table === null) return false;
+    const columns = change.columns?.map(columnStored);
+    if (columns !== undefined) {
+      if (columns.length === 0 || columns.length > BOUND_TABLE_COLUMNS_MAX) return false;
+      if (columns.some((each) => each.header === '' || [...each.header].length > 200)) {
+        return false;
+      }
+      if (columns.some((each) => each.unit !== undefined && [...each.unit.text].length > 40)) {
+        return false;
+      }
+      if (repeatedColumn(columns) !== null) return false;
+    }
+    const sort = change.sort;
+    if (sort !== undefined) {
+      if (sort.length > BOUND_TABLE_SORT_MAX) return false;
+      if (new Set(sort.map((each) => each.column)).size !== sort.length) return false;
+    }
+    const node = state.doc.nodeAt(table.pos)!;
+    const attrs = {
+      ...node.attrs,
+      ...(columns === undefined ? {} : { columns }),
+      ...(change.headerColumn === undefined ? {} : { headerColumn: change.headerColumn }),
+      ...(sort === undefined ? {} : { sort: sort.length === 0 ? null : [...sort] }),
+      ...(change.numbered === undefined ? {} : { numbered: change.numbered }),
+    };
+    if (JSON.stringify(attrs) === JSON.stringify(node.attrs)) return false;
+    if (dispatch) {
+      const tr = state.tr.setNodeMarkup(table.pos, undefined, attrs);
+      dispatch(typed ? tr : closeHistory(tr));
+    }
+    return true;
+  };
+}
+
+/**
+ * Adds a bound table's empty statement, note or source, empty and in its place, the cursor in it; or
+ * removes it, whatever it holds (TB2-F). Declines where it already is as asked.
+ */
+export function setBoundTablePart(part: BoundTablePart, present: boolean): Command {
+  return (state, dispatch) => {
+    const table = boundTableAt(state);
+    if (table === null || table.parts[part] === present) return false;
+    if (dispatch) {
+      const node = state.doc.nodeAt(table.pos)!;
+      const order: readonly string[] = Object.values(PART_NODES);
+      const wanted = order.indexOf(PART_NODES[part]);
+      // After the caption, the body and every part before this one.
+      let at = table.pos + 1;
+      let found: { readonly from: number; readonly to: number } | null = null;
+      node.forEach((child, offset) => {
+        const from = table.pos + 1 + offset;
+        if (child.type.name === PART_NODES[part]) found = { from, to: from + child.nodeSize };
+        if (order.indexOf(child.type.name) < wanted) at = from + child.nodeSize;
+      });
+      if (present) {
+        const tr = state.tr.insert(at, editorSchema.nodes[PART_NODES[part]]!.create());
+        dispatch(tr.setSelection(TextSelection.create(tr.doc, at + 1)).scrollIntoView());
+      } else if (found !== null) {
+        const { from, to } = found;
+        const tr = state.tr.delete(from, to);
+        const $near = tr.doc.resolve(Math.min(tr.mapping.map(state.selection.from, -1), from));
+        dispatch(tr.setSelection(TextSelection.near($near, -1)).scrollIntoView());
+      }
+    }
+    return true;
+  };
+}
+
+/** Removes the bound table the cursor stands in, whole; where it was the only block, a paragraph stays. */
+export const deleteBoundTable: Command = (state, dispatch) => {
+  const table = boundTableAt(state);
+  if (table === null) return false;
+  if (dispatch) {
+    const node = state.doc.nodeAt(table.pos)!;
+    const only = state.doc.resolve(table.pos).parent.childCount === 1;
+    const end = table.pos + node.nodeSize;
+    const tr = only
+      ? state.tr.replaceWith(table.pos, end, paragraphNode.create())
+      : state.tr.delete(table.pos, end);
+    const near = TextSelection.near(tr.doc.resolve(Math.min(table.pos, tr.doc.content.size)));
+    dispatch(tr.setSelection(near).scrollIntoView());
+  }
+  return true;
+};

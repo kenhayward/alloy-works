@@ -1,9 +1,10 @@
 import type { ComponentView, createApiClient } from '@alloy-works/api-client';
 import {
+  bindingDigestInput,
   bindingsIn,
   parseContentDocument,
   readContent,
-  type Binding,
+  type AnyBinding,
   type BoundTableNode,
   type ReportEntry,
 } from '@alloy-works/domain';
@@ -12,6 +13,12 @@ import {
   bindingSelected,
   bindingsShown,
   boundFiguresShown,
+  boundTableAt,
+  boundTablesShown,
+  changeTableBinding,
+  columnsPlaced,
+  insertBoundTable,
+  type TableChoice,
   changeEquation,
   changeBinding,
   changeFigureBinding,
@@ -75,6 +82,7 @@ import { positionAtTextOffset } from './caret.js';
 import { ComponentHeader } from './ComponentHeader.js';
 import { EditorToolbar } from './EditorToolbar.js';
 import { FigureDialog } from './FigureDialog.js';
+import { BoundTablePanel } from './BoundTablePanel.js';
 import { FigurePanel } from './FigurePanel.js';
 import { Icon } from './Icon.js';
 import { ListPanel } from './ListPanel.js';
@@ -283,6 +291,22 @@ const isEditablePhase = (phase: SessionView['phase']) =>
 
 /** A binding choice asked of `insertBoundFigure` only to learn whether a figure could go there. */
 const PROBE: BindingChoice = { query: '', parameters: {}, mode: 'checked', take: { column: '' } };
+/** And for a bound table, which shows a column of any type but an image (TB2-E). */
+const PROBE_TABLE: TableChoice = { query: '', parameters: {}, mode: 'checked' };
+const PROBE_COLUMNS = [{ name: 'probe', type: { base: 'text' } }] as const;
+
+/** Whether the document holds a result for a bound table's binding as the editor holds it now. */
+function tableResolved(state: EditorState, binding: AnyBinding): boolean {
+  const context = bindingContextOf(state);
+  const held = context?.kind === 'document' ? context.held.get(binding.id) : undefined;
+  return (
+    held !== undefined && held.binding === bindingDigestInput(binding) && 'table' in held.shown
+  );
+}
+
+/** What placing a bound table says where it left a declared column out (TB2-E). */
+export const columnsLeftOut = (left: number): string =>
+  `${left === 1 ? 'One column was' : `${left} columns were`} left out: a table shows no image column, and at most 64.`;
 
 /** What the status bar says after a paste: the report's own last sentence says why one was refused. */
 const PASTED = 'Pasted.';
@@ -463,6 +487,8 @@ export function ComponentEditor({
   // The figure panel's, while the cursor stands in a figure (figures 2, ruling R5).
   const figureRegion = useRef<HTMLDivElement | null>(null);
   const valueRegion = useRef<HTMLElement | null>(null);
+  // The Bound table panel's, while the cursor stands in a bound table (TB2-F).
+  const boundTableRegion = useRef<HTMLDivElement | null>(null);
   // The Recovery panel's, while the session is in Recovery (W11.2).
   const recoveryRegion = useRef<HTMLElement | null>(null);
   // What was focused when Recovery was asked for, which the focus goes back to as it closes where it
@@ -497,14 +523,17 @@ export function ComponentEditor({
   // none, or closed (the B2 plan, task 4); and what was focused as it opened.
   const [valuing, setValuing] = useState<{
     readonly view: EditorView;
-    readonly current: ReturnType<typeof bindingSelected>;
+    readonly current: { readonly pos: number; readonly binding: AnyBinding } | null;
     /**
-     * Where an image column's value may stand (B6-H): offered as a figure where one may go, the
-     * figure's own where it changes a bound figure's binding, and in the line otherwise.
+     * Where the value may stand (B6-H, TB2-E): offered as a figure or a table where a block may go,
+     * the figure's own or the table's own where it changes a bound figure's or a bound table's
+     * binding, and in the line otherwise.
      */
-    readonly place: 'line' | 'offer' | 'figure';
+    readonly place: 'line' | 'offer' | 'figure' | 'table';
   } | null>(null);
   const valueOpener = useRef<HTMLElement | null>(null);
+  // Whether the Bound table panel's Format dialog is open over the page (TB2-F).
+  const [formatting, setFormatting] = useState(false);
   // The editing session this page saves under, which a binding placed here is read from (B2-C).
   const sessionNow = useRef<string | null>(null);
   // The symbol palette, open over the view it was asked from - the surface, or a footnote's open
@@ -753,13 +782,23 @@ export function ComponentEditor({
     valueOpener.current ??=
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const current = bindingSelected(editing.state);
-    const mayFigure = current === null && insertBoundFigure(PROBE, () => '')(editing.state);
-    setValuing({ view: editing, current, place: mayFigure ? 'offer' : 'line' });
+    const mayBlock =
+      current === null &&
+      (insertBoundFigure(PROBE, () => '')(editing.state) ||
+        insertBoundTable(PROBE_TABLE, PROBE_COLUMNS, () => '')(editing.state));
+    setValuing({ view: editing, current, place: mayBlock ? 'offer' : 'line' });
     return true;
   };
 
+  /** Opens the Value dialog on a bound table's binding, to change it (TB2-G). */
+  const openTableValue = (editing: EditorView, at: { pos: number; binding: AnyBinding }) => {
+    valueOpener.current ??=
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setValuing({ view: editing, current: at, place: 'table' });
+  };
+
   /** Opens the Value dialog on a bound figure's binding, to change it (B6-H). */
-  const openFigureValue = (editing: EditorView, at: { pos: number; binding: Binding }) => {
+  const openFigureValue = (editing: EditorView, at: { pos: number; binding: AnyBinding }) => {
     valueOpener.current ??=
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setValuing({ view: editing, current: at, place: 'figure' });
@@ -1529,6 +1568,7 @@ export function ComponentEditor({
       preformattedRegion.current,
       tableRegion.current,
       figureRegion.current,
+      boundTableRegion.current,
       valueRegion.current,
       pasteRegion.current,
       recoveryRegion.current,
@@ -1629,13 +1669,39 @@ export function ComponentEditor({
       : (boundFiguresShown(surface.state.doc, bindingContextOf(surface.state)).find(
           (each) => each.pos === figure.pos,
         ) ?? null);
-  // What the Value panel is about: a binding selected whole, or a bound figure's.
-  const valued =
+  // A bound table the cursor stands in, and what its body shows (TB2-F, TB2-G): the Bound table
+  // panel's, and the Value panel's too.
+  const boundTable = surface === null ? null : boundTableAt(surface.state);
+  const boundTableShown =
+    boundTable === null || surface === null
+      ? null
+      : (boundTablesShown(surface.state.doc, bindingContextOf(surface.state)).find(
+          (each) => each.tablePos === boundTable.pos,
+        )?.shown ?? null);
+  // What the Value panel is about: a binding selected whole, a bound figure's, or a bound table's.
+  const valued: {
+    readonly pos: number;
+    readonly binding: AnyBinding;
+    readonly shown: { readonly text: string; readonly resolved: boolean };
+    readonly place: 'line' | 'figure' | 'table';
+  } | null =
     selectedBinding !== null && selectedShown !== null
-      ? { ...selectedBinding, shown: selectedShown, figure: false }
+      ? { ...selectedBinding, shown: selectedShown, place: 'line' }
       : figure?.binding != null && figureShown !== null
-        ? { pos: figure.pos, binding: figure.binding, shown: figureShown, figure: true }
-        : null;
+        ? { pos: figure.pos, binding: figure.binding, shown: figureShown, place: 'figure' }
+        : boundTable !== null && boundTableShown !== null
+          ? {
+              pos: boundTable.pos,
+              binding: boundTable.binding,
+              shown: {
+                text:
+                  boundTableShown.spanning?.text ??
+                  `A table of ${boundTableShown.rows.length + boundTableShown.more} rows`,
+                resolved: tableResolved(surface!.state, boundTable.binding),
+              },
+              place: 'table',
+            }
+          : null;
   const mayFormat = shown.mayEdit && isEditablePhase(phase);
   // What the toolbar acts on: the footnote's own text while one is open, and the surface otherwise
   // (footnotes 1, ruling R9). Every button is asked of that state, so a mark applies in the footnote
@@ -1724,7 +1790,8 @@ export function ComponentEditor({
           referring !== null ||
           equating !== null ||
           symbolizing !== null ||
-          valuing !== null
+          valuing !== null ||
+          formatting
         }
         onKeyDown={moveRegion}
       >
@@ -1985,8 +2052,20 @@ export function ComponentEditor({
                 onReplace={() => setFigureDialog('Replace image')}
               />
             )}
-            {/* And while a binding is selected whole, or the cursor stands in a bound figure (B6.2):
-                what it shows, and its provenance (B1-M). */}
+            {/* And while the cursor stands in a bound table (TB2-F): its presentation. */}
+            {surface !== null && boundTable !== null && (
+              <BoundTablePanel
+                key={`bound-table-${boundTable.id ?? boundTable.pos}`}
+                ref={boundTableRegion}
+                view={surface}
+                table={boundTable}
+                enabled={mayFormat}
+                client={client}
+                onFormatting={setFormatting}
+              />
+            )}
+            {/* And while a binding is selected whole, or the cursor stands in a bound figure (B6.2) or
+                a bound table (TB2-G): what it shows, and its provenance (B1-M). */}
             {valued !== null && (
               <ValuePanel
                 key={`value-${valued.pos}`}
@@ -2006,9 +2085,11 @@ export function ComponentEditor({
                 {...(mayFormat && surface !== null
                   ? {
                       onChange: () =>
-                        valued.figure
+                        valued.place === 'figure'
                           ? openFigureValue(surface, valued)
-                          : openValue(openFootnote(surface) ?? surface),
+                          : valued.place === 'table'
+                            ? openTableValue(surface, valued)
+                            : openValue(openFootnote(surface) ?? surface),
                     }
                   : {})}
                 {...(bindingActs !== undefined && !bindingActs.pinned
@@ -2188,7 +2269,7 @@ export function ComponentEditor({
               bindingContext === undefined ? null : { pinned: bindingActs?.pinned ?? false }
             }
             place={valuing.place}
-            onDone={(choice, placeAs) => {
+            onDone={(...chosen) => {
               const now = controls.current?.view().phase;
               const into = valuing.view;
               if (
@@ -2200,6 +2281,33 @@ export function ComponentEditor({
                 return 'This component can no longer be edited here, so the value was not placed.';
               }
               const changing = valuing.current;
+              const dispatch = into.dispatch.bind(into);
+              const notThere =
+                changing === null
+                  ? 'A value cannot be placed where the cursor is.'
+                  : 'That value is not there any more.';
+              // A table's binding is the table's, which the cursor stands in (TB2-E, TB2-G).
+              if (chosen[1] === 'table') {
+                const [choice, , columns] = chosen;
+                const command =
+                  changing === null
+                    ? insertBoundTable(choice, columns, newBlockIdentifier)
+                    : changeTableBinding(changing.pos, choice);
+                if (!command(into.state, dispatch)) return notThere;
+                setValuing(null);
+                const left = columnsPlaced(columns).left;
+                if (changing === null && left > 0) {
+                  const said = columnsLeftOut(left);
+                  setNotice(said);
+                  // Said again beside the session's own notice, as a paste's is, where this claims.
+                  if (controls.current?.view().phase !== 'editing') pasteSaid.current = said;
+                }
+                const placed =
+                  changing === null ? boundTableAt(into.state)?.binding.id : changing.binding.id;
+                if (placed) settle(placed, changing === null ? 'placed' : 'changed');
+                return null;
+              }
+              const [choice, placeAs] = chosen;
               const asFigure = valuing.place === 'figure' || placeAs === 'figure';
               const command =
                 changing === null
@@ -2209,11 +2317,7 @@ export function ComponentEditor({
                   : valuing.place === 'figure'
                     ? changeFigureBinding(changing.pos, choice)
                     : changeBinding(changing.pos, choice);
-              if (!command(into.state, into.dispatch.bind(into))) {
-                return changing === null
-                  ? 'A value cannot be placed where the cursor is.'
-                  : 'That value is not there any more.';
-              }
+              if (!command(into.state, dispatch)) return notThere;
               setValuing(null);
               // A figure's binding is the figure's, which the cursor stands in (B6-H).
               const placed = asFigure
