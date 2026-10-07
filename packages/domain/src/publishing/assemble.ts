@@ -1426,6 +1426,12 @@ export function assemble(given: AssembleInput): Assembled {
           },
         ];
       }
+      case 'boundTable':
+        // **Refused by name until its stage is built** (the TB1 plan, TB1.1): TB1.2's binding stage
+        // replaces a bound table with a laid-out table before it reaches here, so one arriving is
+        // refused, naming the block, rather than published as anything.
+        failures.push(failure('compose', 'block_not_publishable', node, block.id, block.type));
+        return [];
       case 'equation': {
         // Refused by name without a layout, as a list is: the frozen first shape holds paragraphs alone.
         if (layout === null) {
@@ -2295,6 +2301,14 @@ function resolveReferences(
           for (const cell of row.cells) for (const each of cell.content) block(each, node, header);
         });
         inlines(stored.note ?? [], node, false, inHeader);
+        return;
+      case 'boundTable':
+        // Walked as a table (TB1-D): its caption, then what stands beneath it, its note and source.
+        captions.set(blockAnchor(node, stored.id), { node, caption: stored.caption });
+        inlines(stored.caption, node, false, inHeader, blockAnchor(node, stored.id));
+        inlines(stored.empty ?? [], node, false, inHeader);
+        inlines(stored.note ?? [], node, false, inHeader);
+        inlines(stored.source ?? [], node, false, inHeader);
         return;
       case 'figure':
         captions.set(blockAnchor(node, stored.id), { node, caption: stored.caption });

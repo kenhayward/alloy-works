@@ -174,24 +174,41 @@ function* stringsIn(value: unknown): Generator<string> {
  * and a member's name is not normalised by the canonical form at all. Refused, never normalised: what
  * is stored is what the digest covers.
  */
+const bindingShape = {
+  type: z.literal('binding'),
+  id: z.string().min(1),
+  query: artifactIdentifierSchema,
+  version: artifactIdentifierSchema.optional(),
+  parameters: z
+    .record(parameterName, bindingParameterSchema)
+    .refine(
+      (parameters) => Object.keys(parameters).length <= MAX_BINDING_PARAMETERS,
+      'a binding names at most 50 parameters',
+    ),
+  mode: z.enum(['checked', 'pinned']),
+};
+
 export const bindingNodeSchema = z
-  .strictObject({
-    type: z.literal('binding'),
-    id: z.string().min(1),
-    query: artifactIdentifierSchema,
-    version: artifactIdentifierSchema.optional(),
-    parameters: z
-      .record(parameterName, bindingParameterSchema)
-      .refine(
-        (parameters) => Object.keys(parameters).length <= MAX_BINDING_PARAMETERS,
-        'a binding names at most 50 parameters',
-      ),
-    mode: z.enum(['checked', 'pinned']),
-    take: takeSchema,
-  })
+  .strictObject({ ...bindingShape, take: takeSchema })
   .refine(
     (binding) =>
       [...stringsIn({ parameters: binding.parameters, take: binding.take })].every(
+        (text) => text === text.normalize('NFC'),
+      ),
+    { message: 'A binding holds every string in NFC' },
+  );
+
+/**
+ * **A bound table's binding** (the TB1 plan, TB1-A): an inline binding's members with no `take`, since
+ * a table binds the whole result. Built from the same shape rather than by omitting `take` from
+ * `bindingNodeSchema`, which a refined object cannot do; `type: 'binding'` kept, so its digest is the
+ * canonical form of what it holds, as an inline binding's is. Every string in NFC, for the same reason.
+ */
+export const tableBindingSchema = z
+  .strictObject(bindingShape)
+  .refine(
+    (binding) =>
+      [...stringsIn({ parameters: binding.parameters })].every(
         (text) => text === text.normalize('NFC'),
       ),
     { message: 'A binding holds every string in NFC' },

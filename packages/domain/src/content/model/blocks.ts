@@ -1,10 +1,14 @@
 import { z } from 'zod';
 
+import { boundedText, COLUMN_ALIGNMENTS, fieldFormatSchema } from '../../data/field-format.js';
+import { sourceNameSchema } from '../../data/protocol.js';
+
 import {
   alternativeSchema,
   bindingNodeSchema,
   equationContentSchema,
   inlineNodeSchema,
+  tableBindingSchema,
 } from './inline.js';
 import { artifactIdentifierSchema } from './identifier.js';
 
@@ -45,6 +49,7 @@ export type BlockNode =
       alternative: z.infer<typeof alternativeSchema>;
       numbered?: false | undefined;
     }
+  | BoundTableNode
   | { type: 'preformatted'; id: string; text: string; language?: string | undefined }
   | {
       type: 'blockquote';
@@ -59,6 +64,7 @@ export const blockNodeSchema: z.ZodType<BlockNode> = z.lazy(() =>
     paragraphNodeSchema,
     listNodeSchema,
     tableNodeSchema,
+    boundTableNodeSchema,
     figureNodeSchema,
     preformattedNodeSchema,
     blockquoteNodeSchema,
@@ -173,6 +179,75 @@ export const tableNodeSchema = z.strictObject({
       }),
     )
     .min(1),
+});
+
+/** The most columns a bound table shows, and the most it sorts by (tables.md, "The presentation"). */
+export const BOUND_TABLE_COLUMNS_MAX = 64;
+export const BOUND_TABLE_SORT_MAX = 4;
+
+/**
+ * **A column a bound table shows** (TAB-001 to TAB-003, TAB-035, TAB-036): the result column by its
+ * name, never a position; its header, 1 to 200 characters in NFC; a unit printed in the header or
+ * after each value; a format merged over the table style's (TAB-037); an alignment over the type's
+ * (TAB-046); and `wrap: false` where it must not wrap - `false` the only value stored, as `numbered`.
+ */
+export const boundColumnSchema = z.strictObject({
+  column: sourceNameSchema,
+  header: boundedText(1, 200),
+  unit: z
+    .strictObject({ text: boundedText(1, 40), place: z.enum(['header', 'value']) })
+    .optional(),
+  format: fieldFormatSchema.optional(),
+  align: z.enum(COLUMN_ALIGNMENTS).optional(),
+  wrap: z.literal(false).optional(),
+});
+
+export type BoundColumn = z.infer<typeof boundColumnSchema>;
+
+/** A stable sort key (TAB-007): a result column by name, its direction, and where its nulls go. */
+const sortKeySchema = z.strictObject({
+  column: sourceNameSchema,
+  direction: z.enum(['ascending', 'descending']),
+  nulls: z.enum(['first', 'last']),
+});
+
+/**
+ * **A bound table** (tables.md; the TB1 plan, TB1-A and TB1-B): a block holding a binding to a whole
+ * result - an inline binding's members with no `take` - and the presentation that makes a table of it.
+ * Additive at content schema 1, as B6's figure binding was: nothing stored before holds one. TB1
+ * stores no `notes` and no `wide`, which TB3 adds as optional members, additive again. What zod
+ * cannot hold - a column shown twice under one header, a sort naming one twice - is the walk's
+ * (`document.ts`).
+ */
+export type BoundTableNode = {
+  type: 'boundTable';
+  id: string;
+  style: string;
+  numbered?: false | undefined;
+  binding: z.infer<typeof tableBindingSchema>;
+  caption: z.infer<typeof inlineNodeSchema>[];
+  columns: BoundColumn[];
+  headerColumn: boolean;
+  sort?: z.infer<typeof sortKeySchema>[] | undefined;
+  empty?: z.infer<typeof inlineNodeSchema>[] | undefined;
+  source?: z.infer<typeof inlineNodeSchema>[] | undefined;
+  note?: z.infer<typeof inlineNodeSchema>[] | undefined;
+};
+
+export const boundTableNodeSchema = z.strictObject({
+  type: z.literal('boundTable'),
+  ...identified,
+  style: z.string().min(1).default('table'),
+  numbered: unnumbered,
+  binding: tableBindingSchema,
+  caption: z.array(inlineNodeSchema),
+  columns: z.array(boundColumnSchema).min(1).max(BOUND_TABLE_COLUMNS_MAX),
+  headerColumn: z.boolean(),
+  sort: z.array(sortKeySchema).min(1).max(BOUND_TABLE_SORT_MAX).optional(),
+  // `min(1)`, each: an empty one is a second spelling of an absent one, as an attribution's is.
+  empty: z.array(inlineNodeSchema).min(1).optional(),
+  source: z.array(inlineNodeSchema).min(1).optional(),
+  note: z.array(inlineNodeSchema).min(1).optional(),
 });
 
 export const figureNodeSchema = z.strictObject({

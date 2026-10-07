@@ -1877,6 +1877,26 @@ describe('a table, published (tables 2)', () => {
     expect(assemble(oneComponent(within)).ok).toBe(true);
   });
 
+  it('refuses a bound table that reaches it by name, block_not_publishable, until its stage sets it (TB1.1)', () => {
+    const bound = {
+      type: 'boundTable',
+      id: 't2',
+      binding: {
+        type: 'binding',
+        id: 'k1',
+        query: '00000000-0000-4000-8000-00000000d001',
+        parameters: {},
+        mode: 'checked',
+      },
+      caption: [text('Depths')],
+      columns: [{ column: 'depth', header: 'Depth' }],
+      headerColumn: false,
+    };
+    expect(failuresOf(assemble(oneComponent(stored(), bound)))).toEqual([
+      { ...failed('block_not_publishable', 'boundTable'), block: 't2' },
+    ]);
+  });
+
   it('refuses a table in a style the template does not set, as a paragraph is refused', () => {
     expect(failuresOf(assemble(oneComponent(stored({ style: 'wide' }))))).toEqual([
       failed('style_missing', 'wide'),

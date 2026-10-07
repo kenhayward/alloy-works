@@ -530,6 +530,17 @@ describe('the domain package', () => {
         'fileConditionSchema',
         'fileFilter',
         'sortRows',
+        // TB1: the bound table, its binding taking no value, its column's format and alignment, and
+        // its refusal (the TB1 plan, task 1).
+        'BOUND_TABLE_COLUMNS_MAX',
+        'BOUND_TABLE_SORT_MAX',
+        'BoundTableRefused',
+        'COLUMN_ALIGNMENTS',
+        'boundTableNodeSchema',
+        'fieldFormatSchema',
+        'readsAsANumber',
+        'tableBindingSchema',
+        'takes',
       ].sort(),
     );
   });

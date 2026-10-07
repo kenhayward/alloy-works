@@ -311,6 +311,14 @@ function reidentifyBlock(value: unknown, state: State): unknown[] {
   if (block.type === 'figure' && 'binding' in block) {
     out.binding = reidentifyInline(block.binding, state)[0];
   }
+  // A bound table's binding (the TB1 plan, TB1-A) is renewed as an inline one is, and counted with
+  // them, before its caption, empty statement, note and source, in the order a reader meets them.
+  if (block.type === 'boundTable') {
+    if ('binding' in block) out.binding = reidentifyInline(block.binding, state)[0];
+    for (const member of ['caption', 'empty', 'note', 'source'] as const) {
+      if (member in block) out[member] = inlines(block[member]);
+    }
+  }
   return [out];
 }
 

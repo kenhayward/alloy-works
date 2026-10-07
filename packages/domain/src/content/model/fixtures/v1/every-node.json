@@ -333,6 +333,57 @@
       "alternative": { "kind": "inherited" }
     },
     {
+      "type": "boundTable",
+      "id": "b9-table",
+      "style": "table",
+      "binding": {
+        "type": "binding",
+        "id": "k-table",
+        "query": "00000000-0000-4000-8000-00000000d001",
+        "version": "00000000-0000-4000-8000-00000000d002",
+        "parameters": { "site": { "literal": "north" } },
+        "mode": "pinned"
+      },
+      "caption": [{ "type": "text", "value": "Readings from a binding", "marks": [] }],
+      "columns": [
+        { "column": "site", "header": "Site", "wrap": false },
+        {
+          "column": "depth",
+          "header": "Depth",
+          "unit": { "text": "m", "place": "header" },
+          "format": {
+            "style": "number",
+            "places": 2,
+            "rounding": "halfEven",
+            "negative": "parentheses",
+            "negativeColour": true,
+            "null": "n/a"
+          },
+          "align": "decimal"
+        },
+        {
+          "column": "cost",
+          "header": "Cost",
+          "format": {
+            "style": "currency",
+            "currency": { "symbol": "EUR", "position": "after", "space": true }
+          }
+        },
+        { "column": "share", "header": "Share", "format": { "style": "percent", "percent": "fraction" } },
+        {
+          "column": "elapsed",
+          "header": "Elapsed",
+          "format": { "style": "duration", "duration": { "from": "seconds", "show": "h:mm:ss" } }
+        },
+        { "column": "measured_at", "header": "Measured", "format": { "fraction": 0 }, "align": "end" }
+      ],
+      "headerColumn": true,
+      "sort": [{ "column": "depth", "direction": "descending", "nulls": "last" }],
+      "empty": [{ "type": "text", "value": "No readings were taken", "marks": [] }],
+      "source": [{ "type": "text", "value": "The site survey", "marks": [] }],
+      "note": [{ "type": "text", "value": "Depths below the datum", "marks": [] }]
+    },
+    {
       "type": "preformatted",
       "id": "b10",
       "text": "select 1\n\tfrom nothing",

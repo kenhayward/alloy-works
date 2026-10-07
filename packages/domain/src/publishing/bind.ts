@@ -245,6 +245,17 @@ export function bind(
               })),
             })),
           };
+        case 'boundTable':
+          // The bindings in its own words, as a table's caption's and note's are. Its own binding is
+          // left for TB1.2's stage, which lays the result out in its place; until then `assemble`
+          // refuses the block by name (the TB1 plan, TB1.1).
+          return {
+            ...block,
+            caption: inlines(block.caption, block.id, true),
+            ...(block.empty ? { empty: inlines(block.empty, block.id, inFootnote) } : {}),
+            ...(block.note ? { note: inlines(block.note, block.id, inFootnote) } : {}),
+            ...(block.source ? { source: inlines(block.source, block.id, inFootnote) } : {}),
+          };
         case 'figure': {
           // The figure's own binding first, as a reader meets its image before its caption.
           let figure: BlockNode = block;

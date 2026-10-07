@@ -438,3 +438,37 @@ describe('bind, a bound image (the B6 plan, B6-D and B6-E)', () => {
     ]);
   });
 });
+
+describe("a bound table's words, through the binding stage (TB1.1)", () => {
+  it('sets the bindings in its caption, empty statement, note and source as text, and leaves its own binding for its stage', () => {
+    const whole = { ...binding('whole') } as Record<string, unknown>;
+    delete whole.take;
+    const content = component({
+      type: 'boundTable',
+      id: 't1',
+      binding: whole,
+      caption: [text('Reading '), binding('in-caption')],
+      columns: [{ column: 'reading', header: 'Reading' }],
+      headerColumn: false,
+      empty: [binding('in-empty')],
+      note: [binding('in-note')],
+      source: [binding('in-source')],
+    });
+    const one = held(result(['north', '1.50']));
+    const { bound, failures } = bind(
+      NODE,
+      content,
+      new Map(['in-caption', 'in-empty', 'in-note', 'in-source'].map((name) => [name, one])),
+      DEFAULT_VALUE_FORMATS,
+    );
+    expect(failures).toEqual([]);
+    expect(bound.content[0]).toMatchObject({
+      type: 'boundTable',
+      binding: whole,
+      caption: [text('Reading '), text('1.50')],
+      empty: [text('1.50')],
+      note: [text('1.50')],
+      source: [text('1.50')],
+    });
+  });
+});

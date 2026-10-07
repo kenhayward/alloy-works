@@ -44,6 +44,11 @@ export const outputMapping: {
       tagged: 'Table with THead and TBody, TR, TH carrying /Scope, TD; the caption a Caption',
       note: 'TAB-031 and TAB-039 make scope and the caption association non-negotiable, which is why the spike overrode prosemirror-tables toDOM',
     },
+    boundTable: {
+      ooxml: 'The w:tbl of the table the binding stage sets in its place, with its rows laid out',
+      tagged: 'Table, as the table the binding stage sets in its place, with its header row',
+      note: 'tables.md: the stage replaces the block with an assembled table, so both writers read a table they already know',
+    },
     figure: {
       ooxml:
         'w:drawing, with the alternative in wp:docPr/@descr and the caption a w:p in the caption style',

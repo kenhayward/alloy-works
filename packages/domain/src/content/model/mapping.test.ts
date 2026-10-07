@@ -7,6 +7,7 @@ const blockTypes = [
   'paragraph',
   'list',
   'table',
+  'boundTable',
   'figure',
   'preformatted',
   'blockquote',

@@ -141,6 +141,51 @@ describe('what search reads from a version', () => {
     });
   });
 
+  it("reads a bound table by its caption, headers, empty statement, note and source, and its source's footnote as a block", () => {
+    const content = parseContentDocument({
+      schemaVersion: 1,
+      title: 'Readings',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        {
+          type: 'boundTable',
+          id: 't1',
+          binding: {
+            type: 'binding',
+            id: 'k1',
+            query: '00000000-0000-4000-8000-00000000d001',
+            parameters: {},
+            mode: 'checked',
+          },
+          caption: [text('Depths by site')],
+          columns: [
+            { column: 'site', header: 'Site' },
+            { column: 'depth', header: 'Depth' },
+          ],
+          headerColumn: true,
+          empty: [text('No readings')],
+          note: [text('At noon')],
+          source: [
+            text('The survey'),
+            {
+              type: 'footnote',
+              id: 'fn1',
+              anchor: { kind: 'span' },
+              content: [para('fp1', text('Taken in spring'))],
+            },
+          ],
+        },
+      ],
+    });
+    const [entry] = entriesOf({ kind: 'component', content, values: {} }, context);
+    expect(places(entry!)).toEqual({
+      title: 'Readings',
+      'block:t1': 'Depths by site Site Depth No readings At noon The survey',
+      'block:fp1': 'Taken in spring',
+    });
+  });
+
   it("makes a document an entry and each of its sections one of its own, in the document's language", () => {
     const outline = parseOutlineDocument({
       schemaVersion: 3,

@@ -500,6 +500,35 @@ describe('the re-identify stage', () => {
     expect([...identified.bindingsRenamed]).toEqual([['k1', 'n4']]);
   });
 
+  it("gives a pasted bound table's binding, and the bindings in its caption and source, new identifiers (TB1-A)", () => {
+    const table: Record<string, unknown> = {
+      type: 'boundTable',
+      id: 't1',
+      binding: { ...binding('k1'), take: undefined },
+      caption: [text('Depths '), binding('k2')],
+      columns: [{ column: 'depth', header: 'Depth' }],
+      headerColumn: false,
+      source: [text('Survey '), binding('k3')],
+    };
+    delete (table.binding as Record<string, unknown>).take;
+    const identified = reidentify({ schemaVersion: 1, content: [table] }, receiver(), createReport());
+    if (!identified.ok) throw new Error(identified.failure);
+    expect(identified.value.content).toEqual([
+      {
+        ...table,
+        id: 'n3',
+        binding: { ...(table.binding as object), id: 'n4' },
+        caption: [text('Depths '), { ...binding('k2'), id: 'n5' }],
+        source: [text('Survey '), { ...binding('k3'), id: 'n6' }],
+      },
+    ]);
+    expect([...identified.bindingsRenamed]).toEqual([
+      ['k1', 'n4'],
+      ['k2', 'n5'],
+      ['k3', 'n6'],
+    ]);
+  });
+
   it('keeps a block and a binding that arrived under one identifier apart, neither making the other ambiguous', () => {
     const identified = reidentify(
       { schemaVersion: 1, content: [paragraph('z', [text('Mean '), binding('z')])] },
