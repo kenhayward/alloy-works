@@ -19,6 +19,7 @@ import {
 import {
   colouredNegative,
   formatCell,
+  parenthesised,
   formatMismatch,
   mergeFormat,
   type CellWords,
@@ -74,6 +75,8 @@ export interface LaidOutCell {
   readonly scope: 'row' | null;
   /** Whether it is set in the style's negative colour, beside its sign (TAB-016). */
   readonly negative: boolean;
+  /** Whether it prints its value in parentheses, as its format asks of a negative (TAB-016). */
+  readonly parenthesised: boolean;
 }
 
 /**
@@ -224,6 +227,7 @@ export function layoutTable(
           value,
           scope: table.headerColumn && place === 0 ? 'row' : null,
           negative: colouredNegative(value, column.type, column.format),
+          parenthesised: parenthesised(value, column.type, column.format),
         };
       }),
     };

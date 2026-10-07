@@ -540,6 +540,37 @@ describe('a bound table published (the TB1 plan, TB1-H; TB1.2)', () => {
     expect(table.bound).toEqual({ align: ['start', 'decimal'], wrap: [true, true], source: null });
   });
 
+  it('TAB-046 insets a value printing no parentheses in a column printing them, by what it prints and never by its text, a unit after each value among them', () => {
+    const made = assembled(
+      component(
+        boundTable({
+          columns: [
+            {
+              column: 'reading',
+              header: 'Reading',
+              unit: { text: 'kg', place: 'value' },
+              format: { negative: 'parentheses' },
+            },
+          ],
+        }),
+      ),
+      new Map([['rows', held(result(['north', '1.5'], ['south', '-1.5'], ['east', null]))]]),
+    );
+    const table = tableOf(made);
+    const nbsp = String.fromCodePoint(0xa0);
+    expect(grid(table).slice(1)).toEqual([
+      [`1.50${nbsp}kg`],
+      [`(1.50)${nbsp}kg`],
+      ['Not available'],
+    ]);
+    // The negative prints its parentheses and so is not inset, though its text ends in its unit.
+    expect(table.rows.slice(1).map((row) => row.cells[0]!.inset ?? false)).toEqual([
+      true,
+      false,
+      true,
+    ]);
+  });
+
   it('heads each row by its first column where the table says so, and sets a no-wrap column, its alignment and its source after the layout word', () => {
     const made = assembled(
       component(

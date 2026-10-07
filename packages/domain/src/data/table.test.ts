@@ -280,9 +280,9 @@ describe('a bound table, laid out', () => {
       negativeColour: true,
     });
     expect(out.rows.map((row) => row.cells[0])).toEqual([
-      { text: '4.5', value: '4.5', scope: null, negative: false },
-      { text: '(1.3)', value: '-1.25', scope: null, negative: true },
-      { text: 'Not available', value: null, scope: null, negative: false },
+      { text: '4.5', value: '4.5', scope: null, negative: false, parenthesised: false },
+      { text: '(1.3)', value: '-1.25', scope: null, negative: true, parenthesised: true },
+      { text: 'Not available', value: null, scope: null, negative: false, parenthesised: false },
     ]);
   });
 });

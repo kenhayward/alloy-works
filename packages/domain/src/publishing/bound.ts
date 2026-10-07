@@ -74,11 +74,12 @@ export function laidOutTable(
             const column = laid.columns[x]!;
             return {
               // A value without parentheses in a column printing them, aligned on its separator,
-              // stands in by one so its separator meets theirs (TB1-I).
+              // stands in by one so its separator meets theirs (TB1-I): by what the formatter
+              // printed, never by the text, which a unit after the value ends.
               inset:
                 column.align === 'decimal' &&
                 column.format.negative === 'parentheses' &&
-                !each.text.endsWith(')'),
+                !each.parenthesised,
               colour: each.negative ? negativeColour : null,
             };
           }),
