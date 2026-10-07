@@ -9,6 +9,7 @@ import {
   FOURTH_DEFAULT_LAYOUT,
   LAYOUT_SCHEMA_VERSION,
   SECOND_DEFAULT_LAYOUT,
+  SEVENTH_DEFAULT_LAYOUT,
   SIXTH_DEFAULT_LAYOUT,
   THIRD_DEFAULT_LAYOUT,
   defaultNumberingScheme,
@@ -262,6 +263,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0052_bound_images',
       '0053_dataset_image_index',
       '0054_connection_test_privilege',
+      '0055_bound_tables',
     ]);
 
     // No trigger was held off, and every one stands enabled.
@@ -632,6 +634,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0052_bound_images',
       '0053_dataset_image_index',
       '0054_connection_test_privilege',
+      '0055_bound_tables',
     ]);
 
     const { declared, versions } = await service.withTenant(tenant, async (trx) => ({
@@ -706,6 +709,9 @@ describe('migration 0021, which gives the default layout a list of figures', () 
         contents: 'Table of contents',
         continued: '(continued)',
         preview: productDefaultLayout.words.preview,
+        noRows: 'No rows',
+        notAvailable: 'Not available',
+        source: 'Source:',
       },
     };
     const recorded = await service.withTenant({ ...tenant, id }, async (trx) => {
@@ -760,6 +766,7 @@ describe('migration 0021, which gives the default layout a list of figures', () 
       '0052_bound_images',
       '0053_dataset_image_index',
       '0054_connection_test_privilege',
+      '0055_bound_tables',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -818,6 +825,9 @@ describe('migration 0023, which gives the default layout words for a relative re
         below: 'from below',
         continued: '(continued)',
         preview: { notice: 'Preview', sentence: 'A preview, not approved.' },
+        noRows: 'No rows',
+        notAvailable: 'Not available',
+        source: 'Source:',
       },
     };
     const recorded = await service.withTenant({ ...tenant, id }, async (trx) => {
@@ -870,6 +880,7 @@ describe('migration 0023, which gives the default layout words for a relative re
       '0052_bound_images',
       '0053_dataset_image_index',
       '0054_connection_test_privilege',
+      '0055_bound_tables',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -925,6 +936,7 @@ describe('migration 0023, which gives the default layout words for a relative re
       '0052_bound_images',
       '0053_dataset_image_index',
       '0054_connection_test_privilege',
+      '0055_bound_tables',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     const chain = await service.withTenant({ ...tenant, id }, (trx) =>
@@ -944,12 +956,13 @@ describe('migration 0023, which gives the default layout words for a relative re
       [0, 5],
       [0, 6],
       [0, 7],
+      [0, 8],
     ]);
     expect(chain[3]!.content).toEqual(FOURTH_DEFAULT_LAYOUT);
     expect(declared).toEqual({
       artifactId: DEFAULT_LAYOUT_ID,
-      versionId: chain[6]!.id,
-      number: '0.7',
+      versionId: chain[7]!.id,
+      number: '0.8',
       layout: productDefaultLayout,
     });
   });
@@ -1006,6 +1019,9 @@ describe("migration 0025, which gives the default layout the words a continued t
         ...FOURTH_DEFAULT_LAYOUT.words,
         continued: '(cont.)',
         preview: { notice: 'Preview', sentence: 'A preview, not approved.' },
+        noRows: 'No rows',
+        notAvailable: 'Not available',
+        source: 'Source:',
       },
     };
     const recorded = await service.withTenant(tenant, async (trx) => {
@@ -1056,6 +1072,7 @@ describe("migration 0025, which gives the default layout the words a continued t
       '0052_bound_images',
       '0053_dataset_image_index',
       '0054_connection_test_privilege',
+      '0055_bound_tables',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -1104,6 +1121,7 @@ describe("migration 0025, which gives the default layout the words a continued t
       '0052_bound_images',
       '0053_dataset_image_index',
       '0054_connection_test_privilege',
+      '0055_bound_tables',
     ]);
     const { declared, fifth } = await service.withTenant(tenant, async (trx) => ({
       declared: await defaultLayout(trx),
@@ -1117,7 +1135,7 @@ describe("migration 0025, which gives the default layout the words a continued t
     }));
     expect(fifth).toMatchObject({ author_id: null, note: null, schema_version: 4 });
     expect(fifth.content).toEqual(FIFTH_DEFAULT_LAYOUT);
-    expect(declared).toMatchObject({ number: '0.7', layout: productDefaultLayout });
+    expect(declared).toMatchObject({ number: '0.8', layout: productDefaultLayout });
   });
 });
 
@@ -1218,6 +1236,7 @@ describe('migration 0027, which gives the default layout a Word page', () => {
       '0052_bound_images',
       '0053_dataset_image_index',
       '0054_connection_test_privilege',
+      '0055_bound_tables',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -1289,6 +1308,7 @@ describe('migration 0027, which gives the default layout a Word page', () => {
       '0052_bound_images',
       '0053_dataset_image_index',
       '0054_connection_test_privilege',
+      '0055_bound_tables',
     ]);
     const { declared, sixth, inputs } = await service.withTenant(tenant, async (trx) => ({
       declared: await defaultLayout(trx),
@@ -1305,8 +1325,8 @@ describe('migration 0027, which gives the default layout a Word page', () => {
     // Its Word page is its PDF page, copied.
     expect(sixth.content).toEqual(SIXTH_DEFAULT_LAYOUT);
     expect(SIXTH_DEFAULT_LAYOUT.formats.docx).toEqual(SIXTH_DEFAULT_LAYOUT.formats.pdf);
-    // And 0035, after it, 0.7 on top.
-    expect(declared).toMatchObject({ number: '0.7', layout: productDefaultLayout });
+    // And 0035, after it, 0.7 on top, and 0055 0.8 on that.
+    expect(declared).toMatchObject({ number: '0.8', layout: productDefaultLayout });
     // The request made before it publishes under the 0.5 it was made under, which makes no Word.
     expect(inputs!.layout).toEqual({
       versionId: fifth.versionId,
@@ -1405,6 +1425,7 @@ describe('migration 0035, which gives a request its kind and the default layout 
       '0052_bound_images',
       '0053_dataset_image_index',
       '0054_connection_test_privilege',
+      '0055_bound_tables',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -1463,16 +1484,20 @@ describe('migration 0035, which gives a request its kind and the default layout 
       '0052_bound_images',
       '0053_dataset_image_index',
       '0054_connection_test_privilege',
+      '0055_bound_tables',
     ]);
-    const { declared, seventh, inputs, row } = await service.withTenant(tenant, async (trx) => ({
-      declared: await defaultLayout(trx),
-      seventh: await trx
+    const version = (trx: TenantTransaction, number: number) =>
+      trx
         .selectFrom('artifact_version')
         .selectAll()
         .where('artifact_id', '=', DEFAULT_LAYOUT_ID)
         .where('revision_no', '=', 0)
-        .where('version_no', '=', 7)
-        .executeTakeFirstOrThrow(),
+        .where('version_no', '=', number)
+        .executeTakeFirstOrThrow();
+    const { declared, seventh, eighth, inputs, row } = await service.withTenant(tenant, async (trx) => ({
+      declared: await defaultLayout(trx),
+      seventh: await version(trx, 7),
+      eighth: await version(trx, 8),
       inputs: await publicationInputs(trx, waiting),
       row: await trx
         .selectFrom('publication_request')
@@ -1481,10 +1506,13 @@ describe('migration 0035, which gives a request its kind and the default layout 
         .executeTakeFirstOrThrow(),
     }));
     expect(seventh).toMatchObject({ author_id: null, note: null, schema_version: 6 });
+    expect(seventh.content).toEqual(SEVENTH_DEFAULT_LAYOUT);
+    // And 0055, after it, 0.8 on top.
+    expect(eighth).toMatchObject({ author_id: null, note: null, schema_version: 7 });
     expect(declared).toEqual({
       artifactId: DEFAULT_LAYOUT_ID,
-      versionId: seventh.id,
-      number: '0.7',
+      versionId: eighth.id,
+      number: '0.8',
       layout: productDefaultLayout,
     });
     // The request waiting is a publish, with nothing of a preview, handed the 0.6 it was made under,

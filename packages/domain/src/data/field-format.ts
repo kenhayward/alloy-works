@@ -57,3 +57,35 @@ export type FieldFormat = z.infer<typeof fieldFormatSchema>;
 export const COLUMN_ALIGNMENTS = ['start', 'centre', 'end', 'decimal'] as const;
 
 export type ColumnAlignment = (typeof COLUMN_ALIGNMENTS)[number];
+
+/** The types a table style declares a format and an alignment for: every base but an image. */
+export type FieldKey =
+  | 'integer'
+  | 'decimal'
+  | 'date'
+  | 'time'
+  | 'localDateTime'
+  | 'instant'
+  | 'boolean'
+  | 'text';
+
+/**
+ * **The product's formats by type** (TB1-F), where a style names none: a number as a number, rounded
+ * half away from zero, a negative with a minus; every other type as `formatValue` prints it.
+ */
+export const DEFAULT_TABLE_FIELDS: Readonly<Partial<Record<FieldKey, FieldFormat>>> = Object.freeze({
+  integer: Object.freeze({ style: 'number', rounding: 'halfAwayFromZero', negative: 'minus' }),
+  decimal: Object.freeze({ style: 'number', rounding: 'halfAwayFromZero', negative: 'minus' }),
+} as const);
+
+/** **The product's alignment by type** (STY-077): text at the start, numbers on their separator. */
+export const DEFAULT_TABLE_ALIGN: Readonly<Record<FieldKey, ColumnAlignment>> = Object.freeze({
+  text: 'start',
+  integer: 'decimal',
+  decimal: 'decimal',
+  date: 'end',
+  time: 'end',
+  localDateTime: 'end',
+  instant: 'end',
+  boolean: 'end',
+});

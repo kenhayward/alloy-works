@@ -552,6 +552,15 @@ describe('the domain package', () => {
         'DEFAULT_TABLE_FIELDS',
         'layoutTable',
         'TABLE_ROWS_MAX',
+        // TB1: the types a table style formats by, the default theme's 0.6 frozen as 0.7 replaces it,
+        // and the default layout's 0.7 frozen as 0.8 does (task 5).
+        'FIELD_KEYS',
+        'SEVENTH_DEFAULT_LAYOUT',
+        'SIXTH_DEFAULT_CATALOGUES',
+        'SIXTH_DEFAULT_CATALOGUES_BY_VERSION',
+        'SIXTH_DEFAULT_CATALOGUE_VERSIONS',
+        'SIXTH_DEFAULT_THEME',
+        'SIXTH_DEFAULT_THEME_VERSION',
       ].sort(),
     );
   });

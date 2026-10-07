@@ -21,6 +21,8 @@ import {
   SECOND_DEFAULT_CATALOGUE_VERSIONS,
   SECOND_DEFAULT_THEME,
   SECOND_DEFAULT_THEME_VERSION,
+  SIXTH_DEFAULT_THEME,
+  SIXTH_DEFAULT_THEME_VERSION,
   THIRD_DEFAULT_THEME,
   THIRD_DEFAULT_THEME_VERSION,
   type CatalogueKind,
@@ -52,7 +54,8 @@ function productDefaultTheme(): ResolvedTheme {
 /**
  * The catalogues the theme's 0.2 gave a version of their own (themes 2, ruling R3), by 0025, and its
  * 0.4 another (ET-H), by 0034; the other three are bound at the 0.1 0024 seeded. Of them, the table
- * and image catalogues have a fourth, the theme's 0.5's (W14.5), by 0043.
+ * and image catalogues have a fourth, the theme's 0.5's (W14.5), by 0043, and the table catalogue a
+ * fifth, the theme's 0.7's (TB1), by 0055.
  */
 const REVISED: readonly CatalogueKind[] = ['paragraph', 'table', 'image'];
 const PLACED: readonly CatalogueKind[] = ['table', 'image'];
@@ -105,27 +108,28 @@ describe('the theme every environment starts with', () => {
 
   const unauthored = { author_id: null, note: null, component_type_version_id: null };
 
-  it('STY-024 is a versioned artifact in every environment, at 0.6, binding one catalogue version of each of the six kinds and the value catalogue beside them', async () => {
+  it('STY-024 is a versioned artifact in every environment, at 0.7, binding one catalogue version of each of the six kinds and the value catalogue beside them', async () => {
     for (const tenant of [acme, other]) {
       const declared = await service.withTenant(tenant, (trx) => defaultTheme(trx));
       const theme = await held(tenant, DEFAULT_THEME_ID);
       expect(theme.artifact).toMatchObject({ kind: 'theme', space_id: null });
       // 0.1 as 0024 seeded it, 0.2 on top, as 0025 seeded it under its fixed identifier, 0.3 on top
-      // of that, as 0026 did, 0.4 on top of that, as 0034 did, 0.5 on top of that, as 0043 did, and
-      // 0.6 on top of that, as 0048 did.
-      expect(theme.versions).toHaveLength(6);
-      const [first, second, third, fourth, fifth, sixth] = theme.versions;
+      // of that, as 0026 did, 0.4 on top of that, as 0034 did, 0.5 on top of that, as 0043 did, 0.6
+      // on top of that, as 0048 did, and 0.7 on top of that, as 0055 did.
+      expect(theme.versions).toHaveLength(7);
+      const [first, second, third, fourth, fifth, sixth, seventh] = theme.versions;
       const seeded = { ...unauthored, kind: 'theme', revision_no: 0, schema_version: 1 };
       expect(first).toMatchObject({ ...seeded, version_no: 1 });
       expect(second).toMatchObject({ ...seeded, id: SECOND_DEFAULT_THEME_VERSION, version_no: 2 });
       expect(third).toMatchObject({ ...seeded, id: THIRD_DEFAULT_THEME_VERSION, version_no: 3 });
       expect(fourth).toMatchObject({ ...seeded, id: FOURTH_DEFAULT_THEME_VERSION, version_no: 4 });
       expect(fifth).toMatchObject({ ...seeded, id: FIFTH_DEFAULT_THEME_VERSION, version_no: 5 });
-      expect(sixth).toMatchObject({ ...seeded, id: DEFAULT_THEME_VERSION, version_no: 6 });
+      expect(sixth).toMatchObject({ ...seeded, id: SIXTH_DEFAULT_THEME_VERSION, version_no: 6 });
+      expect(seventh).toMatchObject({ ...seeded, id: DEFAULT_THEME_VERSION, version_no: 7 });
       expect(declared).toEqual({
         artifactId: DEFAULT_THEME_ID,
         versionId: DEFAULT_THEME_VERSION,
-        number: '0.6',
+        number: '0.7',
         content: DEFAULT_THEME,
         theme: productDefaultTheme(),
         catalogues: DEFAULT_CATALOGUES_BY_VERSION,
@@ -141,7 +145,9 @@ describe('the theme every environment starts with', () => {
         const revised = REVISED.includes(kind);
         const placed = PLACED.includes(kind);
         expect(catalogue.artifact, kind).toMatchObject({ kind: 'catalogue', space_id: null });
-        expect(catalogue.versions, kind).toHaveLength(placed ? 4 : revised ? 3 : 1);
+        expect(catalogue.versions, kind).toHaveLength(
+          kind === 'table' ? 5 : placed ? 4 : revised ? 3 : 1,
+        );
         const stored = { ...unauthored, kind: 'catalogue', revision_no: 0 };
         expect(catalogue.versions[0], kind).toMatchObject({
           ...stored,
@@ -166,8 +172,16 @@ describe('the theme every environment starts with', () => {
         if (placed) {
           expect(catalogue.versions[3], kind).toMatchObject({
             ...stored,
-            id: DEFAULT_CATALOGUE_VERSIONS[kind],
+            id: FIFTH_DEFAULT_CATALOGUE_VERSIONS[kind],
             version_no: 4,
+            schema_version: 3,
+          });
+        }
+        if (kind === 'table') {
+          expect(catalogue.versions[4], kind).toMatchObject({
+            ...stored,
+            id: DEFAULT_CATALOGUE_VERSIONS.table,
+            version_no: 5,
             schema_version: 3,
           });
         }
@@ -198,7 +212,7 @@ describe('the theme every environment starts with', () => {
   it("holds each of the domain's default themes and their catalogues exactly, with the digests the domain computes", async () => {
     // Every row, by its fixed identifier, against the domain's data for it: 0.1's seven as 0024 seeded
     // them, 0.2's four as 0025 did, 0.3's theme as 0026 did, 0.4's four as 0034 did, 0.5's three as
-    // 0043 did, and 0.6's two as 0048 did.
+    // 0043 did, 0.6's two as 0048 did, and 0.7's two as 0055 did.
     const theme = await held(acme, DEFAULT_THEME_ID);
     const expected = new Map<string, { kind: 'theme' | 'catalogue'; content: unknown }>([
       [theme.versions[0]!.id, { kind: 'theme', content: FIRST_DEFAULT_THEME }],
@@ -206,8 +220,10 @@ describe('the theme every environment starts with', () => {
       [THIRD_DEFAULT_THEME_VERSION, { kind: 'theme', content: THIRD_DEFAULT_THEME }],
       [FOURTH_DEFAULT_THEME_VERSION, { kind: 'theme', content: FOURTH_DEFAULT_THEME }],
       [FIFTH_DEFAULT_THEME_VERSION, { kind: 'theme', content: FIFTH_DEFAULT_THEME }],
+      [SIXTH_DEFAULT_THEME_VERSION, { kind: 'theme', content: SIXTH_DEFAULT_THEME }],
       [DEFAULT_THEME_VERSION, { kind: 'theme', content: DEFAULT_THEME }],
       [DEFAULT_CATALOGUE_VERSIONS.value, { kind: 'catalogue', content: DEFAULT_CATALOGUES.value }],
+      [DEFAULT_CATALOGUE_VERSIONS.table, { kind: 'catalogue', content: DEFAULT_CATALOGUES.table }],
     ]);
     for (const kind of CATALOGUE_KINDS) {
       expected.set(FIRST_DEFAULT_CATALOGUE_VERSIONS[kind], {
@@ -238,9 +254,9 @@ describe('the theme every environment starts with', () => {
         )
       ).flatMap((each) => each.versions),
     ];
-    // Six theme versions, and fifteen catalogue versions: six at 0.1, three at 0.2, three at 0.4,
-    // two at 0.5 and the value catalogue's at 0.6.
-    expect(rows).toHaveLength(21);
+    // Seven theme versions, and sixteen catalogue versions: six at 0.1, three at 0.2, three at 0.4,
+    // two at 0.5, the value catalogue's at 0.6 and the table catalogue's at 0.7.
+    expect(rows).toHaveLength(23);
     expect(new Set(rows.map((row) => row.id))).toEqual(new Set(expected.keys()));
     for (const version of rows) {
       const substance = expected.get(version.id)!;

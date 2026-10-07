@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { artifactIdentifierSchema } from '../content/model/identifier.js';
+import { COLUMN_ALIGNMENTS, fieldFormatSchema } from '../data/field-format.js';
 import { PUBLISHED_MARK_ORDER } from '../publishing/published.js';
 import { storableEverywhere, storableText } from '../stored/storable.js';
 
@@ -328,7 +329,42 @@ export type CaptionPlacement = (typeof CAPTION_PLACEMENTS)[number];
 
 const captionPlacement = z.enum(CAPTION_PLACEMENTS);
 
-export const tableStyleSchema = z.strictObject({ ...tableStyleShape2, caption: captionPlacement });
+/** The types a table style formats and aligns a bound table's column by: every base but an image. */
+export const FIELD_KEYS = [
+  'integer',
+  'decimal',
+  'date',
+  'time',
+  'localDateTime',
+  'instant',
+  'boolean',
+  'text',
+] as const;
+
+/** An optional member per type, strict: a type the product does not have is refused. */
+const byType = <T extends z.ZodType>(member: T) =>
+  z.strictObject(
+    Object.fromEntries(FIELD_KEYS.map((key) => [key, member.optional()])) as Record<
+      (typeof FIELD_KEYS)[number],
+      z.ZodOptional<T>
+    >,
+  );
+
+/**
+ * At `catalogue/3`, a table style says where its caption sits, and - **optional, so every stored
+ * style reads as it did** (the TB1 plan, TB1-F) - how a bound table's cells are formatted by type
+ * (STY-014), aligned by type (STY-077), the colour a negative is set in beside its sign (TAB-016), and
+ * how a unit in a header is bracketed (TAB-003). Where a style names none, `layoutTable` reads the
+ * product's defaults (`DEFAULT_TABLE_FIELDS`, `DEFAULT_TABLE_ALIGN`, parentheses).
+ */
+export const tableStyleSchema = z.strictObject({
+  ...tableStyleShape2,
+  caption: captionPlacement,
+  fields: byType(fieldFormatSchema).optional(),
+  align: byType(z.enum(COLUMN_ALIGNMENTS)).optional(),
+  negativeColour: colour.optional(),
+  unitBrackets: z.enum(['parentheses', 'brackets']).optional(),
+});
 
 /** The units an image's size is given in (STY-015, STY-017). */
 export const IMAGE_UNITS = ['pt', 'measure', 'textHeight', 'em'] as const;

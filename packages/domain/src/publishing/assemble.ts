@@ -692,6 +692,14 @@ export function assemble(given: AssembleInput): Assembled {
     if (continued !== undefined) {
       checkWords(continued, [roleStyle('caption').typeface.family], push);
     }
+    // What a bound table prints (TB1-G): no rows and a null in a table cell's face, and the word
+    // before its source in a table note's - asked where the layout has them, whether or not the
+    // document holds a bound table, as `continued` is.
+    const { noRows, notAvailable, source } = layout.words;
+    for (const words of [noRows, notAvailable]) {
+      if (words !== undefined) checkWords(words, [placeStyle('tableCell').typeface.family], push);
+    }
+    if (source !== undefined) checkWords(source, [roleStyle('tableNote').typeface.family], push);
   }
 
   // Every cross-reference in the document, resolved before anything is projected (cross-references 2):

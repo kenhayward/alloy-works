@@ -167,20 +167,16 @@ export { bindingDigestInput, bindingsIn, checkTake, literalValues, takes } from 
 export type { AnyBinding, Binding, BindingAt, BindingPlace, TableBinding } from './binding.js';
 export {
   COLUMN_ALIGNMENTS,
+  DEFAULT_TABLE_ALIGN,
+  DEFAULT_TABLE_FIELDS,
   fieldFormatSchema,
   readsAsANumber,
 } from './field-format.js';
-export type { ColumnAlignment, FieldFormat } from './field-format.js';
+export type { ColumnAlignment, FieldFormat, FieldKey } from './field-format.js';
 export { colouredNegative, formatCell, formatMismatch, mergeFormat } from './format-cell.js';
 export type { CellWords } from './format-cell.js';
-export {
-  DEFAULT_TABLE_ALIGN,
-  DEFAULT_TABLE_FIELDS,
-  layoutTable,
-  TABLE_ROWS_MAX,
-} from './table.js';
+export { layoutTable, TABLE_ROWS_MAX } from './table.js';
 export type {
-  FieldKey,
   LaidOut,
   LaidOutCell,
   LaidOutColumn,

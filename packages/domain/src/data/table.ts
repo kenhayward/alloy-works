@@ -7,9 +7,15 @@ import {
   type CanonicalResult,
   type CanonicalValue,
 } from './canonical.js';
-import type { ColumnType, ValueType } from './columns.js';
+import type { ColumnType } from './columns.js';
 import type { Column } from './definition.js';
-import type { ColumnAlignment, FieldFormat } from './field-format.js';
+import {
+  DEFAULT_TABLE_ALIGN,
+  DEFAULT_TABLE_FIELDS,
+  type ColumnAlignment,
+  type FieldFormat,
+  type FieldKey,
+} from './field-format.js';
 import {
   colouredNegative,
   formatCell,
@@ -30,40 +36,16 @@ import {
  */
 export const TABLE_ROWS_MAX = 10_000;
 
-/** The types a table style declares a format and an alignment for: every base but an image. */
-export type FieldKey = ValueType['base'];
-
 /**
  * What a table style says of a bound table's cells (STY-014, STY-077; TB1-F): a format by type, an
  * alignment by type, and how a unit in a header is bracketed. Optional members of the table style at
  * `catalogue/3`, read as the product's defaults below where a stored style names none.
  */
 export interface TablePresentation {
-  readonly fields?: Partial<Record<FieldKey, FieldFormat>> | undefined;
-  readonly align?: Partial<Record<FieldKey, ColumnAlignment>> | undefined;
+  readonly fields?: { readonly [K in FieldKey]?: FieldFormat | undefined } | undefined;
+  readonly align?: { readonly [K in FieldKey]?: ColumnAlignment | undefined } | undefined;
   readonly unitBrackets?: 'parentheses' | 'brackets' | undefined;
 }
-
-/**
- * **The product's formats by type** (TB1-F), where a style names none: a number as a number, rounded
- * half away from zero, a negative with a minus; every other type as `formatValue` prints it.
- */
-export const DEFAULT_TABLE_FIELDS: Readonly<Partial<Record<FieldKey, FieldFormat>>> = Object.freeze({
-  integer: Object.freeze({ style: 'number', rounding: 'halfAwayFromZero', negative: 'minus' }),
-  decimal: Object.freeze({ style: 'number', rounding: 'halfAwayFromZero', negative: 'minus' }),
-} as const);
-
-/** **The product's alignment by type** (STY-077): text at the start, numbers on their separator. */
-export const DEFAULT_TABLE_ALIGN: Readonly<Record<FieldKey, ColumnAlignment>> = Object.freeze({
-  text: 'start',
-  integer: 'decimal',
-  decimal: 'decimal',
-  date: 'end',
-  time: 'end',
-  localDateTime: 'end',
-  instant: 'end',
-  boolean: 'end',
-});
 
 /** Why a bound table cannot be laid out, each naming its column, or its member or count. */
 export type TableFailure =

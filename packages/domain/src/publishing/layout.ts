@@ -51,8 +51,14 @@ import { DRAFT_NOTICE } from './published.js';
  * it is a preview of unapproved content (PUB-005) - in the layout's language. **Required of a layout
  * written at version 6**, and absent from one stored earlier, which reads as having none for version
  * 3's reason: a preview under it fails by name rather than printing English.
+ *
+ * **Version 7 added `words.noRows`, `words.notAvailable` and `words.source`** (the TB1 plan, TB1-G):
+ * what a bound table prints with no rows, for a null, and before its source note, in the layout's
+ * language. **Required of a layout written at version 7**, and absent from one stored earlier, which
+ * reads as having none for version 3's reason: publishing a bound table under it fails by name
+ * (`table_words_missing`) rather than printing English.
  */
-export const LAYOUT_SCHEMA_VERSION = 6;
+export const LAYOUT_SCHEMA_VERSION = 7;
 
 /** The sequences a generated list can list: those a caption-bearing block takes (CNT-081, STR-041). */
 export const LISTED_SEQUENCES = ['figure', 'table', 'equation'] as const;
@@ -109,8 +115,9 @@ export interface Layout {
    * The words the product sets itself: the contents' title, the draft notice and its sentence, what
    * a relative reference prints either side of its target - both, or neither where the layout has no
    * words for them - what a continued table's label adds, which only a layout stored before
-   * schema version 4 lacks, and what a preview says in place of the notice and its sentence, which
-   * only a layout stored before schema version 6 lacks.
+   * schema version 4 lacks, what a preview says in place of the notice and its sentence, which only
+   * a layout stored before schema version 6 lacks, and what a bound table prints, which only one
+   * stored before schema version 7 lacks.
    */
   words: {
     contents: string;
@@ -120,6 +127,10 @@ export interface Layout {
     below?: string | undefined;
     continued?: string | undefined;
     preview?: { notice: string; sentence: string } | undefined;
+    /** What a bound table prints with no rows, for a null, and before its source (schema 7). */
+    noRows?: string | undefined;
+    notAvailable?: string | undefined;
+    source?: string | undefined;
   };
   /** The numbering scheme, in structure.md's shape, labels included (PUB-011, STR-013, STR-024). */
   scheme: NumberingScheme;
@@ -250,6 +261,9 @@ export const layoutWordsSchema = z
     below: words.optional(),
     continued: words.optional(),
     preview: z.strictObject({ notice: words, sentence: words }).optional(),
+    noRows: words.optional(),
+    notAvailable: words.optional(),
+    source: words.optional(),
   })
   .refine(
     ({ above, below }) => (above === undefined) === (below === undefined),
@@ -313,7 +327,7 @@ const continuedLayoutSchema: z.ZodType<Layout> = upgradedLayoutSchema.refine(
  * continued table's label adds (themes 2, ruling R2), and from version 6 on with the words a preview
  * says (PV-D), since a writer knows its own language's.
  */
-export const layoutSchema: z.ZodType<Layout> = continuedLayoutSchema.refine(
+const previewLayoutSchema: z.ZodType<Layout> = continuedLayoutSchema.refine(
   (layout) => layout.words.preview !== undefined,
   {
     message:
@@ -322,11 +336,30 @@ export const layoutSchema: z.ZodType<Layout> = continuedLayoutSchema.refine(
   },
 );
 
+/**
+ * **A layout as it is written at the current schema version**: from version 7 on, with the words a
+ * bound table prints with no rows, for a null and before its source (TB1-G).
+ */
+export const layoutSchema: z.ZodType<Layout> = previewLayoutSchema.superRefine((layout, context) => {
+  for (const word of ['noRows', 'notAvailable', 'source'] as const) {
+    if (layout.words[word] === undefined) {
+      context.addIssue({
+        code: 'custom',
+        message: `A layout from schema version 7 on gives the words a bound table prints: ${word}`,
+        path: ['words', word],
+      });
+    }
+  }
+});
+
 /** The version from which a layout is written with the words a continued table's label adds. */
 const CONTINUED_SINCE = 4;
 
 /** The version from which a layout is written with the words a preview says. */
 const PREVIEW_SINCE = 6;
+
+/** The version from which a layout is written with the words a bound table prints. */
+const BOUND_TABLE_SINCE = 7;
 
 /** The one entry point for a layout at the current schema version, as it is written. */
 export function parseLayout(value: unknown): Layout {
@@ -346,7 +379,10 @@ function parseStoredLayout(value: unknown): Layout {
   if (typeof written !== 'number' || written < CONTINUED_SINCE) {
     return upgradedLayoutSchema.parse(migrated);
   }
-  return written >= PREVIEW_SINCE ? parseLayout(migrated) : continuedLayoutSchema.parse(migrated);
+  if (written >= BOUND_TABLE_SINCE) return parseLayout(migrated);
+  return written >= PREVIEW_SINCE
+    ? previewLayoutSchema.parse(migrated)
+    : continuedLayoutSchema.parse(migrated);
 }
 
 // A read-time projection, as every chain's is: the stored bytes never change.
@@ -368,6 +404,8 @@ export const layoutMigrationChain: MigrationChain = {
     4: (layout) => layout,
     // Version 5 had no words for a preview, and reads as having none, for version 2's reason.
     5: (layout) => layout,
+    // Version 6 had no words for a bound table, and reads as having none, for version 2's reason.
+    6: (layout) => layout,
   },
 };
 
@@ -574,19 +612,48 @@ export const SIXTH_DEFAULT_LAYOUT: Layout5 = (() => {
 })();
 
 /**
- * The default layout as it stands, **version 0.7**: 0.6 with the words a preview says in place of the
- * draft's notice and its sentence (PV-D), in its language, English, at schema version 6.
+ * A layout as schema version 6 stored it: words for a preview, and none for a bound table. The shape
+ * of the default layout's 0.7 row, which is frozen at it.
+ */
+export type Layout6 = Omit<Layout, 'schemaVersion' | 'words'> & {
+  schemaVersion: 6;
+  words: Omit<Layout['words'], 'noRows' | 'notAvailable' | 'source'>;
+};
+
+/**
+ * **The default layout's version 0.7, as migration 0035 stored it**: 0.6 with the words a preview
+ * says in place of the draft's notice and its sentence (PV-D), in its language, English. Frozen, at
+ * schema 6, for 0.2's reason, and checked as 0.2 is to read through today's chain.
+ */
+export const SEVENTH_DEFAULT_LAYOUT: Layout6 = (() => {
+  const layout: Layout6 = {
+    ...SIXTH_DEFAULT_LAYOUT,
+    schemaVersion: 6,
+    words: {
+      ...SIXTH_DEFAULT_LAYOUT.words,
+      preview: {
+        notice: 'Preview - not approved',
+        sentence:
+          'Preview - not approved. This is a preview of unapproved content, not a publication.',
+      },
+    },
+  };
+  parseStoredLayout(layout);
+  return layout;
+})();
+
+/**
+ * The default layout as it stands, **version 0.8**: 0.7 with the words a bound table prints with no
+ * rows, for a null and before its source (TB1-G), in its language, English, at schema version 7.
  */
 export const defaultLayout: Layout = parseLayout({
-  ...SIXTH_DEFAULT_LAYOUT,
+  ...SEVENTH_DEFAULT_LAYOUT,
   schemaVersion: LAYOUT_SCHEMA_VERSION,
   words: {
-    ...SIXTH_DEFAULT_LAYOUT.words,
-    preview: {
-      notice: 'Preview - not approved',
-      sentence:
-        'Preview - not approved. This is a preview of unapproved content, not a publication.',
-    },
+    ...SEVENTH_DEFAULT_LAYOUT.words,
+    noRows: 'No rows',
+    notAvailable: 'Not available',
+    source: 'Source:',
   },
 });
 
