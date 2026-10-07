@@ -25,6 +25,7 @@ const crossReferenceNode = editorSchema.nodes.crossReference!;
 const equationNode = editorSchema.nodes.equation!;
 const bindingNode = editorSchema.nodes.binding!;
 const figureNode = editorSchema.nodes.figure!;
+const boundTableNode = editorSchema.nodes.boundTable!;
 
 /** What a paste event's `clipboardData` offers: the types it holds, and each one's text. */
 export interface ClipboardSource {
@@ -240,10 +241,12 @@ function bindingsGivenBack(
   renamed: ReadonlyMap<string, string>,
 ): { kept: number; copied: number } {
   const doc = placed.doc;
-  // A figure's binding (the B6 plan, B6-A) is an attribute holding its own identifier, which is
-  // given back as an inline binding's is.
+  // A figure's binding (the B6 plan, B6-A) and a bound table's (the TB2 plan, TB2-C) are attributes
+  // holding their own identifiers, each given back as an inline binding's is.
   const figureBinding = (node: Node) =>
-    node.type === figureNode ? (node.attrs.binding as { id: string } | null) : null;
+    node.type === figureNode || node.type === boundTableNode
+      ? (node.attrs.binding as { id: string } | null)
+      : null;
   const held = new Map<string, number>();
   doc.descendants((node) => {
     for (const id of [node.attrs.id, figureBinding(node)?.id]) {

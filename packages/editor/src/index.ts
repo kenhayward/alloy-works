@@ -75,7 +75,22 @@ export {
   bindingSelected,
   bindingsShown,
   boundFiguresShown,
+  boundTablesShown,
   BOUND_VALUE,
+  DEFAULT_TABLE_SETTING,
+  PAGE_ROWS,
+  storedBoundTable,
+  TABLE_CHANGED,
+  TABLE_FAILURE_WORDS,
+  TABLE_NEVER_RESOLVED,
+  TABLE_READING,
+  TABLE_UNAVAILABLE,
+  tableAlone,
+  tableFailureWords,
+  type BoundTableAt,
+  type BoundTableShown,
+  type TableHeld,
+  type TableSetting,
   bindingPlaceable,
   changeBinding,
   insertBinding,
@@ -93,6 +108,7 @@ export {
   type BoundImage,
 } from './bindings.js';
 export { bindingContextOf, setBindingContext } from './bindingView.js';
+export { fillBoundTable, moreRows } from './boundTableView.js';
 export { pasteIntoOpenFootnote } from './footnoteView.js';
 export {
   deleteImage,

@@ -142,6 +142,9 @@ export const assetContentPath = (asset: string): string =>
 /** What a bound figure's image says with nothing to tell it what the binding holds (B6.2). */
 export const BOUND_IMAGE = 'Bound image';
 
+/** What a bound table's body says with nothing to tell it what its binding holds (TB2.1). */
+export const BOUND_TABLE = 'Bound table';
+
 export const editorSchema = new Schema({
   nodes: {
     doc: {
@@ -376,6 +379,87 @@ export const editorSchema = new Schema({
       toDOM: (node) => [
         'figure',
         { 'data-table': '', class: 'aw-table', 'data-table-style': node.attrs.style as string },
+        0,
+      ],
+    },
+    /**
+     * **A bound table** (the TB2 plan, TB2-C; tables.md): a block holding a binding to a whole result
+     * and the presentation that makes a table of it. Its stored members are attributes - `binding`,
+     * `columns`, `headerColumn` and `sort` held as the objects they are stored as, `sort` null where
+     * absent - and its inline members are children: the caption above, the body, then the empty
+     * statement, the note and the source, each present only where stored. Isolating and closed to the
+     * gap cursor, as a table's figure is.
+     *
+     * The body is not content: an atom drawn by the surface from what the document holds for its
+     * binding. No `parseDOM`, for a figure's reason: a bound table enters a component through the
+     * product's own clipboard alone.
+     */
+    boundTable: {
+      group: 'block',
+      content: 'tableCaption boundTableBody boundTableEmpty? tableNote? boundTableSource?',
+      isolating: true,
+      allowGapCursor: false,
+      attrs: {
+        id: { default: null },
+        style: { default: 'table' },
+        numbered: { default: true },
+        binding: {},
+        columns: {},
+        headerColumn: { default: false },
+        sort: { default: null },
+      },
+      toDOM: (node) => [
+        'figure',
+        {
+          'data-bound-table': '',
+          'data-bound-table-binding': (node.attrs.binding as { id: string }).id,
+          class: 'aw-table aw-bound-table',
+          'data-table-style': node.attrs.style as string,
+        },
+        0,
+      ],
+    },
+    /**
+     * **A bound table's body** (TB2-C, TB2-D): an atom, never selectable and never deleted alone, drawn
+     * by `boundTableView` from the decoration over it - its headers, its first rows or why it has none.
+     * `toDOM` is what a rendering and a copy see with nothing to say more; its `leafText` is the same
+     * words, so a copy's plain text says a bound table stood there.
+     */
+    boundTableBody: {
+      atom: true,
+      selectable: false,
+      draggable: false,
+      leafText: () => BOUND_TABLE,
+      toDOM: () => [
+        'div',
+        { class: 'aw-bound-table-body', 'data-bound-table-body': '', contenteditable: 'false' },
+        BOUND_TABLE,
+      ],
+    },
+    /**
+     * A bound table's empty statement (TAB-011): printed in place of rows where the result has none.
+     * Isolating, as a table's note is, so a Backspace at its start reaches nothing above it.
+     */
+    boundTableEmpty: {
+      content: '(text | crossReference | equation | binding)*',
+      marks: '_',
+      defining: true,
+      isolating: true,
+      toDOM: () => [
+        'p',
+        { class: 'aw-bound-table-empty', 'data-bound-table-empty': '', 'data-role': 'tableNote' },
+        0,
+      ],
+    },
+    /** A bound table's source (TAB-027): beneath the table and its note, isolating as they are. */
+    boundTableSource: {
+      content: '(text | crossReference | equation | binding)*',
+      marks: '_',
+      defining: true,
+      isolating: true,
+      toDOM: () => [
+        'p',
+        { class: 'aw-bound-table-source', 'data-bound-table-source': '', 'data-role': 'tableNote' },
         0,
       ],
     },

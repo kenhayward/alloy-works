@@ -13,6 +13,7 @@ import { equationView } from './equationView.js';
 import { figureView } from './figureView.js';
 import { bindingsShown, type BindingShown } from './bindings.js';
 import { bindingContextOf, bindingView } from './bindingView.js';
+import { boundTableBodyView } from './boundTableView.js';
 import { footnoteView } from './footnoteView.js';
 import { imageView } from './imageView.js';
 import { referenceContextOf, referenceView } from './referenceView.js';
@@ -112,6 +113,9 @@ export function mountEditor(place: HTMLElement, options: MountOptions): EditorVi
       binding: (node, owner, _getPos, decorations) =>
         bindingView(node, owner.dom.ownerDocument, decorations),
       equationBlock: (node, owner) => equationView(node, owner.dom.ownerDocument),
+      // A bound table's body, drawn with what its decoration carries (the TB2 plan, TB2-D).
+      boundTableBody: (node, owner, _getPos, decorations) =>
+        boundTableBodyView(node, owner.dom.ownerDocument, decorations),
     },
     handleDOMEvents: {
       paste: (target, event) => {

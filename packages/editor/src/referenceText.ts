@@ -258,6 +258,7 @@ function unnumberedTarget(node: Node, target: CrossReferenceTarget): ReferenceTa
 function kindOf(node: Node): ReferenceKind {
   switch (node.type.name) {
     case 'tableFigure':
+    case 'boundTable':
       return 'table';
     case 'figure':
       return 'figure';
@@ -275,6 +276,7 @@ function kindOf(node: Node): ReferenceKind {
 /** The caption node each captioned block holds, by the block's type. */
 const CAPTIONS: Readonly<Record<string, string>> = {
   tableFigure: 'tableCaption',
+  boundTable: 'tableCaption',
   figure: 'figureCaption',
 };
 

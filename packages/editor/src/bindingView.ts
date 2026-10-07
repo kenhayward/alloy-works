@@ -6,6 +6,7 @@ import {
   ALONE_CLASS,
   bindingsShown,
   boundFiguresShown,
+  boundTablesShown,
   FAILED_CLASS,
   imageOfSpec,
   type BindingContext,
@@ -53,7 +54,31 @@ export function bindingDecorations(doc: Node, context: BindingContext | null): D
       { boundText: text, boundFailed: failed, ...imageSpec(image) },
     ),
   );
-  return DecorationSet.create(doc, [...decorations, ...figures]);
+  // A bound table (TB2-D): what its body shows, one memoised object in the spec, which
+  // `boundTableBodyView` draws again only when it is another; and its caption given the identifier
+  // the table is labelled by.
+  const tables = boundTablesShown(doc, context).flatMap(({ tablePos, bodyPos, table, shown }) => {
+    const captionId = boundCaptionId(context, table, tablePos);
+    const caption = doc.nodeAt(tablePos + 1)!;
+    return [
+      Decoration.node(bodyPos, bodyPos + 1, {}, { boundTable: shown, captionId }),
+      Decoration.node(tablePos + 1, tablePos + 1 + caption.nodeSize, { id: captionId }),
+    ];
+  });
+  return DecorationSet.create(doc, [...decorations, ...figures, ...tables]);
+}
+
+/**
+ * The identifier a bound table's caption carries, which its body's table is labelled by: unique in a
+ * document's text, where one component stands at several nodes, by the occurrence's node.
+ */
+export function boundCaptionId(
+  context: BindingContext | null,
+  table: string | null,
+  pos: number,
+): string {
+  const node = context?.kind === 'document' && context.node !== undefined ? `${context.node}-` : '';
+  return `aw-bound-caption-${node}${table ?? String(pos)}`;
 }
 
 /** An image a binding shows, flat in a decoration's spec as primitives (B6.2); nothing for none. */

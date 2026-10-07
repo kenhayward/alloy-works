@@ -150,7 +150,7 @@ export function unresolvedDecorations(
           );
         }
       }
-      if (node.type.name === 'tableFigure') {
+      if (node.type.name === 'tableFigure' || node.type.name === 'boundTable') {
         const style = node.attrs.style as string;
         const status = check.table(style);
         if (status !== null) {
