@@ -2,11 +2,7 @@ import type { z } from 'zod';
 
 import type { BlockNode } from '../content/model/blocks.js';
 import type { ContentDocument } from '../content/model/document.js';
-import type {
-  bindingNodeSchema,
-  InlineNode,
-  tableBindingSchema,
-} from '../content/model/inline.js';
+import type { bindingNodeSchema, InlineNode, tableBindingSchema } from '../content/model/inline.js';
 import { canonicalJson } from '../stored/canonical.js';
 import { valueProblem } from './canonical.js';
 import type { QueryDefinition } from './definition.js';

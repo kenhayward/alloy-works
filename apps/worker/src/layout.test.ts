@@ -579,6 +579,10 @@ describe('template 4 lays out the page', () => {
         continued: '(continued)',
         // Required of a layout written at schema 6, and set only on a preview's pages.
         preview: defaultLayout.words.preview,
+        // Required of a layout written at schema 7, and set only in a bound table (TB1-G).
+        noRows: defaultLayout.words.noRows,
+        notAvailable: defaultLayout.words.notAvailable,
+        source: defaultLayout.words.source,
       },
     });
     const { read } = await compiled(FIXTURE, reviewing);

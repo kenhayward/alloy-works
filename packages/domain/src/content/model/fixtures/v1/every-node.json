@@ -369,13 +369,22 @@
             "currency": { "symbol": "EUR", "position": "after", "space": true }
           }
         },
-        { "column": "share", "header": "Share", "format": { "style": "percent", "percent": "fraction" } },
+        {
+          "column": "share",
+          "header": "Share",
+          "format": { "style": "percent", "percent": "fraction" }
+        },
         {
           "column": "elapsed",
           "header": "Elapsed",
           "format": { "style": "duration", "duration": { "from": "seconds", "show": "h:mm:ss" } }
         },
-        { "column": "measured_at", "header": "Measured", "format": { "fraction": 0 }, "align": "end" }
+        {
+          "column": "measured_at",
+          "header": "Measured",
+          "format": { "fraction": 0 },
+          "align": "end"
+        }
       ],
       "headerColumn": true,
       "sort": [{ "column": "depth", "direction": "descending", "nulls": "last" }],

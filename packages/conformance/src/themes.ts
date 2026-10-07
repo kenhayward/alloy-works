@@ -1,7 +1,7 @@
 import {
-  DEFAULT_CATALOGUES,
-  DEFAULT_CATALOGUES_BY_VERSION,
-  DEFAULT_THEME,
+  SIXTH_DEFAULT_CATALOGUES,
+  SIXTH_DEFAULT_CATALOGUES_BY_VERSION,
+  SIXTH_DEFAULT_THEME,
   readTheme,
   type Catalogue,
   type CharacterProperties,
@@ -61,15 +61,15 @@ type ImageStyle = ImageCatalogue['styles'][number];
 
 /** The default theme, resolved: every paragraph style with every property stated. */
 function resolvedDefault(): ResolvedTheme {
-  const read = readTheme(DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION);
+  const read = readTheme(SIXTH_DEFAULT_THEME, SIXTH_DEFAULT_CATALOGUES_BY_VERSION);
   if (!read.ok) throw new Error('The default theme does not read');
   return read.theme;
 }
 
 /** The default theme's content but for the catalogues it binds, which each theme here binds its own. */
-const defaultContent: Omit<typeof DEFAULT_THEME, 'catalogues'> = Object.fromEntries(
-  Object.entries(DEFAULT_THEME).filter(([key]) => key !== 'catalogues'),
-) as Omit<typeof DEFAULT_THEME, 'catalogues'>;
+const defaultContent: Omit<typeof SIXTH_DEFAULT_THEME, 'catalogues'> = Object.fromEntries(
+  Object.entries(SIXTH_DEFAULT_THEME).filter(([key]) => key !== 'catalogues'),
+) as Omit<typeof SIXTH_DEFAULT_THEME, 'catalogues'>;
 
 /**
  * A theme like the default in its styles' identifiers, names, places and roles - so the fixture's
@@ -86,12 +86,12 @@ function derive(
   image: (was: ImageStyle) => ImageStyle,
 ): ThemeContent {
   const resolved = resolvedDefault();
-  const base = DEFAULT_CATALOGUES.paragraph.base;
+  const base = SIXTH_DEFAULT_CATALOGUES.paragraph.base;
   const paragraphs: ParagraphCatalogue = {
     schemaVersion: 3,
     kind: 'paragraph',
     base: { ...base, contextualSpacing: base.contextualSpacing ?? false },
-    styles: DEFAULT_CATALOGUES.paragraph.styles.map((style) => ({
+    styles: SIXTH_DEFAULT_CATALOGUES.paragraph.styles.map((style) => ({
       ...style,
       properties: printable(
         style.id,
@@ -103,18 +103,18 @@ function derive(
   const characters: CharacterCatalogue = {
     schemaVersion: 3,
     kind: 'character',
-    styles: DEFAULT_CATALOGUES.character.styles.map((style) => ({
+    styles: SIXTH_DEFAULT_CATALOGUES.character.styles.map((style) => ({
       ...style,
       properties: character(style.id, style.properties),
     })),
   };
   const tables: TableCatalogue = {
-    ...DEFAULT_CATALOGUES.table,
-    styles: DEFAULT_CATALOGUES.table.styles.map(table),
+    ...SIXTH_DEFAULT_CATALOGUES.table,
+    styles: SIXTH_DEFAULT_CATALOGUES.table.styles.map(table),
   };
   const images: ImageCatalogue = {
-    ...DEFAULT_CATALOGUES.image,
-    styles: DEFAULT_CATALOGUES.image.styles.map(image),
+    ...SIXTH_DEFAULT_CATALOGUES.image,
+    styles: SIXTH_DEFAULT_CATALOGUES.image.styles.map(image),
   };
   return {
     theme: { ...defaultContent, name, paper },
@@ -137,14 +137,14 @@ function printable(
   properties: ResolvedParagraphProperties,
 ): ResolvedParagraphProperties {
   const caption =
-    id === DEFAULT_THEME.roles.caption
+    id === SIXTH_DEFAULT_THEME.roles.caption
       ? { background: 'none', padding: 0, startIndent: 0, endIndent: 0, firstLineIndent: 0 }
       : {};
   const unindented =
     properties.alignment === 'centre' ||
-    id === DEFAULT_THEME.roles.preformatted ||
+    id === SIXTH_DEFAULT_THEME.roles.preformatted ||
     appliesTo.includes('listItem') ||
-    Object.entries(DEFAULT_THEME.roles).some(
+    Object.entries(SIXTH_DEFAULT_THEME.roles).some(
       ([role, style]) => role.startsWith('heading') && style === id,
     )
       ? { firstLineIndent: 0 }
@@ -166,11 +166,11 @@ const READ_AT: Readonly<Record<OwnKind, string>> = {
  * what the reader refused, so no suite measures a theme the store would not hold.
  */
 export function readMeasuredTheme(content: ThemeContent): ResolvedTheme {
-  const catalogues = { ...DEFAULT_THEME.catalogues, ...READ_AT };
+  const catalogues = { ...SIXTH_DEFAULT_THEME.catalogues, ...READ_AT };
   const read = readTheme(
     { ...content.theme, catalogues },
     new Map<string, unknown>([
-      ...DEFAULT_CATALOGUES_BY_VERSION,
+      ...SIXTH_DEFAULT_CATALOGUES_BY_VERSION,
       ...OWN_KINDS.map((kind) => [READ_AT[kind], content.catalogues[kind]] as const),
     ]),
   );

@@ -581,7 +581,8 @@ function checkBoundTable(
   const headers = new Map<string, Set<string>>();
   for (const column of block.columns) {
     const seen = headers.get(column.column) ?? new Set<string>();
-    if (seen.has(column.header)) throw new BoundTableRefused('column_repeated', block.id, column.column);
+    if (seen.has(column.header))
+      throw new BoundTableRefused('column_repeated', block.id, column.column);
     seen.add(column.header);
     headers.set(column.column, seen);
   }
@@ -598,7 +599,9 @@ function checkBoundTable(
     if (content === undefined) return {};
     const checked = checkInlineContent(content, 'component', claimed);
     if (checked.length === 0) {
-      throw new Error(`Bound table ${block.id} has ${member === 'empty' ? 'an' : 'a'} ${member} that holds no text`);
+      throw new Error(
+        `Bound table ${block.id} has ${member === 'empty' ? 'an' : 'a'} ${member} that holds no text`,
+      );
     }
     return { [member]: checked };
   };
@@ -723,9 +726,7 @@ export class BoundTableRefused extends Error {
     readonly table: string,
     readonly column: string,
   ) {
-    super(
-      `Bound table ${table} shows ${column} twice under one header (column_repeated)`,
-    );
+    super(`Bound table ${table} shows ${column} twice under one header (column_repeated)`);
   }
 }
 

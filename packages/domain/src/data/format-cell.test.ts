@@ -55,12 +55,9 @@ function referenceRound(
   const kept = BigInt(`${whole}${digits.slice(0, places)}`);
   const next = Number(digits[places]);
   const rest = /[1-9]/.test(digits.slice(places + 1));
-  const up =
-    next > 5 ||
-    (next === 5 && (rest || rule === 'halfAwayFromZero' || kept % 2n === 1n));
+  const up = next > 5 || (next === 5 && (rest || rule === 'halfAwayFromZero' || kept % 2n === 1n));
   const rounded = (up ? kept + 1n : kept).toString().padStart(places + 1, '0');
-  const printed =
-    places === 0 ? rounded : `${rounded.slice(0, -places)}.${rounded.slice(-places)}`;
+  const printed = places === 0 ? rounded : `${rounded.slice(0, -places)}.${rounded.slice(-places)}`;
   return negative && /[1-9]/.test(rounded) ? `-${printed}` : printed;
 }
 

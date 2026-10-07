@@ -2212,7 +2212,7 @@ describe('a bound table (the TB1 plan, TB1-A and TB1-B)', () => {
     }
   });
 
-  it('TAB-017 refuses a null text that reads as a number, or that is empty', () => {
+  it('refuses a null text that reads as a number, or that is empty', () => {
     for (const text of ['0', '-1.5', '(2)', '1,000', '12%', ' 3 ', '']) {
       expect(
         () =>

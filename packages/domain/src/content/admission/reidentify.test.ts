@@ -511,7 +511,11 @@ describe('the re-identify stage', () => {
       source: [text('Survey '), binding('k3')],
     };
     delete (table.binding as Record<string, unknown>).take;
-    const identified = reidentify({ schemaVersion: 1, content: [table] }, receiver(), createReport());
+    const identified = reidentify(
+      { schemaVersion: 1, content: [table] },
+      receiver(),
+      createReport(),
+    );
     if (!identified.ok) throw new Error(identified.failure);
     expect(identified.value.content).toEqual([
       {

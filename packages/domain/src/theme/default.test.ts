@@ -279,16 +279,21 @@ describe("the default theme's version 0.7 (the TB1 plan, TB1-F)", () => {
       DEFAULT_CATALOGUE_VERSIONS.table,
     );
     for (const kind of [...CATALOGUE_KINDS, 'value'] as const) {
-      if (kind !== 'table') expect(DEFAULT_CATALOGUES[kind], kind).toBe(SIXTH_DEFAULT_CATALOGUES[kind]);
+      if (kind !== 'table')
+        expect(DEFAULT_CATALOGUES[kind], kind).toBe(SIXTH_DEFAULT_CATALOGUES[kind]);
     }
   });
 
   it('is its 0.6 naming that catalogue version, with nothing else changed, under a fixed identifier of its own', () => {
-    expect(DEFAULT_THEME).toEqual({ ...SIXTH_DEFAULT_THEME, catalogues: DEFAULT_CATALOGUE_VERSIONS });
+    expect(DEFAULT_THEME).toEqual({
+      ...SIXTH_DEFAULT_THEME,
+      catalogues: DEFAULT_CATALOGUE_VERSIONS,
+    });
     expect(DEFAULT_THEME_VERSION).toBe('b1563a5d-d2ef-43d7-bc8d-add27e3a0de5');
-    expect([SIXTH_DEFAULT_THEME_VERSION, ...Object.values(DEFAULT_CATALOGUE_VERSIONS)]).not.toContain(
-      DEFAULT_THEME_VERSION,
-    );
+    expect([
+      SIXTH_DEFAULT_THEME_VERSION,
+      ...Object.values(DEFAULT_CATALOGUE_VERSIONS),
+    ]).not.toContain(DEFAULT_THEME_VERSION);
   });
 
   it("gives every table style the product's formats and alignment by type, a red for negatives that holds its contrast, and parentheses round a unit", () => {
@@ -342,14 +347,23 @@ describe("the default theme's version 0.7 (the TB1 plan, TB1-F)", () => {
         headerColumn: false,
       },
       { columns: [['depth', 'decimal']], rows: [['-1.5']] },
-      [{ name: 'depth', from: { column: 'depth' }, type: { base: 'decimal', precision: 4, scale: 2 } }],
+      [
+        {
+          name: 'depth',
+          from: { column: 'depth' },
+          type: { base: 'decimal', precision: 4, scale: 2 },
+        },
+      ],
       stored,
       DEFAULT_VALUE_FORMATS,
       { noRows: 'No rows', notAvailable: 'Not available' },
     );
     if ('failures' in laid) throw new Error(JSON.stringify(laid.failures));
     expect(laid.header).toEqual([{ text: 'Depth (m)' }]);
-    expect(laid.columns[0]).toMatchObject({ align: 'decimal', format: DEFAULT_TABLE_FIELDS.decimal });
+    expect(laid.columns[0]).toMatchObject({
+      align: 'decimal',
+      format: DEFAULT_TABLE_FIELDS.decimal,
+    });
     expect(laid.rows[0]!.cells[0]!.text).toBe('-1.50');
   });
 });

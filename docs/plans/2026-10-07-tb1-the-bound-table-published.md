@@ -175,3 +175,17 @@ stage replaces it.
 ## Questions for Ken
 
 None: tables.md's decisions are taken, and TB1's follow from them. The plan rides in TB1.1.
+
+## Changed while building
+
+| PR    | Found                                                                                                                           | Change                                                                                                                                                                |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TB1.1 | `default.ts` and `layout.ts` prefix a version once a newer one replaces it                                                      | The theme's 0.6 is frozen as `SIXTH_*` and 0.7 is the unprefixed `DEFAULT_*`; the layout's 0.7 is frozen as `SEVENTH_DEFAULT_LAYOUT` and 0.8 is `defaultLayout`       |
+| TB1.1 | The empty statement prints only where the result has no rows, so a footnote in it would number in the page and not the publish  | A footnote in `empty` is refused by the walk until TB3 letters a table's notes in its own sequence; `empty`, `note` and `source` are `min(1)`, an emptied one refused |
+| TB1.1 | A unit after each value is the cell's text (TAB-013, TAB-038), and the negative colour is a flag beside the text (TAB-016)      | `formatCell` takes an optional `unit`; `colouredNegative` and `formatMismatch` stand beside it; a currency style with no currency is `format_mismatch`                |
+| TB1.1 | Rounding a clock carries into its day                                                                                           | A time's `fraction` cuts its digits, never rounds them                                                                                                                |
+| TB1.1 | `theme/default.ts` importing `data/table.ts` closed a cycle through `data/format.ts`                                            | `DEFAULT_TABLE_FIELDS` and `DEFAULT_TABLE_ALIGN` live in `data/field-format.ts`, a leaf                                                                               |
+| TB1.1 | `assemble` refuses the block, so the Word writer never meets one; the editor's `namesWithNoNode` already names an unknown block | No refusal in `word/write.ts`; the editor gains a test that a bound table opens read-only, and `bindingFailureWords` takes a table's binding                          |
+| TB1.1 | The stage's walk leaves an unknown block's words unbound                                                                        | `bind` sets the bindings in a bound table's caption, empty statement, note and source in TB1.1; its own binding waits for TB1.2                                       |
+| TB1.1 | The style's `wide` is TB3's, as the block's is                                                                                  | The table style gains `fields`, `align`, `negativeColour` (`#c00000`, 6.5:1 on white) and `unitBrackets` only                                                         |
+| TB1.1 | The conformance kit's themes are pinned by hash to W13.4's, built from the default theme                                        | The kit builds from the frozen `SIXTH_*` 0.6, so the editor and Word are measured under the themes they were                                                          |

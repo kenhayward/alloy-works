@@ -8,7 +8,6 @@ import {
   DEFAULT_CATALOGUES_BY_VERSION,
   DEFAULT_THEME,
   DEFAULT_THEME_VERSION,
-  DEFAULT_CATALOGUES,
   DEFAULT_VALUE_FORMATS,
   defaultNumberingScheme,
   FIFTH_DEFAULT_CATALOGUES_BY_VERSION,
@@ -1823,7 +1822,9 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
     for (const kind of CATALOGUE_KINDS) {
       const chain = await chainOf(tenant, DEFAULT_CATALOGUE_IDS[kind]);
       expect(chain.at(-1)!.id, kind).toBe(
-        kind === 'table' ? DEFAULT_CATALOGUE_VERSIONS.table : FIFTH_DEFAULT_CATALOGUE_VERSIONS[kind],
+        kind === 'table'
+          ? DEFAULT_CATALOGUE_VERSIONS.table
+          : FIFTH_DEFAULT_CATALOGUE_VERSIONS[kind],
       );
     }
     const sixth = read(SIXTH_DEFAULT_THEME, SIXTH_DEFAULT_CATALOGUES_BY_VERSION);

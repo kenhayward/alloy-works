@@ -194,9 +194,7 @@ export const BOUND_TABLE_SORT_MAX = 4;
 export const boundColumnSchema = z.strictObject({
   column: sourceNameSchema,
   header: boundedText(1, 200),
-  unit: z
-    .strictObject({ text: boundedText(1, 40), place: z.enum(['header', 'value']) })
-    .optional(),
+  unit: z.strictObject({ text: boundedText(1, 40), place: z.enum(['header', 'value']) }).optional(),
   format: fieldFormatSchema.optional(),
   align: z.enum(COLUMN_ALIGNMENTS).optional(),
   wrap: z.literal(false).optional(),

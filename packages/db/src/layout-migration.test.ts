@@ -1494,17 +1494,20 @@ describe('migration 0035, which gives a request its kind and the default layout 
         .where('revision_no', '=', 0)
         .where('version_no', '=', number)
         .executeTakeFirstOrThrow();
-    const { declared, seventh, eighth, inputs, row } = await service.withTenant(tenant, async (trx) => ({
-      declared: await defaultLayout(trx),
-      seventh: await version(trx, 7),
-      eighth: await version(trx, 8),
-      inputs: await publicationInputs(trx, waiting),
-      row: await trx
-        .selectFrom('publication_request')
-        .select(['kind', 'preview_key', 'preview_sha256', 'preview_bytes', 'expires_at'])
-        .where('id', '=', waiting)
-        .executeTakeFirstOrThrow(),
-    }));
+    const { declared, seventh, eighth, inputs, row } = await service.withTenant(
+      tenant,
+      async (trx) => ({
+        declared: await defaultLayout(trx),
+        seventh: await version(trx, 7),
+        eighth: await version(trx, 8),
+        inputs: await publicationInputs(trx, waiting),
+        row: await trx
+          .selectFrom('publication_request')
+          .select(['kind', 'preview_key', 'preview_sha256', 'preview_bytes', 'expires_at'])
+          .where('id', '=', waiting)
+          .executeTakeFirstOrThrow(),
+      }),
+    );
     expect(seventh).toMatchObject({ author_id: null, note: null, schema_version: 6 });
     expect(seventh.content).toEqual(SEVENTH_DEFAULT_LAYOUT);
     // And 0055, after it, 0.8 on top.

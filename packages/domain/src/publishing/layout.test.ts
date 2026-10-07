@@ -194,7 +194,10 @@ describe('a layout', () => {
       version: 'layout-version',
     });
     if (!read.ok) throw new Error(read.failure);
-    expect(read.layout).toEqual({ ...SEVENTH_DEFAULT_LAYOUT, schemaVersion: LAYOUT_SCHEMA_VERSION });
+    expect(read.layout).toEqual({
+      ...SEVENTH_DEFAULT_LAYOUT,
+      schemaVersion: LAYOUT_SCHEMA_VERSION,
+    });
     for (const word of ['noRows', 'notAvailable', 'source']) {
       expect(read.layout.words).not.toHaveProperty(word);
     }
@@ -220,7 +223,12 @@ describe('a layout', () => {
       expect(() => parseLayout(blank), word).toThrow(/say something/);
     }
     const french = copy();
-    french.words = { ...french.words, noRows: 'Aucune ligne', notAvailable: 'n.d.', source: 'Source :' };
+    french.words = {
+      ...french.words,
+      noRows: 'Aucune ligne',
+      notAvailable: 'n.d.',
+      source: 'Source :',
+    };
     expect(parseLayout(french).words).toMatchObject({ noRows: 'Aucune ligne', source: 'Source :' });
   });
 

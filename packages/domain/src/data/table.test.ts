@@ -102,7 +102,11 @@ describe('a bound table, laid out', () => {
       columns: [{ column: 'depth', header: 'Depth', unit: { text: 'm', place: 'value' } }],
     });
     expect(laid(afterEach).header[0]!.text).toBe('Depth');
-    expect(texts(laid(afterEach))).toEqual([[`4.50${NBSP}m`], [`-1.25${NBSP}m`], ['Not available']]);
+    expect(texts(laid(afterEach))).toEqual([
+      [`4.50${NBSP}m`],
+      [`-1.25${NBSP}m`],
+      ['Not available'],
+    ]);
   });
 
   it('TAB-004 fails a column shown, or sorted by, that the result does not have, column_missing, never an empty column', () => {
@@ -129,7 +133,9 @@ describe('a bound table, laid out', () => {
   });
 
   it('gathers every failure at once: an image column, a format meaningless for its type, and too many rows', () => {
-    const many = result(...Array.from({ length: TABLE_ROWS_MAX + 1 }, () => ['A', '1', null, null]));
+    const many = result(
+      ...Array.from({ length: TABLE_ROWS_MAX + 1 }, () => ['A', '1', null, null]),
+    );
     const out = layoutTable(
       table({
         columns: [
@@ -169,10 +175,7 @@ describe('a bound table, laid out', () => {
     for (const direction of ['ascending', 'descending'] as const) {
       const sorted = (nullsAt: 'first' | 'last') =>
         texts(
-          laid(
-            table({ sort: [{ column: 'depth', direction, nulls: nullsAt }] }),
-            result(...rows),
-          ),
+          laid(table({ sort: [{ column: 'depth', direction, nulls: nullsAt }] }), result(...rows)),
         ).map((row) => row[0]);
       expect(sorted('last'), direction).toEqual([...nonNull, ...nulls]);
       expect(sorted('first'), direction).toEqual([...nulls, ...nonNull]);
@@ -247,7 +250,9 @@ describe('a bound table, laid out', () => {
   it("formats each cell by its column's format over the style's for its type, and keeps its canonical value", () => {
     const out = laid(
       table({
-        columns: [{ column: 'depth', header: 'Depth', format: { places: 1, negative: 'parentheses' } }],
+        columns: [
+          { column: 'depth', header: 'Depth', format: { places: 1, negative: 'parentheses' } },
+        ],
       }),
       READINGS,
       { fields: { decimal: { places: 3, negativeColour: true } } },

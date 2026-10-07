@@ -5225,7 +5225,13 @@ describe('table and image styles, published (themes 2)', () => {
         each.words[word] = `Nothing ${String.fromCodePoint(0x2016)}`;
       });
       expect(failuresOf(assemble({ ...oneParagraph(text('Set.')), layout })), word).toEqual([
-        { stage: 'compose', code: 'layout_glyph_missing', node: null, block: null, detail: 'U+2016' },
+        {
+          stage: 'compose',
+          code: 'layout_glyph_missing',
+          node: null,
+          block: null,
+          detail: 'U+2016',
+        },
       ]);
     }
   });

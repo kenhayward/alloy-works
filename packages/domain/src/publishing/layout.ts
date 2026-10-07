@@ -340,17 +340,19 @@ const previewLayoutSchema: z.ZodType<Layout> = continuedLayoutSchema.refine(
  * **A layout as it is written at the current schema version**: from version 7 on, with the words a
  * bound table prints with no rows, for a null and before its source (TB1-G).
  */
-export const layoutSchema: z.ZodType<Layout> = previewLayoutSchema.superRefine((layout, context) => {
-  for (const word of ['noRows', 'notAvailable', 'source'] as const) {
-    if (layout.words[word] === undefined) {
-      context.addIssue({
-        code: 'custom',
-        message: `A layout from schema version 7 on gives the words a bound table prints: ${word}`,
-        path: ['words', word],
-      });
+export const layoutSchema: z.ZodType<Layout> = previewLayoutSchema.superRefine(
+  (layout, context) => {
+    for (const word of ['noRows', 'notAvailable', 'source'] as const) {
+      if (layout.words[word] === undefined) {
+        context.addIssue({
+          code: 'custom',
+          message: `A layout from schema version 7 on gives the words a bound table prints: ${word}`,
+          path: ['words', word],
+        });
+      }
     }
-  }
-});
+  },
+);
 
 /** The version from which a layout is written with the words a continued table's label adds. */
 const CONTINUED_SINCE = 4;
