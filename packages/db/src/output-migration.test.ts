@@ -201,6 +201,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0054_connection_test_privilege',
       '0055_bound_tables',
       '0056_table_note_word',
+      '0057_document_parameters',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

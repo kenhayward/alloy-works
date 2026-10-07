@@ -193,6 +193,30 @@ describe('the canonical serialisation of a whole version', () => {
     ).toContain('"values":{"marks":["b","a"]}');
   });
 
+  it("takes a document's parameters only where it has some, so none digests as it did", () => {
+    const outline: OutlineDocument = {
+      schemaVersion: OUTLINE_SCHEMA_VERSION,
+      title: 'The dosing report',
+      language: 'en-GB',
+      direction: 'ltr',
+      nodes: [],
+    };
+    const none = canonicaliseVersion({ kind: 'document', content: outline });
+    expect(canonicaliseVersion({ kind: 'document', content: outline, parameters: {} })).toBe(none);
+    expect(none).not.toContain('parameters');
+    // With some, a member between notCarried and values, its names sorted and a list in its order.
+    expect(
+      canonicaliseVersion({
+        kind: 'document',
+        content: outline,
+        parameters: { site: 'Leeds', days: ['3', '1'] },
+      }),
+    ).toBe(
+      `{"componentType":null,"content":${canonicaliseOutline(outline)},"definitions":[],"notCarried":[],` +
+        `"parameters":{"days":["3","1"],"site":"Leeds"},"values":{}}`,
+    );
+  });
+
   // Pinned, and never edited: every stored version digest is SHA-256 over this serialisation, so a
   // change here makes every digest already written unverifiable. A change is a new decision record.
   it('serialises a known version to exactly this string', () => {

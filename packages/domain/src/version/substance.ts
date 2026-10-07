@@ -13,6 +13,7 @@ import type { Layout } from '../publishing/layout.js';
 import { canonicalJson } from '../stored/canonical.js';
 import { canonicaliseOutline, type OutlineDocument } from '../structure/outline.js';
 import type { TemplateDefinition } from '../template/definition.js';
+import type { DocumentParameters } from '../template/parameters.js';
 import type { Catalogue, Catalogue1, Theme } from '../theme/schema.js';
 import type { ConnectionSettings } from '../data/connection.js';
 import type { QueryDefinition } from '../data/definition.js';
@@ -46,6 +47,11 @@ export type DocumentSubstance = {
   readonly kind: 'document';
   readonly content: OutlineDocument;
   readonly values?: MetadataValues;
+  /**
+   * Its template's parameters' values, by name (templates.md, "Recorded on the document"; TP1-D).
+   * Absent or empty alike for a document with none, which the digest leaves out entirely.
+   */
+  readonly parameters?: DocumentParameters;
 };
 
 /**
@@ -163,7 +169,8 @@ export function canonicaliseVersionContent(substance: VersionSubstance): string 
  * VER-042), which decides whether a version changed.
  *
  * One canonical JSON document of five members in lexicographic order - `componentType`, `content`,
- * `definitions`, `notCarried`, `values` - composed from each member's own canonical form rather than
+ * `definitions`, `notCarried`, `values` - and a document's `parameters` between the last two where it
+ * has any, composed from each member's own canonical form rather than
  * by serialising one object, because content's rule that `marks` is a set must not reach a metadata
  * field whose identifier happens to be `marks` (MET-030). A document version holds its values and
  * nothing else of the three; a definition version holds the same five members, with no type, no
@@ -173,11 +180,17 @@ export function canonicaliseVersion(substance: VersionSubstance): string {
   const component = substance.kind === 'component' ? substance : undefined;
   const values =
     component?.values ?? (substance.kind === 'document' ? substance.values : undefined);
+  // A document's parameters only where it has some (TP1-D), so no document stored before them, and
+  // none made without them, digests differently: a list keeps its order, as a value's meaning.
+  const parameters = substance.kind === 'document' ? (substance.parameters ?? {}) : {};
   const members: readonly (readonly [string, string])[] = [
     ['componentType', canonicalJson(component ? componentTypeOf(component.definitions) : null)],
     ['content', canonicaliseVersionContent(substance)],
     ['definitions', canonicaliseDefinitions(component?.definitions ?? [])],
     ['notCarried', canonicaliseNotCarried(component?.notCarried ?? [])],
+    ...(Object.keys(parameters).length === 0
+      ? []
+      : [['parameters', canonicalJson(parameters)] as const]),
     ['values', canonicaliseValues(values ?? {})],
   ];
   return `{${members.map(([name, value]) => `${JSON.stringify(name)}:${value}`).join(',')}}`;

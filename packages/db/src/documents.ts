@@ -513,8 +513,14 @@ export async function editOutline(
     artifactId: input.artifactId,
     openedFrom: input.openedFrom,
     author: input.author,
-    // The document's values are not the outline's to change, so they are carried as they stand.
-    substance: { kind: 'document', content: applied.outline, values: opened.values },
+    // The document's values and parameters are not the outline's to change, so they are carried as
+    // they stand (TP1-E).
+    substance: {
+      kind: 'document',
+      content: applied.outline,
+      values: opened.values,
+      parameters: opened.parameters,
+    },
   });
 }
 
@@ -562,6 +568,8 @@ export async function recordDocumentValues(
       kind: 'document',
       content: read.outline,
       values: writtenValues(fields, input.values),
+      // Carried as they stand (TP1-E): values are not parameters.
+      parameters: opened.parameters,
     },
   });
 }
