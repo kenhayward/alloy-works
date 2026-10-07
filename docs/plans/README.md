@@ -623,9 +623,10 @@ order names, each planned when its turn comes.
 
 [templates.md](../design/templates.md#parameters)'s build order: a template's parameters, T2's half of TPL.
 
-| #   | Plan                                                                      | Builds                                                                                                                                                                                                                    | Status |
-| --- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| TP1 | [Declared, asked for and recorded](2026-10-07-tp1-template-parameters.md) | A template's parameters and their checks, a document made with them through the API and the form, seeded fields, parameters in the document's versions (0057), the change route and the Parameters panel with its history | Built  |
+| #   | Plan                                                                         | Builds                                                                                                                                                                                                                                            | Status  |
+| --- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| TP1 | [Declared, asked for and recorded](2026-10-07-tp1-template-parameters.md)    | A template's parameters and their checks, a document made with them through the API and the form, seeded fields, parameters in the document's versions (0057), the change route and the Parameters panel with its history                         | Built   |
+| TP2 | [Parameters feeding bindings](2026-10-08-tp2-parameters-feeding-bindings.md) | A binding's `{ document }` argument taking the document's parameter; the digest taken with document arguments substituted, so a changed parameter marks exactly its bindings changed; the Value dialog's From the document; the Data tab's reason | Planned |
 
 ## Publishing
 
