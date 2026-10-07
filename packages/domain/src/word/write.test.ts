@@ -1896,12 +1896,12 @@ describe('writeDocx: tables (Word 2, ruling R7)', () => {
       'before',
       'Table 1.1 Readings at noon',
       'table',
-      'Measured by Grace.',
+      'Note: Measured by Grace.',
       'after',
     ]);
     expect(styleOf(caption)).toBe('caption');
     expect(properties(caption).slice(0, 2)).toEqual(['w:pStyle', 'w:keepNext']);
-    expect(styleOf(at('Measured by Grace.'))).toBe('table-note');
+    expect(styleOf(at('Note: Measured by Grace.'))).toBe('table-note');
   });
 
   it("numbers its caption by Word's fields, as captionField says, each prefilled with the numbering table's label (R1, M3)", () => {
@@ -2123,7 +2123,7 @@ describe('writeDocx: tables (Word 2, ruling R7)', () => {
     // A list in a cell, numbered from its first level by a definition of its own.
     expect(numbered(inCell('listed'))).toEqual({ ilvl: '0', numId: expect.any(String) });
     // The note stands apart from the cells by their space after and its own space before.
-    const note = spacing(cellAt('Measured by Grace.'));
+    const note = spacing(cellAt('Note: Measured by Grace.'));
     expect(note).toEqual({ 'w:before': twips(2.75) });
   });
 
@@ -2674,7 +2674,7 @@ describe('writeDocx: a caption where its style places it (W14.5)', () => {
       'before',
       'table',
       'Table 1.1 Readings at noon',
-      'Measured by Grace.',
+      'Note: Measured by Grace.',
       'between',
     ]);
     const caption = at('Table 1.1 Readings at noon');
@@ -3107,7 +3107,10 @@ describe('writeDocx: footnotes (Word 3, ruling R2; M5)', () => {
     colspan: 1,
     rowspan: 1,
   });
-  /** Notes in running text, in a table's cell and in its header row, a German one and a Hebrew one. */
+  /**
+   * Notes in running text, a German one and a Hebrew one; and in a table's cell and its header row,
+   * which are lettered beneath the table and no Word footnotes (TB3-E).
+   */
   const NOTED = component('Notes', [
     paragraph('p1', text('A claim'), note('n1', paragraph('n1a', text('The first note.')))),
     paragraph(
@@ -3197,7 +3200,7 @@ describe('writeDocx: footnotes (Word 3, ruling R2; M5)', () => {
     expect(notes().map((each) => [each.attrs['w:type'], each.attrs['w:id']])).toEqual([
       ['separator', '-1'],
       ['continuationSeparator', '0'],
-      ...['1', '2', '3', '4', '5', '6'].map((each) => [undefined, each]),
+      ...['1', '2', '3', '4'].map((each) => [undefined, each]),
     ]);
     expect(all(notes()[0]!, 'w:separator')).toHaveLength(1);
     expect(all(notes()[1]!, 'w:continuationSeparator')).toHaveLength(1);
@@ -3213,14 +3216,12 @@ describe('writeDocx: footnotes (Word 3, ruling R2; M5)', () => {
     ]);
   });
 
-  it("PUB-025 writes every footnote as a real Word footnote, numbered by Word: a reference run in the footnote reference style where it stands - in text, in a cell and in a header row - and Word's own number at the head of its note, never a number of the PDF's", () => {
+  it("PUB-025 writes every footnote as a real Word footnote, numbered by Word: a reference run in the footnote reference style where it stands and Word's own number at the head of its note, never a number of the PDF's", () => {
     expect(all(body(), 'w:footnoteReference').map((each) => each.attrs['w:id'])).toEqual([
       '1',
       '2',
       '3',
       '4',
-      '5',
-      '6',
     ]);
     const runs = all(body(), 'w:r').filter((run) => kids(run, 'w:footnoteReference').length > 0);
     for (const run of runs) {
@@ -3235,16 +3236,24 @@ describe('writeDocx: footnotes (Word 3, ruling R2; M5)', () => {
         expect.objectContaining({ name: 'w:footnoteRef' }),
       );
     }
-    // A header row sets its text bold, as template 13 does, and its mark with it.
-    expect(first(runs[2]!, 'w:b')?.attrs['w:val']).toBe('1');
-    expect(first(runs[3]!, 'w:b')).toBeUndefined();
     // The link before the mark is closed first: the mark is no part of it.
     const linked = paragraphSaying(noted.docx, 'Linked and on');
     expect(all(linked, 'w:hyperlink').map(textOf)).toEqual(['Linked']);
     expect(all(first(linked, 'w:hyperlink')!, 'w:footnoteReference')).toEqual([]);
-    // The one in the header row and the one in the body row are in the table's cells.
+    // A table's are no Word footnotes (TB3-E): its letters in its cells, its notes beneath it.
     const table = first(body(), 'w:tbl')!;
-    expect(all(table, 'w:footnoteReference').map((each) => each.attrs['w:id'])).toEqual(['3', '4']);
+    expect(all(table, 'w:footnoteReference')).toEqual([]);
+    const letters = all(table, 'w:r').filter((run) => textOf(run) === 'a' || textOf(run) === 'b');
+    expect(letters.map(textOf)).toEqual(['a', 'b']);
+    // A header row's a plain letter, a body cell's a link to its note beneath the table.
+    const marks = all(table, 'w:hyperlink');
+    expect(marks.map(textOf)).toEqual(['b']);
+    const named = all(body(), 'w:bookmarkStart').find(
+      (each) => each.attrs['w:name'] === marks[0]!.attrs['w:anchor'],
+    );
+    expect(named).toBeDefined();
+    expect(paragraphSaying(noted.docx, 'a Headed.')).toBeDefined();
+    expect(paragraphSaying(noted.docx, 'b In a cell.')).toBeDefined();
   });
 
   it('defines the footnote reference style as Word names its own, superscript as the PDF sets the mark', () => {
@@ -3316,10 +3325,10 @@ describe('writeDocx: footnotes (Word 3, ruling R2; M5)', () => {
   });
 
   it('sets a note in the language and direction where its mark stands, as the PDF does', () => {
-    const [german] = noteAt(6);
+    const [german] = noteAt(4);
     const words = all(german!, 'w:r').find((run) => textOf(run) === 'Eine Anmerkung.')!;
     expect(first(words, 'w:lang')!.attrs).toEqual({ 'w:val': 'de-DE' });
-    const [hebrew] = noteAt(7);
+    const [hebrew] = noteAt(5);
     expect(properties(hebrew!)).toContain('w:bidi');
     const own = all(hebrew!, 'w:r').find((run) => textOf(run) === SEFER)!;
     expect(first(own, 'w:rtl')).toBeDefined();
@@ -3682,7 +3691,9 @@ describe('writeDocx: bookmarks and cross-references (Word 3, rulings R3 and R4; 
     expect(referencesIn(saying('Table 1.2 Cited in 1'))).toEqual([
       { code: REF(2, 'r'), result: '1' },
     ]);
-    expect(referencesIn(saying('See above'))).toEqual([{ code: REF(4, 'p'), result: 'above' }]);
+    expect(referencesIn(saying('Note: See above'))).toEqual([
+      { code: REF(4, 'p'), result: 'above' },
+    ]);
     // The section's title: its words, and the reference among them, as the PDF sets them.
     const results = saying('After 1 ended');
     expect(isHeading(results)).toBe(true);
@@ -4184,7 +4195,7 @@ describe('writeDocx: equations (Word 4, rulings R4 and R5)', () => {
           .at(-1)!,
         'caption',
       ],
-      [at('Where '), 'table-note'],
+      [at('Note: Where '), 'table-note'],
       [first(table(), 'w:p')!, 'table-cell'],
       [titles.at(-1)!, 'heading-1'],
     ];
@@ -4864,6 +4875,7 @@ describe('writeDocx: a bound table (the TB1 plan, TB1-I; TB1.2)', () => {
     columns: COLUMNS,
     datasetVersion: uuid(901),
     images: {},
+    key: [],
   };
   const bound = {
     type: 'boundTable',

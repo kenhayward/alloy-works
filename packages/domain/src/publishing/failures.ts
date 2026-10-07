@@ -186,6 +186,12 @@ export const publishFailureCodes = [
   'format_mismatch',
   'table_too_long',
   'table_words_missing',
+  // bind, from TB3 (TB3-B, TB3-C): a keyed note on a definition declaring no key, its `detail` the
+  // definition; and a keyed note whose row the result no longer has, its `detail` the note, its key
+  // as canonical JSON and the definition, `<note>: <key>: <definition>`, and, where the key names
+  // other columns than the definition's, `: the key is <columns>` after them.
+  'key_required',
+  'note_row_missing',
   // engine and store: the platform's, recorded after the last attempt.
   'engine_failed',
   'store_failed',

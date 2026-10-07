@@ -437,6 +437,18 @@ export function failureWords(failure: Failure, wordOffered = false): string {
       return `This table's result has ${failure.detail ?? ''} rows, more than a table can print. Narrow the rows in its query.`;
     case 'table_words_missing':
       return "The layout has no words for a table's empty result, a missing value or its source. The layout has to change before this document can be published.";
+    // TB3 (TB3-B, TB3-C): a note by key on a definition declaring none; a note whose row is gone,
+    // `detail` the note, its key as canonical JSON, the definition and, where the key names other
+    // columns than the definition's, the definition's key.
+    case 'key_required':
+      return 'This table has a note on a row, but its query definition declares no key to find the row by. Give the query definition a key, or put the note on a column.';
+    case 'note_row_missing': {
+      const [, key, , because] = (failure.detail ?? '').split(': ');
+      const own = because?.startsWith('the key is ')
+        ? ` Its query definition's key is ${because.slice('the key is '.length)}.`
+        : '';
+      return `A note on this table names the row with the key ${key ?? ''}, which its result no longer has.${own} Change or remove the note, or resolve the table again.`;
+    }
     case 'store_failed':
       return 'The publication could not be stored. Publish again.';
     default:

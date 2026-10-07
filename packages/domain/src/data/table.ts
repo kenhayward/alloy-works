@@ -86,7 +86,8 @@ export interface LaidOutCell {
 export interface LaidOut {
   readonly header: readonly { readonly text: string }[];
   readonly columns: readonly LaidOutColumn[];
-  readonly rows: readonly { readonly cells: readonly LaidOutCell[] }[];
+  /** Each row's cells, and its index into the rows it was laid out from (TB3-C). */
+  readonly rows: readonly { readonly index: number; readonly cells: readonly LaidOutCell[] }[];
   readonly empty: {
     readonly content: readonly InlineNode[];
     readonly colspan: number;
@@ -291,6 +292,7 @@ export function layoutTable<C extends TableColumn>(
   const rows = shownOrder.map((index) => {
     const row = result.rows[index]!;
     return {
+      index,
       cells: laidColumns.map((column, place): LaidOutCell => {
         const value = row[indexes[place]!] ?? null;
         return {

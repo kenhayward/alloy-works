@@ -511,7 +511,7 @@ describe('two themes in the PDF (themes 1)', () => {
         expect(set('Pone'), name).toEqual(expected(roleOf(theme, 'preformatted')));
         expect(set('python'), name).toEqual(expected(roleOf(theme, 'preformattedLabel')));
         expect(set('York'), name).toEqual(expected(placeOf(theme, 'tableCell')));
-        expect(set('Estimated.'), name).toEqual(expected(roleOf(theme, 'tableNote')));
+        expect(set('Note: Estimated.'), name).toEqual(expected(roleOf(theme, 'tableNote')));
         expect(set('Footword'), name).toEqual(expected(placeOf(theme, 'footnote')));
         // The caption, after its label, and the draft's notice and the running head, in the margin.
         const caption = paint.texts.find((each) => each.text.includes('Readings'))!;

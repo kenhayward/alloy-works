@@ -390,7 +390,39 @@
       "sort": [{ "column": "depth", "direction": "descending", "nulls": "last" }],
       "empty": [{ "type": "text", "value": "No readings were taken", "marks": [] }],
       "source": [{ "type": "text", "value": "The site survey", "marks": [] }],
-      "note": [{ "type": "text", "value": "Depths below the datum", "marks": [] }]
+      "note": [{ "type": "text", "value": "Depths below the datum", "marks": [] }],
+      "notes": [
+        {
+          "type": "footnote",
+          "id": "b9-note-1",
+          "anchor": {
+            "kind": "keyed",
+            "key": { "site": "north", "late": true },
+            "column": "depth"
+          },
+          "content": [
+            {
+              "type": "paragraph",
+              "id": "b9-note-1-p",
+              "style": "body",
+              "content": [{ "type": "text", "value": "Estimated", "marks": [] }]
+            }
+          ]
+        },
+        {
+          "type": "footnote",
+          "id": "b9-note-2",
+          "anchor": { "kind": "column", "column": "cost" },
+          "content": [
+            {
+              "type": "paragraph",
+              "id": "b9-note-2-p",
+              "style": "body",
+              "content": [{ "type": "text", "value": "Before tax", "marks": [] }]
+            }
+          ]
+        }
+      ]
     },
     {
       "type": "preformatted",

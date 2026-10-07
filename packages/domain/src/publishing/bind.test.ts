@@ -67,11 +67,12 @@ const result = (...rows: CanonicalValue[][]): CanonicalResult => ({
   ],
   rows,
 });
-const held = (r: CanonicalResult): Held => ({
+const held = (r: CanonicalResult, key: readonly string[] = ['site']): Held => ({
   result: r,
   columns: COLUMNS,
   datasetVersion: '00000000-0000-4000-8000-0000000000d1',
   images: {},
+  key,
 });
 
 const outline: OutlineDocument = parseOutlineDocument({
@@ -249,6 +250,7 @@ describe('bind, a bound image (the B6 plan, B6-D and B6-E)', () => {
     columns: PHOTOS,
     datasetVersion: '00000000-0000-4000-8000-0000000000d2',
     images: { [NORTH]: NORTH_ASSET, [SOUTH]: SOUTH_ASSET },
+    key: [],
   });
   const ROWS: CanonicalValue[][] = [
     ['north', NORTH, 'The north gate'],
@@ -825,7 +827,180 @@ describe('a bound table published (the TB1 plan, TB1-H; TB1.2)', () => {
               { printed: '0.13', value: '0.125' },
             ],
           ],
+          notes: [],
         },
+      },
+    ]);
+  });
+});
+
+describe("a bound table's notes published (the TB3 plan, TB3-B, TB3-C and TB3-E)", () => {
+  const whole = (name: string) => {
+    const each = { ...binding(name) } as Record<string, unknown>;
+    delete each.take;
+    return each;
+  };
+  const note = (name: string, anchor: Record<string, unknown>, words = `Note ${name}`) => ({
+    type: 'footnote',
+    id: name,
+    anchor,
+    content: [paragraph(`${name}p`, text(words))],
+  });
+  const keyed = (name: string, site: string, column = 'reading') =>
+    note(name, { kind: 'keyed', key: { site }, column });
+  const boundTable = (notes: unknown[], extra: Record<string, unknown> = {}) => ({
+    type: 'boundTable',
+    id: 't1',
+    binding: whole('rows'),
+    caption: [text('Readings')],
+    columns: [
+      { column: 'site', header: 'Site' },
+      { column: 'reading', header: 'Reading' },
+    ],
+    headerColumn: false,
+    sort: [{ column: 'reading', direction: 'descending', nulls: 'last' }],
+    ...(notes.length === 0 ? {} : { notes }),
+    ...extra,
+  });
+  const ROWS = result(['north', '1.5'], ['south', '7'], ['east', '3']);
+  const tableOf = (made: ReturnType<typeof assemble>) => {
+    if (!made.ok) throw new Error(JSON.stringify(made.failures));
+    const table = blocksOf((made.document as PublishedDocument).nodes).find(
+      (block) => block.type === 'table',
+    );
+    if (table === undefined || table.type !== 'table') throw new Error('no table');
+    return table;
+  };
+  const marks = (cell: { blocks: readonly PublishedBlock[] }) =>
+    cell.blocks
+      .flatMap((block) => (block.type === 'paragraph' ? block.runs : []))
+      .flatMap((run) => ('tableMark' in run ? [run.tableMark] : []));
+  const said = (paragraphs: readonly PublishedBlock[]) =>
+    paragraphs
+      .flatMap((block) => (block.type === 'paragraph' ? block.runs : []))
+      .map((run) => ('text' in run ? run.text : ''))
+      .join('');
+
+  it('DAT-012 fails a keyed note on a definition declaring no key, key_required, naming the table and the definition', () => {
+    const made = assembled(
+      component(boundTable([keyed('n1', 'north'), note('n2', { kind: 'column', column: 'site' })])),
+      new Map([['rows', held(ROWS, [])]]),
+    );
+    expect(made.ok).toBe(false);
+    if (made.ok) return;
+    expect(made.failures).toEqual([
+      { stage: 'bind', code: 'key_required', node: NODE, block: 't1', detail: QUERY },
+    ]);
+    // A column note asks for no key.
+    const columns = assembled(
+      component(boundTable([note('n2', { kind: 'column', column: 'site' })])),
+      new Map([['rows', held(ROWS, [])]]),
+    );
+    expect(columns.ok).toBe(true);
+  });
+
+  it('DAT-048 fails a note whose row is gone, note_row_missing, naming the note, the key and the definition, gathered with every other failure', () => {
+    const made = assembled(
+      component(
+        boundTable([keyed('n1', 'west'), keyed('n2', 'north'), keyed('n3', 'nowhere')]),
+        boundTable([], {
+          id: 't2',
+          binding: whole('other'),
+          columns: [{ column: 'depth', header: 'Depth' }],
+          sort: undefined,
+        }),
+      ),
+      new Map([
+        ['rows', held(ROWS)],
+        ['other', held(ROWS)],
+      ]),
+    );
+    expect(made.ok).toBe(false);
+    if (made.ok) return;
+    expect(made.failures).toEqual([
+      {
+        stage: 'bind',
+        code: 'note_row_missing',
+        node: NODE,
+        block: 't1',
+        detail: `n1: {"site":"west"}: ${QUERY}`,
+      },
+      {
+        stage: 'bind',
+        code: 'note_row_missing',
+        node: NODE,
+        block: 't1',
+        detail: `n3: {"site":"nowhere"}: ${QUERY}`,
+      },
+      { stage: 'bind', code: 'column_missing', node: NODE, block: 't2', detail: 'depth' },
+    ]);
+  });
+
+  it("says a note keyed by columns that are not the definition's key is gone for that reason", () => {
+    const made = assembled(
+      component(boundTable([note('n1', { kind: 'keyed', key: { reading: '7' }, column: 'site' })])),
+      new Map([['rows', held(ROWS)]]),
+    );
+    expect(made.ok).toBe(false);
+    if (made.ok) return;
+    expect(made.failures).toEqual([
+      {
+        stage: 'bind',
+        code: 'note_row_missing',
+        node: NODE,
+        block: 't1',
+        detail: `n1: {"reading":"7"}: ${QUERY}: the key is site`,
+      },
+    ]);
+  });
+
+  it("TAB-024 sets a keyed note's mark in its cell, a link to its note beneath the table, wherever the sort puts its row", () => {
+    const table = tableOf(
+      assembled(component(boundTable([keyed('n1', 'north')])), new Map([['rows', held(ROWS)]])),
+    );
+    // Sorted by reading, descending: south, east, north; north's reading carries the mark.
+    expect(table.rows.map((row) => row.cells.map(marks))).toEqual([
+      [[], []],
+      [[], []],
+      [[], []],
+      [[], [{ letter: 'a', link: `b-${NODE}-n1` }]],
+    ]);
+    expect(table.notes.map((each) => [each.letter, each.anchor, said(each.paragraphs)])).toEqual([
+      ['a', `b-${NODE}-n1`, 'Note n1'],
+    ]);
+  });
+
+  it("TAB-025 sets a column note's mark in its header, a plain letter, lettered before the cells'", () => {
+    const table = tableOf(
+      assembled(
+        component(
+          boundTable([keyed('n1', 'east'), note('n2', { kind: 'column', column: 'reading' })]),
+        ),
+        new Map([['rows', held(ROWS)]]),
+      ),
+    );
+    expect(marks(table.rows[0]!.cells[1]!)).toEqual([{ letter: 'a', link: null }]);
+    expect(marks(table.rows[2]!.cells[1]!)).toEqual([{ letter: 'b', link: `b-${NODE}-n1` }]);
+    expect(table.notes.map((each) => each.letter)).toEqual(['a', 'b']);
+  });
+
+  it("sets the whole table's note after the layout's word, and records each note's letter and anchor", () => {
+    const made = assembled(
+      component(boundTable([keyed('n1', 'north')], { note: [text('Taken at noon')] })),
+      new Map([['rows', held(ROWS)]]),
+    );
+    const table = tableOf(made);
+    expect(table.note?.map((run) => ('text' in run ? run.text : ''))).toEqual([
+      'Note: ',
+      'Taken at noon',
+    ]);
+    if (!made.ok) return;
+    const [value] = made.values;
+    expect(value && 'table' in value ? value.table.notes : undefined).toEqual([
+      {
+        note: 'n1',
+        letter: 'a',
+        anchor: { kind: 'keyed', key: { site: 'north' }, column: 'reading' },
       },
     ]);
   });

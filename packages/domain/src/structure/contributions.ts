@@ -1,5 +1,6 @@
 import type { BlockNode } from '../content/model/blocks.js';
 import type { InlineNode } from '../content/model/inline.js';
+import { placeTableNotes } from '../data/table-notes.js';
 import type { Bound } from '../publishing/bind.js';
 
 /**
@@ -16,6 +17,12 @@ export interface Contribution {
   readonly numbered: boolean;
   /** A figure's or a table's caption, for a generated list to show beside its number. */
   readonly caption?: string;
+  /**
+   * A footnote in a table's cell (TB3-D): sequence `tableNote`, out of the document's footnotes,
+   * lettered in its table's own sequence by `placeTableNotes`, which `number` labels after its table's.
+   */
+  readonly table?: string;
+  readonly letter?: string;
 }
 
 /**
@@ -50,8 +57,10 @@ function blockContributions(block: BlockNode): Contribution[] {
         ...inlineContributions(block.attribution ?? []),
       ];
     case 'table':
-      // The table takes its number before anything inside it, and its note - rendered below the body -
-      // after its cells.
+      // The table takes its number before anything inside it. **A footnote in a table leaves the
+      // document's sequence** (TB3-D): a cell's is lettered in the table's own, and its caption's and
+      // note's, which `assemble` refuses, take nothing. A table holds no table or figure, and a cell
+      // no equation block (decision T-D), so nothing else inside it is numbered.
       return [
         {
           block: block.id,
@@ -59,17 +68,18 @@ function blockContributions(block: BlockNode): Contribution[] {
           numbered: block.numbered !== false,
           caption: captionText(block.caption),
         },
-        // A footnote in the caption stands above the body, so it takes its number before the cells'.
-        ...inlineContributions(block.caption),
-        ...block.rows.flatMap((row) =>
-          row.cells.flatMap((cell) => cell.content.flatMap(blockContributions)),
-        ),
-        ...inlineContributions(block.note ?? []),
+        ...placeTableNotes(block).map(({ note, letter }): Contribution => ({
+          block: note.id,
+          sequence: 'tableNote',
+          numbered: true,
+          table: block.id,
+          letter,
+        })),
       ];
     case 'boundTable':
       // Numbered as a table, with its caption (the TB1 plan, TB1-D), so the page's numbers equal the
-      // publish's, where the stage has set it as one: its caption's footnotes, then its note's and its
-      // source's, in the order they stand. Its empty statement holds no footnote (`document.ts`).
+      // publish's, where the stage has set it as one. Its notes are lettered by its rows, which the
+      // page's numbering has not got, and the footnotes in its words take nothing (TB3-D).
       return [
         {
           block: block.id,
@@ -77,9 +87,6 @@ function blockContributions(block: BlockNode): Contribution[] {
           numbered: block.numbered !== false,
           caption: captionText(block.caption),
         },
-        ...inlineContributions(block.caption),
-        ...inlineContributions(block.note ?? []),
-        ...inlineContributions(block.source ?? []),
       ];
     case 'figure':
       return [

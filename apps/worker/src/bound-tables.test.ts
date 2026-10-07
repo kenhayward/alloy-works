@@ -593,4 +593,178 @@ describe('publishing a document holding a bound table', () => {
     });
     expect(await outputsOf(request)).toEqual([]);
   });
+
+  /** A publication's PDF, Word document and `provenance.json`, from a document of these blocks. */
+  const publishedOf = async (blocks: unknown[], results: Record<string, CanonicalValue[][]>) => {
+    const request = await ask(await documentHolding(blocks, results), ['pdf', 'docx']);
+    expect(await work()).toBe('done');
+    const outputs = await outputsOf(request);
+    const of = (format: string) =>
+      bytesOf(outputs.find((each) => each.format === format)!.object_key);
+    const values = outputs.some((each) => each.format === 'provenance');
+    return {
+      pdf: await of('pdf'),
+      docx: new Uint8Array(await of('docx')),
+      provenance: (values ? JSON.parse((await of('provenance')).toString('utf8')) : null) as {
+        values: { block: string; table?: { notes?: unknown } }[];
+      } | null,
+    };
+  };
+  const note = (id: string, anchor: object, words: string) => ({
+    type: 'footnote',
+    id,
+    anchor,
+    content: [{ type: 'paragraph', id: `${id}-p`, style: 'body', content: [text(words)] }],
+  });
+  /** The Word document's real footnotes, its separators left out. */
+  const wordFootnotes = (docx: Uint8Array) =>
+    [
+      ...strFromU8(unzipSync(docx)['word/footnotes.xml'] ?? new Uint8Array()).matchAll(
+        /<w:footnote w:id="(\d+)">/g,
+      ),
+    ].map(([, id]) => id);
+
+  it("TAB-024 sets a keyed note's mark in its cell, a link to its note beneath the table, in the PDF and in Word; a column note's in its header, a plain letter", async () => {
+    const made = await publishedOf(
+      [
+        withBinding({
+          ...readings,
+          note: [text('Taken at noon')],
+          notes: [
+            note('n1', { kind: 'keyed', key: { site: 'South' }, column: 'reading' }, 'Estimated'),
+            note('n2', { kind: 'column', column: 'site' }, 'By gauge'),
+          ],
+        }),
+      ],
+      {
+        rows: [
+          ['North', '1.11'],
+          ['South', '3.45'],
+        ],
+      },
+    );
+    const read = await readPdf(made.pdf);
+    // One table, its marks in its cells: the column's in the header, the keyed note's by its row.
+    expect(read.elements['Table']).toBe(1);
+    const cells = read.reading.filter((each) => each.role === 'TH' || each.role === 'TD');
+    const bare = (said: string) => said.replace(/\s+/g, '');
+    expect(cells.map((each) => bare(each.text))).toEqual([
+      'Sitea',
+      'Reading(kPa)',
+      'North',
+      '1.11',
+      'South',
+      '3.45b',
+    ]);
+    // Beneath it: the whole table's note after the layout's word, the lettered notes, the source.
+    const paragraphs = read.reading.filter((each) => each.role === 'P').map((each) => each.text);
+    const beneath = paragraphs.slice(paragraphs.indexOf('Note: Taken at noon'));
+    expect(beneath.slice(0, 4).map(bare)).toEqual(
+      ['Note: Taken at noon', 'a By gauge', 'b Estimated', 'Source: Gauge survey, spring'].map(
+        bare,
+      ),
+    );
+    // The body cell's mark is a link to its note, landing on the note's page; the header's is none.
+    // An item's page is counted from 1, a destination's from 0.
+    const page = read.items.find((each) => each.text.includes('Estimated'))!.page - 1;
+    const at = (letter: string, beside: string) => {
+      const value = read.items.find((each) => each.text.includes(beside))!;
+      return read.items.find(
+        (each) =>
+          each.text.trim() === letter &&
+          each.page === value.page &&
+          Math.abs(each.y - value.y) < 12 &&
+          each.x > value.x,
+      )!;
+    };
+    const linked = (item: { page: number; x: number; y: number }) =>
+      read.destinations[item.page - 1]!.some(
+        ({ rect: [left, bottom, right, top] }) =>
+          item.x + 1 >= left && item.x + 1 <= right && item.y + 2 >= bottom && item.y + 2 <= top,
+      );
+    expect(linked(at('b', '3.45'))).toBe(true);
+    expect(read.destinations[at('b', '3.45').page - 1]!.some((each) => each.to === page)).toBe(
+      true,
+    );
+    expect(linked(at('a', 'Site'))).toBe(false);
+    // In Word, the same letters in the same cells, and the same paragraphs beneath, never footnotes.
+    expect(wordCells(made.docx)).toEqual([
+      [
+        ['Sitea', 'Reading (kPa)'],
+        ['North', '1.11'],
+        ['South', '3.45b'],
+      ],
+    ]);
+    const said = wordParagraphs(made.docx);
+    const from = said.indexOf('Note: Taken at noon');
+    expect(said.slice(from, from + 4)).toEqual([
+      'Note: Taken at noon',
+      'a By gauge',
+      'b Estimated',
+      'Source: Gauge survey, spring',
+    ]);
+    expect(wordFootnotes(made.docx)).toEqual([]);
+    expect(made.provenance?.values.find((each) => each.block === 't1')?.table?.notes).toEqual([
+      { note: 'n2', letter: 'a', anchor: { kind: 'column', column: 'site' } },
+      {
+        note: 'n1',
+        letter: 'b',
+        anchor: { kind: 'keyed', key: { site: 'South' }, column: 'reading' },
+      },
+    ]);
+    expect(await checkPdfUa1(made.pdf)).toMatchObject({ compliant: true, failedRules: 0 });
+    expect(await checkOoxml(made.docx)).toEqual([]);
+  }, 120_000);
+
+  it("TAB-026 prints an authored table's cell footnotes beneath it as a and b, a header row's too, not at the page's foot, and numbers the next document footnote without them, in the PDF and in Word", async () => {
+    const cell = (id: string, ...content: unknown[]) => ({
+      content: [{ type: 'paragraph', id, style: 'body', content }],
+      colspan: 1,
+      rowspan: 1,
+    });
+    const paragraph = (id: string, ...content: unknown[]) => ({
+      type: 'paragraph',
+      id,
+      style: 'body',
+      content,
+    });
+    const span = { kind: 'span' };
+    const made = await publishedOf(
+      [
+        paragraph('p1', text('Before'), note('f1', span, 'First of the document.')),
+        {
+          type: 'table',
+          id: 'a1',
+          style: 'table',
+          caption: [text('Authored readings')],
+          headerRows: 1,
+          headerColumns: 0,
+          rows: [
+            { cells: [cell('h1', text('Site'), note('f2', span, 'Headed.'))] },
+            { cells: [cell('c1', text('York'), note('f3', span, 'In a cell.'))] },
+          ],
+        },
+        paragraph('p2', text('After'), note('f4', span, 'Second of the document.')),
+      ],
+      {},
+    );
+    const read = await readPdf(made.pdf);
+    // The document's two footnotes at the page's foot, numbered 1 and 2; the table's none of them.
+    expect(read.elements['Note']).toBe(2);
+    const runs = read.taggedText.flat().map((each) => each.trim());
+    expect(runs[runs.indexOf('Second of the document.') - 1]).toBe('2');
+    const paragraphs = read.reading.filter((each) => each.role === 'P').map((each) => each.text);
+    const bare = (said: string) => said.replace(/\s+/g, '');
+    expect(paragraphs.map(bare)).toEqual(
+      expect.arrayContaining(['aHeaded.', 'bInacell.'].map(bare)),
+    );
+    expect(read.elements['Table']).toBe(1);
+    // Word: two real footnotes, the table's letters in its cells and its notes beneath it.
+    expect(wordFootnotes(made.docx)).toEqual(['1', '2']);
+    expect(wordCells(made.docx)).toEqual([[['Sitea'], ['Yorkb']]]);
+    const said = wordParagraphs(made.docx);
+    expect(said.indexOf('b In a cell.')).toBe(said.indexOf('a Headed.') + 1);
+    expect(await checkPdfUa1(made.pdf)).toMatchObject({ compliant: true, failedRules: 0 });
+    expect(await checkOoxml(made.docx)).toEqual([]);
+  }, 120_000);
 });

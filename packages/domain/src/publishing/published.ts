@@ -7,7 +7,11 @@ import type { MathsTree } from './maths.js';
 /**
  * The published document (docs/design/publishing.md, "The published document"): the one intermediate
  * every writer reads, holding everything a writer needs and nothing it must decide. Version
- * `publishing/16` is the document whose **tables may be bound tables laid out** (the TB1 plan, TB1-J):
+ * `publishing/17` is the document whose **tables letter their own notes** (the TB3 plan, TB3-D and
+ * TB3-E): a footnote in a table's cell is a lettered mark there - a link to its note in a body cell, a
+ * plain letter in a header row - and its note is a paragraph beneath the table, in the table's
+ * `notes`, after the whole table's note, which follows the layout's word where it has one. Otherwise it
+ * is `publishing/16`, the document whose **tables may be bound tables laid out** (the TB1 plan, TB1-J):
  * such a table carries `bound` - each column's alignment and wrap, and its source - and its body cells
  * the parenthesis inset and negative colour `layoutTable` gave them; an authored table carries none of
  * them and is what `publishing/15` made of it. Otherwise it is
@@ -30,7 +34,7 @@ import type { MathsTree } from './maths.js';
  * stored - only its digest is, on the publication - so a later shape is a new schema string and a new
  * template version, not a migration.
  */
-export const PUBLISHING_SCHEMA = 'publishing/16';
+export const PUBLISHING_SCHEMA = 'publishing/17';
 
 /**
  * The first slice's shape, before layouts: what `assemble` still makes, byte for byte, for a request
@@ -144,6 +148,14 @@ export const PUBLISHING_SCHEMA_14 = 'publishing/14';
  * and the publications made with it are a record.
  */
 export const PUBLISHING_SCHEMA_15 = 'publishing/15';
+
+/**
+ * The document as it stood before a table lettered its own notes - a footnote in a cell numbered at the
+ * foot of the page with the document's - frozen by TB3.1 for the reason `publishing/15` is:
+ * `apps/worker/templates/publication/16/` asserts it, and a template version and the publications made
+ * with it are a record.
+ */
+export const PUBLISHING_SCHEMA_16 = 'publishing/16';
 
 /**
  * A BCP 47 tag as Typst can carry it: a language of two or three letters and, where there is one, a
@@ -302,15 +314,36 @@ export interface PublishedEquationRun {
 }
 
 /**
- * One piece of a published run sequence: text with its marks, an image, a footnote, a reference or an
- * equation.
+ * **A table's note's mark** (TB3-E), where a footnote in its cell stood: its letter, set superscript,
+ * and `link`, the anchor of its note beneath the table, which a body cell's mark links to - or null in
+ * a header row, which the engine sets again on every page as an artifact, where a link is refused.
+ */
+export interface PublishedTableMarkRun {
+  readonly tableMark: { readonly letter: string; readonly link: string | null };
+}
+
+/**
+ * One piece of a published run sequence: text with its marks, an image, a footnote, a reference, an
+ * equation or a table's note's mark.
  */
 export type PublishedInline =
   | PublishedRun
   | PublishedImageRun
   | PublishedFootnoteRun
   | PublishedReferenceRun
-  | PublishedEquationRun;
+  | PublishedEquationRun
+  | PublishedTableMarkRun;
+
+/**
+ * **A table's lettered note** (TB3-E), set beneath it after the whole table's note and before a bound
+ * table's source, in the `tableNote` role: its letter, superscript, then its paragraphs. `anchor` is
+ * always set, since its mark links to it, and is the one a reference to the footnote names.
+ */
+export interface PublishedTableNote {
+  readonly letter: string;
+  readonly anchor: string;
+  readonly paragraphs: readonly PublishedParagraph[];
+}
 
 /**
  * Every published block carries `anchor`: the label a template sets on it where a cross-reference in
@@ -446,6 +479,8 @@ export interface PublishedTable {
    * inside its figure, or null where the table has none or it says nothing.
    */
   readonly note: readonly PublishedInline[] | null;
+  /** Its lettered notes, in letter order (TB3-E), set beneath it after `note`; empty where none. */
+  readonly notes: readonly PublishedTableNote[];
   /**
    * **A bound table's** (TB1-H, TB1-J), absent from an authored one: each column's alignment - a
    * `decimal` one set at its end with its digits unkerned, so its separators meet (TAB-046) - and

@@ -7,6 +7,7 @@ import {
   alternativeSchema,
   bindingNodeSchema,
   equationContentSchema,
+  footnoteNodeSchema,
   inlineNodeSchema,
   tableBindingSchema,
 } from './inline.js';
@@ -212,8 +213,8 @@ const sortKeySchema = z.strictObject({
 /**
  * **A bound table** (tables.md; the TB1 plan, TB1-A and TB1-B): a block holding a binding to a whole
  * result - an inline binding's members with no `take` - and the presentation that makes a table of it.
- * Additive at content schema 1, as B6's figure binding was: nothing stored before holds one. TB1
- * stores no `notes` and no `wide`, which TB3 adds as optional members, additive again. What zod
+ * Additive at content schema 1, as B6's figure binding was: nothing stored before holds one. TB3
+ * adds `notes`, an optional member, additive again. What zod
  * cannot hold - a column shown twice under one header, a sort naming one twice - is the walk's
  * (`document.ts`).
  */
@@ -230,7 +231,11 @@ export type BoundTableNode = {
   empty?: z.infer<typeof inlineNodeSchema>[] | undefined;
   source?: z.infer<typeof inlineNodeSchema>[] | undefined;
   note?: z.infer<typeof inlineNodeSchema>[] | undefined;
+  notes?: z.infer<typeof footnoteNodeSchema>[] | undefined;
 };
+
+/** The most notes a bound table holds (the TB3 plan, TB3-A). */
+export const BOUND_TABLE_NOTES_MAX = 200;
 
 export const boundTableNodeSchema = z.strictObject({
   type: z.literal('boundTable'),
@@ -246,6 +251,8 @@ export const boundTableNodeSchema = z.strictObject({
   empty: z.array(inlineNodeSchema).min(1).optional(),
   source: z.array(inlineNodeSchema).min(1).optional(),
   note: z.array(inlineNodeSchema).min(1).optional(),
+  // Anchored `keyed` or `column`, and only those (TB3-A), which the walk holds.
+  notes: z.array(footnoteNodeSchema).min(1).max(BOUND_TABLE_NOTES_MAX).optional(),
 });
 
 export const figureNodeSchema = z.strictObject({

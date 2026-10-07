@@ -151,6 +151,7 @@ describe('publishedProvenance', () => {
           [{ printed: '1,234.57', value: canonical }],
           [{ printed: 'Not available', value: null }],
         ],
+        notes: [],
       },
     };
     const made = publishedProvenance([value, table], datasets, numbering);
@@ -181,11 +182,37 @@ describe('publishedProvenance', () => {
           [{ printed: '1,234.57', value: canonical }],
           [{ printed: 'Not available', value: null }],
         ],
+        notes: [],
       },
     });
     // The canonical value as the source returned it, every digit, beside what was printed of it.
     expect(new TextDecoder().decode(provenanceBytes(made))).toContain(`"value":"${canonical}"`);
     expect(recorded).not.toHaveProperty('take');
+  });
+
+  it("records a bound table's notes, each by its letter and the anchor it was stored with (TB3.1)", () => {
+    const notes = [
+      { note: 'n1', letter: 'a', anchor: { kind: 'column' as const, column: 'reading' } },
+      {
+        note: 'n2',
+        letter: 'b',
+        anchor: { kind: 'keyed' as const, key: { site: 'north' }, column: 'reading' },
+      },
+    ];
+    const made = publishedProvenance(
+      [
+        {
+          node: NODE,
+          block: 't1',
+          binding: 'rows',
+          datasetVersion: VERSION,
+          table: { columns: [], rows: [], notes },
+        },
+      ],
+      datasets,
+      numbering,
+    );
+    expect(made.values[0]).toMatchObject({ table: { notes } });
   });
 
   it('holds no SQL, no connection and no column source, whatever the stored provenance carries beside them', () => {

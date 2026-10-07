@@ -139,6 +139,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       '0053_dataset_image_index',
       '0054_connection_test_privilege',
       '0055_bound_tables',
+      '0056_table_note_word',
     ]);
     const kept = await queryAs(
       db.adminUrl,

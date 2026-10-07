@@ -407,6 +407,8 @@ export const editorSchema = new Schema({
         columns: {},
         headerColumn: { default: false },
         sort: { default: null },
+        // Its keyed and column notes as stored (TB3-A), kept whole until the page edits them (TB3.3).
+        notes: { default: null },
       },
       toDOM: (node) => [
         'figure',

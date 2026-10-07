@@ -302,7 +302,10 @@ const printed = (read: ReadPdf, tag: string) => {
  * footnote's label, the one other link a line here can hold, stands before its words.
  */
 const linksAt = (read: ReadPdf, tag: string): readonly InternalLink[] => {
-  const words = read.items.find((item) => new RegExp(`^Ref ${tag}\\b`).test(item.text.trim()));
+  // A table's note begins with the layout's word (TB3-E).
+  const words = read.items.find((item) =>
+    new RegExp(`^(?:Note: )?Ref ${tag}\\b`).test(item.text.trim()),
+  );
   if (words === undefined) throw new Error(`No words Ref ${tag}`);
   // `items` counts its pages from 1.
   return read.destinations[words.page - 1]!.filter(

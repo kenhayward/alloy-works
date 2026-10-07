@@ -1059,7 +1059,7 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
     ).toHaveLength(2);
   });
 
-  it("writes each footnote as Word's own - in text, in a cell and, for Word alone, in a table's header row, which the PDF refuses - which the Open XML SDK finds nothing wrong with (Word 3)", async () => {
+  it("writes each footnote in the text as Word's own, and a table's beneath it, lettered - a cell's and its header row's, for the PDF and Word alike (TB3-E) - which the Open XML SDK finds nothing wrong with (Word 3)", async () => {
     // The readings table with a footnote in its second header row, whose engine sets it on every page.
     const headed = parseContentDocument(
       JSON.parse(
@@ -1076,10 +1076,8 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
       formats: ['docx'],
       occurrences: new Map([...input.occurrences, [id('readings'), headed]]),
     };
-    const refused = assemble({ ...alone, formats: ['pdf', 'docx'] });
-    expect(refused.ok ? [] : refused.failures.map((each) => each.code)).toEqual([
-      'footnote_not_publishable_here',
-    ]);
+    const both = assemble({ ...alone, formats: ['pdf', 'docx'] });
+    expect(both.ok ? [] : both.failures.map((each) => each.code)).toEqual([]);
     const assembled = assemble(alone);
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
     const { bytes } = writeDocx({
@@ -1094,10 +1092,10 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
     const parts = unzipSync(bytes);
     const document = strFromU8(parts['word/document.xml']!);
     const footnotes = strFromU8(parts['word/footnotes.xml']!);
-    // Each mark in document order - the header row's before the body row's - and each note by it.
+    // Each mark in the text in document order, and each note by it; the table's are no footnotes.
     expect(
       [...document.matchAll(/<w:footnoteReference w:id="(\d+)"\/>/g)].map((m) => m[1]),
-    ).toEqual(['1', '2', '3', '4']);
+    ).toEqual(['1', '2']);
     const notes = [...footnotes.matchAll(/<w:footnote w:id="(\d+)">(.*?)<\/w:footnote>/g)].map(
       (m) => [
         m[1],
@@ -1110,14 +1108,17 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
     expect(notes).toEqual([
       ['1', 'Twice, as Ada asked.See the log and its notes.'],
       ['2', 'Eine Anmerkung.'],
-      ['3', 'Early.'],
-      ['4', 'Late.'],
     ]);
-    // The header row's mark stands in the header row Word repeats on every page the table reaches.
+    // The header row's letter stands in the header row Word repeats on every page the table reaches,
+    // and its note and the cell's beneath the table, lettered in its own sequence.
     const table = document.slice(document.indexOf('<w:tbl>'), document.indexOf('</w:tbl>'));
     const header = table.split('<w:tr>')[2]!;
     expect(header).toContain('<w:tblHeader/>');
-    expect(header).toContain('<w:footnoteReference w:id="3"/>');
+    expect(header).toContain('<w:t xml:space="preserve">a</w:t>');
+    expect(header).not.toContain('<w:footnoteReference');
+    const after = document.indexOf('</w:tbl>');
+    expect(document.indexOf('Early.', after)).toBeGreaterThan(after);
+    expect(document.indexOf('Late.', after)).toBeGreaterThan(document.indexOf('Early.', after));
     // The note's link is related from the footnotes part.
     expect(strFromU8(parts['word/_rels/footnotes.xml.rels']!)).toContain(
       'Target="https://example.test/log" TargetMode="External"',
@@ -1179,12 +1180,13 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
     ]);
     expect(codes(footnotes)).toEqual(['PAGEREF _Ref \\h', 'REF _Ref \\r \\h']);
     // Each target's bookmarks hidden and named in document order, one set whoever names it: the two
-    // sections, the paragraph, the table's two, the figure's two, the footnote and the appendix.
+    // sections, the paragraph, the table's two, its lettered note's, which its mark links to (TB3-E),
+    // the figure's two, the footnote and the appendix.
     const names = [
       ...(document + footnotes).matchAll(/<w:bookmarkStart w:id="(\d+)" w:name="([^"]+)"\/>/g),
     ];
     expect(names.map((match) => match[2])).toEqual(
-      Array.from({ length: 9 }, (_, at) => `_Ref${String(at + 1).padStart(9, '0')}`),
+      Array.from({ length: 10 }, (_, at) => `_Ref${String(at + 1).padStart(9, '0')}`),
     );
     for (const [, id] of names)
       expect(document + footnotes).toContain(`<w:bookmarkEnd w:id="${id}"/>`);
@@ -1495,6 +1497,8 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
     const labels = assembled.numbering.entries.flatMap((entry) =>
       entry.block === null ||
       entry.sequence === 'footnote' ||
+      // A table's note's label is written as text in a reference to it, not a caption's (TB3-D).
+      entry.sequence === 'tableNote' ||
       entry.label === null ||
       entry.number === null
         ? []
@@ -1834,7 +1838,11 @@ describe("a publication in Word, written from the worker's own faces (Word 1 to 
       equations.length + listedEquationsOf(published),
     );
     const numbered = assembled.numbering.entries.filter(
-      (entry) => entry.block !== null && entry.sequence !== 'footnote' && entry.label !== null,
+      (entry) =>
+        entry.block !== null &&
+        entry.sequence !== 'footnote' &&
+        entry.sequence !== 'tableNote' &&
+        entry.label !== null,
     );
     expect(count(document, / SEQ (?:Figure|Table|Equation|EquationFront) /g)).toBe(numbered.length);
     expect(count(document, / TOC \\o /g)).toBe(1);

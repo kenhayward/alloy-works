@@ -57,8 +57,9 @@ import type { JobHandler } from '../worker.js';
  * their styles, 14 the first to leave a table or a figure marked unnumbered out of the list of its
  * kind, 15 the first to set a table's or a figure's caption where its style places it, 16 the
  * first to set a bound value, read from its stored result, and make `provenance.json` beside it, and
- * 17 the first to set a bound image and write `provenance.json` at its schema 2 (the B6 plan), and 18
- * the first to lay out and set a bound table and write `provenance.json` at its schema 3 (TB1-J).
+ * 17 the first to set a bound image and write `provenance.json` at its schema 2 (the B6 plan), 18
+ * the first to lay out and set a bound table and write `provenance.json` at its schema 3 (TB1-J), and
+ * 19 the first to letter a table's notes beneath it and place a bound table's (TB3-K).
  *
  * **Both keys are frozen.** Keyed by `PUBLISHING_SCHEMA` itself, a repoint moved the key while the
  * value stayed behind, and the `satisfies` clause could not catch it because `PublishedSchema`
@@ -70,7 +71,7 @@ import type { JobHandler } from '../worker.js';
  */
 export const PIPELINE_VERSION = {
   [PUBLISHING_SCHEMA_1]: '1',
-  [PUBLISHING_SCHEMA_CURRENT]: '18',
+  [PUBLISHING_SCHEMA_CURRENT]: '19',
 } as const satisfies Record<PublishedSchema, string>;
 
 /** The document's own failures, every one at once: the job is finished, never tried again. */
@@ -136,7 +137,11 @@ export async function heldResults(
   prefix: string,
 ): Promise<Map<string, Map<string, Held>>> {
   const read = new Map<string, Promise<Held>>();
-  const readOnce = (version: string, dataset: HeldDataset): Promise<Held> => {
+  const readOnce = (
+    version: string,
+    dataset: HeldDataset,
+    key: readonly string[],
+  ): Promise<Held> => {
     let held = read.get(version);
     if (held === undefined) {
       held = (async (): Promise<Held> => {
@@ -153,6 +158,7 @@ export async function heldResults(
             columns,
             datasetVersion: version,
             images: dataset.provenance.images,
+            key,
           };
         } catch {
           return 'unreadable';
@@ -166,7 +172,7 @@ export async function heldResults(
   for (const [node, held] of bindings) {
     const results = new Map<string, Held>();
     for (const [binding, recorded] of held) {
-      results.set(binding, await readOnce(recorded.datasetVersion, recorded.dataset));
+      results.set(binding, await readOnce(recorded.datasetVersion, recorded.dataset, recorded.key));
     }
     byNode.set(node, results);
   }

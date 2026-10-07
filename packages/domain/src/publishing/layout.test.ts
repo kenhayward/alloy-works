@@ -17,6 +17,7 @@ import {
   readLayout,
   SECOND_DEFAULT_LAYOUT,
   SEVENTH_DEFAULT_LAYOUT,
+  EIGHTH_DEFAULT_LAYOUT,
   SIXTH_DEFAULT_LAYOUT,
   speaksFor,
   THIRD_DEFAULT_LAYOUT,
@@ -95,6 +96,8 @@ describe('a layout', () => {
         noRows: 'No rows',
         notAvailable: 'Not available',
         source: 'Source:',
+        // Version 0.9's: what a table's whole-table note follows (TB3-F).
+        note: 'Note:',
       },
       scheme: defaultNumberingScheme,
       matter: {
@@ -176,7 +179,7 @@ describe('a layout', () => {
     expect(SEVENTH_DEFAULT_LAYOUT.schemaVersion).toBe(6);
     expect(SEVENTH_DEFAULT_LAYOUT.words).not.toHaveProperty('noRows');
     expect(LAYOUT_SCHEMA_VERSION).toBe(7);
-    expect(defaultLayout).toEqual({
+    expect(EIGHTH_DEFAULT_LAYOUT).toEqual({
       ...SEVENTH_DEFAULT_LAYOUT,
       schemaVersion: 7,
       words: {
@@ -186,6 +189,20 @@ describe('a layout', () => {
         source: 'Source:',
       },
     });
+  });
+
+  it("keeps the default layout's 0.8, as migration 0055 stored it, and 0.9 is 0.8 with the word a table's note follows (TB3-F)", () => {
+    expect(EIGHTH_DEFAULT_LAYOUT.schemaVersion).toBe(7);
+    expect(EIGHTH_DEFAULT_LAYOUT.words).not.toHaveProperty('note');
+    expect(defaultLayout).toEqual({
+      ...EIGHTH_DEFAULT_LAYOUT,
+      words: { ...EIGHTH_DEFAULT_LAYOUT.words, note: 'Note:' },
+    });
+    // Optional at schema 7, in place: a layout without it reads, and fails nothing for its absence.
+    expect(parseLayout(JSON.parse(JSON.stringify(EIGHTH_DEFAULT_LAYOUT)))).toEqual(
+      EIGHTH_DEFAULT_LAYOUT,
+    );
+    expect(() => parseLayout({ ...copy(), words: { ...copy().words, note: '' } })).toThrow();
   });
 
   it('reads a layout stored at schema version 6 as one with no words for a bound table', () => {
@@ -486,6 +503,7 @@ describe('a layout', () => {
       noRows: 'No rows',
       notAvailable: 'Not available',
       source: 'Source:',
+      note: 'Note:',
     });
 
     for (const alone of ['above', 'below'] as const) {

@@ -153,6 +153,21 @@ describe('a bound table mapped to the editor and back (TB2-C)', () => {
         empty: [text('No readings were taken.')],
         note: [text('Taken at low tide.')],
         source: [text('The harbour survey')],
+        // Kept whole until the page edits them (TB3.3).
+        notes: [
+          {
+            type: 'footnote',
+            id: 'f1',
+            anchor: { kind: 'keyed', key: { site: 'North' }, column: 'depth' },
+            content: [paragraph('f1p', text('Estimated')) as never],
+          },
+          {
+            type: 'footnote',
+            id: 'f2',
+            anchor: { kind: 'column', column: 'site' },
+            content: [paragraph('f2p', text('By name')) as never],
+          },
+        ],
       }),
       boundTable({ note: [text('Only a note.')] }),
       boundTable({ source: [text('Only a source.')] }),
@@ -405,6 +420,41 @@ describe('copying, cutting and pasting a bound table (BI-D)', () => {
 
     const cut = state.apply(state.tr.delete(from, to));
     expect(tableBindings(pasted(atEnd(cut), clipped))).toEqual(['k1']);
+  });
+
+  it("refuses a bound table's keyed or column note pasted into a paragraph (TB3-A)", () => {
+    const state = atEnd(stateOf(documentOf(paragraph('p1', text('End')))));
+    for (const anchor of [
+      { kind: 'keyed', key: { site: 'North' }, column: 'depth' },
+      { kind: 'column', column: 'depth' },
+    ]) {
+      const data = JSON.stringify({
+        format: 'alloy-works/content',
+        schemaVersion: 1,
+        language: 'en-GB',
+        direction: 'ltr',
+        content: [
+          paragraph('q1', text('Pasted'), {
+            type: 'footnote',
+            id: 'f1',
+            anchor,
+            content: [paragraph('f1p', text('Estimated'))],
+          }),
+        ],
+      });
+      const outcome = pasteInto(
+        state,
+        readClipboard(
+          {
+            types: [PRODUCT_CLIPBOARD_TYPE],
+            getData: (type) => (type === PRODUCT_CLIPBOARD_TYPE ? data : ''),
+          },
+          'blocks',
+        ),
+        counter('p'),
+      );
+      expect(outcome.ok, anchor.kind).toBe(false);
+    }
   });
 });
 

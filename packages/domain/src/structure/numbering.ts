@@ -146,6 +146,24 @@ export function number(conditioned: Conditioned, scheme: NumberingScheme): Numbe
   };
 
   const take = (node: string, contribution: Contribution, matter: OutlineMatter) => {
+    // A table's footnote (TB3-D): its letter, labelled after its table's label, moving no counter.
+    if (contribution.table !== undefined && contribution.letter !== undefined) {
+      const table = entries.findLast(
+        (each) => each.node === node && each.block === contribution.table,
+      );
+      entries.push({
+        node,
+        block: contribution.block,
+        sequence: contribution.sequence,
+        matter,
+        sections: [...states[matter].sections],
+        value: null,
+        restartedAt: null,
+        number: contribution.letter,
+        label: table?.label == null ? null : `${table.label} (${contribution.letter})`,
+      });
+      return;
+    }
     const rule = scheme.sequences[contribution.sequence]?.[matter];
     const sectionRule = scheme.sequences['section']?.[matter];
     // A sequence the scheme does not declare numbers nothing, and an unnumbered equation (CNT-047),

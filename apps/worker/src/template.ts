@@ -9,6 +9,7 @@ import {
   PUBLISHING_SCHEMA_13,
   PUBLISHING_SCHEMA_14,
   PUBLISHING_SCHEMA_15,
+  PUBLISHING_SCHEMA_16,
   type PublishedDocument,
   type PublishedDocument1,
 } from '@alloy-works/domain';
@@ -19,15 +20,15 @@ export type PublishedSchema = (PublishedDocument | PublishedDocument1)['schema']
 /**
  * `PUBLISHING_SCHEMA` frozen at the schema this worker's newest template was written for, and the one
  * key the maps below take for it. The annotation is the whole point: the day `PUBLISHING_SCHEMA` is
- * repointed at `publishing/17`, THIS LINE stops typechecking, where a key computed from the moving
- * constant would have moved with it and left `publishing/17` read by template 16 with the typecheck
+ * repointed at `publishing/18`, THIS LINE stops typechecking, where a key computed from the moving
+ * constant would have moved with it and left `publishing/18` read by template 17 with the typecheck
  * clean (the schema-keyed map trap, which cost three slices before it was pinned by literals in
- * `template.test.ts`). Freeze the domain's `PUBLISHING_SCHEMA_16` beside the new schema, key template
- * 16's rows by it, and re-point this at the new one - as themes 1 did for `publishing/11`, themes 2
- * for `publishing/12`, W14.4 for `publishing/13`, W14.5 for `publishing/14` and TB1.2 for
- * `publishing/15`.
+ * `template.test.ts`). Freeze the domain's `PUBLISHING_SCHEMA_17` beside the new schema, key template
+ * 17's rows by it, and re-point this at the new one - as themes 1 did for `publishing/11`, themes 2
+ * for `publishing/12`, W14.4 for `publishing/13`, W14.5 for `publishing/14`, TB1.2 for
+ * `publishing/15` and TB3.1 for `publishing/16`.
  */
-export const PUBLISHING_SCHEMA_CURRENT: 'publishing/16' = PUBLISHING_SCHEMA;
+export const PUBLISHING_SCHEMA_CURRENT: 'publishing/17' = PUBLISHING_SCHEMA;
 
 const at = (version: number) =>
   fileURLToPath(new URL(`../templates/publication/${version}/main.typ`, import.meta.url));
@@ -89,15 +90,18 @@ export const PUBLICATION_TEMPLATE = {
   // TB1.2 repointed `PUBLISHING_SCHEMA` at `publishing/16`, and the guard above asked for this row:
   // template 16, which sets a bound table's alignment, wrap, negative colour and source.
   16: { name: 'publication', version: 16, file: at(16) },
+  // TB3.1 repointed `PUBLISHING_SCHEMA` at `publishing/17`, and the guard above asked for this row:
+  // template 17, which letters a table's notes and sets them beneath it.
+  17: { name: 'publication', version: 17, file: at(17) },
 } as const;
 
 /**
  * The template that reads a published document of each schema. `assemble` makes `publishing/1` only
  * for a request made before layouts, which publishes with template 1 as it would have then (Ken's
- * answer F); every request since is made under a layout and a theme, and publishes with template 16,
- * the one TB1.2 writes. Templates 9 to 15 keep their rows for `publishing/9` to `publishing/15`, the
+ * answer F); every request since is made under a layout and a theme, and publishes with template 17,
+ * the one TB3.1 writes. Templates 9 to 16 keep their rows for `publishing/9` to `publishing/16`, the
  * schemas they were written for, although nothing makes any of them now (cross-references 2, ruling
- * R8; equations 2; themes 1; themes 2; W14.4; W14.5); no row names templates 2 to 8.
+ * R8; equations 2; themes 1; themes 2; W14.4; W14.5; TB1.2); no row names templates 2 to 8.
  *
  * **Every key is a frozen constant.** Until cross-references 2 the newest row was keyed by
  * `PUBLISHING_SCHEMA` itself, so repointing it moved the KEY while the value stayed where it was, and
@@ -117,7 +121,8 @@ export const TEMPLATE_READING = {
   [PUBLISHING_SCHEMA_13]: 13,
   [PUBLISHING_SCHEMA_14]: 14,
   [PUBLISHING_SCHEMA_15]: 15,
-  [PUBLISHING_SCHEMA_CURRENT]: 16,
+  [PUBLISHING_SCHEMA_16]: 16,
+  [PUBLISHING_SCHEMA_CURRENT]: 17,
 } as const satisfies Record<
   | PublishedSchema
   | typeof PUBLISHING_SCHEMA_9
@@ -126,6 +131,7 @@ export const TEMPLATE_READING = {
   | typeof PUBLISHING_SCHEMA_12
   | typeof PUBLISHING_SCHEMA_13
   | typeof PUBLISHING_SCHEMA_14
-  | typeof PUBLISHING_SCHEMA_15,
+  | typeof PUBLISHING_SCHEMA_15
+  | typeof PUBLISHING_SCHEMA_16,
   keyof typeof PUBLICATION_TEMPLATE
 >;

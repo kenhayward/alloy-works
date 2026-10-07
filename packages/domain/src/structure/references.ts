@@ -124,6 +124,8 @@ const OFFERED: Readonly<Record<string, ReferenceKind>> = {
   figure: 'figure',
   table: 'table',
   footnote: 'footnote',
+  // A table's footnote, lettered in its table's sequence (TB3-D).
+  tableNote: 'footnote',
   equation: 'equation',
 };
 

@@ -12,6 +12,7 @@ export type {
   Alternative,
   CrossReferenceDisplay,
   CrossReferenceTarget,
+  FootnoteNode,
 } from './inline.js';
 
 export {

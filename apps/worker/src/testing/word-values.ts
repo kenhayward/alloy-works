@@ -211,6 +211,7 @@ export const valuesBindings: ReadonlyMap<string, ReadonlyMap<string, Held>> = ne
           columns: COLUMNS,
           datasetVersion: '00000000-0000-4000-8000-000000000097',
           images: {},
+          key: [],
         },
       ]),
     ),

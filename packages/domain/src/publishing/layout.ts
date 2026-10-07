@@ -56,7 +56,9 @@ import { DRAFT_NOTICE } from './published.js';
  * what a bound table prints with no rows, for a null, and before its source note, in the layout's
  * language. **Required of a layout written at version 7**, and absent from one stored earlier, which
  * reads as having none for version 3's reason: publishing a bound table under it fails by name
- * (`table_words_missing`) rather than printing English.
+ * (`table_words_missing`) rather than printing English. **`words.note` was added at 7 in place** (the
+ * TB3 plan, TB3-F): optional, what a table's whole-table note follows; without it, a note prints
+ * unlabelled.
  */
 export const LAYOUT_SCHEMA_VERSION = 7;
 
@@ -131,6 +133,8 @@ export interface Layout {
     noRows?: string | undefined;
     notAvailable?: string | undefined;
     source?: string | undefined;
+    /** What a table's whole-table note follows (TB3-F): optional at schema 7, added in place. */
+    note?: string | undefined;
   };
   /** The numbering scheme, in structure.md's shape, labels included (PUB-011, STR-013, STR-024). */
   scheme: NumberingScheme;
@@ -264,6 +268,7 @@ export const layoutWordsSchema = z
     noRows: words.optional(),
     notAvailable: words.optional(),
     source: words.optional(),
+    note: words.optional(),
   })
   .refine(
     ({ above, below }) => (above === undefined) === (below === undefined),
@@ -645,10 +650,11 @@ export const SEVENTH_DEFAULT_LAYOUT: Layout6 = (() => {
 })();
 
 /**
- * The default layout as it stands, **version 0.8**: 0.7 with the words a bound table prints with no
- * rows, for a null and before its source (TB1-G), in its language, English, at schema version 7.
+ * **The default layout's version 0.8, as migration 0055 stored it**: 0.7 with the words a bound table
+ * prints with no rows, for a null and before its source (TB1-G), in its language, English, at schema
+ * version 7. Frozen for 0.2's reason.
  */
-export const defaultLayout: Layout = parseLayout({
+export const EIGHTH_DEFAULT_LAYOUT: Layout = parseLayout({
   ...SEVENTH_DEFAULT_LAYOUT,
   schemaVersion: LAYOUT_SCHEMA_VERSION,
   words: {
@@ -657,6 +663,15 @@ export const defaultLayout: Layout = parseLayout({
     notAvailable: 'Not available',
     source: 'Source:',
   },
+});
+
+/**
+ * The default layout as it stands, **version 0.9**: 0.8 with the word a table's whole-table note
+ * follows (TB3-F), at schema version 7, seeded by migration 0056.
+ */
+export const defaultLayout: Layout = parseLayout({
+  ...EIGHTH_DEFAULT_LAYOUT,
+  words: { ...EIGHTH_DEFAULT_LAYOUT.words, note: 'Note:' },
 });
 
 /**

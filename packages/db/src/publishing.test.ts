@@ -482,14 +482,14 @@ describe('requesting and recording a publication', () => {
           },
         });
         if (next.answer !== 'recorded') throw new Error(next.answer);
-        // The default is at 0.8 since 0055, so the version recorded after it is 0.9.
-        expect((await defaultLayout(trx)).number).toBe('0.9');
+        // The default is at 0.9 since 0056, so the version recorded after it is 0.10.
+        expect((await defaultLayout(trx)).number).toBe('0.10');
 
         const inputs = await publicationInputs(trx, id);
         expect(inputs!.layout).toEqual({ versionId: declared.versionId, layout: declared.layout });
         // The document's version as `revision.version` (VER-009): a first version is 0.1.
         expect(inputs!.revision).toBe('0.1');
-        // Thrown to roll the layout's 0.9 back: the rest of the suite publishes under the default.
+        // Thrown to roll the layout's 0.10 back: the rest of the suite publishes under the default.
         throw rolledBack;
       }),
     ).rejects.toBe(rolledBack);

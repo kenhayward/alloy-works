@@ -371,6 +371,8 @@ describe('the bindings of a publication request and a publication', () => {
       dataset: { id: two.dataset, name: 'Depths at north', number: '0.1' },
     });
     expect(held.get('k2')!.dataset.provenance.parameters).toEqual({ site: 'south' });
+    // The key of the definition version the dataset version ran (TB3-B), which a keyed note names.
+    expect(held.get('k1')!.key).toEqual(['id']);
   });
 
   it("holds a request's binding to the resolution it names, while the request is queued, and never changes or removes one", async () => {

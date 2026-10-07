@@ -224,7 +224,11 @@ function namesIn(value: unknown): { reserved: Set<string>; targetable: Set<strin
       const target = asRecord(record.target);
       if (target?.kind === 'block' && typeof target.block === 'string') reserved.add(target.block);
     }
-    for (const [name, member] of Object.entries(record)) walk(member, name === 'marks');
+    // A keyed note's key is column names and values (TB3-A): a key column called id is no identifier.
+    for (const [name, member] of Object.entries(record)) {
+      if (name === 'key' && record.kind === 'keyed') continue;
+      walk(member, name === 'marks');
+    }
   };
   walk(value, false);
   return { reserved, targetable };
@@ -312,10 +316,11 @@ function reidentifyBlock(value: unknown, state: State): unknown[] {
     out.binding = reidentifyInline(block.binding, state)[0];
   }
   // A bound table's binding (the TB1 plan, TB1-A) is renewed as an inline one is, and counted with
-  // them, before its caption, empty statement, note and source, in the order a reader meets them.
+  // them, before its caption, empty statement, note, notes (TB3-A) and source, in the order a reader
+  // meets them.
   if (block.type === 'boundTable') {
     if ('binding' in block) out.binding = reidentifyInline(block.binding, state)[0];
-    for (const member of ['caption', 'empty', 'note', 'source'] as const) {
+    for (const member of ['caption', 'empty', 'note', 'notes', 'source'] as const) {
       if (member in block) out[member] = inlines(block[member]);
     }
   }

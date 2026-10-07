@@ -2284,3 +2284,82 @@ describe('a bound table (the TB1 plan, TB1-A and TB1-B)', () => {
     }
   });
 });
+
+describe("a bound table's notes (the TB3 plan, TB3-A)", () => {
+  const run = (value: string) => ({ type: 'text', value, marks: [] });
+  const note = (id: string, anchor: Record<string, unknown>) => ({
+    type: 'footnote',
+    id,
+    anchor,
+    content: [{ type: 'paragraph', id: `${id}-p`, style: 'body', content: [run('Estimated')] }],
+  });
+  const keyed = (id: string, key: Record<string, unknown> = { site: 'North' }, column = 'depth') =>
+    note(id, { kind: 'keyed', key, column });
+  const column = (id: string, name = 'depth') => note(id, { kind: 'column', column: name });
+  const boundTable = (notes: unknown[]) => ({
+    type: 'boundTable',
+    id: 'T1',
+    binding: {
+      type: 'binding',
+      id: 'k1',
+      query: '00000000-0000-4000-8000-00000000d001',
+      parameters: {},
+      mode: 'checked',
+    },
+    caption: [run('Readings')],
+    columns: [
+      { column: 'site', header: 'Site' },
+      { column: 'depth', header: 'Depth' },
+    ],
+    headerColumn: false,
+    notes,
+  });
+  const parsed = (notes: unknown[]) => parseContentDocument(doc([boundTable(notes)]));
+
+  it('holds keyed and column notes through the parse of what the parse returned', () => {
+    const once = parsed([keyed('n1', { site: 'North', on: true }), column('n2')]);
+    expect(parseContentDocument(once)).toEqual(once);
+    expect(once.content[0]).toMatchObject({ notes: [{ id: 'n1' }, { id: 'n2' }] });
+  });
+
+  it('refuses a note of any other anchor in notes, and either new kind anywhere else', () => {
+    for (const kind of ['span', 'table']) {
+      expect(() => parsed([note('n1', { kind })]), kind).toThrow(/n1 .*bound table's notes/);
+    }
+    const inParagraph = {
+      type: 'paragraph',
+      id: 'p1',
+      style: 'body',
+      content: [run('A'), keyed('n1')],
+    };
+    expect(() => parseContentDocument(doc([inParagraph]))).toThrow(/n1 .*only a bound table/);
+    const inCaption = { ...boundTable([]), notes: undefined, caption: [run('A'), column('n1')] };
+    expect(() => parseContentDocument(doc([inCaption]))).toThrow(/n1 .*only a bound table/);
+  });
+
+  it('refuses an empty notes, more than 200, and a note naming a column not shown', () => {
+    expect(() => parsed([])).toThrow();
+    const many = Array.from({ length: 201 }, (_, at) => column(`n${at}`));
+    expect(() => parsed(many)).toThrow();
+    expect(() => parsed(many.slice(0, 200))).not.toThrow();
+    expect(() => parsed([column('n1', 'colour')])).toThrow(/n1 names colour, a column not shown/);
+    expect(() => parsed([keyed('n1', { site: 'North' }, 'colour')])).toThrow(
+      /n1 names colour, a column not shown/,
+    );
+  });
+
+  it('refuses a key of no columns, of more than 32, a null value, and one not in NFC', () => {
+    const decomposed = 'Café';
+    expect(() => parsed([keyed('n1', {})])).toThrow(/n1 .*1 to 32/);
+    const wide = Object.fromEntries(Array.from({ length: 33 }, (_, at) => [`c${at}`, '1']));
+    expect(() => parsed([keyed('n1', wide)])).toThrow(/n1 .*1 to 32/);
+    expect(() => parsed([keyed('n1', { site: null })])).toThrow();
+    expect(() => parsed([keyed('n1', { site: decomposed })])).toThrow(/not in NFC/);
+    expect(() => parsed([keyed('n1', { [decomposed]: 'North' })])).toThrow(/not in NFC/);
+  });
+
+  it("claims each note's identifiers with the component's others", () => {
+    expect(() => parsed([column('T1')])).toThrow(/T1 is used more than once/);
+    expect(() => parsed([column('n1'), column('n1')])).toThrow(/n1 is used more than once/);
+  });
+});

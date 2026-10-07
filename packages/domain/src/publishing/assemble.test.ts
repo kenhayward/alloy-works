@@ -52,6 +52,7 @@ import {
   PUBLISHING_SCHEMA_13,
   PUBLISHING_SCHEMA_14,
   PUBLISHING_SCHEMA_15,
+  PUBLISHING_SCHEMA_16,
   type PublishedBlock,
   type PublishedDocument,
   type PublishedInline,
@@ -1148,8 +1149,8 @@ describe('assemble', () => {
     ]);
   });
 
-  it('assembles under a layout as publishing/16, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/16');
+  it('assembles under a layout as publishing/17, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/17');
     // Frozen with templates 3 and 4 and the publications made by them, exactly as `publishing/2` was
     // frozen when a run began to carry its marks: a template version is a record, not something to
     // migrate.
@@ -1735,8 +1736,8 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     ]);
   });
 
-  it('makes publishing/16, and publishing/4 to publishing/15 are frozen', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/16');
+  it('makes publishing/17, and publishing/4 to publishing/16 are frozen', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/17');
     expect(PUBLISHING_SCHEMA_4).toBe('publishing/4');
     expect(PUBLISHING_SCHEMA_5).toBe('publishing/5');
     expect(PUBLISHING_SCHEMA_6).toBe('publishing/6');
@@ -1749,6 +1750,7 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     expect(PUBLISHING_SCHEMA_13).toBe('publishing/13');
     expect(PUBLISHING_SCHEMA_14).toBe('publishing/14');
     expect(PUBLISHING_SCHEMA_15).toBe('publishing/15');
+    expect(PUBLISHING_SCHEMA_16).toBe('publishing/16');
   });
 });
 
@@ -1843,6 +1845,7 @@ describe('a table, published (tables 2)', () => {
         // Numbered, so the list of tables lists it (W14.4).
         listed: true,
         note: null,
+        notes: [],
       },
     ]);
   });
@@ -2609,6 +2612,26 @@ describe('footnotes and the table note, published (footnotes 2)', () => {
     walk(blocksOf(assembled));
     return found;
   };
+  /** Each table's lettered notes, and the marks in its rows, row by row (TB3-E). */
+  const lettersOf = (assembled: Assembled<PublishedDocument>) =>
+    blocksOf(assembled).flatMap((block) =>
+      block.type === 'table'
+        ? [
+            {
+              notes: block.notes.map((each) => [each.letter, each.anchor]),
+              marks: block.rows.map((row) =>
+                row.cells.flatMap((cell) =>
+                  cell.blocks.flatMap((inner) =>
+                    inner.type === 'paragraph'
+                      ? inner.runs.flatMap((run) => ('tableMark' in run ? [run.tableMark] : []))
+                      : [],
+                  ),
+                ),
+              ),
+            },
+          ]
+        : [],
+    );
 
   it('publishes a footnote in running text as a run carrying its number and its paragraphs', () => {
     const assembled = assemble(
@@ -2652,7 +2675,7 @@ describe('footnotes and the table note, published (footnotes 2)', () => {
     ]);
   });
 
-  it("numbers footnotes straight through, in a list's item, a quotation and a table's cell", () => {
+  it("TAB-026 numbers footnotes straight through a list's item and a quotation, letters a table's cell's beneath it, and numbers the next without it", () => {
     const assembled = assemble(
       oneComponent(
         storedList('L1', 'unordered', [
@@ -2664,9 +2687,14 @@ describe('footnotes and the table note, published (footnotes 2)', () => {
           content: [paragraph('b1', text('Said'), footnote('f2', [paragraph('b', text('B'))]))],
         },
         table({}, [text('North'), footnote('f3', [paragraph('c', text('C'))])]),
+        paragraph('p4', text('After'), footnote('f4', [paragraph('d', text('D'))])),
       ),
     );
     expect(footnotesOf(assembled).map((each) => each.label)).toEqual(['1', '2', '3']);
+    const anchor = `b-${id('calib')}-f3`;
+    expect(lettersOf(assembled)).toEqual([
+      { notes: [['a', anchor]], marks: [[{ letter: 'a', link: anchor }], []] },
+    ]);
   });
 
   it('drops the empty paragraphs of a footnote, and refuses one with no text at all', () => {
@@ -2811,26 +2839,31 @@ describe('footnotes and the table note, published (footnotes 2)', () => {
     ] as const) {
       const assembled = assemble(oneComponent(anchored(anchor, over)));
       expect(
-        footnotesOf(assembled).map((each) => each.label),
+        lettersOf(assembled)[0]?.notes.map(([letter]) => letter),
         anchor.kind,
-      ).toEqual(['1']);
+      ).toEqual(['a']);
     }
   });
 
-  it("refuses a footnote in a table's header row, which the engine would set again on every page (final review)", () => {
+  it("TAB-026 letters a footnote in a table's header row, its mark a plain letter, which the engine sets again on every page, and its note beneath (TB3-E)", () => {
     const headed = table({ headerRows: 1 }, [
       text('North'),
       footnote('f1', [paragraph('fp1', text('Once.'))]),
     ]);
-    expect(failuresOf(assemble(oneComponent(headed)))).toEqual([
-      failed('footnote_not_publishable_here', 'k1'),
+    const assembled = assemble(oneComponent(headed));
+    expect(failuresOf(assembled)).toEqual([]);
+    const anchor = `b-${id('calib')}-f1`;
+    expect(lettersOf(assembled)).toEqual([
+      { notes: [['a', anchor]], marks: [[{ letter: 'a', link: null }], []] },
     ]);
-    // A header column is set once, so a footnote there is published.
+    // A header column is set once, so its mark is a link.
     const columned = table({ headerColumns: 1 }, [
       text('North'),
       footnote('f1', [paragraph('fp1', text('Once.'))]),
     ]);
-    expect(footnotesOf(assemble(oneComponent(columned))).map((each) => each.label)).toEqual(['1']);
+    expect(lettersOf(assemble(oneComponent(columned)))[0]?.marks[0]).toEqual([
+      { letter: 'a', link: anchor },
+    ]);
   });
 
   it('refuses a footnote the layout gives no number, rather than printing it with none (final review)', () => {
@@ -2917,21 +2950,27 @@ describe('footnotes and the table note, published (footnotes 2)', () => {
     ]);
   });
 
-  it("publishes a table's note on the table, and none where it has none or it says nothing", () => {
-    const noteOf = (over: object) => {
-      const [block] = blocksOf(assemble(oneComponent(table(over))));
+  it("publishes a table's note on the table after the layout's word, and none where it has none or it says nothing", () => {
+    const noteOf = (over: object, layout = defaultLayout) => {
+      const [block] = blocksOf(assemble({ ...oneComponent(table(over)), layout }));
       if (block?.type !== 'table') throw new Error('not a table');
       return block.note;
     };
-    expect(
-      noteOf({ note: [text('Figures are '), marked('estimated', emphasis), text('.')] }),
-    ).toEqual([
+    const said = { note: [text('Figures are '), marked('estimated', emphasis), text('.')] };
+    expect(noteOf(said)).toEqual([
+      { text: 'Note: ', marks: [] },
       { text: 'Figures are ', marks: [] },
       { text: 'estimated', marks: [{ kind: 'emphasis' }] },
       { text: '.', marks: [] },
     ]);
+    // Unlabelled under a layout without the word (TB3-F).
+    const without = layoutWith((layout) => {
+      delete layout.words.note;
+    });
+    expect(noteOf(said, without)?.[0]).toEqual({ text: 'Figures are ', marks: [] });
     expect(noteOf({})).toBeNull();
     expect(noteOf({ note: [] })).toBeNull();
+    expect(noteOf({ note: [text('  ')] })).toBeNull();
   });
 });
 
@@ -4204,7 +4243,7 @@ describe('equations, published (equations 2)', () => {
         { cells: [{ blocks: [{ id: 'h1', runs: [equation] }] }] },
         { cells: [{ blocks: [{ id: 'c1', runs: [equation] }] }] },
       ],
-      note: [{ text: 'Where ', marks: [] }, equation],
+      note: [{ text: 'Note: ', marks: [] }, { text: 'Where ', marks: [] }, equation],
     });
     expect(paragraphRuns(noted)[1]).toMatchObject({
       footnote: { paragraphs: [{ id: 'np1', runs: [equation] }] },
@@ -4528,11 +4567,11 @@ describe('the theme a publication is set from (themes 1)', () => {
     return styles;
   };
 
-  it('makes publishing/16, carrying the Typst projection of every paragraph, table and image style the theme holds, used or not', () => {
+  it('makes publishing/17, carrying the Typst projection of every paragraph, table and image style the theme holds, used or not', () => {
     const theme = resolved();
     const assembled = assemble(oneParagraph(text('Set the tray.')));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    expect(assembled.document.schema).toBe('publishing/16');
+    expect(assembled.document.schema).toBe('publishing/17');
     expect(assembled.document.theme).toEqual(projectTypst(theme));
     expect(Object.keys(assembled.document.theme.tables)).toEqual(['table', 'banded']);
     expect(Object.keys(assembled.document.theme.images)).toEqual([
@@ -5899,37 +5938,21 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     expect(failuresOf(assemble(six))).toEqual([]);
   });
 
-  it("reports a footnote in a table's header row, which the PDF's engine sets on every page, only where the PDF is asked for, and publishes it for Word", () => {
+  it("publishes a footnote in a table's header row for every format, lettered beneath the table, its mark a plain letter (TB3-E)", () => {
     const headed = table(
       't1',
       { headerRows: 1 },
       paragraph('h1', text('North'), footnote('n1', paragraph('n1p', text('Once.')))),
     );
-    const refused = failed('footnote_not_publishable_here', 'h1');
     const over = { ...holding(headed), layout: listless };
-    expect(failuresFor(over)).toEqual({ pdf: [refused], docx: [], both: [refused] });
-    // The trap Word 1 left (Word 3, ruling R1): the PDF's refusal no longer drops the footnote, so a
-    // Word document carries it in its header row, numbered as the PDF would have numbered it.
+    expect(failuresFor(over)).toEqual({ pdf: [], docx: [], both: [] });
     const [tabled] = blocksOf(assemble({ ...over, formats: ['docx'] }));
     if (tabled?.type !== 'table') throw new Error('no table');
     expect(paragraphRuns(tabled.rows[0]!.cells[0]!.blocks[0])).toEqual([
       { text: 'North', marks: [] },
-      {
-        footnote: {
-          label: '1',
-          anchor: null,
-          paragraphs: [
-            {
-              type: 'paragraph',
-              id: 'n1p',
-              anchor: null,
-              style: 'footnote',
-              runs: [{ text: 'Once.', marks: [] }],
-            },
-          ],
-        },
-      },
+      { tableMark: { letter: 'a', link: null } },
     ]);
+    expect(tabled.notes).toMatchObject([{ letter: 'a', paragraphs: [{ id: 'n1p' }] }]);
     // A footnote in a caption is refused whatever the format: it is where no footnote may stand.
     const captioned = table('t2', {
       caption: [text('Readings'), footnote('n2', paragraph('n2p', text('Once.')))],
@@ -5976,6 +5999,46 @@ describe('the formats a publication is assembled for (Word 1)', () => {
     expect(paragraphRuns(seen)[1]).toEqual({
       reference: { anchor, text: null, page: true, relative: false, link: true },
     });
+  });
+
+  it("prints a reference to a table's footnote, a header row's among them, as its table's label and its letter, for every format, landing beneath the table (TB3-D)", () => {
+    const headed = table(
+      't1',
+      { headerRows: 1 },
+      paragraph('h1', text('North'), footnote('n1', paragraph('n1p', text('Once.')))),
+    );
+    const over = {
+      ...holding(
+        headed,
+        paragraph(
+          'b1',
+          text('See '),
+          xref('x1', toBlock('n1'), 'number'),
+          text(' on '),
+          xref('x2', toBlock('n1'), 'page'),
+          text(', '),
+          xref('x3', toBlock('n1'), 'relative'),
+        ),
+      ),
+      layout: listless,
+    };
+    expect(failuresFor(over)).toEqual({ pdf: [], docx: [], both: [] });
+    const [tabled, seen] = blocksOf(assemble({ ...over, formats: ['pdf', 'docx'] }));
+    if (tabled?.type !== 'table') throw new Error('no table');
+    const anchor = `b-${id('calib')}-n1`;
+    expect(tabled.notes.map((each) => each.anchor)).toEqual([anchor]);
+    const runs = paragraphRuns(seen);
+    expect(runs[1]).toEqual({
+      reference: {
+        anchor,
+        text: expect.stringMatching(/^Table \S+ \(a\)$/) as unknown as string,
+        page: false,
+        relative: false,
+        link: true,
+      },
+    });
+    // Its note stands beneath the table, so above the paragraph reading it.
+    expect(runs[5]).toMatchObject({ reference: { text: 'above' } });
   });
 
   it('R2 refuses an equation the maths tree cannot set for Word alone, the PDF alone and both, by the construct: none leaves a tree for Word to write, and none is dropped from a Word document in silence (Word 4)', () => {
@@ -6486,7 +6549,8 @@ describe("each image's size against the Word page (Word 2, ruling R3)", () => {
         [inlineImageKey(node, { kind: 'term', block: 'L1', item: 1 }, 1), placeSize('listItem')],
         [inlineImageKey(node, { kind: 'attribution', block: 'q1' }, 0), sizeOf('attribution')],
         [inlineImageKey(node, { kind: 'paragraph', block: 'c1' }, 0), placeSize('tableCell')],
-        [inlineImageKey(node, { kind: 'note', block: 't1' }, 1), sizeOf('tableNote')],
+        // After the layout's word for a note (TB3-E).
+        [inlineImageKey(node, { kind: 'note', block: 't1' }, 2), sizeOf('tableNote')],
       ]),
     );
     // The same size the PDF's run carries, where the em is the same on both pages.

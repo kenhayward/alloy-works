@@ -11628,6 +11628,56 @@
                             "kind"
                           ],
                           "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "keyed"
+                            },
+                            "key": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "additionalProperties": {
+                                "type": [
+                                  "string",
+                                  "boolean"
+                                ]
+                              }
+                            },
+                            "column": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "key",
+                            "column"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "column"
+                            },
+                            "column": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "column"
+                          ],
+                          "additionalProperties": false
                         }
                       ]
                     },
@@ -12478,6 +12528,56 @@
                           },
                           "required": [
                             "kind"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "keyed"
+                            },
+                            "key": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "additionalProperties": {
+                                "type": [
+                                  "string",
+                                  "boolean"
+                                ]
+                              }
+                            },
+                            "column": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "key",
+                            "column"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "column"
+                            },
+                            "column": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "column"
                           ],
                           "additionalProperties": false
                         }
@@ -79524,6 +79624,56 @@
                                                     "kind"
                                                   ],
                                                   "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "kind": {
+                                                      "type": "string",
+                                                      "const": "keyed"
+                                                    },
+                                                    "key": {
+                                                      "type": "object",
+                                                      "propertyNames": {
+                                                        "type": "string",
+                                                        "minLength": 1
+                                                      },
+                                                      "additionalProperties": {
+                                                        "type": [
+                                                          "string",
+                                                          "boolean"
+                                                        ]
+                                                      }
+                                                    },
+                                                    "column": {
+                                                      "type": "string",
+                                                      "minLength": 1
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "kind",
+                                                    "key",
+                                                    "column"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "kind": {
+                                                      "type": "string",
+                                                      "const": "column"
+                                                    },
+                                                    "column": {
+                                                      "type": "string",
+                                                      "minLength": 1
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "kind",
+                                                    "column"
+                                                  ],
+                                                  "additionalProperties": false
                                                 }
                                               ]
                                             },
@@ -80477,6 +80627,56 @@
                                           },
                                           "required": [
                                             "kind"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "keyed"
+                                            },
+                                            "key": {
+                                              "type": "object",
+                                              "propertyNames": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              },
+                                              "additionalProperties": {
+                                                "type": [
+                                                  "string",
+                                                  "boolean"
+                                                ]
+                                              }
+                                            },
+                                            "column": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "key",
+                                            "column"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "kind": {
+                                              "type": "string",
+                                              "const": "column"
+                                            },
+                                            "column": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            }
+                                          },
+                                          "required": [
+                                            "kind",
+                                            "column"
                                           ],
                                           "additionalProperties": false
                                         }
@@ -83061,6 +83261,8 @@
                               "format_mismatch",
                               "table_too_long",
                               "table_words_missing",
+                              "key_required",
+                              "note_row_missing",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -84426,6 +84628,8 @@
                               "format_mismatch",
                               "table_too_long",
                               "table_words_missing",
+                              "key_required",
+                              "note_row_missing",
                               "engine_failed",
                               "store_failed"
                             ]
@@ -92655,6 +92859,8 @@
                               "format_mismatch",
                               "table_too_long",
                               "table_words_missing",
+                              "key_required",
+                              "note_row_missing",
                               "engine_failed",
                               "store_failed"
                             ]

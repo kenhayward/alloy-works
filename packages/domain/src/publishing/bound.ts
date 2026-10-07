@@ -2,6 +2,7 @@ import type { BlockNode, BoundTableNode } from '../content/model/blocks.js';
 import type { InlineNode } from '../content/model/inline.js';
 import type { ColumnAlignment } from '../data/field-format.js';
 import type { LaidOut } from '../data/table.js';
+import type { PlacedNote } from '../data/table-notes.js';
 
 /**
  * **A bound table as the binding stage leaves it** (the TB1 plan, TB1-H): an ordinary table's members -
@@ -54,17 +55,29 @@ export function laidOutTable(
   table: BoundTableNode,
   laid: LaidOut,
   negativeColour: string,
+  notes: readonly PlacedNote[] = [],
 ): LaidOutTable {
   const cell = (content: InlineNode[], at: string, colspan = 1) => ({
     content: [{ type: 'paragraph' as const, id: `${table.id}-${at}`, style: 'body', content }],
     colspan,
     rowspan: 1,
   });
-  const header = { cells: laid.header.map((each, x) => cell(runOf(each.text), `h${x}`)) };
+  // Each note placed stands at the end of its cell as a footnote there (TB3-C), its header's for a
+  // column note, in the order `placeTableNotes` lettered them - the reading order an authored table's
+  // footnotes are lettered in, so `assemble` letters them alike.
+  const marked = (row: number | null, column: number): InlineNode[] =>
+    notes
+      .filter((each) => each.row === row && each.column === column)
+      .map((each) => ({ ...each.note, anchor: { kind: 'span' as const } }));
+  const header = {
+    cells: laid.header.map((each, x) => cell([...runOf(each.text), ...marked(null, x)], `h${x}`)),
+  };
   const body =
     laid.empty === null
       ? laid.rows.map((row, y) => ({
-          cells: row.cells.map((each, x) => cell(runOf(each.text), `r${y}c${x}`)),
+          cells: row.cells.map((each, x) =>
+            cell([...runOf(each.text), ...marked(y, x)], `r${y}c${x}`),
+          ),
         }))
       : [{ cells: [cell([...laid.empty.content], 'empty', laid.empty.colspan)] }];
   const marks =
