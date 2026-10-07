@@ -365,7 +365,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   product pastes as one. A footnote cannot be placed in a caption, a term, an attribution, a table's
   note or preformatted text, and one stored by a table's key or by row and column is kept as it is.
   A published document prints each footnote at the foot of the page its mark is on, numbered with
-  the document's number for it (see Publishing).
+  the document's number for it (see Publishing); one in a table's cell, its header rows included, is
+  lettered in the table's own sequence and printed beneath the table instead.
 
 - **Cross-references.** **Reference** on the formatting toolbar, or `Ctrl+Alt+X` (`Cmd+Option+X` on a
   Mac), opens a dialog for pointing at something from the cursor. Editing a component in its
@@ -777,13 +778,21 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   why it shows none - more than 1,500 rows, a column gone, a format that does not fit - before any
   publish. Each change in the panel redraws it at once, without a save. The read text draws it as the
   editor does, and the Data tab lists it as a table of its rows, failed where it would not print. It
-  is resolved, checked, accepted and kept like any value. **A document holding one publishes**: the PDF and Word print it as a table
+  is resolved, checked, accepted and kept like any value. **Notes**: the panel's Notes adds a note on
+  a column, or on a cell of the row a key names - each key value chosen from the rows shown or typed,
+  and read as its column's type, so 1.50 finds 1.5 - typed in place beneath the table, listed with
+  **Edit** and **Remove**; the page draws each note's letter in its cell or header and beneath the
+  table, a, b, c in reading order, and says in place and on the Data tab where a note's row has gone or
+  its query definition declares no key. **Wide**, on this panel and the Table panel, sets a table to
+  scale or rotate where it is too wide, or to follow its table style. **A document holding one publishes**: the PDF and Word print it as a table
   of the result, each value formatted by the table style's format for its type under the column's own,
   in the document's language, numbers lined up on their decimal separator, a negative in parentheses
   and the style's colour where asked, no rows as the headers and the statement, and the source beneath
-  it; `provenance.json` records each printed cell beside the value it was printed from. A table of more
-  than 1,500 rows, a column the result lacks or a format that does not fit its column fails the publish
-  by name.
+  it, its notes lettered beneath it before the source; `provenance.json` records each printed cell
+  beside the value it was printed from, and each note's letter and anchor. A table of more than 1,500
+  rows, a column the result lacks, a format that does not fit its column, a note whose row the result
+  no longer has, or a note on a row where the query definition declares no key fails the publish by
+  name.
 - **The Data tab.** Beside Contents, in a document holding values: every value you may see, under its
   part of the document, with its definition, its mode and its state - never resolved, changed since
   resolved, failed, revision waiting, definition changed, changed since published, or holding -
@@ -1153,11 +1162,15 @@ window.` and offers **Recover here** instead. Either starts editing, taking the 
   **A footnote prints** at the foot of the page its mark is on, with the document's number for it in
   the text and before the note - numbered straight through the body, and on their own in front matter
   and in each appendix - and a screen reader reads it as a note, in the language of the text its mark
-  stands in; one too long for what is left of its page begins there and carries on over the next. A
-  table's note prints beneath the table, a little smaller; it does not travel with the table, so a
-  table that ends a page can have its note begin the next. A footnote in a caption, a heading, a
-  definition's term, a quotation's attribution, a table's note or a table's header row - which is
-  printed again on every page the table reaches - is refused, naming where it is, as is one with no
+  stands in; one too long for what is left of its page begins there and carries on over the next.
+  **A footnote in a table** is lettered instead - a, b, c in the table's reading order, its header rows
+  included - its mark a superscript letter in its cell, a link to its note in a body cell, and the note
+  printed beneath the table after the table's own note, which begins with the layout's word for a note,
+  and before its source; later footnotes are numbered without it, and a cross-reference to one prints
+  its table and letter, "Table 3 (a)". Publications made before keep their numbers. A table's notes
+  print a little smaller; they do not travel with the table, so a table that ends a page can have its
+  notes begin the next. A footnote in a caption, a heading, a definition's term, a quotation's
+  attribution or a table's note is refused, naming where it is, as is one with no
   text, one anchored to a table as a whole, and one anchored to a table's cell the table does not have.
 
   **A cross-reference prints** what it was set to show: the number the document gives its target -
@@ -1205,9 +1218,14 @@ window.` and offers **Recover here** instead. Either starts editing, taking the 
   **This is a PDF of paragraphs, lists, quotations, preformatted text, tables and their notes,
   figures, images in a line of text, footnotes, cross-references and equations, not publishing.** A
   block equation wider than its line runs past both margins and can be cut off at the page's edge,
-  and one in a line of text runs past the right margin; nothing refuses either yet. A table too wide
-  for the page is not turned, shrunk or split, and a column is not aligned by the kind of value it
-  holds. A citation
+  and one in a line of text runs past the right margin; nothing refuses either yet. **A table too wide
+  for the page** is scaled to fit it, or, where the table or its table style says to rotate, set on
+  landscape pages of its own with the running heads and page numbers carried on - one inside a
+  quotation or a list's item scales, since a page cannot turn there - and stays one table to a screen
+  reader; one that would shrink below half its size, that is taller than a page once scaled, or that
+  is too wide even for a landscape page fails the publish by name. In Word a rotated table has a
+  landscape section of its own, footnotes numbered on across it, and one the PDF scaled is fitted by
+  Word and named on the publication's page. No table is split across pages sideways. A citation
   in a quotation's attribution cannot be written or published yet. A list nested
   past about thirty levels is stored by the editor and cannot be published at all, and the page says
   only that the publish failed. Quotations inside one another stop at fifteen in the editor, which is
@@ -1269,9 +1287,9 @@ Named explicitly so nobody has to read the source to find out:
 - No page for component types: a Definitions manager makes and changes them through the API alone,
   and nothing yet changes which one is the environment's default.
 - No way to delete a component or a document, including one made by mistake.
-- A bound table has no notes on its cells or columns, and no strategy for a table wider than the page;
-  where the document holds no result for it, its panel offers the columns of its definition's latest
-  version.
+- Where the document holds no result for a bound table, its panel offers the columns of its
+  definition's latest version. A note is added to a bound table from its panel alone, not from a menu
+  on a cell.
 - A document's own parameters do not exist, so a binding taking one cannot be resolved. A connection
   reaches PostgreSQL, as its own account or as each person by a role the database's administrator
   made, an HTTPS API by its own secret or an S3 bucket by a static key pair, each answering JSON,

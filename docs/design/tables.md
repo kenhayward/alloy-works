@@ -18,7 +18,7 @@ grouping, totals and subtotals, transposition and conditional emphasis rules - e
 the presentation layer. A tenant groups and totals in the query (TAB-020). Revising a bound cell by
 hand is T3's with the rest of revision (ADR-0036, DAT-063).
 
-> **TB1 and TB2 built; TB3 not built.** [TB1](../plans/2026-10-07-tb1-the-bound-table-published.md)
+> **Built: TB1, TB2 and TB3.** [TB1](../plans/2026-10-07-tb1-the-bound-table-published.md)
 > built the `boundTable` block and its walks, `formatCell` and `layoutTable`, the table style's formats
 > and alignment by type (default theme 0.7), layout schema 7's `noRows`, `notAvailable` and `source`,
 > the binding paths, and the publish: the stage lays a bound table out in its place, template 16 and
@@ -28,7 +28,12 @@ hand is T3's with the rest of revision (ADR-0036, DAT-063).
 > [TB2](../plans/2026-10-07-tb2-the-bound-table-on-the-page.md) built [the page](#the-page): Place as
 > Table, the Bound table panel and its Format dialog, the body drawn in the editor and the read text by
 > `layoutTable` from the rows route, and the Data tab's row; it claims nothing new.
-> [Changed while building](#changed-while-building) records where TB1 and TB2 differ from what follows.
+> [TB3](../plans/2026-10-07-tb3-notes-and-wide-tables.md) built [notes](#notes) - keyed and column notes,
+> every table's notes lettered beneath it, `key_required` and `note_row_missing` - and
+> [wide tables](#wide-tables), scaled or rotated in the PDF and Word, both on the page; it answers
+> TAB-024 to TAB-026, TAB-033, TAB-051, DAT-012, DAT-048 and CNT-039, so every claim below is built.
+> [Changed while building](#changed-while-building) records where TB1, TB2 and TB3 differ from what
+> follows.
 
 ## The shape in one paragraph
 
@@ -227,8 +232,13 @@ As TB2 built it ([the TB2 plan](../plans/2026-10-07-tb2-the-bound-table-on-the-p
   column are refused with words. **Change** in the Value panel changes the binding, resolved at once in
   a document; a column the new definition lacks stays, `column_missing`. The caption, empty statement,
   source and note are typed in place.
-- **Notes**: in a document, a cell's or a header's menu adds a note anchored to it; in a component,
-  the panel adds one by typing the key. Notes list beneath the table, lettered. TB3's.
+- **Notes** (TB3.3): the panel's **Notes** adds one on a column the table shows, or on that column's
+  cell in a row named by its key - one field per key column, its values offered from the rows shown or
+  typed, canonicalised by the column's type - lists each by its letter with **Edit** and **Remove**,
+  and offers a cell only where the definition declares a key. Each note is a child beneath the table,
+  typed in place. The page letters them by `placeTableNotes` over every row in the table's order,
+  draws the marks in the cells and headers shown and the letters beneath, and says `note_row_missing`
+  and `key_required` in place and on the Data tab. **Wide** stands on the Table panel and this one.
 - **The Data tab** lists a bound table as one binding, "A table of N rows", with `checkTable`'s
   failures beside its state, which they make `failed`.
 
@@ -296,7 +306,7 @@ what the source returned.
 | `column_repeated`  | save        | A column shown twice under the same header (TAB-048)                      |
 | `column_image`     | page, stage | An image column shown                                                     |
 | `format_mismatch`  | page, stage | A format member meaningless for the column's type                         |
-| `key_required`     | save, stage | A note by key on a definition declaring no key (DAT-012)                  |
+| `key_required`     | page, stage | A note by key on a definition declaring no key (DAT-012)                  |
 | `note_row_missing` | page, stage | A note whose key the result no longer has (DAT-048)                       |
 | `table_too_long`   | page, stage | More rows than the ceiling                                                |
 
@@ -371,6 +381,24 @@ table has every row.
 - **Each panel change is its own undo step**; a header or a unit typed joins the keystrokes before it.
   The panel also has **Delete table**.
 
+What TB3 built that differs; the [TB3 plan](../plans/2026-10-07-tb3-notes-and-wide-tables.md)'s
+table has every row.
+
+- **`key_required` is the page's and the stage's, never a save's** (TB3-B): the walk cannot see the
+  definition. The key is the definition version's that the result ran, which the stage and the bindings
+  view read beside the result.
+- **A footnote in any table leaves the document's sequence** (TB3-D): lettered with its table's notes
+  and printed beneath it, header rows included; a reference to one prints "Table 3 (a)". A table's own
+  note begins with `words.note` (layout 0.9, migration 0056), unlabelled under a layout without it.
+- **Rotate is kept, for a table in the text itself** (TB3-L's spike): one inside a quotation or a list's
+  item scales. Template 18 asks `typst query` (as `typst eval`) first, so `table_too_wide` names its
+  table, at stage `compose`; Word reports `table_reflowed` for each table the PDF scaled.
+- **The ceiling is 1,500 rows**, re-timed with the query and template 18 (TB3.2).
+- **The rows route answers `notes`** (TB3.3): each keyed note's row as an index into the rows it sends,
+  matched over the whole result, so a key column not shown is never sent; its `ETag` covers the notes'
+  anchors. A save naming a key column the version did not name is `definition_unreadable` to one who may
+  not read the definition, as a column is.
+
 ## Build order
 
 1. **TB1, the bound table published**: the block and its walk, `layoutTable` and `formatCell`, the
@@ -380,8 +408,8 @@ table has every row.
 2. **TB2, the page**: Place as Table, the body in a component and a document laid out by the page from
    the rows route, the Bound table panel and Format dialog, the Data tab. Built.
 3. **TB3, notes and wide tables**: keyed and column notes, `key_required`, `note_row_missing`, notes
-   lettered for every table, `wide` for every table, scale and rotate in the PDF and Word. Closes the
-   tables.
+   lettered for every table, `wide` for every table, scale and rotate in the PDF and Word, both on the
+   page. Built; closes the tables.
 
 Then the `templates.md` additions: a template's parameters, and a document's bindings set when it is
 made.

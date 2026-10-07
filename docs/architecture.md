@@ -2519,6 +2519,20 @@ faces, images })`, pure and deterministic - a fixed zip time, the parts in a fix
   and the source - and a body cell's `inset` and `colour`, absent from an authored table, so template
   16 sets an authored table as template 15 did. `PUBLISHING_SCHEMA_15` freezes `publishing/15`. See
   [bound tables](#bound-tables). (`'17'`, B6's, set bound images under template 15.)
+- **Table notes (`publishing/17`, template 17, `PIPELINE_VERSION` `'19'`; TB3.1).** Every table's
+  footnotes leave the document's sequence (TB3-D): `contributions.ts` numbers none inside a table, and
+  `assemble` letters each table's by `placeTableNotes` and publishes them beneath it - the whole table's
+  note first after `words.note`, then the lettered notes, then the source - each a `tableNote`
+  paragraph, a body cell's mark a `Link` to its note and a header's plain; a reference to one prints
+  "Table 1.1 (a)". Layout 0.9 adds `words.note`, optional at layout schema 7, seeded by migration 0056. The Word writer writes superscript runs and paragraphs, never Word footnotes.
+  `PUBLISHING_SCHEMA_16` freezes `publishing/16`. See [bound tables](#bound-tables).
+- **Wide tables (`publishing/18`, template 18, `PIPELINE_VERSION` `'20'`; TB3.2).** A table's `wide`,
+  its own or its style's, `scale` by default: the worker asks Typst first (`Typst.query`, run as
+  `typst eval 'query(<aw-wide>)'`), so a table too wide fails `table_too_wide` by name, at stage
+  `compose`, before the compile; template 18 scales a table too wide to its measure with `reflow`, or
+  sets one to `rotate` in the text itself on landscape pages of its own; the Word writer gives a rotated
+  table a landscape section of its own, footnotes numbered on across it, and reports `table_reflowed`
+  for each table the PDF scaled. `PUBLISHING_SCHEMA_17` freezes `publishing/17`.
 - **Equations (`publishing/11`, template 11).** `packages/domain/src/publishing/maths.ts` is the one
   converter both writers are to read (EQ-B): `mathsTree` reads an equation's stored MathML with the
   strict reader and returns the maths tree - rows, identifiers with their variant by MathML Core's
@@ -3596,11 +3610,13 @@ reader to a named failure over a hostile file within the memory bound; `tests/e2
 
 ## Bound tables
 
-TB1 and TB2 of [tables.md](design/tables.md), built by
-[the TB1 plan](plans/2026-10-07-tb1-the-bound-table-published.md) and
-[the TB2 plan](plans/2026-10-07-tb2-the-bound-table-on-the-page.md): a table bound to a whole query
+[tables.md](design/tables.md), built by
+[the TB1 plan](plans/2026-10-07-tb1-the-bound-table-published.md),
+[the TB2 plan](plans/2026-10-07-tb2-the-bound-table-on-the-page.md) and
+[the TB3 plan](plans/2026-10-07-tb3-notes-and-wide-tables.md): a table bound to a whole query
 result, placed from the Value dialog and shaped in its panel, laid out on the page by the publish's own
-function, resolved like any binding, and published as a table laid out from its result.
+function, resolved like any binding, and published as a table laid out from its result, its notes
+lettered beneath it and, where too wide, scaled or rotated.
 
 **The model** (`packages/domain`): `boundTable`, a block at content schema 1 (TB1-A), holding a
 binding with no take (`tableBindingSchema`, built with the inline binding from one `bindingShape`) and
@@ -3615,8 +3631,8 @@ which resolve, the session read and confirm read as such (TB1-C), and the contra
 merged over the table style's for its type (`mergeFormat`), in exact decimal arithmetic on the
 canonical text, with the value catalogue's separators for the document's language; `layoutTable`
 chooses, heads, sorts stably and formats the columns, and fails `column_missing`, `column_image`,
-`format_mismatch` or `table_too_long` (`TABLE_ROWS_MAX`, 2,000 rows, measured on Linux at 8 columns
-in 1 GiB). The table style's `fields`, `align`, `negativeColour` and `unitBrackets` are optional at
+`format_mismatch` or `table_too_long` (`TABLE_ROWS_MAX`, 1,500 rows, measured on Linux at 8 columns
+in 1 GiB, re-timed by TB3.2). The table style's `fields`, `align`, `negativeColour` and `unitBrackets` are optional at
 `catalogue/3`; the default theme's 0.7 sets them and layout 0.8, at layout schema 7, the words
 `noRows`, `notAvailable` and `source`, both seeded by migration 0055 on 0048's and 0035's guards.
 
@@ -3671,6 +3687,35 @@ each change one transaction. The Data tab lists it as "A table of N rows", `fail
 | `web: src/editor/BoundTablePanel.tsx`, `FormatDialog.tsx` | The panel and the Format dialog                       |
 | `web: src/structure/bindingContexts.ts`, `tableRows.ts`   | The rows fetched for the page, and the table setting  |
 | `tests/browser: src/bound-tables.test.ts`                 | Placed and shaped by the keyboard, axe, and published |
+
+**Notes and wide tables** (TB3). A bound table's `notes` hold footnotes anchored `keyed` - a key record
+and a column - or `column`, admitted there alone (TB3-A); `wide` stands on a table, a bound table and
+the table style. `data/table-notes.ts` holds `matchNoteRows`, each keyed note's row compared by
+`compareCanonical` for its column's type, `placeTableNotes`, lettering a table's notes in reading
+order, and `canonicalKeyValue`, a key typed on the page. The stage reads the key of the definition
+version a result ran (`recordedBindings`, `Held.key`) and fails `key_required` and `note_row_missing`;
+`laidOutTable` places each note at the end of its cell, so `assemble` letters every table by one path.
+**The rows route** answers `notes`, each keyed note's row as an index into the rows it sends, matched
+over the whole result so a key column not shown is never sent, its `ETag` covering the anchors; the
+bindings view sends `held.key`; a save naming a key column the version did not name is
+`definition_unreadable` to a non-reader. **The editor** holds each note as a `boundTableNote` child,
+`footnoteParagraph+`, beneath the table; `boundTablesShown` letters them over `tableOrder`, every row
+in the table's order, and the body, a decoration's widget and `render.ts` draw the marks and letters.
+`tables.ts` adds `addBoundTableNote`, `selectBoundTableNote`, `removeBoundTableNote` and `setTableWide`;
+`BoundTablePanel` gains Notes and Wide, `TablePanel` Wide, and the Data tab note failures
+(`noteFailures`).
+
+| Where                                                      | What                                                       |
+| ---------------------------------------------------------- | ---------------------------------------------------------- |
+| `domain: src/data/table-notes.ts`                          | `matchNoteRows`, `placeTableNotes`, `canonicalKeyValue`    |
+| `db: src/publishing.ts`, `migrations/tenant/0056`          | The recorded key; `words.note` in the default layout's 0.9 |
+| `worker: templates/publication/17/`, `18/`, `src/typst.ts` | Notes lettered beneath; scale and rotate; the query        |
+| `domain: src/word/write.ts`, `word/numbering.ts`           | Notes as paragraphs; a rotated table's landscape section   |
+| `service: src/data/bindings.ts`, `src/editing.ts`          | The rows route's `notes`, the view's key, the save's rule  |
+| `editor: src/schema.ts`, `mapping.ts`, `tables.ts`         | `boundTableNote`, its mapping, the commands                |
+| `web: src/editor/BoundTablePanel.tsx`, `TablePanel.tsx`    | Notes and Wide                                             |
+| `tests/browser: src/table-notes.test.ts`                   | Notes added by the keyboard, rotated, axe, published       |
+| `tests/e2e: src/bound-tables.test.ts`                      | A note whose row a source change removed fails the publish |
 
 ## Containers and images
 

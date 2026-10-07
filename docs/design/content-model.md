@@ -141,7 +141,7 @@ say this design holds ground it does not.
 | CNT-084, CNT-128          | The mark is here; carrying a language and a hyperlink into every output format is the publisher's                                                                                                         |
 | CNT-164, CNT-057, CNT-058 | A toolbar, a keyboard shortcut and an insertion palette are the editor's; component-editor.md claims CNT-164 and CNT-057. CNT-035 was split into CNT-164, T1, and CNT-165, the defined term's control, T6 |
 | CNT-053, CNT-102          | Citation style rendering is T6, in **PUB**                                                                                                                                                                |
-| CNT-039                   | The strict data anchor is here in shape, but generated content needs a bound table, which is T2. Claiming it would claim the T2 case                                                                      |
+| CNT-039                   | Claimed by [tables.md](tables.md#notes): a bound table's note anchored `keyed` names its row by key values (TB3)                                                                                          |
 | CNT-120                   | Admonitions are T7, and the block is deliberately absent from the vocabulary                                                                                                                              |
 | CNT-122                   | Claimed by [themes.md](themes.md): resolving an image style to real dimensions is **STY**'s, and the editor resolves it by those same rules                                                               |
 | CNT-094                   | Already claimed by [themes.md](themes.md)                                                                                                                                                                 |
@@ -414,6 +414,12 @@ nothing edits either until the footnotes slice.
 
 `text` is the only leaf. Eight inline nodes: `text`, `equation`, `footnote`, `crossReference`,
 `citation`, `variable`, `binding`, `image`.
+
+**A footnote's anchor** is one of six kinds: `span`, where it stands in text; `cell` by key,
+`cellPosition` and `table`, which nothing makes; and, only in a bound table's `notes` and only there,
+`keyed` - `{ key, column }`, the key naming 1 to 32 of the definition's key columns, each value
+canonical, non-null and NFC - and `column` (TB3-A, [tables.md](tables.md#notes)). Additive at schema
+version 1; the product clipboard refuses a keyed or column note pasted into a paragraph.
 
 Thirteen marks, closed by CNT-006, and every one carries an identifier.
 

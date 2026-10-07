@@ -784,6 +784,12 @@ own structure elements.
 
 ### How a footnote is published
 
+> **A footnote in a table is lettered beneath it** ([tables.md](tables.md#notes), TB3-D, built by TB3):
+> a cell's footnote, header rows included, and a bound table's keyed and column notes leave the
+> document's sequence, lettered a, b, c in the table's reading order and printed beneath it after its
+> note and before its source - a body cell's mark a `Link` to its note, a header's plain - in the PDF
+> and as paragraphs in Word. What follows holds for every footnote in the text.
+
 - **A footnote is published where it stands in a paragraph** - running text, a list's item, a
   quotation, a table's cell - as a Typst `footnote` whose numbering is `number`'s label for it, so the
   mark in the text and the mark at the foot are the number the numbering route and the outline panel

@@ -3,6 +3,36 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.142.0 - 2026-10-07 (PR #NNN)
+
+### Added
+
+- **Notes on a bound table.** A bound table can hold notes on a column, or on a cell found by its row's
+  key values, so a note follows its row however the rows are sorted. The Bound table panel's **Notes**
+  adds one, each key value chosen from the rows shown or typed and read as its column's type, and each
+  note is typed in place beneath the table. The page draws each note's letter in its cell or header and
+  beneath the table, and says in place and on the Data tab where a note's row has gone or its query
+  definition declares no key. Each prints beneath the table, lettered, in the PDF and Word, and a note
+  on a row the result no longer has, or a note on a row where the query definition declares no key,
+  fails the publish by name.
+- **Wide tables are scaled or turned, never cut off.** A table too wide for the page is scaled down to
+  fit it in the PDF, or, where its **Wide** says to rotate, set on landscape pages of its own with the
+  running heads and page numbers carried on. **Wide** stands on the Table panel and the Bound table
+  panel: the table style's, scale or rotate. Each stays one table to a screen reader. A table that would
+  have to shrink below half its size, that is taller than a page once scaled, or that is too wide even
+  for a landscape page fails the publish by name. In Word a rotated table has a landscape section of its
+  own, and a table the PDF scaled is fitted to the page by Word and noted on the publication's page.
+
+### Changed
+
+- **Table footnotes are lettered beneath their table.** A footnote in any table's cell, its header rows
+  included, is now printed as a letter in the cell and a note beneath the table - a, b, c in reading
+  order - rather than at the foot of the page. Later document footnotes are renumbered without them,
+  and a cross-reference to one prints its table and letter, such as "Table 3 (a)". A table's own note
+  now begins with the layout's word for a note, "Note:". Publications already made keep their numbers.
+- **A bound table prints at most 1,500 rows**, down from 2,000, since measuring a table's width takes
+  more of the engine's memory.
+
 ## 0.141.0 - 2026-10-07 (PR #440)
 
 ### Added
