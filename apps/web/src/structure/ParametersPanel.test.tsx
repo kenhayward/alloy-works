@@ -3,7 +3,8 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { shimRangeMeasurement } from '../test/range.js';
-import { ParametersPanel } from './ParametersPanel.js';
+import type { TemplateParameter } from '@alloy-works/domain';
+import { documentOffer, ParametersPanel } from './ParametersPanel.js';
 import {
   DOCUMENT,
   INTRODUCTION,
@@ -171,6 +172,26 @@ describe('the Parameters panel (the TP1 plan, TP1-I)', () => {
     await screen.findByRole('treeitem', { name: 'Introduction' });
     await waitFor(() => expect(fake.sent.some((each) => each.url === PARAMETERS)).toBe(true));
     expect(screen.queryByRole('region', { name: 'Parameters' })).toBeNull();
+  });
+
+  it('offers the Value dialog the declarations once read, saying it reads them meanwhile and why there are none (the TP2 final review)', () => {
+    const declared = DECLARED as unknown as readonly TemplateParameter[];
+    expect(documentOffer({ shown: true, read: undefined, holdsValues: true })).toEqual({
+      none: 'reading',
+    });
+    expect(documentOffer({ shown: true, read: null, holdsValues: true })).toEqual({
+      none: 'unread',
+    });
+    expect(documentOffer({ shown: true, read: declared, holdsValues: true })).toEqual({
+      declarations: declared,
+    });
+    expect(documentOffer({ shown: true, read: [], holdsValues: true })).toEqual({
+      none: 'unreadable',
+    });
+    expect(documentOffer({ shown: true, read: [], holdsValues: false })).toEqual({ none: 'blank' });
+    expect(documentOffer({ shown: false, read: undefined, holdsValues: false })).toEqual({
+      none: 'blank',
+    });
   });
 
   it('tells the page the declarations it read, for the Value dialog (the TP2 plan, TP2-F)', async () => {

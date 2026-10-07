@@ -22,6 +22,7 @@ import type {
 import { SESSION_COOKIE, type ProvenanceView } from '@alloy-works/api-contract';
 import {
   assetHolding,
+  bindingQuestion,
   componentsBinding,
   dataPolicy,
   datasetName,
@@ -84,7 +85,6 @@ import {
   takes,
   takeValue,
   sortResult,
-  substituteDocumentArguments,
   TABLE_ROWS_MAX,
   type AnyBinding,
   type AssetFormat,
@@ -210,6 +210,11 @@ interface Placed {
    * the component holds it, its document arguments as written, which clients compare it by.
    */
   readonly binding: AnyBinding;
+  /**
+   * The question it asks: its document arguments substituted where the document's template feeds
+   * them to arguments of their type (`bindingQuestion`; the TP2 final review), which `digest` is over.
+   */
+  readonly question: AnyBinding;
   readonly digest: string;
   /** The document's latest version's parameters, which its document arguments take (TP2-B). */
   readonly parameters: DocumentParameters;
@@ -229,8 +234,7 @@ interface Placed {
 const key = (node: string, binding: string) => `${node} ${binding}`;
 
 /** The binding with its document arguments substituted: the question it asks (TP2-A). */
-const questionOf = (placed: Placed): AnyBinding =>
-  substituteDocumentArguments(placed.binding, placed.parameters);
+const questionOf = (placed: Placed): AnyBinding => placed.question;
 
 /**
  * Where bindings are read from beside the component versions (B2-C): the caller's own editing session,
@@ -302,13 +306,13 @@ async function bindingsPlaced(
     });
     if (!content.ok) throw new Error(`The component version ${occurrence.version} does not read`);
     for (const { binding, place, decorative } of bindingsIn(content.document)) {
+      const question = await bindingQuestion(trx, documentId, binding, document.version.parameters);
       placed.push({
         node: occurrence.node,
         component: occurrence.component,
         binding,
-        digest: sha256(
-          bindingDigestInput(substituteDocumentArguments(binding, document.version.parameters)),
-        ),
+        question,
+        digest: sha256(bindingDigestInput(question)),
         parameters: document.version.parameters,
         place,
         ...(decorative ? { decorative } : {}),
@@ -535,14 +539,16 @@ async function prepare(
         },
       );
     }
-    // Its document arguments substituted (TP2-C): one the document has no value for is required.
+    // Its document arguments substituted (TP2-C): one the document has no value for is required
+    // where its parameter is, and otherwise left out, the run made without it (the TP2 final review).
     const literal = literalValues(questionOf(placed));
+    const requires = new Set(
+      definition.parameters.filter((each) => each.required).map((each) => each.name),
+    );
     const problems = [
-      ...literal.fromDocument.map((parameter) => ({
-        parameter,
-        rule: 'required' as const,
-        value: '',
-      })),
+      ...literal.fromDocument
+        .filter((parameter) => requires.has(parameter))
+        .map((parameter) => ({ parameter, rule: 'required' as const, value: '' })),
       ...checkParameterValues(definition.parameters, literal.values).filter(
         (problem) => !literal.fromDocument.includes(problem.parameter),
       ),
@@ -1429,7 +1435,7 @@ function viewer(
         continue;
       }
       const stale = held.digest !== placed.digest;
-      const changed = stale ? parametersChanged(placed, held.held.provenance) : [];
+      const changed = stale ? parametersChanged(placed, held.held.provenance, held.digest) : [];
       // A waiting result that is another person's own view is offered to them alone (D7-H).
       const waitingWhose = held.waiting && ownViewOf(held.waiting.provenance.identity);
       const offered = waitingWhose === undefined || waitingWhose === caller.principalId;
@@ -1475,21 +1481,35 @@ type Views = ReturnType<typeof viewer>;
 
 /**
  * The document's parameters a stale binding reads whose values now differ from those its held result
- * ran with (the TP2 plan, TP2-E): for each `{ document }` argument, the definition parameter's value in
- * the provenance against the document's, compared as the parameters digest compares them, by the
- * document's names, once each.
+ * ran with (the TP2 plan, TP2-E), by the document's names, once each: only where each is substituted
+ * now and the question, with those arguments at the values the result ran with, is the one held - so
+ * only their values moved, and not the component's binding too (the TP2 final review). A component
+ * repointing an argument to another parameter whose value differs is not told apart, since the digest
+ * held is over the values substituted.
  */
-function parametersChanged(placed: Placed, provenance: Provenance): string[] {
+function parametersChanged(placed: Placed, provenance: Provenance, heldDigest: string): string[] {
   const spelled = (value: ParameterValues[string]) =>
     parametersDigestInput(value === undefined ? {} : { value });
   const changed = new Set<string>();
+  const atHeld: Record<string, AnyBinding['parameters'][string]> = {
+    ...placed.question.parameters,
+  };
   for (const [name, parameter] of Object.entries(placed.binding.parameters)) {
     if (!('document' in parameter)) continue;
-    const ran = spelled(provenance.parameters[name]);
-    const now = spelled(placed.parameters[parameter.document]);
-    if (ran !== now) changed.add(parameter.document);
+    const ran = provenance.parameters[name];
+    const now = placed.question.parameters[name];
+    if (now === undefined || !('literal' in now)) continue;
+    if (spelled(ran) === spelled(now.literal as ParameterValues[string])) continue;
+    changed.add(parameter.document);
+    // A result run without it held the argument as written, as the document then had no value.
+    atHeld[name] =
+      ran === undefined || ran === null
+        ? parameter
+        : ({ literal: ran } as AnyBinding['parameters'][string]);
   }
-  return [...changed];
+  if (changed.size === 0) return [];
+  const asked = { ...placed.question, parameters: atHeld } as AnyBinding;
+  return sha256(bindingDigestInput(asked)) === heldDigest ? [...changed] : [];
 }
 
 /** The view of one binding as a document holds it now. */

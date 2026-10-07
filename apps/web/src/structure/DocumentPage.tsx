@@ -28,7 +28,6 @@ import { PaneSeparator, usePaneWidth } from '../layouts/PaneWidth.js';
 import { StatusBar, useStatus } from '../shell/Status.js';
 import styles from './DocumentPage.module.css';
 import { ComponentEditor } from '../editor/ComponentEditor.js';
-import type { DocumentOffer } from '../editor/ValueDialog.js';
 import { ProvenancePanel } from '../data/ProvenancePanel.js';
 import { bindingStatesIn, holdsBinding, type BindingState } from './bindingContexts.js';
 import { boundTablesByKey, type TableRows } from './tableRows.js';
@@ -57,7 +56,7 @@ import { inverseOf, nodeName, placeOf, visibleOrder, type Names } from './tree.j
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import { HeldFields, type SaveAnswer } from '../metadata/HeldFields.js';
-import { ParametersPanel, type ParametersSaved } from './ParametersPanel.js';
+import { documentOffer, ParametersPanel, type ParametersSaved } from './ParametersPanel.js';
 import type { ParameterValue } from './ParameterInput.js';
 import { byName } from '../metadata/people.js';
 import { UnheldFaces, ZoomControl } from '../theme/Canvas.js';
@@ -590,7 +589,7 @@ export function DocumentPage({
   // The template's declarations the Parameters panel read, by document, for the Value dialog (TP2-F).
   const [declared, setDeclared] = useState<{
     readonly document: string;
-    readonly declarations: readonly TemplateParameter[];
+    readonly declarations: readonly TemplateParameter[] | null;
   } | null>(null);
   useEffect(() => {
     if (!holdsBindings && bindingSession === null) {
@@ -1319,15 +1318,12 @@ export function DocumentPage({
   const shown = shownTab(tab, tabs);
   // What the Value dialog's From the document is offered (TP2-F): the declarations a reader of the
   // template is given; none held, why - values withheld with them, or no parameters at all.
-  const declarations = declared?.document === document.id ? declared.declarations : null;
-  const documentParameters: DocumentOffer =
-    declarations !== null && declarations.length > 0
-      ? { declarations }
-      : Object.keys(document.parameters).length > 0
-        ? { none: declarations === null ? 'unread' : 'unreadable' }
-        : document.templated && declarations === null
-          ? { none: 'unread' }
-          : { none: 'blank' };
+  const holdsValues = Object.keys(document.parameters).length > 0;
+  const documentParameters = documentOffer({
+    shown: document.templated || holdsValues,
+    read: declared?.document === document.id ? declared.declarations : undefined,
+    holdsValues,
+  });
   const ids = tabIds(shown);
   return (
     // Set in the theme and layout this document publishes under, its own and its components' text alike
@@ -1569,7 +1565,7 @@ export function DocumentPage({
               />
             )}
             {/* What the document was made with, beside its fields (the TP1 plan, TP1-I). */}
-            {(document.templated || Object.keys(document.parameters).length > 0) && (
+            {(document.templated || holdsValues) && (
               <ParametersPanel
                 client={client}
                 document={document.id}

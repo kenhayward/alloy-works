@@ -487,6 +487,22 @@ describe("a binding's document arguments substituted (TP2-A)", () => {
     expect(substituteDocumentArguments(asked, { ids: [] })).toEqual(asked);
   });
 
+  it('leaves an argument whose document parameter it does not admit as it is (the TP2 final review)', () => {
+    const asked = parse({
+      parameters: { on: { document: 'issued' }, from: { document: 'period' } },
+    });
+    expect(
+      substituteDocumentArguments(
+        asked,
+        { issued: '2026-10-01', period: '2026-09-01' },
+        (argument) => argument !== 'on',
+      ),
+    ).toEqual({
+      ...asked,
+      parameters: { on: { document: 'issued' }, from: { literal: '2026-09-01' } },
+    });
+  });
+
   it('returns a binding with no document argument unchanged, so its digest stays', () => {
     const asked = parse({ parameters: { site: { literal: 'north' } } });
     expect(substituteDocumentArguments(asked, { site: 'south' })).toBe(asked);

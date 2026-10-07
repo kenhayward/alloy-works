@@ -285,9 +285,11 @@ of entries, or a choice where `permitted` lists values (TPL-026). In the same tr
 As built by [the TP2 plan](../plans/2026-10-08-tp2-parameters-feeding-bindings.md):
 
 - **A `{ document: name }` argument takes the document's latest value** at resolve and check
-  (`substituteDocumentArguments`, made once in the service's `bindingsPlaced`). Refused
-  `parameter_invalid`: an argument the document has no value for, or an empty list, rule `required`
-  naming the definition's parameter; a document parameter whose declaration does not feed arguments,
+  (`bindingQuestion` in `packages/db`, read by the service's `bindingsPlaced` and the publish
+  request's `bindingsHeld`), substituted only where `argumentRefusal` admits the document's parameter,
+  so one repointed to a parameter not fed to arguments reads as changed. Refused `parameter_invalid`:
+  an argument the document has no value for, or an empty list, rule `required` naming the definition's
+  parameter, where that parameter is required - otherwise the run is made without it; a document parameter whose declaration does not feed arguments,
   `feeds`, or whose base type or `list` is not the definition parameter's, `type`, each naming the
   document's parameter and nothing of its declaration (`argumentRefusal`). The value is then checked
   against the definition's own declaration, which may be narrower.
@@ -296,7 +298,8 @@ As built by [the TP2 plan](../plans/2026-10-08-tp2-parameters-feeding-bindings.m
   and `binding_unresolved` - is taken over the binding **with its document arguments replaced by their
   current values**; the view still answers the binding as written. A binding with none keeps the digest
   it has, so no resolution held before moved. The view's `held.parameters` names each document parameter
-  that differs from the held provenance, and the Data tab says "The document's period changed". A check
+  that differs from the held provenance where only its value moved - the question with it at the held
+  value digests to the one held - and the Data tab says "The document's period changed". A check
   leaves a changed binding unchecked; the author resolves it again, as after any edit (ADR-0035).
 - **The Value dialog's From the document**, beside each parameter: in a document, a choice of its
   template's parameters that feed arguments and match the definition parameter's base type and `list`,

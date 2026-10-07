@@ -1367,19 +1367,22 @@ its **History**. Development's Report declares three: `reviewer`, `issued` and `
 | `tests/browser: src/parameters.test.ts`, `tests/e2e: src/parameters.test.ts`  | Made and changed by the keyboard, axe; over HTTP, a fixed one refused                                       |
 
 **Parameters feeding bindings** ([the TP2 plan](plans/2026-10-08-tp2-parameters-feeding-bindings.md)).
-`bindingsPlaced` reads the document's latest parameters and substitutes each `{ document: name }`
-argument holding a value (`substituteDocumentArguments`): `Placed.digest` is taken over the
-substituted binding, so every comparer - resolve and settle, check, accept, confirm, Keep, the view's
+`bindingsPlaced` and `bindingsHeld` take each binding's question from `bindingQuestion` (db), which
+substitutes each `{ document: name }` argument holding a value whose declaration `argumentRefusal`
+admits (`substituteDocumentArguments`), reading declarations and definition parameters once per
+transaction: `Placed.digest` is taken over the substituted binding, so every comparer - resolve and settle, check, accept, confirm, Keep, the view's
 `stale`, `sincePublished`, `mayCheck` and the publish request's `bindingsHeld` - compares like with
 like, while `Placed.binding` stays as written for the view and the page. A binding with no document
 argument keeps its digest. `literalValues` answers `fromDocument`, each argument left unsubstituted
-refused `parameter_invalid`, rule `required`; `documentParameterDeclarations` reads the recorded
+refused `parameter_invalid`, rule `required`, where its definition parameter is required, and left out
+of the run otherwise; `documentParameterDeclarations` reads the recorded
 template version's parameters, and `argumentRefusal` refuses one not feeding arguments (`feeds`) or of
 another base type or `list` (`type`), naming the document's parameter alone. The view's
-`held.parameters` names each document parameter differing from the held provenance, which the Data
+`held.parameters` names each document parameter differing from the held provenance where only its
+value moved, which the Data
 tab says as "The document's period changed". On the page, the Parameters panel hands the page the
 declarations it read (`onDeclarations`), which the page passes to the component editor and the Value
-dialog's **From the document** as a `DocumentOffer`: a choice of those `argumentRefusal` allows, or why
+dialog's **From the document** as a `DocumentOffer` (`documentOffer`, `reading` until the read settles): a choice of those `argumentRefusal` allows, or why
 none is offered and a typed name held to `PARAMETER_NAME`. The dialog compares a changed binding's
 question by `questionSpelledAlike`, and `settleBinding` says a resolve's `parameter_invalid` by
 parameter.

@@ -6,7 +6,7 @@ import {
 } from '@alloy-works/db';
 import { queryAs } from '@alloy-works/db/testing';
 import { defaultNumberingScheme, TEMPLATE_SCHEMA_VERSION } from '@alloy-works/domain';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
   binding,
   definitionBody,
@@ -430,8 +430,12 @@ describe("a binding's document arguments, through the service", () => {
     h.connector.run = ranOk([['7', 'Harbour']]);
     let release!: () => void;
     h.connector.hold = new Promise<void>((done) => (release = done));
+    const asked = h.connector.asked.length;
     const pending = resolve(document.id, node, 'b1');
-    await new Promise((settle) => setTimeout(settle, 150));
+    // The resolve has reached the source, which holds its answer.
+    await vi.waitFor(() =>
+      expect(h.connector.asked.slice(asked).some((each) => each.path === '/v1/run')).toBe(true),
+    );
     await change(document.id, { site: '8' });
     release();
     h.connector.hold = undefined;
@@ -445,5 +449,110 @@ describe("a binding's document arguments, through the service", () => {
       stale: false,
       provenance: { parameters: { site: '8' } },
     });
+  });
+  it('runs without a document argument the document has no value for where its parameter is not required, and marks it changed once the value is set (the TP2 final review)', async () => {
+    const optional = await h.definition(
+      connection.id,
+      definitionBody(connection.id, {
+        parameters: [{ name: 'site', type: { base: 'integer' }, required: false, list: false }],
+      }),
+    );
+    const { document, node } = await placed({ template: sites }, fromDocument('b1', optional.id));
+    h.connector.run = ranOk([['1', 'North']]);
+    const asked = h.connector.asked.length;
+    const answer = await resolve(document.id, node, 'b1');
+    expect(answer.statusCode, answer.body).toBe(200);
+    const run = h.connector.asked.slice(asked).find((each) => each.path === '/v1/run')!;
+    expect((run.body as { values: Json }).values).toEqual({});
+    expect((await stateOf(document.id, 'b1')).held).toMatchObject({ stale: false });
+    await change(document.id, { site: '7' });
+    expect((await stateOf(document.id, 'b1')).held).toMatchObject({
+      stale: true,
+      parameters: ['site'],
+    });
+  });
+
+  it('reads a binding repointed to a parameter not fed to arguments as changed, though it holds the same value, and the publish refuses it (the TP2 final review)', async () => {
+    const text = await h.definition(
+      connection.id,
+      definitionBody(connection.id, {
+        parameters: [{ name: 'who', type: { base: 'text' }, required: true, list: false }],
+        fetch: { kind: 'sql', text: 'select id, name from sample.site where name = {{who}}' },
+      }),
+    );
+    // Report's own definition, with `who` fed to arguments beside `reviewer`, which seeds a field alone.
+    const read = await h.call('ada', 'GET', `/v1/templates/${report}`);
+    const definition = read.json<{ definition: Json & { parameters: Json[] } }>().definition;
+    const made = await h.call('ada', 'POST', `/v1/spaces/${h.general}/templates`, {
+      definition: {
+        ...definition,
+        name: `Reviewed ${Date.now()}`,
+        parameters: [
+          ...definition.parameters.filter((each) => each['name'] === 'reviewer'),
+          {
+            name: 'who',
+            type: { base: 'text' },
+            required: false,
+            list: false,
+            changeable: true,
+            feeds: { arguments: true },
+          },
+        ],
+      },
+    });
+    expect(made.statusCode, made.body).toBe(200);
+    const { component, document, node } = await placed(
+      { template: made.json<{ id: string }>().id, parameters: { who: 'Grace', reviewer: 'Grace' } },
+      binding('b1', text.id, { parameters: { who: { document: 'who' } } }),
+    );
+    h.connector.run = ranOk([['1', 'Grace']]);
+    expect((await resolve(document.id, node, 'b1')).statusCode).toBe(200);
+    expect((await publish(document.id)).statusCode).toBe(200);
+    await h.place(
+      component,
+      { type: 'text', value: 'The site is ', marks: [] },
+      binding('b1', text.id, { parameters: { who: { document: 'reviewer' } } }),
+    );
+    expect((await stateOf(document.id, 'b1')).held).toMatchObject({ stale: true });
+    const refused = await publish(document.id);
+    expect(refused.statusCode, refused.body).toBe(400);
+    expect(refused.json()).toMatchObject({
+      code: 'binding_unresolved',
+      bindings: [{ node, binding: 'b1', reason: 'changed' }],
+    });
+    const answer = await resolve(document.id, node, 'b1');
+    expect(answer.statusCode).toBe(400);
+    expect(answer.json<{ problems: unknown[] }>().problems).toEqual([
+      { parameter: 'reviewer', rule: 'feeds', value: '' },
+    ]);
+  });
+
+  it('names a changed parameter only where its value alone moved, not where the component changed too or the document has none (the TP2 final review)', async () => {
+    const definition = await h.definition(connection.id);
+    const { component, document, node } = await placed(
+      { template: sites, parameters: { site: '7' } },
+      fromDocument('b1', definition.id),
+    );
+    h.connector.run = ranOk([['7', 'Harbour']]);
+    expect((await resolve(document.id, node, 'b1')).statusCode).toBe(200);
+    // Its take changed as well as the value: the component changed it too.
+    await h.place(
+      component,
+      { type: 'text', value: 'The site is ', marks: [] },
+      fromDocument('b1', definition.id, 'site', { take: { column: 'id' } }),
+    );
+    await change(document.id, { site: '8' });
+    const both = (await stateOf(document.id, 'b1')).held!;
+    expect(both.stale).toBe(true);
+    expect(both.parameters).toBeUndefined();
+    // Repointed to a parameter the document has no value for.
+    await h.place(
+      component,
+      { type: 'text', value: 'The site is ', marks: [] },
+      fromDocument('b1', definition.id, 'lot'),
+    );
+    const none = (await stateOf(document.id, 'b1')).held!;
+    expect(none.stale).toBe(true);
+    expect(none.parameters).toBeUndefined();
   });
 });

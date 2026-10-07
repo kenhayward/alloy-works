@@ -552,8 +552,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   Value dialog's **From the document**, beside each parameter, offers the document's parameters that
   its template gives to values of that type, or, where it cannot - in a component alone, or a template
   you may not read - says why and takes the name typed. Resolved and checked, the value runs with the
-  document's current value; a parameter the document has no value for, does not give to values, or of
-  another type is refused by name. Changing a parameter marks just the values that read it changed,
+  document's current value. A parameter the document does not give to values, or of another type, is
+  refused by name, and one it has no value for is too where the query requires it; otherwise the
+  query runs without it, and setting it later marks the value changed. Changing a parameter marks just the values that read it changed,
   the Data tab saying "The document's period changed", and the publish refuses them until they are
   resolved again; every other value keeps what it holds.
 
@@ -1314,8 +1315,7 @@ Named explicitly so nobody has to read the source to find out:
 - Where the document holds no result for a bound table, its panel offers the columns of its
   definition's latest version. A note is added to a bound table from its panel alone, not from a menu
   on a cell.
-- A connection
-  reaches PostgreSQL, as its own account or as each person by a role the database's administrator
+- A connection reaches PostgreSQL, as its own account or as each person by a role the database's administrator
   made, an HTTPS API by its own secret or an S3 bucket by a static key pair, each answering JSON,
   JSON Lines, CSV or XLSX; no S3 role, instance credentials or anonymous bucket, and no
   connection runs with a person's own token from their sign-in provider

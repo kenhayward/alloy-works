@@ -162,11 +162,14 @@ describe("a document's parameter feeding a value, in Chromium (the TP2 plan, tas
       await tabTo(page, chosen);
       await page.keyboard.press('ArrowDown');
       expect(await chosen.inputValue()).toBe('period');
-      // Within the dialog: the modal leaves the text behind it inert, and a Report's text scrolls, which
-      // axe would call a scrollable region with nothing to focus.
-      await checkAxe(page, 'the Value dialog taking a parameter From the document', task.meta, {
-        within: '[role="dialog"]',
+      // The whole page, allowing one finding alone: the modal makes the text behind it inert, so a
+      // Report's text, which scrolls, has nothing to focus while the dialog is open. Not a fault, so
+      // no issue: it is found by its element's own class, which carries its stylesheet's hash.
+      const state = 'the Value dialog taking a parameter From the document';
+      const scroller = await text.evaluate((element) => `.${element.classList[0] ?? ''}`);
+      await checkAxe(page, state, task.meta, {
         shows: [dialog, chosen],
+        allowed: [{ state, rule: 'scrollable-region-focusable', target: scroller, issue: 0 }],
       });
       await tabTo(page, dialog.getByRole('button', { name: 'Insert' }));
       await page.keyboard.press('Enter');

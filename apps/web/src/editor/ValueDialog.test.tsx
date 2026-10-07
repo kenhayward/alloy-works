@@ -4,7 +4,13 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
-import { PARAMETER_WORDS, PLACE_AS, RUNS_AS, ValueDialog } from './ValueDialog.js';
+import {
+  PARAMETER_WORDS,
+  PLACE_AS,
+  RUNS_AS,
+  ValueDialog,
+  type DocumentOffer,
+} from './ValueDialog.js';
 
 const SITES = '44444444-4444-4444-8444-444444444441';
 const VISITS = '44444444-4444-4444-8444-444444444442';
@@ -541,5 +547,58 @@ describe("the Value dialog's From the document (the TP2 plan, TP2-F)", () => {
         'One document will hold no value for it until resolved again: Site report.',
       ),
     ).toBeInTheDocument();
+  });
+
+  it('forgets a parameter taken from the document once another definition without it is chosen (the TP2 final review)', async () => {
+    const user = userEvent.setup();
+    const { onDone } = dialog({ inDocument: null });
+    await user.click(await screen.findByRole('radio', { name: /Site by id/ }));
+    await user.click(await screen.findByRole('checkbox', { name: 'Take site from the document' }));
+    await user.click(screen.getByRole('radio', { name: /Visits by person/ }));
+    await screen.findByRole('radio', { name: 'Always the latest' });
+    await user.click(await screen.findByRole('button', { name: 'Insert' }));
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(onDone).toHaveBeenCalledWith(
+      { query: VISITS, parameters: {}, mode: 'checked', take: { column: 'id' } },
+      'line',
+    );
+  });
+
+  it("holds its choice while the document's parameters are read, and offers them once they are (the TP2 final review)", async () => {
+    const user = userEvent.setup();
+    const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const path = new URL(request.url).pathname;
+      if (path === '/v1/query-definitions') {
+        return json(200, {
+          items: [summary(SITES, 'Site by id', 'service')],
+          next: null,
+          total: 1,
+          facets: { spaces: [] },
+        });
+      }
+      if (path === `/v1/query-definitions/${SITES}`) return json(200, view());
+      return json(200, { documents: { readable: [], others: 0 } });
+    }) as unknown as typeof fetch;
+    const shown = (documentParameters: DocumentOffer) => (
+      <ValueDialog
+        client={createApiClient({ baseUrl: 'http://value.test', fetch: fetching })}
+        componentId={COMPONENT}
+        current={null}
+        inDocument={{ pinned: false }}
+        documentParameters={documentParameters}
+        onDone={() => null}
+        onCancel={() => undefined}
+      />
+    );
+    const { rerender } = render(shown({ none: 'reading' }));
+    await user.click(await screen.findByRole('radio', { name: /Site by id/ }));
+    await user.click(await screen.findByRole('checkbox', { name: 'Take site from the document' }));
+    expect(screen.getByText("Reading this document's parameters.")).toBeInTheDocument();
+    expect(screen.queryByLabelText('Name of the document parameter for site')).toBeNull();
+    rerender(shown({ declarations: [offered('lot', 'integer'), offered('site_no', 'integer')] }));
+    expect(
+      await screen.findByRole('combobox', { name: 'Document parameter for site' }),
+    ).toHaveValue('lot');
   });
 });

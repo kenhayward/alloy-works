@@ -51,7 +51,7 @@ export const PARAMETER_WORDS = {
  */
 export type DocumentOffer =
   | { readonly declarations: readonly TemplateParameter[] }
-  | { readonly none: 'blank' | 'unreadable' | 'unread' };
+  | { readonly none: 'blank' | 'unreadable' | 'unread' | 'reading' };
 
 /** Why no document parameter is offered, before the dialog takes a typed name instead. */
 const NONE_OFFERED = {
@@ -59,6 +59,7 @@ const NONE_OFFERED = {
   blank: 'This document holds no parameters to offer.',
   unreadable: "You may not read this document's template, so its parameters cannot be offered.",
   unread: "This document's parameters could not be read, so none can be offered.",
+  reading: "Reading this document's parameters.",
   unfit: "None of this document's parameters is given to values of this type, so none is offered.",
 } as const;
 
@@ -338,6 +339,14 @@ export function ValueDialog({
           identity: identityOf(data.connection),
           mayUse: data.mayUse === true,
         });
+        // Only the chosen version's parameters are taken from the document (the TP2 final review).
+        const asks = new Set(
+          ((definition.parameters ?? []) as Parameter[]).map((each) => each.name),
+        );
+        setNamed((now) => {
+          const kept = Object.entries(now).filter(([name]) => asks.has(name));
+          return kept.length === Object.keys(now).length ? now : Object.fromEntries(kept);
+        });
         setColumn((now) =>
           columns.some((each) => each.name === now) ? now : (columns[0]?.name ?? ''),
         );
@@ -392,9 +401,9 @@ export function ValueDialog({
         );
   const problemOf = (name: string) =>
     problems.find((each) => each.parameter === name && (tried || each.rule !== 'required'));
-  const unnamed = Object.entries(named)
-    .filter(([, name]) => !PARAMETER_NAME.test(name))
-    .map(([parameter]) => parameter);
+  const unnamed = (ready?.parameters ?? [])
+    .filter((each) => Object.hasOwn(named, each.name) && !PARAMETER_NAME.test(named[each.name]!))
+    .map((each) => each.name);
   const unnamedShown = (parameter: string) =>
     unnamed.includes(parameter) && (tried || named[parameter] !== '');
   // The document's parameters a definition's parameter may take: those fed to values, of its type.
@@ -404,6 +413,25 @@ export function ValueDialog({
       : documentParameters.declarations
           .filter((each) => argumentRefusal(each, parameter) === null)
           .map((each) => each.name);
+  const reading =
+    inDocument !== null && 'none' in documentParameters && documentParameters.none === 'reading';
+  // Once the declarations arrive, a parameter ticked while they were read takes the first offered.
+  useEffect(() => {
+    if (ready === null || inDocument === null || !('declarations' in documentParameters)) return;
+    const { declarations } = documentParameters;
+    setNamed((now) => {
+      let moved = false;
+      const next = { ...now };
+      for (const parameter of ready.parameters) {
+        if (next[parameter.name] !== '') continue;
+        const first = declarations.find((each) => argumentRefusal(each, parameter) === null);
+        if (first === undefined) continue;
+        next[parameter.name] = first.name;
+        moved = true;
+      }
+      return moved ? next : now;
+    });
+  }, [ready, inDocument, documentParameters]);
   const noneOffered =
     inDocument === null
       ? NONE_OFFERED.alone
@@ -687,7 +715,10 @@ export function ValueDialog({
                             </select>
                           </>
                         )}
-                        {fromDocument && !choosing && (
+                        {fromDocument && !choosing && reading && (
+                          <p className={styles['note']}>{NONE_OFFERED.reading}</p>
+                        )}
+                        {fromDocument && !choosing && !reading && (
                           <>
                             <p id={`${field}-why`} className={styles['note']}>
                               {noneOffered} {TYPE_A_NAME}
