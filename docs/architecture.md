@@ -2514,6 +2514,11 @@ faces, images })`, pure and deterministic - a fixed zip time, the parts in a fix
   not already stand where its style places it. `table-and-image-styles.test.ts` sets both sides of each
   through veraPDF and shows a document under the default theme set by template 15 as by template 14;
   `word.test.ts` the Word document, through the Open XML SDK.
+- **Bound tables (`publishing/16`, template 16, `PIPELINE_VERSION` `'18'`; TB1).** A table may be a
+  bound table the binding stage laid out: `PublishedTable.bound` - each column's alignment and wrap,
+  and the source - and a body cell's `inset` and `colour`, absent from an authored table, so template
+  16 sets an authored table as template 15 did. `PUBLISHING_SCHEMA_15` freezes `publishing/15`. See
+  [bound tables](#bound-tables). (`'17'`, B6's, set bound images under template 15.)
 - **Equations (`publishing/11`, template 11).** `packages/domain/src/publishing/maths.ts` is the one
   converter both writers are to read (EQ-B): `mathsTree` reads an equation's stored MathML with the
   strict reader and returns the maths tree - rows, identifiers with their variant by MathML Core's
@@ -3587,6 +3592,53 @@ reader to a named failure over a hostile file within the memory bound; `tests/e2
 | `web: src/data/HttpFields.tsx`, `FileFields.tsx`, `FormatFields.tsx` | A request, a file's key and filters, each format                                 |
 | `deploy/sources/http`, `deploy/sources/s3`                           | `source-http` and `source-s3` in the `sources` profile; case 6's files           |
 | `tests/e2e: src/file-sources.test.ts`                                | An XLSX over HTTP and a CSV from S3 resolved and published                       |
+
+## Bound tables
+
+TB1 of [tables.md](design/tables.md), built by
+[the TB1 plan](plans/2026-10-07-tb1-the-bound-table-published.md): a table bound to a whole query
+result, placed through the API, resolved like any binding, and published as a table laid out from its
+result.
+
+**The model** (`packages/domain`): `boundTable`, a block at content schema 1 (TB1-A), holding a
+binding with no take (`tableBindingSchema`, built with the inline binding from one `bindingShape`) and
+its presentation - columns by result column name with header, unit, `FieldFormat`, alignment and
+wrap, a sort, a header column, a caption, an empty statement, a source and a note. The walk refuses a
+column repeated under one header, a sort column named twice, a numeric null text, a footnote in the
+empty statement and a bound table in a cell; `bindingsIn` reports its binding placed `table` and without a take,
+which resolve, the session read and confirm read as such (TB1-C), and the contract's `taken` answers
+`{ table: true }`. Its caption, empty statement, note and source are walked as a table caption's.
+
+**Laying out** (`packages/domain/src/data/`): `formatCell` prints a canonical value by a `FieldFormat`
+merged over the table style's for its type (`mergeFormat`), in exact decimal arithmetic on the
+canonical text, with the value catalogue's separators for the document's language; `layoutTable`
+chooses, heads, sorts stably and formats the columns, and fails `column_missing`, `column_image`,
+`format_mismatch` or `table_too_long` (`TABLE_ROWS_MAX`, 2,000 rows, measured on Linux at 8 columns
+in 1 GiB). The table style's `fields`, `align`, `negativeColour` and `unitBrackets` are optional at
+`catalogue/3`; the default theme's 0.7 sets them and layout 0.8, at layout schema 7, the words
+`noRows`, `notAvailable` and `source`, both seeded by migration 0055 on 0048's and 0035's guards.
+
+**The stage** (`publishing/bind.ts`, `bound.ts`) reads a bound table's result as it reads a value's,
+lays it out once per dataset version and presentation, and replaces the block with a `table` carrying
+`laidOut` - outside `blockNodeSchema`, so no stored table holds it - which `assemble`'s table arm
+publishes, numbering, references and tagging reading a table; a layout without the words is
+`table_words_missing`. **Template 16** sets a `decimal` column at its end with kerning off and a value
+without parentheses inset by a parenthesis's measured advance, so separators share an x (TB1-I); a
+no-wrap column `auto`-wide and unbroken; a negative in the style's colour; and the source after the
+note. The Word writer aligns each cell, insets by the face's own advance (`w:ind w:right`), sets
+`w:noWrap` and the colour, and writes the source paragraph. `provenance.json` is at schema 3, a value
+gaining a table arm: each column's header and format and each printed cell beside its canonical value.
+
+| Where                                         | What                                                                      |
+| --------------------------------------------- | ------------------------------------------------------------------------- |
+| `domain: src/content/model/blocks.ts`         | `boundTableNodeSchema`, `boundColumnSchema`; the walk in `document.ts`    |
+| `domain: src/data/format-cell.ts`, `table.ts` | `formatCell`, `mergeFormat`, `layoutTable`, `TABLE_ROWS_MAX`              |
+| `domain: src/publishing/bind.ts`, `bound.ts`  | The stage's table, `LaidOutTable`, the five failures                      |
+| `domain: src/publishing/provenance.ts`        | `provenance.json` at schema 3                                             |
+| `domain: src/word/write.ts`                   | A bound table's alignment, inset, colour, `w:noWrap` and source           |
+| `db: migrations/tenant/0055`                  | The table catalogue's fifth version, the theme's 0.7 and the layout's 0.8 |
+| `worker: templates/publication/16/`           | Template 16                                                               |
+| `tests/e2e: src/bound-tables.test.ts`         | Placed, resolved and published from the development source                |
 
 ## Containers and images
 

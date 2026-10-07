@@ -759,6 +759,17 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   decorative, which then needs no description. The PDF and Word print each as an image, described to
   a screen reader by the same words, and a publish fails by name where a bound image has neither a
   description nor a decorative mark, or stands in a footnote or a caption.
+- **Bound tables.** Through the API, a component can hold a table bound to a whole query result: the
+  columns it shows, each with its header, a unit in the header or after each value, its format and
+  alignment, and whether it may wrap; a stable sort; whether the first column heads each row; a
+  caption, an empty statement, a source and a note. It is resolved, checked, accepted and listed in the
+  Data tab like any value. **A document holding one publishes**: the PDF and Word print it as a table
+  of the result, each value formatted by the table style's format for its type under the column's own,
+  in the document's language, numbers lined up on their decimal separator, a negative in parentheses
+  and the style's colour where asked, no rows as the headers and the statement, and the source beneath
+  it; `provenance.json` records each printed cell beside the value it was printed from. A table of more
+  than 2,000 rows, a column the result lacks or a format that does not fit its column fails the publish
+  by name.
 - **The Data tab.** Beside Contents, in a document holding values: every value you may see, under its
   part of the document, with its definition, its mode and its state - never resolved, changed since
   resolved, failed, revision waiting, definition changed, changed since published, or holding -
@@ -1244,6 +1255,9 @@ Named explicitly so nobody has to read the source to find out:
 - No page for component types: a Definitions manager makes and changes them through the API alone,
   and nothing yet changes which one is the environment's default.
 - No way to delete a component or a document, including one made by mistake.
+- A bound table is placed through the API alone: the editor opens a component holding one for reading
+  only, and a document's page shows no rows of it. It has no notes on its cells or columns, and no
+  strategy for a table wider than the page.
 - A document's own parameters do not exist, so a binding taking one cannot be resolved. A connection
   reaches PostgreSQL, as its own account or as each person by a role the database's administrator
   made, an HTTPS API by its own secret or an S3 bucket by a static key pair, each answering JSON,

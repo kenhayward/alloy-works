@@ -18,7 +18,15 @@ grouping, totals and subtotals, transposition and conditional emphasis rules - e
 the presentation layer. A tenant groups and totals in the query (TAB-020). Revising a bound cell by
 hand is T3's with the rest of revision (ADR-0036, DAT-063).
 
-> **Not built.** Built in three slices, [below](#build-order).
+> **TB1 built; TB2 and TB3 not built.** [TB1](../plans/2026-10-07-tb1-the-bound-table-published.md)
+> built the `boundTable` block and its walks, `formatCell` and `layoutTable`, the table style's formats
+> and alignment by type (default theme 0.7), layout schema 7's `noRows`, `notAvailable` and `source`,
+> the binding paths, and the publish: the stage lays a bound table out in its place, template 16 and
+> the Word writer set it, and `provenance.json` at schema 3 records its cells. Of the claims below TB1
+> answers TAB-001 to TAB-004, TAB-006, TAB-007, TAB-011 to TAB-017, TAB-019, TAB-027, TAB-035 to
+> TAB-038, TAB-045, TAB-046, TAB-048, DAT-028, DAT-033 and DAT-069; the rest wait for TB2 and TB3. A
+> bound table is placed through the API; the editor opens a component holding one for reading only.
+> [Changed while building](#changed-while-building) records where TB1 differs from what follows.
 
 ## The shape in one paragraph
 
@@ -238,7 +246,8 @@ checksum, once per dataset version, and:
    `key_required`, `note_row_missing`, `table_too_long`, beside every other failure.
 
 **`table_too_long`**: a ceiling on rows printed, measured in TB1 against the pinned Typst on Linux as
-D6 measured its readers, starting from 10,000, the default row limit.
+D6 measured its readers: **2,000 rows** (`TABLE_ROWS_MAX`), the most an 8-column table published in
+1 GiB - the engine's memory, never time, decides it.
 
 **Provenance** (TAB-019, DAT-042): `provenance.json` gains per bound table the binding, the dataset by
 name and version, each column's name, type, header and the format applied - its rounding rule stated
@@ -283,6 +292,28 @@ what the source returned.
 | TB-H | **A row gone fails the publish**, named                                                                                | Dropping the note, which states nothing about a row that was there               |
 | TB-I | **No image columns in T2**                                                                                             | A layout no requirement asks for                                                 |
 | TB-J | **The page lays out the first 50 rows on the service, kept as derived data**                                           | Sending a 25 MiB result to the browser                                           |
+
+## Changed while building
+
+What TB1 built that differs from the above; the [TB1 plan](../plans/2026-10-07-tb1-the-bound-table-published.md)'s
+table has every row.
+
+- **The stage replaces a bound table with a table of its own kind** (TB1-H): a `table` carrying
+  `laidOut` - each column's alignment and wrap, the source, and each cell's parenthesis inset and
+  negative colour - outside `blockNodeSchema`, so no stored table holds them. `publishing/16` carries
+  them as a table's `bound` and a cell's `inset` and `colour`, absent from an authored table.
+- **Decimal alignment is by layout** (TB1-I): a `decimal` column is set at its end with its digits
+  unkerned, a value without parentheses inset by a parenthesis's advance - measured in the PDF,
+  `w:ind w:right` in Word - and no character added.
+- **A no-wrap column is as wide as its widest cell** in the PDF, the others sharing what is left; Word
+  sets `w:noWrap`.
+- **The source** stands after the note, in the table note role, its runs beginning with
+  `words.source`. `words.note` waits for TB3; a layout stored at 6 publishing a bound table is
+  `table_words_missing`.
+- **The ceiling is 2,000 rows**, not 10,000 (TB1-K): 10,000 would need about 5 GiB of the engine.
+- **The empty statement and the stage's failures**: an empty statement holds no footnote until TB3;
+  `column_missing`, `column_image`, `format_mismatch`, `table_too_long` and `table_words_missing` fail
+  a publish at stage `bind`, naming the table.
 
 ## Build order
 

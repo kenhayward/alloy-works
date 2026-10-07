@@ -801,8 +801,10 @@ describe('the citations in the committed model', () => {
   // 712 (2026-10-06): D6.3's XLSX and the cross-source fixture: DAT-074, DAT-080 and DAT-110 twice.
   // 732 (2026-10-07): TB1.1's bound table - TAB-001, TAB-036 and TAB-048 in the model; formatCell's
   // TAB-012 to TAB-019, TAB-037, TAB-038 and DAT-033; layoutTable's TAB-002 to TAB-011 and TAB-046.
+  // 750 (2026-10-07): TB1.2's bound table published - DAT-028, DAT-069, TAB-045 and TAB-004 at the
+  // stage, TAB-019 and TAB-015 in provenance, four in Word and eight in the worker.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(732);
+    expect(model.citations).toHaveLength(750);
   });
 
   it('cites no identifier the corpus does not hold', () => {

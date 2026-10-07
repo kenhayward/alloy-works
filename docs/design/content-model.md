@@ -295,7 +295,7 @@ that happen to say the same thing.
 
 ## Blocks
 
-Seven, and the vocabulary is closed. Every addition is a construct that has to survive comparison,
+Eight, and the vocabulary is closed. Every addition is a construct that has to survive comparison,
 conditional resolution, translation and three output formats.
 
 | Node           | Carries                                                                                                                                                                                                                                                                      |
@@ -304,14 +304,15 @@ conditional resolution, translation and three output formats.
 | `list`         | A kind - ordered, unordered, definition - and items holding block content, each item on a definition list also carrying the `term` it defines as inline content. An ordered list carries start and format                                                                    |
 | `table`        | Rows and cells, declared header rows and columns, cell spans, a caption, optional key columns, an optional note, and `numbered: false` where its author marked it unnumbered. [Tables, before the first is stored](#tables-before-the-first-is-stored) proposes what changes |
 | `figure`       | An asset reference or a binding taking an image column (the B6 plan, B6-A), an image style name, a caption, an alternative-text state, and `numbered: false` where its author marked it unnumbered                                                                           |
+| `boundTable`   | A binding to a whole result, with no take, and its presentation: the columns shown with headers, units, formats, alignment and wrap, a sort, a header column, a caption, and an empty statement, a source and a note ([tables.md](tables.md); the TB1 plan, TB1-A)           |
 | `preformatted` | Text with whitespace significant, and an optional language label                                                                                                                                                                                                             |
 | `blockquote`   | Block content, and an optional attribution that may carry a citation                                                                                                                                                                                                         |
 | `equation`     | MathML, and numbered or explicitly unnumbered                                                                                                                                                                                                                                |
 
-Two are absent on purpose. **`admonition`** is CNT-120, which is T7 and takes its closed vocabulary
-from an admonition style catalogue that does not exist yet. **A bound table** arrives with T2's
-bindings; the spike built one for gate case 3, and what transferred from that case is the key-column
-anchoring CNT-107 now requires of an authored table.
+One is absent on purpose. **`admonition`** is CNT-120, which is T7 and takes its closed vocabulary
+from an admonition style catalogue that does not exist yet. **A bound table** arrived with T2's
+bindings as `boundTable` (TB1), additive at schema 1; the spike built one for gate case 3, and what
+transferred from that case is the key-column anchoring CNT-107 now requires of an authored table.
 
 **A figure or a table explicitly unnumbered** (issue #129, STR-071; W14.4, decision W-H). Each
 carries `numbered`, **stored only as `false`**: absent is numbered, and `numbered: true` is refused,

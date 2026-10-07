@@ -3,6 +3,24 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.140.0 - 2026-10-07 (PR #435)
+
+### Added
+
+- **Bound tables.** A component can hold a table bound to a whole query result, placed through the
+  API: the columns it shows with their headers, units, formats, alignment and wrap, a sort, whether
+  its first column heads each row, a caption, an empty statement, a source and a note. Its binding is
+  resolved, checked, accepted and kept like any other, and the Data tab shows it holding.
+- **Bound tables publish.** The PDF and Word print a bound table laid out from its stored result: each
+  value formatted by the table style for its type and the document's language, numbers lined up on
+  their decimal separator, a negative in parentheses and in colour where asked, no rows as its headers
+  and its statement, and its source beneath it. `provenance.json` records each printed cell beside the
+  value it came from. A table of more than 2,000 rows, a column its result lacks or a format that does
+  not fit its column fails the publish by name.
+- **Table formats in the default theme.** Table styles say how numbers, currencies, percentages, dates
+  and durations print in a bound table, and the default layout gives the words for an empty table, a
+  missing value and a source note.
+
 ## 0.139.0 - 2026-10-06 (PR #432)
 
 ### Added
