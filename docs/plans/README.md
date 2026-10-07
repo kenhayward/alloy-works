@@ -613,9 +613,10 @@ order names, each planned when its turn comes.
 
 [tables.md](../design/tables.md)'s build order: a result as a bound table.
 
-| #   | Plan                                                                      | Builds                                                                                                                                                                              | Status |
-| --- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| TB1 | [The bound table, published](2026-10-07-tb1-the-bound-table-published.md) | The `boundTable` block at content schema 1, `formatCell` and `layoutTable`, the table style's formats and alignment by type, `publishing/16`, Word and provenance for a bound table | Built  |
+| #   | Plan                                                                         | Builds                                                                                                                                                                                                                                           | Status  |
+| --- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
+| TB1 | [The bound table, published](2026-10-07-tb1-the-bound-table-published.md)    | The `boundTable` block at content schema 1, `formatCell` and `layoutTable`, the table style's formats and alignment by type, `publishing/16`, Word and provenance for a bound table                                                              | Built   |
+| TB2 | [The bound table on the page](2026-10-07-tb2-the-bound-table-on-the-page.md) | Place as Table, the Bound table panel and Format dialog, the body drawn in the editor and read text by the publish's own layout, the rows route trimmed to the table's columns, `table_too_long` and every table failure shown before publishing | Planned |
 
 ## Publishing
 
