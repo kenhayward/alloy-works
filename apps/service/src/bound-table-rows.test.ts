@@ -458,6 +458,38 @@ describe("a bound table's rows, for the page", () => {
       expect(saved.json()).toMatchObject({ code: 'definition_unreadable' });
     });
 
+    it('refuses a save adding a keyed note the version did not hold, though its columns are named, and takes one keeping it (the TB3 final review, M1)', async () => {
+      const definition = await h.definition(connection.id, {}, h.quality);
+      const columns = [
+        { column: 'id', header: 'Site' },
+        { column: 'name', header: 'Name' },
+      ];
+      const held = note('n1', { kind: 'keyed', key: { id: '1' }, column: 'name' });
+      const { component } = await placed([
+        table(whole('b1', definition.id), { columns, notes: [held] }),
+      ]);
+      const session = randomUUID();
+      const claimed = await h.call('grace', 'POST', `/v1/components/${component.id}/lock`, {
+        session,
+        move: true,
+      });
+      expect(claimed.statusCode, claimed.body).toBe(200);
+      const save = (notes: unknown[], sequence: number) =>
+        h.call('grace', 'PUT', `/v1/components/${component.id}/iterations/${session}/${sequence}`, {
+          openedFrom: component.version,
+          content: content([table(whole('b1', definition.id), { columns, notes })]),
+        });
+      // A key probed: whether a row of id 2 exists would show in the rows route's notes.
+      const probed = await save(
+        [held, note('n2', { kind: 'keyed', key: { id: '2' }, column: 'name' })],
+        1,
+      );
+      expect(probed.statusCode, probed.body).toBe(403);
+      expect(probed.json()).toMatchObject({ code: 'definition_unreadable' });
+      const kept = await save([held], 1);
+      expect(kept.statusCode, kept.body).toBe(200);
+    });
+
     it('refuses a save adding a column the table did not name, definition_unreadable, and takes one renaming a header', async () => {
       const { save } = await hidden();
       const added = await save([

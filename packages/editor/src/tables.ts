@@ -638,7 +638,8 @@ function columnStored(column: BoundColumn): BoundColumn {
  * **The Bound table panel's change** (TB2-F) to the table the cursor stands in, one step for the undo
  * history. Declines what the walk would refuse - no column or more than 64, a header empty or over 200
  * characters, a unit over 40, a column shown twice under one header (TAB-048), more than four sort
- * keys or one column sorted twice - and a change that changes nothing.
+ * keys or one column sorted twice, a column a note stands on taken out (`noteColumnDropped`) - and a
+ * change that changes nothing.
  *
  * Its own step even beside another made at once, unless `typed`: a header or a unit typed in the panel
  * a keystroke at a time joins the steps typed just before it, as typing in the text does.
@@ -657,6 +658,7 @@ export function setBoundTable(change: BoundTableChange, { typed = false } = {}):
         return false;
       }
       if (repeatedColumn(columns) !== null) return false;
+      if (noteColumnDropped(table.notes, columns) !== null) return false;
     }
     const sort = change.sort;
     if (sort !== undefined) {
@@ -713,6 +715,18 @@ export function setBoundTablePart(part: BoundTablePart, present: boolean): Comma
     }
     return true;
   };
+}
+
+/**
+ * The column a note stands on that `columns` no longer shows, or null (the TB3 final review, H1): the
+ * walk refuses a note on a column not shown, so the panel keeps the column while a note stands on it.
+ */
+export function noteColumnDropped(
+  notes: readonly BoundNoteAt[],
+  columns: readonly BoundColumn[],
+): string | null {
+  const shown = new Set(columns.map((each) => each.column));
+  return notes.find((each) => !shown.has(each.anchor.column))?.anchor.column ?? null;
 }
 
 /**

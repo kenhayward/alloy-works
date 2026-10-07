@@ -520,6 +520,18 @@ describe("a bound table's notes and Wide (TB3.3)", () => {
     expect(notesOf(view)).toEqual([]);
   });
 
+  it('refuses to take out a column a note stands on, saying why (the TB3 final review, H1)', async () => {
+    const { view, panel } = await inTable(COLUMNS, {}, holding(), DECLARED, [
+      note('f2', { kind: 'column', column: 'depth' }, 'By gauge'),
+    ]);
+    await userEvent.click(within(column(panel, 2)).getByRole('button', { name: 'Remove' }));
+    expect(within(panel).getByRole('alert')).toHaveTextContent(
+      BOUND_TABLE_WORDS.noteStands('depth'),
+    );
+    // Still shown, its note's letter beside its header.
+    expect(bodyOf(view)[0]).toEqual(['Site', 'Deptha']);
+  });
+
   it('refuses a key typed that is not a value of its column, saying so', async () => {
     const user = userEvent.setup();
     const { panel } = await inTable(

@@ -705,12 +705,8 @@ describe('publishing a document holding a bound table', () => {
     ]);
     expect(wordFootnotes(made.docx)).toEqual([]);
     expect(made.provenance?.values.find((each) => each.block === 't1')?.table?.notes).toEqual([
-      { note: 'n2', letter: 'a', anchor: { kind: 'column', column: 'site' } },
-      {
-        note: 'n1',
-        letter: 'b',
-        anchor: { kind: 'keyed', key: { site: 'South' }, column: 'reading' },
-      },
+      { note: 'n2', letter: 'a', row: null, column: 'site' },
+      { note: 'n1', letter: 'b', row: 1, column: 'reading' },
     ]);
     expect(await checkPdfUa1(made.pdf)).toMatchObject({ compliant: true, failedRules: 0 });
     expect(await checkOoxml(made.docx)).toEqual([]);

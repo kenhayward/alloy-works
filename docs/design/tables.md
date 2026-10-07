@@ -257,8 +257,9 @@ anchor: … | { kind: 'keyed', key: Record<string, CanonicalValue>, column: stri
 - **Lettered in the table's own sequence** (TAB-026): a, b, c in reading order - headers left to
   right, then cells row by row - printed beneath the table, before the source; the whole-table note
   first and unlettered, after `words.note`. **This applies to authored tables too**: a footnote in an
-  authored table's caption, cells or note leaves the document's sequence and is lettered with its
-  table's. Nothing stored changes; publications printed before keep their numbers.
+  authored table's cells, its header rows included, leaves the document's sequence and is lettered
+  with its table's; one in a caption or a table's note stays refused, `footnote_not_publishable_here`,
+  as before. Nothing stored changes; publications printed before keep their numbers.
 - **In Word**, notes are paragraphs beneath the table with superscript letters, not Word footnotes,
   matching the PDF.
 
@@ -396,7 +397,9 @@ table has every row.
 - **The ceiling is 1,500 rows**, re-timed with the query and template 18 (TB3.2).
 - **The rows route answers `notes`** (TB3.3): each keyed note's row as an index into the rows it sends,
   matched over the whole result, so a key column not shown is never sent; its `ETag` covers the notes'
-  anchors. A save naming a key column the version did not name is `definition_unreadable` to one who may
+  anchors. The bindings view's `held.key` names the key columns to whoever may read the document, as
+  every declared column's name already goes to them; a keyed note's key and column the opened version
+  did not hold is, at save, a column named (the TB3 final review). A save naming a key column the version did not name is `definition_unreadable` to one who may
   not read the definition, as a column is.
 
 ## Build order

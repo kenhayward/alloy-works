@@ -71,7 +71,8 @@ function blockContributions(block: BlockNode): Contribution[] {
         ...placeTableNotes(block).map(({ note, letter }): Contribution => ({
           block: note.id,
           sequence: 'tableNote',
-          numbered: true,
+          // As its table is (STR-071): one in an unnumbered table has no label, and no number form.
+          numbered: block.numbered !== false,
           table: block.id,
           letter,
         })),

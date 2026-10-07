@@ -260,6 +260,34 @@ describe('the Bound table panel (TB2-F)', () => {
 });
 
 describe("a bound table's notes and Wide (TB3.3)", () => {
+  it('declines taking out, or naming another, a column a note stands on (the TB3 final review, H1)', () => {
+    let state = into(stateOf(documentOf(paragraph('p1'), boundTable())), 'tableCaption');
+    state = run(state, addBoundTableNote({ kind: 'column', column: 'depth' })).state;
+    state = run(
+      state,
+      addBoundTableNote({ kind: 'keyed', key: { site: 'North' }, column: 'site' }),
+    ).state;
+    expect(setBoundTable({ columns: [{ column: 'site', header: 'Site' }] })(state)).toBe(false);
+    expect(
+      setBoundTable({
+        columns: [
+          { column: 'tide', header: 'Site' },
+          { column: 'depth', header: 'Depth' },
+        ],
+      })(state),
+    ).toBe(false);
+    // Renamed, reordered or joined by another, the columns it stands on stay: taken.
+    expect(
+      setBoundTable({
+        columns: [
+          { column: 'depth', header: 'Depth (m)' },
+          { column: 'site', header: 'Place' },
+          { column: 'tide', header: 'Tide' },
+        ],
+      })(state),
+    ).toBe(true);
+  });
+
   const inTable = (over: Partial<BoundTableNode> = {}) =>
     into(stateOf(documentOf(paragraph('p1'), boundTable(over))), 'tableCaption');
 

@@ -190,14 +190,10 @@ describe('publishedProvenance', () => {
     expect(recorded).not.toHaveProperty('take');
   });
 
-  it("records a bound table's notes, each by its letter and the anchor it was stored with (TB3.1)", () => {
+  it("records a bound table's notes, each by its letter, its printed row and its column, never a key (the TB3 final review, M2)", () => {
     const notes = [
-      { note: 'n1', letter: 'a', anchor: { kind: 'column' as const, column: 'reading' } },
-      {
-        note: 'n2',
-        letter: 'b',
-        anchor: { kind: 'keyed' as const, key: { site: 'north' }, column: 'reading' },
-      },
+      { note: 'n1', letter: 'a', row: null, column: 'reading' },
+      { note: 'n2', letter: 'b', row: 2, column: 'reading' },
     ];
     const made = publishedProvenance(
       [

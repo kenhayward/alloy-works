@@ -727,6 +727,53 @@ describe('resolving a reference in the document that publishes it', () => {
     expect(resolver(target, { node: id('method') })).toEqual(expected);
   });
 
+  it('gives a footnote in an unnumbered table no number, as its table has none, so a number form of it is refused by name (the TB3 final review, L2)', () => {
+    const noted = (numbered: boolean): ContentDocument =>
+      parseContentDocument({
+        schemaVersion: 1,
+        title: 'Totals',
+        language: 'en-GB',
+        direction: 'ltr',
+        content: [
+          {
+            type: 'table',
+            id: 'nt1',
+            caption: [text('Grand totals')],
+            headerRows: 0,
+            headerColumns: 0,
+            ...(numbered ? {} : { numbered: false }),
+            rows: [
+              {
+                cells: [
+                  {
+                    content: [
+                      paragraph('nc1', text('40'), {
+                        type: 'footnote',
+                        id: 'nf1',
+                        anchor: { kind: 'span' },
+                        content: [paragraph('nf1p', text('Rounded'))],
+                      }),
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+    const labelled = (numbered: boolean) => {
+      const resolution = resolving([placed('grace', GRACE)], { grace: noted(numbered) })(
+        block('nf1'),
+        { node: id('grace') },
+      );
+      return resolution.ok ? resolution.target : null;
+    };
+    expect(labelled(true)?.label).toBe('Table 1.1 (a)');
+    const bare = labelled(false)!;
+    expect(bare.label).toBeNull();
+    expect(printableForms(bare)).not.toContain('number');
+  });
+
   it('fails a component target whose component the document holds twice, or never, rather than taking the first', () => {
     const resolver = resolving(
       [placed('grace', GRACE), placed('ada', ADA), placed('again', GRACE)],

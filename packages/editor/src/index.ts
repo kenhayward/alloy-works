@@ -26,6 +26,7 @@ export {
   columnsPlaced,
   deleteBoundTable,
   insertBoundTable,
+  noteColumnDropped,
   removeBoundTableNote,
   repeatedColumn,
   selectBoundTableNote,

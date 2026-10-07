@@ -19,6 +19,7 @@ import {
   BOUND_TABLE_NOTES_MAX,
   boundTablesShown,
   deleteBoundTable,
+  noteColumnDropped,
   removeBoundTableNote,
   repeatedColumn,
   selectBoundTableNote,
@@ -101,6 +102,8 @@ export const BOUND_TABLE_WORDS = {
     'The key of its query definition is not known here, so a note can stand on a column alone.',
   keyNeeded: (column: string) => `Type a value of ${column} for the row the note is on.`,
   tooManyNotes: `A table holds at most ${BOUND_TABLE_NOTES_MAX} notes.`,
+  noteStands: (column: string) =>
+    `A note stands on ${column}. Remove the note before taking the column out of the table.`,
 } as const;
 
 /** A note as the panel lists it: what it stands on, in words. */
@@ -240,6 +243,11 @@ export function BoundTablePanel({
     const repeated = repeatedColumn(columns);
     if (repeated !== null) {
       setSaid(repeatedWords(repeated));
+      return false;
+    }
+    const noted = noteColumnDropped(table.notes, columns);
+    if (noted !== null) {
+      setSaid(BOUND_TABLE_WORDS.noteStands(noted));
       return false;
     }
     setSaid(null);
