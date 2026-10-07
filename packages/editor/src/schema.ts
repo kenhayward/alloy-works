@@ -1,6 +1,6 @@
 import { Schema, type Attrs, type MarkSpec, type TagParseRule } from 'prosemirror-model';
 import { tableNodes } from 'prosemirror-tables';
-import { equationAlternative, isLanguageLabel, kindWord } from '@alloy-works/domain';
+import { defaultLayout, equationAlternative, isLanguageLabel, kindWord } from '@alloy-works/domain';
 
 /**
  * Renders a mark's element, always carrying `data-mark-id`, so that the view can read its own output
@@ -506,9 +506,16 @@ export const editorSchema = new Schema({
       defining: true,
       isolating: true,
       parseDOM: [{ tag: 'p[data-table-note]', priority: 60 }],
+      // The default layout's word for a note, drawn before its words as the PDF prints it (TB3-E):
+      // an attribute, never content, so nothing stores it.
       toDOM: () => [
         'p',
-        { class: 'aw-table-note', 'data-table-note': '', 'data-role': 'tableNote' },
+        {
+          class: 'aw-table-note',
+          'data-table-note': '',
+          'data-role': 'tableNote',
+          'data-word': defaultLayout.words.note ?? '',
+        },
         0,
       ],
     },

@@ -504,6 +504,10 @@
   font-size: 0.9em;
 }
 
+.aw-table-note[data-word]:not(.aw-empty)::before {
+  content: attr(data-word) ' ';
+}
+
 .ProseMirror p.aw-table-note.aw-empty::before {
   content: 'Note';
   color: var(--muted);
