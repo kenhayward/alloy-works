@@ -442,7 +442,7 @@ describe('bind, a bound image (the B6 plan, B6-D and B6-E)', () => {
 });
 
 describe("a bound table's words, through the binding stage (TB1.1)", () => {
-  it('sets the bindings in its caption, empty statement, note and source as text, and leaves its own binding for its stage', () => {
+  it('sets the bindings in its caption, note and source as text, and leaves its own binding and its empty statement for its stage', () => {
     const whole = { ...binding('whole') } as Record<string, unknown>;
     delete whole.take;
     const content = component({
@@ -464,11 +464,12 @@ describe("a bound table's words, through the binding stage (TB1.1)", () => {
       DEFAULT_VALUE_FORMATS,
     );
     expect(failures).toEqual([]);
+    // The empty statement's binding is left for the stage, which sets it only where it prints.
     expect(bound.content[0]).toMatchObject({
       type: 'boundTable',
       binding: whole,
       caption: [text('Reading '), text('1.50')],
-      empty: [text('1.50')],
+      empty: [binding('in-empty')],
       note: [text('1.50')],
       source: [text('1.50')],
     });
@@ -538,6 +539,31 @@ describe('a bound table published (the TB1 plan, TB1-H; TB1.2)', () => {
     expect(table.rows[1]!.cells.map((cell) => cell.scope)).toEqual([null, null]);
     // Text at the start and numbers on their separator, the table style's by type; both may wrap.
     expect(table.bound).toEqual({ align: ['start', 'decimal'], wrap: [true, true], source: null });
+  });
+
+  it("sets an empty statement's bindings only where it prints: with rows, they record nothing and fail nothing", () => {
+    const made = assembled(
+      component(boundTable({ empty: [text('None since '), binding('since')] })),
+      // `since` has no result recorded: taken, it would fail `binding_unresolved`.
+      new Map([['rows', held(result(['north', '1.5']))]]),
+    );
+    if (!made.ok) throw new Error(JSON.stringify(made.failures));
+    expect(made.values.map((each) => each.binding)).toEqual(['rows']);
+  });
+
+  it("sets an empty statement's bindings where the result has no rows, each printed and recorded", () => {
+    const made = assembled(
+      component(boundTable({ empty: [text('None since '), binding('since')] })),
+      new Map([
+        ['rows', held(result())],
+        ['since', held(result(['north', '2.25']))],
+      ]),
+    );
+    const table = tableOf(made);
+    expect(grid(table)[1]).toEqual(['None since 2.25']);
+    if (!made.ok) return;
+    expect(made.values.map((each) => each.binding)).toEqual(['rows', 'since']);
+    expect(made.values[1]).toMatchObject({ block: 't1', printed: '2.25' });
   });
 
   it('TAB-046 insets a value printing no parentheses in a column printing them, by what it prints and never by its text, a unit after each value among them', () => {

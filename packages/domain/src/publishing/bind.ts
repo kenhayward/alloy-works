@@ -289,7 +289,13 @@ export function bind(
         ),
       },
     });
-    return laidOutTable(table, laid, style.negativeColour ?? DEFAULT_NEGATIVE_COLOUR);
+    // The empty statement's own bindings are set only where it prints - the result has no rows - so a
+    // statement not printed records no value and fails nothing (the TB1 final review, M2).
+    const printed =
+      laid.empty === null || table.empty === undefined
+        ? laid
+        : { ...laid, empty: { ...laid.empty, content: inlines(table.empty, table.id) } };
+    return laidOutTable(table, printed, style.negativeColour ?? DEFAULT_NEGATIVE_COLOUR);
   };
 
   const inlines = (sequence: readonly InlineNode[], block: string, noImage = false): InlineNode[] =>
@@ -357,12 +363,12 @@ export function bind(
             })),
           };
         case 'boundTable':
-          // The bindings in its own words first, as a table's caption's and note's are; then its own
-          // binding, the whole result laid out in its place (TB1-H).
+          // The bindings in its own words first, as a table's caption's and note's are - but for its
+          // empty statement's, set only where it prints; then its own binding, the whole result laid
+          // out in its place (TB1-H).
           return layOut({
             ...block,
             caption: inlines(block.caption, block.id, true),
-            ...(block.empty ? { empty: inlines(block.empty, block.id, inFootnote) } : {}),
             ...(block.note ? { note: inlines(block.note, block.id, inFootnote) } : {}),
             ...(block.source ? { source: inlines(block.source, block.id, inFootnote) } : {}),
           });
