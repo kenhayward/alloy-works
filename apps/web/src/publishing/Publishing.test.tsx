@@ -722,6 +722,31 @@ describe('publishing from the document page', () => {
     }
   });
 
+  it("names each bound table's note a publish could not place, and why (TB3)", async () => {
+    const failed = (code: string, detail: string) => ({
+      stage: 'bind' as const,
+      code: code as 'key_required',
+      node: 'n7',
+      block: 't1',
+      detail,
+    });
+    const fake = failing([
+      failed('key_required', 'q1'),
+      failed('note_row_missing', 'n1: {"site":"West"}: q1'),
+      failed('note_row_missing', 'n2: {"depth":"7"}: q1: the key is site'),
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    for (const words of [
+      'This table has a note on a row, but its query definition declares no key to find the row by. Give the query definition a key, or put the note on a column.',
+      'A note on this table names the row with the key {"site":"West"}, which its result no longer has. Change or remove the note, or resolve the table again.',
+      'A note on this table names the row with the key {"depth":"7"}, which its result no longer has. Its query definition\'s key is site. Change or remove the note, or resolve the table again.',
+    ]) {
+      expect(why).toHaveTextContent(words);
+    }
+  });
+
   it('names a cross-reference Word would not print as the PDF does, and why, pointing at the PDF', async () => {
     // Word 3's ruling R5: `detail` is `<form>:<why>`, and the reference is the author's to change.
     const refused = (detail: string) => ({

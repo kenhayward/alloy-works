@@ -456,7 +456,7 @@ interface Bookmark {
  * bookmark in a text box prints the bookmark's words, as it does across the notes).
  */
 type Bookmarked =
-  | { readonly kind: 'heading' | 'footnote' | 'block'; readonly at: Bookmark }
+  | { readonly kind: 'heading' | 'footnote' | 'block' | 'tableNote'; readonly at: Bookmark }
   | {
       readonly kind: 'caption';
       /** Around its label, or holding nothing where the caption begins where it has none. */
@@ -496,7 +496,7 @@ function bookmarksOf(
     count += 1;
     return { id: count, name: `_Ref${String(count).padStart(9, '0')}` };
   };
-  const add = (anchor: string | null, kind: 'heading' | 'footnote' | 'block') => {
+  const add = (anchor: string | null, kind: 'heading' | 'footnote' | 'block' | 'tableNote') => {
     if (anchor !== null) named.set(anchor, { kind, at: next() });
   };
   const runs = (inlines: readonly PublishedInline[]) => {
@@ -532,6 +532,11 @@ function bookmarksOf(
         }
         if (each.type === 'table') {
           for (const row of each.rows) for (const cell of row.cells) cell.blocks.forEach(block);
+          // Its lettered notes beneath it (TB3-E), each named where it begins: its mark links there.
+          for (const note of each.notes) {
+            add(note.anchor, 'tableNote');
+            note.paragraphs.forEach(block);
+          }
         }
         return;
       case 'preformatted':
@@ -1744,14 +1749,56 @@ class Writer {
             : (below ? 0 : cell.spaceAfter) + noteStyle.spaceBefore,
       };
     }
+    // Its lettered notes (TB3-E), after its note and before its source, as the PDF sets them:
+    // paragraphs, never Word footnotes, each named where it begins, its letter superscript.
+    const notes = table.notes.flatMap((each) =>
+      each.paragraphs.map((paragraph, at) => {
+        const opening =
+          at === 0
+            ? bookmarked(this.bookmarkOf(each.anchor, 'tableNote'), '') +
+              this.textRun(each.letter, ['superscript'], paragraph.style, passage, null, false) +
+              runXml(' ', this.runProperties([], paragraph.style, passage, null, false))
+            : '';
+        return this.paragraph(
+          paragraph.style,
+          bookmarked(this.bookmarkOf(paragraph.anchor, 'block'), '') +
+            opening +
+            this.inlineRuns(paragraph.runs, paragraph.style, passage, {
+              kind: 'paragraph',
+              block: paragraph.id,
+            }),
+          { bidi: passage.rtl, ...this.indented(paragraph.style, place) },
+        );
+      }),
+    );
+    let previous = note !== null;
+    for (const each of notes) {
+      const own = this.properties(each.theme);
+      each.wanted = {
+        before: previous
+          ? this.properties(noteRole).spaceAfter + own.spaceBefore
+          : (below ? 0 : cell.spaceAfter) + own.spaceBefore,
+      };
+      previous = true;
+    }
+    if (source !== null && note === null && notes.length > 0) {
+      const noteStyle = this.properties(noteRole);
+      source.wanted = { before: noteStyle.spaceAfter + noteStyle.spaceBefore };
+    }
     this.report(table, style);
     const body: Body[] = below ? [written, caption] : [caption, written];
     if (note !== null) body.push(note);
+    body.push(...notes);
     if (source !== null) body.push(source);
     return {
       body,
       top: below ? cellStyle : captionRole,
-      bottom: note !== null || source !== null ? noteRole : below ? captionRole : cellStyle,
+      bottom:
+        note !== null || notes.length > 0 || source !== null
+          ? noteRole
+          : below
+            ? captionRole
+            : cellStyle,
       container: true,
     };
   }
@@ -2586,6 +2633,23 @@ class Writer {
         xml += this.footnote(run.footnote, passage, strong);
         continue;
       }
+      if ('tableMark' in run) {
+        // A table's note's mark (TB3-E): a superscript letter, in a body cell a link to its note
+        // beneath the table, as the PDF's.
+        if (linking !== null) xml += '</w:hyperlink>';
+        linking = null;
+        const letter = this.textRun(
+          run.tableMark.letter,
+          ['superscript'],
+          styleId,
+          passage,
+          null,
+          strong,
+        );
+        const to = this.bookmarkOf(run.tableMark.link, 'tableNote');
+        xml += to === null ? letter : `<w:hyperlink w:anchor="${to.name}">${letter}</w:hyperlink>`;
+        continue;
+      }
       if ('reference' in run) {
         // A field of its own, no part of a link before it: where it links, it links to its target.
         if (linking !== null) xml += '</w:hyperlink>';
@@ -2732,14 +2796,20 @@ class Writer {
       referenceField(`${code}${run.link ? ` ${BACKSLASH}h` : ''}${format}`, result, own);
     const place = placeOf(target);
     const number = () =>
-      target.kind === 'footnote'
-        ? field(`NOTEREF ${place.name}`, form.label ?? '', numeral)
-        : target.kind === 'heading'
-          ? field(`REF ${place.name} ${BACKSLASH}r`, form.label ?? '', numeral)
-          : // A caption's label, or a numbered equation's, set in the reference's own formatting, the
-            // field code's: measured in Word 16 (the final review of Word 4, M2), `REF` alone printed
-            // the label's own, regular in a bold term whose other words Word kept bold.
-            field(`REF ${place.name}`, form.label ?? '', properties, ` ${BACKSLASH}* CHARFORMAT`);
+      // A table's note is no Word footnote (TB3-E): its label as the PDF prints it, "Table 3 (a)",
+      // words Word has no field for, linked to the note where the PDF's is.
+      target.kind === 'tableNote'
+        ? run.link
+          ? `<w:hyperlink w:anchor="${place.name}">${runXml(form.label ?? '', properties)}</w:hyperlink>`
+          : runXml(form.label ?? '', properties)
+        : target.kind === 'footnote'
+          ? field(`NOTEREF ${place.name}`, form.label ?? '', numeral)
+          : target.kind === 'heading'
+            ? field(`REF ${place.name} ${BACKSLASH}r`, form.label ?? '', numeral)
+            : // A caption's label, or a numbered equation's, set in the reference's own formatting, the
+              // field code's: measured in Word 16 (the final review of Word 4, M2), `REF` alone printed
+              // the label's own, regular in a bold term whose other words Word kept bold.
+              field(`REF ${place.name}`, form.label ?? '', properties, ` ${BACKSLASH}* CHARFORMAT`);
     const title = () =>
       field(`REF ${(target.kind === 'caption' ? target.words : place).name}`, form.title ?? '');
     switch (form.display) {
@@ -2780,7 +2850,7 @@ class Writer {
    */
   private bookmarkOf(
     anchor: string | null,
-    kind: 'heading' | 'footnote' | 'block',
+    kind: 'heading' | 'footnote' | 'block' | 'tableNote',
   ): Bookmark | null;
   private bookmarkOf(
     anchor: string | null,

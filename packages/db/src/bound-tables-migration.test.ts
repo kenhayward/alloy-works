@@ -11,6 +11,7 @@ import {
   FIFTH_DEFAULT_CATALOGUE_VERSIONS,
   LAYOUT_SCHEMA_VERSION,
   SEVENTH_DEFAULT_LAYOUT,
+  EIGHTH_DEFAULT_LAYOUT,
   SIXTH_DEFAULT_THEME,
   SIXTH_DEFAULT_THEME_VERSION,
   type Layout,
@@ -43,6 +44,7 @@ describe('migration 0055, which gives the default theme and layout what a bound 
   let db: TestDatabase;
   let service: TenantDatabase;
   let before: string;
+  let through: string;
 
   beforeAll(async () => {
     db = await freshDatabase();
@@ -56,12 +58,22 @@ describe('migration 0055, which gives the default theme and layout what a bound 
         return numbered === null || Number(numbered[1]) < 55;
       },
     });
+    // And every one through 0055, so this is 0055's alone, whatever comes after it.
+    through = await mkdtemp(join(tmpdir(), 'aw-through-0055-'));
+    await cp(new URL('../migrations/', import.meta.url), through, {
+      recursive: true,
+      filter: (source) => {
+        const numbered = /[\\/]tenant[\\/](\d{4})_[a-z0-9_]+\.sql$/.exec(source);
+        return numbered === null || Number(numbered[1]) <= 55;
+      },
+    });
     service = createTenantDatabase(db.serviceUrl);
   });
 
   afterAll(async () => {
     await service?.close();
     await rm(before, { recursive: true, force: true });
+    await rm(through, { recursive: true, force: true });
     await db?.drop();
   });
 
@@ -88,7 +100,11 @@ describe('migration 0055, which gives the default theme and layout what a bound 
   };
 
   const migrated = async (tenant: Tenant) =>
-    expect((await migrate(db.migratorUrl)).tenants[tenant.id]).toEqual(['0055_bound_tables']);
+    expect(
+      (await migrate(db.migratorUrl, { migrationsDir: pathToFileURL(`${through}/`) })).tenants[
+        tenant.id
+      ],
+    ).toEqual(['0055_bound_tables']);
 
   /** Every version of one artifact, by identifier and number, in the chain's order. */
   const chainOf = (tenant: Tenant, artifactId: string) =>
@@ -164,7 +180,7 @@ describe('migration 0055, which gives the default theme and layout what a bound 
       fields: DEFAULT_CATALOGUES.table.styles[0]!.fields,
       unitBrackets: 'parentheses',
     });
-    expect(layout).toMatchObject({ number: '0.8', layout: productDefaultLayout });
+    expect(layout).toMatchObject({ number: '0.8', layout: EIGHTH_DEFAULT_LAYOUT });
     // The request waiting keeps the 0.6 and the 0.7 it was made under; one made now records the new.
     expect(handed!.theme!.versionId).toBe(SIXTH_DEFAULT_THEME_VERSION);
     expect(handed!.layout).toEqual({

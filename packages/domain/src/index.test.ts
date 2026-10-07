@@ -208,6 +208,7 @@ describe('the domain package', () => {
         'PUBLISHING_SCHEMA_14',
         // Frozen by TB1.2, which made `publishing/16`: the schema template 15 reads.
         'PUBLISHING_SCHEMA_15',
+        'PUBLISHING_SCHEMA_16',
         'assemble',
         'publishedImagePath',
         'publishFailureCodes',
@@ -568,6 +569,8 @@ describe('the domain package', () => {
         // and the default layout's 0.7 frozen as 0.8 does (task 5).
         'FIELD_KEYS',
         'SEVENTH_DEFAULT_LAYOUT',
+        // TB3: the default layout's 0.8 frozen as 0.9 adds `words.note` (TB3-F).
+        'EIGHTH_DEFAULT_LAYOUT',
         'SIXTH_DEFAULT_CATALOGUES',
         'SIXTH_DEFAULT_CATALOGUES_BY_VERSION',
         'SIXTH_DEFAULT_CATALOGUE_VERSIONS',

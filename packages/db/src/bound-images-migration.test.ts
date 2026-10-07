@@ -155,6 +155,7 @@ describe('migration 0052, which widens dataset_take to an image', () => {
       '0053_dataset_image_index',
       '0054_connection_test_privilege',
       '0055_bound_tables',
+      '0056_table_note_word',
     ]);
     const kept = await queryAs(
       db.adminUrl,

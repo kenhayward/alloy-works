@@ -777,6 +777,8 @@ export interface RecordedBinding {
   readonly resolution: string;
   readonly datasetVersion: string;
   readonly dataset: HeldDataset;
+  /** The key of the definition version that dataset version ran (TB3-B); empty where it declares none. */
+  readonly key: readonly string[];
 }
 
 /**
@@ -809,13 +811,17 @@ async function recordedBindings(
     version_no: number;
     content: unknown;
     name: string | null;
+    key: string[] | null;
   }>`
     select b.node, b.binding, b.resolution::text as resolution, b.dataset_version, b.dataset_id,
            v.revision_no, v.version_no, v.content,
            (select n.name from dataset_name n where n.dataset_id = b.dataset_id
-             order by n.id desc limit 1) as name
+             order by n.id desc limit 1) as name,
+           d.content->'key' as key
       from ${'request' in on ? sql`publication_request_binding` : sql`publication_binding`} b
       join artifact_version v on v.id = b.dataset_version
+      left join artifact_version d
+        on d.id = (v.content->'queryDefinition'->>'version')::uuid and d.kind = 'queryDefinition'
      where ${'request' in on ? sql`b.request_id = ${on.request}` : sql`b.publication_id = ${on.publication}`}
      order by b.node collate "C", b.binding collate "C"`.execute(trx);
   return rows.map((row) => ({
@@ -830,6 +836,7 @@ async function recordedBindings(
       // Written by `recordDatasetVersion`, which parsed it: one that does not parse is a broken store.
       provenance: parseProvenance(row.content),
     },
+    key: row.key ?? [],
   }));
 }
 

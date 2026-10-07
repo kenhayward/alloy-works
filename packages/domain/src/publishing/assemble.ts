@@ -10,6 +10,7 @@ import type {
 } from '../content/model/inline.js';
 import type { Mark } from '../content/model/marks.js';
 import { formatsFor } from '../data/format.js';
+import { placeTableNotes } from '../data/table-notes.js';
 import { hasText } from '../content/model/text.js';
 import { contributionsOf, type Contribution } from '../structure/contributions.js';
 import { contents, listOf } from '../structure/lists.js';
@@ -85,6 +86,7 @@ import {
   type PublishedPdfFormat,
   type PublishedReferenceRun,
   type PublishedRun,
+  type PublishedTableNote,
   type PublishedTitleRun,
 } from './published.js';
 
@@ -517,6 +519,11 @@ export function assemble(given: AssembleInput): Assembled {
     // Said once, and for every format where either time it was met is not the PDF's alone.
     else if (!pdfsOwn.has(next)) pdfsOwn.delete(said);
   };
+  /** Each table's footnotes' letters, and its notes as its cells publish them (TB3-D, TB3-E). */
+  const tableNotes = new Map<
+    TableNode,
+    { readonly letters: ReadonlyMap<string, string>; readonly notes: PublishedTableNote[] }
+  >();
   // A figure whose image the request could not read, where it said so: told once, not twice.
   const refusedAssets = new Set(
     input.refused
@@ -799,6 +806,23 @@ export function assemble(given: AssembleInput): Assembled {
     const runs: PublishedInline[] = [];
     const caption = site.kind === 'caption';
     for (const inline of content) {
+      // A footnote in a table's cell is lettered in the table's own sequence and set beneath it
+      // (TB3-D, TB3-E): its mark a link to its note in a body cell, a plain letter in a header row,
+      // which the engine sets again on every page as an artifact.
+      const lettering =
+        inline.type === 'footnote' && inParagraph?.table != null
+          ? tableNotes.get(inParagraph.table)
+          : undefined;
+      const letter = inline.type === 'footnote' ? lettering?.letters.get(inline.id) : undefined;
+      if (inline.type === 'footnote' && layout !== null && letter !== undefined) {
+        const note = publishedTableNote(inline, node, block, inParagraph!.table!, letter, indent);
+        if (note !== null) {
+          lettering!.notes.push(note);
+          check(letter, node, block, families);
+          runs.push({ tableMark: { letter, link: inParagraph!.heading ? null : note.anchor } });
+        }
+        continue;
+      }
       if (inline.type === 'footnote' && layout !== null) {
         // A table's header rows repeat on every page it reaches, and the engine refuses a footnote in
         // a repeated header outright - a link in an artifact - naming nothing (final review of
@@ -922,6 +946,66 @@ export function assemble(given: AssembleInput): Assembled {
     }
     const setIn = style !== undefined && applies ? style : placeStyle(place);
     return { id, families: [setBy(setIn.typeface)], size: setIn.properties.size };
+  };
+
+  /**
+   * **A table's footnote as the note beneath it** (TB3-E), lettered, or null where it is refused: as
+   * `publishedFootnote` refuses one - anchored to the table, a cell it does not resolve to, or no text
+   * at all - but numbered by nothing, its letter given. Its paragraphs are set in the `tableNote` role
+   * where they are stored `body`, and a reference in them is a link, as in any paragraph's text.
+   */
+  const publishedTableNote = (
+    footnote: Extract<InlineNode, { type: 'footnote' }>,
+    node: string,
+    block: string,
+    table: TableNode,
+    letter: string,
+    indent: Indent,
+  ): PublishedTableNote | null => {
+    const { anchor } = footnote;
+    let refused = false;
+    if (anchor.kind === 'table') {
+      failOnce(failure('compose', 'footnote_not_publishable_here', node, block, null));
+      refused = true;
+    } else if (anchor.kind !== 'span' && !anchorResolves(anchor, table)) {
+      failures.push(failure('compose', 'footnote_anchor_unresolved', node, footnote.id, null));
+      refused = true;
+    }
+    const content = footnote.content as readonly Extract<BlockNode, { type: 'paragraph' }>[];
+    const says = content.some((paragraph) =>
+      paragraph.content.some((inline) => inline.type !== 'text' || inline.value.trim() !== ''),
+    );
+    if (!says) {
+      failures.push(failure('compose', 'footnote_empty', node, footnote.id, null));
+      refused = true;
+    }
+    if (refused) return null;
+    const paragraphs = content.flatMap((paragraph) => {
+      const style =
+        paragraph.style === BODY
+          ? {
+              id: theme!.roles.tableNote,
+              families: roles('tableNote'),
+              size: roleStyle('tableNote').properties.size,
+            }
+          : paragraphStyle(paragraph.style, 'footnote', node, footnote.id);
+      const runs = publishedRuns(
+        paragraph.content,
+        node,
+        footnote.id,
+        style.families,
+        style.size,
+        indent,
+        { kind: 'paragraph', block: paragraph.id },
+        { table: null, heading: false },
+      );
+      const named = anchorOf(node, paragraph.id);
+      return runs.length === 0 && named === null
+        ? []
+        : [{ type: 'paragraph' as const, id: paragraph.id, anchor: named, style: style.id, runs }];
+    });
+    check(letter, node, footnote.id, roles('tableNote'));
+    return { letter, anchor: blockAnchor(node, footnote.id), paragraphs };
   };
 
   /**
@@ -1269,11 +1353,17 @@ export function assemble(given: AssembleInput): Assembled {
         // A note on the table as a whole (CNT-038, FN-C), set beneath it in its figure (footnotes 2,
         // ruling R7), in the `tableNote` role's style. One that says nothing, which another route may
         // store, is none.
+        // After the layout's word where it has one, and unlabelled where not (TB3-E, TB3-F): one
+        // sequence of runs, so a reference in it is kept by its place among them, as anywhere else.
+        const word: InlineNode[] =
+          layout.words.note === undefined
+            ? []
+            : [{ type: 'text', value: `${layout.words.note} `, marks: [] }];
         const note =
           block.note === undefined
             ? []
             : publishedRuns(
-                block.note,
+                [...word, ...block.note],
                 node,
                 block.id,
                 roles('tableNote'),
@@ -1281,7 +1371,15 @@ export function assemble(given: AssembleInput): Assembled {
                 indent,
                 { kind: 'note', block: block.id },
               );
-        const noteSays = note.some((run) => !('text' in run) || run.text.trim() !== '');
+        const noteSays = note
+          .slice(word.length)
+          .some((run) => !('text' in run) || run.text.trim() !== '');
+        // Its footnotes lettered in its own sequence (TB3-D), collected as its cells are published.
+        const lettering = {
+          letters: new Map(placeTableNotes(block).map(({ note, letter }) => [note.id, letter])),
+          notes: [] as PublishedTableNote[],
+        };
+        tableNotes.set(block, lettering);
         // A bound table's own (TB1-H): its source beneath it, after the layout's word (TAB-027), in
         // the table note role's style, and what the binding stage laid out of its columns and cells.
         const laidOut = isLaidOut(block) ? block.laidOut : null;
@@ -1356,6 +1454,7 @@ export function assemble(given: AssembleInput): Assembled {
             })),
             listed: entry !== undefined,
             note: noteSays ? note : null,
+            notes: lettering.notes,
             ...(laidOut === null
               ? {}
               : { bound: { align: laidOut.align, wrap: laidOut.wrap, source } }),
@@ -2305,6 +2404,11 @@ function resolveReferences(
     positions.set(anchor, at++);
     if (inHeader) repeated.add(anchor);
   };
+  /**
+   * A table's cells' footnotes, placed where their notes are set - beneath the table, after its own
+   * note, never in a header row and never in Word's footnotes part (TB3-E) - or null outside a table.
+   */
+  let beneath: (() => void)[] | null = null;
   const inlines = (
     content: readonly InlineNode[],
     node: string,
@@ -2316,6 +2420,15 @@ function resolveReferences(
     for (const inline of content) {
       if (inline.type === 'crossReference') {
         found.push({ node, reference: inline, inTitle, at: at++, inNote, inCaption });
+      } else if (inline.type === 'footnote' && beneath !== null) {
+        beneath.push(() => {
+          place(blockAnchor(node, inline.id), false);
+          const paragraphs = inline.content as readonly Extract<BlockNode, { type: 'paragraph' }>[];
+          for (const paragraph of paragraphs) {
+            place(blockAnchor(node, paragraph.id), false);
+            inlines(paragraph.content, node, inTitle, false, inCaption, false);
+          }
+        });
       } else if (inline.type === 'footnote') {
         place(blockAnchor(node, inline.id), inHeader);
         const paragraphs = inline.content as readonly Extract<BlockNode, { type: 'paragraph' }>[];
@@ -2348,11 +2461,19 @@ function resolveReferences(
       case 'table':
         captions.set(blockAnchor(node, stored.id), { node, caption: stored.caption });
         inlines(stored.caption, node, false, inHeader, blockAnchor(node, stored.id));
-        stored.rows.forEach((row, index) => {
-          const header = inHeader || index < stored.headerRows;
-          for (const cell of row.cells) for (const each of cell.content) block(each, node, header);
-        });
-        inlines(stored.note ?? [], node, false, inHeader);
+        {
+          const outer = beneath;
+          const lettered: (() => void)[] = [];
+          beneath = lettered;
+          stored.rows.forEach((row, index) => {
+            const header = inHeader || index < stored.headerRows;
+            for (const cell of row.cells)
+              for (const each of cell.content) block(each, node, header);
+          });
+          beneath = outer;
+          inlines(stored.note ?? [], node, false, inHeader);
+          for (const each of lettered) each();
+        }
         return;
       case 'boundTable':
         // Walked as a table (TB1-D): its caption, then what stands beneath it, its note and source.

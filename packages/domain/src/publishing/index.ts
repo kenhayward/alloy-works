@@ -55,6 +55,7 @@ export {
   FIFTH_DEFAULT_LAYOUT,
   SIXTH_DEFAULT_LAYOUT,
   SEVENTH_DEFAULT_LAYOUT,
+  EIGHTH_DEFAULT_LAYOUT,
   LAYOUT_SCHEMA_VERSION,
   LISTED_SEQUENCES,
   layoutMigrationChain,
@@ -137,6 +138,7 @@ export {
   // Frozen by TB1.2, which made `publishing/16`: the schema template 15 reads, and the schema of every
   // publication made before a table could be a bound table laid out.
   PUBLISHING_SCHEMA_15,
+  PUBLISHING_SCHEMA_16,
 } from './published.js';
 export type {
   PublishedBlock,
@@ -166,5 +168,7 @@ export type {
   PublishedReferenceRun,
   PublishedRun,
   PublishedRun1,
+  PublishedTableMarkRun,
+  PublishedTableNote,
   PublishedTitleRun,
 } from './published.js';

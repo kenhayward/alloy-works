@@ -177,7 +177,7 @@ describe('footnotes and a table note in the PDF (footnotes 2)', () => {
       'Note in running text.',
       'Note in a list.',
       'Note in a quotation.',
-      'Note in a cell.',
+      // A cell's is lettered beneath its table, in the table's own sequence (TB3-D).
       ...Array.from({ length: LINES }, (_, line) => line)
         .filter(anchored)
         .map((line) => `Note for anchor ${line}.`),
@@ -188,9 +188,18 @@ describe('footnotes and a table note in the PDF (footnotes 2)', () => {
   });
 
   it("CNT-038 publishes a table's note straight after the table, which keeps its caption", () => {
-    expect(pageOf(read, 'Figures are estimated.')).toBe(pageOf(read, 'York'));
+    expect(pageOf(read, 'Note: Figures are estimated.')).toBe(pageOf(read, 'York'));
     const page = read.taggedText[pageOf(read, 'York')]!.map((run) => run.trim());
-    expect(page.indexOf('Figures are estimated.')).toBe(page.indexOf('12') + 1);
+    expect(page.indexOf('Note: Figures are estimated.')).toBe(page.indexOf('12') + 1);
+    // Its cell's footnote lettered after it, its mark where it stood (TB3-E).
+    expect(page.slice(page.indexOf('York'), page.indexOf('York') + 6)).toEqual([
+      'York',
+      'a',
+      '12',
+      'Note: Figures are estimated.',
+      'a',
+      'Note in a cell.',
+    ]);
     // The caption is still the table's first child, so still its programmatic caption (TAB-039).
     expect(read.roles[read.roles.indexOf('Table') + 1]).toBe('Caption');
   });

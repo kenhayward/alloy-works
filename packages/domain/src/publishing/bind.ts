@@ -1,6 +1,6 @@
 import type { BlockNode } from '../content/model/blocks.js';
 import type { ContentDocument } from '../content/model/document.js';
-import type { Alternative, InlineNode } from '../content/model/inline.js';
+import type { Alternative, FootnoteNode, InlineNode } from '../content/model/inline.js';
 import type { Binding } from '../data/binding.js';
 import type { CanonicalResult, CanonicalValue } from '../data/canonical.js';
 import type { ColumnType, ImageColumnType, ValueType } from '../data/columns.js';
@@ -8,6 +8,7 @@ import type { Column } from '../data/definition.js';
 import type { FieldFormat } from '../data/field-format.js';
 import { formatValue } from '../data/format.js';
 import { layoutTable, type TablePresentation } from '../data/table.js';
+import { keyNamesTheKey, matchNoteRows, placeTableNotes } from '../data/table-notes.js';
 import { takeValue, type TakeOutcome } from '../data/take.js';
 import { canonicalJson } from '../stored/canonical.js';
 import type { ValueFormats } from '../theme/schema.js';
@@ -46,6 +47,8 @@ export type Held =
       readonly columns: readonly Column[];
       readonly datasetVersion: string;
       readonly images: Readonly<Record<string, string>>;
+      /** The key of the definition version the dataset version ran (TB3-B): what a keyed note names. */
+      readonly key: readonly string[];
     }
   | 'unreadable';
 
@@ -74,6 +77,12 @@ export interface PrintedTable {
     readonly printed: string;
     readonly value: CanonicalValue;
   }[])[];
+  /** Each note printed beneath it, by its letter, and the anchor it was stored with (TB3.1). */
+  readonly notes: readonly {
+    readonly note: string;
+    readonly letter: string;
+    readonly anchor: FootnoteNode['anchor'];
+  }[];
 }
 
 /**
@@ -272,6 +281,26 @@ export function bind(
       }
       return table;
     }
+    // Its notes (TB3-B, TB3-C): a keyed one needs the definition's key, and its row by that key.
+    const notes = table.notes ?? [];
+    const definition = table.binding.query;
+    if (result.key.length === 0 && notes.some((note) => note.anchor.kind === 'keyed')) {
+      fail('key_required', table.id, definition);
+      return table;
+    }
+    const noteRows = matchNoteRows(notes, result.result, result.key, result.columns);
+    let gone = false;
+    for (const note of notes) {
+      if (note.anchor.kind !== 'keyed' || noteRows.get(note.id) !== null) continue;
+      gone = true;
+      const why = keyNamesTheKey(note.anchor.key, result.key)
+        ? ''
+        : `: the key is ${result.key.join(', ')}`;
+      const key = canonicalJson(note.anchor.key);
+      fail('note_row_missing', table.id, `${note.id}: ${key}: ${definition}${why}`);
+    }
+    if (gone) return table;
+    const placed = placeTableNotes(table, laid, noteRows);
     values.push({
       node,
       block: table.id,
@@ -287,6 +316,7 @@ export function bind(
         rows: laid.rows.map((row) =>
           row.cells.map((cell) => ({ printed: cell.text, value: cell.value })),
         ),
+        notes: placed.map(({ note, letter }) => ({ note: note.id, letter, anchor: note.anchor })),
       },
     });
     // The empty statement's own bindings are set only where it prints - the result has no rows - so a
@@ -295,7 +325,7 @@ export function bind(
       laid.empty === null || table.empty === undefined
         ? laid
         : { ...laid, empty: { ...laid.empty, content: inlines(table.empty, table.id) } };
-    return laidOutTable(table, printed, style.negativeColour ?? DEFAULT_NEGATIVE_COLOUR);
+    return laidOutTable(table, printed, style.negativeColour ?? DEFAULT_NEGATIVE_COLOUR, placed);
   };
 
   const inlines = (sequence: readonly InlineNode[], block: string, noImage = false): InlineNode[] =>
@@ -370,6 +400,9 @@ export function bind(
             ...block,
             caption: inlines(block.caption, block.id, true),
             ...(block.note ? { note: inlines(block.note, block.id, inFootnote) } : {}),
+            ...(block.notes
+              ? { notes: inlines(block.notes, block.id, true) as FootnoteNode[] }
+              : {}),
             ...(block.source ? { source: inlines(block.source, block.id, inFootnote) } : {}),
           });
         case 'figure': {

@@ -618,7 +618,7 @@ describe("PUB-087 the engine spike's nine cases, through the pipeline", () => {
     expect(await checkPdfUa1(pdf)).toMatchObject({ compliant: true, failedRules: 0 });
   }, 120_000);
 
-  it('case 3: repeats a forty-row table header on every page it crosses, and sets a note in one of its cells at the foot of that page', async () => {
+  it("case 3: repeats a forty-row table header on every page it crosses, and sets a note in one of its cells beneath the table, lettered in the table's own sequence (TB3-E)", async () => {
     const { paint, pdf, starts } = await tableBreaking();
     const spanned = [...new Set(starts.map((each) => each.page))];
     // Across three pages, as the spike's did, so a header that repeats once by luck is not enough.
@@ -635,11 +635,12 @@ describe("PUB-087 the engine spike's nine cases, through the pipeline", () => {
         `the header above the first row on page ${page}`,
       ).toBe(true);
     }
-    // The cell's note on its mark's page, in the foot area rather than in the cell.
-    const mark = first(paint, 'cellmark')!;
+    // The cell's note beneath the table, after its last row, and not at any page's foot.
+    const last = first(paint, 'rowend40')!;
     const note = first(paint, 'cellnote')!;
-    expect(note.page).toBe(mark.page);
-    expect(inFootArea(paint, note)).toBe(true);
+    expect(note.page).toBe(last.page);
+    expect(note.y).toBeLessThan(last.y);
+    expect(inFootArea(paint, note)).toBe(false);
     expect(await checkPdfUa1(pdf)).toMatchObject({ compliant: true, failedRules: 0 });
     // The spike's third check, the caption on its table's first page, fails on this very document:
     // that is issue #235, open, and its case below pins it as it stands.
