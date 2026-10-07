@@ -19751,6 +19751,24 @@
       "kind": "title"
     },
     {
+      "id": "TPL-026",
+      "file": "apps/web/src/structure/NewDocument.parameters.test.tsx",
+      "line": 165,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-045",
+      "file": "apps/web/src/structure/NewDocument.parameters.test.tsx",
+      "line": 202,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-020",
+      "file": "apps/web/src/structure/ParametersPanel.test.tsx",
+      "line": 54,
+      "kind": "title"
+    },
+    {
       "id": "STR-045",
       "file": "apps/web/src/structure/position.test.ts",
       "line": 122,
@@ -22814,6 +22832,30 @@
       "id": "DAT-056",
       "file": "tests/e2e/src/connector-privilege.test.ts",
       "line": 178,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-018",
+      "file": "tests/e2e/src/parameters.test.ts",
+      "line": 109,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-020",
+      "file": "tests/e2e/src/parameters.test.ts",
+      "line": 121,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-021",
+      "file": "tests/e2e/src/parameters.test.ts",
+      "line": 121,
+      "kind": "title"
+    },
+    {
+      "id": "TPL-026",
+      "file": "tests/e2e/src/parameters.test.ts",
+      "line": 99,
       "kind": "title"
     },
     {

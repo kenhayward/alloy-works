@@ -227,7 +227,8 @@ describe('the development content', () => {
       return (await latestVersion(trx, found.id))!;
     });
     // As an environment seeded before TP1 holds it: the same definition, with no parameters.
-    const { parameters: _dropped, ...before } = report.content as Record<string, unknown>;
+    const before: Record<string, unknown> = { ...(report.content as Record<string, unknown>) };
+    delete before['parameters'];
     await service.withTenant(tenant, async (trx) => {
       const grace = await trx
         .selectFrom('principal')

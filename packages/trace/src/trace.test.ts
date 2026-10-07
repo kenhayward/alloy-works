@@ -812,8 +812,10 @@ describe('the citations in the committed model', () => {
   // 771 (2026-10-07): TB3.2's wide tables - TAB-033 and TAB-051 in the worker.
   // 781 (2026-10-07): TP1.1's template parameters through the service - TPL-017, TPL-018, TPL-020,
   // TPL-026, TPL-045, TPL-021 and TPL-068 in titles, and TPL-068, TPL-021 and DAT-020 as rules.
+  // 788 (2026-10-07): TP1.2's page and whole system - TPL-026, TPL-045 and TPL-020 in the renderer,
+  // TPL-026, TPL-018, TPL-021 and TPL-020 over HTTP.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(781);
+    expect(model.citations).toHaveLength(788);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -886,6 +888,7 @@ describe('scanning the repository for test files', () => {
     // 43, from 37 (2026-10-05): ComponentEditor.test.tsx and DocumentPage.test.tsx split in four each.
     // 44, from 43 (2026-10-07): structure/DocumentPage.bound-tables.test.tsx, which cites nothing.
     // 45, from 44 (2026-10-07): editor/ComponentEditor.bound-tables.test.tsx, which cites six TAB.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(45);
+    // 47, from 45 (2026-10-07): structure/NewDocument.parameters.test.tsx and ParametersPanel.test.tsx.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(47);
   });
 });
