@@ -238,7 +238,8 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(628); // 628 (2026-10-07): tables.md claims 33.
+    ).toBe(627); // 628 (2026-10-07): tables.md claims 33. 627 (2026-10-07): it drops TAB-035, whose
+    // widths no table style holds yet (the TB1 final review, M3).
   });
 });
 

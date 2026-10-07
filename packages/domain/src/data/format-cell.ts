@@ -250,7 +250,11 @@ export function colouredNegative(
  * format asking for them. Decided by what is printed, never read back from the printed text, which a
  * unit after the value or a currency may end (TB1-I).
  */
-export function parenthesised(value: CanonicalValue, type: ColumnType, format: FieldFormat): boolean {
+export function parenthesised(
+  value: CanonicalValue,
+  type: ColumnType,
+  format: FieldFormat,
+): boolean {
   if ((format.negative ?? 'minus') !== 'parentheses' || !isNumber(type)) return false;
   if (typeof value !== 'string' || !DECIMAL.test(value)) return false;
   return printedNumber(value, type, format, PLAIN).negative;

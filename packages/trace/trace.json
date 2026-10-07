@@ -17594,10 +17594,6 @@
           "howItIsMet": "A column the dataset version does not have is `column_missing`, in the page and at the stage, never an empty column"
         },
         {
-          "id": "TAB-035",
-          "howItIsMet": "Widths are the table style's; a column declares `wrap: false` where it must not wrap"
-        },
-        {
           "id": "TAB-036",
           "howItIsMet": "Every declaration lives in the block and names a column by the result's column name, never a position; T3's declarations follow the same rule"
         },
@@ -18250,6 +18246,12 @@
       "id": "DAT-114",
       "file": "apps/connector/src/postgres.test.ts",
       "line": 154,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-069",
+      "file": "apps/connector/src/result.test.ts",
+      "line": 22,
       "kind": "title"
     },
     {
@@ -19653,7 +19655,7 @@
     {
       "id": "TAB-004",
       "file": "apps/worker/src/bound-tables.test.ts",
-      "line": 565,
+      "line": 576,
       "kind": "title"
     },
     {
@@ -19665,19 +19667,13 @@
     {
       "id": "TAB-019",
       "file": "apps/worker/src/bound-tables.test.ts",
-      "line": 527,
+      "line": 538,
       "kind": "title"
     },
     {
       "id": "TAB-027",
       "file": "apps/worker/src/bound-tables.test.ts",
       "line": 506,
-      "kind": "title"
-    },
-    {
-      "id": "TAB-035",
-      "file": "apps/worker/src/bound-tables.test.ts",
-      "line": 489,
       "kind": "title"
     },
     {
@@ -21165,7 +21161,7 @@
     {
       "id": "DAT-033",
       "file": "packages/domain/src/data/format-cell.test.ts",
-      "line": 207,
+      "line": 215,
       "kind": "title"
     },
     {
@@ -21207,7 +21203,7 @@
     {
       "id": "TAB-019",
       "file": "packages/domain/src/data/format-cell.test.ts",
-      "line": 191,
+      "line": 199,
       "kind": "title"
     },
     {
@@ -21219,7 +21215,7 @@
     {
       "id": "TAB-038",
       "file": "packages/domain/src/data/format-cell.test.ts",
-      "line": 198,
+      "line": 206,
       "kind": "title"
     },
     {
@@ -21327,7 +21323,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 570,
+      "line": 572,
       "kind": "title"
     },
     {
@@ -21711,7 +21707,7 @@
     {
       "id": "DAT-028",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 511,
+      "line": 512,
       "kind": "title"
     },
     {
@@ -21723,7 +21719,7 @@
     {
       "id": "DAT-069",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 584,
+      "line": 641,
       "kind": "title"
     },
     {
@@ -21741,13 +21737,19 @@
     {
       "id": "TAB-004",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 658,
+      "line": 715,
       "kind": "title"
     },
     {
       "id": "TAB-045",
       "file": "packages/domain/src/publishing/bind.test.ts",
-      "line": 598,
+      "line": 655,
+      "kind": "title"
+    },
+    {
+      "id": "TAB-046",
+      "file": "packages/domain/src/publishing/bind.test.ts",
+      "line": 569,
       "kind": "title"
     },
     {
@@ -22250,12 +22252,6 @@
     },
     {
       "id": "TAB-027",
-      "file": "packages/domain/src/word/write.test.ts",
-      "line": 4892,
-      "kind": "title"
-    },
-    {
-      "id": "TAB-035",
       "file": "packages/domain/src/word/write.test.ts",
       "line": 4892,
       "kind": "title"

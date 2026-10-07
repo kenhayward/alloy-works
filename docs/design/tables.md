@@ -23,7 +23,7 @@ hand is T3's with the rest of revision (ADR-0036, DAT-063).
 > and alignment by type (default theme 0.7), layout schema 7's `noRows`, `notAvailable` and `source`,
 > the binding paths, and the publish: the stage lays a bound table out in its place, template 16 and
 > the Word writer set it, and `provenance.json` at schema 3 records its cells. Of the claims below TB1
-> answers TAB-001 to TAB-004, TAB-006, TAB-007, TAB-011 to TAB-017, TAB-019, TAB-027, TAB-035 to
+> answers TAB-001 to TAB-004, TAB-006, TAB-007, TAB-011 to TAB-017, TAB-019, TAB-027, TAB-036 to
 > TAB-038, TAB-045, TAB-046, TAB-048, DAT-028, DAT-033 and DAT-069; the rest wait for TB2 and TB3. A
 > bound table is placed through the API; the editor opens a component holding one for reading only.
 > [Changed while building](#changed-while-building) records where TB1 differs from what follows.
@@ -50,7 +50,6 @@ do not wrap, table notes in their own sequence, and the wide-table strategy.
 | **TAB-002** | Each column carries its `header`, required, defaulting in the editor to the column's name                                                                                 |
 | **TAB-003** | A column's `unit` prints in its header, bracketed as the table style says, or after each value where the column asks                                                      |
 | **TAB-004** | A column the dataset version does not have is `column_missing`, in the page and at the stage, never an empty column                                                       |
-| **TAB-035** | Widths are the table style's; a column declares `wrap: false` where it must not wrap                                                                                      |
 | **TAB-036** | Every declaration lives in the block and names a column by the result's column name, never a position; T3's declarations follow the same rule                             |
 | **TAB-048** | A column named twice is refused unless every header naming it differs, `column_repeated`                                                                                  |
 | **TAB-006** | With no `sort`, rows print in the dataset version's stored order: the definition's declared order, or for a multiset the canonical order data.md stores                   |
@@ -82,6 +81,11 @@ do not wrap, table notes in their own sequence, and the wide-table strategy.
 
 STY-014 and STY-077 stay themes.md's; the members that answer them are [here](#the-table-style).
 TAB-030 is met by TAB-016's rule and claimed with T3's emphasis rules, which are what it is about.
+
+**TAB-035 is not claimed**: it asks for column widths from the table style, and no table style has a
+width member yet - columns share the measure equally. Only its other half is built: a column declares
+`wrap: false` where it must not wrap. **TAB-046 is read with STY-077's "a specific table may
+override"**: the style aligns by type, and a bound table's column may override it, as `align` does.
 
 ## The presentation
 
@@ -311,6 +315,11 @@ table has every row.
   `words.source`. `words.note` waits for TB3; a layout stored at 6 publishing a bound table is
   `table_words_missing`.
 - **The ceiling is 2,000 rows**, not 10,000 (TB1-K): 10,000 would need about 5 GiB of the engine.
+- **An empty statement's bindings are set only where it prints** (the TB1 final review, M2), so with
+  rows they record nothing and fail nothing. **A cell's parenthesis inset** is decided by what the
+  formatter printed (`parenthesised`), never by the text, which a unit after the value ends (M1).
+  **Headers differing only in case** are one header to `column_repeated` (L3), and a null text reading
+  as a number in any script's digits or beside a currency symbol is refused (L2).
 - **The empty statement and the stage's failures**: an empty statement holds no footnote until TB3;
   `column_missing`, `column_image`, `format_mismatch`, `table_too_long` and `table_words_missing` fail
   a publish at stage `bind`, naming the table.

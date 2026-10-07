@@ -8,10 +8,15 @@ import { z } from 'zod';
  * result's columns are known (`format_mismatch`), never here.
  */
 
-/** Whether a text, spaces taken out, reads as a number: digits, separators, a sign, parentheses, `%`. */
+/**
+ * Whether a text, spaces taken out, reads as a number: digits of any script, their separators, a
+ * sign, parentheses, `%`, and a currency's symbol before or after them (the TB1 final review, L2).
+ */
 export function readsAsANumber(text: string): boolean {
   const bare = text.replace(/\s/gu, '');
-  return /^[+\-\u2212(]?[\d.,']*\d[\d.,']*\)?%?$/u.test(bare);
+  return /^[+\-\u2212(]?\p{Sc}?[+\-\u2212]?[\p{Nd}.,'\u066B\u066C]*\p{Nd}[\p{Nd}.,'\u066B\u066C]*\p{Sc}?\)?%?\p{Sc}?$/u.test(
+    bare,
+  );
 }
 
 /** A string held to a length in code points and to NFC, as every string the digest covers is. */

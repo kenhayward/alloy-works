@@ -4889,7 +4889,7 @@ describe('writeDocx: a bound table (the TB1 plan, TB1-I; TB1.2)', () => {
   const cells = rowsOf(table);
   const paragraphOf = (row: number, column: number) => kids(cells[row]![column]!, 'w:p')[0]!;
 
-  it('TAB-046 TAB-035 TAB-027 sets a number column at its end with a value lacking parentheses stood in by one, a no-wrap column unwrapped, and the source after the table', () => {
+  it('TAB-046 TAB-027 sets a number column at its end with a value lacking parentheses stood in by one, a no-wrap column unwrapped, and the source after the table', () => {
     expect(cells.map((row) => row.map((each) => textOf(each)))).toEqual([
       ['Site', 'Reading'],
       ['north', '1.50'],

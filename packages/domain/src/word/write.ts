@@ -1841,7 +1841,7 @@ class Writer {
         if (each === undefined) break;
         const own = this.cellFormat(table, style, at, x, each);
         const merge = each.rowspan > 1 ? '<w:vMerge w:val="restart"/>' : '';
-        // A bound table's column that must not wrap (TAB-035): Word's `w:noWrap`, after the shading.
+        // A bound table's column that must not wrap (the no-wrap half of TAB-035): Word's `w:noWrap`, after the shading.
         const noWrap = table.bound?.wrap[x] === false && each.colspan === 1 ? '<w:noWrap/>' : '';
         const tcPr = (merge: string) =>
           `<w:tcPr><w:tcW w:w="${column * each.colspan}" w:type="dxa"/>` +

@@ -548,6 +548,8 @@ describe('the domain package', () => {
         'formatCell',
         'formatMismatch',
         'mergeFormat',
+        // The TB1 final review (M1): whether a cell prints its value in parentheses.
+        'parenthesised',
         // TB1: a bound table laid out, its row ceiling, and the product's formats and alignment by
         // type where a table style names none (task 4).
         'DEFAULT_TABLE_ALIGN',

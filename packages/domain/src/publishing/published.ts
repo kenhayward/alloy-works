@@ -449,7 +449,7 @@ export interface PublishedTable {
   /**
    * **A bound table's** (TB1-H, TB1-J), absent from an authored one: each column's alignment - a
    * `decimal` one set at its end with its digits unkerned, so its separators meet (TAB-046) - and
-   * whether it may wrap (TAB-035); and its source, as runs the layout's word begins, which a template
+   * whether it may wrap (the no-wrap half of TAB-035); and its source, as runs the layout's word begins, which a template
    * sets beneath the table after its note (TAB-027), or null.
    */
   readonly bound?: {

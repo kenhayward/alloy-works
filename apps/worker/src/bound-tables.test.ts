@@ -486,7 +486,7 @@ describe('publishing a document holding a bound table', () => {
     expect(fill('1.11')).not.toBe('#c00000');
   });
 
-  it("TAB-035 sets a no-wrap column's cells on one line in the PDF, and w:noWrap on them in Word", async () => {
+  it("sets a no-wrap column's cells on one line in the PDF, and w:noWrap on them in Word", async () => {
     const paint = await readGlyphs(published.pdf);
     const words = LONG_SITE.split(' ');
     const lines = new Set(
@@ -516,8 +516,19 @@ describe('publishing a document holding a bound table', () => {
     );
   });
 
-  it("DAT-069 publishes an empty result its definition declares valid as its headers and the statement, in the PDF's tags and Word's cells", () => {
-    // Read above: the quiet table's header row and its one statement, a data cell across it.
+  it("DAT-069 publishes an empty result its definition declares valid as its headers and the statement, in the PDF's tags and Word's cells", async () => {
+    // The quiet table, the second: in the PDF's tags its header row of two headers and one data cell,
+    // the statement, a row of its own though its first column heads every row.
+    const read = await readPdf(published.pdf);
+    const rows = read.reading.filter((each) => ['TR', 'TH', 'TD'].includes(each.role));
+    const quiet = rows.slice(rows.findLastIndex((each) => each.text.trim() === 'Site') - 1);
+    expect(quiet.map((each) => [each.role, each.text.trim()])).toEqual([
+      ['TR', 'Site Reading'],
+      ['TH', 'Site'],
+      ['TH', 'Reading'],
+      ['TR', 'No quiet site reported.'],
+      ['TD', 'No quiet site reported.'],
+    ]);
     expect(wordCells(published.docx)[1]).toEqual([
       ['Site', 'Reading'],
       ['No quiet site reported.'],

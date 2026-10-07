@@ -569,8 +569,8 @@ function checkBlock(block: BlockNode, claimed: Claimed): BlockNode {
 
 /**
  * **A bound table** (the TB1 plan, TB1-A): what zod cannot hold. A column shown twice is refused unless
- * every header naming it differs (TAB-048, `column_repeated`), headers compared as stored, in NFC; a
- * sort names each column once. Its binding's identifier is claimed as an inline one's is, and its
+ * every header naming it differs (TAB-048, `column_repeated`), headers compared in NFC and folded to
+ * one case, which a reader cannot tell apart (the TB1 final review, L3); a sort names each column once. Its binding's identifier is claimed as an inline one's is, and its
  * caption, empty statement, note and source are inline content under a table caption's rules, walked
  * in the order a reader meets them: the caption, the table's body, then its note and its source.
  */
@@ -581,9 +581,9 @@ function checkBoundTable(
   const headers = new Map<string, Set<string>>();
   for (const column of block.columns) {
     const seen = headers.get(column.column) ?? new Set<string>();
-    if (seen.has(column.header))
-      throw new BoundTableRefused('column_repeated', block.id, column.column);
-    seen.add(column.header);
+    const header = column.header.toLocaleLowerCase('und');
+    if (seen.has(header)) throw new BoundTableRefused('column_repeated', block.id, column.column);
+    seen.add(header);
     headers.set(column.column, seen);
   }
   const sorted = new Set<string>();
