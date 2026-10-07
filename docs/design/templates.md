@@ -275,7 +275,8 @@ of entries, or a choice where `permitted` lists values (TPL-026). In the same tr
   Outline and values acts carry `parameters` unchanged.
 - **Visible and auditable** (TPL-020): the document page's **Parameters** panel, beside its fields,
   shows each value, a changeable one editable and saved a pause after it is typed, a fixed one read
-  only, and a **History** of each change, who made it and when, read from the version chain's author
+  only - the values alone, by name, to a reader who may not read the template, whose declarations the
+  route withholds as `DocumentView.template` does - and a **History** of each change, who made it and when, read from the version chain's author
   and time. `GET /v1/documents/{id}/parameters` answers the same - the declarations at the document's
   recorded template version, the values, and the history newest first, `limit` and `cursor` paging it.
 
@@ -298,13 +299,13 @@ of entries, or a choice where `permitted` lists values (TPL-026). In the same tr
 
 ### Failures
 
-| Failure             | Where                     | Meaning                                                                                 |
-| ------------------- | ------------------------- | --------------------------------------------------------------------------------------- |
-| `parameter_unused`  | template save             | A parameter seeds no field and supplies no argument (TPL-068)                           |
-| `parameter_field`   | template save, creation   | A seeded field is not document-level, is fixed, or cannot take the parameter's type     |
-| `parameter_invalid` | creation, change, resolve | A required value missing or a value invalid, naming parameter, rule and value (TPL-045) |
-| `parameter_unknown` | creation, change          | A value for a parameter the template does not declare                                   |
-| `parameter_fixed`   | change                    | A changed value of a parameter that is not changeable (TPL-021)                         |
+| Failure             | Where                     | Meaning                                                                                                                                                                   |
+| ------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `parameter_unused`  | template save             | A parameter seeds no field and supplies no argument (TPL-068)                                                                                                             |
+| `parameter_field`   | template save, creation   | A seeded field is not document-level, is fixed, cannot take the parameter's type, or is seeded by two parameters, each named                                              |
+| `parameter_invalid` | creation, change, resolve | A required value missing (rule TPL-018 where that is all) or a value invalid, a list's item repeated (`duplicate`) among them, naming parameter, rule and value (TPL-045) |
+| `parameter_unknown` | creation, change          | A value for a parameter the template does not declare                                                                                                                     |
+| `parameter_fixed`   | change                    | A changed value of a parameter that is not changeable (TPL-021)                                                                                                           |
 
 ### Build order
 
