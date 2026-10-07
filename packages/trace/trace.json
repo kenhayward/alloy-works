@@ -19143,6 +19143,42 @@
       "kind": "title"
     },
     {
+      "id": "TAB-001",
+      "file": "apps/web/src/editor/ComponentEditor.bound-tables.test.tsx",
+      "line": 237,
+      "kind": "title"
+    },
+    {
+      "id": "TAB-002",
+      "file": "apps/web/src/editor/ComponentEditor.bound-tables.test.tsx",
+      "line": 250,
+      "kind": "title"
+    },
+    {
+      "id": "TAB-003",
+      "file": "apps/web/src/editor/ComponentEditor.bound-tables.test.tsx",
+      "line": 250,
+      "kind": "title"
+    },
+    {
+      "id": "TAB-007",
+      "file": "apps/web/src/editor/ComponentEditor.bound-tables.test.tsx",
+      "line": 266,
+      "kind": "title"
+    },
+    {
+      "id": "TAB-037",
+      "file": "apps/web/src/editor/ComponentEditor.bound-tables.test.tsx",
+      "line": 287,
+      "kind": "title"
+    },
+    {
+      "id": "TAB-048",
+      "file": "apps/web/src/editor/ComponentEditor.bound-tables.test.tsx",
+      "line": 324,
+      "kind": "title"
+    },
+    {
       "id": "CNT-063",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
       "line": 473,
