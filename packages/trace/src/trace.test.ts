@@ -238,7 +238,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(595); // 595 (2026-10-06): data.md claims IAM-082 (D7.3).
+    ).toBe(628); // 628 (2026-10-07): tables.md claims 33.
   });
 });
 

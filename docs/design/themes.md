@@ -242,7 +242,9 @@ padding, alignment by column type, default field formats by column type (STY-014
 behaviour: whether the header repeats, the continuation label, and whether rows are kept whole
 (STY-013); and where its caption sits, above the table or below it (STY-079, since
 [W14.5](#where-a-caption-sits)). The editor renders all of it except break behaviour, which is
-pagination.
+pagination. The members answering STY-014 and STY-077 - formats and alignment by column
+type, the negative colour, unit brackets and the wide-table strategy - are set out in
+[tables.md](tables.md#the-table-style).
 
 The continuation label matters beyond appearance: the spike found that no engine can express one
 without per-document work. In this design it is a table style property the Typst template renders -

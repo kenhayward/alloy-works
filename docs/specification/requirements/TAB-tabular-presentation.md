@@ -59,14 +59,14 @@ scientific or engineering reader expects.
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
 | **TAB-006** | A table must preserve the order the query returned, unless it declares its own sort                                                                                                                                    | T2      | Specified |
 | **TAB-007** | A declared sort must be stable, so that two rows that tie do not swap between runs                                                                                                                                     | T2      | Specified |
-| **TAB-008** | Rows must be groupable by a column, with a group heading row                                                                                                                                                           | T2      | Specified |
-| **TAB-009** | Totals and subtotals must be declarable per column, with the aggregation named                                                                                                                                         | T2      | Specified |
-| **TAB-010** | An aggregation must state whether it was computed here or returned by the query, because the two can disagree                                                                                                          | T2      | Specified |
+| **TAB-008** | Rows must be groupable by a column, with a group heading row                                                                                                                                                           | T3      | Specified |
+| **TAB-009** | Totals and subtotals must be declarable per column, with the aggregation named                                                                                                                                         | T3      | Specified |
+| **TAB-010** | An aggregation must state whether it was computed here or returned by the query, because the two can disagree                                                                                                          | T3      | Specified |
 | **TAB-011** | A table returning no rows must render a declared empty state rather than a table with a header and nothing under it                                                                                                    | T2      | Specified |
-| **TAB-043** | Grouping must be declarable on more than one column, nesting in a declared order, and the relationship with a declared sort (TAB-007) must be stated: groups order first, and the sort applies within each group       | T2      | Specified |
-| **TAB-042** | A group heading must stay with the first row of its group, and a subtotal with the last row of its, across a page break. How that is achieved is the table style's (**STY-013**); that it must hold is this document's | T2      | Specified |
-| **TAB-044** | The aggregations available for a total or a subtotal must be a closed set - sum, count, minimum, maximum and mean - named on the column. Anything else must be computed by the query (TAB-020, TAB-N02)                | T2      | Specified |
-| **TAB-047** | A total computed here rather than returned by the query (TAB-010) must record its inputs and its rule in provenance, so that a number on the page that no query returned can still be explained (**DAT-085**)          | T2      | Specified |
+| **TAB-043** | Grouping must be declarable on more than one column, nesting in a declared order, and the relationship with a declared sort (TAB-007) must be stated: groups order first, and the sort applies within each group       | T3      | Specified |
+| **TAB-042** | A group heading must stay with the first row of its group, and a subtotal with the last row of its, across a page break. How that is achieved is the table style's (**STY-013**); that it must hold is this document's | T3      | Specified |
+| **TAB-044** | The aggregations available for a total or a subtotal must be a closed set - sum, count, minimum, maximum and mean - named on the column. Anything else must be computed by the query (TAB-020, TAB-N02)                | T3      | Specified |
+| **TAB-047** | A total computed here rather than returned by the query (TAB-010) must record its inputs and its rule in provenance, so that a number on the page that no query returned can still be explained (**DAT-085**)          | T3      | Specified |
 
 **TAB-042 is the realistic bad case in a measurement table, and it sat between two documents.**
 TAB-008 requires group headings and TAB-032 defers break behaviour to the table style, and neither
@@ -123,8 +123,8 @@ answer with the number the source gave, not with the rounded, unit-converted thi
 | ID          | Requirement                                                                                                                                 | Tranche    | Status    |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
 | **TAB-020** | Pivoting and aggregation must be performed by the query wherever the source supports them                                                   | Constraint | Specified |
-| **TAB-021** | The presentation layer must perform only a declared, narrow set of reshaping: transposing a small result, and grouping as in section 4      | T2         | Specified |
-| **TAB-022** | Any reshaping performed here must be stated in the table's definition, so that a reader of the definition can see what the query did not do | T2         | Specified |
+| **TAB-021** | The presentation layer must perform only a declared, narrow set of reshaping: transposing a small result, and grouping as in section 4      | T3         | Specified |
+| **TAB-022** | Any reshaping performed here must be stated in the table's definition, so that a reader of the definition can see what the query did not do | T3         | Specified |
 | **TAB-023** | Reshaping must never change the number of values, only their arrangement                                                                    | Constraint | Specified |
 
 ## 7. Notes on a table
@@ -140,7 +140,7 @@ answer with the number the source gave, not with the rounded, unit-converted thi
 
 | ID          | Requirement                                                                                                                       | Tranche    | Status    |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **TAB-028** | Conditional presentation - a threshold exceeded, a value out of range - must be declarable as a rule in the table style (**STY**) | T2         | Specified |
+| **TAB-028** | Conditional presentation - a threshold exceeded, a value out of range - must be declarable as a rule in the table style (**STY**) | T3         | Specified |
 | **TAB-029** | Such a rule must not be authorable per document, so that two tables of the same kind highlight the same things                    | Constraint | Specified |
 | **TAB-030** | Emphasis must not be carried by colour alone, since it must survive monochrome printing and meet accessibility requirements       | Constraint | Specified |
 
@@ -301,6 +301,23 @@ this area cites. Each citation is repointed; none of these rows changes what it 
 | TAB-004 cites DAT-044, a failed query failing the publish; a publish now runs no query | Edited for clarity: it cites **DAT-086**, a failed query failing the act that ran it |
 | TAB-036 cites DAT-011, now superseded by DAT-080's closed list of column types         | Edited for clarity: it cites **DAT-080**, and its traceability row too               |
 | TAB-047 cites DAT-040, now superseded by DAT-085's provenance record                   | Edited for clarity: it cites **DAT-085**, and its traceability row too               |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 51, of which 4 superseded | 51, of which 4 superseded |
+
+### Computation in the presentation layer moves to T3 (ADR-0042), 2026-10-07
+
+Not a review. Designing [tables.md](../../design/tables.md) found grouping, totals, transposition and
+emphasis rules the riskiest and least needed of T2's rows, since the query can group and total
+(TAB-020). Ken moved them to T3, recorded by [ADR-0042](../../decisions/0042-grouping-totals-transposition-and-emphasis-rules-move-to-t3.md).
+Each row moves whole and keeps its identifier; only its tranche changes.
+
+| What was found                                                               | Change                                                                          |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Grouping, totals and subtotals print or arrange what no query returned       | **TAB-008, TAB-009, TAB-010, TAB-042, TAB-043, TAB-044 and TAB-047** move to T3 |
+| Transposition is the one reshaping left, and grouping's companion in TAB-021 | **TAB-021 and TAB-022** move to T3                                              |
+| Conditional emphasis rules belong with the style work T3 does beside them    | **TAB-028** moves to T3; TAB-029 and TAB-030 stay Constraints                   |
 
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
