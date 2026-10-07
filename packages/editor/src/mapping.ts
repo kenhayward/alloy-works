@@ -297,6 +297,7 @@ function nodeOf(block: BlockNode): Node {
           headerColumns: block.headerColumns,
           keyColumns: block.keyColumns ?? null,
           numbered: block.numbered !== false,
+          wide: block.wide ?? null,
         },
         [
           editorSchema.node('tableCaption', null, block.caption.flatMap(toRun)),
@@ -346,6 +347,7 @@ function nodeOf(block: BlockNode): Node {
           headerColumn: block.headerColumn,
           sort: block.sort ?? null,
           notes: block.notes ?? null,
+          wide: block.wide ?? null,
         },
         [
           editorSchema.node('tableCaption', null, block.caption.flatMap(toRun)),
@@ -696,6 +698,8 @@ function storedBlock(node: Node, at: string): unknown {
         ...(note.length === 0 ? {} : { note }),
         // Stored only when false (STR-071, W-H): a numbered table has one spelling, the member absent.
         ...(node.attrs.numbered === false ? { numbered: false } : {}),
+        // As stored (TB3-G): absent is null here, and the style's when published.
+        ...(node.attrs.wide === null ? {} : { wide: node.attrs.wide as string }),
         rows,
       };
     }
@@ -738,6 +742,7 @@ function storedBlock(node: Node, at: string): unknown {
         ...member('tableNote', 'note'),
         ...(node.attrs.notes === null ? {} : { notes: node.attrs.notes as object }),
         ...member('boundTableSource', 'source'),
+        ...(node.attrs.wide === null ? {} : { wide: node.attrs.wide as string }),
       };
     }
     case 'equationBlock': {

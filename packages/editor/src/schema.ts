@@ -374,6 +374,9 @@ export const editorSchema = new Schema({
         // STR-071: false where the author marked the table unnumbered, which the stored model spells
         // `numbered: false` and a numbered one by the member's absence (W14's W-H).
         numbered: { default: true },
+        // How it is set where too wide (TB3-G), as stored, null where absent: the Table panel sets it
+        // in TB3.3.
+        wide: { default: null },
       },
       parseDOM: [{ tag: 'figure[data-table]' }],
       toDOM: (node) => [
@@ -409,6 +412,8 @@ export const editorSchema = new Schema({
         sort: { default: null },
         // Its keyed and column notes as stored (TB3-A), kept whole until the page edits them (TB3.3).
         notes: { default: null },
+        // How it is set where too wide (TB3-G), as a table's is.
+        wide: { default: null },
       },
       toDOM: (node) => [
         'figure',

@@ -38,6 +38,7 @@ export type BlockNode =
       keyColumns?: number[] | undefined;
       note?: z.infer<typeof inlineNodeSchema>[] | undefined;
       numbered?: false | undefined;
+      wide?: WideStrategy | undefined;
       rows: { cells: { content: BlockNode[]; colspan: number; rowspan: number }[] }[];
     }
   | {
@@ -146,6 +147,17 @@ export function startsOutsideItsNumbering(list: ListNode): boolean {
  */
 const unnumbered = z.literal(false).optional();
 
+/**
+ * **How a table too wide for its measure is set** (TAB-033; the TB3 plan, TB3-G): scaled to the
+ * measure, or turned onto landscape pages of its own. Optional on a table, a bound table and a table
+ * style, and so additive: absent, the table style's, and absent there too, `scale`. Never clipped.
+ */
+export const WIDE_STRATEGIES = ['scale', 'rotate'] as const;
+
+export type WideStrategy = (typeof WIDE_STRATEGIES)[number];
+
+const wide = z.enum(WIDE_STRATEGIES).optional();
+
 export const tableNodeSchema = z.strictObject({
   type: z.literal('table'),
   ...identified,
@@ -164,6 +176,7 @@ export const tableNodeSchema = z.strictObject({
   /** CNT-038: a note on the table as a whole, which is not an inline anchor because a table is not a span. */
   note: z.array(inlineNodeSchema).optional(),
   numbered: unnumbered,
+  wide,
   // The grid - rows covering one number of columns, no two cells covering one place - is a rule of
   // the walk, which can see the whole table (`checkTable` in document.ts).
   rows: z
@@ -214,7 +227,7 @@ const sortKeySchema = z.strictObject({
  * **A bound table** (tables.md; the TB1 plan, TB1-A and TB1-B): a block holding a binding to a whole
  * result - an inline binding's members with no `take` - and the presentation that makes a table of it.
  * Additive at content schema 1, as B6's figure binding was: nothing stored before holds one. TB3
- * adds `notes`, an optional member, additive again. What zod
+ * adds `notes` and `wide`, optional members, additive again. What zod
  * cannot hold - a column shown twice under one header, a sort naming one twice - is the walk's
  * (`document.ts`).
  */
@@ -232,6 +245,7 @@ export type BoundTableNode = {
   source?: z.infer<typeof inlineNodeSchema>[] | undefined;
   note?: z.infer<typeof inlineNodeSchema>[] | undefined;
   notes?: z.infer<typeof footnoteNodeSchema>[] | undefined;
+  wide?: WideStrategy | undefined;
 };
 
 /** The most notes a bound table holds (the TB3 plan, TB3-A). */
@@ -253,6 +267,7 @@ export const boundTableNodeSchema = z.strictObject({
   note: z.array(inlineNodeSchema).min(1).optional(),
   // Anchored `keyed` or `column`, and only those (TB3-A), which the walk holds.
   notes: z.array(footnoteNodeSchema).min(1).max(BOUND_TABLE_NOTES_MAX).optional(),
+  wide,
 });
 
 export const figureNodeSchema = z.strictObject({

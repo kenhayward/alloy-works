@@ -2363,3 +2363,52 @@ describe("a bound table's notes (the TB3 plan, TB3-A)", () => {
     expect(() => parsed([column('n1'), column('n1')])).toThrow(/n1 is used more than once/);
   });
 });
+
+describe('how a table too wide for its measure is set (the TB3 plan, TB3-G)', () => {
+  const run = (value: string) => ({ type: 'text', value, marks: [] });
+  const table = (over: Record<string, unknown> = {}) => ({
+    type: 'table',
+    id: 'T1',
+    caption: [run('Readings')],
+    headerRows: 0,
+    headerColumns: 0,
+    rows: [{ cells: [{ content: [paragraph('T1p1', 'alpha')] }] }],
+    ...over,
+  });
+  const boundTable = (over: Record<string, unknown> = {}) => ({
+    type: 'boundTable',
+    id: 'T2',
+    binding: {
+      type: 'binding',
+      id: 'k1',
+      query: '00000000-0000-4000-8000-00000000d001',
+      parameters: {},
+      mode: 'checked',
+    },
+    caption: [run('Depths')],
+    columns: [{ column: 'site', header: 'Site' }],
+    headerColumn: false,
+    ...over,
+  });
+
+  it("holds a table's and a bound table's own wide through the parse of what the parse returned", () => {
+    const once = parseContentDocument(
+      doc([table({ wide: 'rotate' }), boundTable({ wide: 'scale' })]),
+    );
+    expect(once.content).toMatchObject([{ wide: 'rotate' }, { wide: 'scale' }]);
+    expect(parseContentDocument(once)).toEqual(once);
+    expect(canonicalise(once)).toContain('"wide":"rotate"');
+  });
+
+  it('refuses a strategy the product does not have, split among them', () => {
+    for (const wide of ['split', 'shrink', '', null, true]) {
+      expect(() => parseContentDocument(doc([table({ wide })])), String(wide)).toThrow();
+      expect(() => parseContentDocument(doc([boundTable({ wide })])), String(wide)).toThrow();
+    }
+  });
+
+  it('leaves a table stored without it as it was: no member, so its canonical form is unchanged', () => {
+    const stored = parseContentDocument(doc([table(), boundTable()]));
+    expect(stored.content.every((block) => !('wide' in block))).toBe(true);
+  });
+});
