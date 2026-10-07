@@ -8,7 +8,8 @@ import { FacetCountView, idsFilter, listingQuery, listingTotal, nextCursor } fro
 import { CreateComponentBody, FieldView, Lock, SpaceParams, VersionSummary } from './components.js';
 import type { RouteContract } from './contract.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
-import { TemplateRefusal } from './templates.js';
+import { parameterRefusal, TemplateRefusal } from './templates.js';
+import { templateParameterSchema } from '@alloy-works/domain';
 
 /** A document, by the id its artifact carries - lowercase, unlike `ComponentParams`. */
 export const DocumentParams = z.object({ id: LowercaseUuid });
@@ -26,6 +27,15 @@ export const CreateDocumentBody = CreateComponentBody.pick({
   template: LowercaseUuid.optional().describe(
     'The template to make it from, at its latest version (templates.md); without one, a blank document',
   ),
+  parameters: z
+    .record(z.string(), z.unknown())
+    .refine(storableEverywhere, 'A value holds a character that cannot be stored')
+    .optional()
+    .describe(
+      "A value for each of the template's parameters, by name: each in its type's canonical form, " +
+        'or a list of them where the parameter is a list (templates.md, "Asked for when a document ' +
+        'is made"). A required one must be given; none for a blank document',
+    ),
 });
 export type CreateDocumentBody = z.infer<typeof CreateDocumentBody>;
 
@@ -56,6 +66,72 @@ export const DocumentValuesBody = z.strictObject({
     .describe("The document's values, by field identifier"),
 });
 export type DocumentValuesBody = z.infer<typeof DocumentValuesBody>;
+
+/**
+ * A document's parameters, whole (templates.md, "Recorded on the document"), from the version they
+ * were read at: one left out is removed, and one its template does not declare changeable must keep
+ * its value (TPL-021).
+ */
+export const DocumentParametersBody = z.strictObject({
+  openedFrom: LowercaseUuid.describe(
+    'The version the parameters were read at, which must be the latest',
+  ),
+  parameters: z
+    .record(z.string(), z.unknown())
+    .refine(storableEverywhere, 'A value holds a character that cannot be stored')
+    .describe("The document's parameters, by name"),
+});
+export type DocumentParametersBody = z.infer<typeof DocumentParametersBody>;
+
+/** A page of a document's parameter history. */
+export const DocumentParametersQuery = z.object({
+  limit: z
+    .string()
+    .regex(/^(?:[1-9]|[1-9][0-9]|1[0-9][0-9]|200)$/, 'Expected a whole number from 1 to 200')
+    .optional()
+    .describe('At most this many changes, 1 to 200; 50 when not given'),
+  cursor: z.string().optional().describe('Where the page before ended, as its `next` gave it'),
+});
+export type DocumentParametersQuery = z.infer<typeof DocumentParametersQuery>;
+
+const parameterValue = z.union([
+  z.string(),
+  z.boolean(),
+  z.array(z.union([z.string(), z.boolean()])),
+]);
+
+/** A document's parameters: what its template declares, their values now, and their history. */
+export const DocumentParametersView = z.object({
+  declarations: z
+    .array(templateParameterSchema)
+    .describe(
+      'The parameters the template version the document was made from declares (templates.md, ' +
+        '"Declared on the template"); none for a document made blank',
+    ),
+  parameters: z
+    .record(z.string(), parameterValue)
+    .describe("The latest version's parameter values, by name"),
+  history: z
+    .array(
+      z.object({
+        version: z.object({ id: z.string(), number: z.string() }),
+        createdAt: z.string().describe('When the version was made'),
+        author: z
+          .object({ id: z.string(), name: z.string().nullable() })
+          .nullable()
+          .describe('Who made it'),
+        parameters: z.record(z.string(), parameterValue).describe('Its parameters, whole'),
+        changed: z
+          .array(z.string())
+          .describe('The parameters whose values it changed: every one it holds, for the first'),
+      }),
+    )
+    .describe(
+      "The document's first version and each that changed a parameter, newest first (TPL-020)",
+    ),
+  next: z.string().nullable().describe('The cursor for the next page, or null at the end'),
+});
+export type DocumentParametersView = z.infer<typeof DocumentParametersView>;
 
 export const DocumentList = z.object({
   items: z.array(
@@ -116,6 +192,12 @@ export const DocumentView = z.object({
     .record(z.string(), z.unknown())
     .describe(
       "The latest version's own field values, by field identifier: empty for a document with no template",
+    ),
+  parameters: z
+    .record(z.string(), z.unknown())
+    .describe(
+      'The latest version\'s parameter values, by name (templates.md, "Recorded on the document"): ' +
+        'empty for a document with none',
     ),
   fields: z
     .object({ document: z.array(FieldView), section: z.array(FieldView) })
@@ -194,6 +276,7 @@ export const OutlineRefusal = ErrorBody.extend({
   unresolved: TemplateRefusal.shape.unresolved.describe(
     "values_unresolved: what the document's template names that does not resolve now",
   ),
+  ...parameterRefusal,
 });
 export type OutlineRefusal = z.infer<typeof OutlineRefusal>;
 
@@ -355,8 +438,12 @@ export const documentRoutes = {
       200: { description: 'Created, at version 0.1', schema: DocumentView },
       400: {
         description:
-          'The title, language or direction is not one an outline accepts; or ' +
-          '`template_unresolved`: a theme, layout, schema or field the template names does not resolve',
+          'The title, language or direction is not one an outline accepts; ' +
+          '`template_unresolved`: a theme, layout, schema or field the template names does not ' +
+          'resolve; `parameter_invalid`: a required parameter has no value, or a value does not fit ' +
+          'its parameter or the field it seeds; `parameter_unknown`: a value for a parameter the ' +
+          'template does not declare, or any for a blank document; or `parameter_unused`, ' +
+          "`parameter_field`: the template's parameters no longer fit its fields. Nothing is made",
         schema: TemplateRefusal,
       },
       401: unauthenticated,
@@ -468,6 +555,69 @@ export const documentRoutes = {
           "values_invalid: a value is for a field the document's template does not apply, or does " +
           'not fit its field; values_unresolved: the template no longer resolves; or ' +
           'invalid_request: a body this route does not accept',
+        schema: OutlineRefusal,
+      },
+      401: unauthenticated,
+      403: {
+        description: 'The caller may read the document but may not edit it',
+        schema: ErrorBody,
+      },
+      404: notFound,
+      409: {
+        description: 'version_precondition: the document has changed since it was read',
+        schema: OutlineRefusal,
+      },
+    },
+  },
+  getDocumentParameters: {
+    operationId: 'getDocumentParameters',
+    method: 'GET',
+    path: '/v1/documents/{id}/parameters',
+    summary:
+      "The document's parameters: what its template declares, their values and their history",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    params: DocumentParams,
+    query: DocumentParametersQuery,
+    responses: {
+      200: {
+        description: 'Its parameters and a page of their history',
+        schema: DocumentParametersView,
+      },
+      400: {
+        description: 'A cursor this route did not give out, or a limit outside 1 to 200',
+        schema: ErrorBody,
+      },
+      401: unauthenticated,
+      403: {
+        description:
+          'Never answered: a document the caller may read is one whose parameters they may read',
+        schema: ErrorBody,
+      },
+      404: notFound,
+    },
+  },
+  recordDocumentParameters: {
+    operationId: 'recordDocumentParameters',
+    method: 'PUT',
+    path: '/v1/documents/{id}/parameters',
+    summary:
+      "Write the document's parameters, whole, as one version with its outline and values unchanged",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
+    params: DocumentParams,
+    body: DocumentParametersBody,
+    responses: {
+      200: {
+        description: 'Written, or nothing changed: the document at its latest version',
+        schema: DocumentView,
+      },
+      400: {
+        description:
+          'parameter_invalid: a required parameter has no value, or a value does not fit its ' +
+          'parameter; parameter_unknown: a value for a parameter the template does not declare; ' +
+          'parameter_fixed: a parameter that may not change was changed; or invalid_request: a body ' +
+          'this route does not accept',
         schema: OutlineRefusal,
       },
       401: unauthenticated,

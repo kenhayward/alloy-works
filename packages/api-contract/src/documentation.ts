@@ -120,6 +120,8 @@ const operationTags = {
     'editOutline',
     'getDocumentTexts',
     'recordDocumentValues',
+    'getDocumentParameters',
+    'recordDocumentParameters',
     'getContributions',
   ],
   Definitions: ['listDefinitions', 'createDefinition', 'getDefinition', 'recordDefinitionVersion'],
@@ -242,6 +244,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Reads the text of components placed by the latest document version, filtered by what the caller may read.',
   recordDocumentValues:
     'Replaces the document’s own values as one version while leaving its outline unchanged. Supply the version previously read.',
+  getDocumentParameters:
+    'Returns the parameters the document’s template declares, their current values, and each change with who made it and when, newest first.',
+  recordDocumentParameters:
+    'Replaces the document’s parameter values as one version while leaving its outline and values unchanged. A parameter its template does not declare changeable keeps its value. Supply the version previously read.',
   getContributions:
     'Shows what each occurrence contributes to the current document, subject to the caller’s readable set.',
   getNumbering:

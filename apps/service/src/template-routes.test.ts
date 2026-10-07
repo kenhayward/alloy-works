@@ -638,4 +638,294 @@ describe('templates through the service', () => {
       expect(answer.json<{ code: string }>().code).not.toBe('parameter_unused');
     });
   });
+
+  describe('a document made with parameters', () => {
+    const site = {
+      name: 'site',
+      type: { base: 'text' },
+      required: true,
+      list: false,
+      permitted: { values: ['Leeds', 'York'] },
+      changeable: false,
+      feeds: { field: REVIEWER, arguments: true },
+    };
+    const quarter = {
+      name: 'quarter',
+      type: { base: 'integer' },
+      required: false,
+      list: false,
+      permitted: { minimum: '1', maximum: '4' },
+      changeable: true,
+      feeds: { arguments: true },
+    };
+    const due = {
+      name: 'due',
+      type: { base: 'date' },
+      required: false,
+      list: false,
+      changeable: true,
+      feeds: { field: DUE, arguments: false },
+    };
+    let template: TemplateBody;
+
+    interface Made {
+      id: string;
+      version: { id: string; number: string };
+      values: Json;
+      parameters: Json;
+    }
+    const withParameters = (as: string, parameters: Json, space = general) =>
+      call(as, 'POST', `/v1/spaces/${space}/documents`, {
+        title: 'The site report',
+        language: 'en-GB',
+        direction: 'ltr',
+        template: template.id,
+        parameters,
+      });
+    const change = (as: string, document: string, openedFrom: string, parameters: Json) =>
+      call(as, 'PUT', `/v1/documents/${document}/parameters`, { openedFrom, parameters });
+    const documents = () =>
+      tenantDb.withTenant(tenant, async (trx) =>
+        Number(
+          (
+            await trx
+              .selectFrom('artifact')
+              .select((eb) => eb.fn.countAll().as('n'))
+              .where('kind', '=', 'document')
+              .executeTakeFirstOrThrow()
+          ).n,
+        ),
+      );
+
+    beforeAll(async () => {
+      const made = await make(
+        'ada',
+        {
+          schemas: [
+            { schema: REVIEW_SCHEMA, level: 'document', requires: [] },
+            { schema: SIGN_OFF_SCHEMA, level: 'document', requires: [] },
+          ],
+          parameters: [site, quarter, due],
+        },
+        'Quarterly site report',
+      );
+      expect(made.statusCode, made.body).toBe(200);
+      template = made.json<TemplateBody>();
+    });
+
+    it('TPL-026 makes a document from a template with its parameters through the API', async () => {
+      const made = await withParameters('alice', { site: 'York', quarter: '2', due: '2026-10-07' });
+      expect(made.statusCode, made.body).toBe(200);
+      const view = made.json<Made>();
+      expect(view.parameters).toEqual({ site: 'York', quarter: '2', due: '2026-10-07' });
+      // Each field a parameter feeds is seeded from it, in the document's first version.
+      expect(view.version.number).toBe('0.1');
+      expect(view.values).toMatchObject({ [REVIEWER]: 'York', [DUE]: '2026-10-07' });
+      const opened = await call('alice', 'GET', `/v1/documents/${view.id}`);
+      expect(opened.json<Made>().parameters).toEqual(view.parameters);
+    });
+
+    it('TPL-018 makes no document while a required parameter has no value, and writes nothing', async () => {
+      const before = await documents();
+      const answer = await withParameters('alice', { quarter: '2' });
+      expect(answer.statusCode).toBe(400);
+      expect(answer.json()).toMatchObject({
+        code: 'parameter_invalid',
+        rule: 'DAT-020',
+        problems: [{ parameter: 'site', rule: 'required', value: '' }],
+      });
+      expect(await documents()).toBe(before);
+    });
+
+    it('TPL-045 refuses a value of the wrong type, outside its range or not permitted, naming the parameter, the rule and the value, at creation and at change', async () => {
+      const before = await documents();
+      for (const [given, problem] of [
+        [
+          { site: 'York', quarter: 2 },
+          { parameter: 'quarter', rule: 'type', value: '2' },
+        ],
+        [
+          { site: 'York', quarter: '5' },
+          { parameter: 'quarter', rule: 'range', value: '5' },
+        ],
+        [{ site: 'Hull' }, { parameter: 'site', rule: 'permitted', value: 'Hull' }],
+      ] as const) {
+        const answer = await withParameters('alice', given);
+        expect(answer.statusCode).toBe(400);
+        expect(answer.json()).toMatchObject({ code: 'parameter_invalid', problems: [problem] });
+      }
+      expect(await documents()).toBe(before);
+      const view = (await withParameters('alice', { site: 'York' })).json<Made>();
+      const changed = await change('alice', view.id, view.version.id, {
+        site: 'York',
+        quarter: '0',
+      });
+      expect(changed.statusCode).toBe(400);
+      expect(changed.json()).toMatchObject({
+        code: 'parameter_invalid',
+        problems: [{ parameter: 'quarter', rule: 'range', value: '0' }],
+      });
+    });
+
+    it('TPL-021 changes a changeable parameter, refuses a fixed one parameter_fixed, and passes a fixed one unchanged', async () => {
+      const view = (await withParameters('alice', { site: 'York', quarter: '1' })).json<Made>();
+      const fixed = await change('alice', view.id, view.version.id, {
+        site: 'Leeds',
+        quarter: '1',
+      });
+      expect(fixed.statusCode).toBe(400);
+      expect(fixed.json()).toMatchObject({
+        code: 'parameter_fixed',
+        rule: 'TPL-021',
+        parameters: [{ parameter: 'site' }],
+      });
+      const changed = await change('alice', view.id, view.version.id, {
+        site: 'York',
+        quarter: '3',
+      });
+      expect(changed.statusCode, changed.body).toBe(200);
+      expect(changed.json<Made>()).toMatchObject({
+        version: { number: '0.2' },
+        parameters: { site: 'York', quarter: '3' },
+        // Seeded once: the field keeps what it was given.
+        values: { [REVIEWER]: 'York' },
+      });
+    });
+
+    it('TPL-020 answers each value and every change with its author and time, across an outline act between', async () => {
+      const first = (await withParameters('alice', { site: 'York', quarter: '1' })).json<Made>();
+      const second = (
+        await change('alice', first.id, first.version.id, { site: 'York', quarter: '2' })
+      ).json<Made>();
+      const third = (
+        await call('alice', 'POST', `/v1/documents/${first.id}/outline`, {
+          openedFrom: second.version.id,
+          operation: {
+            operation: 'insert',
+            parent: null,
+            position: 1,
+            node: { type: 'section', title: text('Results') },
+          },
+        })
+      ).json<Made>();
+      expect(third.parameters).toEqual({ site: 'York', quarter: '2' });
+      const fourth = (
+        await change('alice', first.id, third.version.id, { site: 'York', quarter: '4' })
+      ).json<Made>();
+      const read = await call('alice', 'GET', `/v1/documents/${first.id}/parameters`);
+      expect(read.statusCode, read.body).toBe(200);
+      const body = read.json<{
+        declarations: { name: string }[];
+        parameters: Json;
+        history: {
+          version: { id: string; number: string };
+          createdAt: string;
+          author: { id: string; name: string | null };
+          changed: string[];
+          parameters: Json;
+        }[];
+        next: string | null;
+      }>();
+      expect(body.declarations.map((each) => each.name)).toEqual(['site', 'quarter', 'due']);
+      expect(body.parameters).toEqual({ site: 'York', quarter: '4' });
+      expect(
+        body.history.map((each) => [
+          each.version.id,
+          each.author.id,
+          each.changed,
+          each.parameters,
+        ]),
+      ).toEqual([
+        [fourth.version.id, ids.alice, ['quarter'], { site: 'York', quarter: '4' }],
+        [second.version.id, ids.alice, ['quarter'], { site: 'York', quarter: '2' }],
+        [first.version.id, ids.alice, ['quarter', 'site'], { site: 'York', quarter: '1' }],
+      ]);
+      expect(body.history.every((each) => !Number.isNaN(Date.parse(each.createdAt)))).toBe(true);
+      expect(body.next).toBeNull();
+      // A page at a time.
+      const page = (
+        await call('alice', 'GET', `/v1/documents/${first.id}/parameters?limit=2`)
+      ).json<{ history: unknown[]; next: string }>();
+      expect(page.history).toHaveLength(2);
+      const rest = (
+        await call(
+          'alice',
+          'GET',
+          `/v1/documents/${first.id}/parameters?limit=2&cursor=${page.next}`,
+        )
+      ).json<{ history: { version: { id: string } }[]; next: string | null }>();
+      expect(rest.history.map((each) => each.version.id)).toEqual([first.version.id]);
+    });
+
+    it('refuses a name the template does not declare, and parameters on a blank document', async () => {
+      const unknown = await withParameters('alice', { site: 'York', colour: 'red' });
+      expect(unknown.statusCode).toBe(400);
+      expect(unknown.json()).toMatchObject({
+        code: 'parameter_unknown',
+        parameters: [{ parameter: 'colour' }],
+      });
+      expect(unknown.json<{ rule?: string }>().rule).toBeUndefined();
+      const blank = await call('alice', 'POST', `/v1/spaces/${general}/documents`, {
+        title: 'Blank',
+        language: 'en-GB',
+        direction: 'ltr',
+        parameters: { site: 'York' },
+      });
+      expect(blank.json()).toMatchObject({ code: 'parameter_unknown' });
+    });
+
+    it('reads parameters with read on the document, and changes them only with edit', async () => {
+      // A space of Alice's own, where nobody else holds anything; the template is General's, which
+      // she may read.
+      const field = await tenantDb.withTenant(tenant, async (trx) => {
+        const space = (await createSpace(trx, 'Field')).id;
+        const author = await findRole(trx, 'Author');
+        await grant(trx, {
+          roleId: author!.id,
+          subject: { principal: ids.alice! },
+          level: { kind: 'space', id: space },
+          effect: 'allow',
+          grantedBy: ids.ada!,
+        });
+        return space;
+      });
+      const made = await withParameters('alice', { site: 'York' }, field);
+      expect(made.statusCode, made.body).toBe(200);
+      const view = made.json<Made>();
+      // Grace holds nothing on it: neither route tells her it exists.
+      expect((await call('grace', 'GET', `/v1/documents/${view.id}/parameters`)).statusCode).toBe(
+        404,
+      );
+      expect((await change('grace', view.id, view.version.id, { site: 'York' })).statusCode).toBe(
+        404,
+      );
+      // Given Reader on the one document, she reads its parameters and may not change them.
+      const reader = await tenantDb.withTenant(tenant, (trx) => findRole(trx, 'Reader'));
+      await tenantDb.withTenant(tenant, (trx) =>
+        grant(trx, {
+          roleId: reader!.id,
+          subject: { principal: ids.grace! },
+          level: { kind: 'artifact', id: view.id },
+          effect: 'allow',
+          grantedBy: ids.ada!,
+        }),
+      );
+      expect((await call('grace', 'GET', `/v1/documents/${view.id}/parameters`)).statusCode).toBe(
+        200,
+      );
+      expect(
+        (await change('grace', view.id, view.version.id, { site: 'York', quarter: '2' }))
+          .statusCode,
+      ).toBe(403);
+      // A stale change is answered with the document as it stands.
+      const next = await change('alice', view.id, view.version.id, { site: 'York', quarter: '2' });
+      expect(next.statusCode).toBe(200);
+      const stale = await change('alice', view.id, view.version.id, { site: 'York', quarter: '3' });
+      expect(stale.statusCode).toBe(409);
+      expect(stale.json()).toMatchObject({
+        code: 'version_precondition',
+        current: { parameters: { site: 'York', quarter: '2' } },
+      });
+    });
+  });
 });

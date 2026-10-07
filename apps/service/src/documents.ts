@@ -2,6 +2,9 @@ import type {
   CreateDocumentBody,
   DocumentParams,
   DocumentListQuery,
+  DocumentParametersBody,
+  DocumentParametersQuery,
+  DocumentParametersView,
   DocumentValuesBody,
   DocumentView,
   OutlineOperationBody,
@@ -18,12 +21,17 @@ import {
   loadFacts,
   loadFactsFor,
   numberingInputs,
+  parameterHistory,
   readLocks,
+  recordDocumentParameters,
   recordDocumentValues,
   versionContents,
   readableComponents,
   readDocument,
   readVersion,
+  type ParameterValuesRefused,
+  type ParametersFixed,
+  type ParametersRefused,
   type StoredDocument,
   type StoredVersion,
   type Tenant,
@@ -46,9 +54,10 @@ import {
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
-import { fieldViews, lockView, versionView } from './components.js';
+import { afterVersion, fieldViews, lockView, versionCursor, versionView } from './components.js';
 import type { AppError } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
+import { PARAMETER_WORDS } from './templates.js';
 import { refused } from './wire-codes.js';
 
 /** Who a document is being shown to, in the transaction their permission was decided in. */
@@ -159,6 +168,7 @@ async function documentView(
     version: versionView(version),
     outline: await outlineView(viewer, document.id, version),
     values: { ...version.values },
+    parameters: { ...version.parameters },
     ...(await documentFields(viewer, document.id)),
     template: await templateView(viewer, document.id),
     mayEdit: viewer.mayEdit,
@@ -199,6 +209,48 @@ async function refusedValues(
   throw refused(400, 'values.invalid', 'A value does not fit its field.', {
     failures: answer.failures,
   });
+}
+
+/**
+ * Parameter values refused, at creation or change (templates.md, "Failures"), each by name: the
+ * parameter's own words, with what each names.
+ */
+function refusedParameters(
+  answer: ParameterValuesRefused | ParametersRefused | ParametersFixed,
+): AppError {
+  switch (answer.answer) {
+    case 'parameter.unknown':
+      return refused(400, 'parameter.unknown', PARAMETER_WORDS.unknown, {
+        parameters: answer.parameters.map((parameter) => ({ parameter })),
+      });
+    case 'parameter.fixed':
+      return refused(400, 'parameter.fixed', PARAMETER_WORDS.fixed, {
+        parameters: answer.parameters.map((parameter) => ({ parameter })),
+      });
+    case 'parameter.invalid':
+      return refused(400, 'parameter.invalid', PARAMETER_WORDS.invalid, {
+        problems: answer.problems.map(({ parameter, rule, value, field }) => ({
+          parameter,
+          rule,
+          value,
+          ...(field === undefined ? {} : { field }),
+        })),
+      });
+    case 'parameter.unused':
+    case 'parameter.field':
+      return refused(
+        400,
+        answer.answer,
+        answer.answer === 'parameter.unused' ? PARAMETER_WORDS.unused : PARAMETER_WORDS.field,
+        {
+          parameters: answer.problems.map(({ parameter, field, message }) => ({
+            parameter,
+            ...(field === undefined ? {} : { field }),
+            message,
+          })),
+        },
+      );
+  }
 }
 
 /** The precondition's refusal, carrying the document as it now stands so the caller can look again. */
@@ -296,6 +348,7 @@ export function documentHandlers(
         direction: body.direction,
         author: principalId,
         ...(body.template === undefined ? {} : { template: body.template }),
+        ...(body.parameters === undefined ? {} : { parameters: body.parameters }),
       });
       // The space was decided on before this ran, so `space.missing` here means it went in the moment
       // between; answered as absent either way, never as a refusal that says it exists.
@@ -318,6 +371,7 @@ export function documentHandlers(
           'A document needs a title and a language tag such as en-GB.',
         );
       }
+      if (answer.answer !== 'created') throw refusedParameters(answer);
       const held = await trx
         .selectFrom('space')
         .select(['id', 'name'])
@@ -540,6 +594,83 @@ export function documentHandlers(
         case 'template.unresolved':
           return refusedValues(viewer, id, body.openedFrom, answer);
       }
+    },
+
+    /**
+     * The document's parameters, whole, as one version with its outline and values unchanged
+     * (templates.md, "Recorded on the document"). Stale before anything else, as a values write is.
+     */
+    recordDocumentParameters: async (
+      request: FastifyRequest,
+      { trx, principalId, facts }: Authorised,
+    ): Promise<DocumentView> => {
+      const { id } = request.params as DocumentParams;
+      const body = request.body as DocumentParametersBody;
+      const viewer = {
+        trx,
+        principalId,
+        mayEdit: decide('edit', facts).allowed,
+        mayPublish: decide('publish', facts).allowed,
+      };
+      const document = await readDocument(trx, id);
+      if (!document) throw notFound();
+      const answer = await recordDocumentParameters(trx, {
+        documentId: id,
+        openedFrom: body.openedFrom,
+        author: principalId,
+        parameters: body.parameters,
+      });
+      switch (answer.answer) {
+        case 'recorded':
+          return documentView(viewer, document, answer.version);
+        case 'version.unchanged':
+          return documentView(viewer, document, answer.current);
+        case 'version.precondition':
+          throw stale(await documentView(viewer, document, answer.current));
+        case 'artifact.missing':
+          throw stale(await latestView(viewer, id));
+        default: {
+          // Told only to a caller who is not stale, as a value refused is.
+          const current = await latestView(viewer, id);
+          if (current.version.id !== body.openedFrom) throw stale(current);
+          throw refusedParameters(answer);
+        }
+      }
+    },
+
+    /**
+     * A document's parameters (TPL-020): what the template version it was made from declares, its
+     * values now, and a page of their history, newest first.
+     */
+    getDocumentParameters: async (
+      request: FastifyRequest,
+      { trx }: Authorised,
+    ): Promise<DocumentParametersView> => {
+      const { id } = request.params as DocumentParams;
+      const query = request.query as DocumentParametersQuery;
+      const document = await readDocument(trx, id);
+      if (!document) throw notFound();
+      const after = afterVersion(query.cursor);
+      const rules = await documentRules(trx, id);
+      const history = await parameterHistory(trx, id, {
+        limit: query.limit === undefined ? 50 : Number(query.limit),
+        ...(after === undefined ? {} : { after }),
+      });
+      return {
+        declarations: rules.bound ? [...(rules.definition.parameters ?? [])] : [],
+        parameters: { ...document.version.parameters } as DocumentParametersView['parameters'],
+        history: history.items.map((each) => ({
+          version: {
+            id: each.version.id,
+            number: `${each.version.revision}.${each.version.version}`,
+          },
+          createdAt: each.createdAt.toISOString(),
+          author: each.author,
+          parameters: { ...each.parameters } as DocumentParametersView['parameters'],
+          changed: [...each.changed],
+        })),
+        next: versionCursor(history.next),
+      };
     },
 
     editOutline: async (

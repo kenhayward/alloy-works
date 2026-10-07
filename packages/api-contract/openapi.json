@@ -33749,6 +33749,14 @@
                       "additionalProperties": {},
                       "description": "The latest version's own field values, by field identifier: empty for a document with no template"
                     },
+                    "parameters": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {},
+                      "description": "The latest version's parameter values, by name (templates.md, \"Recorded on the document\"): empty for a document with none"
+                    },
                     "fields": {
                       "type": "object",
                       "properties": {
@@ -34030,6 +34038,7 @@
                     "version",
                     "outline",
                     "values",
+                    "parameters",
                     "fields",
                     "schemas",
                     "template",
@@ -34053,6 +34062,7 @@
                   },
                   "outline": {},
                   "values": {},
+                  "parameters": {},
                   "fields": {
                     "document": [],
                     "section": []
@@ -81415,6 +81425,14 @@
                       "additionalProperties": {},
                       "description": "The latest version's own field values, by field identifier: empty for a document with no template"
                     },
+                    "parameters": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {},
+                      "description": "The latest version's parameter values, by name (templates.md, \"Recorded on the document\"): empty for a document with none"
+                    },
                     "fields": {
                       "type": "object",
                       "properties": {
@@ -81696,6 +81714,7 @@
                     "version",
                     "outline",
                     "values",
+                    "parameters",
                     "fields",
                     "schemas",
                     "template",
@@ -81719,6 +81738,7 @@
                   },
                   "outline": {},
                   "values": {},
+                  "parameters": {},
                   "fields": {
                     "document": [],
                     "section": []
@@ -81861,6 +81881,14 @@
                           },
                           "additionalProperties": {},
                           "description": "The latest version's own field values, by field identifier: empty for a document with no template"
+                        },
+                        "parameters": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The latest version's parameter values, by name (templates.md, \"Recorded on the document\"): empty for a document with none"
                         },
                         "fields": {
                           "type": "object",
@@ -82143,6 +82171,7 @@
                         "version",
                         "outline",
                         "values",
+                        "parameters",
                         "fields",
                         "schemas",
                         "template",
@@ -82229,6 +82258,55 @@
                         "required": [
                           "reference",
                           "id"
+                        ]
+                      }
+                    },
+                    "parameters": {
+                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "parameter": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "description": "The field it seeds, where that is what is refused",
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "parameter"
+                        ]
+                      }
+                    },
+                    "problems": {
+                      "description": "parameter_invalid: each parameter missing a required value or given an invalid one, with the rule it breaks and the value (TPL-018, TPL-045)",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "parameter": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "description": "The field it seeds, where the rule is that field's and not the parameter's",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "parameter",
+                          "rule",
+                          "value"
                         ]
                       }
                     }
@@ -82469,6 +82547,14 @@
                           "additionalProperties": {},
                           "description": "The latest version's own field values, by field identifier: empty for a document with no template"
                         },
+                        "parameters": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The latest version's parameter values, by name (templates.md, \"Recorded on the document\"): empty for a document with none"
+                        },
                         "fields": {
                           "type": "object",
                           "properties": {
@@ -82750,6 +82836,7 @@
                         "version",
                         "outline",
                         "values",
+                        "parameters",
                         "fields",
                         "schemas",
                         "template",
@@ -82836,6 +82923,2508 @@
                         "required": [
                           "reference",
                           "id"
+                        ]
+                      }
+                    },
+                    "parameters": {
+                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "parameter": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "description": "The field it seeds, where that is what is refused",
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "parameter"
+                        ]
+                      }
+                    },
+                    "problems": {
+                      "description": "parameter_invalid: each parameter missing a required value or given an invalid one, with the rule it breaks and the value (TPL-018, TPL-045)",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "parameter": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "description": "The field it seeds, where the rule is that field's and not the parameter's",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "parameter",
+                          "rule",
+                          "value"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/documents/{id}/parameters": {
+      "get": {
+        "operationId": "getDocumentParameters",
+        "summary": "The document's parameters: what its template declares, their values and their history",
+        "description": "Returns the parameters the document’s template declares, their current values, and each change with who made it and when, newest first.",
+        "tags": [
+          "Documents"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "At most this many changes, 1 to 200; 50 when not given",
+              "type": "string",
+              "pattern": "^(?:[1-9]|[1-9][0-9]|1[0-9][0-9]|200)$"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Where the page before ended, as its `next` gave it",
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Its parameters and a page of their history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "declarations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                          },
+                          "type": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "base": {
+                                    "type": "string",
+                                    "const": "text"
+                                  }
+                                },
+                                "required": [
+                                  "base"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "base": {
+                                    "type": "string",
+                                    "const": "integer"
+                                  }
+                                },
+                                "required": [
+                                  "base"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "base": {
+                                    "type": "string",
+                                    "const": "decimal"
+                                  },
+                                  "precision": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 1000
+                                  },
+                                  "scale": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 1000
+                                  }
+                                },
+                                "required": [
+                                  "base",
+                                  "precision",
+                                  "scale"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "base": {
+                                    "type": "string",
+                                    "const": "date"
+                                  }
+                                },
+                                "required": [
+                                  "base"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "base": {
+                                    "type": "string",
+                                    "const": "time"
+                                  },
+                                  "fraction": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 6
+                                  }
+                                },
+                                "required": [
+                                  "base",
+                                  "fraction"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "base": {
+                                    "type": "string",
+                                    "const": "localDateTime"
+                                  },
+                                  "fraction": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 6
+                                  }
+                                },
+                                "required": [
+                                  "base",
+                                  "fraction"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "base": {
+                                    "type": "string",
+                                    "const": "instant"
+                                  },
+                                  "fraction": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 6
+                                  }
+                                },
+                                "required": [
+                                  "base",
+                                  "fraction"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "base": {
+                                    "type": "string",
+                                    "const": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "base"
+                                ]
+                              }
+                            ]
+                          },
+                          "required": {
+                            "type": "boolean"
+                          },
+                          "list": {
+                            "type": "boolean"
+                          },
+                          "permitted": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "values": {
+                                    "type": "array",
+                                    "items": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "maxLength": 1000
+                                        },
+                                        {
+                                          "type": "boolean"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "values"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "minimum": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 1000
+                                      },
+                                      {
+                                        "type": "boolean"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "maximum": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "maxLength": 1000
+                                      },
+                                      {
+                                        "type": "boolean"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "changeable": {
+                            "type": "boolean"
+                          },
+                          "feeds": {
+                            "type": "object",
+                            "properties": {
+                              "field": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "arguments": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "arguments"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "type",
+                          "required",
+                          "list",
+                          "changeable",
+                          "feeds"
+                        ]
+                      },
+                      "description": "The parameters the template version the document was made from declares (templates.md, \"Declared on the template\"); none for a document made blank"
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "boolean"
+                          },
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": [
+                                "string",
+                                "boolean"
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      "description": "The latest version's parameter values, by name"
+                    },
+                    "history": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "version": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "number": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "number"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "description": "When the version was made"
+                          },
+                          "author": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Who made it"
+                          },
+                          "parameters": {
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "array",
+                                  "items": {
+                                    "type": [
+                                      "string",
+                                      "boolean"
+                                    ]
+                                  }
+                                }
+                              ]
+                            },
+                            "description": "Its parameters, whole"
+                          },
+                          "changed": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "The parameters whose values it changed: every one it holds, for the first"
+                          }
+                        },
+                        "required": [
+                          "version",
+                          "createdAt",
+                          "author",
+                          "parameters",
+                          "changed"
+                        ]
+                      },
+                      "description": "The document's first version and each that changed a parameter, newest first (TPL-020)"
+                    },
+                    "next": {
+                      "description": "The cursor for the next page, or null at the end",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "declarations",
+                    "parameters",
+                    "history",
+                    "next"
+                  ]
+                },
+                "example": {
+                  "declarations": [],
+                  "parameters": {},
+                  "history": [],
+                  "next": "example"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A cursor this route did not give out, or a limit outside 1 to 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Never answered: a document the caller may read is one whose parameters they may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such document in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "recordDocumentParameters",
+        "summary": "Write the document's parameters, whole, as one version with its outline and values unchanged",
+        "description": "Replaces the document’s parameter values as one version while leaving its outline and values unchanged. A parameter its template does not declare changeable keeps its value. Supply the version previously read.",
+        "tags": [
+          "Documents"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "edit",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "openedFrom": {
+                    "type": "string",
+                    "allOf": [
+                      {
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      }
+                    ],
+                    "description": "The version the parameters were read at, which must be the latest"
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {},
+                    "description": "The document's parameters, by name"
+                  }
+                },
+                "required": [
+                  "openedFrom",
+                  "parameters"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "openedFrom": "00000000-0000-4000-8000-000000000001",
+                "parameters": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Written, or nothing changed: the document at its latest version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "space": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    "version": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "number": {
+                          "type": "string",
+                          "description": "`revision.version`, as `0.2`"
+                        },
+                        "author": {
+                          "description": "The principal who cut it; null for a starter definition",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "note": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "number",
+                        "author",
+                        "createdAt",
+                        "note"
+                      ]
+                    },
+                    "outline": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {},
+                      "description": "The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read"
+                    },
+                    "values": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {},
+                      "description": "The latest version's own field values, by field identifier: empty for a document with no template"
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {},
+                      "description": "The latest version's parameter values, by name (templates.md, \"Recorded on the document\"): empty for a document with none"
+                    },
+                    "fields": {
+                      "type": "object",
+                      "properties": {
+                        "document": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "dataType": {
+                                "type": "string"
+                              },
+                              "multiplicity": {
+                                "type": "string",
+                                "enum": [
+                                  "one",
+                                  "many"
+                                ]
+                              },
+                              "maxValues": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "validation": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {}
+                              },
+                              "required": {
+                                "type": "boolean"
+                              },
+                              "requiredBy": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Every schema that makes it required, by identifier"
+                              },
+                              "fixed": {
+                                "type": "boolean"
+                              },
+                              "fixedBy": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Every schema that fixes it, by identifier"
+                              },
+                              "default": {
+                                "description": "Absent where no schema gives one"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "dataType",
+                              "multiplicity",
+                              "validation",
+                              "required",
+                              "requiredBy",
+                              "fixed",
+                              "fixedBy"
+                            ]
+                          }
+                        },
+                        "section": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "dataType": {
+                                "type": "string"
+                              },
+                              "multiplicity": {
+                                "type": "string",
+                                "enum": [
+                                  "one",
+                                  "many"
+                                ]
+                              },
+                              "maxValues": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "validation": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {}
+                              },
+                              "required": {
+                                "type": "boolean"
+                              },
+                              "requiredBy": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Every schema that makes it required, by identifier"
+                              },
+                              "fixed": {
+                                "type": "boolean"
+                              },
+                              "fixedBy": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Every schema that fixes it, by identifier"
+                              },
+                              "default": {
+                                "description": "Absent where no schema gives one"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "dataType",
+                              "multiplicity",
+                              "validation",
+                              "required",
+                              "requiredBy",
+                              "fixed",
+                              "fixedBy"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "document",
+                        "section"
+                      ],
+                      "description": "The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves"
+                    },
+                    "schemas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      },
+                      "description": "The schemas behind those fields, by name, for naming which require or fix one"
+                    },
+                    "template": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "version": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "number": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "number"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "version"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read"
+                    },
+                    "mayEdit": {
+                      "type": "boolean",
+                      "description": "Whether the caller may restructure the outline"
+                    },
+                    "mayPublish": {
+                      "type": "boolean",
+                      "description": "Whether the caller may publish the document"
+                    },
+                    "layout": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "number": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number"
+                          ]
+                        },
+                        "language": {
+                          "type": "string"
+                        },
+                        "scheme": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The numbering scheme this document is numbered and published with"
+                        },
+                        "words": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2), and `preview`, the notice and sentence a preview says in place of the draft's, which a layout read at schema 5 or before has none of (the preview, PV-D)"
+                        },
+                        "formats": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "version",
+                        "language",
+                        "scheme",
+                        "words",
+                        "formats"
+                      ],
+                      "description": "The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, \"The layout\"; templates.md)"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "space",
+                    "version",
+                    "outline",
+                    "values",
+                    "parameters",
+                    "fields",
+                    "schemas",
+                    "template",
+                    "mayEdit",
+                    "mayPublish",
+                    "layout"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "space": {
+                    "id": "example",
+                    "name": "example"
+                  },
+                  "version": {
+                    "id": "example",
+                    "number": "example",
+                    "author": "example",
+                    "createdAt": "example",
+                    "note": "example"
+                  },
+                  "outline": {},
+                  "values": {},
+                  "parameters": {},
+                  "fields": {
+                    "document": [],
+                    "section": []
+                  },
+                  "schemas": [],
+                  "template": {
+                    "id": "example",
+                    "name": "example",
+                    "version": {
+                      "id": "example",
+                      "number": "example"
+                    }
+                  },
+                  "mayEdit": false,
+                  "mayPublish": false,
+                  "layout": {
+                    "id": "example",
+                    "version": {
+                      "id": "example",
+                      "number": "example"
+                    },
+                    "language": "en",
+                    "scheme": {},
+                    "words": {},
+                    "formats": []
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "parameter_invalid: a required parameter has no value, or a value does not fit its parameter; parameter_unknown: a value for a parameter the template does not declare; parameter_fixed: a parameter that may not change was changed; or invalid_request: a body this route does not accept",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    },
+                    "current": {
+                      "description": "version_precondition: the document as it now stands",
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "space": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ]
+                        },
+                        "version": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "number": {
+                              "type": "string",
+                              "description": "`revision.version`, as `0.2`"
+                            },
+                            "author": {
+                              "description": "The principal who cut it; null for a starter definition",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "note": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "author",
+                            "createdAt",
+                            "note"
+                          ]
+                        },
+                        "outline": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read"
+                        },
+                        "values": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The latest version's own field values, by field identifier: empty for a document with no template"
+                        },
+                        "parameters": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The latest version's parameter values, by name (templates.md, \"Recorded on the document\"): empty for a document with none"
+                        },
+                        "fields": {
+                          "type": "object",
+                          "properties": {
+                            "document": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "dataType": {
+                                    "type": "string"
+                                  },
+                                  "multiplicity": {
+                                    "type": "string",
+                                    "enum": [
+                                      "one",
+                                      "many"
+                                    ]
+                                  },
+                                  "maxValues": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "validation": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {}
+                                  },
+                                  "required": {
+                                    "type": "boolean"
+                                  },
+                                  "requiredBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that makes it required, by identifier"
+                                  },
+                                  "fixed": {
+                                    "type": "boolean"
+                                  },
+                                  "fixedBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that fixes it, by identifier"
+                                  },
+                                  "default": {
+                                    "description": "Absent where no schema gives one"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "dataType",
+                                  "multiplicity",
+                                  "validation",
+                                  "required",
+                                  "requiredBy",
+                                  "fixed",
+                                  "fixedBy"
+                                ]
+                              }
+                            },
+                            "section": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "dataType": {
+                                    "type": "string"
+                                  },
+                                  "multiplicity": {
+                                    "type": "string",
+                                    "enum": [
+                                      "one",
+                                      "many"
+                                    ]
+                                  },
+                                  "maxValues": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "validation": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {}
+                                  },
+                                  "required": {
+                                    "type": "boolean"
+                                  },
+                                  "requiredBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that makes it required, by identifier"
+                                  },
+                                  "fixed": {
+                                    "type": "boolean"
+                                  },
+                                  "fixedBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that fixes it, by identifier"
+                                  },
+                                  "default": {
+                                    "description": "Absent where no schema gives one"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "dataType",
+                                  "multiplicity",
+                                  "validation",
+                                  "required",
+                                  "requiredBy",
+                                  "fixed",
+                                  "fixedBy"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "document",
+                            "section"
+                          ],
+                          "description": "The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves"
+                        },
+                        "schemas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
+                          },
+                          "description": "The schemas behind those fields, by name, for naming which require or fix one"
+                        },
+                        "template": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "version": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "number": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "number"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "version"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read"
+                        },
+                        "mayEdit": {
+                          "type": "boolean",
+                          "description": "Whether the caller may restructure the outline"
+                        },
+                        "mayPublish": {
+                          "type": "boolean",
+                          "description": "Whether the caller may publish the document"
+                        },
+                        "layout": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "version": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "number": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "number"
+                              ]
+                            },
+                            "language": {
+                              "type": "string"
+                            },
+                            "scheme": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {},
+                              "description": "The numbering scheme this document is numbered and published with"
+                            },
+                            "words": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {},
+                              "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2), and `preview`, the notice and sentence a preview says in place of the draft's, which a layout read at schema 5 or before has none of (the preview, PV-D)"
+                            },
+                            "formats": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "version",
+                            "language",
+                            "scheme",
+                            "words",
+                            "formats"
+                          ],
+                          "description": "The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, \"The layout\"; templates.md)"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "space",
+                        "version",
+                        "outline",
+                        "values",
+                        "parameters",
+                        "fields",
+                        "schemas",
+                        "template",
+                        "mayEdit",
+                        "mayPublish",
+                        "layout"
+                      ]
+                    },
+                    "reason": {
+                      "description": "outline_invalid: why the operation does not apply",
+                      "type": "string"
+                    },
+                    "failures": {
+                      "description": "values_invalid: each value that does not fit its field, in MET-022's shape",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "schemas": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "detail": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "field",
+                          "rule",
+                          "schemas",
+                          "detail"
+                        ]
+                      }
+                    },
+                    "unresolved": {
+                      "description": "values_unresolved: what the document's template names that does not resolve now",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "reference": {
+                            "type": "string",
+                            "enum": [
+                              "theme",
+                              "layout",
+                              "schema",
+                              "field",
+                              "requires",
+                              "conflict"
+                            ]
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "level": {
+                            "type": "string",
+                            "enum": [
+                              "document",
+                              "section"
+                            ]
+                          },
+                          "schemas": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "reference",
+                          "id"
+                        ]
+                      }
+                    },
+                    "parameters": {
+                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "parameter": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "description": "The field it seeds, where that is what is refused",
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "parameter"
+                        ]
+                      }
+                    },
+                    "problems": {
+                      "description": "parameter_invalid: each parameter missing a required value or given an invalid one, with the rule it breaks and the value (TPL-018, TPL-045)",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "parameter": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "description": "The field it seeds, where the rule is that field's and not the parameter's",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "parameter",
+                          "rule",
+                          "value"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may read the document but may not edit it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such document in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "version_precondition: the document has changed since it was read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    },
+                    "current": {
+                      "description": "version_precondition: the document as it now stands",
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "space": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ]
+                        },
+                        "version": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "number": {
+                              "type": "string",
+                              "description": "`revision.version`, as `0.2`"
+                            },
+                            "author": {
+                              "description": "The principal who cut it; null for a starter definition",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "note": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "author",
+                            "createdAt",
+                            "note"
+                          ]
+                        },
+                        "outline": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read"
+                        },
+                        "values": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The latest version's own field values, by field identifier: empty for a document with no template"
+                        },
+                        "parameters": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The latest version's parameter values, by name (templates.md, \"Recorded on the document\"): empty for a document with none"
+                        },
+                        "fields": {
+                          "type": "object",
+                          "properties": {
+                            "document": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "dataType": {
+                                    "type": "string"
+                                  },
+                                  "multiplicity": {
+                                    "type": "string",
+                                    "enum": [
+                                      "one",
+                                      "many"
+                                    ]
+                                  },
+                                  "maxValues": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "validation": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {}
+                                  },
+                                  "required": {
+                                    "type": "boolean"
+                                  },
+                                  "requiredBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that makes it required, by identifier"
+                                  },
+                                  "fixed": {
+                                    "type": "boolean"
+                                  },
+                                  "fixedBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that fixes it, by identifier"
+                                  },
+                                  "default": {
+                                    "description": "Absent where no schema gives one"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "dataType",
+                                  "multiplicity",
+                                  "validation",
+                                  "required",
+                                  "requiredBy",
+                                  "fixed",
+                                  "fixedBy"
+                                ]
+                              }
+                            },
+                            "section": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "dataType": {
+                                    "type": "string"
+                                  },
+                                  "multiplicity": {
+                                    "type": "string",
+                                    "enum": [
+                                      "one",
+                                      "many"
+                                    ]
+                                  },
+                                  "maxValues": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "validation": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {}
+                                  },
+                                  "required": {
+                                    "type": "boolean"
+                                  },
+                                  "requiredBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that makes it required, by identifier"
+                                  },
+                                  "fixed": {
+                                    "type": "boolean"
+                                  },
+                                  "fixedBy": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every schema that fixes it, by identifier"
+                                  },
+                                  "default": {
+                                    "description": "Absent where no schema gives one"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "dataType",
+                                  "multiplicity",
+                                  "validation",
+                                  "required",
+                                  "requiredBy",
+                                  "fixed",
+                                  "fixedBy"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "document",
+                            "section"
+                          ],
+                          "description": "The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves"
+                        },
+                        "schemas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
+                          },
+                          "description": "The schemas behind those fields, by name, for naming which require or fix one"
+                        },
+                        "template": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "version": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "number": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "number"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "version"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read"
+                        },
+                        "mayEdit": {
+                          "type": "boolean",
+                          "description": "Whether the caller may restructure the outline"
+                        },
+                        "mayPublish": {
+                          "type": "boolean",
+                          "description": "Whether the caller may publish the document"
+                        },
+                        "layout": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "version": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "number": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "number"
+                              ]
+                            },
+                            "language": {
+                              "type": "string"
+                            },
+                            "scheme": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {},
+                              "description": "The numbering scheme this document is numbered and published with"
+                            },
+                            "words": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {},
+                              "description": "The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2), and `preview`, the notice and sentence a preview says in place of the draft's, which a layout read at schema 5 or before has none of (the preview, PV-D)"
+                            },
+                            "formats": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "version",
+                            "language",
+                            "scheme",
+                            "words",
+                            "formats"
+                          ],
+                          "description": "The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, \"The layout\"; templates.md)"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "space",
+                        "version",
+                        "outline",
+                        "values",
+                        "parameters",
+                        "fields",
+                        "schemas",
+                        "template",
+                        "mayEdit",
+                        "mayPublish",
+                        "layout"
+                      ]
+                    },
+                    "reason": {
+                      "description": "outline_invalid: why the operation does not apply",
+                      "type": "string"
+                    },
+                    "failures": {
+                      "description": "values_invalid: each value that does not fit its field, in MET-022's shape",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "schemas": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "detail": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "field",
+                          "rule",
+                          "schemas",
+                          "detail"
+                        ]
+                      }
+                    },
+                    "unresolved": {
+                      "description": "values_unresolved: what the document's template names that does not resolve now",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "reference": {
+                            "type": "string",
+                            "enum": [
+                              "theme",
+                              "layout",
+                              "schema",
+                              "field",
+                              "requires",
+                              "conflict"
+                            ]
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "level": {
+                            "type": "string",
+                            "enum": [
+                              "document",
+                              "section"
+                            ]
+                          },
+                          "schemas": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "reference",
+                          "id"
+                        ]
+                      }
+                    },
+                    "parameters": {
+                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "parameter": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "description": "The field it seeds, where that is what is refused",
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "parameter"
+                        ]
+                      }
+                    },
+                    "problems": {
+                      "description": "parameter_invalid: each parameter missing a required value or given an invalid one, with the rule it breaks and the value (TPL-018, TPL-045)",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "parameter": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "description": "The field it seeds, where the rule is that field's and not the parameter's",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "parameter",
+                          "rule",
+                          "value"
                         ]
                       }
                     }
@@ -85989,6 +88578,14 @@
                       "additionalProperties": {},
                       "description": "The latest version's own field values, by field identifier: empty for a document with no template"
                     },
+                    "parameters": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {},
+                      "description": "The latest version's parameter values, by name (templates.md, \"Recorded on the document\"): empty for a document with none"
+                    },
                     "fields": {
                       "type": "object",
                       "properties": {
@@ -86270,6 +88867,7 @@
                     "version",
                     "outline",
                     "values",
+                    "parameters",
                     "fields",
                     "schemas",
                     "template",
@@ -86293,6 +88891,7 @@
                   },
                   "outline": {},
                   "values": {},
+                  "parameters": {},
                   "fields": {
                     "document": [],
                     "section": []
@@ -86435,6 +89034,14 @@
                           },
                           "additionalProperties": {},
                           "description": "The latest version's own field values, by field identifier: empty for a document with no template"
+                        },
+                        "parameters": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The latest version's parameter values, by name (templates.md, \"Recorded on the document\"): empty for a document with none"
                         },
                         "fields": {
                           "type": "object",
@@ -86717,6 +89324,7 @@
                         "version",
                         "outline",
                         "values",
+                        "parameters",
                         "fields",
                         "schemas",
                         "template",
@@ -86803,6 +89411,55 @@
                         "required": [
                           "reference",
                           "id"
+                        ]
+                      }
+                    },
+                    "parameters": {
+                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "parameter": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "description": "The field it seeds, where that is what is refused",
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "parameter"
+                        ]
+                      }
+                    },
+                    "problems": {
+                      "description": "parameter_invalid: each parameter missing a required value or given an invalid one, with the rule it breaks and the value (TPL-018, TPL-045)",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "parameter": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "description": "The field it seeds, where the rule is that field's and not the parameter's",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "parameter",
+                          "rule",
+                          "value"
                         ]
                       }
                     }
@@ -87043,6 +89700,14 @@
                           "additionalProperties": {},
                           "description": "The latest version's own field values, by field identifier: empty for a document with no template"
                         },
+                        "parameters": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The latest version's parameter values, by name (templates.md, \"Recorded on the document\"): empty for a document with none"
+                        },
                         "fields": {
                           "type": "object",
                           "properties": {
@@ -87324,6 +89989,7 @@
                         "version",
                         "outline",
                         "values",
+                        "parameters",
                         "fields",
                         "schemas",
                         "template",
@@ -87410,6 +90076,55 @@
                         "required": [
                           "reference",
                           "id"
+                        ]
+                      }
+                    },
+                    "parameters": {
+                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "parameter": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "description": "The field it seeds, where that is what is refused",
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "parameter"
+                        ]
+                      }
+                    },
+                    "problems": {
+                      "description": "parameter_invalid: each parameter missing a required value or given an invalid one, with the rule it breaks and the value (TPL-018, TPL-045)",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "parameter": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "description": "The field it seeds, where the rule is that field's and not the parameter's",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "parameter",
+                          "rule",
+                          "value"
                         ]
                       }
                     }
@@ -109889,6 +112604,14 @@
                         "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                       }
                     ]
+                  },
+                  "parameters": {
+                    "description": "A value for each of the template's parameters, by name: each in its type's canonical form, or a list of them where the parameter is a list (templates.md, \"Asked for when a document is made\"). A required one must be given; none for a blank document",
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {}
                   }
                 },
                 "required": [
@@ -109982,6 +112705,14 @@
                       },
                       "additionalProperties": {},
                       "description": "The latest version's own field values, by field identifier: empty for a document with no template"
+                    },
+                    "parameters": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {},
+                      "description": "The latest version's parameter values, by name (templates.md, \"Recorded on the document\"): empty for a document with none"
                     },
                     "fields": {
                       "type": "object",
@@ -110264,6 +112995,7 @@
                     "version",
                     "outline",
                     "values",
+                    "parameters",
                     "fields",
                     "schemas",
                     "template",
@@ -110287,6 +113019,7 @@
                   },
                   "outline": {},
                   "values": {},
+                  "parameters": {},
                   "fields": {
                     "document": [],
                     "section": []
@@ -110335,7 +113068,7 @@
             }
           },
           "400": {
-            "description": "The title, language or direction is not one an outline accepts; or `template_unresolved`: a theme, layout, schema or field the template names does not resolve",
+            "description": "The title, language or direction is not one an outline accepts; `template_unresolved`: a theme, layout, schema or field the template names does not resolve; `parameter_invalid`: a required parameter has no value, or a value does not fit its parameter or the field it seeds; `parameter_unknown`: a value for a parameter the template does not declare, or any for a blank document; or `parameter_unused`, `parameter_field`: the template's parameters no longer fit its fields. Nothing is made",
             "content": {
               "application/json": {
                 "schema": {
@@ -110475,6 +113208,55 @@
                         "definition",
                         "mayDesign"
                       ]
+                    },
+                    "parameters": {
+                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "parameter": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "description": "The field it seeds, where that is what is refused",
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "parameter"
+                        ]
+                      }
+                    },
+                    "problems": {
+                      "description": "parameter_invalid: each parameter missing a required value or given an invalid one, with the rule it breaks and the value (TPL-018, TPL-045)",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "parameter": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "description": "The field it seeds, where the rule is that field's and not the parameter's",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "parameter",
+                          "rule",
+                          "value"
+                        ]
+                      }
                     }
                   },
                   "required": [
@@ -115821,6 +118603,255 @@
                           "reorder"
                         ],
                         "additionalProperties": false
+                      },
+                      "parameters": {
+                        "maxItems": 50,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                            },
+                            "type": {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "base": {
+                                      "type": "string",
+                                      "const": "text"
+                                    }
+                                  },
+                                  "required": [
+                                    "base"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "base": {
+                                      "type": "string",
+                                      "const": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "base"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "base": {
+                                      "type": "string",
+                                      "const": "decimal"
+                                    },
+                                    "precision": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 1000
+                                    },
+                                    "scale": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 1000
+                                    }
+                                  },
+                                  "required": [
+                                    "base",
+                                    "precision",
+                                    "scale"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "base": {
+                                      "type": "string",
+                                      "const": "date"
+                                    }
+                                  },
+                                  "required": [
+                                    "base"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "base": {
+                                      "type": "string",
+                                      "const": "time"
+                                    },
+                                    "fraction": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 6
+                                    }
+                                  },
+                                  "required": [
+                                    "base",
+                                    "fraction"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "base": {
+                                      "type": "string",
+                                      "const": "localDateTime"
+                                    },
+                                    "fraction": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 6
+                                    }
+                                  },
+                                  "required": [
+                                    "base",
+                                    "fraction"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "base": {
+                                      "type": "string",
+                                      "const": "instant"
+                                    },
+                                    "fraction": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 6
+                                    }
+                                  },
+                                  "required": [
+                                    "base",
+                                    "fraction"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "base": {
+                                      "type": "string",
+                                      "const": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "base"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            },
+                            "required": {
+                              "type": "boolean"
+                            },
+                            "list": {
+                              "type": "boolean"
+                            },
+                            "permitted": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "values": {
+                                      "type": "array",
+                                      "items": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 1000
+                                          },
+                                          {
+                                            "type": "boolean"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "values"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "minimum": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "maxLength": 1000
+                                        },
+                                        {
+                                          "type": "boolean"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "maximum": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "maxLength": 1000
+                                        },
+                                        {
+                                          "type": "boolean"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "additionalProperties": false
+                                }
+                              ]
+                            },
+                            "changeable": {
+                              "type": "boolean"
+                            },
+                            "feeds": {
+                              "type": "object",
+                              "properties": {
+                                "field": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "arguments": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "arguments"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "name",
+                            "type",
+                            "required",
+                            "list",
+                            "changeable",
+                            "feeds"
+                          ],
+                          "additionalProperties": false
+                        }
                       }
                     },
                     "required": [
@@ -115979,7 +119010,7 @@
             }
           },
           "400": {
-            "description": "`template_unresolved`: a theme, layout, schema or field it names does not resolve",
+            "description": "`template_unresolved`: a theme, layout, schema or field it names does not resolve; `parameter_unused`: a parameter feeds nothing; `parameter_field`: a seeded field cannot take its parameter; or the definition is not one the contract reads",
             "content": {
               "application/json": {
                 "schema": {
@@ -116119,6 +119150,55 @@
                         "definition",
                         "mayDesign"
                       ]
+                    },
+                    "parameters": {
+                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "parameter": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "description": "The field it seeds, where that is what is refused",
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "parameter"
+                        ]
+                      }
+                    },
+                    "problems": {
+                      "description": "parameter_invalid: each parameter missing a required value or given an invalid one, with the rule it breaks and the value (TPL-018, TPL-045)",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "parameter": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "description": "The field it seeds, where the rule is that field's and not the parameter's",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "parameter",
+                          "rule",
+                          "value"
+                        ]
+                      }
                     }
                   },
                   "required": [
@@ -117347,6 +120427,255 @@
                           "reorder"
                         ],
                         "additionalProperties": false
+                      },
+                      "parameters": {
+                        "maxItems": 50,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                            },
+                            "type": {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "base": {
+                                      "type": "string",
+                                      "const": "text"
+                                    }
+                                  },
+                                  "required": [
+                                    "base"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "base": {
+                                      "type": "string",
+                                      "const": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "base"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "base": {
+                                      "type": "string",
+                                      "const": "decimal"
+                                    },
+                                    "precision": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 1000
+                                    },
+                                    "scale": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 1000
+                                    }
+                                  },
+                                  "required": [
+                                    "base",
+                                    "precision",
+                                    "scale"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "base": {
+                                      "type": "string",
+                                      "const": "date"
+                                    }
+                                  },
+                                  "required": [
+                                    "base"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "base": {
+                                      "type": "string",
+                                      "const": "time"
+                                    },
+                                    "fraction": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 6
+                                    }
+                                  },
+                                  "required": [
+                                    "base",
+                                    "fraction"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "base": {
+                                      "type": "string",
+                                      "const": "localDateTime"
+                                    },
+                                    "fraction": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 6
+                                    }
+                                  },
+                                  "required": [
+                                    "base",
+                                    "fraction"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "base": {
+                                      "type": "string",
+                                      "const": "instant"
+                                    },
+                                    "fraction": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 6
+                                    }
+                                  },
+                                  "required": [
+                                    "base",
+                                    "fraction"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "base": {
+                                      "type": "string",
+                                      "const": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "base"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            },
+                            "required": {
+                              "type": "boolean"
+                            },
+                            "list": {
+                              "type": "boolean"
+                            },
+                            "permitted": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "values": {
+                                      "type": "array",
+                                      "items": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "maxLength": 1000
+                                          },
+                                          {
+                                            "type": "boolean"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "values"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "minimum": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "maxLength": 1000
+                                        },
+                                        {
+                                          "type": "boolean"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "maximum": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "maxLength": 1000
+                                        },
+                                        {
+                                          "type": "boolean"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "additionalProperties": false
+                                }
+                              ]
+                            },
+                            "changeable": {
+                              "type": "boolean"
+                            },
+                            "feeds": {
+                              "type": "object",
+                              "properties": {
+                                "field": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "arguments": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "arguments"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "name",
+                            "type",
+                            "required",
+                            "list",
+                            "changeable",
+                            "feeds"
+                          ],
+                          "additionalProperties": false
+                        }
                       }
                     },
                     "required": [
@@ -117507,7 +120836,7 @@
             }
           },
           "400": {
-            "description": "`template_unresolved`: a theme, layout, schema or field it names does not resolve",
+            "description": "`template_unresolved`: a theme, layout, schema or field it names does not resolve; `parameter_unused`: a parameter feeds nothing; `parameter_field`: a seeded field cannot take its parameter; or the definition is not one the contract reads",
             "content": {
               "application/json": {
                 "schema": {
@@ -117647,6 +120976,55 @@
                         "definition",
                         "mayDesign"
                       ]
+                    },
+                    "parameters": {
+                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "parameter": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "description": "The field it seeds, where that is what is refused",
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "parameter"
+                        ]
+                      }
+                    },
+                    "problems": {
+                      "description": "parameter_invalid: each parameter missing a required value or given an invalid one, with the rule it breaks and the value (TPL-018, TPL-045)",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "parameter": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "description": "The field it seeds, where the rule is that field's and not the parameter's",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "parameter",
+                          "rule",
+                          "value"
+                        ]
+                      }
                     }
                   },
                   "required": [
@@ -117930,6 +121308,55 @@
                         "definition",
                         "mayDesign"
                       ]
+                    },
+                    "parameters": {
+                      "description": "parameter_unused: each parameter that seeds no field and supplies no argument (TPL-068); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021)",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "parameter": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "description": "The field it seeds, where that is what is refused",
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "parameter"
+                        ]
+                      }
+                    },
+                    "problems": {
+                      "description": "parameter_invalid: each parameter missing a required value or given an invalid one, with the rule it breaks and the value (TPL-018, TPL-045)",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "parameter": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "description": "The field it seeds, where the rule is that field's and not the parameter's",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "parameter",
+                          "rule",
+                          "value"
+                        ]
+                      }
                     }
                   },
                   "required": [
