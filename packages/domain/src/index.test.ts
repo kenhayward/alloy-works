@@ -546,6 +546,12 @@ describe('the domain package', () => {
         'formatCell',
         'formatMismatch',
         'mergeFormat',
+        // TB1: a bound table laid out, its row ceiling, and the product's formats and alignment by
+        // type where a table style names none (task 4).
+        'DEFAULT_TABLE_ALIGN',
+        'DEFAULT_TABLE_FIELDS',
+        'layoutTable',
+        'TABLE_ROWS_MAX',
       ].sort(),
     );
   });

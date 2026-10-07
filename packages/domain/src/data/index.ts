@@ -174,6 +174,21 @@ export type { ColumnAlignment, FieldFormat } from './field-format.js';
 export { colouredNegative, formatCell, formatMismatch, mergeFormat } from './format-cell.js';
 export type { CellWords } from './format-cell.js';
 export {
+  DEFAULT_TABLE_ALIGN,
+  DEFAULT_TABLE_FIELDS,
+  layoutTable,
+  TABLE_ROWS_MAX,
+} from './table.js';
+export type {
+  FieldKey,
+  LaidOut,
+  LaidOutCell,
+  LaidOutColumn,
+  TableFailure,
+  TablePresentation,
+  TableWords,
+} from './table.js';
+export {
   PROVENANCE_SCHEMA_VERSION,
   provenanceSchema,
   parseProvenance,
