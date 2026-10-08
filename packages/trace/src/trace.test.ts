@@ -830,8 +830,10 @@ describe('the citations in the committed model', () => {
   // domain, IAM-013 in the service.
   // 826 (2026-10-08): AU1.2 - ADM-002, IAM-013, IAM-037, IAM-060, LIF-027 and LIF-029 in the db,
   // ADM-002, IAM-013 and IAM-037 in the service, IAM-013 in the worker.
+  // 834 (2026-10-08): AU1.3 - DAT-007, LIF-026 and LIF-063 in the db, DAT-007 and LIF-026 in the
+  // service's audit-data and LIF-026 in its dataset-images, LIF-026 in the worker's ingest and publish.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(826);
+    expect(model.citations).toHaveLength(834);
   });
 
   it('cites no identifier the corpus does not hold', () => {

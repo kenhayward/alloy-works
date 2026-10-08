@@ -18694,6 +18694,18 @@
       "kind": "title"
     },
     {
+      "id": "DAT-007",
+      "file": "apps/service/src/audit-data.test.ts",
+      "line": 53,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-026",
+      "file": "apps/service/src/audit-data.test.ts",
+      "line": 131,
+      "kind": "title"
+    },
+    {
       "id": "IAM-013",
       "file": "apps/service/src/audit-refusals.test.ts",
       "line": 44,
@@ -18834,13 +18846,19 @@
     {
       "id": "DAT-096",
       "file": "apps/service/src/dataset-images.test.ts",
-      "line": 185,
+      "line": 191,
       "kind": "title"
     },
     {
       "id": "DAT-097",
       "file": "apps/service/src/dataset-images.test.ts",
-      "line": 797,
+      "line": 829,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-026",
+      "file": "apps/service/src/dataset-images.test.ts",
+      "line": 239,
       "kind": "title"
     },
     {
@@ -20238,19 +20256,25 @@
     {
       "id": "AST-005",
       "file": "apps/worker/src/ingest.test.ts",
-      "line": 136,
+      "line": 142,
       "kind": "title"
     },
     {
       "id": "AST-006",
       "file": "apps/worker/src/ingest.test.ts",
-      "line": 197,
+      "line": 233,
       "kind": "title"
     },
     {
       "id": "AST-051",
       "file": "apps/worker/src/ingest.test.ts",
-      "line": 197,
+      "line": 233,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-026",
+      "file": "apps/worker/src/ingest.test.ts",
+      "line": 202,
       "kind": "title"
     },
     {
@@ -20296,75 +20320,81 @@
       "kind": "title"
     },
     {
+      "id": "LIF-026",
+      "file": "apps/worker/src/publish.test.ts",
+      "line": 674,
+      "kind": "title"
+    },
+    {
       "id": "PUB-005",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 426,
+      "line": 427,
       "kind": "title"
     },
     {
       "id": "PUB-006",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 468,
+      "line": 469,
       "kind": "title"
     },
     {
       "id": "PUB-021",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 361,
+      "line": 362,
       "kind": "title"
     },
     {
       "id": "PUB-053",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 747,
+      "line": 789,
       "kind": "title"
     },
     {
       "id": "PUB-061",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 565,
+      "line": 566,
       "kind": "title"
     },
     {
       "id": "PUB-062",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 581,
+      "line": 582,
       "kind": "title"
     },
     {
       "id": "PUB-063",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 586,
+      "line": 587,
       "kind": "title"
     },
     {
       "id": "PUB-065",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1327,
+      "line": 1369,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1242,
+      "line": 1284,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 765,
+      "line": 807,
       "kind": "title"
     },
     {
       "id": "PUB-093",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 375,
+      "line": 376,
       "kind": "title"
     },
     {
       "id": "PUB-094",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 692,
+      "line": 734,
       "kind": "title"
     },
     {
@@ -20665,6 +20695,24 @@
       "id": "AST-041",
       "file": "packages/db/src/assets.test.ts",
       "line": 96,
+      "kind": "title"
+    },
+    {
+      "id": "DAT-007",
+      "file": "packages/db/src/audit-content.test.ts",
+      "line": 253,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-026",
+      "file": "packages/db/src/audit-content.test.ts",
+      "line": 141,
+      "kind": "title"
+    },
+    {
+      "id": "LIF-063",
+      "file": "packages/db/src/audit-content.test.ts",
+      "line": 141,
       "kind": "title"
     },
     {
@@ -21306,7 +21354,7 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 149,
+      "line": 160,
       "kind": "title"
     },
     {

@@ -3,6 +3,26 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.145.0 - 2026-10-08 (PR #466)
+
+### Added
+
+- **Spaces.** An administrator can make, rename, archive and restore spaces from Administration;
+  nothing new is made in an archived space, except images added while editing what is in it, and
+  nothing already in it changes.
+- **Starting query roles.** Two starting roles, Query builder and Query writer, let an administrator
+  grant the use of connections and SQL from Manage access.
+- **An audit log.** The environment records every act in its own audit log, in the same step as the
+  act and naming who did it: sign-ins, sign-outs and failed sign-ins, refused access, tokens, access,
+  groups, invitations, spaces and settings, every version of everything, connections (which settings
+  changed, never a credential), values and datasets, images, and publications. Nothing can change or
+  delete an entry. Reading it comes next.
+
+### Changed
+
+- In development, Ada may do everything across the environment, so every part of the product can be
+  tried.
+
 ## 0.144.1 - 2026-10-08 (PR #454)
 
 ### Changed
