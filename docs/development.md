@@ -85,7 +85,9 @@ in the service's log saying the sign-in must be configured again: run `pnpm dev:
 seals it.
 
 `pnpm dev:setup` invites Ada, at `ada@example.com`, to administer each environment, so the first time she
-signs in she is Administrator there; nobody else holds a role until something grants one.
+signs in she is Administrator there. The seed also gives her **Full access (development)**, every
+permission across the environment, so every part of the product can be tried as her; nobody else holds
+a role until something grants one.
 `http://dev.acme.localhost:8088/v1/access/explain?principal=<her id from /v1/me>&target=tenant` shows it.
 
 **A database `pnpm dev:setup` prepared before 0.25.0** already holds Ada as a principal, and a sign-in finds
