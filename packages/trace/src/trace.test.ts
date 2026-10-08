@@ -241,7 +241,7 @@ describe('the committed trace.json', () => {
     // than repointed. docs/design/ says so in prose beside each table.
     expect(
       new Set(model.designs.flatMap((design) => design.owns.map((claim) => claim.id))).size,
-    ).toBe(637); // 637 (2026-10-08): ADR-0045 - data.md drops DAT-007, whose audit is LIF's log, not designed. 638 (2026-10-08): the T2 audit - data.md claims DAT-117 and DAT-118 for DAT-076, themes.md STY-083 for STY-014, tables.md TAB-052, templates.md TPL-016. 635 (2026-10-07): templates.md's parameters claim 8. 628 (2026-10-07): tables.md claims 33. 627 (2026-10-07): it drops TAB-035, whose
+    ).toBe(638); // 638 (2026-10-08): SP1 - access.md claims ADM-049. 637 (2026-10-08): ADR-0045 - data.md drops DAT-007, whose audit is LIF's log, not designed. 638 (2026-10-08): the T2 audit - data.md claims DAT-117 and DAT-118 for DAT-076, themes.md STY-083 for STY-014, tables.md TAB-052, templates.md TPL-016. 635 (2026-10-07): templates.md's parameters claim 8. 628 (2026-10-07): tables.md claims 33. 627 (2026-10-07): it drops TAB-035, whose
     // widths no table style holds yet (the TB1 final review, M3).
   });
 });
@@ -824,8 +824,10 @@ describe('the citations in the committed model', () => {
   // 805 (2026-10-08): the T2 audit - DAT-024 in the service, the Data tab and the provenance panel,
   // DAT-117 in the service and the domain, DAT-025 and DAT-066 in the service, STY-077 and STY-083 in
   // the domain, TAB-052 in the worker, DAT-045 in the connector and TPL-016 in the db.
+  // 809 (2026-10-08): SP1 - ADM-049 in the service, Administration's Spaces, over HTTP and in the
+  // browser.
   it('cites exactly as many times as the corpus currently does', () => {
-    expect(model.citations).toHaveLength(805);
+    expect(model.citations).toHaveLength(809);
   });
 
   it('cites no identifier the corpus does not hold', () => {

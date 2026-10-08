@@ -34,6 +34,7 @@ import { checkProvenanceNames } from './dataset-references.js';
 import { checkNamedConnection, checkNotInUse } from './definition-references.js';
 import { checkedLimit } from './listing.js';
 import { indexVersion } from './search.js';
+import { checkSpaceLive } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import { versionDigests } from './version-digest.js';
 
@@ -107,6 +108,18 @@ const spacedSubstanceKinds: readonly string[] = [
   'connection',
   'queryDefinition',
   'dataset',
+] satisfies readonly SpacedSubstanceKind[];
+
+/**
+ * The spaced kinds an archived space refuses (SP-C): not an asset, which is an image added to what is
+ * already there, nor a dataset, which is a refresh of a binding already there.
+ */
+const archiveCheckedKinds: readonly string[] = [
+  'component',
+  'document',
+  'template',
+  'connection',
+  'queryDefinition',
 ] satisfies readonly SpacedSubstanceKind[];
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -320,6 +333,11 @@ export async function createArtifact(
   }
   // A dataset version names a version of its definition and of its connection, on every path.
   if (substance.kind === 'dataset') await checkProvenanceNames(trx, substance.content);
+  // Nothing new is made in an archived space (the SP1 plan, SP-C), checked here, where every artifact
+  // is made, so no route can forget it.
+  if (archiveCheckedKinds.includes(substance.kind) && 'spaceId' in input) {
+    await checkSpaceLive(trx, input.spaceId);
+  }
   const artifact = await trx
     .insertInto('artifact')
     .values(

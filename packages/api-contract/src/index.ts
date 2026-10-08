@@ -16,8 +16,13 @@ export {
   FieldView,
   CreateComponentBody,
   PageQuery,
+  CreateSpaceBody,
+  SpaceIdParams,
   SpaceList,
+  SpaceListQuery,
   SpaceParams,
+  SpaceView,
+  UpdateSpaceBody,
 } from './components.js';
 export {
   CreateDocumentBody,

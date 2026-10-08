@@ -279,6 +279,23 @@ describe("New document's parameters (the TP1 plan, TP1-I)", () => {
     );
   });
 
+  it('says the space has been archived on a 409 space_archived, and re-reads the spaces it offers', async () => {
+    const { fetch, sent } = service(() =>
+      json(409, { code: 'space_archived', message: 'Archived.', traceId: 't' }),
+    );
+    await chooseReport(fetch);
+    await userEvent.type(screen.getByLabelText('due (required)'), '2026-10-01');
+    await userEvent.selectOptions(screen.getByLabelText('region (required)'), 'North');
+    const spacesRead = sent.filter((each) => each.url === '/v1/spaces').length;
+    await userEvent.click(create());
+    expect(
+      await screen.findByText('This space has been archived. Choose another.'),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(sent.filter((each) => each.url === '/v1/spaces').length).toBeGreaterThan(spacesRead),
+    );
+  });
+
   it('asks for no parameters and sends none for a template that declares none, or for Blank', async () => {
     const { fetch, made } = service();
     const declaresNone = (async (input: RequestInfo | URL, init?: RequestInit) => {

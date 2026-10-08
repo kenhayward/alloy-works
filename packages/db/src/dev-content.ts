@@ -71,6 +71,20 @@ async function person(
 }
 
 /**
+ * The environment's General: its oldest space, which every tenant starts with, found by when it was made
+ * rather than by its name, so renaming or archiving it never breaks the seed (the SP1 plan, SP-I).
+ */
+async function generalSpace(trx: TenantTransaction): Promise<{ id: string }> {
+  return trx
+    .selectFrom('space')
+    .select('id')
+    .orderBy('created_at')
+    .orderBy('id')
+    .limit(1)
+    .executeTakeFirstOrThrow();
+}
+
+/**
  * Development only: something to open in the editor, and somebody allowed to edit it. The component
  * type is no longer this module's to make - 0015 gives every environment one, unauthored, at migration
  * time (STARTER_COMPONENT_TYPE_ID) - and nothing in the product yet creates a component or grants a
@@ -92,11 +106,7 @@ export async function seedDevelopmentContent(
 ): Promise<SeededContent> {
   const ada = await person(trx, input.issuer, 'ada', 'Ada', true);
   const grace = await person(trx, input.issuer, 'grace', 'Grace');
-  const general = await trx
-    .selectFrom('space')
-    .select('id')
-    .where('name', '=', 'General')
-    .executeTakeFirstOrThrow();
+  const general = await generalSpace(trx);
   // Author, and Publisher: an environment granting nobody a role that holds `publish` is one where
   // nothing can be published (the first publishing plan, decision N).
   for (const name of ['Author', 'Publisher']) {
@@ -493,11 +503,7 @@ export async function seedDevelopmentConnectionUse(
   input: DevelopmentContent,
 ): Promise<void> {
   const ada = await person(trx, input.issuer, 'ada', 'Ada', true);
-  const general = await trx
-    .selectFrom('space')
-    .select('id')
-    .where('name', '=', 'General')
-    .executeTakeFirstOrThrow();
+  const general = await generalSpace(trx);
   const held = ['read', 'use_connection', 'write_sql'] as const;
   let role = await findRole(trx, 'Connection user');
   if (!role) {

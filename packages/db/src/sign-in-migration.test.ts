@@ -68,6 +68,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0056_table_note_word',
       '0057_document_parameters',
       '0058_query_roles',
+      '0059_space_archive',
     ]);
 
     const read = async () =>

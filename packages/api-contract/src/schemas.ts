@@ -21,6 +21,13 @@ const LOWERCASE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f
  */
 export const LowercaseUuid = z.uuid().regex(LOWERCASE_UUID, 'Expected a lowercase uuid');
 
+/**
+ * The refusal of a creation in an archived space (the SP1 plan, SP-C), declared by every route that
+ * can answer it.
+ */
+export const SPACE_ARCHIVED =
+  '`space_archived`: the space is archived, and nothing new is made in it';
+
 export const ErrorBody = z.object({
   code: z.string().describe('Stable and machine-readable: branch on this, never on the message'),
   message: z.string().describe('For people. It may change between releases'),

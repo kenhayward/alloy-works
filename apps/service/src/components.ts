@@ -3,6 +3,7 @@ import type {
   ComponentParams,
   ComponentQuery,
   CreateComponentBody,
+  SpaceListQuery,
   SpaceParams,
   FieldView,
   PageQuery,
@@ -172,9 +173,16 @@ export function componentHandlers(
     },
 
     listSpaces: async (request: FastifyRequest) => {
-      const asked = pageAsked('spaces', request.query as PageQuery);
+      const query = request.query as SpaceListQuery;
+      const asked = pageAsked('spaces', query);
       const spaces = await db.withTenant(tenantOf(request), (trx) =>
-        listSpacesFor(trx, principalOf(request).principalId, scopesOf(request), asked),
+        listSpacesFor(
+          trx,
+          principalOf(request).principalId,
+          scopesOf(request),
+          asked,
+          query.archived === 'false' ? { archived: false } : {},
+        ),
       );
       return {
         items: [...spaces.items],

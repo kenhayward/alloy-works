@@ -65,7 +65,8 @@ interface Space {
 
 /**
  * The spaces the service says the caller may administer, where a connection is made (DA-Y): each
- * space the caller may read, asked about in turn. `null` until every answer is in.
+ * space the caller may read and that is not archived, where nothing new is made (the SP1 plan, SP-E),
+ * asked about in turn. `null` until every answer is in.
  */
 function useAdministeredSpaces(client: Client): readonly Space[] | null {
   const [spaces, setSpaces] = useState<readonly Space[] | null>(null);
@@ -75,7 +76,13 @@ function useAdministeredSpaces(client: Client): readonly Space[] | null {
       try {
         const all = await everyPage((cursor) =>
           client.GET('/v1/spaces', {
-            params: { query: { limit: '100', ...(cursor === undefined ? {} : { cursor }) } },
+            params: {
+              query: {
+                limit: '100',
+                archived: 'false',
+                ...(cursor === undefined ? {} : { cursor }),
+              },
+            },
           }),
         );
         const readable = ('items' in all ? all.items : []).flatMap((item: unknown) =>

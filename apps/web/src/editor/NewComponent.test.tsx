@@ -112,6 +112,30 @@ describe('New component', () => {
     });
   });
 
+  it('offers no archived space, which the listing never says may be created in (SP-E)', async () => {
+    // The loader New document shares: an archived space is listed, marked, and not offered.
+    const { fetch } = service({
+      '/v1/spaces': {
+        items: [
+          { ...SPACES.items[0]!, archived: false },
+          {
+            id: 'aaaaaaaa-0000-4000-8000-000000000004',
+            name: 'Shelved',
+            archived: true,
+            mayCreate: false,
+          },
+        ],
+        next: null,
+      },
+      [`/v1/spaces/${SPACES.items[0]!.id}/component-types`]: TYPES,
+    });
+    render(<NewComponent client={client(fetch)} onCreated={vi.fn()} />);
+    const where = await screen.findByLabelText('Where');
+    expect([...where.querySelectorAll('option')].map((option) => option.textContent)).toEqual([
+      'General',
+    ]);
+  });
+
   it('says nothing at all where there is nowhere the caller may create', async () => {
     const { fetch } = service({
       '/v1/spaces': { items: [SPACES.items[1]], next: null },
@@ -219,6 +243,47 @@ describe('New component', () => {
 
     expect(await screen.findByRole('status')).toHaveTextContent(
       'This space is no longer open to you. Choose another.',
+    );
+    await waitFor(() =>
+      expect(
+        [...screen.getByLabelText('Where').querySelectorAll('option')].map(
+          (option) => option.textContent,
+        ),
+      ).toEqual(['Regulatory']),
+    );
+  });
+
+  it('says the space has been archived on a 409 space_archived, and re-reads the spaces it offers', async () => {
+    let spacesCall = 0;
+    const answer = (status: number, body: unknown) =>
+      new Response(JSON.stringify(body), {
+        status,
+        headers: { 'content-type': 'application/json' },
+      });
+    const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const url = new URL(request.url).pathname;
+      if (url === '/v1/spaces') {
+        spacesCall += 1;
+        return answer(200, {
+          items: spacesCall === 1 ? SPACES.items : [SPACES.items[2]],
+          next: null,
+        });
+      }
+      if (url.endsWith('/component-types')) return answer(200, TYPES);
+      if (url === `/v1/spaces/${SPACES.items[0]!.id}/components`) {
+        return answer(409, { code: 'space_archived', message: 'Archived.', traceId: 't' });
+      }
+      return answer(500, {});
+    }) as typeof globalThis.fetch;
+
+    render(<NewComponent client={client(fetch)} onCreated={vi.fn()} />);
+    await screen.findByLabelText('Where');
+    await userEvent.type(screen.getByLabelText('Title'), 'Replace the toner');
+    await userEvent.click(screen.getByRole('button', { name: 'Create' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'This space has been archived. Choose another.',
     );
     await waitFor(() =>
       expect(

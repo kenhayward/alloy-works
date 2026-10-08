@@ -151,7 +151,7 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
     setSending(true);
     setNotice(null);
     try {
-      const { data, response } = await client.POST('/v1/spaces/{space}/components', {
+      const { data, error, response } = await client.POST('/v1/spaces/{space}/components', {
         params: { path: { space: where } },
         body: {
           title,
@@ -176,6 +176,11 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
           void loadSpaces();
         } else if (response.status === 404) {
           setNotice('This space is no longer open to you. Choose another.');
+          void loadSpaces();
+        } else if (response.status === 409 && error?.code === 'space_archived') {
+          // Archived since the spaces were read: nothing new is made there (the SP1 plan, SP-C), and
+          // the re-read stops offering it.
+          setNotice('This space has been archived. Choose another.');
           void loadSpaces();
         } else if (response.status === 409) {
           // The re-read decides which sentence is true: "Choose another" beside an empty chooser -

@@ -42,9 +42,9 @@ export const listingSorts = {
     title: { types: ['text'], order: 'asc' },
     changed: { types: ['timestamptz'], order: 'desc' },
   },
-  // The small listings, each in one order: a space by its name, which nothing changes; a definition by
-  // its latest name, read as of the snapshot; a person by when they first appeared, since a name is
-  // changed in place at every sign-in.
+  // The small listings, each in one order: a space by its name, which a rename may change mid-walk
+  // (the SP1 plan, SP-E); a definition by its latest name, read as of the snapshot; a person by when
+  // they first appeared, since a name is changed in place at every sign-in.
   spaces: { name: { types: ['text'], order: 'asc' } },
   componentTypes: { name: { types: ['text'], order: 'asc' } },
   definitions: { name: { types: ['text'], order: 'asc' } },

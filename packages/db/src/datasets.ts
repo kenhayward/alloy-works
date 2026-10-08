@@ -12,6 +12,7 @@ import {
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { mayReadArtifact } from './queryDefinitions.js';
+import { isPlainName } from './plain-name.js';
 import type { TenantTransaction } from './tables.js';
 import { createArtifact, latestVersion, recordVersion, type StoredVersion } from './versions.js';
 
@@ -461,20 +462,8 @@ export interface DatasetName {
   readonly namedAt: Date;
 }
 
-/** Any control character: C0, DEL and C1. */
-const CONTROL = /\p{Cc}/u;
-
-/** Whether a name is one `dataset_name` takes: 1 to 200 characters, trimmed, no control, in NFC. */
-function isDatasetName(name: string): boolean {
-  const length = [...name].length;
-  return (
-    length >= 1 &&
-    length <= 200 &&
-    name === name.trim() &&
-    !CONTROL.test(name) &&
-    name === name.normalize('NFC')
-  );
-}
+/** Whether a name is one `dataset_name` takes: the plain-name rule a space's name follows too. */
+const isDatasetName = isPlainName;
 
 /**
  * Names a dataset (DAT-092; D3-N): a row, the latest the name, since an artifact row takes no update.

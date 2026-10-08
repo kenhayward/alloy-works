@@ -959,6 +959,14 @@ describe('routes that check a permission', () => {
       payload: { principals: [] },
     }),
     deleteGroup: () => ({ url: `/v1/groups/${MISSING}`, status: 403 }),
+    // A space is made, renamed and archived by an administrator of the whole environment (SP-A), so
+    // each is refused before the space is looked for: 403, never 404.
+    createSpace: () => ({ url: '/v1/spaces', status: 403, payload: { name: 'Mine' } }),
+    updateSpace: () => ({
+      url: `/v1/spaces/${MISSING}`,
+      status: 403,
+      payload: { name: 'Mine' },
+    }),
     listPrincipalTokens: () => ({ url: `/v1/principals/${ids.alice}/tokens`, status: 403 }),
     revokePrincipalToken: () => ({
       url: `/v1/principals/${ids.alice}/tokens/${MISSING}`,

@@ -185,6 +185,9 @@ export interface SpaceTable {
   id: Generated<string>;
   name: string;
   created_at: Generated<Date>;
+  /** Both null while the space is live, both set once archived (0059; the SP1 plan, SP-C). */
+  archived_at: ColumnType<Date | null, undefined, Date | null>;
+  archived_by: ColumnType<string | null, undefined, string | null>;
 }
 
 /** No update: an artifact's identity does not change, and the runtime role holds no such grant. */

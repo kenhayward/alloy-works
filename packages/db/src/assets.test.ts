@@ -13,7 +13,7 @@ import {
 import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
-import { createSpace } from './spaces.js';
+import { archiveSpace, createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import { freshDatabase, queryAs, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
@@ -125,6 +125,25 @@ describe('an asset upload, and the asset it makes (figures 1)', () => {
     });
     expect(await inTenant((trx) => objectInUse(trx, key('b'), upload.id))).toBe(true);
     expect(await inTenant((trx) => objectInUse(trx, key('c'), upload.id))).toBe(false);
+  });
+
+  it('records an image uploaded to an archived space, the one thing made there: adding an image is part of editing what is already in it (SP-C)', async () => {
+    const archived = await inTenant(async (trx) => {
+      const space = await createSpace(trx, 'Archived figures');
+      await archiveSpace(trx, space.id, ada);
+      return space.id;
+    });
+    const upload = await inTenant((trx) =>
+      createAssetUpload(trx, { spaceId: archived, uploader: ada, alternative: null }),
+    );
+    await inTenant((trx) =>
+      receiveAssetBytes(trx, upload.id, { key: key('e'), format: 'png', bytes: 3530 }),
+    );
+    await expect(inTenant((trx) => recordAsset(trx, upload.id, header))).resolves.toMatchObject({
+      kind: 'asset',
+      revision: 0,
+      version: 1,
+    });
   });
 
   it('counts an object in use by another upload of the same bytes that is still checking, but not by the one asking', async () => {

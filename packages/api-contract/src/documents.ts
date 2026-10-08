@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { FacetCountView, idsFilter, listingQuery, listingTotal, nextCursor } from './listing.js';
 import { CreateComponentBody, FieldView, Lock, SpaceParams, VersionSummary } from './components.js';
 import type { RouteContract } from './contract.js';
-import { ErrorBody, LowercaseUuid } from './schemas.js';
+import { ErrorBody, LowercaseUuid, SPACE_ARCHIVED } from './schemas.js';
 import { parameterRefusal, TemplateRefusal } from './templates.js';
 import { templateParameterSchema } from '@alloy-works/domain';
 
@@ -457,6 +457,7 @@ export const documentRoutes = {
           'none the caller may read',
         schema: ErrorBody,
       },
+      409: { description: SPACE_ARCHIVED, schema: ErrorBody },
     },
   },
   getDocument: {

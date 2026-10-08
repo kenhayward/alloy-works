@@ -111,6 +111,13 @@ describe('the rule behind a refusal', () => {
       // A column named by somebody who may not read its definition (the TB2 final review): a guard
       // of tables.md's own, which no requirement names.
       'definition.unreadable',
+      // A space's own guards (the SP1 plan, SP-B to SP-D): a name past its shape or taken, the last
+      // live space, and a creation in an archived one. ADM-049 asks that a space can be archived;
+      // what archiving refuses is the design's.
+      'space.archived',
+      'space.name_invalid',
+      'space.name_taken',
+      'space.last',
     ];
     expect([...ruled.map(([dotted]) => dotted), ...unruled].sort()).toEqual(
       [...DOTTED_CODES].sort(),

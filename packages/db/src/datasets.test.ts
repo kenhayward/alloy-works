@@ -41,7 +41,7 @@ import {
   type StoredQueryDefinition,
 } from './queryDefinitions.js';
 import { findRole } from './roles.js';
-import { createSpace } from './spaces.js';
+import { archiveSpace, createSpace, restoreSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import {
@@ -342,6 +342,16 @@ describe('datasets and resolutions', () => {
       }),
     );
     expect(resolution).toMatchObject({ dataset: first.dataset.id, version: first.version.id });
+  });
+
+  it('records a dataset in an archived space: refreshing a binding already there makes nothing new (SP-C)', async () => {
+    await tenant((trx) => archiveSpace(trx, general, ada));
+    try {
+      const refreshed = await recorded({ parameters: { site: 'archived' } });
+      expect(refreshed.version).toMatchObject({ kind: 'dataset', revision: 0, version: 1 });
+    } finally {
+      await tenant((trx) => restoreSpace(trx, general));
+    }
   });
 
   it("DAT-085 records with each dataset version its provenance: the definition and connection with their versions, the parameters, the identity, the SQL that ran, the time, the row count, the canonical form's version and the result's checksum", async () => {

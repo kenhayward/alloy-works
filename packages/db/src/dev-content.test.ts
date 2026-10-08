@@ -16,6 +16,7 @@ import { inviteFirstAdministrator } from './first-administrator.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { createRole, findRole } from './roles.js';
+import { archiveSpace, createSpace, renameSpace } from './spaces.js';
 import { createTenantDatabase, type TenantDatabase } from './tenant-database.js';
 import { freshDatabase, TEST_PASSWORDS, type TestDatabase } from './testing/database.js';
 import { DEFAULT_LAYOUT_ID } from './layouts.js';
@@ -491,5 +492,51 @@ describe('the development content', () => {
         expect(decide(permission, facts!).allowed, permission).toBe(true);
       }
     });
+  });
+
+  it('seeds again after General is renamed and then archived, finding it as the oldest space (SP-I)', async () => {
+    const own = await createTenant(db.adminUrl, db.migratorUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id: db.newTenantId(), name: 'Renamed' },
+      hostnames: ['renamed.acme.alloy.test'],
+    });
+    const seed = () =>
+      service.withTenant(own, async (trx) => {
+        const seeded = await seedDevelopmentContent(trx, { issuer: ISSUER });
+        await seedDevelopmentConnectionUse(trx, { issuer: ISSUER });
+        return seeded;
+      });
+    const first = await seed();
+    const general = await service.withTenant(own, async (trx) => {
+      const row = await trx
+        .selectFrom('space')
+        .select('id')
+        .where('name', '=', 'General')
+        .executeTakeFirstOrThrow();
+      await renameSpace(trx, row.id, 'Main');
+      // Younger than General, so never mistaken for it.
+      await createSpace(trx, 'General');
+      return row.id;
+    });
+    await expect(seed()).resolves.toEqual({ componentId: first.componentId, created: false });
+
+    await service.withTenant(own, async (trx) => {
+      const ada = await trx
+        .selectFrom('principal')
+        .select('id')
+        .where('subject', '=', 'ada')
+        .executeTakeFirstOrThrow();
+      await archiveSpace(trx, general, ada.id);
+    });
+    await expect(seed()).resolves.toEqual({ componentId: first.componentId, created: false });
+    const inNewGeneral = await service.withTenant(own, (trx) =>
+      trx
+        .selectFrom('artifact as a')
+        .innerJoin('space as s', 's.id', 'a.space_id')
+        .select('a.id')
+        .where('s.name', '=', 'General')
+        .execute(),
+    );
+    expect(inNewGeneral).toEqual([]);
   });
 });

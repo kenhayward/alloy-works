@@ -47,7 +47,7 @@ describe('spaces and artifacts', () => {
 
     await expect(
       service.withTenant(production, (trx) => createSpace(trx, 'Regulatory')),
-    ).rejects.toThrow(/space_name_key/);
+    ).rejects.toThrow(/space\.name_taken/);
     await expect(
       service.withTenant(development, (trx) => createSpace(trx, 'Regulatory')),
     ).resolves.toMatchObject({ name: 'Regulatory' });
@@ -56,7 +56,7 @@ describe('spaces and artifacts', () => {
   it('refuses a space name that is empty or carries surrounding spaces', async () => {
     for (const name of ['', ' Quality', 'Quality ']) {
       await expect(service.withTenant(production, (trx) => createSpace(trx, name))).rejects.toThrow(
-        /space_name_check/,
+        /space\.name_invalid/,
       );
     }
   });
@@ -144,13 +144,13 @@ describe('spaces and artifacts', () => {
     const listed = (scopes: readonly Permission[] | undefined) =>
       service.withTenant(production, (trx) => listSpacesFor(trx, ada, scopes));
     expect((await listed(undefined)).items).toEqual([
-      { id: general.id, name: 'Editorial', mayCreate: true },
-      { id: quality.id, name: 'Review', mayCreate: false },
+      { id: general.id, name: 'Editorial', archived: false, mayCreate: true },
+      { id: quality.id, name: 'Review', archived: false, mayCreate: false },
     ]);
     // Through a token that may not create, the same spaces are listed and none may be created in.
     expect((await listed(['edit'])).items).toEqual([
-      { id: general.id, name: 'Editorial', mayCreate: false },
-      { id: quality.id, name: 'Review', mayCreate: false },
+      { id: general.id, name: 'Editorial', archived: false, mayCreate: false },
+      { id: quality.id, name: 'Review', archived: false, mayCreate: false },
     ]);
 
     // A real principal in `development`, holding a real grant there - not `ada`'s id reused under
