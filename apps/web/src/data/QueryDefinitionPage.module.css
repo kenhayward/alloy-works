@@ -118,8 +118,13 @@
 
 /* Each checkbox and radio button's row at least 24px tall, so its 13px target has the spacing WCAG
    2.5.8 asks of a small one: stacked with no gap they stood closer, and axe failed them. */
+/* A row of its own, tall enough that a 13px box keeps 24px of space from the next (WCAG 2.5.8; axe's
+   target-size found 21px once the Ledger's spacing stacked a key's columns, LG2). */
 .check {
-  min-height: 24px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: 32px;
 }
 
 .form fieldset,

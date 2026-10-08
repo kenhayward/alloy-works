@@ -103,7 +103,8 @@ async function arrived(state: string, { shows, hides = [] }: Arrival): Promise<v
  *
  * **On the product's own pages, in every theme** (ADR-0046): Light, under the state's own name, then
  * Dark, as `<state>, in Dark`, the page's Auto following the browser's emulated preference; left in
- * Light. A page that sets no `data-theme` - the allow-list's own - is checked once, as it is.
+ * Light. An allowed entry for the state holds in both. A page that sets no `data-theme` - the
+ * allow-list's own - is checked once, as it is.
  */
 export async function checkAxe(
   page: Page,
@@ -113,9 +114,15 @@ export async function checkAxe(
 ): Promise<void> {
   const themed = await page.evaluate(() => document.documentElement.dataset['theme'] !== undefined);
   if (!themed) return checkAxeOnce(page, state, meta, options);
+  // What the allow-list holds for a state, it holds in either theme: a known violation is not new in Dark.
+  const list = options.allowed ?? ALLOWED;
   for (const theme of ['light', 'dark'] as const) {
+    const named = theme === 'light' ? state : `${state}, in Dark`;
     await inTheme(page, theme);
-    await checkAxeOnce(page, theme === 'light' ? state : `${state}, in Dark`, meta, options);
+    await checkAxeOnce(page, named, meta, {
+      ...options,
+      allowed: list.map((entry) => (entry.state === state ? { ...entry, state: named } : entry)),
+    });
   }
   await inTheme(page, 'light');
 }
