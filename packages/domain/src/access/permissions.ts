@@ -14,11 +14,12 @@ export const permissions = [
   'design',
   'manage_definitions',
   'administer',
-  // Running anything against a connection, decided at the connection (data.md, "Permissions"). No
-  // starting role holds it, so using a connection is always granted on purpose.
+  // Running anything against a connection, decided at the connection (data.md, "Permissions"). Only
+  // Query builder and Query writer hold it, and no default grant names them, so using a connection is
+  // always granted on purpose.
   'use_connection',
   // Saving or running SQL against a connection, decided at the connection as using one is (data.md,
-  // "Permissions"; DAT-101). No starting role holds it either.
+  // "Permissions"; DAT-101). Query writer alone holds it.
   'write_sql',
 ] as const;
 

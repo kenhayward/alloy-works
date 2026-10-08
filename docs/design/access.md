@@ -152,7 +152,7 @@ denies `read` too, as it denies everything the role holds.
 ## Roles
 
 A **role** is `id`, a `name` unique in the tenant, and its permissions - at least one, each once. A
-tenant starts with nine, which are ordinary rows it may rename, change or remove:
+tenant starts with eleven, which are ordinary rows it may rename, change or remove:
 
 | Role                | Permissions                                    |
 | ------------------- | ---------------------------------------------- |
@@ -165,12 +165,17 @@ tenant starts with nine, which are ordinary rows it may rename, change or remove
 | Administrator       | `read`, `administer`                           |
 | Editing             | `edit` - for denials; it cannot be allowed     |
 | Publisher           | `read`, `publish`                              |
+| Query builder       | `read`, `use_connection`                       |
+| Query writer        | `read`, `use_connection`, `write_sql`          |
 
 Editing is a starter role rather than one each tenant makes, because "read-only here" is the first
 denial anybody reaches for, and a role a tenant must think to create before it can do that is a role
 nobody finds. Publisher is the ninth, added with publishing ([publishing.md](publishing.md), decision
 L): it alone holds `publish`, because publishing is the act that releases content, and adding it to
-Author would let every contributor release a whole document.
+Author would let every contributor release a whole document. Query builder and Query writer, added by
+migration 0058, are the only roles holding `use_connection`, and Query writer alone `write_sql`
+([data.md](data.md), "Permissions"): until a tenant can make roles, nobody could otherwise be granted
+the use of a connection. No default grant names them; an administrator grants them on purpose.
 
 Changing a role changes the access of everybody holding it, at once, which is what a bundle is for.
 Removing a role that any grant names is refused; the grants go first, so nobody loses access as a

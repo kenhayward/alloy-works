@@ -50,11 +50,13 @@ describe('the permission set', () => {
     expect(isPermission('toString')).toBe(false);
   });
 
-  it('no starting role holds use_connection or write_sql, and an external principal is refused either whatever the grants say', () => {
-    for (const role of starterRoles) {
-      expect(role.permissions, role.name).not.toContain('use_connection');
-      expect(role.permissions, role.name).not.toContain('write_sql');
-    }
+  it('gives use_connection to Query builder and Query writer alone and write_sql to Query writer alone, and refuses an external principal either whatever the grants say', () => {
+    const holding = (permission: string) =>
+      starterRoles
+        .filter((role) => (role.permissions as readonly string[]).includes(permission))
+        .map((role) => role.name);
+    expect(holding('use_connection')).toEqual(['Query builder', 'Query writer']);
+    expect(holding('write_sql')).toEqual(['Query writer']);
     const user: Level = { kind: 'artifact', id: CONNECTION };
     const grants: AccessGrant[] = [
       {

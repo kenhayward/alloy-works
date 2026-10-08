@@ -154,14 +154,17 @@ describe('migration 0044, over an environment made before it', () => {
       '0055_bound_tables',
       '0056_table_note_word',
       '0057_document_parameters',
+      '0058_query_roles',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1); and what 0055 seeds: the table catalogue's fifth version, the default
-    // theme's 0.7 and the default layout's 0.8 (TB1); and what 0056 seeds, its 0.9 (TB3).
+    // theme's 0.7 and the default layout's 0.8 (TB1); and what 0056 seeds, its 0.9 (TB3); and 0058's
+    // two query roles.
     expect(await countRows(upgraded.schema)).toEqual({
       ...counts,
       artifact: counts.artifact! + 1,
       artifact_version: counts.artifact_version! + 6,
+      role: counts.role! + 2,
     });
 
     fresh = await createTenant(db.adminUrl, db.migratorUrl, {

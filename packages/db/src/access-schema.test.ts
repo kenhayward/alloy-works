@@ -65,7 +65,7 @@ describe('the access tables', () => {
     await db.drop();
   });
 
-  it('starts every tenant with the nine starter roles and one space, General', async () => {
+  it('starts every tenant with the eleven starter roles and one space, General', async () => {
     for (const tenant of [production, development]) {
       const roles = await service.withTenant(tenant, (trx) =>
         trx.selectFrom('role').select(['name', 'permissions']).execute(),

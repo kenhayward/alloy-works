@@ -479,12 +479,13 @@ async function seedProcedure(trx: TenantTransaction, space: string, author: stri
 
 /**
  * Development only: somebody who may use a connection and write SQL against one, and somebody who may
- * use one and write no SQL. No starting role holds `use_connection` or `write_sql`, so either is always
+ * use one and write no SQL. No default grant gives `use_connection` or `write_sql`, so either is always
  * granted on purpose (data.md, "Permissions"); this makes a role of the environment's own, Connection
  * user, holding `read`, `use_connection` and `write_sql` (D2-T), and allows it to Ada on General, where
- * she may already make a connection as the environment's administrator; and a second, Query builder,
- * holding `read` and `use_connection`, allowed to Grace on General, who builds queries without writing
- * SQL (the D4 plan, D4-J). Safe to run again, and a role D1's setup made gains `write_sql`.
+ * she may already make a connection as the environment's administrator; and Query builder, holding
+ * `read` and `use_connection` - the starting role 0058 makes, or made here before it - allowed to
+ * Grace on General, who builds queries without writing SQL (the D4 plan, D4-J). Safe to run again,
+ * and a role D1's setup made gains `write_sql`.
  */
 export async function seedDevelopmentConnectionUse(
   trx: TenantTransaction,
