@@ -96,8 +96,12 @@ describe('migration 0058, which starts every environment with Query builder and 
     const made = await queryRoles(own);
 
     const applied = (await migrate(db.migratorUrl)).tenants;
-    expect(applied[development.id]).toEqual(['0058_query_roles', '0059_space_archive']);
-    expect(applied[own.id]).toEqual(['0058_query_roles', '0059_space_archive']);
+    expect(applied[development.id]).toEqual([
+      '0058_query_roles',
+      '0059_space_archive',
+      '0060_audit',
+    ]);
+    expect(applied[own.id]).toEqual(['0058_query_roles', '0059_space_archive', '0060_audit']);
 
     expect(await queryRoles(development)).toEqual([
       seeded[0],

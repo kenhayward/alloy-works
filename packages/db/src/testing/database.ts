@@ -5,7 +5,27 @@ import { bootstrapLoginRoles } from '../bootstrap.js';
 import { datasetQuestionKey, type DatasetIdentity } from '../datasets.js';
 import type { Tenant } from '../provision.js';
 import type { TenantTransaction } from '../tables.js';
-import type { TenantDatabase } from '../tenant-database.js';
+import type { AuditContext } from '@alloy-works/domain';
+import {
+  createTenantDatabase,
+  type TenantDatabase,
+  type TenantDatabaseOptions,
+} from '../tenant-database.js';
+
+/** Who a test's transactions act for when a test names nobody: the system (the AU1 plan, AU1-D). */
+export const TEST_AUDIT_CONTEXT: AuditContext = { actorKind: 'system', traceId: 'test' };
+
+/**
+ * A tenant database whose transactions act as `TEST_AUDIT_CONTEXT` unless given a context, so a test
+ * seeding content records its events without naming an actor. A test of who an event names passes
+ * its own context, or builds the database with `createTenantDatabase`, which defaults to none.
+ */
+export function testTenantDatabase(
+  url: string,
+  options: TenantDatabaseOptions = {},
+): TenantDatabase {
+  return createTenantDatabase(url, { auditContext: TEST_AUDIT_CONTEXT, ...options });
+}
 
 /**
  * Runs `work` while another transaction holds the tenant's access epoch FOR SHARE, as every decision in
