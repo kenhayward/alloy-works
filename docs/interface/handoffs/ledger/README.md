@@ -38,6 +38,8 @@ self-contained; each `.png` is it at 1440x900, rendered headless with IBM Plex i
 5. **Faces**: IBM Plex Sans for the interface, IBM Plex Mono for numbers, versions and
    identifiers. Bundled as woff2 in `packages/fonts` with their OFL licences, never fetched: the
    desktop shell loads over `file://`.
+   **The drawings are wrong to set the editor surface and the document text in Plex**: those keep
+   the publishing theme's typefaces (CNT-097, STY-036). Plex is the chrome's face only.
 6. **Panels are named in words** (Part, Used in, History, Checks; Attributes, Versions, Access).
    No two-letter dock codes.
 7. **The document palette stays as it is**: a page is paper in both themes; only the desk darkens.
@@ -121,7 +123,7 @@ One PR each, plan first ([`docs/plans/README.md`](../../../plans/README.md) tier
 
 1. Plan, the ADR above, this folder replacing the old screens' look in `../../README.md`.
 2. Tokens: both blocks, Auto, `THEMES` gains Dark, the Theme menu works, the choice is
-   remembered; `colours.test.ts` holds the blocks equal; the five stray hexes go; old size and
+   remembered; `colours.test.ts` holds the blocks equal; old size and
    space names alias the new scale. The browser suite runs axe in both themes.
 3. Fonts in `packages/fonts`.
 4. Shell: rail, header, status bar, Ctrl K (navigation first), Home.
