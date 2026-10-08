@@ -112,6 +112,30 @@ describe('New component', () => {
     });
   });
 
+  it('offers no archived space, which the listing never says may be created in (SP-E)', async () => {
+    // The loader New document shares: an archived space is listed, marked, and not offered.
+    const { fetch } = service({
+      '/v1/spaces': {
+        items: [
+          { ...SPACES.items[0]!, archived: false },
+          {
+            id: 'aaaaaaaa-0000-4000-8000-000000000004',
+            name: 'Shelved',
+            archived: true,
+            mayCreate: false,
+          },
+        ],
+        next: null,
+      },
+      [`/v1/spaces/${SPACES.items[0]!.id}/component-types`]: TYPES,
+    });
+    render(<NewComponent client={client(fetch)} onCreated={vi.fn()} />);
+    const where = await screen.findByLabelText('Where');
+    expect([...where.querySelectorAll('option')].map((option) => option.textContent)).toEqual([
+      'General',
+    ]);
+  });
+
   it('says nothing at all where there is nowhere the caller may create', async () => {
     const { fetch } = service({
       '/v1/spaces': { items: [SPACES.items[1]], next: null },

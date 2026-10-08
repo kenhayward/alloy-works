@@ -11,7 +11,8 @@ export interface Space {
 /**
  * The spaces the service says the caller may create in (`mayCreate`), from a body that is checked
  * rather than trusted: the client's bodies are `any`. `undefined` is a body that is not a listing at
- * all; an entry that is malformed, or one the caller may not create in, is left out. Shared by **New
+ * all; an entry that is malformed, or one the caller may not create in - an archived space among them,
+ * which the service never says may be created in (the SP1 plan, SP-E) - is left out. Shared by **New
  * component** and **New document** (the plan's decision 8), so the two forms cannot disagree about
  * where a person may create.
  */

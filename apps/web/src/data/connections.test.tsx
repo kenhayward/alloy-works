@@ -12,6 +12,7 @@ const READINGS = '33333333-3333-4333-8333-333333333333';
 const FIRST = '44444444-4444-4444-8444-444444444444';
 const SECOND = '55555555-5555-4555-8555-555555555555';
 const CANARY = 'an-invented-canary-password';
+const SHELVED = '66666666-6666-4666-8666-666666666666';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -164,8 +165,12 @@ function service(
     if (request.method === 'GET' && path === '/v1/spaces') {
       return json(200, {
         items: [
-          { id: GENERAL, name: 'General', mayCreate: false },
-          { id: QUALITY, name: 'Quality', mayCreate: false },
+          { id: GENERAL, name: 'General', archived: false, mayCreate: false },
+          { id: QUALITY, name: 'Quality', archived: false, mayCreate: false },
+          // Archived: listed only to a reader who does not ask for it to be left out.
+          ...(url.searchParams.get('archived') === 'false'
+            ? []
+            : [{ id: SHELVED, name: 'Shelved', archived: true, mayCreate: false }]),
         ],
         next: null,
       });
@@ -420,6 +425,23 @@ describe('the Connections list', () => {
         retired: false,
       },
     });
+  });
+
+  it('leaves an archived space out of where a new connection may be made', async () => {
+    const user = userEvent.setup();
+    const { client } = service({ administers: [QUALITY, SHELVED] });
+    render(<Connections client={client} />);
+    await user.click(await screen.findByRole('button', { name: 'New connection' }));
+    const where = within(screen.getByRole('dialog', { name: 'New connection' })).getByLabelText(
+      'Space',
+    );
+    await waitFor(() =>
+      expect(
+        within(where)
+          .getAllByRole('option')
+          .map((each) => each.textContent),
+      ).toEqual(['Quality']),
+    );
   });
 
   it('offers no New connection to somebody who administers no space', async () => {

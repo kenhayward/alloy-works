@@ -732,3 +732,174 @@ describe('Groups in Administration', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
+
+/** A service holding spaces that change as an administrator makes, renames, archives and restores. */
+function spacesService(administers: readonly string[] = ['tenant', 'space:s1', 'space:s2']) {
+  const spaces = [
+    { id: 's1', name: 'General', archived: false, mayCreate: true },
+    { id: 's2', name: 'Training', archived: false, mayCreate: false },
+  ];
+  const sent: { method: string; path: string; body: unknown }[] = [];
+  const viewOf = (space: (typeof spaces)[number]) => ({
+    id: space.id,
+    name: space.name,
+    archived: space.archived,
+    archivedAt: space.archived ? '2026-10-08T09:00:00.000Z' : null,
+    archivedBy: space.archived ? 'p1' : null,
+  });
+  const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+    const request = input instanceof Request ? input : new Request(String(input), init);
+    const url = new URL(request.url);
+    const text = request.method === 'GET' ? '' : await request.clone().text();
+    const body = text === '' ? undefined : JSON.parse(text);
+    if (request.method !== 'GET') sent.push({ method: request.method, path: url.pathname, body });
+    const route = `${request.method} ${url.pathname}`;
+    if (route === 'GET /v1/tenant') return json(200, { name: 'Development' });
+    if (route === 'GET /v1/access') return administering(...administers)(url);
+    if (route === 'GET /v1/spaces') {
+      return json(200, { items: spaces.map((each) => ({ ...each })), next: null });
+    }
+    if (route === 'POST /v1/spaces') {
+      const { name } = body as { name: string };
+      if (spaces.some((each) => each.name === name.trim())) {
+        return json(409, {
+          code: 'space_name_taken',
+          message: 'There is already a space with that name, perhaps an archived one.',
+          traceId: 't',
+        });
+      }
+      const space = {
+        id: `s${spaces.length + 1}`,
+        name: name.trim(),
+        archived: false,
+        mayCreate: true,
+      };
+      spaces.push(space);
+      return json(200, viewOf(space));
+    }
+    const changing = /^PATCH \/v1\/spaces\/(\w+)$/.exec(route);
+    if (changing) {
+      const space = spaces.find((each) => each.id === changing[1]);
+      if (!space) return json(404, { code: 'not_found', message: 'x', traceId: 't' });
+      const { name, archived } = body as { name?: string; archived?: boolean };
+      if (archived === true && spaces.filter((each) => !each.archived).length <= 1) {
+        return json(409, {
+          code: 'space_last',
+          message: 'This is the last space not archived, so it cannot be archived.',
+          traceId: 't',
+        });
+      }
+      if (name !== undefined) space.name = name.trim();
+      if (archived !== undefined) {
+        space.archived = archived;
+        space.mayCreate = !archived;
+      }
+      return json(200, viewOf(space));
+    }
+    return json(404, { code: 'not_found', message: 'x', traceId: 't' });
+  }) as unknown as typeof fetch;
+  return { client: createApiClient({ baseUrl: 'http://admin.test', fetch: fetching }), sent };
+}
+
+describe('Spaces in Administration', () => {
+  const openSpaces = async (client: ReturnType<typeof spacesService>['client']) => {
+    render(<Administration client={client} about={null} onClose={vi.fn()} />);
+    await userEvent.click(section('Spaces'));
+    const table = await screen.findByRole('table', { name: 'Spaces' });
+    return { table, dialog: screen.getByRole('dialog', { name: 'Administration' }) };
+  };
+  const row = (table: HTMLElement, name: string) =>
+    within(table).getByRole('row', { name: new RegExp(`^${name}`) });
+
+  it('ADM-049 lets an administrator make, rename, archive and restore a space from Spaces', async () => {
+    const { client, sent } = spacesService();
+    const { table, dialog } = await openSpaces(client);
+
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'New space' }));
+    const making = screen.getByRole('dialog', { name: 'New space' });
+    await userEvent.type(within(making).getByRole('textbox', { name: 'Name' }), 'Regulatory');
+    await userEvent.click(within(making).getByRole('button', { name: 'Make space' }));
+    expect(await screen.findByText('Made the space Regulatory.')).toBeInTheDocument();
+    expect(await within(table).findByRole('row', { name: /^Regulatory/ })).toBeInTheDocument();
+
+    await userEvent.click(
+      within(row(table, 'Regulatory')).getByRole('button', { name: 'Rename Regulatory' }),
+    );
+    const renaming = screen.getByRole('dialog', { name: 'Rename Regulatory' });
+    const named = within(renaming).getByRole('textbox', { name: 'Name' });
+    expect(named).toHaveValue('Regulatory');
+    await userEvent.clear(named);
+    await userEvent.type(named, 'Regulatory affairs');
+    await userEvent.click(within(renaming).getByRole('button', { name: 'Rename space' }));
+    expect(
+      await screen.findByText('Renamed Regulatory to Regulatory affairs.'),
+    ).toBeInTheDocument();
+
+    await userEvent.click(
+      await within(table).findByRole('button', { name: 'Archive Regulatory affairs' }),
+    );
+    const archiving = screen.getByRole('dialog', { name: 'Archive Regulatory affairs?' });
+    expect(archiving).toHaveTextContent('Nothing new can be made in it.');
+    expect(archiving).toHaveTextContent('Nothing already in it changes');
+    await userEvent.click(within(archiving).getByRole('button', { name: 'Archive space' }));
+    expect(await screen.findByText('Archived Regulatory affairs.')).toBeInTheDocument();
+    expect(
+      await within(row(table, 'Regulatory affairs')).findByRole('cell', { name: 'Archived' }),
+    ).toBeInTheDocument();
+
+    await userEvent.click(
+      within(row(table, 'Regulatory affairs')).getByRole('button', {
+        name: 'Restore Regulatory affairs',
+      }),
+    );
+    const restoring = screen.getByRole('dialog', { name: 'Restore Regulatory affairs?' });
+    await userEvent.click(within(restoring).getByRole('button', { name: 'Restore space' }));
+    expect(await screen.findByText('Restored Regulatory affairs.')).toBeInTheDocument();
+    expect(dialog).toContainElement(document.activeElement as HTMLElement);
+
+    expect(sent).toEqual([
+      { method: 'POST', path: '/v1/spaces', body: { name: 'Regulatory' } },
+      { method: 'PATCH', path: '/v1/spaces/s3', body: { name: 'Regulatory affairs' } },
+      { method: 'PATCH', path: '/v1/spaces/s3', body: { archived: true } },
+      { method: 'PATCH', path: '/v1/spaces/s3', body: { archived: false } },
+    ]);
+  });
+
+  it('says why a space was not made or archived: a name taken, and the last space', async () => {
+    const { client, sent } = spacesService();
+    const { table, dialog } = await openSpaces(client);
+
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'New space' }));
+    const making = screen.getByRole('dialog', { name: 'New space' });
+    await userEvent.click(within(making).getByRole('button', { name: 'Make space' }));
+    expect(within(making).getByRole('status')).toHaveTextContent('Give the space a name.');
+    expect(sent).toEqual([]);
+    await userEvent.type(within(making).getByRole('textbox', { name: 'Name' }), 'General');
+    await userEvent.click(within(making).getByRole('button', { name: 'Make space' }));
+    expect(await within(making).findByRole('status')).toHaveTextContent(
+      'There is already a space with that name, perhaps an archived one.',
+    );
+    await userEvent.click(within(making).getByRole('button', { name: 'Cancel' }));
+
+    for (const name of ['Training', 'General']) {
+      await userEvent.click(await within(table).findByRole('button', { name: `Archive ${name}` }));
+      await userEvent.click(
+        within(screen.getByRole('dialog', { name: `Archive ${name}?` })).getByRole('button', {
+          name: 'Archive space',
+        }),
+      );
+    }
+    expect(
+      await screen.findByText('This is the last space not archived, so it cannot be archived.'),
+    ).toBeInTheDocument();
+    expect(within(row(table, 'General')).queryByRole('cell', { name: 'Archived' })).toBeNull();
+  });
+
+  it('offers none of it to one who administers only a space', async () => {
+    const { client } = spacesService(['space:s1']);
+    const { table, dialog } = await openSpaces(client);
+    await within(table).findByRole('button', { name: 'Access to the space General' });
+    expect(within(dialog).queryByRole('button', { name: 'New space' })).toBeNull();
+    expect(within(table).queryByRole('button', { name: /^(Rename|Archive|Restore) / })).toBeNull();
+  });
+});

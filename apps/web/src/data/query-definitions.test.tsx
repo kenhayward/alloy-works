@@ -8,6 +8,7 @@ import { QueryDefinitions } from './QueryDefinitions.js';
 import { isRecord } from './shapes.js';
 
 const GENERAL = '11111111-1111-4111-8111-111111111111';
+const SHELVED = '66666666-6666-4666-8666-666666666666';
 const READINGS = '33333333-3333-4333-8333-333333333333';
 const DEFINITION = '44444444-4444-4444-8444-444444444444';
 const FIRST = '55555555-5555-4555-8555-555555555555';
@@ -152,7 +153,16 @@ function service(
     asked.push({ method: request.method, path: url.pathname, body });
     const path = url.pathname;
     if (request.method === 'GET' && path === '/v1/spaces') {
-      return json(200, { items: [{ id: GENERAL, name: 'General', mayCreate: true }], next: null });
+      return json(200, {
+        items: [
+          { id: GENERAL, name: 'General', archived: false, mayCreate: true },
+          // Archived: listed only to a reader who does not ask for it to be left out.
+          ...(url.searchParams.get('archived') === 'false'
+            ? []
+            : [{ id: SHELVED, name: 'Shelved', archived: true, mayCreate: false }]),
+        ],
+        next: null,
+      });
     }
     if (request.method === 'GET' && path === '/v1/connections') {
       return json(200, {
@@ -227,7 +237,10 @@ function service(
         target,
         permissions: [
           { permission: 'read', allowed: true },
-          { permission: 'edit', allowed: target === `space:${GENERAL}` },
+          {
+            permission: 'edit',
+            allowed: target === `space:${GENERAL}` || target === `space:${SHELVED}`,
+          },
           {
             permission: 'use_connection',
             allowed:
@@ -394,6 +407,19 @@ describe('the Query definitions list', () => {
 });
 
 describe('the query definition page', () => {
+  it('leaves an archived space out of where a new definition may be made', async () => {
+    const { client } = service();
+    render(<QueryDefinitionPage client={client} id="new" />);
+    const where = await screen.findByLabelText('Space');
+    await waitFor(() =>
+      expect(
+        within(where)
+          .getAllByRole('option')
+          .map((each) => each.textContent),
+      ).toEqual(['General']),
+    );
+  });
+
   it("DAT-105 proposes each column from the source's metadata and saves none until the author has confirmed every one", async () => {
     const user = userEvent.setup();
     const { client, asked } = service();

@@ -54,7 +54,7 @@ export interface DefinitionPlaces {
 
 /**
  * Where the caller may write a query definition (data.md, "Permissions"; the D4 plan, D4-J): the
- * spaces they may edit in, the connections in service on which they hold `use_connection`, which a
+ * spaces they may edit in that are not archived (the SP1 plan, SP-E), the connections in service on which they hold `use_connection`, which a
  * built query needs, and among them those where they hold `write_sql` as well, which SQL needs
  * (DAT-101). Null until every answer is in; empty lists where nothing could be read.
  */
@@ -67,7 +67,13 @@ export function useDefinitionPlaces(client: Client): DefinitionPlaces | null {
         const [spaces, connections] = await Promise.all([
           everyPage((cursor) =>
             client.GET('/v1/spaces', {
-              params: { query: { limit: '100', ...(cursor === undefined ? {} : { cursor }) } },
+              params: {
+                query: {
+                  limit: '100',
+                  archived: 'false',
+                  ...(cursor === undefined ? {} : { cursor }),
+                },
+              },
             }),
           ),
           everyPage((cursor) =>
