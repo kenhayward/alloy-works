@@ -503,21 +503,22 @@ Two rows saying one thing would be claimed and cited twice; ADR-0027 moved CNT-1
 
 ### The version a document references, and comparison
 
-| ID          | Requirement                                                                                                                                                                                                                  | Tranche | Status                |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------- |
-| **CNT-108** | An author must be able to choose which version or revision of a component a document references, from the document view, without leaving it                                                                                  | T1      | Superseded by CNT-158 |
-| **CNT-158** | An author must be able to choose which version of a component a document references, from the document view, without leaving it                                                                                              | T1      | Specified             |
-| **CNT-159** | An author must be able to choose which revision of a component a document references, from the document view, without leaving it                                                                                             | T3      | Specified             |
-| **CNT-109** | Changing which version or revision a document references must be an audited act, recording who changed it, when, and from which to which                                                                                     | T1      | Superseded by CNT-160 |
-| **CNT-160** | Changing which version a document references must be recorded as a new version of the document, naming who changed it and when, so that the reference before and after can be read back                                      | T1      | Specified             |
-| **CNT-161** | Changing which version or revision a document references must be an audited act, recording who changed it, when, and from which to which                                                                                     | T3      | Specified             |
-| **CNT-110** | The view must show which version or revision of a component is referenced, and whether the reference is pinned or floating at latest                                                                                         | T1      | Superseded by CNT-141 |
-| **CNT-141** | The view must show which version or revision of a component is referenced, and which of the three modes the reference takes: pinned, floating at latest, or tracking the latest approved revision (**REU-050**, **LIF-038**) | T1      | Superseded by CNT-162 |
-| **CNT-162** | The view must show which version of a component is referenced, and whether the reference is pinned or floating at latest                                                                                                     | T1      | Specified             |
-| **CNT-163** | The view must show when a reference tracks the latest approved revision, and which revision that is (**REU-050**, **LIF-038**)                                                                                               | T3      | Specified             |
-| **CNT-111** | An author must be able to compare a component against an earlier version or revision from within the editor, choosing from a list that shows who changed each and when                                                       | T3      | Specified             |
-| **CNT-112** | That comparison must be available between any two versions and between any two revisions, rendered as a redline (**VER** owns the comparison itself)                                                                         | T3      | Specified             |
-| **CNT-113** | An author must be able to see what they have changed in the current session, as a tracked-changes view over the version the session opened from                                                                              | T3      | Specified             |
+| ID          | Requirement                                                                                                                                                                                                                                    | Tranche | Status                |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------- |
+| **CNT-108** | An author must be able to choose which version or revision of a component a document references, from the document view, without leaving it                                                                                                    | T1      | Superseded by CNT-158 |
+| **CNT-158** | An author must be able to choose which version of a component a document references, from the document view, without leaving it                                                                                                                | T1      | Specified             |
+| **CNT-159** | An author must be able to choose which revision of a component a document references, from the document view, without leaving it                                                                                                               | T3      | Specified             |
+| **CNT-109** | Changing which version or revision a document references must be an audited act, recording who changed it, when, and from which to which                                                                                                       | T1      | Superseded by CNT-160 |
+| **CNT-160** | Changing which version a document references must be recorded as a new version of the document, naming who changed it and when, so that the reference before and after can be read back                                                        | T1      | Specified             |
+| **CNT-161** | Changing which version or revision a document references must be an audited act, recording who changed it, when, and from which to which                                                                                                       | T3      | Specified             |
+| **CNT-110** | The view must show which version or revision of a component is referenced, and whether the reference is pinned or floating at latest                                                                                                           | T1      | Superseded by CNT-141 |
+| **CNT-141** | The view must show which version or revision of a component is referenced, and which of the three modes the reference takes: pinned, floating at latest, or tracking the latest approved revision (**REU-050**, **LIF-038**)                   | T1      | Superseded by CNT-162 |
+| **CNT-162** | The view must show which version of a component is referenced, and whether the reference is pinned or floating at latest                                                                                                                       | T1      | Specified             |
+| **CNT-163** | The view must show when a reference tracks the latest approved revision, and which revision that is (**REU-050**, **LIF-038**)                                                                                                                 | T3      | Specified             |
+| **CNT-181** | Where a document's reference to a component is pinned to a version and a newer version of that component exists that the reader may read, the document view must say so, naming the newer version, and must offer to compare the two (CNT-111) | T3      | Specified             |
+| **CNT-111** | An author must be able to compare a component against an earlier version or revision from within the editor, choosing from a list that shows who changed each and when                                                                         | T3      | Specified             |
+| **CNT-112** | That comparison must be available between any two versions and between any two revisions, rendered as a redline (**VER** owns the comparison itself)                                                                                           | T3      | Specified             |
+| **CNT-113** | An author must be able to see what they have changed in the current session, as a tracked-changes view over the version the session opened from                                                                                                | T3      | Specified             |
 
 **CNT-072 and CNT-073 are in tension by design.** The monolithic reading experience is the point of
 the view; the component boundary is what an author needs and a reader does not. Permanent chrome
@@ -978,3 +979,17 @@ identifier, and only its tranche changes.
 | Counts       | Before                                      | After                                       |
 | ------------ | ------------------------------------------- | ------------------------------------------- |
 | Requirements | 180, of which 34 superseded and 1 withdrawn | 180, of which 34 superseded and 1 withdrawn |
+
+### From the Ledger interface's review, 2026-10-08
+
+Not a review of this area. The Ledger redesign draws a pinned reference saying a newer version exists,
+with Compare; [ADR-0046](../../decisions/0046-the-ledger-interface.md) builds nothing drawn without a
+row. Filed as [issue #469](https://github.com/kenhayward/alloy-works/issues/469).
+
+| What was found                                                                                 | Change                                                                                                       |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| An author holding a pinned reference cannot tell the component has moved on without opening it | **CNT-181**, T3 with the comparison it offers (CNT-111): the view names the newer version and offers Compare |
+
+| Counts       | Before                                      | After                                       |
+| ------------ | ------------------------------------------- | ------------------------------------------- |
+| Requirements | 180, of which 34 superseded and 1 withdrawn | 181, of which 34 superseded and 1 withdrawn |
