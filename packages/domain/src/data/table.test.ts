@@ -247,7 +247,7 @@ describe('a bound table, laid out', () => {
     expect(laid(table()).rows[0]!.cells.map((cell) => cell.scope)).toEqual([null, null]);
   });
 
-  it("TAB-046 aligns a number column as the style's align says, on its decimal separator by default, and a column overrides it", () => {
+  it("TAB-046 STY-077 aligns a number column as the style's align says, on its decimal separator by default, and a column overrides it", () => {
     const columns = [
       { column: 'site', header: 'Site' },
       { column: 'depth', header: 'Depth' },
@@ -292,6 +292,72 @@ describe('a bound table, laid out', () => {
       { text: '(1.3)', value: '-1.25', scope: null, negative: true, parenthesised: true },
       { text: 'Not available', value: null, scope: null, negative: false, parenthesised: false },
     ]);
+  });
+
+  it("STY-083 formats a number column as a currency or a percentage by its type through the table style, brackets a unit as the style says, a column overriding both, and a date by the document language's value formats", () => {
+    const columns = [
+      { column: 'site', header: 'Site' },
+      { column: 'depth', header: 'Depth' },
+      { column: 'measured_on', header: 'Measured' },
+    ];
+    const pounds = { symbol: '£', position: 'before' as const, space: false };
+    const byType: TablePresentation = {
+      fields: {
+        decimal: { style: 'currency', currency: pounds, places: 2 },
+        integer: { style: 'percent', percent: 'hundred', places: 0 },
+      },
+      unitBrackets: 'brackets',
+    };
+    // A decimal column, by its type, as the style's currency.
+    expect(texts(laid(table({ columns }), READINGS, byType)).map((row) => row[1])).toEqual([
+      '£4.50',
+      '-£1.25',
+      'Not available',
+    ]);
+    // An integer column, by its type, as the style's percentage.
+    const counted: CanonicalResult = {
+      columns: [
+        ['site', 'text'],
+        ['depth', 'integer'],
+      ],
+      rows: [['North', '12']],
+    };
+    const counts = layoutTable(
+      table(),
+      counted,
+      [declared('site', { base: 'text' }), declared('depth', { base: 'integer' })],
+      byType,
+      DEFAULT_VALUE_FORMATS,
+      words,
+    );
+    if ('failures' in counts) throw new Error(JSON.stringify(counts.failures));
+    expect(texts(counts)).toEqual([['North', '12%']]);
+    // The style brackets a unit; a column overrides the style's format with its own.
+    const overridden = laid(
+      table({
+        columns: [
+          {
+            column: 'depth',
+            header: 'Depth',
+            unit: { text: 'm', place: 'header' },
+            format: { style: 'number', places: 1 },
+          },
+        ],
+      }),
+      READINGS,
+      byType,
+    );
+    expect(overridden.header[0]!.text).toBe('Depth [m]');
+    expect(texts(overridden).map((row) => row[0])).toEqual(['4.5', '-1.3', 'Not available']);
+    // A date is the theme's value formats', in the document's language: the style declares none.
+    const dayFirst = {
+      ...DEFAULT_VALUE_FORMATS,
+      date: { order: 'dmy', separator: '/', pad: true },
+    } as typeof DEFAULT_VALUE_FORMATS;
+    const dated = layoutTable(table({ columns }), READINGS, COLUMNS, byType, dayFirst, words);
+    if ('failures' in dated) throw new Error(JSON.stringify(dated.failures));
+    expect(texts(dated)[0]![2]).toBe('01/10/2026');
+    expect(texts(laid(table({ columns }), READINGS, byType))[0]![2]).toBe('2026-10-01');
   });
 });
 

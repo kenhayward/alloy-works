@@ -62,7 +62,7 @@ async function goneWithin(marker: string): Promise<number> {
 }
 
 describe("a run's limits", { timeout: LOADED_TIMEOUT_MS }, () => {
-  it('DAT-051 fails a run past its row, byte or time limit by name and answers no rows', async () => {
+  it('DAT-051 DAT-045 fails a run past its row, byte or time limit by name and answers no rows', async () => {
     const failed = (code: string, attribution = 'query') => ({
       outcome: 'failed',
       failure: { code, attribution },

@@ -1078,6 +1078,45 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     ).toBeNull();
   });
 
+  it("DAT-024 says in a value's provenance whose own view it is: the person, how they signed in, and who the source saw", async () => {
+    const user = userEvent.setup();
+    const asserted = (signInRoute: string, asSeen: string) => {
+      const held = state(bound('b1'), value);
+      return {
+        ...held,
+        held: {
+          ...held.held,
+          provenance: provenance({
+            identity: {
+              kind: 'endUser',
+              mechanism: 'asserted',
+              principal: ADA,
+              signInRoute,
+              asSeen,
+            },
+          }),
+        },
+      };
+    };
+    for (const [route, seen, said] of [
+      ['organisation', 'ada@example.com', "signed in through the organisation's provider"],
+      ['google', 'ada@example.com', 'signed in with Google'],
+      ['token', 'ada', 'acting through a personal API token'],
+    ] as const) {
+      const { checked } = openWithValues({
+        content: withValue(bound('b1')),
+        bindings: [asserted(route, seen)],
+      });
+      const text = await textRegion();
+      await checked();
+      await user.click(await within(text).findByRole('button', { name: '1,234.5, bound value' }));
+      const panel = await screen.findByRole('region', { name: 'Provenance' });
+      const whose = within(panel).getByText('Whose view').nextElementSibling!;
+      expect(whose).toHaveTextContent(`Ada's own view, ${said}, seen by the source as ${seen}`);
+      cleanup();
+    }
+  });
+
   it('returns the focus to the value when the provenance is closed by Escape', async () => {
     const user = userEvent.setup();
     const { checked } = openWithValues({

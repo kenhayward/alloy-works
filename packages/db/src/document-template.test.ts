@@ -238,7 +238,7 @@ describe('a document made from a template', () => {
     expect(await count('artifact')).toBe(before + 1);
   });
 
-  it("TPL-027 leaves the document's outline its own", async () => {
+  it("TPL-027 TPL-016 leaves the document's outline its own", async () => {
     const made = await template({ name: 'Minutes' });
     const answer = await make(made.id);
     if (answer.answer !== 'created') throw new Error(answer.answer);

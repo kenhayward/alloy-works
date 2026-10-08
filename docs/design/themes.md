@@ -43,7 +43,7 @@ conformance suite.
 | **STY-076** | The table property set below, but for alignment by column type                                                                                                                                                                                                                                                                                                                                      |
 | **STY-077** | Alignment by column type, a table style's `align`, which a bound table's column overrides (TAB-046); optional at `catalogue/3`, set by default theme 0.7 (TB1)                                                                                                                                                                                                                                      |
 | **STY-013** | Table break behaviour is part of the table style: header repetition, continuation label, rows kept whole                                                                                                                                                                                                                                                                                            |
-| **STY-014** | Default field formats by column type are a table style's `fields`, merged member by member under a bound table's column format (TAB-012, TAB-037); optional at `catalogue/3`, set by default theme 0.7 (TB1)                                                                                                                                                                                        |
+| **STY-083** | Default field formats by column type are a table style's `fields`, merged member by member under a bound table's column format (TAB-012, TAB-037): a number, a currency or a percentage by `style`, and a unit's brackets by `unitBrackets`; a date or a time takes the value catalogue's formats for the document's language (STY-082); optional at `catalogue/3`, set by default theme 0.7 (TB1)  |
 | **STY-015** | An image style fixes one dimension, as points or as a fraction of the measure                                                                                                                                                                                                                                                                                                                       |
 | **STY-016** | The other dimension is derived from the asset's intrinsic proportions at resolution, never declared                                                                                                                                                                                                                                                                                                 |
 | **STY-017** | An image style declares a maximum for the free dimension; exceeding it re-derives from that dimension instead                                                                                                                                                                                                                                                                                       |
@@ -238,11 +238,11 @@ and colour (STY-009). The map is the theme's (STY-010). The mark itself never ca
 
 Header row and header column treatment (fill, weight, rule beneath), banding (fill on alternate
 rows), rules (outer, horizontal inside, vertical inside - each a width and colour or none), cell
-padding, alignment by column type, default field formats by column type (STY-014), and break
+padding, alignment by column type, default field formats by column type (STY-083), and break
 behaviour: whether the header repeats, the continuation label, and whether rows are kept whole
 (STY-013); and where its caption sits, above the table or below it (STY-079, since
 [W14.5](#where-a-caption-sits)). The editor renders all of it except break behaviour, which is
-pagination. The members answering STY-014 and STY-077 - formats and alignment by column
+pagination. The members answering STY-083 and STY-077 - formats and alignment by column
 type, the negative colour, unit brackets and the wide-table strategy - are set out in
 [tables.md](tables.md#the-table-style); TB1 built all but the wide-table strategy, `wide` - `scale`,
 the product's default, or `rotate` - which TB3 built, optional at `catalogue/3` with no theme version,

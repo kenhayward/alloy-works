@@ -13,6 +13,7 @@ import {
   binding,
   definitionBody,
   ranOk,
+  SECRET,
   sha256,
   startHarness,
   type Harness,
@@ -686,7 +687,59 @@ describe('bindings and datasets through the service', () => {
     });
   });
 
-  it('DAT-090 answers a stored result to whoever may read the document holding it, and to nobody else', async () => {
+  it("DAT-066 leaves what every binding holds, and the connection's version, as they were across a rotation, and names every dependent once where it fails", async () => {
+    const rotated = await h.connection('Rotated readings');
+    const definition = await h.definition(rotated.id, { title: 'Rotated sums' });
+    const { document, node } = await placed(
+      binding('b1', definition.id, { parameters: { site: { literal: '61' } } }),
+    );
+    h.connector.mode = 'answer';
+    h.connector.run = ranOk([['61', 'Breakwater']]);
+    expect((await resolve('ada', document.id, [{ node, binding: 'b1' }])).statusCode).toBe(200);
+    const held = (await stateOf('ada', document.id, 'b1')).held!;
+    const versionOf = async () =>
+      (await h.call('ada', 'GET', `/v1/connections/${rotated.id}`)).json<{
+        version: { id: string };
+      }>().version.id;
+    const before = { connection: await versionOf(), datasets: await datasetVersions() };
+    expect(before.connection).toBe(rotated.version);
+
+    // A rotation whose test passes: the same dataset version held, the connection's version
+    // unchanged, and the source, asked again, answering what is held.
+    h.connector.test = { outcome: 'ok', findings: [] };
+    const passed = await h.call('ada', 'PUT', `/v1/connections/${rotated.id}/credential`, {
+      secret: `${SECRET}-rotated`,
+    });
+    expect(passed.statusCode, passed.body).toBe(200);
+    expect(passed.json()).not.toHaveProperty('dependents');
+    expect((await stateOf('ada', document.id, 'b1')).held).toMatchObject({
+      version: held.version,
+      provenance: { checksum: held.provenance.checksum },
+    });
+    expect(await versionOf()).toBe(before.connection);
+    const checked = await check('ada', document.id);
+    expect(checked.json()).toEqual({ results: [{ node, binding: 'b1', outcome: 'unchanged' }] });
+    expect(await datasetVersions()).toEqual(before.datasets);
+
+    // One whose test fails is reported once, against the connection, naming the definition that
+    // depends on it, and still moves nothing a binding holds.
+    h.connector.test = {
+      outcome: 'failed',
+      failure: { code: 'connection_failed', attribution: 'connector' },
+    };
+    const failed = await h.call('ada', 'PUT', `/v1/connections/${rotated.id}/credential`, {
+      secret: `${SECRET}-wrong`,
+    });
+    h.connector.test = { outcome: 'ok', findings: [] };
+    expect(failed.json()).toMatchObject({
+      test: { outcome: 'failed' },
+      dependents: { readable: [{ id: definition.id, title: 'Rotated sums' }], others: 0 },
+    });
+    expect((await stateOf('ada', document.id, 'b1')).held!.version).toBe(held.version);
+    expect(await versionOf()).toBe(before.connection);
+  });
+
+  it('DAT-090 DAT-025 answers a stored result to whoever may read the document holding it, and to nobody else', async () => {
     const definition = await h.definition(connection.id);
     const { document, node } = await placed(
       binding('b1', definition.id, { parameters: { site: { literal: '51' } } }),
@@ -938,7 +991,7 @@ describe('bindings and datasets through the service', () => {
     });
   });
 
-  it('refuses a resolve before anything runs: a binding the node does not hold, a retired definition, a parameter a blank document has no value for, and a caller who may not use the connection', async () => {
+  it('DAT-025 refuses a resolve before anything runs: a binding the node does not hold, a retired definition, a parameter a blank document has no value for, and a caller who may not use the connection', async () => {
     const definition = await h.definition(connection.id);
     const { document, node } = await placed(
       binding('b1', definition.id, { parameters: { site: { literal: '71' } } }),

@@ -47,6 +47,11 @@ decisions, K4, K5, K6 and K8, and the remaining T1 rewordings, decided on 2026-0
 ADR-0031, are answered by a **Ken's answer to the T1 audit's last decisions** subsection in CNT, PUB, IAM
 and STY.
 
+**[T2 - Audit against the code](<T2 - Audit against the code.md>)** does the same for T2 at
+0.144.0: its ten rows not `Covered`, a spot check of fifteen that are, and the Constraint rows. It is
+answered by a **From the T2 audit against the code** subsection in DAT, STY and TAB, and by
+[ADR-0044](../decisions/0044-the-delegated-tokens-requirement-moves-past-the-first-release.md).
+
 **They are not edited to match what happened.** A review is evidence of what was visible at the time
 it was written, and rewriting it afterwards would destroy exactly that. Where a reviewer was wrong,
 the answer is in the reply, not in a correction here.

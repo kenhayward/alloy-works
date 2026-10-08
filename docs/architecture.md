@@ -3306,7 +3306,8 @@ a text holds a binding, whenever it re-reads them; a failed read shows no values
 the theme's catalogue and the outline's language, for the read text (`DocumentText.tsx`) and the
 editor opened in place (DAT-027). In the read text a value is a button: a click or Enter opens
 `ProvenancePanel` (`src/data/`) in the side column, not the editor (DAT-041) - the definition and
-version, parameters, whose view, when, rows, checksum, dataset, who resolved it, the SQL where the view
+version, parameters, whose view (a person's own by name, how they signed in and the name the source saw
+them by, DAT-024), when, rows, checksum, dataset, who resolved it, the SQL where the view
 gives it, the waiting value beside the held one, and **Show the result**, the first 200 rows from
 `GET .../datasets/{version}`; focus moves to its heading, and **Close** and Escape return it. In the
 editor, a binding selected whole shows the **Value panel** (`src/editor/ValuePanel.tsx`) with its
@@ -3557,7 +3558,7 @@ offers image columns alone (`changeFigureBinding`).
 D7 of [data.md](design/data.md), built by [the D7 plan](plans/2026-10-06-d7-end-user-identity.md): a
 PostgreSQL connection may declare `identity: {kind: 'endUser', mechanism: 'asserted', attribute:
 'email' | 'subject'}`, and a run as the person acting is decided by the source's own grants and
-row-level security. The delegated token moved to D6, which deferred it (ADR-0041). **Asserted identity trusts the source's
+row-level security. The delegated token moved to D6, which deferred it (ADR-0041); its requirement, DAT-118, is T7's (ADR-0044). **Asserted identity trusts the source's
 function, view and policy authors**
 ([ADR-0040](decisions/0040-asserted-identity-trusts-the-sources-function-authors.md)); the
 administrator's half is [a guide](guides/asserted-identity-on-postgresql.md).

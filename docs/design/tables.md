@@ -73,6 +73,7 @@ do not wrap, table notes in their own sequence, and the wide-table strategy.
 | **TAB-038** | A unit labels; no format converts a quantity                                                                                                                              |
 | **TAB-045** | Separators and date order come from the value catalogue's formats for the document's language (BI-F)                                                                      |
 | **TAB-046** | A number column aligns on its decimal separator by layout, not by added characters; alignment by type is the table style's                                                |
+| **TAB-052** | A column declares `wrap: false` where it must not wrap: its cells are set on one line in the PDF and carry `w:noWrap` in Word                                             |
 | **TAB-024** | A note anchors to a cell by the definition's key and a column ([Notes](#notes))                                                                                           |
 | **TAB-025** | A note anchors to a column; the table's `note` is the note on the whole table                                                                                             |
 | **TAB-026** | Notes in any table, bound or authored, are lettered in the table's own sequence and printed beneath it                                                                    |
@@ -86,12 +87,12 @@ do not wrap, table notes in their own sequence, and the wide-table strategy.
 | **DAT-069** | An empty result where the definition declares one valid prints headers and the statement; declared invalid, the run already failed (DAT-068)                              |
 | **CNT-039** | A note into generated content names its row by key value, never by position                                                                                               |
 
-STY-014 and STY-077 stay themes.md's; the members that answer them are [here](#the-table-style).
+STY-083 and STY-077 stay themes.md's; the members that answer them are [here](#the-table-style).
 TAB-030 is met by TAB-016's rule and claimed with T3's emphasis rules, which are what it is about.
 
-**TAB-035 is not claimed**: it asks for column widths from the table style, and no table style has a
-width member yet - columns share the measure equally. Only its other half is built: a column declares
-`wrap: false` where it must not wrap. **TAB-046 is read with STY-077's "a specific table may
+**TAB-053 is not claimed**: it asks for column widths from the table style, T3's, and no table style
+has a width member yet - columns share the measure equally. Its other half, TAB-052 (the two supersede
+TAB-035), is built: a column declares `wrap: false` where it must not wrap. **TAB-046 is read with STY-077's "a specific table may
 override"**: the style aligns by type, and a bound table's column may override it, as `align` does.
 
 ## The presentation
@@ -182,7 +183,7 @@ stored theme names none (as 0048's reader does for the value catalogue), seeded 
 0.7:
 
 ```ts
-fields?: Partial<Record<'integer' | 'decimal' | 'date' | 'time' | 'localDateTime' | 'instant' | 'boolean' | 'text', FieldFormat>>, // STY-014
+fields?: Partial<Record<'integer' | 'decimal' | 'date' | 'time' | 'localDateTime' | 'instant' | 'boolean' | 'text', FieldFormat>>, // STY-083
 align?:  Partial<Record<same keys, 'start' | 'centre' | 'end' | 'decimal'>>,  // STY-077; default text start, numbers decimal, others end
 negativeColour?: Colour,                 // default a red the conformance suite checks for contrast
 unitBrackets?: 'parentheses' | 'brackets',

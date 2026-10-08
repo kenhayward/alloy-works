@@ -62,6 +62,9 @@ export interface ProvenanceShown {
   readonly identity: string;
   /** Whose own view it is, where it ran as a person (the D7 plan, D7-J); else null. */
   readonly principal?: string | null;
+  /** How that person signed in, and the name the source saw them by (DAT-024); else null. */
+  readonly signInRoute?: string | null;
+  readonly asSeen?: string | null;
   readonly at: string;
   readonly rowCount: number;
   readonly checksum: string;
@@ -190,6 +193,8 @@ function provenanceIn(value: unknown): ProvenanceShown | undefined {
     sql,
     identity,
     principal: text(value.identity.principal) ?? null,
+    signInRoute: text(value.identity.signInRoute) ?? null,
+    asSeen: text(value.identity.asSeen) ?? null,
     at,
     rowCount,
     checksum,

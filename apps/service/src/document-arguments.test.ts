@@ -148,6 +148,52 @@ describe("a binding's document arguments, through the service", () => {
     expect(state.binding.parameters).toEqual({ site: { document: 'site' } });
   });
 
+  it("DAT-030 resolves one component placed in two documents to each document's own value by its parameters, and a literal to the same in both", async () => {
+    const definition = await h.definition(connection.id);
+    const component = await h.component(h.general, 'Readings');
+    await h.place(
+      component,
+      { type: 'text', value: 'The site is ', marks: [] },
+      fromDocument('b1', definition.id),
+      binding('b2', definition.id, { parameters: { site: { literal: '3' } } }),
+    );
+    const made = await Promise.all(
+      ['7', '8'].map((site) =>
+        h.documentReferencing([component.id], h.general, {
+          template: sites,
+          parameters: { site },
+        }),
+      ),
+    );
+    const ran: Json[] = [];
+    for (const document of made) {
+      h.connector.run = ranOk([['1', 'Harbour']]);
+      const asked = h.connector.asked.length;
+      const answer = await resolve(document.id, document.nodes[0]!, 'b1', 'b2');
+      expect(answer.statusCode, answer.body).toBe(200);
+      ran.push(
+        ...h.connector.asked
+          .slice(asked)
+          .filter((each) => each.path === '/v1/run')
+          .map((each) => (each.body as { values: Json }).values),
+      );
+    }
+    // One component: each document ran its own site for b1, and the literal for b2.
+    expect(ran).toEqual([{ site: '7' }, { site: '3' }, { site: '8' }, { site: '3' }]);
+    const held = await Promise.all(
+      made.map(async (document) =>
+        Promise.all(['b1', 'b2'].map(async (id) => (await stateOf(document.id, id)).held)),
+      ),
+    );
+    expect(held.map((each) => each.map((one) => one?.provenance.parameters))).toEqual([
+      [{ site: '7' }, { site: '3' }],
+      [{ site: '8' }, { site: '3' }],
+    ]);
+    // Two questions for b1, so two dataset versions; one question for b2, held by both.
+    expect(held[0]![0]!.version).not.toBe(held[1]![0]!.version);
+    expect(held[0]![1]!.version).toBe(held[1]![1]!.version);
+  });
+
   it('TPL-066 seeds the Period field from the period parameter when the document is made and supplies it as the argument of a binding placed in it, and a changed period marks that binding changed', async () => {
     const definition = await h.definition(
       connection.id,

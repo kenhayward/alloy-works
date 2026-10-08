@@ -91,13 +91,14 @@ asked to make a phrase stand out, and it does.
 
 ## 5. Table styles
 
-| ID          | Requirement                                                                                                                                                        | Tranche | Status                |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- | --------------------- |
-| **STY-012** | A table style must declare header row and column treatment, banding, rules and borders, cell padding, and alignment by column type                                 | T1      | Superseded by STY-076 |
-| **STY-076** | A table style must declare header row and column treatment, banding, rules and borders, and cell padding                                                           | T1      | Specified             |
-| **STY-077** | A table style must declare alignment by column type, which a specific table may override (**TAB**)                                                                 | T2      | Specified             |
-| **STY-013** | A table style must declare what happens when a table breaks across a page: whether headers repeat, what continuation label appears, and what must be kept together | T1      | Specified             |
-| **STY-014** | A table style must declare default field formatting by column type - number, currency, percentage, date, unit - which a specific table may override (**TAB**)      | T2      | Specified             |
+| ID          | Requirement                                                                                                                                                                                                                                                                            | Tranche | Status                |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------- |
+| **STY-012** | A table style must declare header row and column treatment, banding, rules and borders, cell padding, and alignment by column type                                                                                                                                                     | T1      | Superseded by STY-076 |
+| **STY-076** | A table style must declare header row and column treatment, banding, rules and borders, and cell padding                                                                                                                                                                               | T1      | Specified             |
+| **STY-077** | A table style must declare alignment by column type, which a specific table may override (**TAB**)                                                                                                                                                                                     | T2      | Specified             |
+| **STY-013** | A table style must declare what happens when a table breaks across a page: whether headers repeat, what continuation label appears, and what must be kept together                                                                                                                     | T1      | Specified             |
+| **STY-014** | A table style must declare default field formatting by column type - number, currency, percentage, date, unit - which a specific table may override (**TAB**)                                                                                                                          | T2      | Superseded by STY-083 |
+| **STY-083** | A table style must declare default field formatting by column type for a number, a currency, a percentage and a unit, which a specific table may override (**TAB**); a date or a time is formatted by the theme's value formats for the document's language (**STY-082**, **TAB-045**) | T2      | Specified             |
 
 **STY-013 is a style rather than a layout property on purpose.** How a table behaves at a page break
 is a property of the kind of table it is - a dense data table and a two-row summary want different
@@ -500,3 +501,17 @@ Ken answered its question on 2026-10-04, as the design recommended.
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
 | Requirements | 81, of which 6 superseded | 82, of which 6 superseded |
+
+### From the T2 audit against the code (2026-10-08)
+
+[The T2 audit](<../../reviews/T2 - Audit against the code.md>) read every T2 requirement not yet
+`Covered` against the code. Ken approved its recommendations on 2026-10-08.
+
+| What was found                                                                                                                                                                                                      | Change                                                                                                                                                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| STY-014 lists a date among a table style's formats by type. A date in a bound table is printed by the theme's value formats for the document's language (STY-082), as TAB-045 asks, and no table style declares one | **STY-014 superseded by STY-083**, in T2: a table style declares formats by column type for a number, a currency, a percentage and a unit, a table overriding them; a date or a time takes the theme's value formats for the document's language |
+| STY-077 was built and demonstrated, uncited                                                                                                                                                                         | Not changed; cited                                                                                                                                                                                                                               |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 82, of which 6 superseded | 83, of which 7 superseded |
