@@ -64,6 +64,7 @@ enforcing it cannot disagree.
 | **IAM-059** | Whoever provisions a tenant invites its first administrator to a named address; the first sign-in through a permitted route whose provider verifies it is Administrator. There is no local credential (IAM-042) and no vendor account: the invitation is used once and lapses, which is shown only by absence ("Roles", "Invitations")                                                                  |
 | **IAM-072** | An administrator of the tenant invites an address, which makes a principal at once; every grant route names it before anybody has signed in, and what it is granted confers nothing until the first sign-in through a route the tenant permits whose provider asserts that address verified, which claims it ("Invitations")                                                                            |
 | **IAM-051** | `GET /v1/access/external` lists every external principal, each with every grant reaching them - directly or through a group, with its level and expiry - and the readable set those grants produce                                                                                                                                                                                                      |
+| **ADM-049** | An administrator of the environment makes, renames, archives and restores a space from Administration's Spaces and through `POST /v1/spaces` and `PATCH /v1/spaces/{id}`, each decided as `administer` at the tenant like any other act ("Spaces")                                                                                                                                                      |
 | **API-053** | One refusal vocabulary for every route, below, and a contract test that fails when a route does not declare the permission it checks                                                                                                                                                                                                                                                                    |
 
 ## What this document does not own
@@ -93,8 +94,22 @@ live in exactly one: a component, a document (which holds its own outline), a te
 definition is shared across spaces. `artifact.space_id` is required for a content kind and forbidden
 for a tenant-wide kind, by a check constraint over `kind` rather than a convention.
 
-A new tenant starts with one space, named _General_, which an administrator can rename. Creating a
-space needs `administer` at the tenant.
+A new tenant starts with one space, named _General_, which an administrator can rename. Making,
+renaming, archiving and restoring a space each need `administer` at the tenant; a space's own
+administrators grant within it and do none of these ([SP1](../plans/2026-10-08-sp1-spaces.md), SP-A).
+A name is normalised to NFC and trimmed, 1 to 200 characters with no control character, and unique in
+the tenant, archived spaces included, compared exactly (SP-B).
+
+**Archiving** (`space.archived_at`, `archived_by`) stops new content in a space and changes nothing
+already there (SP-C): `createArtifact` refuses a component, document, template, connection or query
+definition made in an archived space, `409 space_archived`, holding the space `FOR SHARE` while
+archiving takes it `FOR UPDATE`, so no creation commits into a space archived a moment before. An
+asset, a dataset and a publication are exempt: each is an edit, a refresh or a publish of what is
+already there. What is in an archived space is read, edited, versioned and published as before, its
+grants kept; no decision reads archiving. The last space not archived cannot be archived, counted with
+every live space held `FOR UPDATE` (SP-D). `GET /v1/spaces` marks an archived space, never says one may
+be created in, and leaves them out on `?archived=false` (SP-E). Who archived is kept until a restore
+clears it; the audit log will record each act (SP-H).
 
 ## Permissions
 
@@ -588,8 +603,8 @@ every route has the cross-tenant test IAM-004 already requires plus one as a pri
 
 | Route                                                                             | Needs                                       | Does                                                                                                                        |
 | --------------------------------------------------------------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `GET /v1/spaces`                                                                  | Signed in                                   | The spaces the caller may read, and whether they may create in each                                                         |
-| `POST /v1/spaces`, `PATCH /v1/spaces/{id}`                                        | `administer`, tenant                        | Creates or renames a space                                                                                                  |
+| `GET /v1/spaces`                                                                  | Signed in                                   | The spaces the caller may read, whether each is archived, and whether they may create in each                               |
+| `POST /v1/spaces`, `PATCH /v1/spaces/{id}`                                        | `administer`, tenant                        | Creates a space; renames, archives or restores one                                                                          |
 | `GET /v1/roles?level=`                                                            | `administer` at the level or above          | The roles a grant can name, to anyone who may grant at that level                                                           |
 | `GET /v1/principals?level=`                                                       | `administer` at the level or above          | Everybody who has signed in or been invited, to choose a subject or a person to explain                                     |
 | `GET`, `POST /v1/invitations`                                                     | `administer`, tenant                        | Lists every invitation; invites an address or renews its invitation                                                         |

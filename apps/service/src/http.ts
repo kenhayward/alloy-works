@@ -10,7 +10,7 @@ import Fastify, {
 import type { z } from 'zod';
 import type { LogLevel } from './config.js';
 import { AppError, toErrorBody } from './errors.js';
-import { spaceRefusal } from './spaces.js';
+import { spaceRefusal } from './space-refusals.js';
 
 export interface HttpOptions {
   readonly logLevel: LogLevel;

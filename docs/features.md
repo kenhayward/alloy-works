@@ -115,6 +115,17 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   already signed in as from outside the organisation, extends an expiring grant or gives one an expiry,
   and no page shows a template on its own, so its access is reached from its row in Templates.
 
+- **Spaces.** An administrator of the whole environment makes a space, renames one, and archives or
+  restores one, from Administration's **Spaces** and through the API (`POST /v1/spaces`,
+  `PATCH /v1/spaces/{id}`). A name is unique in the environment, archived spaces included. Nothing new -
+  a component, a document, a template, a connection or a query definition - can be made in an archived
+  space; everything already in it is read, edited, published and refreshed as before, and keeps its
+  access. The last space not archived cannot be archived. An archived space is marked in the list of
+  spaces and offered nowhere as a place to make something.
+
+  **This is not yet audited.** Who archived a space is kept until it is restored; nothing records a
+  rename, and moving content between spaces is T7.
+
 - **Groups, and your organisation's directory.** An administrator of the whole environment makes groups
   in Administration's **Groups** and grants a role to one as to a person, from any access page: everybody
   in it holds that role there. Groups lists each group with where its members come from and who they

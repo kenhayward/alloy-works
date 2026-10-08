@@ -15665,6 +15665,10 @@
           "howItIsMet": "`GET /v1/access/external` lists every external principal, each with every grant reaching them - directly or through a group, with its level and expiry - and the readable set those grants produce"
         },
         {
+          "id": "ADM-049",
+          "howItIsMet": "An administrator of the environment makes, renames, archives and restores a space from Administration's Spaces and through `POST /v1/spaces` and `PATCH /v1/spaces/{id}`, each decided as `administer` at the tenant like any other act (\"Spaces\")"
+        },
+        {
           "id": "API-053",
           "howItIsMet": "One refusal vocabulary for every route, below, and a contract test that fails when a route does not declare the permission it checks"
         }
@@ -18723,7 +18727,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 854,
+      "line": 857,
       "kind": "title"
     },
     {
@@ -19135,6 +19139,12 @@
       "kind": "title"
     },
     {
+      "id": "ADM-049",
+      "file": "apps/service/src/space-routes.test.ts",
+      "line": 220,
+      "kind": "title"
+    },
+    {
       "id": "API-047",
       "file": "apps/service/src/stream.test.ts",
       "line": 224,
@@ -19303,6 +19313,12 @@
       "kind": "title"
     },
     {
+      "id": "ADM-049",
+      "file": "apps/web/src/admin/Administration.test.tsx",
+      "line": 814,
+      "kind": "title"
+    },
+    {
       "id": "API-061",
       "file": "apps/web/src/api.test.ts",
       "line": 197,
@@ -19311,37 +19327,37 @@
     {
       "id": "DAT-004",
       "file": "apps/web/src/data/connections.test.tsx",
-      "line": 558,
+      "line": 580,
       "kind": "title"
     },
     {
       "id": "DAT-064",
       "file": "apps/web/src/data/connections.test.tsx",
-      "line": 811,
+      "line": 833,
       "kind": "title"
     },
     {
       "id": "DAT-075",
       "file": "apps/web/src/data/connections.test.tsx",
-      "line": 506,
+      "line": 528,
       "kind": "title"
     },
     {
       "id": "DAT-014",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 468,
+      "line": 494,
       "kind": "title"
     },
     {
       "id": "DAT-016",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 840,
+      "line": 866,
       "kind": "title"
     },
     {
       "id": "DAT-105",
       "file": "apps/web/src/data/query-definitions.test.tsx",
-      "line": 397,
+      "line": 423,
       "kind": "title"
     },
     {
@@ -20577,13 +20593,13 @@
     {
       "id": "DAT-070",
       "file": "packages/db/src/datasets.test.ts",
-      "line": 722,
+      "line": 732,
       "kind": "title"
     },
     {
       "id": "DAT-085",
       "file": "packages/db/src/datasets.test.ts",
-      "line": 347,
+      "line": 357,
       "kind": "title"
     },
     {
@@ -22969,6 +22985,12 @@
       "kind": "title"
     },
     {
+      "id": "ADM-049",
+      "file": "tests/browser/src/spaces.test.ts",
+      "line": 39,
+      "kind": "title"
+    },
+    {
       "id": "STY-080",
       "file": "tests/browser/src/styles.test.ts",
       "line": 273,
@@ -23044,6 +23066,12 @@
       "id": "DAT-103",
       "file": "tests/e2e/src/query-definitions.test.ts",
       "line": 186,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-049",
+      "file": "tests/e2e/src/spaces.test.ts",
+      "line": 40,
       "kind": "title"
     },
     {
