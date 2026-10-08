@@ -84,10 +84,10 @@ and the failure is invisible until somebody re-publishes.
 
 | ID          | Requirement                                                                                                  | Tranche    | Status    |
 | ----------- | ------------------------------------------------------------------------------------------------------------ | ---------- | --------- |
-| **VER-012** | A revision must be a designation applied to an existing version, not a second snapshot beside it             | T3         | Specified |
-| **VER-013** | A revision must be created only when a lifecycle gate is passed (**LIF**), never by an author acting alone   | T3         | Specified |
-| **VER-014** | A revision must record who designated it, when, and against which gate                                       | T3         | Specified |
-| **VER-015** | Revisions must be numbered sequentially from 1, and something never issued must be presentable as revision 0 | T3         | Specified |
+| **VER-012** | A revision must be a designation applied to an existing version, not a second snapshot beside it             | T9         | Specified |
+| **VER-013** | A revision must be created only when a lifecycle gate is passed (**LIF**), never by an author acting alone   | T9         | Specified |
+| **VER-014** | A revision must record who designated it, when, and against which gate                                       | T9         | Specified |
+| **VER-015** | Revisions must be numbered sequentially from 1, and something never issued must be presentable as revision 0 | T9         | Specified |
 | **VER-016** | A revision must be immutable once designated, including its number                                           | Constraint | Specified |
 
 ## 6. Baselines
@@ -316,5 +316,22 @@ changes; a row split by tranche is superseded by its T1 half, and the rest becom
 | Counts           | Before                    | After                     |
 | ---------------- | ------------------------- | ------------------------- |
 | Requirements     | 55, of which 3 superseded | 57, of which 4 superseded |
+| Non-requirements | 4                         | 4                         |
+| Open questions   | 5                         | 5                         |
+
+### Ken's re-tranching of T3 (ADR-0047), 2026-10-08
+
+Not a review. Ken moved workflow out of T3 whole, to a tranche of its own, **T9**, built after T3 and
+before T4, and moved T3's API jobs and query cost limits to T4 and Home's recently opened list to T7,
+recorded by [ADR-0047](../../decisions/0047-workflow-leaves-t3-for-t9.md). A row moving tranche whole
+keeps its identifier, and only its tranche changes.
+
+| What was found                                                                                | Change                                                                                                                                      |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| A revision is created only when a gate is passed (VER-013), so revisions arrive with workflow | **VER-012 to VER-015 moved to T9**. Baselines, comparison and restore stay; a baseline taken automatically at a gate (VER-021) waits for T9 |
+
+| Counts           | Before                    | After                     |
+| ---------------- | ------------------------- | ------------------------- |
+| Requirements     | 57, of which 4 superseded | 57, of which 4 superseded |
 | Non-requirements | 4                         | 4                         |
 | Open questions   | 5                         | 5                         |

@@ -54,7 +54,7 @@ hundreds of thinly-described tools and degrade every model that touched it.
 | **API-054** | A realtime connection must re-check authorisation on a stated interval as well as at connect and reconnect (API-016), so that a permission withdrawn mid-connection takes effect without waiting for a reconnection that may never come (**IAM-082**)                                                                                                                                                             | Constraint | Specified             |
 | **API-055** | Webhook subscriptions must be administrable: created, changed and removed by an entitled administrator, declaring the endpoint, the event types selected, and the signing key with a rotation path. Every such change must be audited (**LIF-064**), and subscriptions must be carried in the configuration export (**ADM-005**)                                                                                  | T5         | Specified             |
 | **API-056** | Every failure surfaced to a user, an administrator or an integrator must use the structured error contract in API-005 and API-006, with a stable machine-readable identifier. Every request, job, event, webhook delivery, realtime message, notification and publishing-pipeline stage must carry a correlation identifier that appears in logs, in diagnostics (**ADM-036**) and in any error reported about it | Constraint | Specified             |
-| **API-057** | Submitting a job (API-040) or a bulk operation must be safely retryable: an idempotency key or equivalent must make a retry return the original work rather than starting a second export, publication, cohort or report. Where an operation cannot be idempotent, the specification must say what a retry does                                                                                                   | T3         | Specified             |
+| **API-057** | Submitting a job (API-040) or a bulk operation must be safely retryable: an idempotency key or equivalent must make a retry return the original work rather than starting a second export, publication, cohort or report. Where an operation cannot be idempotent, the specification must say what a retry does                                                                                                   | T4         | Specified             |
 | **API-058** | Anything any area requires to be listable must be paged, capped or budgeted wherever its size grows with the tenant, with a stable order (API-007). A listing that cannot be paged must state its cap and show itself as capped (**SCH-034**)                                                                                                                                                                     | Constraint | Specified             |
 | **API-059** | Installing, updating and removing an extension must be permissioned, audited and visible to the tenant, and an extension must declare what leaves the tenant boundary so that it appears in the tenant's outbound inventory (**ADM-041**, API-033, **API-Q06**)                                                                                                                                                   | T5         | Specified             |
 
@@ -127,11 +127,11 @@ of their own.
 
 | ID          | Requirement                                                                                                                                                    | Tranche | Status    |
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
-| **API-040** | Work that can outlive a request must be submitted as a job and must return a job identity immediately, rather than holding the request open until it finishes  | T3      | Specified |
-| **API-041** | A job's state must be pollable - accepted, running, succeeded, failed or cancelled - with when it started and, where it is knowable, how far it has got        | T3      | Specified |
-| **API-042** | A job must be cancellable, and a cancelled job must state what it had already done and what it had not                                                         | T3      | Specified |
-| **API-043** | A failed job must report its failure in the same structured shape as a synchronous error (API-005, API-006), and must remain inspectable after it has finished | T3      | Specified |
-| **API-044** | Exporting at scale must be a job (**IMP-018**, **IMP-020**) rather than something a caller assembles by paging every resource                                  | T3      | Specified |
+| **API-040** | Work that can outlive a request must be submitted as a job and must return a job identity immediately, rather than holding the request open until it finishes  | T4      | Specified |
+| **API-041** | A job's state must be pollable - accepted, running, succeeded, failed or cancelled - with when it started and, where it is knowable, how far it has got        | T4      | Specified |
+| **API-042** | A job must be cancellable, and a cancelled job must state what it had already done and what it had not                                                         | T4      | Specified |
+| **API-043** | A failed job must report its failure in the same structured shape as a synchronous error (API-005, API-006), and must remain inspectable after it has finished | T4      | Specified |
+| **API-044** | Exporting at scale must be a job (**IMP-018**, **IMP-020**) rather than something a caller assembles by paging every resource                                  | T4      | Specified |
 
 **API-042 asks for more than a cancel button.** Cancelling a publication halfway leaves a question -
 what exists now - and a job that simply reports "cancelled" makes the caller find out by looking.
@@ -354,6 +354,21 @@ identifier, and only its tranche changes.
 | What was found                                                                     | Change                              |
 | ---------------------------------------------------------------------------------- | ----------------------------------- |
 | Deprecating a version of the API needs a second version; the first release has one | **API-011 and API-013 moved to T7** |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 62, of which 3 superseded | 62, of which 3 superseded |
+
+### Ken's re-tranching of T3 (ADR-0047), 2026-10-08
+
+Not a review. Ken moved workflow out of T3 whole, to a tranche of its own, **T9**, built after T3 and
+before T4, and moved T3's API jobs and query cost limits to T4 and Home's recently opened list to T7,
+recorded by [ADR-0047](../../decisions/0047-workflow-leaves-t3-for-t9.md). A row moving tranche whole
+keeps its identifier, and only its tranche changes.
+
+| What was found                                                                                                                           | Change                                         |
+| ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| Jobs - submitted, polled, cancelled, failing in shape, retry-safe, export at scale - serve bulk generation and export, not collaboration | **API-040 to API-044 and API-057 moved to T4** |
 
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |

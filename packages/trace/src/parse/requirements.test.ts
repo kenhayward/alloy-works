@@ -78,7 +78,7 @@ describe('parsing an area document', () => {
   });
 
   it('refuses a tranche outside the vocabulary, naming the document and line', () => {
-    const text = '| **ZZZ-004** | A widget must exist | T9 | Specified |';
+    const text = '| **ZZZ-004** | A widget must exist | T10 | Specified |';
 
     expect(() => parseAreaDocument(document, text)).toThrow(/ZZZ-invented-area\.md:1/);
   });
@@ -94,6 +94,13 @@ describe('parsing an area document', () => {
     const tranches = parseAreaDocument(document, text).requirements.map((row) => row.tranche);
 
     expect(tranches).toEqual(['T7', 'T8']);
+  });
+
+  // T9 arrived when workflow left T3 (ADR-0047): numbered after T8, built after T3.
+  it('reads a row in T9, the workflow', () => {
+    const text = '| **ZZZ-011** | A widget must pass a gate | T9 | Specified |';
+
+    expect(parseAreaDocument(document, text).requirements[0]?.tranche).toBe('T9');
   });
 
   it('refuses a statement that binds nothing', () => {

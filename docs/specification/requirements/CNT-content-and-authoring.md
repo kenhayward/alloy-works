@@ -507,14 +507,14 @@ Two rows saying one thing would be claimed and cited twice; ADR-0027 moved CNT-1
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------- |
 | **CNT-108** | An author must be able to choose which version or revision of a component a document references, from the document view, without leaving it                                                                                                    | T1      | Superseded by CNT-158 |
 | **CNT-158** | An author must be able to choose which version of a component a document references, from the document view, without leaving it                                                                                                                | T1      | Specified             |
-| **CNT-159** | An author must be able to choose which revision of a component a document references, from the document view, without leaving it                                                                                                               | T3      | Specified             |
+| **CNT-159** | An author must be able to choose which revision of a component a document references, from the document view, without leaving it                                                                                                               | T9      | Specified             |
 | **CNT-109** | Changing which version or revision a document references must be an audited act, recording who changed it, when, and from which to which                                                                                                       | T1      | Superseded by CNT-160 |
 | **CNT-160** | Changing which version a document references must be recorded as a new version of the document, naming who changed it and when, so that the reference before and after can be read back                                                        | T1      | Specified             |
 | **CNT-161** | Changing which version or revision a document references must be an audited act, recording who changed it, when, and from which to which                                                                                                       | T3      | Specified             |
 | **CNT-110** | The view must show which version or revision of a component is referenced, and whether the reference is pinned or floating at latest                                                                                                           | T1      | Superseded by CNT-141 |
 | **CNT-141** | The view must show which version or revision of a component is referenced, and which of the three modes the reference takes: pinned, floating at latest, or tracking the latest approved revision (**REU-050**, **LIF-038**)                   | T1      | Superseded by CNT-162 |
 | **CNT-162** | The view must show which version of a component is referenced, and whether the reference is pinned or floating at latest                                                                                                                       | T1      | Specified             |
-| **CNT-163** | The view must show when a reference tracks the latest approved revision, and which revision that is (**REU-050**, **LIF-038**)                                                                                                                 | T3      | Specified             |
+| **CNT-163** | The view must show when a reference tracks the latest approved revision, and which revision that is (**REU-050**, **LIF-038**)                                                                                                                 | T9      | Specified             |
 | **CNT-181** | Where a document's reference to a component is pinned to a version and a newer version of that component exists that the reader may read, the document view must say so, naming the newer version, and must offer to compare the two (CNT-111) | T3      | Specified             |
 | **CNT-111** | An author must be able to compare a component against an earlier version or revision from within the editor, choosing from a list that shows who changed each and when                                                                         | T3      | Specified             |
 | **CNT-112** | That comparison must be available between any two versions and between any two revisions, rendered as a redline (**VER** owns the comparison itself)                                                                                           | T3      | Specified             |
@@ -993,3 +993,18 @@ row. Filed as [issue #469](https://github.com/kenhayward/alloy-works/issues/469)
 | Counts       | Before                                      | After                                       |
 | ------------ | ------------------------------------------- | ------------------------------------------- |
 | Requirements | 180, of which 34 superseded and 1 withdrawn | 181, of which 34 superseded and 1 withdrawn |
+
+### Ken's re-tranching of T3 (ADR-0047), 2026-10-08
+
+Not a review. Ken moved workflow out of T3 whole, to a tranche of its own, **T9**, built after T3 and
+before T4, and moved T3's API jobs and query cost limits to T4 and Home's recently opened list to T7,
+recorded by [ADR-0047](../../decisions/0047-workflow-leaves-t3-for-t9.md). A row moving tranche whole
+keeps its identifier, and only its tranche changes.
+
+| What was found                                                                       | Change                                                                   |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| Choosing a revision and showing the latest approved one need revisions and approvals | **CNT-159 and CNT-163 moved to T9**. CNT-161, an audited re-point, stays |
+
+| Counts       | Before                                      | After                                       |
+| ------------ | ------------------------------------------- | ------------------------------------------- |
+| Requirements | 181, of which 34 superseded and 1 withdrawn | 181, of which 34 superseded and 1 withdrawn |

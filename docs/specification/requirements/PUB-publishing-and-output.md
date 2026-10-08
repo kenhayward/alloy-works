@@ -73,7 +73,7 @@ exactly when it matters.
 | **PUB-009** | A layout must declare page numbering, including restarts and a different scheme for front matter                                                                                               | T1      | Specified             |
 | **PUB-010** | A layout must declare the front and back matter a document carries: cover, approval page, contents, appendices                                                                                 | T1      | Superseded by PUB-088 |
 | **PUB-088** | A layout must declare the front and back matter a document carries: cover, contents and appendices                                                                                             | T1      | Specified             |
-| **PUB-089** | A layout must be able to declare an approval page, showing the approvals recorded for what is published                                                                                        | T3      | Specified             |
+| **PUB-089** | A layout must be able to declare an approval page, showing the approvals recorded for what is published                                                                                        | T9      | Specified             |
 | **PUB-011** | A layout must declare the numbering schemes **STR** applies to sections, figures, tables and equations                                                                                         | T1      | Specified             |
 | **PUB-012** | A layout must be able to differ per output format, because a page has no meaning in some of them                                                                                               | T1      | Specified             |
 | **PUB-013** | A layout must be a versioned artifact, and a baseline must pin the layout version it published under                                                                                           | T3      | Specified             |
@@ -626,6 +626,21 @@ identifier, and only its tranche changes.
 | An automatic accessibility check of Word is Word's, beside Word's fidelity                                                                                 | **PUB-101 moved to T8**                           |
 | Incremental and clean compilation byte-identical, and an untagged range preview saying so, are the warm range preview's, which ADR-0027 moved with CNT-151 | **PUB-076 and PUB-080 moved to T4**, with CNT-151 |
 | Checking a change to the pipeline against recorded output protects every publication already made                                                          | **PUB-075 stays in T3**, early in its order       |
+
+| Counts       | Before                      | After                       |
+| ------------ | --------------------------- | --------------------------- |
+| Requirements | 111, of which 16 superseded | 111, of which 16 superseded |
+
+### Ken's re-tranching of T3 (ADR-0047), 2026-10-08
+
+Not a review. Ken moved workflow out of T3 whole, to a tranche of its own, **T9**, built after T3 and
+before T4, and moved T3's API jobs and query cost limits to T4 and Home's recently opened list to T7,
+recorded by [ADR-0047](../../decisions/0047-workflow-leaves-t3-for-t9.md). A row moving tranche whole
+keeps its identifier, and only its tranche changes.
+
+| What was found                                               | Change                                              |
+| ------------------------------------------------------------ | --------------------------------------------------- |
+| An approval page shows approvals, which arrive with workflow | **PUB-089 moved to T9**. PUB-075 stays, early in T3 |
 
 | Counts       | Before                      | After                       |
 | ------------ | --------------------------- | --------------------------- |
