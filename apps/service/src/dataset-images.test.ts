@@ -604,6 +604,34 @@ describe("a result's images, admitted before it is kept (the D8 plan, D8-D and D
       expect(await entries(asset.artifactId)).toBe(0);
     });
 
+    it('IAM-013 records a dataset image refused to a reader of no document holding it as a hidden refusal', async () => {
+      const image = png(42);
+      const component = await h.component(h.general, 'Sites');
+      site += 1;
+      await h.place(
+        component,
+        binding('b1', definition.id, { parameters: { site: { literal: String(site) } } }),
+      );
+      const document = await h.documentReferencing([component.id], h.quality);
+      const node = document.nodes[0]!;
+      h.connector.run = ranWithImages([[String(site), 'North', image]]);
+      const id = pendingOf(await resolve(document.id, node));
+      const asset = await admit((await uploadsOf(image))[0]!.id, image);
+      expect((await followed(id)).state).toBe('done');
+      const before = await h.tenantDb.withTenant(h.tenant, newestEvent);
+      expect((await h.call('alice', 'GET', `/v1/asset-versions/${asset.id}`)).statusCode).toBe(404);
+      const events = await h.tenantDb.withTenant(h.tenant, (trx) => auditEvents(trx, before));
+      expect(events).toHaveLength(1);
+      expect(events[0]).toMatchObject({
+        kind: 'access.refused',
+        outcome: 'refused',
+        actor: h.ids.alice,
+        subjectKind: 'artifact',
+        subject: asset.artifactId,
+        detail: { permission: 'read', hidden: true, code: 'not_found' },
+      });
+    });
+
     it('reads a dataset image for a reader of a document holding it, and an uploaded asset as before', async () => {
       const image = png(41);
       const { document, node } = await placed();

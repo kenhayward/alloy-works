@@ -23,7 +23,14 @@ import {
 import { ADMITTED_FORMATS, ASSET_MAX_BYTES, decide, readImageHeader } from '@alloy-works/domain';
 import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
-import { authoriseAt, callerOf, notFound, type Authorised, type Caller } from './access.js';
+import {
+  authoriseAt,
+  callerOf,
+  notFound,
+  refusedBy,
+  type Authorised,
+  type Caller,
+} from './access.js';
 import { contextOf } from './audit.js';
 import { connectionFacts } from './data/sql-access.js';
 import { AppError, storageUnavailable } from './errors.js';
@@ -81,11 +88,23 @@ async function readableAssetVersion(trx: TenantTransaction, caller: Caller, id: 
   if (!version) throw notFound();
   const holders = await documentsHoldingAsset(trx, version.assetId);
   if (holders === undefined) return version;
+  let refusal: AppError | undefined;
   for (const document of holders) {
     const facts = await connectionFacts(trx, caller, document);
-    if (facts && decide('read', facts).allowed) return version;
+    if (!facts) continue;
+    const reading = decide('read', facts);
+    if (reading.allowed) return version;
+    // The image exists, and no document the caller may read holds it: a refusal, hidden (AU1-E),
+    // by the first holding document's decision.
+    refusal ??= refusedBy(
+      notFound(),
+      reading,
+      facts,
+      { kind: 'artifact', id: version.assetId },
+      true,
+    );
   }
-  throw notFound();
+  throw refusal ?? notFound();
 }
 
 /**

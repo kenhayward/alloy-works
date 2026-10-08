@@ -512,8 +512,19 @@ async function prepare(
     const facts = stored && (await connectionFacts(trx, caller, stored.id));
     // A definition the caller may not read is answered as one that is not there, so a binding's
     // refusal never tells them whether it exists.
-    if (!stored || !facts || !decide('read', facts).allowed) {
+    if (!stored || !facts) {
       throw bindingMissing(naming, `The binding ${binding.id} names no query definition here.`);
+    }
+    // One that exists and that the caller may not read: a refusal, hidden (AU1-E).
+    const reading = decide('read', facts);
+    if (!reading.allowed) {
+      throw refusedBy(
+        bindingMissing(naming, `The binding ${binding.id} names no query definition here.`),
+        reading,
+        facts,
+        { kind: 'artifact', id: stored.id },
+        true,
+      );
     }
     if (stored.definition.retired) {
       throw refused(
@@ -1066,8 +1077,19 @@ async function mayTakeResult(
   naming: Required<Naming>,
 ): Promise<void> {
   const definition = await connectionFacts(trx, caller, provenance.queryDefinition.artifact);
-  if (!definition || !decide('read', definition).allowed) {
-    throw bindingMissing(naming, `The binding ${naming.binding} names no query definition here.`);
+  const missing = () =>
+    bindingMissing(naming, `The binding ${naming.binding} names no query definition here.`);
+  if (!definition) throw missing();
+  // One that exists and that the caller may not read: a refusal, hidden (AU1-E).
+  const reading = decide('read', definition);
+  if (!reading.allowed) {
+    throw refusedBy(
+      missing(),
+      reading,
+      definition,
+      { kind: 'artifact', id: provenance.queryDefinition.artifact },
+      true,
+    );
   }
   const connection = await connectionFacts(trx, caller, provenance.connection.artifact);
   const using = connection && decide('use_connection', connection);
@@ -2168,10 +2190,21 @@ export function bindingHandlers(
       await lockBindings(trx, id, [{ node: found.node, binding: found.binding.id }]);
       const caller = callerOf(request);
       const facts = await connectionFacts(trx, caller, found.binding.query);
-      if (!facts || !decide('read', facts).allowed) {
-        throw bindingMissing(
+      const missing = () =>
+        bindingMissing(
           { ...naming, definition: found.binding.query },
           `The binding ${found.binding.id} names no query definition here.`,
+        );
+      if (!facts) throw missing();
+      // One that exists and that the caller may not read: a refusal, hidden (AU1-E).
+      const reading = decide('read', facts);
+      if (!reading.allowed) {
+        throw refusedBy(
+          missing(),
+          reading,
+          facts,
+          { kind: 'artifact', id: found.binding.query },
+          true,
         );
       }
       const held = (await heldBy(trx, id, placed)).get(key(body.node, body.binding));
